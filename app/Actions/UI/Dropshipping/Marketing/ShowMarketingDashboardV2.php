@@ -15,7 +15,7 @@ use App\Actions\CRM\TrafficSource\Attribution\GetShopOrderJourney;
 use App\Actions\CRM\TrafficSource\GetAttributionStartedAt;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\WithMarketingPeriod;
-use App\Enums\UI\Marketing\MarketingComparePeriodEnum;
+use App\Enums\Helpers\Period\ComparePeriodEnum;
 use App\Enums\UI\Marketing\MarketingDashboardV2TabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -30,7 +30,7 @@ class ShowMarketingDashboardV2 extends OrgAction
 
     private ?string $journeyOrder = null;
 
-    private ?MarketingComparePeriodEnum $compareMode = null;
+    private ?ComparePeriodEnum $compareMode = null;
 
     private ?Carbon $compareFrom = null;
 
@@ -60,7 +60,7 @@ class ShowMarketingDashboardV2 extends OrgAction
 
     private function setComparePeriod(ActionRequest $request): void
     {
-        $this->compareMode       = MarketingComparePeriodEnum::tryFrom((string) $request->query('compare'));
+        $this->compareMode       = ComparePeriodEnum::tryFrom((string) $request->query('compare'));
         $this->customCompareFrom = $request->query('compare_from');
         $this->customCompareTo   = $request->query('compare_to');
 
@@ -124,7 +124,7 @@ class ShowMarketingDashboardV2 extends OrgAction
         return [
             'available'           => $this->periodFrom !== null,
             'mode'                => $this->compareFrom ? $this->compareMode?->value : null,
-            'options'             => collect(MarketingComparePeriodEnum::cases())->map(fn (MarketingComparePeriodEnum $mode) => [
+            'options'             => collect(ComparePeriodEnum::cases())->map(fn (ComparePeriodEnum $mode) => [
                 'value' => $mode->value,
                 'label' => $mode->label(),
             ])->all(),

@@ -352,6 +352,28 @@ export const applySocialIconSet = (icons: Array<Record<string, any>>, iconSet: s
     })
 }
 
+const CSS_URL_UNSAFE_CHARACTERS: Record<string, string> = { "'": '%27', '"': '%22', '(': '%28', ')': '%29', ' ': '%20', '\\': '%5C' }
+
+export const backgroundImageUrl = (value: string | null | undefined): string =>
+    String(value ?? '').match(/^\s*url\(\s*(['"]?)(.*?)\1\s*\)\s*$/i)?.[2] ?? ''
+
+export const backgroundImageCss = (url: string): string => {
+    const safeUrl = url.trim().replace(/[\r\n\t]/g, '').replace(/['"() \\]/g, (character) => CSS_URL_UNSAFE_CHARACTERS[character])
+
+    return safeUrl ? `url('${safeUrl}')` : 'none'
+}
+
+export const setBackgroundImage = (style: Record<string, any>, url: string): void => {
+    const hadImage = backgroundImageUrl(style['background-image']) !== ''
+    style['background-image'] = backgroundImageCss(url)
+    if (hadImage || style['background-image'] === 'none') {
+        return
+    }
+    style['background-size'] = 'cover'
+    style['background-position'] = 'center'
+    style['background-repeat'] = 'no-repeat'
+}
+
 export const youtubeVideoId = (url: string): string | null =>
     url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/)?.[1] ?? null
 

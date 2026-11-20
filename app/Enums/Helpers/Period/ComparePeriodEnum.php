@@ -6,12 +6,12 @@
  * Copyright (c) 2026, Steven Wicca Alfredo
  */
 
-namespace App\Enums\UI\Marketing;
+namespace App\Enums\Helpers\Period;
 
 use App\Enums\EnumHelperTrait;
 use Illuminate\Support\Carbon;
 
-enum MarketingComparePeriodEnum: string
+enum ComparePeriodEnum: string
 {
     use EnumHelperTrait;
 

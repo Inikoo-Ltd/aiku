@@ -280,7 +280,7 @@ Spend is the period's `traffic_source_costs`, read the way `GetShopMarketingOver
 | `routes/grp/web/org/shops/marketing.php` | One `GET dashboard-v2` route |
 | `resources/js/Pages/Grp/Org/Marketing/MarketingDashboardV2.vue` | Page with tabs |
 | `app/Actions/Catalogue/Shop/Hydrators/ShopHydrateCustomerValueCurve.php` | Monthly value curve per shop for CLTV |
-| `app/Enums/UI/Marketing/MarketingComparePeriodEnum.php` | Compare modes and their date ranges |
+| `app/Enums/Helpers/Period/ComparePeriodEnum.php` | Compare modes and their date ranges |
 | `resources/js/Components/Marketing/V2/*` | `AcquisitionTab`, `OrdersTab`, `JourneyTab`, `ComparePeriod`, `DeltaBadge`, and `palette.ts` with the chart and channel colours |
 
 ## Phases

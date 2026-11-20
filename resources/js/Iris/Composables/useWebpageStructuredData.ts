@@ -55,41 +55,30 @@ const getListItems = (list: unknown): any[] => {
     return (list as Record<string, any>)?.data ?? []
 }
 
-const buildPictureItemListNode = (
+const buildPictureGalleryNode = (
     items: unknown,
     webpageData: Record<string, any>,
-    listName: string
+    galleryName: string
 ): StructuredDataNode | null => {
-    const itemListElement: StructuredDataNode[] = []
-    const seenUrls = new Set<string>()
+    const imageUrls = new Set<string>()
 
     for (const item of Array.isArray(items) ? items : []) {
-        if (!isPlainObject(item)) continue
-
-        const url = normalizeUrl(item.url)
-        const name = stripHtml(item.title) ?? stripHtml(item.name)
-        if (!url || !name || seenUrls.has(url)) continue
-
-        seenUrls.add(url)
-
-        const listItem: StructuredDataNode = { "@type": "ListItem", position: itemListElement.length + 1, name, url }
+        if (!isPlainObject(item) || !normalizeUrl(item.url) || !(stripHtml(item.title) ?? stripHtml(item.name))) continue
 
         const imageUrl = getCardImageUrl(item)
         if (imageUrl) {
-            listItem.image = imageUrl
+            imageUrls.add(imageUrl)
         }
-
-        itemListElement.push(listItem)
     }
 
-    if (!itemListElement.length) return null
+    if (!imageUrls.size) return null
 
-    const node: StructuredDataNode = { "@type": "ItemList", itemListElement }
+    const node: StructuredDataNode = { "@type": "WebPageElement", image: [...imageUrls] }
 
     const pageUrl = normalizeUrl(webpageData?.canonical_url)
     if (pageUrl) {
-        node["@id"] = `${pageUrl}#${listName}`
-        node.url = pageUrl
+        node["@id"] = `${pageUrl}#${galleryName}`
+        node.isPartOf = { "@id": pageUrl }
     }
 
     return node
@@ -112,11 +101,11 @@ const getSeeAlsoProducts = (productsData: Record<string, any> | null | undefined
     return productsData?.top_sellers ?? []
 }
 
-const withListNodes = (
+const withPictureNodes = (
     structuredData: StructuredDataValue | null,
-    listNodes: (StructuredDataNode | null)[]
+    pictureNodes: (StructuredDataNode | null)[]
 ): StructuredDataValue | null => {
-    const nodes = listNodes.filter((node): node is StructuredDataNode => !!node)
+    const nodes = pictureNodes.filter((node): node is StructuredDataNode => !!node)
     if (!nodes.length) return structuredData
 
     const graph = normalizeStructuredDataForGraph(structuredData)
@@ -145,29 +134,29 @@ const buildBlockStructuredData = (type: string, context: BlockStructuredDataCont
                 listId,
             })
         case "sub-departments-3":
-            return withListNodes(
+            return withPictureNodes(
                 buildDepartmentStructuredData({
                     subDepartments: fieldValue.sub_department_list,
                     collections: fieldValue.collections_list,
                     webpageData,
                     listId,
                 }),
-                [buildPictureItemListNode(getListItems(fieldValue.families), webpageData, `family-list-${listId}`)]
+                [buildPictureGalleryNode(getListItems(fieldValue.families), webpageData, `family-list-${listId}`)]
             )
         case "top-families":
-            return withListNodes(null, [
-                buildPictureItemListNode(fieldValue.families, webpageData, `top-families-${listId}`),
+            return withPictureNodes(null, [
+                buildPictureGalleryNode(fieldValue.families, webpageData, `top-families-${listId}`),
             ])
         case "see-also-1":
-            return withListNodes(null, [
-                buildPictureItemListNode(getSeeAlsoProducts(fieldValue.settings?.products_data), webpageData, `see-also-${listId}`),
+            return withPictureNodes(null, [
+                buildPictureGalleryNode(getSeeAlsoProducts(fieldValue.settings?.products_data), webpageData, `see-also-${listId}`),
             ])
         case "products-1":
         case "products-2":
             if (webpageData?.sub_type === "family") return null
 
-            return withListNodes(null, [
-                buildPictureItemListNode(
+            return withPictureNodes(null, [
+                buildPictureGalleryNode(
                     [...getListItems(fieldValue.products), ...getListItems(fieldValue.products_out_of_stock)],
                     webpageData,
                     `product-list-${listId}`

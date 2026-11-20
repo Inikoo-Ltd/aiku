@@ -9,13 +9,14 @@ import EmailWorkshopField from './EmailWorkshopField.vue'
 import EmailWorkshopPadding from './EmailWorkshopPadding.vue'
 import EmailWorkshopSection from './EmailWorkshopSection.vue'
 import EmailWorkshopColumns from './EmailWorkshopColumns.vue'
+import EmailWorkshopBackgroundImage from './EmailWorkshopBackgroundImage.vue'
 import EmailWorkshopReadyMadeLink, { type ReadyMadeLink } from './EmailWorkshopReadyMadeLink.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
     DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
     createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
-    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource,
+    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource, setBackgroundImage,
 } from './emailWorkshopBlocks'
 import { isLinkUnderlined, moduleMobileStyle, withoutLinkUnderlineChoices } from './renderEmailHtml'
 
@@ -273,6 +274,8 @@ const pickVideoThumbnail = () => openImagePicker((url, alt) => {
         descriptor.value.video.thumbAlt = alt ?? ''
     }
 })
+
+const pickBackgroundImage = (style: Record<string, any>) => openImagePicker((url) => setBackgroundImage(style, url))
 
 const pickIconImage = (icon: Record<string, any>) => openImagePicker((url) => {
     icon.image = url
@@ -756,7 +759,9 @@ const contentSectionTitle = computed(() => ({
         <template v-else-if="row">
             <EmailWorkshopSection :title="ctrans('Row properties')">
                 <EmailWorkshopField v-model="rowContainerStyle['background-color']" type="color" :label="ctrans('Row background color')" />
+                <EmailWorkshopBackgroundImage :target="rowContainerStyle" :label="ctrans('Row background image')" @pick="pickBackgroundImage(rowContainerStyle)" />
                 <EmailWorkshopField v-model="rowContentStyle['background-color']" type="color" :label="ctrans('Content area background')" />
+                <EmailWorkshopBackgroundImage :target="rowContentStyle" :label="ctrans('Content area background image')" @pick="pickBackgroundImage(rowContentStyle)" />
                 <EmailWorkshopField v-model="rowContentStyle['border-radius']" type="px" :label="ctrans('Rounded corners')" />
                 <EmailWorkshopField v-model="rowContentComputedStyle.verticalAlign" type="select" :options="verticalAlignOptions" :label="ctrans('Vertical align')" />
             </EmailWorkshopSection>

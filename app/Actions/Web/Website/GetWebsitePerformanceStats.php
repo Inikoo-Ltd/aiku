@@ -8,10 +8,13 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Web\Seo\GetSeoPeriods;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\ComparePeriod;
 use App\Models\Web\Website;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -20,9 +23,12 @@ class GetWebsitePerformanceStats
     use AsObject;
 
     /**
-     * @return array{days_with_data: int, first_day: string|null, last_day: string|null, visitors: int, sessions: int, page_views: int, pages_per_session: float, avg_session_duration: int, bounce_rate: float, new_visitors: int, returning_visitors: int, sessions_desktop: int, sessions_mobile: int, sessions_tablet: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float, average_order_value: float, currency_code: string|null, conversions_tracked_since: string|null, comparisons: array<string, array{from: string, to: string, days_with_data: int, visitors: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}>, daily: array<int, array{day: string, visitors: int, page_views: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}>}|null
+     * The figures of the period and, when comparing, the same figures over the compared period with
+     * its daily records moved onto the matching days of the period, so both lines share a chart.
+     *
+     * @return array<string, mixed>|null
      */
-    public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null): ?array
+    public function handle(Website $website, ?string $fromDate = null, ?string $toDate = null, ?ComparePeriod $compare = null): ?array
     {
         $dailyTimeSeries = $website->timeSeries()
             ->where('frequency', TimeSeriesFrequencyEnum::DAILY->value)
@@ -35,7 +41,46 @@ class GetWebsitePerformanceStats
         $from = $fromDate ? Carbon::parse($fromDate)->startOfDay() : null;
         $to   = $toDate ? Carbon::parse($toDate)->startOfDay() : null;
 
-        $daily = $this->dailyRecords($dailyTimeSeries->id, $from, $to)
+        $conversionsTrackedSince = DB::connection('aiku_no_sticky')->table('website_time_series_records')
+            ->where('website_time_series_id', $dailyTimeSeries->id)
+            ->where('frequency', TimeSeriesFrequencyEnum::DAILY->singleLetter())
+            ->where(fn ($query) => $query->where('checkouts', '>', 0)->orWhere('purchases', '>', 0))
+            ->min('period');
+
+        $periods    = GetSeoPeriods::run($website, $fromDate, $toDate, $compare);
+        $period     = $periods['traffic'];
+        $comparison = null;
+
+        if ($from && isset($period['previous_from'])) {
+            $previousFrom = Carbon::parse($period['previous_from']);
+            $previousTo   = Carbon::parse($period['previous_to']);
+
+            $comparison = array_merge($this->summary($this->totals($dailyTimeSeries->id, $previousFrom, $previousTo)), [
+                'from'  => $period['previous_from'],
+                'to'    => $period['previous_to'],
+                'label' => $periods['label'],
+                'daily' => $this->daily($dailyTimeSeries->id, $previousFrom, $previousTo)
+                    ->map(fn (array $record) => array_merge($record, [
+                        'day' => $from->copy()->addDays((int) $previousFrom->diffInDays(Carbon::parse($record['day'])))->toDateString(),
+                    ]))
+                    ->all(),
+            ]);
+        }
+
+        return array_merge($this->summary($this->totals($dailyTimeSeries->id, $from, $to)), [
+            'currency_code'             => $website->shop->currency?->code,
+            'conversions_tracked_since' => $conversionsTrackedSince,
+            'comparison'                => $comparison,
+            'daily'                     => $this->daily($dailyTimeSeries->id, $from, $to)->all(),
+        ]);
+    }
+
+    /**
+     * @return Collection<int, array{day: string, visitors: int, page_views: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float}>
+     */
+    private function daily(int $timeSeriesId, ?Carbon $from, ?Carbon $to): Collection
+    {
+        return $this->dailyRecords($timeSeriesId, $from, $to)
             ->orderBy('period')
             ->get(['period', 'visitors', 'page_views', 'add_to_baskets', 'checkouts', 'purchases', 'revenue'])
             ->map(fn ($record) => [
@@ -46,64 +91,39 @@ class GetWebsitePerformanceStats
                 'checkouts'      => (int) $record->checkouts,
                 'purchases'      => (int) $record->purchases,
                 'revenue'        => (float) $record->revenue,
-            ])
-            ->all();
+            ]);
+    }
 
-        $totals = $this->totals($dailyTimeSeries->id, $from, $to);
-
-        $comparisons = [];
-
-        if ($from && $to) {
-            $length = (int) $from->diffInDays($to);
-
-            $comparisons['previous_period'] = $this->comparisonTotals(
-                $dailyTimeSeries->id,
-                $from->copy()->subDays($length + 1),
-                $from->copy()->subDay()
-            );
-
-            $comparisons['previous_year'] = $this->comparisonTotals(
-                $dailyTimeSeries->id,
-                $from->copy()->subYear(),
-                $to->copy()->subYear()
-            );
-        }
-
-        $conversionsTrackedSince = DB::connection('aiku_no_sticky')->table('website_time_series_records')
-            ->where('website_time_series_id', $dailyTimeSeries->id)
-            ->where('frequency', TimeSeriesFrequencyEnum::DAILY->singleLetter())
-            ->where(fn ($query) => $query->where('checkouts', '>', 0)->orWhere('purchases', '>', 0))
-            ->min('period');
-
+    /**
+     * @return array{days_with_data: int, first_day: string|null, last_day: string|null, visitors: int, sessions: int, page_views: int, pages_per_session: float, avg_session_duration: int, bounce_rate: float, new_visitors: int, returning_visitors: int, sessions_desktop: int, sessions_mobile: int, sessions_tablet: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float, average_order_value: float}
+     */
+    private function summary(object $totals): array
+    {
         $sessions  = (int) $totals->sessions;
         $purchases = (int) $totals->purchases;
         $revenue   = (float) $totals->revenue;
 
         return [
-            'days_with_data'            => (int) $totals->days_with_data,
-            'first_day'                 => $totals->first_day,
-            'last_day'                  => $totals->last_day,
-            'visitors'                  => (int) $totals->visitors,
-            'sessions'                  => $sessions,
-            'page_views'                => (int) $totals->page_views,
-            'pages_per_session'         => $sessions > 0 ? round($totals->page_views / $sessions, 2) : 0,
-            'avg_session_duration'      => $sessions > 0 ? (int) round($totals->total_duration / $sessions) : 0,
-            'bounce_rate'               => $sessions > 0 ? round(($totals->total_bounces / $sessions) * 100, 2) : 0,
-            'new_visitors'              => (int) $totals->new_visitors,
-            'returning_visitors'        => (int) $totals->returning_visitors,
-            'sessions_desktop'          => (int) $totals->sessions_desktop,
-            'sessions_mobile'           => (int) $totals->sessions_mobile,
-            'sessions_tablet'           => (int) $totals->sessions_tablet,
-            'add_to_baskets'            => (int) $totals->add_to_baskets,
-            'checkouts'                 => (int) $totals->checkouts,
-            'purchases'                 => $purchases,
-            'revenue'                   => $revenue,
-            'conversion_rate'           => $this->conversionRate($purchases, (int) $totals->visitors),
-            'average_order_value'       => $purchases > 0 ? round($revenue / $purchases, 2) : 0,
-            'currency_code'             => $website->shop->currency?->code,
-            'conversions_tracked_since' => $conversionsTrackedSince,
-            'comparisons'               => $comparisons,
-            'daily'                     => $daily,
+            'days_with_data'       => (int) $totals->days_with_data,
+            'first_day'            => $totals->first_day,
+            'last_day'             => $totals->last_day,
+            'visitors'             => (int) $totals->visitors,
+            'sessions'             => $sessions,
+            'page_views'           => (int) $totals->page_views,
+            'pages_per_session'    => $sessions > 0 ? round($totals->page_views / $sessions, 2) : 0,
+            'avg_session_duration' => $sessions > 0 ? (int) round($totals->total_duration / $sessions) : 0,
+            'bounce_rate'          => $sessions > 0 ? round(($totals->total_bounces / $sessions) * 100, 2) : 0,
+            'new_visitors'         => (int) $totals->new_visitors,
+            'returning_visitors'   => (int) $totals->returning_visitors,
+            'sessions_desktop'     => (int) $totals->sessions_desktop,
+            'sessions_mobile'      => (int) $totals->sessions_mobile,
+            'sessions_tablet'      => (int) $totals->sessions_tablet,
+            'add_to_baskets'       => (int) $totals->add_to_baskets,
+            'checkouts'            => (int) $totals->checkouts,
+            'purchases'            => $purchases,
+            'revenue'              => $revenue,
+            'conversion_rate'      => $this->conversionRate($purchases, (int) $totals->visitors),
+            'average_order_value'  => $purchases > 0 ? round($revenue / $purchases, 2) : 0,
         ];
     }
 
@@ -139,26 +159,6 @@ class GetWebsitePerformanceStats
                 COALESCE(SUM(revenue), 0) as revenue
             ')
             ->first();
-    }
-
-    /**
-     * @return array{from: string, to: string, days_with_data: int, visitors: int, add_to_baskets: int, checkouts: int, purchases: int, revenue: float, conversion_rate: float}
-     */
-    private function comparisonTotals(int $timeSeriesId, Carbon $from, Carbon $to): array
-    {
-        $totals = $this->totals($timeSeriesId, $from, $to);
-
-        return [
-            'from'           => $from->toDateString(),
-            'to'             => $to->toDateString(),
-            'days_with_data' => (int) $totals->days_with_data,
-            'visitors'       => (int) $totals->visitors,
-            'add_to_baskets' => (int) $totals->add_to_baskets,
-            'checkouts'      => (int) $totals->checkouts,
-            'purchases'      => (int) $totals->purchases,
-            'revenue'        => (float) $totals->revenue,
-            'conversion_rate' => $this->conversionRate((int) $totals->purchases, (int) $totals->visitors),
-        ];
     }
 
     private function conversionRate(int $purchases, int $visitors): float

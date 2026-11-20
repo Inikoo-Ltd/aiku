@@ -1001,14 +1001,13 @@ onMounted(async () => {
 
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
-        <Teleport to="body">
-            <BubbleMenu  
+        <Teleport to="body" v-if="editorInstance && !showDialog">
+            <BubbleMenu
                 :key="key"
                 :shouldShow="shouldShowBubble"
                 :options="bubbleMenuOptions"
                 :append-to="appendBubbleMenuToBody"
                 :editor="editorInstance"
-                v-if="editorInstance && !showDialog"
                 data-bubble-menu
                 class="z-[9999] w-max max-w-[92vw]"
             >

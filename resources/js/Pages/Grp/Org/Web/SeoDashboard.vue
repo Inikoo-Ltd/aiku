@@ -11,6 +11,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Chart from "primevue/chart"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardSettings from "@/Components/DataDisplay/Dashboard/DashboardSettings.vue"
+import ComparePeriod from "@/Components/DataDisplay/Dashboard/ComparePeriod.vue"
+import DeltaBadge from "@/Components/DataDisplay/Dashboard/DeltaBadge.vue"
+import { type CompareProp, keepCompareQuery } from "@/Components/DataDisplay/Dashboard/comparePeriod"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TableWebpagesPerformance from "@/Components/Tables/Grp/Org/Web/TableWebpagesPerformance.vue"
 import TableWebsiteConversionCustomers from "@/Components/Tables/Grp/Org/Web/TableWebsiteConversionCustomers.vue"
@@ -48,21 +51,7 @@ type DailyTraffic = {
     revenue: number
 }
 
-type ConversionComparison = {
-    from: string
-    to: string
-    days_with_data: number
-    visitors: number
-    add_to_baskets: number
-    checkouts: number
-    purchases: number
-    revenue: number
-    conversion_rate: number
-}
-
-type ComparisonKey = "previous_period" | "previous_year"
-
-type WebsitePerformance = {
+type PerformanceSummary = {
     days_with_data: number
     first_day: string | null
     last_day: string | null
@@ -83,9 +72,19 @@ type WebsitePerformance = {
     revenue: number
     conversion_rate: number
     average_order_value: number
+}
+
+type PerformanceComparison = PerformanceSummary & {
+    from: string
+    to: string
+    label: string | null
+    daily: DailyTraffic[]
+}
+
+type WebsitePerformance = PerformanceSummary & {
     currency_code: string | null
     conversions_tracked_since: string | null
-    comparisons: Partial<Record<ComparisonKey, ConversionComparison>>
+    comparison: PerformanceComparison | null
     daily: DailyTraffic[]
 }
 
@@ -102,11 +101,7 @@ type PageSpeedSummary = {
     visitors: { days: number, devices: Record<"phone" | "desktop", DeviceVitals> } | null
 }
 
-type SearchPerformance = {
-    is_connected: boolean
-    site_url: string | null
-    service_account_email: string | null
-    latest_stored_day: string | null
+type SearchSummary = {
     days_with_data: number
     first_day: string | null
     last_day: string | null
@@ -115,6 +110,14 @@ type SearchPerformance = {
     ctr: number
     position: number | null
     daily: DailySearch[]
+}
+
+type SearchPerformance = SearchSummary & {
+    is_connected: boolean
+    site_url: string | null
+    service_account_email: string | null
+    latest_stored_day: string | null
+    comparison: (SearchSummary & { from: string, to: string, label: string | null }) | null
 }
 
 type PerformanceWebsite = {
@@ -127,6 +130,7 @@ type PerformanceWebsite = {
 type ShareSegment = {
     label: string
     value: number
+    previous?: number | null
     percentage: number
     swatchClass: string
 }
@@ -136,6 +140,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     intervals: Intervals
     settings: Settings
+    compare: CompareProp
     website: PerformanceWebsite | null
     performance: WebsitePerformance | null
     search: SearchPerformance | null
@@ -169,7 +174,9 @@ const handlePageTabUpdate = (tabSlug: string) => {
         return
     }
 
-    router.get(`${window.location.pathname}?tab=${encodeURIComponent(tabSlug)}`, {}, {
+    const query = keepCompareQuery(new URLSearchParams({ tab: tabSlug }))
+
+    router.get(`${window.location.pathname}?${query.toString()}`, {}, {
         preserveScroll: true,
         onSuccess: () => currentPageTab.value = tabSlug,
     })
@@ -188,11 +195,9 @@ const handleTabUpdate = (tabSlug: string) => {
         return
     }
 
-    const url = new URL(window.location.href)
+    const query = keepCompareQuery(new URLSearchParams({ tab: "overview", table: tabSlug }))
 
-    url.search = `?tab=overview&table=${encodeURIComponent(tabSlug)}`
-
-    router.get(url.pathname + url.search, {}, {
+    router.get(`${window.location.pathname}?${query.toString()}`, {}, {
         only: [tabSlug, "queryBuilderProps"],
         preserveState: true,
         preserveScroll: true,
@@ -264,7 +269,9 @@ const verdictText = (rating: "good" | "needs_improvement" | "poor") => ({
     poor: ctrans("Fails Core Web Vitals"),
 })[rating]
 
-const reloadOnly = computed(() => ["intervals", "performance", "search", currentTab.value])
+const reloadOnly = computed(() => ["intervals", "compare", "performance", "search", currentTab.value])
+
+const compareReloadOnly = computed(() => ["compare", "performance", "search", currentTab.value])
 
 const locale = useLocaleStore()
 
@@ -307,6 +314,29 @@ const percentageOf = (part: number, whole: number) => whole > 0 ? part / whole *
 
 const formatPercentage = (percentage: number) => `${percentage.toFixed(1)}%`
 
+const comparison = computed(() => props.performance?.comparison ?? null)
+
+const comparisonHasData = computed(() => (comparison.value?.days_with_data ?? 0) > 0)
+
+const comparedWithText = (compared: { label: string | null, from: string, to: string } | null | undefined) => compared
+    ? ctrans("Compared with :period, :from to :to", {
+        period: (compared.label ?? "").toLowerCase(),
+        from: formatDay(compared.from, "mdy"),
+        to: formatDay(compared.to, "mdy"),
+    })
+    : ""
+
+type Delta = {
+    previous: number | null
+    unit?: "percent" | "points" | "difference"
+    better?: "up" | "down" | "none"
+    format?: (value: number) => string
+}
+
+const trafficDelta = (key: keyof PerformanceSummary, options: Omit<Delta, "previous"> = {}): Delta | null => comparison.value
+    ? { previous: comparison.value[key] as number, ...options }
+    : null
+
 const metrics = computed(() => {
     const performance = props.performance
 
@@ -315,11 +345,11 @@ const metrics = computed(() => {
     }
 
     return [
-        { label: ctrans("Sessions"), value: locale.number(performance.sessions) },
-        { label: ctrans("Page views"), value: locale.number(performance.page_views) },
-        { label: ctrans("Pages per session"), value: locale.number(performance.pages_per_session) },
-        { label: ctrans("Avg. session duration"), value: formatDuration(performance.avg_session_duration) },
-        { label: ctrans("Visit bounce rate"), value: `${locale.number(performance.bounce_rate)}%` },
+        { label: ctrans("Sessions"), value: locale.number(performance.sessions), current: performance.sessions, delta: trafficDelta("sessions", { format: locale.number }) },
+        { label: ctrans("Page views"), value: locale.number(performance.page_views), current: performance.page_views, delta: trafficDelta("page_views", { format: locale.number }) },
+        { label: ctrans("Pages per session"), value: locale.number(performance.pages_per_session), current: performance.pages_per_session, delta: trafficDelta("pages_per_session", { format: locale.number }) },
+        { label: ctrans("Avg. session duration"), value: formatDuration(performance.avg_session_duration), current: performance.avg_session_duration, delta: trafficDelta("avg_session_duration", { format: formatDuration }) },
+        { label: ctrans("Visit bounce rate"), value: `${locale.number(performance.bounce_rate)}%`, current: performance.bounce_rate, delta: trafficDelta("bounce_rate", { unit: "points", better: "down", format: (value: number) => `${locale.number(value)}%` }) },
     ]
 })
 
@@ -331,8 +361,8 @@ const visitorTypes = computed<ShareSegment[]>(() => {
     }
 
     return [
-        { label: ctrans("New"), value: performance.new_visitors, swatchClass: "bg-[--app-accent]" },
-        { label: ctrans("Returning"), value: performance.returning_visitors, swatchClass: "bg-[--app-accent-muted]" },
+        { label: ctrans("New"), value: performance.new_visitors, previous: comparison.value?.new_visitors, swatchClass: "bg-[--app-accent]" },
+        { label: ctrans("Returning"), value: performance.returning_visitors, previous: comparison.value?.returning_visitors, swatchClass: "bg-[--app-accent-muted]" },
     ].map((segment) => ({ ...segment, percentage: percentageOf(segment.value, performance.visitors) }))
 })
 
@@ -343,13 +373,14 @@ const deviceSessions = computed<ShareSegment[]>(() => {
         return []
     }
 
-    const unclassified = Math.max(0, performance.sessions - performance.sessions_desktop - performance.sessions_mobile - performance.sessions_tablet)
+    const unclassifiedOf = (summary: PerformanceSummary) => Math.max(0, summary.sessions - summary.sessions_desktop - summary.sessions_mobile - summary.sessions_tablet)
+    const compared = comparison.value
 
     return [
-        { label: ctrans("Desktop"), value: performance.sessions_desktop, swatchClass: "bg-[--app-accent]" },
-        { label: ctrans("Mobile"), value: performance.sessions_mobile, swatchClass: "bg-[--app-accent-muted]" },
-        { label: ctrans("Tablet"), value: performance.sessions_tablet, swatchClass: "bg-gray-500" },
-        { label: ctrans("Other"), value: unclassified, swatchClass: "bg-gray-300" },
+        { label: ctrans("Desktop"), value: performance.sessions_desktop, previous: compared?.sessions_desktop, swatchClass: "bg-[--app-accent]" },
+        { label: ctrans("Mobile"), value: performance.sessions_mobile, previous: compared?.sessions_mobile, swatchClass: "bg-[--app-accent-muted]" },
+        { label: ctrans("Tablet"), value: performance.sessions_tablet, previous: compared?.sessions_tablet, swatchClass: "bg-gray-500" },
+        { label: ctrans("Other"), value: unclassifiedOf(performance), previous: compared ? unclassifiedOf(compared) : null, swatchClass: "bg-gray-300" },
     ].map((segment) => ({ ...segment, percentage: percentageOf(segment.value, performance.sessions) }))
 })
 
@@ -388,6 +419,29 @@ const fillCalendar = <Key extends string>(records: Array<{ day: string } & Recor
 
 const dailyTraffic = computed(() => fillCalendar(props.performance?.daily ?? [], ["visitors", "page_views"]))
 
+/**
+ * The compared period's values of one figure on the days of the chart: the backend has already
+ * moved each compared day onto the matching day of the period.
+ */
+const comparedSeries = <Row extends { day: string }>(days: { day: string }[], compared: Row[] | undefined, value: (record: Row) => number) => {
+    const byDay = new Map((compared ?? []).map((record) => [record.day, value(record)]))
+
+    return days.map((record) => byDay.get(record.day) ?? null)
+}
+
+const comparedDataset = (figure: string, period: string | null | undefined, data: (number | null)[], extra: Record<string, unknown> = {}) => ({
+    label: ctrans(":figure, :period", { figure, period: (period ?? "").toLowerCase() }),
+    data,
+    spanGaps: false,
+    borderColor: accentColor(),
+    backgroundColor: accentColor(),
+    borderWidth: 1.5,
+    borderDash: [2, 3],
+    pointRadius: 0,
+    tension: 0.25,
+    ...extra,
+})
+
 const showDailyChart = computed(() => (props.performance?.daily.length ?? 0) > 1)
 
 const dailyChartData = computed(() => {
@@ -417,6 +471,7 @@ const dailyChartData = computed(() => {
                 pointRadius,
                 tension: 0.25,
             },
+            ...(comparison.value ? [comparedDataset(ctrans("Visitors"), comparison.value.label, comparedSeries(dailyTraffic.value, comparison.value.daily, (record) => record.visitors))] : []),
         ],
     }
 })
@@ -437,16 +492,11 @@ const dailyChartOptions = {
 
 type ConversionMetricKey = "add_to_baskets" | "checkouts" | "purchases" | "revenue" | "conversion_rate" | "average_order_value"
 
-const comparisonLabels: Record<ComparisonKey, string> = {
-    previous_period: ctrans("Previous period"),
-    previous_year: ctrans("Same period last year"),
-}
-
 const formatMoney = (amount: number) => props.performance?.currency_code
     ? String(locale.currencyFormat(props.performance.currency_code, amount))
     : locale.number(amount)
 
-const metricValue = (source: Pick<ConversionComparison, "add_to_baskets" | "checkouts" | "purchases" | "revenue" | "conversion_rate">, key: ConversionMetricKey) => {
+const metricValue = (source: PerformanceSummary, key: ConversionMetricKey) => {
     if (key === "average_order_value") {
         return source.purchases > 0 ? source.revenue / source.purchases : 0
     }
@@ -456,57 +506,34 @@ const metricValue = (source: Pick<ConversionComparison, "add_to_baskets" | "chec
 
 const isTrackedSinceEventStart = (key: ConversionMetricKey) => key !== "add_to_baskets"
 
-const comparisonText = (key: ConversionMetricKey, comparisonKey: ComparisonKey) => {
-    const performance = props.performance
-    const comparison = performance?.comparisons?.[comparisonKey]
+/**
+ * Checkouts and purchases are recorded only since the conversion tracking began, so a compared
+ * period starting before then has no figure to compare them with.
+ */
+const isComparedBeforeTracking = (key: ConversionMetricKey) => {
+    const trackedSince = props.performance?.conversions_tracked_since
 
-    if (!performance || !comparison) {
+    return isTrackedSinceEventStart(key) && !!comparison.value && (!trackedSince || comparison.value.from < trackedSince)
+}
+
+const conversionDelta = (key: ConversionMetricKey) => {
+    const performance = props.performance
+    const compared = comparison.value
+
+    if (!performance || !compared) {
         return null
     }
 
-    const trackedSince = performance.conversions_tracked_since
-    const isBeforeTracking = isTrackedSinceEventStart(key) && (!trackedSince || comparison.from < trackedSince)
-
-    if (comparison.days_with_data === 0 || isBeforeTracking) {
-        return { text: ctrans("No data"), tone: "text-gray-500" }
-    }
-
-    const current = metricValue(performance, key)
-    const previous = metricValue(comparison, key)
-
-    if (key === "conversion_rate") {
-        const points = current - previous
-
-        return {
-            text: ctrans(":change pts", { change: `${points > 0 ? "+" : ""}${locale.number(Math.round(points * 100) / 100)}` }),
-            tone: points > 0 ? "text-green-700" : points < 0 ? "text-red-700" : "text-gray-500",
-        }
-    }
-
-    if (previous === 0) {
-        return current > 0
-            ? { text: ctrans("New"), tone: "text-green-700" }
-            : { text: ctrans("No change"), tone: "text-gray-500" }
-    }
-
-    const change = (current - previous) / previous * 100
-
     return {
-        text: `${change > 0 ? "+" : ""}${change.toFixed(1)}%`,
-        tone: change > 0 ? "text-green-700" : change < 0 ? "text-red-700" : "text-gray-500",
+        current: metricValue(performance, key),
+        previous: metricValue(compared, key),
+        unavailable: !comparisonHasData.value || isComparedBeforeTracking(key),
+        unit: key === "conversion_rate" ? "points" as const : "percent" as const,
+        format: key === "revenue" || key === "average_order_value"
+            ? formatMoney
+            : key === "conversion_rate" ? (value: number) => `${locale.number(value)}%` : locale.number,
     }
 }
-
-const comparisonRange = (comparisonKey: ComparisonKey) => {
-    const comparison = props.performance?.comparisons?.[comparisonKey]
-
-    return comparison
-        ? ctrans(":from to :to", { from: formatDay(comparison.from, "mdy"), to: formatDay(comparison.to, "mdy") })
-        : ""
-}
-
-const availableComparisons = computed(() => (Object.keys(comparisonLabels) as ComparisonKey[])
-    .filter((comparisonKey) => props.performance?.comparisons?.[comparisonKey]))
 
 const conversionMetrics = computed(() => {
     const performance = props.performance
@@ -578,6 +605,7 @@ const conversionChartData = computed(() => {
                 pointRadius,
                 tension: 0.25,
             },
+            ...(comparison.value && !isComparedBeforeTracking("purchases") ? [comparedDataset(ctrans("Purchases"), comparison.value.label, comparedSeries(dailyConversions.value, comparison.value.daily, (record) => record.purchases))] : []),
         ],
     }
 })
@@ -607,6 +635,10 @@ const latestSearchDayText = computed(() => props.search?.latest_stored_day
     ? ctrans("Latest day from Google: :day", { day: formatDay(props.search.latest_stored_day, "mdy") })
     : "")
 
+const searchComparison = computed(() => props.search?.comparison ?? null)
+
+const searchComparisonHasData = computed(() => (searchComparison.value?.days_with_data ?? 0) > 0)
+
 const searchMetrics = computed(() => {
     const search = props.search
 
@@ -614,10 +646,12 @@ const searchMetrics = computed(() => {
         return []
     }
 
+    const compared = searchComparison.value
+
     return [
-        { label: ctrans("Impressions"), value: locale.number(search.impressions) },
-        { label: ctrans("CTR"), value: `${locale.number(search.ctr)}%` },
-        { label: ctrans("Avg. position"), value: search.position !== null ? locale.number(search.position) : "-" },
+        { label: ctrans("Impressions"), value: locale.number(search.impressions), current: search.impressions, delta: compared ? { previous: compared.impressions, format: locale.number } : null },
+        { label: ctrans("CTR"), value: `${locale.number(search.ctr)}%`, current: search.ctr, delta: compared ? { previous: compared.ctr, unit: "points" as const, format: (value: number) => `${locale.number(value)}%` } : null },
+        { label: ctrans("Avg. position"), value: search.position !== null ? locale.number(search.position) : "-", current: search.position, delta: compared ? { previous: compared.position, unit: "difference" as const, better: "down" as const, format: locale.number } : null },
     ]
 })
 
@@ -654,6 +688,7 @@ const searchChartData = computed(() => {
                 pointRadius,
                 tension: 0.25,
             },
+            ...(searchComparison.value ? [comparedDataset(ctrans("Clicks"), searchComparison.value.label, comparedSeries(dailySearch.value, searchComparison.value.daily, (record) => record.clicks), { yAxisID: "y" })] : []),
         ],
     }
 })
@@ -698,7 +733,14 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
 
     <template v-else>
         <div class="pt-3">
-            <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="reloadOnly" />
+            <DashboardSettings :intervals="intervals" :settings="settings" currentTab="seo" :reloadOnly="reloadOnly">
+                <template #actions>
+                    <ComparePeriod
+                        :compare="compare"
+                        :reloadOnly="compareReloadOnly"
+                        :note="ctrans('The cards and charts above the tables are compared with this period. Google Search figures are compared over the days Google has sent.')" />
+                </template>
+            </DashboardSettings>
         </div>
 
         <section
@@ -724,7 +766,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                         {{ website.domain }}
                     </a>
                 </p>
-                <span v-if="hasData" class="text-xs text-gray-500">{{ periodText }}</span>
+                <span v-if="hasData" class="text-right text-xs text-gray-500">
+                    {{ periodText }}
+                    <span v-if="comparison" class="block">{{ comparedWithText(comparison) }}</span>
+                </span>
             </div>
 
             <p v-if="!performance" class="px-5 pb-5 pt-3 text-sm text-gray-600">
@@ -741,7 +786,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                     :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showDailyChart }">
                     <div class="flex flex-col justify-between gap-y-5">
                         <div>
-                            <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(performance.visitors) }}</div>
+                            <div class="flex flex-wrap items-center gap-x-2">
+                                <span class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(performance.visitors) }}</span>
+                                <DeltaBadge v-if="comparison" :current="performance.visitors" :previous="comparison.visitors" :unavailable="!comparisonHasData" :label="comparison.label ?? undefined" :format="locale.number" />
+                            </div>
                             <div class="mt-1 text-sm text-gray-600">{{ ctrans("Visitors") }}</div>
                             <div class="text-xs text-gray-500">{{ ctrans("unique visitors per day, added up") }}</div>
                         </div>
@@ -758,9 +806,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                                 <div v-for="segment in visitorTypes" :key="segment.label" class="flex items-center gap-2">
                                     <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
                                     <dt class="text-gray-600">{{ segment.label }}</dt>
-                                    <dd class="ml-auto tabular-nums text-gray-900">
+                                    <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
+                                        <DeltaBadge v-if="comparison && comparisonHasData" :current="segment.value" :previous="segment.previous" :label="comparison.label ?? undefined" :format="locale.number" />
                                         {{ locale.number(segment.value) }}
-                                        <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
+                                        <span class="inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
                                     </dd>
                                 </div>
                             </dl>
@@ -781,6 +830,16 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                         class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
                         <dt class="text-xs text-gray-500">{{ metric.label }}</dt>
                         <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
+                        <dd v-if="metric.delta" class="mt-0.5">
+                            <DeltaBadge
+                                :current="metric.current"
+                                :previous="metric.delta.previous"
+                                :unit="metric.delta.unit"
+                                :better="metric.delta.better"
+                                :format="metric.delta.format"
+                                :unavailable="!comparisonHasData"
+                                :label="comparison?.label ?? undefined" />
+                        </dd>
                     </div>
                 </dl>
 
@@ -800,9 +859,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                         <div v-for="segment in deviceSessions" :key="segment.label" class="flex items-center gap-2">
                             <span class="size-2.5 shrink-0 rounded-sm" :class="segment.swatchClass" aria-hidden="true" />
                             <dt class="text-gray-600">{{ segment.label }}</dt>
-                            <dd class="ml-auto tabular-nums text-gray-900">
+                            <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
+                                <DeltaBadge v-if="comparison && comparisonHasData" :current="segment.value" :previous="segment.previous" :label="comparison.label ?? undefined" :format="locale.number" />
                                 {{ locale.number(segment.value) }}
-                                <span class="ml-1.5 inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
+                                <span class="inline-block w-12 text-right text-gray-500">{{ formatPercentage(segment.percentage) }}</span>
                             </dd>
                         </div>
                     </dl>
@@ -821,7 +881,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
 
             <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-4">
                 <span class="text-sm font-medium text-gray-900">{{ ctrans("Conversions") }}</span>
-                <span class="text-xs text-gray-500">{{ conversionsTrackedText }}</span>
+                <span class="text-right text-xs text-gray-500">
+                    {{ conversionsTrackedText }}
+                    <span v-if="comparison && hasConversions" class="block">{{ comparedWithText(comparison) }}</span>
+                </span>
             </div>
 
             <p v-if="!hasConversions" class="px-5 pb-5 pt-3 text-sm text-gray-600">
@@ -841,13 +904,8 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                     class="min-w-0 px-5 py-4 lg:border-l lg:border-gray-100 lg:first:border-l-0">
                     <dt class="text-xs text-gray-500" v-tooltip="metric.hint">{{ metric.label }}</dt>
                     <dd class="mt-1 break-words text-lg font-medium tabular-nums text-gray-900">{{ metric.value }}</dd>
-                    <dd
-                        v-for="comparisonKey in availableComparisons"
-                        :key="comparisonKey"
-                        class="mt-0.5 flex flex-wrap gap-x-1 text-xs"
-                        v-tooltip="comparisonRange(comparisonKey)">
-                        <span class="text-gray-500">{{ comparisonLabels[comparisonKey] }}</span>
-                        <span class="tabular-nums" :class="comparisonText(metric.key, comparisonKey)?.tone">{{ comparisonText(metric.key, comparisonKey)?.text }}</span>
+                    <dd v-if="conversionDelta(metric.key)" class="mt-0.5">
+                        <DeltaBadge v-bind="conversionDelta(metric.key)!" :label="comparison?.label ?? undefined" />
                     </dd>
                 </div>
             </dl>
@@ -867,7 +925,10 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                     <span class="font-medium text-gray-900">{{ ctrans("Google Search") }}</span>
                     <span v-if="search.site_url" class="break-all text-gray-600">{{ search.site_url }}</span>
                 </p>
-                <span v-if="hasSearchData" class="text-xs text-gray-500">{{ searchPeriodText }}</span>
+                <span v-if="hasSearchData" class="text-right text-xs text-gray-500">
+                    {{ searchPeriodText }}
+                    <span v-if="searchComparison" class="block">{{ comparedWithText(searchComparison) }}</span>
+                </span>
             </div>
 
             <div v-if="!isSearchConnected" class="px-5 pb-5 pt-3 text-sm text-gray-600">
@@ -894,15 +955,29 @@ const dailyChartSummary = computed(() => ctrans("Visitors and page views per day
                     :class="{ 'lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]': showSearchChart }">
                     <div class="flex flex-col justify-between gap-y-5">
                         <div>
-                            <div class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(search.clicks) }}</div>
+                            <div class="flex flex-wrap items-center gap-x-2">
+                                <span class="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{{ locale.number(search.clicks) }}</span>
+                                <DeltaBadge v-if="searchComparison" :current="search.clicks" :previous="searchComparison.clicks" :unavailable="!searchComparisonHasData" :label="searchComparison.label ?? undefined" :format="locale.number" />
+                            </div>
                             <div class="mt-1 text-sm text-gray-600">{{ ctrans("Clicks") }}</div>
                             <div class="text-xs text-gray-500">{{ latestSearchDayText }}</div>
                         </div>
 
                         <dl class="space-y-1 text-sm">
-                            <div v-for="metric in searchMetrics" :key="metric.label" class="flex items-baseline gap-2">
+                            <div v-for="metric in searchMetrics" :key="metric.label" class="flex items-center gap-2">
                                 <dt class="text-gray-600">{{ metric.label }}</dt>
-                                <dd class="ml-auto tabular-nums text-gray-900">{{ metric.value }}</dd>
+                                <dd class="ml-auto flex items-center gap-1.5 tabular-nums text-gray-900">
+                                    <DeltaBadge
+                                        v-if="metric.delta"
+                                        :current="metric.current"
+                                        :previous="metric.delta.previous"
+                                        :unit="metric.delta.unit"
+                                        :better="metric.delta.better"
+                                        :format="metric.delta.format"
+                                        :unavailable="!searchComparisonHasData"
+                                        :label="searchComparison?.label ?? undefined" />
+                                    {{ metric.value }}
+                                </dd>
                             </div>
                         </dl>
                     </div>

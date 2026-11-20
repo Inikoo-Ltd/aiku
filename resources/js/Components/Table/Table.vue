@@ -1480,6 +1480,9 @@ const getSeverity = (type?: string) => {
                             </thead>
 
                             <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Section: TopRows (e.g. totals shown above the records) -->
+                                <slot name="topRows" :show="show" :columns="queryBuilderProps.columns" :isCheckBox="isCheckBox" />
+
                                 <slot name="body" :show="show">
                                     <!-- Virtualized path (opt-in via virtualScroll): only rows in the scroll
                                          viewport are mounted. Rows stay fully reactive unless the consumer passes

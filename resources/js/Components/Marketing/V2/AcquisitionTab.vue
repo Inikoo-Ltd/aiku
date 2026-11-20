@@ -9,7 +9,7 @@ import Select from "primevue/select"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
-import DeltaBadge from "@/Components/Marketing/V2/DeltaBadge.vue"
+import DeltaBadge from "@/Components/DataDisplay/Dashboard/DeltaBadge.vue"
 import { BAR_TRACK_COLOR, CHANNEL_COLORS, OTHER_CHANNEL_COLOR, channelColor } from "@/Components/Marketing/V2/palette"
 
 type WindowFigures = {

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { readFileSync } from "node:fs"
 import { getSchema } from "@tiptap/core"
 import Document from "@tiptap/extension-document"
 import Paragraph from "@tiptap/extension-paragraph"
@@ -41,4 +42,12 @@ test("a heading inside a script does not reach the table of contents", () => {
 test("decoding text that was never encoded keeps it as it is", () => {
 	assert.equal(decodeScriptBlockHtml("100% <b>off</b>"), "100% <b>off</b>")
 	assert.equal(decodeScriptBlockHtml(encodeScriptBlockHtml("100% off")), "100% off")
+})
+
+test("opening a dialog removes the teleported bubble menu, not the menu element tiptap detaches while hidden", () => {
+	const source = readFileSync("resources/js/Components/Forms/Fields/BubleTextEditor/EditorV2.vue", "utf8")
+	const bubbleMenuTag = source.match(/<BubbleMenu\b[^>]*>/)?.[0] ?? ""
+
+	assert.match(source, /<Teleport to="body" v-if="editorInstance && !showDialog">\s*<BubbleMenu\b/)
+	assert.doesNotMatch(bubbleMenuTag, /v-if=/)
 })

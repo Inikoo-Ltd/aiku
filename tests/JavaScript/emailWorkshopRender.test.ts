@@ -7,11 +7,16 @@ import {
 	imageDisplayWidth,
 	isLinkUnderlined,
 	renderModuleHtml,
+	renderRowHtml,
 	withoutLinkUnderlineChoices,
 } from "../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/renderEmailHtml.ts"
 import {
 	MODULE_TYPES,
+	backgroundImageCss,
+	backgroundImageUrl,
 	createModule,
+	createRow,
+	setBackgroundImage,
 } from "../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/emailWorkshopBlocks.ts"
 
 const emailWithBody = (computedStyle: Record<string, unknown> = {}) => ({
@@ -192,4 +197,41 @@ test("an empty paragraph typed as a blank line between paragraphs keeps its line
 	text.descriptor.text = { html: "<p>Turn up the colour!</p><p></p><p>Black Friday savings</p>", style: {} }
 
 	assert.match(renderModuleHtml(text, createRenderContext(emailWithBody(), 600)), /<p style="margin:0 0 0 0">Turn up the colour!<\/p><p style="margin:0 0 0 0">&nbsp;<\/p><p style="margin:0">Black Friday savings<\/p>/)
+})
+
+test("a picked background image fills the content area the first time and keeps the settings chosen after that", () => {
+	const style: Record<string, string> = { "background-image": "none", "background-repeat": "no-repeat", "background-position": "top left" }
+
+	setBackgroundImage(style, "https://media.aiku.io/banner.jpg")
+	assert.equal(style["background-image"], "url('https://media.aiku.io/banner.jpg')")
+	assert.equal(style["background-size"], "cover")
+	assert.equal(style["background-position"], "center")
+
+	style["background-position"] = "top right"
+	setBackgroundImage(style, "https://media.aiku.io/other.jpg")
+	assert.equal(backgroundImageUrl(style["background-image"]), "https://media.aiku.io/other.jpg")
+	assert.equal(style["background-position"], "top right")
+
+	setBackgroundImage(style, "  ")
+	assert.equal(style["background-image"], "none")
+})
+
+test("background image urls are read back from every css form and written so they cannot break the style attribute", () => {
+	assert.equal(backgroundImageUrl("url('https://a.test/x.png')"), "https://a.test/x.png")
+	assert.equal(backgroundImageUrl('url("https://a.test/x.png")'), "https://a.test/x.png")
+	assert.equal(backgroundImageUrl("url(https://a.test/x.png)"), "https://a.test/x.png")
+	assert.equal(backgroundImageUrl("none"), "")
+	assert.equal(backgroundImageCss(`https://a.test/it's "x" (1).png`), "url('https://a.test/it%27s%20%22x%22%20%281%29.png')")
+})
+
+test("the row and its content area are sent with their background images", () => {
+	const email = emailWithBody()
+	const row = createRow([12], "600px")
+	setBackgroundImage(row.container.style, "https://a.test/row.png")
+	setBackgroundImage(row.content.style, "https://a.test/content.png")
+
+	const html = renderRowHtml(email, row, 0, createRenderContext(email, 600))
+
+	assert.match(html, /class="row row-1[^"]*"[^>]*style="[^"]*background-image:url\('https:\/\/a\.test\/row\.png'\)/)
+	assert.match(html, /class="row-content[^"]*"[^>]*style="[^"]*background-image:url\('https:\/\/a\.test\/content\.png'\);[^"]*background-size:cover/)
 })
