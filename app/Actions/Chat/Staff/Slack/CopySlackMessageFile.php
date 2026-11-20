@@ -15,6 +15,8 @@ use App\Models\Chat\SlackFile;
 use App\Models\Chat\SlackMessage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 use Throwable;
@@ -29,6 +31,10 @@ class CopySlackMessageFile
     use WithSlack;
 
     public const int MAX_BYTES = 50 * 1024 * 1024;
+
+    public const int MAX_LARGE_BYTES = 1024 * 1024 * 1024;
+
+    public const string LARGE_DISK = 'staff-chat-r2';
 
     public const array GONE_MODES = ['tombstone', 'hidden_by_limit'];
 
@@ -117,9 +123,32 @@ class CopySlackMessageFile
             self::isMarkedGone($file)                       => [SlackFileStateEnum::NOT_AVAILABLE, 'Slack shows it as '.(in_array($mode, self::GONE_MODES, true) ? $mode : Arr::get($file, 'file_access'))],
             !$url                                           => [SlackFileStateEnum::NOT_AVAILABLE, 'no download link'],
             !self::isSlackFileUrl($url)                     => [SlackFileStateEnum::SKIPPED, 'download link is not on slack.com'],
-            (int) Arr::get($file, 'size') > self::MAX_BYTES => [SlackFileStateEnum::SKIPPED, 'larger than 50 MB'],
+            (int) Arr::get($file, 'size') > self::maxBytes() => [SlackFileStateEnum::SKIPPED, self::tooLargeReason()],
             default                                         => null,
         };
+    }
+
+    /**
+     * The media library holds copies up to its own limit; larger ones, up to 1 GB, go to the large files disk when it is set up.
+     */
+    public static function mediaLimit(): int
+    {
+        return min(self::MAX_BYTES, (int) config('media-library.max_file_size'));
+    }
+
+    public static function hasLargeDisk(): bool
+    {
+        return (bool) config('filesystems.disks.'.self::LARGE_DISK.'.bucket');
+    }
+
+    public static function maxBytes(): int
+    {
+        return self::hasLargeDisk() ? self::MAX_LARGE_BYTES : self::mediaLimit();
+    }
+
+    public static function tooLargeReason(): string
+    {
+        return self::hasLargeDisk() ? 'larger than 1 GB' : 'larger than 50 MB';
     }
 
     /**
@@ -194,7 +223,7 @@ class CopySlackMessageFile
         $path  = tempnam(sys_get_temp_dir(), 'slack-file-');
 
         try {
-            $response = Http::withToken($token)->timeout(300)->sink($path)->get($url);
+            $response = Http::withToken($token)->timeout(540)->sink($path)->get($url);
 
             if (in_array($response->status(), [404, 410], true)) {
                 $slackFile->update(['state' => SlackFileStateEnum::NOT_AVAILABLE, 'reason' => 'gone in Slack (http '.$response->status().')']);
@@ -207,10 +236,13 @@ class CopySlackMessageFile
             if (str_contains(strtolower((string) $response->header('Content-Type')), 'text/html') && !str_contains((string) $slackFile->mime_type, 'html')) {
                 $this->fail($slackFile, 'Slack answered with a login page, the bot token has no access to the file');
             }
-            if (filesize($path) > self::MAX_BYTES) {
-                $slackFile->update(['state' => SlackFileStateEnum::SKIPPED, 'reason' => 'larger than 50 MB']);
+            if (filesize($path) > self::maxBytes()) {
+                $slackFile->update(['state' => SlackFileStateEnum::SKIPPED, 'reason' => self::tooLargeReason()]);
 
                 return $slackFile;
+            }
+            if (filesize($path) > self::mediaLimit()) {
+                return $this->keepOnLargeDisk($slackFile, $path);
             }
 
             $isImage   = in_array($slackFile->mime_type, self::IMAGE_MIME_TYPES, true);
@@ -230,6 +262,26 @@ class CopySlackMessageFile
                 unlink($path);
             }
         }
+    }
+
+    private function keepOnLargeDisk(SlackFile $slackFile, string $path): SlackFile
+    {
+        $target = 'slack-files/'.$slackFile->slack_id.'/'.Str::slug(pathinfo((string) $slackFile->name, PATHINFO_FILENAME) ?: 'file');
+        if ($extension = pathinfo((string) $slackFile->name, PATHINFO_EXTENSION) ?: Arr::get($slackFile->data, 'filetype')) {
+            $target .= '.'.strtolower((string) $extension);
+        }
+
+        $stream = fopen($path, 'r');
+        try {
+            Storage::disk(self::LARGE_DISK)->writeStream($target, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+        $slackFile->update(['state' => SlackFileStateEnum::COPIED, 'reason' => null, 'disk' => self::LARGE_DISK, 'path' => $target, 'size' => filesize($path)]);
+
+        return $slackFile;
     }
 
     private function fail(SlackFile $slackFile, string $reason): never

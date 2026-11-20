@@ -12,6 +12,7 @@ use App\Enums\CRM\Livechat\SlackFileStateEnum;
 use App\Models\Helpers\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -29,6 +30,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property SlackFileStateEnum $state
  * @property string|null $reason
  * @property int|null $media_id
+ * @property string|null $disk
+ * @property string|null $path
  * @property array|null $data
  */
 class SlackFile extends Model implements HasMedia
@@ -48,6 +51,14 @@ class SlackFile extends Model implements HasMedia
     public function message(): BelongsTo
     {
         return $this->belongsTo(SlackMessage::class, 'slack_message_id');
+    }
+
+    /**
+     * A link to a copy kept on the large files disk, good for a few minutes; give it only to someone allowed to see the channel.
+     */
+    public function temporaryUrl(int $minutes = 5): ?string
+    {
+        return $this->disk && $this->path ? Storage::disk($this->disk)->temporaryUrl($this->path, now()->addMinutes($minutes)) : null;
     }
 
     public function copy(): BelongsTo

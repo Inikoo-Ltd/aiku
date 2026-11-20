@@ -1348,3 +1348,23 @@ test('the Slack catch-up leaves unfinished history alone, a channel Slack stops 
     \App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction::make()->fromStoredMessage($message);
     expect($message->reactions()->get()->map(fn ($reaction) => $reaction->name.':'.$reaction->slack_user_id)->all())->toBe(['eyes:UB']);
 });
+
+test('a Slack file too large for the media library is kept on the large files disk, up to 1 GB, and only when that disk is set up, INI-491', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Config::set('media-library.max_file_size', 10);
+    \Illuminate\Support\Facades\Storage::fake('staff-chat-r2');
+    $channel = SlackChannel::create(['group_id' => \App\Models\SysAdmin\Group::firstOrFail()->id, 'slack_id' => 'CLARGE1', 'name' => 'training', 'is_member' => true]);
+    $message = SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => '1789600000.000100', 'text' => 'video', 'sent_at' => now(), 'data' => []]);
+    $file    = fn (string $id, int $size) => ['id' => $id, 'name' => 'Can You Sell This.mp4', 'mimetype' => 'video/mp4', 'filetype' => 'mp4', 'size' => $size, 'url_private_download' => "https://files.slack.com/files-pri/T1-$id/video.mp4"];
+    Http::fake(['files.slack.com/*' => Http::response(str_repeat('v', 20), 200, ['Content-Type' => 'video/mp4'])]);
+
+    $copy = \App\Actions\Chat\Staff\Slack\CopySlackMessageFile::class;
+    expect($copy::run($message, $file('FLARGE0', 20))->only(['state', 'reason', 'disk']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::SKIPPED, 'reason' => 'larger than 50 MB', 'disk' => null]);
+
+    Config::set('filesystems.disks.staff-chat-r2.bucket', 'aiku-staff-chat');
+    $kept = $copy::run($message, $file('FLARGE1', 20));
+    expect($kept->only(['state', 'disk', 'path', 'size', 'media_id']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED, 'disk' => 'staff-chat-r2', 'path' => 'slack-files/FLARGE1/can-you-sell-this.mp4', 'size' => 20, 'media_id' => null]);
+    \Illuminate\Support\Facades\Storage::disk('staff-chat-r2')->assertExists('slack-files/FLARGE1/can-you-sell-this.mp4');
+    expect(\Illuminate\Support\Facades\Storage::disk('staff-chat-r2')->get('slack-files/FLARGE1/can-you-sell-this.mp4'))->toBe(str_repeat('v', 20))
+        ->and($copy::run($message, $file('FLARGE2', $copy::MAX_LARGE_BYTES + 1))->only(['state', 'reason']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::SKIPPED, 'reason' => 'larger than 1 GB']);
+});

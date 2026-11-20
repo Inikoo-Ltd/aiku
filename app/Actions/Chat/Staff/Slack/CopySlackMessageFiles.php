@@ -136,7 +136,7 @@ class CopySlackMessageFiles
                   and not exists (select 1 from slack_files s where s.slack_id = f->>'id' and s.state <> all(?::text[]))
                 order by f->>'id', m.id
             ) files group by category order by category",
-            [CopySlackMessageFile::MAX_BYTES, $channel?->id, $channel?->id, '{'.implode(',', SlackFileStateEnum::toCopy($retryFailed)).'}']
+            [CopySlackMessageFile::maxBytes(), $channel?->id, $channel?->id, '{'.implode(',', SlackFileStateEnum::toCopy($retryFailed)).'}']
         );
 
         return collect($rows)->mapWithKeys(fn ($row) => [$row->category => ['files' => (int) $row->files, 'bytes' => (int) $row->bytes]])->all();

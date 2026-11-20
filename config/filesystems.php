@@ -95,6 +95,16 @@ return [
             'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
             'bucket'   => env('CLOUDFLARE_R2_MEDIA_BUCKET_NAME'),
         ],
+        'staff-chat-r2' => [
+            'driver'                  => 's3',
+            'key'                     => env('CLOUDFLARE_STAFF_CHAT_R2_ACCESS_KEY'),
+            'secret'                  => env('CLOUDFLARE_STAFF_CHAT_R2_SECRET_KEY'),
+            'region'                  => env('CLOUDFLARE_STAFF_CHAT_R2_REGION', 'auto'),
+            'endpoint'                => env('CLOUDFLARE_STAFF_CHAT_R2_ENDPOINT'),
+            'bucket'                  => env('CLOUDFLARE_STAFF_CHAT_R2_BUCKET_NAME'),
+            'use_path_style_endpoint' => true,
+            'throw'                   => true,
+        ],
         'catalogue-iris-r2' => [
             'driver'   => 's3',
             'key'      => env('CLOUDFLARE_CATALOGUE_IRIS_R2_ACCESS_KEY'),
