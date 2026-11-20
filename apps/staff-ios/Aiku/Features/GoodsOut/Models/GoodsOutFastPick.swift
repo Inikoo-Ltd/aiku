@@ -27,6 +27,7 @@ extension GoodsOutStore {
               let lineIndex = notes[noteIndex].lines.firstIndex(where: { $0.id == lineID }) else {
             return .nothingChanged(message: nil)
         }
+        if let queued = queueOffline(action, noteID: id) { return queued }
         let original = notes[noteIndex].lines[lineIndex]
         var optimistic = original
         change.apply(to: &optimistic)
@@ -58,6 +59,7 @@ extension GoodsOutStore {
         case .failure(let error):
             replaceLine(original, on: reference)
             if error.isCancellation { return .failed(message: "") }
+            if error as? APIError == .offline, let queued = queueOffline(action, noteID: id, force: true) { return queued }
             return .failed(message: GoodsOutMapper.message(for: error))
         }
     }

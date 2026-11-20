@@ -4,114 +4,109 @@ import Testing
 
 @MainActor
 struct SystemTests {
-    @Test("Conflicts stay hidden until the queue has synced")
-    func conflictsHiddenBeforeSync() {
-        let store = SystemSyncStore()
-
-        #expect(store.openConflicts.isEmpty)
-        #expect(store.pendingCount == 4)
-        #expect(store.canSignOut == false)
+    private static func entry(_ json: String) throws -> OfflineOperationEntry {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(OfflineOperationEntry.self, from: Data(json.utf8))
     }
 
-    @Test("Sync now uploads unchanged actions and holds changed ones for review")
-    func syncUploadsUnchangedActions() {
-        let store = SystemSyncStore()
+    private static let refusedPick = #"""
+    {"operation_id": 41, "status": "partly_applied", "operation": "pick", "reason": "not_enough_stock", "instruction": "put_back",
+     "requested_quantity": "3", "applied_quantity": 1, "labels": {"title": "AR24811 · Line 2", "location_code": "A-03-02"},
+     "record": {"type": "delivery_note", "id": 501}, "resolutions": ["put_back", "done", "nonsense"], "can_rollback": false}
+    """#
 
-        let result = store.syncNow(at: "10:40")
-
-        #expect(result == SystemSyncResult(uploaded: 1, conflicts: 2))
-        #expect(store.isOnline)
-        #expect(store.waitingActions.isEmpty)
-        #expect(store.reviewActions.map(\.id) == ["q1", "q2", "q3"])
-        #expect(store.openConflicts.count == 2)
-        #expect(store.history.first?.title == "1 action uploaded")
-        #expect(store.canSignOut == false)
+    private static func store(
+        open: [OfflineOperationEntry],
+        recent: [OfflineOperationEntry] = [],
+        resolved: OfflineOperationEntry? = nil,
+        failure: APIError? = nil
+    ) -> SystemSyncStore {
+        SystemSyncStore(service: SystemSyncService(
+            operations: { state in state == .open ? open : recent },
+            resolve: { _, _ in
+                if let failure { throw failure }
+                return OfflineResolveOutcome(operation: try #require(resolved), results: [])
+            },
+            rollback: { _, _ in
+                if let failure { throw failure }
+                return try #require(resolved)
+            }
+        ))
     }
 
-    @Test("Both adds the quantities up but never above what the line needs")
-    func bothIsCappedAtRequiredQuantity() throws {
-        let conflict = try #require(SystemSyncSampleData.conflicts.first)
-        let picked = conflict.lines[0]
-        let notPicked = conflict.lines[1]
-        let audit = try #require(SystemSyncSampleData.conflicts.last?.lines.first)
+    @Test("An operation reads lenient numbers and keeps only the resolutions the app knows")
+    func operationDecodes() throws {
+        let entry = try Self.entry(Self.refusedPick)
 
-        #expect(picked.bothQuantity == 6)
-        #expect(picked.bothLabel == "6 (max)")
-        #expect(picked.choices == [.mine, .aiku, .both])
-        #expect(notPicked.allowsBoth == false)
-        #expect(audit.allowsBoth == false)
+        #expect(entry.key == 41)
+        #expect(entry.requestedQuantity == 3)
+        #expect(entry.missingQuantity == 2)
+        #expect(entry.allowedResolutions == [.putBack, .done])
+        #expect(entry.record?.key == .deliveryNote(501))
+        #expect(entry.isOpen)
+        #expect(OfflineTexts.instruction(entry) == "Put the other 2 back at A-03-02")
+        #expect(OfflineTexts.reason(entry.reason) == "Aiku shows less stock at this location")
     }
 
-    @Test("A conflict is never applied until every line has a choice")
-    func applyNeedsEveryLineChosen() {
-        let store = SystemSyncStore()
-        store.syncNow(at: "10:40")
+    @Test("Loading keeps open and recent operations apart")
+    func loadsOpenAndRecent() async throws {
+        let open = try Self.entry(Self.refusedPick)
+        let recent = try Self.entry(#"{"id": 40, "status": "applied", "state": "rolled_back", "operation": "pack"}"#)
+        let store = Self.store(open: [open], recent: [recent])
 
-        store.choose(.both, line: "SKO-00733", in: "AR24811")
-        #expect(store.apply("AR24811", at: "10:41") == false)
+        await store.load()
 
-        store.choose(.aiku, line: "SKO-00953", in: "AR24811")
-        #expect(store.conflict(reference: "AR24811")?.choiceSummary == "1 both, 1 Aiku")
-        #expect(store.apply("AR24811", at: "10:41"))
-        #expect(store.conflict(reference: "AR24811")?.isResolved == true)
-        #expect(store.reviewActions.map(\.id) == ["q3"])
-        #expect(store.openConflicts.map(\.reference) == ["A-03-02"])
+        #expect(store.hasLoaded)
+        #expect(store.openOperations.map(\.key) == [41])
+        #expect(store.operation(40)?.currentState == "rolled_back")
     }
 
-    @Test("A choice the line does not offer is ignored")
-    func unavailableChoiceIsIgnored() {
-        let store = SystemSyncStore()
-        store.syncNow(at: "10:40")
+    @Test("Resolving moves the operation out of the open list")
+    func resolvingClosesTheOperation() async throws {
+        let resolved = try Self.entry(#"{"operation_id": 41, "status": "partly_applied", "state": "resolved", "operation": "pick"}"#)
+        let store = Self.store(open: [try Self.entry(Self.refusedPick)], resolved: resolved)
+        await store.load()
 
-        store.choose(.both, line: "SKO-00953", in: "AR24811")
+        let change = await store.resolve(41, with: .putBack)
 
-        #expect(store.conflict(reference: "AR24811")?.lines[1].choice == nil)
+        #expect(change == .resolved(.putBack))
+        #expect(store.openOperations.isEmpty)
+        #expect(store.operation(41)?.currentState == "resolved")
     }
 
-    @Test("Use mine for all picks mine on every differing line")
-    func chooseAllSetsEveryLine() {
-        let store = SystemSyncStore()
-        store.syncNow(at: "10:40")
+    @Test("A resolution the operation does not offer is not sent")
+    func unofferedResolutionIsIgnored() async throws {
+        let store = Self.store(open: [try Self.entry(Self.refusedPick)])
+        await store.load()
 
-        store.chooseAll(.mine, in: "AR24811")
-
-        #expect(store.conflict(reference: "AR24811")?.lines.allSatisfy { $0.choice == .mine } == true)
-        #expect(store.conflict(reference: "AR24811")?.canApply == true)
+        #expect(await store.resolve(41, with: .keepCount) == nil)
+        #expect(store.openOperations.count == 1)
     }
 
-    @Test("Keep all Aiku resolves every open conflict and unblocks logout")
-    func resolveAllClearsQueue() {
-        let store = SystemSyncStore()
-        store.syncNow(at: "10:40")
+    @Test("A refused resolution keeps the operation open and says why")
+    func refusedResolution() async throws {
+        let store = Self.store(open: [try Self.entry(Self.refusedPick)], failure: .rejected(message: "Already resolved."))
+        await store.load()
 
-        let resolved = store.resolveAll(keeping: .aiku, at: "10:45")
-
-        #expect(resolved == 2)
-        #expect(store.openConflicts.isEmpty)
-        #expect(store.pendingCount == 0)
-        #expect(store.uploadedCount == 4)
-        #expect(store.canSignOut)
+        #expect(await store.resolve(41, with: .done) == .refused("Already resolved."))
+        #expect(store.openOperations.count == 1)
     }
 
-    @Test("Discarding the queue keeps a record in the sync history")
-    func discardKeepsHistory() {
-        let store = SystemSyncStore()
+    @Test("Queued work is grouped per record and titled from the downloaded copy")
+    func queueGroups() {
+        let store = SystemSyncStore(service: SystemSyncService(operations: { _ in [] }, resolve: { _, _ in throw APIError.offline }, rollback: { _, _ in throw APIError.offline }))
+        let note = OfflineRecordKey.deliveryNote(501)
+        let location = OfflineRecordKey(type: .location, id: 7)
+        let entries = [OfflineTestData.entry(1, record: note), OfflineTestData.entry(2, record: location), OfflineTestData.entry(3, record: note)]
+        let body = Data(#"{"data": {"id": 501, "reference": "AR24811"}}"#.utf8)
 
-        let discarded = store.discardQueue(at: "10:50")
+        let groups = store.groups(of: entries) { record in
+            record == note ? DownloadedRecord(body: body, seenAt: .now, downloadedAt: .now) : nil
+        }
 
-        #expect(discarded == 4)
-        #expect(store.pendingCount == 0)
-        #expect(store.canSignOut)
-        #expect(store.history.first?.chip == Chip("Discarded", .neutral))
-        #expect(store.history.count == 2)
-    }
-
-    @Test("Unknown conflict references fall back to the first conflict")
-    func unknownReferenceFallsBack() {
-        let store = SystemSyncStore()
-
-        #expect(store.conflict(reference: "NOPE")?.reference == "AR24811")
-        #expect(store.position(of: "A-03-02") == 2)
+        #expect(groups.map(\.title) == ["Delivery note AR24811", "Location #7"])
+        #expect(groups.first?.entries.map(\.localID) == [1, 3])
     }
 
     @Test("The states gallery lists every designed state once")

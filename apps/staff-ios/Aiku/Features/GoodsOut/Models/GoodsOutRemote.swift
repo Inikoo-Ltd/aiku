@@ -282,7 +282,7 @@ enum GoodsOutMapper {
         let channel = GoodsOutChannel(apiKey: dto.channel) ?? GoodsOutChannel(apiKey: dto.shop?.type) ?? .wholesale
         let summary = dto.summary
         let fields = dto.deliveryAddress?.fields
-        let settings = dto.settings
+        let settings = dto.effectiveSettings
         var remote = GoodsOutRemoteDetails()
         remote.isDetailed = true
         remote.stateKey = dto.state

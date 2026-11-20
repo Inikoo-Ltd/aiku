@@ -3,100 +3,113 @@ import SwiftUI
 struct SystemSyncQueueView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
-    @State private var store = SystemSyncStore.shared
-    @State private var isConfirmingDiscard = false
+    private let offline = OfflineWork.shared
+    private let store = SystemSyncStore.shared
 
     var body: some View {
         AppScreen(title: "Offline & sync", kicker: "Profile") {
             banner
-            if !store.reviewActions.isEmpty {
-                SectionHeading("Needs you", detail: "version changed")
-                CardList(store.reviewActions) { action in
-                    ListRow(
-                        action.title,
-                        subtitle: action.detail,
-                        icon: action.icon,
-                        iconTone: .warn,
-                        chips: [Chip("Conflict", .warn)],
-                        showsChevron: true
-                    ) {
-                        router.open(SystemRoute.conflict(reference: action.conflictReference ?? ""))
+            if offline.needsYouCount > 0 {
+                InlineAlert(
+                    tone: .warn,
+                    icon: .warning,
+                    title: OfflineTexts.count(offline.needsYouCount, "action needs you", "actions need you"),
+                    message: "Aiku could not record these exactly as you did them. Open each one to see what to do."
+                ) {
+                    AikuButton("Resolve", icon: .next, kind: .caution, size: .regular, fullWidth: false) {
+                        router.open(SystemRoute.conflicts)
+                    }
+                    .accessibilityIdentifier("system.openConflicts")
+                }
+            }
+            if groups.isEmpty {
+                EmptyState(icon: .checkDouble, title: "Nothing waiting", message: "Work you do offline shows here until it has synced.")
+            } else {
+                ForEach(groups) { group in
+                    SectionHeading(group.title)
+                    CardList(group.entries) { entry in
+                        let needsYou = entry.state == .needsYou
+                        let openEntry: (() -> Void)? = needsYou ? { open(entry) } : nil
+                        ListRow(
+                            row(entry),
+                            subtitle: subtitle(entry),
+                            chips: [OfflineTexts.queueState(entry)],
+                            showsChevron: needsYou,
+                            action: openEntry
+                        ) {
+                            IconTile(entry.operation?.icon ?? .sync, tone: needsYou ? .warn : .neutral)
+                        } trailing: {
+                            if entry.canUndo {
+                                AikuButton("Undo", icon: .undo, kind: .tertiary, size: .small, fullWidth: false) {
+                                    offline.undo(entry.localID)
+                                    toasts.show("Undone", tone: .neutral)
+                                }
+                                .accessibilityIdentifier("system.undo.\(entry.localID)")
+                            }
+                        }
                     }
                 }
             }
-            if !store.waitingActions.isEmpty {
-                SectionHeading("Waiting to upload", detail: "oldest first")
-                CardList(store.waitingActions) { action in
-                    ListRow(action.title, subtitle: action.detail, icon: action.icon, iconTone: .neutral, chips: [Chip("Waiting")])
-                }
-            }
-            if store.pendingCount == 0 {
-                EmptyState(icon: .checkDouble, title: "Nothing waiting", message: "Everything on this phone is in Aiku.")
-            }
-            SectionHeading("Last sync")
-            CardList(store.history) { record in
-                ListRow(record.title, subtitle: record.detail, icon: record.icon, iconTone: record.chip.tone, chips: [record.chip])
-            }
-            HelperText("Line-level work is saved on the phone while offline: pick, not picked, pack, check, place, audit, move. On reconnect each action is checked against the version it started from: if nothing changed in Aiku it uploads by itself, otherwise it waits for you in Resolve conflicts. Clocking and state changes need a connection.")
-            if store.pendingCount > 0 {
-                AikuButton("Discard waiting actions", icon: .trash, kind: .danger, size: .regular) {
-                    isConfirmingDiscard = true
-                }
-                .accessibilityIdentifier("system.discardQueue")
-                HelperText("You can only log out once the queue is synced or discarded.")
-            }
+            HelperText("Line-level work (picks, packs, put-away, return puts, moves and counts) is saved on the phone while offline and checked by Aiku when it syncs. Status changes need a connection.")
         } footer: {
-            footer
+            if offline.isOnline && offline.waitingCount > 0 {
+                AikuButton("Sync now", icon: .sync, isLoading: offline.isSyncing) {
+                    offline.syncNow(.manual)
+                }
+                .accessibilityIdentifier("system.syncNow")
+            }
         }
-        .aikuConfirm(
-            "Discard waiting actions?",
-            isPresented: $isConfirmingDiscard,
-            message: "\(store.pendingCount) actions saved on this phone will not be uploaded to Aiku. They stay in the sync history.",
-            confirmTitle: "Discard",
-            isDestructive: true
-        ) {
-            let count = store.discardQueue(at: SystemSyncStore.clockTime())
-            toasts.show(count == 1 ? "1 action discarded" : "\(count) actions discarded", tone: .neutral)
+        .task {
+            await store.load()
         }
+    }
+
+    private var groups: [SystemQueueGroup] {
+        store.groups(of: offline.queue.filter { $0.state != .applied || isRecent($0) }, downloaded: offline.downloaded)
     }
 
     @ViewBuilder
     private var banner: some View {
-        if !store.isOnline {
-            SystemStatusBanner("Offline since \(store.offlineSince) · \(actionCount(store.pendingCount)) waiting", tone: .warn)
-        } else if !store.openConflicts.isEmpty {
-            SystemStatusBanner("Back online · \(conflictCount(store.openConflicts.count)) to resolve", tone: .info)
+        if !offline.isOnline {
+            SystemStatusBanner(offlineText, tone: .warn)
+        } else if offline.isSyncing {
+            SystemStatusBanner("Sending \(OfflineTexts.count(offline.waitingCount, "action", "actions"))", tone: .info)
+        } else if offline.waitingCount > 0 {
+            SystemStatusBanner("Online · \(OfflineTexts.count(offline.waitingCount, "action", "actions")) waiting", tone: .info)
         } else {
             SystemStatusBanner("Online · everything is synced", tone: .success)
         }
     }
 
-    @ViewBuilder
-    private var footer: some View {
-        if !store.isOnline && store.pendingCount > 0 {
-            AikuButton("Sync now", icon: .sync) {
-                let result = store.syncNow(at: SystemSyncStore.clockTime())
-                let uploaded = result.uploaded == 1 ? "1 action uploaded" : "\(result.uploaded) actions uploaded"
-                if result.conflicts > 0 {
-                    toasts.show("\(uploaded) · \(conflictCount(result.conflicts)) to resolve", tone: .warn)
-                } else {
-                    toasts.show(uploaded)
-                }
-            }
-            .accessibilityIdentifier("system.syncNow")
-        } else if !store.openConflicts.isEmpty {
-            AikuButton("Back online · \(conflictCount(store.openConflicts.count)) to resolve", icon: .next) {
-                router.open(SystemRoute.conflicts)
-            }
-            .accessibilityIdentifier("system.openConflicts")
+    private var offlineText: String {
+        let waiting = OfflineTexts.count(offline.waitingCount, "action", "actions")
+        guard let since = offline.offlineSince else { return "Offline · \(waiting) waiting" }
+        return "Offline since \(since.formatted(date: .omitted, time: .shortened)) · \(waiting) waiting"
+    }
+
+    private func row(_ entry: QueueEntry) -> String {
+        let quantity = entry.payload?["quantity"] == nil ? nil : OfflineTexts.quantity(entry.quantity)
+        let label = entry.operation?.label ?? "Offline work"
+        return quantity.map { "\(label) · \($0)" } ?? label
+    }
+
+    private func subtitle(_ entry: QueueEntry) -> String {
+        let time = entry.performedAt.formatted(date: .abbreviated, time: .shortened)
+        guard entry.state == .needsYou, let result = entry.result else { return time }
+        return [OfflineTexts.reason(result), time].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    private func isRecent(_ entry: QueueEntry) -> Bool {
+        (entry.syncedAt ?? .distantPast) > Date().addingTimeInterval(-Self.showSyncedFor)
+    }
+
+    private func open(_ entry: QueueEntry) {
+        if let operationID = entry.result?.operationID {
+            router.open(SystemRoute.conflict(reference: String(operationID)))
+        } else {
+            router.open(SystemRoute.conflicts)
         }
     }
 
-    private func actionCount(_ count: Int) -> String {
-        count == 1 ? "1 action" : "\(count) actions"
-    }
-
-    private func conflictCount(_ count: Int) -> String {
-        count == 1 ? "1 conflict" : "\(count) conflicts"
-    }
+    private static let showSyncedFor: TimeInterval = 60 * 60
 }

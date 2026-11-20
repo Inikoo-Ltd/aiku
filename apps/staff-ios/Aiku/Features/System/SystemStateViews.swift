@@ -8,7 +8,7 @@ enum SystemRichText {
 
 struct SystemOfflineView: View {
     @Environment(AppRouter.self) private var router
-    @State private var store = SystemSyncStore.shared
+    private let offline = OfflineWork.shared
 
     var body: some View {
         SystemStateScreen {
@@ -39,7 +39,7 @@ struct SystemOfflineView: View {
                     }
                     .foregroundStyle(AikuColor.text2)
                     Spacer(minLength: 8)
-                    Text(store.pendingCount == 1 ? "1 action" : "\(store.pendingCount) actions")
+                    Text(OfflineTexts.count(offline.waitingCount, "action", "actions"))
                         .fontWeight(.bold)
                         .foregroundStyle(AikuColor.text)
                 }
@@ -65,7 +65,7 @@ struct SystemOfflineView: View {
     }
 
     private var summary: String {
-        (store.waitingActions + store.reviewActions).map(\.summary).joined(separator: " · ")
+        offline.queue.filter { $0.isUnsent || $0.state == .needsYou }.compactMap { $0.operation?.label }.joined(separator: " · ")
     }
 }
 

@@ -9,6 +9,7 @@ struct AikuApp: App {
 
     init() {
         CrashReporting.start()
+        OfflineWork.shared.start()
     }
 
     var body: some Scene {

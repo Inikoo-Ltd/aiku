@@ -191,6 +191,8 @@ extension GoodsOutStore {
         guard isRemote else { return GoodsOutWriteResult(outcome: .failed(message: "Sign in and choose a warehouse to work on delivery notes.")) }
         guard let id = noteID(for: reference) else { return GoodsOutWriteResult(outcome: .failed(message: "This delivery note is not in the selected warehouse.")) }
         guard !isWorking(on: reference) else { return GoodsOutWriteResult(outcome: .failed(message: "Still working on the last action.")) }
+        if let queued = queueOffline(action, noteID: id) { return GoodsOutWriteResult(outcome: queued) }
+        if let unsettled = await settleOfflineWork(before: action, noteID: id) { return GoodsOutWriteResult(outcome: unsettled) }
         setWorking(reference, true)
         defer { setWorking(reference, false) }
         do {
@@ -207,6 +209,7 @@ extension GoodsOutStore {
             return GoodsOutWriteResult(outcome: .failed(message: formError.message), fieldErrors: formError.fields)
         } catch {
             if error.isCancellation { return GoodsOutWriteResult(outcome: .failed(message: "")) }
+            if error as? APIError == .offline, let queued = queueOffline(action, noteID: id, force: true) { return GoodsOutWriteResult(outcome: queued) }
             await reloadIfPlatformUnanswered(action, error: error, noteID: id)
             return GoodsOutWriteResult(outcome: .failed(message: GoodsOutMapper.message(for: error)))
         }
