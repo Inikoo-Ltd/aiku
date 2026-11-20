@@ -9,6 +9,9 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction;
+use App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent;
+use App\Actions\Chat\Staff\Slack\StoreSlackUser;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
@@ -67,11 +70,29 @@ class ReceiveSlackTicketReaction
         }
 
         $event = $request->input('event', []);
-        if (Arr::get($event, 'type') === 'message') {
-            dispatch(fn () => StoreTicketCommentFromSlackThread::run($event));
-            StoreSlackMessage::dispatch($event);
+        if (in_array(Arr::get($event, 'type'), ['user_change', 'team_join'], true)) {
+            StoreSlackUser::dispatch((array) Arr::get($event, 'user', []));
 
             return response()->json(['ok' => true]);
+        }
+        if (in_array(Arr::get($event, 'type'), UpdateSlackChannelFromEvent::EVENTS, true)) {
+            UpdateSlackChannelFromEvent::run($event, $request->input('authorizations.0.user_id'));
+
+            return response()->json(['ok' => true]);
+        }
+        if (Arr::get($event, 'type') === 'message') {
+            if (Arr::get($event, 'subtype') === 'channel_convert_to_private' || Arr::get($event, 'channel_type') === 'group') {
+                UpdateSlackChannelFromEvent::make()->markPrivate((string) Arr::get($event, 'channel'));
+            }
+            dispatch(fn () => StoreTicketCommentFromSlackThread::run($event));
+            if (Arr::get($event, 'subtype') !== 'channel_convert_to_private') {
+                StoreSlackMessage::dispatch($event);
+            }
+
+            return response()->json(['ok' => true]);
+        }
+        if (in_array(Arr::get($event, 'type'), ['reaction_added', 'reaction_removed'], true)) {
+            StoreSlackMessageReaction::dispatch($event);
         }
         if (
             Arr::get($event, 'type') !== 'reaction_added'

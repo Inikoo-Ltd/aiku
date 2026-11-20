@@ -1900,6 +1900,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:sync-public-channels --history --catch-up')->dailyAt('02:40')->timezone('UTC')->onOneServer()->withoutOverlapping(180)->sentryMonitor(
+                    monitorSlug: 'SyncSlackPublicChannels',
+                ),
+                name: 'SyncSlackPublicChannels',
+                type: 'command',
+                scheduledAt: '02:40'
+            );
+
+            $this->logSchedule(
                 $schedule->command('production:release_pre_pick')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ReleaseFullyStockedPrePickLines',
                 ),
