@@ -29,9 +29,8 @@ use Throwable;
 /**
  * Fills the name and descriptions of every active product of a shop in one more language, on the
  * product only, never on its master. A product whose code and unit content (trade units and
- * units) match a product of a shop written in that language gets that shop's copy, cleaned by the
- * AI of wording meant for wholesale buyers; every other text is machine translated from the shop's
- * own. How each text was made is kept in data.translation_sources.<locale>, so machine text can be
+ * units) match a product of a shop written in that language gets that shop's copy as it is,
+ * without the AI; every other text is machine translated from the shop's own. How each text was made is kept in data.translation_sources.<locale>, so machine text can be
  * found and redone with --force, and German a person wrote (no marker) is never overwritten.
  */
 class FillShopProductTranslations
@@ -41,7 +40,7 @@ class FillShopProductTranslations
 
     public const array FIELDS = ['name', 'description_title', 'description', 'description_extra'];
 
-    public const string COPIED = 'copied_cleaned';
+    public const string COPIED = 'copied';
 
     public const string MACHINE = 'machine';
 
@@ -51,7 +50,7 @@ class FillShopProductTranslations
         {--source-shop= : shop id or slug to copy from (default: the open shop of the same organisation written in that language)}
         {--limit= : stop after this many products}
         {--chunk=50 : products per batch}
-        {--apply : write the texts (without it nothing is saved, but the AI is still called and paid for)}
+        {--apply : write the texts (without it nothing is saved, but texts to translate still go to the AI and are paid for)}
         {--force : redo products whose texts this command already made}
         {--model= : OpenRouter model (default: the catalogue translation model)}';
 
@@ -70,7 +69,7 @@ class FillShopProductTranslations
      */
     public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null): array
     {
-        $this->stats = ['copied_cleaned' => 0, 'machine' => 0, 'mixed' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
+        $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
         $this->cost  = 0;
         $this->sourceShop = $sourceShop;
         $model ??= config('auto-translations.drivers.catalogue.model');
@@ -106,17 +105,16 @@ class FillShopProductTranslations
     private function fillProduct(Product $product, ?Product $sibling, Language $language, string $locale, bool $apply, string $model, ?callable $report): void
     {
         $fields      = [];
+        $copies      = [];
         $sources     = [];
-        $shopTexts   = [];
         foreach (self::FIELDS as $field) {
             $copy  = $sibling ? trim((string) $sibling->{$field}) : '';
             $shopText = trim((string) $product->{$field});
-            $shopTexts[$field] = $shopText;
             if (!$this->isOurs($product, $field, $locale)) {
                 continue;
             }
             if ($copy !== '' && $copy !== $shopText) {
-                $fields[$field]  = $field === 'name' && $shopText !== '' ? ['copy' => $copy, 'reference' => $shopText] : ['copy' => $copy];
+                $copies[$field]  = $copy;
                 $sources[$field] = self::COPIED;
             } elseif ($shopText !== '') {
                 $fields[$field]  = ['translate' => $shopText];
@@ -124,13 +122,17 @@ class FillShopProductTranslations
             }
         }
 
-        if (!$fields) {
+        if (!$sources) {
             $this->stats['nothing_to_translate']++;
 
             return;
         }
 
-        $texts = $this->askWithRetry($product, $fields, $shopTexts, $language, $model);
+        $texts = $fields ? $this->askWithRetry($fields, $product, $language, $model) : [];
+        if ($texts !== null) {
+            $texts = $copies + $texts;
+        }
+        $fields += array_map(fn (string $copy) => ['copy' => $copy], $copies);
         if ($texts === null) {
             $this->stats['failed']++;
             $report && $report($product, $fields, null, $sources, $this->lastFailure);
@@ -156,7 +158,7 @@ class FillShopProductTranslations
             'fields'          => Arr::only($sources, array_keys($texts)) + Arr::get($data, "translation_sources.$locale.fields", []),
             'hashes'          => array_map('md5', $texts) + Arr::get($data, "translation_sources.$locale.hashes", []),
             'from_product_id' => in_array(self::COPIED, $sources) ? $sibling->id : null,
-            'model'           => $model,
+            'model'           => in_array(self::MACHINE, $sources) ? $model : null,
             'at'              => now()->toIso8601String(),
         ]);
         $product->data = $data;
@@ -177,12 +179,12 @@ class FillShopProductTranslations
     /**
      * @return array<string, string>|null
      */
-    private function askWithRetry(Product $product, array $fields, array $shopTexts, Language $language, string $model): ?array
+    private function askWithRetry(array $fields, Product $product, Language $language, string $model): ?array
     {
         foreach ([0, 1] as $attempt) {
             try {
                 $texts             = $this->ask($product, $fields, $language, $model);
-                $this->lastFailure = $this->invalidReason($fields, $texts, $shopTexts);
+                $this->lastFailure = $this->invalidReason($fields, $texts);
                 if ($this->lastFailure === null) {
                     return Arr::only($texts, array_keys($fields));
                 }
@@ -225,12 +227,8 @@ class FillShopProductTranslations
 
 This time the text is not for retailers: it is for the product page of an online retail store run by a dropshipper, read by a consumer buying the item.
 
-You get a JSON object whose keys are fields of one product (name, description_title, description, description_extra). Each value is either
-- {"copy": "..."}: existing {$language->name} copy written for wholesale buyers, describing exactly the item the consumer receives. Keep it as it is, including every quantity and set size (a "12er-Packung" or "2er-Set" is what the consumer gets), and only remove or reword what speaks to a reseller: wholesale, "en gros", minimum order, cartons or outer packs, trade prices, "for your shop", "your customers", "your product range", resale margins. Do not otherwise rewrite it.
-  A name may also come with "reference": the product name in the shop's own language. Make sure the name does not leave out what the reference says about size, count or condition (e.g. "10 x 10 ml", "unlabelled").
-  If a copy is not written in {$language->name}, translate it instead.
-- {"translate": "..."}: translate it into {$language->name}, written for that consumer.
-Keep every HTML tag in the same order (when you remove a sentence, keep the tags around it), keep placeholders in braces and every number, size and measurement.
+You get a JSON object whose keys are fields of one product (name, description_title, description, description_extra), each holding {"translate": "..."}: translate it into {$language->name}, written for that consumer.
+Keep every HTML tag in the same order, keep placeholders in braces and every number, size and measurement.
 Reply with a JSON object with the same keys, each holding only the final {$language->name} text as a string.
 EOT;
     }
@@ -251,72 +249,29 @@ EOT;
             ->first();
     }
 
-    /**
-     * Copied text may come with broken legacy markup, so there the tags only have to stay a
-     * balanced subset of the source; a name may gain the size its shop text gives.
-     *
-     * @param  array<string, string>  $shopTexts
-     */
-    public function invalidReason(array $fields, array $texts, array $shopTexts = []): ?string
+    public function invalidReason(array $fields, array $texts): ?string
     {
         foreach ($fields as $field => $input) {
             $output = Arr::get($texts, $field);
-            $source = Arr::first($input);
+            $source = $input['translate'];
             if (!is_string($output) || trim($output) === '') {
                 return "$field: empty";
             }
-            if (isset($input['translate']) ? $this->tags($source) !== $this->tags($output) : !$this->keepsTags($source, $output)) {
+            if ($this->tags($source) !== $this->tags($output)) {
                 return "$field: HTML tags changed";
             }
             if ($this->placeholders($source) !== $this->placeholders($output)) {
                 return "$field: placeholders changed";
             }
-            if (isset($input['translate']) && $lost = array_diff($this->numbers($source), $this->numbers($output))) {
+            if ($lost = array_diff($this->numbers($source), $this->numbers($output))) {
                 return "$field: numbers lost (".implode(', ', $lost).')';
             }
-            if (isset($input['translate']) && $output === $source && mb_strlen($source) > 25) {
+            if ($output === $source && mb_strlen($source) > 25) {
                 return "$field: not translated";
-            }
-            if ($field === 'name' && $lost = array_diff($this->numbers($source), $this->numbers($output))) {
-                return "$field: numbers lost (".implode(', ', $lost).')';
-            }
-            if (isset($input['copy']) && $added = array_diff($this->numbers($output), $this->numbers($source), $this->numbers($shopTexts[$field] ?? ''))) {
-                return "$field: numbers added (".implode(', ', $added).')';
             }
         }
 
         return null;
-    }
-
-    private function keepsTags(string $source, string $output): bool
-    {
-        $remaining = $this->tags($source);
-        foreach ($this->tags($output) as $tag) {
-            $position = array_search($tag, $remaining, true);
-            if ($position === false) {
-                return false;
-            }
-            $remaining = array_slice($remaining, $position + 1);
-        }
-
-        return $this->tagBalance($source) === $this->tagBalance($output);
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    private function tagBalance(string $text): array
-    {
-        $balance = [];
-        foreach ($this->tags($text) as $tag) {
-            $name           = ltrim($tag, '/');
-            $balance[$name] = ($balance[$name] ?? 0) + (str_starts_with($tag, '/') ? -1 : 1);
-        }
-
-        $balance = array_filter($balance);
-        ksort($balance);
-
-        return $balance;
     }
 
     private function tags(string $text): array

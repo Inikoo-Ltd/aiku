@@ -641,7 +641,7 @@ function fillTranslationsFixture(object $test, float $siblingUnits = 1): Product
     Config::set('services.openrouter.api_key', 'test-key');
     Http::fake(['openrouter.ai/*' => function (Request $request) use ($test) {
         $texts = collect(json_decode($request['messages'][1]['content'], true))
-            ->map(fn (array $input) => isset($input['copy']) ? str_replace(' en gros', '', $input['copy']) : ($test->aiPrefix ?? 'DE ').$input['translate']);
+            ->map(fn (array $input) => ($test->aiPrefix ?? 'DE ').$input['translate']);
 
         return Http::response(['choices' => [['message' => ['content' => json_encode($texts)]]], 'usage' => ['cost' => 0.001]]);
     }]);
@@ -663,14 +663,16 @@ function fillTranslations(object $test, bool $apply = true, bool $force = false)
     return FillShopProductTranslations::run($test->shop, Language::where('code', 'de')->first(), $test->germanShop, $apply, $force);
 }
 
-test('fill translations copies the sibling shop text, cleaned of wholesale wording, onto the product and never the master', function () {
+test('fill translations copies the same pack text of the sibling shop as it is, without the AI, onto the product and never the master', function () {
     $sibling = fillTranslationsFixture($this);
 
     fillTranslations($this);
 
     $product = $this->product->refresh();
-    expect($product->getTranslation('name_i8n', 'de', false))->toBe('Lavendelseife 100g')
-        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife</p>')
+    Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Lavendelseife') || str_contains($request->body(), 'Seife'));
+    expect($product->getTranslation('name_i8n', 'de', false))->toBe('Lavendelseife 100g en gros')
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife en gros</p>')
+        ->and($product->data['translation_sources']['de']['model'])->toBeNull()
         ->and($product->getTranslation('name_i8n', 'en', false))->toBe('Lavender soap 100g')
         ->and($product->name)->toBe('Lavender soap 100g')
         ->and($product->data['translation_sources']['de']['fields']['name'])->toBe(FillShopProductTranslations::COPIED)
@@ -696,8 +698,8 @@ test('fill translations in dry run writes nothing', function () {
 
     expect($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('')
         ->and($this->product->data)->not->toHaveKey('translation_sources')
-        ->and($result['stats']['copied_cleaned'])->toBeGreaterThan(0)
-        ->and($result['cost'])->toBeGreaterThan(0);
+        ->and($result['stats']['copied'])->toBeGreaterThan(0)
+        ->and($result['cost'])->toBe(0.0);
 });
 
 test('fill translations resumes past done products and never overwrites german a person wrote', function () {
