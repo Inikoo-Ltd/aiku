@@ -26742,6 +26742,8 @@
     "eBay said: \":message\"": "eBay antwortete: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "In Ihrem Warenkorb (bestellte Packungen × Stück pro Packung = Stück):",
     "On its way to us: :families.": "Auf dem Weg zu uns: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "Wir haben das bei unserem Lieferanten bestellt. Es ist noch nicht auf unserer Website.",
+    "Coming soon to our website: :families.": "Bald auf unserer Website: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Nach dem aktuellen Arbeitsstand unseres Lagers in dieser Woche schätzen wir, dass Ihre Bestellung am :day versandt wird. Das ist eine Schätzung, kein garantiertes Datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Nach dem aktuellen Arbeitsstand unseres Lagers in dieser Woche schätzen wir, dass Ihre Bestellung zwischen :from und :to versandt wird. Das ist eine Schätzung, kein garantiertes Datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "Diese Artikel Ihrer Bestellung konnten nicht kommissioniert werden: :items. Unser Team muss wissen, ob die Bestellung ohne sie oder mit einem Ersatz verschickt werden soll.",

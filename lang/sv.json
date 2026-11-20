@@ -9931,6 +9931,8 @@
     "eBay said: \":message\"": "eBay svarade: \":message\"",
     "In your basket (packs ordered × units in each pack = units):": "I din varukorg (beställda förpackningar × styck per förpackning = styck):",
     "On its way to us: :families.": "På väg till oss: :families.",
+    "We have this on order with our supplier. It is not on our website yet.": "Vi har beställt detta från vår leverantör. Det finns inte på vår webbplats än.",
+    "Coming soon to our website: :families.": "Snart på vår webbplats: :families.",
     "Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.": "Utifrån hur vårt lager arbetar den här veckan uppskattar vi att din beställning skickas :day. Det är en uppskattning, inte ett garanterat datum.",
     "Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.": "Utifrån hur vårt lager arbetar den här veckan uppskattar vi att din beställning skickas mellan :from och :to. Det är en uppskattning, inte ett garanterat datum.",
     "These items of your order could not be picked: :items. Our team needs to know whether to send the order without them or with a replacement.": "De här artiklarna i din beställning kunde inte plockas: :items. Vårt team behöver veta om beställningen ska skickas utan dem eller med en ersättare.",

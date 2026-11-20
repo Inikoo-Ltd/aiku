@@ -4517,7 +4517,7 @@ test('an order waiting in the warehouse gets an estimated dispatch day range wit
     Carbon::setTestNow();
 });
 
-test('coming soon lists, by family name only, the new ranges whose stock is on an agreed order, never one made for a customer or one with nothing on its way', function () {
+test('coming soon lists, by family name only, the new ranges whose stock is on an open order (submitted counts), never one made for a customer or one with nothing on its way', function () {
     $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
     $family     = fn (string $name) => \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => $name]));
     $suffix     = fake()->lexify('?????');
@@ -4528,7 +4528,7 @@ test('coming soon lists, by family name only, the new ranges whose stock is on a
         $product  = shoppingAssistantProductOn($this, [$orgStock->id]);
         $product->update(['family_id' => $ranges[$key]->id, 'status' => ProductStatusEnum::COMING_SOON, 'state' => ProductStateEnum::ACTIVE]);
         if ($onOrder) {
-            shoppingAssistantPurchaseOrderLine($this, $orgStock->id, now()->subDays(5)->toDateTimeString(), null, 'confirmed');
+            shoppingAssistantPurchaseOrderLine($this, $orgStock->id, now()->subDays(5)->toDateTimeString(), null, 'submitted');
         }
 
         return $product;
@@ -4547,7 +4547,67 @@ test('coming soon lists, by family name only, the new ranges whose stock is on a
         ->and($result['content']['ranges'])->not->toContain('Private Label Soaps '.$suffix)
         ->and($result['content']['ranges'])->not->toContain('Old Promise Candles '.$suffix)
         ->and(json_encode($result['content']))->not->toMatch('/\d/')
-        ->and($result['fact'])->toStartWith(Str::before(__('On its way to us: :families.', [], 'es'), ':families'))
+        ->and($result['fact'])->toStartWith(Str::before(__('Coming soon to our website: :families.', [], 'es'), ':families'))
         ->and($result['fact'])->toContain('Lotus Lanterns '.$suffix)
         ->and(collect(GetShoppingAssistantTools::make()->definitions())->pluck('function.name'))->toContain('coming_soon');
+});
+
+test('stock on order with no product yet is found by meaning and teased with a fixed sentence, never by name, and never when we already sell that kind of item', function () {
+    $word     = 'cupro'.fake()->lexify('??????');
+    $orgStock = function (string $name, array $flags = [], ?string $submittedAt = 'recent') use ($word) {
+        $orgStock = shoppingAssistantOrgStock($this);
+        DB::table('org_stocks')->where('id', $orgStock->id)->update(array_merge(['name' => str_replace('WORD', ucfirst($word), $name), 'state' => 'active', 'has_been_in_warehouse' => false, 'quantity_in_locations' => 0, 'is_raw_material_in_organisation' => false, 'is_shipment_packaging' => false, 'customer_id' => null], $flags));
+        if ($submittedAt) {
+            shoppingAssistantPurchaseOrderLine($this, $orgStock->id, $submittedAt === 'recent' ? now()->subMonth()->toDateTimeString() : $submittedAt, now()->addMonths(2)->toDateTimeString());
+        }
+
+        return $orgStock;
+    };
+    $teased   = $orgStock('WORD Bottles -  27.5cm -950ml - Tall shape - 270gm');
+    $listed   = $orgStock('WORD Bottles - Coke shape');
+    shoppingAssistantProductOn($this, [$listed->id]);
+    $received = $orgStock('WORD Bottles - Squat shape', ['has_been_in_warehouse' => true]);
+    $raw      = $orgStock('WORD Sheet for bottles', ['is_raw_material_in_organisation' => true]);
+    $stale    = $orgStock('WORD Bottles - Old shape', [], now()->subMonths(14)->toDateTimeString());
+    $private  = $orgStock('Private Label WORD Bottles');
+
+    \Illuminate\Support\Facades\Cache::put('shopping-assistant:on-order-shops:'.$this->shop->organisation_id, [$this->shop->id => 10], now()->addHour());
+    \Illuminate\Support\Facades\Cache::forget('shopping-assistant:on-order-candidates:'.$this->shop->organisation_id);
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 7 : 8 => 1.0]);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()])]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $candidates   = App\Actions\CRM\ShoppingAssistant\GetOnOrderNotListed::make()->candidates($this->shop->organisation_id)->pluck('org_stocks.id')->all();
+    $embedded     = DB::table('catalogue_search_embeddings')->where('shop_id', $this->shop->id)->where('model_type', 'OrgStock')->pluck('model_id')->all();
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $tools  = GetShoppingAssistantTools::make();
+    $search = $tools->execute($conversation->fresh(), 'search_products', ['query' => $word.' cups and bottles']);
+    $tease  = $tools->execute($conversation->fresh(), 'on_order_not_listed', ['query' => $word.' cups and bottles']);
+    $none   = $tools->execute($conversation->fresh(), 'on_order_not_listed', ['query' => 'garden gnomes']);
+
+    expect($candidates)->toContain($teased->id)->toContain($private->id)
+        ->and($candidates)->not->toContain($listed->id)->not->toContain($received->id)->not->toContain($raw->id)->not->toContain($stale->id)
+        ->and($embedded)->toContain($teased->id)->not->toContain($private->id)
+        ->and($search['content']['on_order_not_listed'])->toBe([ucfirst($word).' Bottles Tall shape'])
+        ->and($search['content']['on_order_note'])->toContain('never say we do not have it')
+        ->and($tease['fact'])->toBe(__('We have this on order with our supplier. It is not on our website yet.', [], 'en'))
+        ->and(json_encode($tease['content']))->not->toContain(ucfirst($word))
+        ->and($none['content']['found'])->toBeFalse()
+        ->and($none)->not->toHaveKey('fact')
+        ->and(collect($tools->definitions())->pluck('function.name'))->toContain('on_order_not_listed');
+
+    $sold = shoppingAssistantProduct($this->product);
+    $sold->update(['name' => ucfirst($word).' bottle we sell', 'available_quantity' => 10]);
+    DB::table('products')->where('id', $sold->id)->update(['is_in_website' => true]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    expect($tools->execute($conversation->fresh(), 'search_products', ['query' => $word.' cups and bottles'])['content'])->not->toHaveKey('on_order_not_listed');
+
+    \Illuminate\Support\Facades\Cache::put('shopping-assistant:on-order-shops:'.$this->shop->organisation_id, [$this->shop->id => 10, 999999 => 100], now()->addHour());
+    $narrow = App\Actions\CRM\ShoppingAssistant\GetOnOrderNotListed::teasesIn($this->shop->fresh());
+    \Illuminate\Support\Facades\Cache::forget('shopping-assistant:on-order-shops:'.$this->shop->organisation_id);
+
+    expect($narrow)->toBeFalse()
+        ->and(App\Actions\CRM\ShoppingAssistant\GetOnOrderNotListed::teasesIn($this->shop->fresh()))->toBeBool();
 });

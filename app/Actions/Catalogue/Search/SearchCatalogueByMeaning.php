@@ -17,6 +17,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -35,7 +36,7 @@ class SearchCatalogueByMeaning
 
     public function handle(Shop $shop, string $query, ?Customer $customer = null, int $limit = 12, bool $inStock = true): Collection
     {
-        $vector = $this->embedQuery($query);
+        $vector = self::queryVector($query);
 
         if ($vector === null) {
             return collect();
@@ -53,7 +54,7 @@ class SearchCatalogueByMeaning
 
     public function families(Shop $shop, string $query, int $limit = 6): Collection
     {
-        $vector = $this->embedQuery($query);
+        $vector = self::queryVector($query);
 
         if ($vector === null) {
             return collect();
@@ -72,9 +73,12 @@ class SearchCatalogueByMeaning
     }
 
     /**
+     * Cached a few minutes: one customer search embeds the same words for products and for stock
+     * on order (GetOnOrderNotListed).
+     *
      * @return array<int, float>|null
      */
-    private function embedQuery(string $query): ?array
+    public static function queryVector(string $query): ?array
     {
         $query = mb_substr(trim($query), 0, self::MAX_QUERY);
 
@@ -82,6 +86,17 @@ class SearchCatalogueByMeaning
             return null;
         }
 
-        return EmbedTexts::run([$query])[0] ?? null;
+        $key    = 'catalogue-search:query-vector:'.sha1($query);
+        $vector = Cache::get($key);
+        if (is_array($vector)) {
+            return $vector;
+        }
+
+        $vector = EmbedTexts::run([$query])[0] ?? null;
+        if ($vector !== null) {
+            Cache::put($key, $vector, now()->addMinutes(10));
+        }
+
+        return $vector;
     }
 }
