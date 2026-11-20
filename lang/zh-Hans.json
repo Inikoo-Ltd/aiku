@@ -25914,6 +25914,8 @@
     "Yes, the quantity is right": "是的，数量正确",
     "Too fast": "过快",
     "More than ten times the target: check the quantity and the times": "超过目标的十倍：请检查数量和时间",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "是的，我希望 :brand 通过 WhatsApp 向我发送有关订单、配送、补货和会员资格的最新消息。",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "是的，我愿意通过 WhatsApp 接收 :brand 不定期发送的优惠和资讯。",
     ":count item notes go with it, each to the supplier of its line.": "随附 :count 条货品备注，各自发送给对应行的供应商。",
     "A pinned note on :supplier: it shows on its next purchase orders and on the goods-in checklist.": ":supplier 的置顶备注：会显示在其后续采购订单和收货检查清单上。",
     "Carton labels": "外箱标签",

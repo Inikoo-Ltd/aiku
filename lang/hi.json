@@ -22700,5 +22700,7 @@
     "Warehouse :warehouse · Factory :factory": "गोदाम :warehouse · कारखाना :factory",
     "Wrong Weights": "गलत वज़न",
     "material": "सामग्री",
-    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO, :name द्वारा, :time|:count SKO, :name द्वारा, :time"
+    ":count SKO by :name, :time|:count SKOs by :name, :time": ":count SKO, :name द्वारा, :time|:count SKO, :name द्वारा, :time",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "हाँ, :brand मुझे मेरे ऑर्डर, डिलीवरी, रीस्टॉक और सदस्यता के बारे में WhatsApp पर अपडेट भेज सकता है।",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "हाँ, :brand मुझे WhatsApp पर कभी-कभी ऑफ़र और समाचार भेज सकता है।"
 }

@@ -1664,5 +1664,7 @@
     ":actor has updated :reference, which is assigned to you.": ":actor が、あなたに割り当てられている :reference を更新しました。",
     "Operational": "稼働中",
     ":reference cancelled": ":reference がキャンセルされました",
-    "The customer": "顧客"
+    "The customer": "顧客",
+    "Yes, I would like :brand to send me WhatsApp updates about my orders, deliveries, restocks and membership.": "はい、注文、配送、再入荷、メンバーシップに関するお知らせを :brand から WhatsApp で受け取ります。",
+    "Yes, I would like to receive occasional offers and news from :brand on WhatsApp.": "はい、:brand からのお得な情報やニュースを WhatsApp で時々受け取ります。"
 }
