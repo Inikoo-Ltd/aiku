@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
@@ -83,10 +82,6 @@ class UpdatePortfolio extends OrgAction
             OrganisationHydratePortfolios::dispatch($portfolio->organisation)->delay(max($this->hydratorsDelay, 300));
             ShopHydratePortfolios::dispatch($portfolio->shop)->delay(max($this->hydratorsDelay, 60));
             CustomerHydratePortfolios::dispatch($portfolio->customer_id)->delay(5);
-        }
-
-        if ($portfolio->customerSalesChannel && $portfolio->wasChanged(['status', 'platform_status'])) {
-            CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel)->delay(5);
         }
 
 

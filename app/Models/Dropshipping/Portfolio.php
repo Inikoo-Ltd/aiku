@@ -8,6 +8,7 @@
 
 namespace App\Models\Dropshipping;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Enums\Catalogue\Portfolio\PortfolioTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\HasHistory;
@@ -123,6 +124,15 @@ class Portfolio extends Model implements Auditable
         'status',
         'sku'
     ];
+
+    protected static function booted(): void
+    {
+        static::updated(function (Portfolio $portfolio) {
+            if ($portfolio->wasChanged(['status', 'platform_status']) && $portfolio->customerSalesChannel) {
+                CustomerSalesChannelsHydratePortfolios::dispatch($portfolio->customerSalesChannel)->delay(5);
+            }
+        });
+    }
 
     public function item(): BelongsTo
     {

@@ -10,15 +10,15 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel\Hydrators;
 
+use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 
-class CustomerSalesChannelsHydratePortfolios implements ShouldBeUnique
+class CustomerSalesChannelsHydratePortfolios implements ShouldBeUniqueUntilProcessing
 {
-    use AsAction;
+    use AsUniqueUntilProcessingAction;
     use WithEnumStats;
 
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
