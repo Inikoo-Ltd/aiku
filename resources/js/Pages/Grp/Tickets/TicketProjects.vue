@@ -21,9 +21,9 @@ import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vu
 import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadge.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faTable, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack } from "@fal"
+import { faProjectDiagram, faPlus, faList, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faTable, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack)
+library.add(faProjectDiagram, faPlus, faList, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Progress = { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
@@ -42,6 +42,7 @@ type ProjectRow = {
     progress: Progress
     quiet_days: number | null
     children: ProjectRow[]
+    is_sub_project?: boolean
 }
 
 const props = defineProps<{
@@ -57,7 +58,7 @@ const props = defineProps<{
 
 const view = ref<"table" | "cards">(props.view === "cards" ? "cards" : "table")
 const viewOptions = [
-    { label: ctrans("Table"), value: "table" as const, icon: "fal fa-table" },
+    { label: ctrans("Table"), value: "table" as const, icon: "fal fa-list" },
     { label: ctrans("Cards"), value: "cards" as const, icon: "fal fa-th-large" },
 ]
 watch(view, (value) => {
@@ -100,6 +101,10 @@ const healthClasses: Record<string, string> = {
     work_done: "bg-gray-100 text-gray-600",
 }
 
+const tableRows = computed(() => ({
+    ...props.data,
+    data: props.data.data.flatMap((project) => [project, ...project.children.map((child) => ({ ...child, is_sub_project: true }))]),
+}))
 const isBehind = (progress: Progress) => progress.percent !== null && progress.time_percent !== null && progress.percent + 10 < progress.time_percent
 const shortDate = (date: string | null) => (date ? useFormatTime(date + "T00:00:00", { formatTime: "d MMM yy" }) : "—")
 const workLabel = (progress: Progress) =>
@@ -128,26 +133,16 @@ const timeLabel = (progress: Progress) => {
         </template>
     </PageHeading>
 
-    <Table v-if="view === 'table'" :resource="data" class="mt-2" :useTopPagination="true">
+    <Table v-if="view === 'table'" :resource="tableRows" class="mt-2" :useTopPagination="true">
         <template #cell(name)="{ item }">
-            <FontAwesomeIcon v-if="item.is_pinned" v-tooltip="ctrans('Pinned: an ongoing area with no end date')" icon="fal fa-thumbtack" class="mr-1.5 text-[var(--app-accent)]" fixed-width />
-            <Link :href="route('grp.projects.show', item.slug)" class="font-medium text-gray-800 hover:underline">{{ item.name }}</Link>
-            <div v-if="item.children.length" class="mt-1 space-y-0.5">
-                <div v-for="child in item.children" :key="child.slug" class="grid min-w-[22rem] grid-cols-[1rem_minmax(8rem,1fr)_1.25rem_4rem_6.5rem] items-center gap-2 text-xs text-gray-600">
-                    <FontAwesomeIcon icon="fal fa-level-up" class="rotate-90 text-gray-400" fixed-width aria-hidden="true" />
-                    <span class="flex items-center gap-1.5">
-                        <Link :href="route('grp.projects.show', child.slug)" class="hover:underline">{{ child.name }}</Link>
-                        <TicketProjectQuietBadge :days="child.quiet_days" />
-                    </span>
-                    <span>
-                        <TicketUserAvatar v-if="child.owner" v-tooltip="ctrans('Leader') + ': ' + child.owner.name" :name="child.owner.name" :avatar="child.owner.avatar" size="xs" />
-                    </span>
-                    <span class="h-1.5 overflow-hidden rounded-full bg-gray-100">
-                        <span class="block h-full rounded-full" :class="isBehind(child.progress) ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (child.progress.percent ?? 0) + '%' }" />
-                    </span>
-                    <span v-tooltip="workTooltip(child.progress)" class="whitespace-nowrap text-right tabular-nums" :class="isBehind(child.progress) && 'font-semibold text-red-600'">{{ workLabel(child.progress) }}</span>
-                </div>
-            </div>
+            <span v-if="item.is_sub_project" class="flex items-center gap-1.5 pl-4">
+                <FontAwesomeIcon icon="fal fa-level-up" class="rotate-90 text-gray-400" fixed-width aria-hidden="true" />
+                <Link :href="route('grp.projects.show', item.slug)" class="text-gray-700 hover:underline">{{ item.name }}</Link>
+            </span>
+            <template v-else>
+                <FontAwesomeIcon v-if="item.is_pinned" v-tooltip="ctrans('Pinned: an ongoing area with no end date')" icon="fal fa-thumbtack" class="mr-1.5 text-[var(--app-accent)]" fixed-width />
+                <Link :href="route('grp.projects.show', item.slug)" class="font-medium text-gray-800 hover:underline">{{ item.name }}</Link>
+            </template>
         </template>
         <template #cell(status)="{ item }">
             <span class="flex gap-1">
@@ -157,7 +152,7 @@ const timeLabel = (progress: Progress) => {
             </span>
         </template>
         <template #cell(progress)="{ item }">
-            <span class="grid grid-cols-[6rem_6.5rem] items-center gap-2 text-xs">
+            <span class="grid grid-cols-[6rem_9.5rem] items-center gap-2 text-xs">
                 <span class="h-2 overflow-hidden rounded-full bg-gray-100">
                     <span class="block h-full rounded-full" :class="isBehind(item.progress) ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (item.progress.percent ?? 0) + '%' }" />
                 </span>
