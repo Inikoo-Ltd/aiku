@@ -7,6 +7,9 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Product\AskShopkeeperToReviewMasterText;
+use App\Actions\Catalogue\Product\FillShopProductTranslations;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Models\Catalogue\Shop;
 use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -631,4 +634,96 @@ test('changing the units of a single trade unit master recalculates its net weig
     UpdateMasterAsset::make()->action($slice, ['has_independent_units' => true, 'units' => 2]);
 
     expect($slice->refresh()->marketing_weight)->toBe(1200);
+});
+
+function fillTranslationsFixture(object $test, float $siblingUnits = 1): Product
+{
+    Config::set('services.openrouter.api_key', 'test-key');
+    Http::fake(['openrouter.ai/*' => function (Request $request) use ($test) {
+        $texts = collect(json_decode($request['messages'][1]['content'], true))
+            ->map(fn (array $input) => isset($input['copy']) ? str_replace(' en gros', '', $input['copy']) : ($test->aiPrefix ?? 'DE ').$input['translate']);
+
+        return Http::response(['choices' => [['message' => ['content' => json_encode($texts)]]], 'usage' => ['cost' => 0.001]]);
+    }]);
+
+    $test->product->updateQuietly(['state' => 'active', 'units' => 1, 'name' => 'Lavender soap 100g', 'description' => '<p>Lovely soap</p>', 'name_i8n' => ['en' => 'Lavender soap 100g'], 'data' => []]);
+    $test->product->tradeUnits()->sync([$test->bottle => ['quantity' => 1]]);
+
+    $test->germanShop ??= StoreShop::make()->action($test->organisation, array_merge(Shop::factory()->definition(), ['language_id' => Language::where('code', 'de')->first()->id]));
+    $sibling = $test->product->replicate();
+    $sibling->fill(['shop_id' => $test->germanShop->id, 'slug' => 'de-'.Str::random(10), 'units' => $siblingUnits, 'name' => 'Lavendelseife 100g en gros', 'description' => '<p>Schöne Seife en gros</p>', 'master_product_id' => null, 'data' => []]);
+    $sibling->saveQuietly();
+    $sibling->tradeUnits()->sync([$test->bottle => ['quantity' => $siblingUnits]]);
+
+    return $sibling;
+}
+
+function fillTranslations(object $test, bool $apply = true, bool $force = false): array
+{
+    return FillShopProductTranslations::run($test->shop, Language::where('code', 'de')->first(), $test->germanShop, $apply, $force);
+}
+
+test('fill translations copies the sibling shop text, cleaned of wholesale wording, onto the product and never the master', function () {
+    $sibling = fillTranslationsFixture($this);
+
+    fillTranslations($this);
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('name_i8n', 'de', false))->toBe('Lavendelseife 100g')
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife</p>')
+        ->and($product->getTranslation('name_i8n', 'en', false))->toBe('Lavender soap 100g')
+        ->and($product->name)->toBe('Lavender soap 100g')
+        ->and($product->data['translation_sources']['de']['fields']['name'])->toBe(FillShopProductTranslations::COPIED)
+        ->and($product->data['translation_sources']['de']['from_product_id'])->toBe($sibling->id)
+        ->and(data_get($this->masterAsset->refresh()->name_i8n, 'de'))->toBeEmpty();
+});
+
+test('fill translations machine translates a product whose sibling is a wholesale pack', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+
+    fillTranslations($this);
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
+        ->and($product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::MACHINE)
+        ->and($product->data['translation_sources']['de']['from_product_id'])->toBeNull();
+});
+
+test('fill translations in dry run writes nothing', function () {
+    fillTranslationsFixture($this);
+
+    $result = fillTranslations($this, apply: false);
+
+    expect($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('')
+        ->and($this->product->data)->not->toHaveKey('translation_sources')
+        ->and($result['stats']['copied_cleaned'])->toBeGreaterThan(0)
+        ->and($result['cost'])->toBeGreaterThan(0);
+});
+
+test('fill translations resumes past done products and never overwrites german a person wrote', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    fillTranslations($this);
+    $handWritten = $this->product->replicate();
+    $handWritten->fill(['slug' => 'hw-'.Str::random(10), 'code' => 'HW'.Str::random(8), 'master_product_id' => null, 'name' => 'Handmade soap', 'name_i8n' => ['de' => 'Von Hand geschrieben'], 'data' => []]);
+    $handWritten->saveQuietly();
+    $this->aiPrefix = 'NEU ';
+    $requestsFor = fn (string $text) => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', $text))->count();
+
+    $before = $requestsFor('Lavender soap 100g');
+
+    fillTranslations($this);
+    expect($requestsFor('Lavender soap 100g'))->toBe($before);
+
+    fillTranslations($this, force: true);
+    expect($requestsFor('Lavender soap 100g'))->toBeGreaterThan($before)
+        ->and($requestsFor('Handmade soap'))->toBe(0)
+        ->and($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('NEU Lavender soap 100g')
+        ->and($handWritten->refresh()->getTranslation('name_i8n', 'de', false))->toBe('Von Hand geschrieben');
+
+    $this->product->setTranslation('name_i8n', 'de', 'Korrigiert')->save();
+    $this->aiPrefix = 'NOCHMAL ';
+    fillTranslations($this, force: true);
+
+    expect($this->product->refresh()->getTranslation('name_i8n', 'de', false))->toBe('Korrigiert')
+        ->and($this->product->getTranslation('description_i8n', 'de', false))->toBe('NOCHMAL <p>Lovely soap</p>');
 });
