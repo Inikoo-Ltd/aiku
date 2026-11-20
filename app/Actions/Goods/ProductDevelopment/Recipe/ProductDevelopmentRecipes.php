@@ -252,7 +252,7 @@ class ProductDevelopmentRecipes
         if (!$formulation->type->hasOwnArtefact()) {
             return $item->artefact;
         }
-        if ($formulation->artefact) {
+        if ($formulation->artefact && $formulation->artefact->state !== ArtefactStateEnum::CANCELLED) {
             return $formulation->artefact;
         }
 
@@ -276,21 +276,23 @@ class ProductDevelopmentRecipes
     }
 
     /**
-     * A stage that became a blend after its trial runs were made on the SKU's artefact (HELP-4838) starts its own
-     * artefact from the ingredients its latest run recorded, so the next run or the approval carries on from there.
+     * A new blend artefact starts from the latest run of the stage recorded in shares on another artefact (e.g. one
+     * since cancelled), with the units per kg of blend it worked out. A run recorded per piece, on the SKU's artefact
+     * before the stage was a blend (HELP-4838), is never copied: its quantities are per piece, and on an artefact whose
+     * unit is 1 kg of blend they became 300 units of oil (HELP-4852).
      */
     private static function seedFromEarlierRun(ProductDevelopmentFormulation $formulation, Artefact $artefact): void
     {
-        $earlierRun = $formulation->samples()->reorder()->where('artefact_id', '!=', $artefact->id)->whereNotNull('recipe')->orderByDesc('number')->first();
+        $earlierRun = $formulation->samples()->reorder()->where('artefact_id', '!=', $artefact->id)->whereNotNull('recipe->formulation')->orderByDesc('number')->first();
         $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)->orderBy('position')->first();
         if (!$earlierRun || !$recipeStep) {
             return;
         }
 
-        foreach ($earlierRun->recipe['ingredients'] ?? [] as $ingredient) {
-            $rawMaterial = RawMaterial::where('organisation_id', $artefact->organisation_id)->where('code', $ingredient['code'])->first();
-            if ($rawMaterial && (float) $ingredient['quantity'] > 0 && $rawMaterial->artefact_id !== $artefact->id) {
-                AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => (float) $ingredient['quantity']]);
+        foreach ($earlierRun->recipe['formulation']['lines'] as $line) {
+            $rawMaterial = RawMaterial::where('organisation_id', $artefact->organisation_id)->find($line['raw_material_id']);
+            if ($rawMaterial && $line['units_per_kg'] !== null && $rawMaterial->artefact_id !== $artefact->id) {
+                AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => (float) $line['units_per_kg']]);
             }
         }
     }

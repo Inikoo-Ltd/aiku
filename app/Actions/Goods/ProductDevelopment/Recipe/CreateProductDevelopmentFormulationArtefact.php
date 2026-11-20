@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Goods\ProductDevelopmentFormulation;
 use App\Models\Production\Artefact;
 use Illuminate\Http\RedirectResponse;
@@ -21,9 +22,10 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Gives a blend or intermediate stage its own artefact when it has none yet, e.g. a stage whose trial runs were
- * made on the SKU's artefact before it was a blend. Once the stage is approved the artefact is an in-house
- * ingredient straight away, ready for the finished product's recipe.
+ * Gives a blend or intermediate stage its own artefact when it has none yet or its artefact was cancelled, e.g. a
+ * stage whose trial runs were made on the SKU's artefact before it was a blend. Once the stage is approved and no
+ * share waits for its units the artefact is an in-house ingredient straight away, ready for the finished product's
+ * recipe.
  */
 class CreateProductDevelopmentFormulationArtefact extends OrgAction
 {
@@ -48,9 +50,9 @@ class CreateProductDevelopmentFormulationArtefact extends OrgAction
         return DB::transaction(function () use ($formulation) {
             ProductDevelopmentFormulation::whereKey($formulation->id)->lockForUpdate()->first();
             $artefact = ProductDevelopmentRecipes::stageArtefact($formulation->refresh());
-            $approved = $formulation->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED->value)->exists();
+            $approved = $formulation->samples()->where('status', ProductDevelopmentSampleStatusEnum::APPROVED->value)->reorder()->orderByDesc('number')->first();
 
-            if ($approved) {
+            if ($approved && !FormulationPercentages::hasPendingUnits($approved) && count(ProductDevelopmentRecipes::recipe($artefact)['ingredients']) > 0) {
                 SetArtefactAsMix::make()->action($artefact, true);
             }
 
@@ -66,7 +68,7 @@ class CreateProductDevelopmentFormulationArtefact extends OrgAction
             return;
         }
 
-        if ($this->formulation->artefact_id) {
+        if ($this->formulation->artefact_id && $this->formulation->artefact?->state !== ArtefactStateEnum::CANCELLED) {
             $validator->errors()->add('formulation', __('This stage already has its artefact'));
 
             return;

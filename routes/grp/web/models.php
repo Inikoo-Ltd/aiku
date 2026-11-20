@@ -47,6 +47,7 @@ use App\Actions\Goods\ProductDevelopment\Recipe\DeleteProductDevelopmentComponen
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentComponent;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentComponent;
 use App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample;
+use App\Actions\Goods\ProductDevelopment\Recipe\SetProductDevelopmentSampleUnits;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample;
 use App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentFormulation;
 use App\Actions\Goods\ProductDevelopment\Recipe\UpdateProductDevelopmentFormulation;
@@ -2393,6 +2394,7 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::patch('sample/{productDevelopmentSample:id}', UpdateProductDevelopmentSample::class)->name('sample.update')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/submit', SubmitProductDevelopmentSample::class)->name('sample.submit')->withoutScopedBindings();
     Route::patch('sample/{productDevelopmentSample:id}/review', ReviewProductDevelopmentSample::class)->name('sample.review')->withoutScopedBindings();
+    Route::post('sample/{productDevelopmentSample:id}/units', SetProductDevelopmentSampleUnits::class)->name('sample.units')->withoutScopedBindings();
     Route::post('sample/{productDevelopmentSample:id}/photos', UploadProductDevelopmentSamplePhotos::class)->name('sample.photos')->withoutScopedBindings();
     Route::delete('photo/{productDevelopmentFile:id}', RemoveProductDevelopmentPhoto::class)->name('photo.remove')->withoutScopedBindings();
     Route::post('{productDevelopment:id}/sample-job', CreateProductDevelopmentSampleJob::class)->name('sample_job.store')->withoutScopedBindings();

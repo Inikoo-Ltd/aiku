@@ -141,6 +141,7 @@ class GetTrialRunBrief extends OrgAction
             ] : null,
             'form'        => $viewer && $sample->workingArtefact() && RecordTrialRunFormulation::isChangeable($sample) && RecordTrialRunFormulation::canRecord($viewer, $jobOrder) ? [
                 'steps'                => RecordTrialRunFormulation::formSteps($sample->workingArtefact()),
+                'percentages'          => RecordTrialRunFormulation::formFormulation($sample, $jobOrder),
                 'notes'                => $formulation['notes'] ?? null,
                 'raw_material_options' => ['name' => 'grp.json.production.raw_materials.index', 'parameters' => ['production' => $jobOrder->production_id]],
                 'save_route'           => ['name' => 'grp.models.job-order.trial_run_formulation', 'parameters' => ['jobOrder' => $jobOrder->id], 'method' => 'post'],

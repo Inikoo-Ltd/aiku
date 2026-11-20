@@ -2347,9 +2347,12 @@ test('a blend stage is made on its own artefact, becomes an ingredient once appr
             ->where('formulation.skus.0.formulations.0.can_create_artefact', true));
     $legacyArtefact = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentFormulationArtefact::make()->action($legacyStage->fresh());
     expect($legacyStage->fresh()->artefact_id)->toBe($legacyArtefact->id)
-        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $legacyArtefact->id)->value('type')?->value)->toBe('intermediate')
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $legacyArtefact->id)->exists())->toBeFalse()
         ->and($legacyRun->fresh()->artefact_id)->toBe($legacyItem->artefact_id)
-        ->and(collect($recipes::recipe($legacyArtefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$legacyItem->id => 0.05]);
+        ->and($recipes::recipe($legacyArtefact)['ingredients'])->toBe([]);
+    get(route('grp.product_developments.show', [$legacy->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.approved_recipe.ingredients.0.code', 'MAND'.$legacyItem->id));
 });
 
 test('a stage changes type while its trial run is being made, but only becomes the finished product when that run is on the SKU artefact, HELP-4838', function () {
@@ -2378,7 +2381,8 @@ test('a stage changes type while its trial run is being made, but only becomes t
     $nextRun  = \App\Actions\Goods\ProductDevelopment\Recipe\StoreProductDevelopmentSample::make()->action($item->fresh(), $this->user, ['product_development_formulation_id' => $stage->id]);
     $artefact = $stage->fresh()->artefact;
     expect($nextRun->artefact_id)->toBe($artefact->id)
-        ->and(collect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($artefact)['ingredients'])->pluck('quantity', 'code')->all())->toEqual(['MAND'.$item->id => 0.05]);
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($artefact)['ingredients'])->toBe([])
+        ->and(collect(\App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation::formFormulation($nextRun->fresh(), null)['lines'])->pluck('percent', 'code')->all())->toEqual(['MAND'.$item->id => 100.0]);
     $update(['type' => 'intermediate'])->assertSessionHasNoErrors();
     $update(['type' => 'finished_product'])->assertSessionHasErrors('type');
 });
@@ -3205,4 +3209,144 @@ test('the To produce board lists the trial runs a development asks for, counts t
     patch(route('grp.models.job-order.confirm', ['jobOrder' => $waiting->id]))->assertSessionHasNoErrors();
     expect($board()['unassigned'])->toBe(0)
         ->and(collect($board()['runs'])->firstWhere('id', $waiting->id)['artisans'])->toBe([$artisan->contact_name]);
+});
+
+test('a blend is formulated as shares of a sample, its recipe in Production is units per kg of blend, and it stays a draft until every share has its units, HELP-4852', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 2);
+    [$item, $other] = $productDevelopment->items()->with(['tradeUnit', 'artefact'])->orderBy('id')->get()->all();
+    $stage = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::formulations($item)->first();
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $stage->id]), ['name' => 'EO Blend', 'type' => 'base_blend'])->assertSessionHasNoErrors();
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Body wash', 'type' => 'finished_product'])->assertSessionHasNoErrors();
+
+    $other->tradeUnit->update(['net_weight' => 10000]);
+    $vanilla  = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'VAN'.$item->id, 'description' => 'Vanilla (KG)', 'unit' => 'kilogram']);
+    $cedar    = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'CED'.$item->id, 'description' => 'Cedarwood 10 kg drum', 'unit' => 'unit', 'trade_unit_id' => $other->trade_unit_id]);
+    $patchouli = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'PAT'.$item->id, 'description' => 'Patchouli', 'unit' => 'unit']);
+
+    $jobOrder = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1])[0];
+    $sample   = $item->samples()->where('number', 1)->firstOrFail();
+    $blend    = $sample->workingArtefact();
+    $step     = \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $blend->id)->orderBy('position')->firstOrFail();
+
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $vanilla->id, 'quantity_per_unit' => 0.2]);
+    $form = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->json('brief.form.percentages');
+    expect($form['recipe_step_id'])->toBe($step->id)->and($form['sample_unit'])->toBe('g')
+        ->and(collect($form['lines'])->pluck('percent', 'code')->all())->toEqual(['VAN'.$item->id => 100.0]);
+
+    $record = fn (array $shares, string $unit = 'g') => post(route('grp.models.job-order.trial_run_formulation', ['jobOrder' => $jobOrder->id]), [
+        'sample_size' => 100, 'sample_unit' => $unit, 'recipe_step_id' => $step->id,
+        'lines'       => collect($shares)->map(fn ($percent, $id) => ['raw_material_id' => $id, 'percent' => $percent])->values()->all(),
+    ]);
+    $record([$vanilla->id => 50, $cedar->id => 30, $patchouli->id => 10])->assertSessionHasErrors('formulation');
+    $record([$vanilla->id => 50, $cedar->id => 30, $patchouli->id => 20])->assertRedirect()->assertSessionHasNoErrors();
+
+    $recipeOf = fn () => \App\Models\Production\RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)->pluck('quantity_per_unit', 'raw_material_id')->map(fn ($quantity) => (float) $quantity)->all();
+    $lines    = collect($sample->fresh()->recipe['formulation']['lines'])->keyBy('raw_material_id');
+    expect($recipeOf())->toEqual([$vanilla->id => 0.5, $cedar->id => 0.03])
+        ->and($lines[$vanilla->id]['sample_quantity'])->toEqual(50)
+        ->and($lines[$patchouli->id]['units_per_kg'])->toBeNull()
+        ->and((float) $sample->fresh()->batch_size)->toEqual(100.0)
+        ->and($sample->fresh()->batch_unit)->toBe('g')
+        ->and($jobOrder->fresh()->data['formulation']['recipe']['formulation']['sample_unit'])->toBe('g');
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($sample->fresh(), $this->user, ['operation' => 'approve']);
+    expect(\App\Models\Production\RawMaterial::where('artefact_id', $blend->id)->exists())->toBeFalse();
+
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.percentages.trial_run', '01')
+            ->where('formulation.skus.0.formulations.0.percentages.pending', 1)
+            ->where('formulation.skus.0.formulations.0.percentages.sample_unit', 'g')
+            ->where('formulation.skus.0.formulations.0.percentages.can_set_units', true)
+            ->where('formulation.skus.0.formulations.0.percentages.approved_by', $this->user->contact_name ?: $this->user->username)
+            ->where('formulation.skus.0.formulations.1.percentages', null));
+
+    $units = fn (array $lines) => post(route('grp.models.product_development.sample.units', ['productDevelopmentSample' => $sample->id]), ['lines' => $lines]);
+    $units([['raw_material_id' => $vanilla->id, 'units_per_kg' => 0.4]])->assertSessionHasErrors('lines.0.raw_material_id');
+
+    $blend->update(['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::CANCELLED]);
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('formulation.skus.0.formulations.0.artefact.is_cancelled', true)
+            ->where('formulation.skus.0.formulations.0.can_create_artefact', true)
+            ->where('formulation.skus.0.formulations.0.approved_by', $this->user->contact_name ?: $this->user->username)
+            ->where('formulation.skus.0.formulations.1.blends_made_on_sku', []));
+    post(route('grp.models.product_development.formulation.artefact', ['productDevelopmentFormulation' => $stage->id]))->assertSessionHasNoErrors();
+    $renewed   = $stage->fresh()->artefact;
+    $renewedOf = fn () => collect(\App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::recipe($renewed)['ingredients'])->pluck('quantity', 'code')->all();
+    expect($renewed->id)->not->toBe($blend->id)
+        ->and($renewed->code)->toBe($blend->code.'-2')
+        ->and($renewedOf())->toEqual(['VAN'.$item->id => 0.5, 'CED'.$item->id => 0.03])
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $renewed->id)->exists())->toBeFalse();
+
+    $units([['raw_material_id' => $patchouli->id, 'units_per_kg' => 0.25]])->assertRedirect()->assertSessionHasNoErrors();
+    expect($renewedOf())->toEqual(['VAN'.$item->id => 0.5, 'CED'.$item->id => 0.03, 'PAT'.$item->id => 0.25])
+        ->and($recipeOf())->toEqual([$vanilla->id => 0.5, $cedar->id => 0.03])
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::hasPendingUnits($sample->fresh()))->toBeFalse()
+        ->and(collect($sample->fresh()->recipe['formulation']['lines'])->pluck('percent', 'raw_material_id')->all())->toEqual([$vanilla->id => 50, $cedar->id => 30, $patchouli->id => 20])
+        ->and(\App\Models\Production\RawMaterial::where('artefact_id', $renewed->id)->value('type')?->value)->toBe('intermediate')
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::unitsPerKg(30, 'ml', 1.0))->toBeNull()
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::unitsPerKg(0.000001, 'g', 25.0))->toBeNull();
+});
+
+test('a blend weighs its raw materials through their SKO, a sample in ml waits for units by hand that are kept while the share stays, the next run starts from the last formulation, and a run on the SKU artefact stays per piece, HELP-4852', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 2);
+    [$item, $other] = $productDevelopment->items()->with(['tradeUnit', 'artefact'])->orderBy('id')->get()->all();
+    $stage = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::formulations($item)->first();
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $stage->id]), ['name' => 'EO Blend', 'type' => 'base_blend'])->assertSessionHasNoErrors();
+    post(route('grp.models.product_development.item.formulation.store', ['productDevelopmentItem' => $item->id]), ['name' => 'Body wash', 'type' => 'finished_product'])->assertSessionHasNoErrors();
+
+    $other->tradeUnit->update(['net_weight' => 5000]);
+    $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($production->organisation, $stock, \App\Models\Inventory\OrgStock::factory()->definition());
+    $orgStock->tradeUnits()->sync([$other->trade_unit_id => ['quantity' => 2]]);
+    $drum    = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'DRM'.$item->id, 'description' => 'Fragrance 10 kg drum', 'unit' => 'unit', 'org_stock_id' => $orgStock->id]);
+    $vanilla = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'VNL'.$item->id, 'description' => 'Vanilla (KG)', 'unit' => 'kilogram']);
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::kgPerUnit($drum->fresh()))->toEqual(10.0);
+
+    $jobOrder = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1])[0];
+    $sample   = $item->samples()->where('number', 1)->firstOrFail();
+    $step     = \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $sample->workingArtefact()->id)->orderBy('position')->firstOrFail();
+    $recipeOf = fn () => \App\Models\Production\RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)->pluck('quantity_per_unit', 'raw_material_id')->map(fn ($quantity) => (float) $quantity)->all();
+    $record   = fn (array $shares, string $unit) => post(route('grp.models.job-order.trial_run_formulation', ['jobOrder' => $jobOrder->id]), [
+        'sample_size' => 200, 'sample_unit' => $unit, 'recipe_step_id' => $step->id,
+        'lines'       => collect($shares)->map(fn ($percent, $id) => ['raw_material_id' => $id, 'percent' => $percent])->values()->all(),
+    ]);
+
+    $record([$drum->id => 40, $vanilla->id => 60], 'g')->assertSessionHasNoErrors();
+    expect($recipeOf())->toEqual([$drum->id => 0.04, $vanilla->id => 0.6]);
+
+    $record([$drum->id => 40, $vanilla->id => 60], 'ml')->assertSessionHasNoErrors();
+    expect($recipeOf())->toBe([])
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::pendingLines($sample->fresh()->recipe))->toHaveCount(2)
+        ->and(collect($sample->fresh()->recipe['formulation']['lines'])->pluck('sample_quantity', 'raw_material_id')->all())->toEqual([$vanilla->id => 120, $drum->id => 80]);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SetProductDevelopmentSampleUnits::make()->action($sample->fresh(), ['lines' => [['raw_material_id' => $drum->id, 'units_per_kg' => 0.035], ['raw_material_id' => $vanilla->id, 'units_per_kg' => 0.52]]]);
+    expect($recipeOf())->toEqual([$drum->id => 0.035, $vanilla->id => 0.52])
+        ->and($jobOrder->fresh()->data['formulation']['recipe']['formulation']['lines'][0]['manual'])->toBeTrue();
+
+    $record([$drum->id => 40, $vanilla->id => 60], 'ml')->assertSessionHasNoErrors();
+    expect($recipeOf())->toEqual([$drum->id => 0.035, $vanilla->id => 0.52]);
+    $record([$drum->id => 45, $vanilla->id => 55], 'ml')->assertSessionHasNoErrors();
+    expect($recipeOf())->toBe([]);
+
+    \App\Actions\Goods\ProductDevelopment\Recipe\SetProductDevelopmentSampleUnits::make()->action($sample->fresh(), ['lines' => [['raw_material_id' => $drum->id, 'units_per_kg' => 0.04], ['raw_material_id' => $vanilla->id, 'units_per_kg' => 0.5]]]);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    \App\Actions\Goods\ProductDevelopment\Recipe\ReviewProductDevelopmentSample::make()->action($sample->fresh(), $this->user, ['operation' => 'request_changes', 'comment' => 'Less vanilla']);
+    $nextJob = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 1])[0];
+    $form    = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $nextJob->id]))->json('brief.form.percentages');
+    expect($form['sample_unit'])->toBe('ml')
+        ->and(collect($form['lines'])->pluck('percent', 'raw_material_id')->all())->toEqual([$vanilla->id => 55, $drum->id => 45]);
+    post(route('grp.models.product_development.sample.units', ['productDevelopmentSample' => $sample->id]), ['lines' => [['raw_material_id' => $drum->id, 'units_per_kg' => 0.04]]])->assertSessionHasErrors('lines');
+    post(route('grp.models.job-order.trial_run_formulation', ['jobOrder' => $nextJob->id]), ['sample_size' => 200, 'sample_unit' => 'ml', 'recipe_step_id' => $step->id, 'lines' => [['raw_material_id' => $drum->id, 'percent' => 45], ['raw_material_id' => $vanilla->id, 'percent' => 55]]])->assertSessionHasNoErrors();
+    expect($recipeOf())->toEqual([$drum->id => 0.04, $vanilla->id => 0.5]);
+
+    $otherStage = \App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes::formulations($other)->first();
+    $otherJob   = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$other->id], 'quantity' => 1])[0];
+    patch(route('grp.models.product_development.formulation.update', ['productDevelopmentFormulation' => $otherStage->id]), ['type' => 'base_blend'])->assertSessionHasNoErrors();
+    $otherSample = $other->samples()->firstOrFail();
+    expect($otherSample->artefact_id)->toBe($other->artefact_id)
+        ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::isForSample($otherSample->fresh()))->toBeFalse()
+        ->and(get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $otherJob->id]))->json('brief.form.percentages'))->toBeNull();
 });

@@ -14,6 +14,7 @@ import { ctrans } from "@/Composables/useTrans"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import ProductDevelopmentLabelPackaging from "@/Components/Goods/ProductDevelopment/ProductDevelopmentLabelPackaging.vue"
 import RecipeIngredients from "@/Components/Goods/ProductDevelopment/Formulation/RecipeIngredients.vue"
+import FormulationPercentages from "@/Components/Goods/ProductDevelopment/Formulation/FormulationPercentages.vue"
 import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
 import { skuProgress, skuProgressPills } from "@/Components/Goods/ProductDevelopment/productDevelopmentSkuProgress"
 import ProductDevelopmentProgressBar from "@/Components/Goods/ProductDevelopment/ProductDevelopmentProgressBar.vue"
@@ -201,7 +202,8 @@ function setTemplate(category: string) {
                                         <span class="text-xs text-gray-500">{{ stage.type }}</span>
                                         <span v-if="stage.artefact" class="whitespace-nowrap text-xs text-gray-500">{{ stage.artefact }}</span>
                                     </div>
-                                    <RecipeIngredients :ingredients="stage.ingredients" />
+                                    <FormulationPercentages v-if="stage.percentages" :percentages="stage.percentages" />
+                                    <RecipeIngredients v-else :ingredients="stage.ingredients" />
                                     <p class="mt-1 text-xs text-gray-500">{{ stage.is_finished ? ctrans("Trial run :number, the final recipe for the compliance assessment", { number: stage.number }) : ctrans("Trial run :number", { number: stage.number }) }}</p>
                                 </div>
                             </template>

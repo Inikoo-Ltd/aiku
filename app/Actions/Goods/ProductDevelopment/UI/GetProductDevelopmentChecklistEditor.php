@@ -158,6 +158,7 @@ class GetProductDevelopmentChecklistEditor
                     'artefact'    => $formulation->type->hasOwnArtefact() ? $formulation->artefact?->code : $item->artefact?->code,
                     'number'      => $sample->reference(),
                     'ingredients' => $sample->recipe['ingredients'] ?? [],
+                    'percentages' => $sample->recipe['formulation'] ?? null,
                     'approved_at' => $sample->reviewed_at?->toIso8601String(),
                 ];
             })->values();

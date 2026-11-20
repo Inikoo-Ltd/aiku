@@ -11,6 +11,7 @@ import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TrialRunFormulation, { type TrialRunFormulationForm } from "@/Components/Production/TrialRunFormulation.vue"
+import FormulationPercentages, { type Percentages } from "@/Components/Goods/ProductDevelopment/Formulation/FormulationPercentages.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
@@ -47,7 +48,7 @@ export interface TrialRunBriefData {
         notes: { label: string, value: string }[]
     }
     formulation: null | {
-        recipe: { steps: { position: number, name: string, raw_materials: RecipeLine[] }[], ingredients: RecipeLine[] }
+        recipe: { steps: { position: number, name: string, raw_materials: RecipeLine[] }[], ingredients: RecipeLine[], formulation?: Percentages }
         notes: string | null
         recorded_by: string | null
         recorded_at: string | null
@@ -126,7 +127,8 @@ function saved() {
                     </h4>
                     <TrialRunFormulation v-if="editing && brief.form" :form="brief.form" :sku="brief.sku.code" cancellable changing @saved="saved" @cancel="editing = false" />
                     <template v-else-if="brief.formulation">
-                        <div v-for="step in brief.formulation.recipe.steps" :key="step.position + step.name" class="mb-2">
+                        <FormulationPercentages v-if="brief.formulation.recipe.formulation" :percentages="brief.formulation.recipe.formulation" class="mb-2" />
+                        <div v-for="step in brief.formulation.recipe.formulation ? [] : brief.formulation.recipe.steps" :key="step.position + step.name" class="mb-2">
                             <div v-if="brief.formulation.recipe.steps.length > 1" class="text-xs font-medium text-gray-500">{{ step.name }}</div>
                             <table class="w-full text-sm">
                                 <tbody>

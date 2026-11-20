@@ -16,6 +16,7 @@ import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import RecipeIngredients, { type Ingredient } from "@/Components/Goods/ProductDevelopment/Formulation/RecipeIngredients.vue"
+import FormulationPercentages, { type Percentages } from "@/Components/Goods/ProductDevelopment/Formulation/FormulationPercentages.vue"
 import SampleThread from "@/Components/Goods/ProductDevelopment/Formulation/SampleThread.vue"
 import ProductDevelopmentPhotoStrip, { type ProductDevelopmentPhoto } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentPhotoStrip.vue"
 import ProductDevelopmentSkuList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentSkuList.vue"
@@ -26,8 +27,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFlask, faExternalLink, faPlus, faPencil, faCheck, faUndo, faTimes, faPaperPlane, faComments, faChevronDown, faExclamationTriangle, faImage, faTasks, faCheckCircle, faTrashAlt, faBoxOpen, faFileAlt, faCube, faHourglassHalf, faLink } from "@fal"
-library.add(faFlask, faExternalLink, faPlus, faPencil, faCheck, faUndo, faTimes, faPaperPlane, faComments, faChevronDown, faExclamationTriangle, faImage, faTasks, faCheckCircle, faTrashAlt, faBoxOpen, faFileAlt, faCube, faHourglassHalf, faLink)
+import { faFlask, faExternalLink, faPlus, faPencil, faCheck, faUndo, faTimes, faPaperPlane, faComments, faChevronDown, faExclamationTriangle, faImage, faTasks, faCheckCircle, faTrashAlt, faBoxOpen, faFileAlt, faCube, faHourglassHalf, faLink, faCalendarAlt, faIndustry } from "@fal"
+library.add(faFlask, faExternalLink, faPlus, faPencil, faCheck, faUndo, faTimes, faPaperPlane, faComments, faChevronDown, faExclamationTriangle, faImage, faTasks, faCheckCircle, faTrashAlt, faBoxOpen, faFileAlt, faCube, faHourglassHalf, faLink, faCalendarAlt, faIndustry)
 
 interface Status {
     value: string
@@ -39,12 +40,14 @@ interface Status {
 interface Recipe {
     steps: { position: number, name: string, raw_materials: Ingredient[] }[]
     ingredients: Ingredient[]
+    formulation?: Percentages
 }
 
 interface ArtefactLink {
     code: string
     name: string
     state: string
+    is_cancelled?: boolean
     route: routeType
 }
 
@@ -60,12 +63,16 @@ interface Formulation {
     artisan: string | null
     approved: string | null
     approved_at: string | null
+    approved_by: string | null
+    approved_recipe: Recipe | null
+    blends_made_on_sku: { stage: string, number: string }[]
     is_current: boolean
     status: Status | null
     assignment: { value: string, label: string, color: string } | null
     artefact: ArtefactLink | null
     recipe: Recipe | null
     in_finished_recipe: boolean | null
+    percentages: Percentages | null
     trial_runs: { total: number, reviewed: number }
     can_edit: boolean
     can_change_type: boolean
@@ -360,6 +367,9 @@ function review(sample: Sample, operation: "approve" | "request_changes") {
 /* Folding parts of a sample */
 
 const openRecipe = ref<Record<number, boolean>>({})
+const openRun = ref<Record<number, boolean>>({})
+const isRunOpen = (sample: Sample) => openRun.value[sample.id] ?? (sample.can_edit || sample.can_review)
+const toggleRun = (sample: Sample) => openRun.value[sample.id] = !isRunOpen(sample)
 const openThread = ref<Record<number, boolean>>({})
 
 /* Trial runs */
@@ -526,68 +536,13 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                         <p class="whitespace-pre-line text-sm text-gray-800">{{ selected.brief }}</p>
                     </section>
 
-                    <section>
-                        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Packaging & components") }}</h4>
-                        <div class="overflow-x-auto rounded-md border border-gray-200">
-                            <table class="w-full text-sm">
-                                <thead class="whitespace-nowrap bg-gray-50 text-left text-xs text-gray-500">
-                                    <tr>
-                                        <th class="px-3 py-1.5 font-medium">{{ ctrans("Component") }}</th>
-                                        <th class="px-3 py-1.5 text-right font-medium">{{ ctrans("Needed to start") }}</th>
-                                        <th class="px-3 py-1.5 font-medium">{{ ctrans("Status") }}</th>
-                                        <th class="px-3 py-1.5" />
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <tr v-for="component in selected.components" :key="component.id">
-                                        <td class="px-3 py-1.5">
-                                            <a :href="route(component.route.name, component.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[var(--app-accent)]">{{ component.code }}</a>
-                                            <span class="ml-1.5 text-gray-600">{{ component.name }}</span>
-                                            <div v-if="component.note" class="text-xs text-gray-500">{{ component.note }}</div>
-                                        </td>
-                                        <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{{ formatQuantity(component.quantity) }}</td>
-                                        <td class="px-3 py-1.5">
-                                            <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs" :class="productDevelopmentColor(component.status.color).active" v-tooltip="component.approved_by ? ctrans('Approved by :name on :date', { name: component.approved_by, date: formatDate(component.approved_at) }) : undefined">
-                                                <FontAwesomeIcon :icon="component.status.icon" fixed-width aria-hidden="true" />
-                                                {{ component.status.label }}
-                                            </span>
-                                        </td>
-                                        <td class="px-3 py-1.5">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <Button v-if="component.can_approve" type="tertiary" size="xs" :label="component.status.value === 'approved' ? ctrans('Take back') : ctrans('Approve')" :loading="working === `approval-${component.id}`" @click="setApproval(component, component.status.value !== 'approved')">
-                                                    <template #icon><FontAwesomeIcon :icon="component.status.value === 'approved' ? 'fal fa-undo' : 'fal fa-check'" :class="component.status.value === 'approved' ? 'text-orange-500' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
-                                                </Button>
-                                                <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Change component')" v-tooltip="ctrans('Change component')" @click="openComponent(component)">
-                                                    <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
-                                                </button>
-                                                <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-red-500 hover:bg-red-50" :aria-label="ctrans('Remove component')" v-tooltip="ctrans('Remove component')" :disabled="working === `remove-${component.id}`" @click="removeComponent(component)">
-                                                    <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="!selected.components.length">
-                                        <td colspan="4" class="px-3 py-3 text-center text-xs text-gray-400">{{ ctrans("No components yet") }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div v-if="selected.can_add_component" class="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,12rem)_auto]">
-                            <ProductDevelopmentRemoteSelect v-model="newComponent.trade_unit_id" :searchRoute="data.component_search" :placeholder="ctrans('Search a component by code')" />
-                            <InputNumber v-model="newComponent.quantity" :min="0" :maxFractionDigits="3" :placeholder="ctrans('Quantity')" class="w-full" inputClass="w-full" />
-                            <InputText v-model="newComponent.note" maxlength="255" :placeholder="ctrans('Note (optional)')" class="w-full" />
-                            <Button type="tertiary" :label="ctrans('Add')" :loading="working === `component-${selected.id}`" :disabled="!newComponent.trade_unit_id || !newComponent.quantity" @click="addComponent(selected)">
-                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
-                            </Button>
-                        </div>
-                        <p v-if="!componentDialog && Object.keys(componentErrors).length" class="mt-1 text-xs text-red-600">{{ firstError(componentErrors) }}</p>
-                    </section>
-
-                    <section class="space-y-3">
+                    <section class="space-y-4">
                         <div class="flex items-center justify-between gap-2">
-                            <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Formulation stages (:count)", { count: String(selected.formulations.length) }) }}</h4>
+                            <h4 class="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+                                <FontAwesomeIcon icon="fal fa-flask" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Formulation stages (:count)", { count: String(selected.formulations.length) }) }}
+                            </h4>
                             <Button v-if="selected.can_add_formulation" type="tertiary" size="xs" :label="ctrans('Add stage')" @click="openFormulation(selected, null)">
-                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-gray-500" fixed-width aria-hidden="true" /></template>
                             </Button>
                         </div>
 
@@ -596,213 +551,341 @@ const skusWithRecipe = computed(() => (props.data?.skus ?? []).filter((sku) => s
                             {{ ctrans("No stage is the finished product yet. Set one stage's type to Finished product: its approved trial run becomes the production formula.") }}
                         </p>
 
-                        <article v-for="formulation in selected.formulations" :key="formulation.id" class="overflow-hidden rounded-lg border" :class="formulation.is_current && !selected.progress.final ? 'border-[var(--app-accent-muted)]' : 'border-gray-200'">
-                            <header class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5" :class="isExpanded(formulation) ? 'bg-[var(--app-accent-soft)]' : 'hover:bg-gray-50'" role="button" tabindex="0" :aria-expanded="isExpanded(formulation)" @click="toggleStage(formulation)" @keydown.enter="toggleStage(formulation)">
-                                <FontAwesomeIcon icon="fal fa-flask" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                        <article v-for="formulation in selected.formulations" :key="formulation.id" class="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
+                            <header class="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 bg-gray-800 px-4 py-3 text-white" role="button" tabindex="0" :aria-expanded="isExpanded(formulation)" @click="toggleStage(formulation)" @keydown.enter="toggleStage(formulation)">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-accent)] text-[var(--app-accent-text)]">
+                                    <FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" />
+                                </span>
                                 <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-x-2">
-                                        <span class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Stage :position", { position: String(formulation.position) }) }}</span>
-                                        <span class="text-sm font-semibold text-gray-900">{{ formulation.name }}</span>
-                                        <span class="whitespace-nowrap rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-700">{{ formulation.type.label }}</span>
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <span class="text-sm font-semibold">{{ ctrans("Stage :position – :name", { position: String(formulation.position), name: formulation.name }) }}</span>
+                                        <span class="whitespace-nowrap rounded-full border border-white/30 px-2 py-0.5 text-xs text-gray-200">{{ formulation.type.label }}</span>
                                     </div>
-                                    <div class="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-gray-500">
+                                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-300">
                                         <span class="whitespace-nowrap">{{ ctrans("Artisan: :name", { name: formulation.artisan ?? ctrans("not proposed") }) }}</span>
-                                        <span v-if="formulation.artefact" class="whitespace-nowrap">{{ ctrans("Artefact: :code", { code: formulation.artefact.code }) }}</span>
-                                        <span v-else-if="formulation.type.value !== 'finished_product'" class="whitespace-nowrap text-gray-400">{{ ctrans("Artefact made with its first trial run") }}</span>
+                                        <span class="text-gray-500">|</span>
+                                        <span class="whitespace-nowrap">{{ ctrans("Artefact: :code", { code: formulation.artefact?.code ?? "—" }) }}<template v-if="formulation.artefact?.is_cancelled"> ({{ formulation.artefact.state }})</template></span>
                                     </div>
                                 </div>
                                 <div class="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
-                                    <span v-if="formulation.approved" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor('green').active">{{ ctrans("Trial run :number approved", { number: formulation.approved }) }}</span>
+                                    <span v-if="formulation.percentages?.pending" class="whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-amber-800">{{ ctrans("Units to enter") }}</span>
+                                    <span v-if="formulation.approved" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-green-600 px-2.5 py-0.5 text-white">
+                                        <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />{{ formulation.type.value === "finished_product" ? ctrans("Production formula") : ctrans("Approved formulation") }}
+                                    </span>
                                     <span v-else-if="formulation.status" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor(formulation.status.color).active">{{ formulation.status.label }}</span>
-                                    <span v-else class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor('gray').active">{{ ctrans("No trial run yet") }}</span>
+                                    <span v-else class="whitespace-nowrap rounded-full border border-white/40 px-2.5 py-0.5 text-gray-100">{{ ctrans("No trial run yet") }}</span>
                                     <span v-if="formulation.assignment && !formulation.approved" class="whitespace-nowrap rounded-full border px-2 py-0.5" :class="productDevelopmentColor(formulation.assignment.color).active">{{ formulation.assignment.label }}</span>
-                                    <button v-if="formulation.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--app-accent)] hover:bg-white" :aria-label="ctrans('Edit stage')" v-tooltip="ctrans('Edit stage')" @click.stop="openFormulation(selected, formulation)">
+                                    <button v-if="formulation.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-gray-300 hover:bg-white/10 hover:text-white" :aria-label="ctrans('Edit stage')" v-tooltip="ctrans('Edit stage')" @click.stop="openFormulation(selected, formulation)">
                                         <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
                                     </button>
-                                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-500 transition-transform" :class="isExpanded(formulation) ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fal fa-chevron-down" class="text-gray-300 transition-transform" :class="isExpanded(formulation) ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
                                 </div>
                             </header>
 
-                            <div v-if="isExpanded(formulation)" class="space-y-4 border-t border-gray-100 p-3">
-                                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-                                    <div class="min-w-0">
-                                        <h5 class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            <FontAwesomeIcon icon="fal fa-file-alt" fixed-width aria-hidden="true" />{{ ctrans("Formulation brief") }}
-                                        </h5>
-                                        <p class="whitespace-pre-line text-sm" :class="formulation.brief ? 'text-gray-800' : 'text-gray-400'">{{ formulation.brief || ctrans("No brief for this stage yet") }}</p>
-
-                                        <div v-if="formulation.type.value === 'finished_product' && blendsOf(selected).length" class="mt-4">
-                                            <h5 class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                                <FontAwesomeIcon icon="fal fa-link" fixed-width aria-hidden="true" />{{ ctrans("Blends used in this recipe") }}
+                            <div v-if="isExpanded(formulation)" class="space-y-4 bg-gray-50 p-4">
+                                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
+                                    <div class="min-w-0 space-y-4">
+                                        <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                            <h5 class="flex items-center gap-2 border-b border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800">
+                                                <FontAwesomeIcon icon="fal fa-file-alt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Formulation brief") }}
                                             </h5>
-                                            <ul class="space-y-1 text-sm">
-                                                <li v-for="blend in blendsOf(selected)" :key="blend.id" class="flex flex-wrap items-center gap-x-2">
-                                                    <a v-if="blend.artefact" :href="route(blend.artefact.route.name, blend.artefact.route.parameters)" target="_blank" rel="noopener" class="whitespace-nowrap font-medium text-gray-900 hover:text-[var(--app-accent)]">{{ blend.artefact.code }}</a>
-                                                    <span class="text-gray-600">{{ blend.name }}</span>
-                                                    <span v-if="blend.in_finished_recipe" class="text-xs text-green-700">{{ ctrans("in the recipe") }}</span>
-                                                    <span v-else-if="blend.approved" class="text-xs text-amber-700">{{ ctrans("approved, add it to the recipe in Production") }}</span>
-                                                    <span v-else class="text-xs text-gray-400">{{ ctrans("not approved yet") }}</span>
+                                            <p class="whitespace-pre-line px-3 py-2.5 text-sm" :class="formulation.brief ? 'text-gray-800' : 'text-gray-400'">{{ formulation.brief || ctrans("No brief for this stage yet") }}</p>
+                                        </section>
+
+                                        <section v-if="formulation.type.value === 'finished_product' && blendsOf(selected).length" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                            <h5 class="flex items-center gap-2 border-b border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800">
+                                                <FontAwesomeIcon icon="fal fa-link" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Linked formulations / blends used") }}
+                                            </h5>
+                                            <ul class="space-y-2 p-3">
+                                                <li v-for="blend in blendsOf(selected)" :key="blend.id" class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2">
+                                                    <div class="min-w-0">
+                                                        <div class="text-sm font-medium text-gray-900">{{ blend.name }} <span class="whitespace-nowrap text-xs text-gray-500">({{ ctrans("Stage :position", { position: String(blend.position) }) }})</span></div>
+                                                        <a v-if="blend.artefact" :href="route(blend.artefact.route.name, blend.artefact.route.parameters)" target="_blank" rel="noopener" class="whitespace-nowrap text-xs text-gray-600 hover:text-[var(--app-accent)]">{{ blend.artefact.code }}</a>
+                                                    </div>
+                                                    <div class="flex flex-col items-end gap-1 text-xs">
+                                                        <span v-if="blend.approved" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-green-300 bg-white px-2 py-0.5 text-green-700"><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />{{ ctrans("Approved") }}</span>
+                                                        <span v-else class="whitespace-nowrap rounded-full border border-gray-300 bg-white px-2 py-0.5 text-gray-500">{{ ctrans("Not approved yet") }}</span>
+                                                        <span v-if="blend.in_finished_recipe" class="whitespace-nowrap text-green-700">{{ ctrans("in the recipe") }}</span>
+                                                        <span v-else-if="blend.approved" class="text-amber-700">{{ ctrans("add it to the recipe in Production") }}</span>
+                                                    </div>
                                                 </li>
                                             </ul>
-                                        </div>
+                                        </section>
+
+                                        <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                            <h5 class="flex items-center gap-2 border-b border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800">
+                                                <FontAwesomeIcon icon="fal fa-check-circle" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Formulation status") }}
+                                            </h5>
+                                            <div class="px-3 py-2.5">
+                                                <div v-if="formulation.approved" class="flex items-start gap-2">
+                                                    <FontAwesomeIcon icon="fal fa-check-circle" class="mt-0.5 text-green-600" fixed-width aria-hidden="true" />
+                                                    <div>
+                                                        <div class="text-sm font-semibold text-gray-900">{{ ctrans("Approved") }}</div>
+                                                        <div class="text-xs text-gray-600">{{ ctrans("Trial run :number, approved by :name on :date", { number: formulation.approved, name: formulation.approved_by ?? "—", date: formatDate(formulation.approved_at) }) }}</div>
+                                                        <div v-if="formulation.percentages?.pending" class="mt-1 text-xs text-amber-700">{{ ctrans(":count ingredients wait for their units: the blend is a draft until they are entered", { count: String(formulation.percentages.pending) }) }}</div>
+                                                    </div>
+                                                </div>
+                                                <div v-else class="flex flex-wrap items-center gap-2">
+                                                    <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs" :class="formulation.status ? productDevelopmentColor(formulation.status.color).active : productDevelopmentColor('sky').active">
+                                                        <FontAwesomeIcon icon="fal fa-hourglass-half" fixed-width aria-hidden="true" />{{ formulation.status?.label ?? ctrans("In process") }}
+                                                    </span>
+                                                    <span v-if="formulation.assignment" class="text-xs text-gray-600">{{ formulation.assignment.label }}</span>
+                                                    <span v-if="!formulation.is_current" class="text-xs text-gray-500">{{ ctrans("Approve the earlier stages first") }}</span>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
 
-                                    <div class="min-w-0">
-                                        <h5 class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            <FontAwesomeIcon icon="fal fa-cube" fixed-width aria-hidden="true" />{{ formulation.approved ? ctrans("Ingredients (recipe in Production)") : ctrans("Ingredients") }}
+                                    <section class="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                        <h5 class="flex flex-wrap items-center gap-x-2 border-b border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800">
+                                            <FontAwesomeIcon icon="fal fa-cube" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Ingredients") }}
+                                            <span class="text-xs font-normal text-gray-500">{{ ctrans("(recipe for this formulation)") }}</span>
                                         </h5>
-                                        <template v-if="formulation.artefact">
-                                            <p v-if="formulation.type.value === 'finished_product' && selected.recipe_changed" class="mb-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                        <div class="space-y-3 p-3">
+                                            <p v-if="formulation.type.value === 'finished_product' && selected.recipe_changed" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                                                 <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
                                                 {{ ctrans("The recipe has changed since trial run :number was approved. A new trial run needs to be made and approved.", { number: selected.final ?? "" }) }}
                                             </p>
-                                            <RecipeIngredients :ingredients="formulation.recipe?.ingredients ?? []" />
-                                            <p class="mt-1 text-xs text-gray-500">
+                                            <p v-for="blend in formulation.blends_made_on_sku" :key="blend.stage" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                                <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                                                {{ ctrans("Trial run :number of :stage was made on :code before that stage was a blend, so its ingredients may still be in :code's recipe below. Take them out of :code in Production and use the blend instead.", { number: blend.number, stage: blend.stage, code: formulation.artefact?.code ?? selected.code }) }}
+                                            </p>
+
+                                            <FormulationPercentages v-if="formulation.percentages" :key="formulation.percentages.trial_run" :percentages="formulation.percentages" withBatch />
+                                            <div v-else-if="formulation.approved_recipe?.ingredients?.length">
+                                                <p class="mb-1 text-xs text-gray-600">{{ ctrans("Approved in trial run :number", { number: formulation.approved ?? "" }) }}</p>
+                                                <RecipeIngredients :ingredients="formulation.approved_recipe.ingredients" />
+                                            </div>
+                                            <RecipeIngredients v-else-if="formulation.recipe?.ingredients?.length" :ingredients="formulation.recipe.ingredients" />
+                                            <div v-else class="flex flex-col items-center gap-1.5 rounded-md border border-dashed border-gray-300 px-3 py-5 text-center">
+                                                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500"><FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" /></span>
+                                                <span class="text-sm font-medium text-gray-800">{{ ctrans("No ingredients added yet") }}</span>
+                                                <span class="text-xs text-gray-500">{{ formulation.type.value === "finished_product" ? ctrans("Add the ingredients of the finished product (:name) to its recipe in Production.", { name: formulation.name }) : ctrans("They are entered with the first trial run's formulation.") }}</span>
+                                            </div>
+
+                                            <div v-if="formulation.artefact && !formulation.artefact.is_cancelled && (formulation.percentages || formulation.approved_recipe?.ingredients?.length)" class="border-t border-gray-100 pt-2">
+                                                <p class="mb-1 text-xs font-medium text-gray-700">{{ formulation.percentages ? ctrans("Recipe in Production, per kg of blend") : ctrans("Recipe in Production now") }}</p>
+                                                <RecipeIngredients :ingredients="formulation.recipe?.ingredients ?? []" />
+                                            </div>
+                                            <p v-if="formulation.artefact" class="text-xs text-gray-500">
                                                 {{ ctrans("Edited in Production, under") }}
                                                 <a :href="route(formulation.artefact.route.name, formulation.artefact.route.parameters)" target="_blank" rel="noopener" class="whitespace-nowrap font-medium text-gray-700 hover:text-[var(--app-accent)]">{{ formulation.artefact.code }}</a>
                                                 · {{ formulation.artefact.state }}
                                             </p>
-                                            <p v-if="formulation.type.value !== 'finished_product' && formulation.approved" class="mt-1 text-xs" :class="formulation.in_finished_recipe ? 'text-green-700' : 'text-amber-700'">
-                                                {{ formulation.in_finished_recipe ? ctrans("Used as an ingredient of the finished product") : ctrans("Approved: it is an in-house ingredient now. Add :code to the finished product's recipe in Production.", { code: formulation.artefact.code }) }}
+                                            <p v-if="formulation.type.value !== 'finished_product' && formulation.approved && formulation.artefact && !formulation.artefact.is_cancelled" class="text-xs" :class="formulation.in_finished_recipe ? 'text-green-700' : 'text-amber-700'">
+                                                {{ formulation.in_finished_recipe ? ctrans("Used as an ingredient of the finished product") : formulation.percentages?.pending ? ctrans("Enter the missing units: then :code becomes an in-house ingredient for the finished product's recipe.", { code: formulation.artefact.code }) : ctrans("Approved: it is an in-house ingredient now. Add :code to the finished product's recipe in Production.", { code: formulation.artefact.code }) }}
                                             </p>
-                                        </template>
-                                        <div v-else class="space-y-2 rounded-md border border-dashed border-gray-300 px-3 py-2.5 text-xs text-gray-500">
-                                            <p v-if="formulation.type.value === 'finished_product'">{{ selected.no_artefact_reason ?? ctrans("This SKU has no recipe in Production yet") }}</p>
-                                            <p v-else-if="formulation.approved">{{ ctrans("Trial run :number was made on :code before this stage had its own artefact. Create its artefact and enter the approved recipe there; it is then an ingredient the finished product's recipe can use.", { number: formulation.approved, code: selected.artefact?.code ?? selected.code }) }}</p>
-                                            <p v-else>{{ ctrans("This stage gets its own artefact, with its own recipe, when its first trial run is raised, or create it now to enter the recipe first.") }}</p>
-                                            <Button v-if="formulation.can_create_artefact" type="tertiary" size="xs" :label="ctrans('Create its artefact')" :loading="creatingArtefact === formulation.id" @click="createArtefact(formulation)">
-                                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                            <div v-if="!formulation.artefact || formulation.artefact.is_cancelled" class="space-y-2 text-xs text-gray-500">
+                                                <p v-if="formulation.type.value === 'finished_product'">{{ selected.no_artefact_reason ?? ctrans("This SKU has no recipe in Production yet") }}</p>
+                                                <p v-else-if="formulation.artefact">{{ ctrans(":code was cancelled. Create a new artefact for this stage and enter its recipe there.", { code: formulation.artefact.code }) }}</p>
+                                                <p v-else-if="formulation.approved">{{ ctrans("Trial run :number was made on :code before this stage had its own artefact. Create its artefact and enter the approved recipe there; it is then an ingredient the finished product's recipe can use.", { number: formulation.approved, code: selected.artefact?.code ?? selected.code }) }}</p>
+                                                <p v-else>{{ ctrans("This stage gets its own artefact, with its own recipe, when its first trial run is raised, or create it now to enter the recipe first.") }}</p>
+                                                <p v-if="artefactErrors[formulation.id]" class="text-red-600">{{ artefactErrors[formulation.id] }}</p>
+                                            </div>
+                                            <Button v-if="formulation.can_create_artefact" type="tertiary" size="xs" :label="ctrans('Create artefact')" :loading="creatingArtefact === formulation.id" @click="createArtefact(formulation)">
+                                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-gray-500" fixed-width aria-hidden="true" /></template>
                                             </Button>
-                                            <p v-if="artefactErrors[formulation.id]" class="text-red-600">{{ artefactErrors[formulation.id] }}</p>
                                         </div>
-                                    </div>
+                                    </section>
                                 </div>
 
-                                <div class="space-y-3">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <h5 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />{{ ctrans("Trial runs (:count)", { count: String(formulation.trial_runs.total) }) }}
+                                <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-[var(--app-accent-soft)] px-3 py-2">
+                                        <h5 class="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                            <FontAwesomeIcon icon="fal fa-tasks" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Trial runs (:count)", { count: String(formulation.trial_runs.total) }) }}
                                         </h5>
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span v-if="!formulation.approved && !formulation.is_current" class="text-xs text-gray-500">{{ ctrans("Approve the earlier stages first") }}</span>
-                                            <span v-else-if="formulation.is_current && openSample(selected) && stageOf(selected, openSample(selected)!)?.id !== formulation.id" class="text-xs text-gray-500">{{ ctrans("A trial run of :stage is open; finish it first", { stage: stageOf(selected, openSample(selected)!)?.name ?? "" }) }}</span>
+                                            <span v-if="formulation.is_current && openSample(selected) && stageOf(selected, openSample(selected)!)?.id !== formulation.id" class="text-xs text-gray-600">{{ ctrans("A trial run of :stage is open; finish it first", { stage: stageOf(selected, openSample(selected)!)?.name ?? "" }) }}</span>
                                             <Button v-if="data.can_create_job && canRaiseIn(selected, formulation)" type="tertiary" size="xs" :label="ctrans('Raise trial run')" @click="openJob(selected)">
-                                                <template #icon><FontAwesomeIcon icon="fal fa-tasks" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                                <template #icon><FontAwesomeIcon icon="fal fa-tasks" class="text-gray-500" fixed-width aria-hidden="true" /></template>
                                             </Button>
                                             <Button v-if="selected.can_start_sample && canRaiseIn(selected, formulation)" type="tertiary" size="xs" :label="ctrans('Start a new trial run')" :loading="starting === formulation.id" @click="startSample(selected, formulation)">
-                                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-gray-500" fixed-width aria-hidden="true" /></template>
                                             </Button>
                                         </div>
                                     </div>
 
-                                    <p v-if="!samplesOf(selected, formulation).length" class="rounded-md border border-dashed border-gray-300 px-3 py-3 text-center text-xs text-gray-400">{{ ctrans("No trial runs yet") }}</p>
-
-                                <article v-for="sample in samplesOf(selected, formulation)" :key="sample.id" class="rounded-lg border border-gray-200">
-                                    <header class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
-                                        <span class="text-sm font-semibold text-gray-900">{{ ctrans("Trial run :number", { number: sample.number }) }}</span>
-                                        <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium" :class="productDevelopmentColor(sample.status.color).active">
-                                            <FontAwesomeIcon :icon="sample.status.icon" fixed-width aria-hidden="true" />
-                                            {{ sample.status.label }}
-                                        </span>
-                                        <span v-if="formulation.approved === sample.number" class="rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white">{{ formulation.type.value === "finished_product" ? ctrans("Production formula") : ctrans("Approved formulation") }}</span>
-                                        <span class="text-xs text-gray-500">{{ ctrans("Made by :name", { name: sample.made_by ?? "—" }) }}</span>
-                                        <component :is="sample.job.route ? 'a' : 'span'" v-if="sample.job" :href="sample.job.route ? route(sample.job.route.name, sample.job.route.parameters) : undefined" class="ml-auto whitespace-nowrap text-xs text-gray-500" :class="{ 'hover:text-[var(--app-accent)]': sample.job.route }">
-                                            <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
-                                            {{ sample.job.reference }} · <span :class="{ 'text-amber-700': sample.job.waiting }">{{ sample.job.status }}</span> · {{ ctrans(":received of :quantity at the office", { received: String(sample.job.received), quantity: String(sample.job.quantity) }) }}<template v-if="sample.job.assignee"> · {{ sample.job.assignee }}</template>
-                                        </component>
-                                    </header>
-
-                                    <div class="space-y-2.5 border-t border-gray-100 px-3 py-2.5 text-sm">
-                                        <dl class="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
-                                            <div>
-                                                <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Requested") }}</dt>
-                                                <dd class="whitespace-nowrap text-gray-900">{{ formatDate(sample.created_at) || "—" }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Sample done") }}</dt>
-                                                <dd class="whitespace-nowrap" :class="sample.ready_at ? 'text-gray-900' : 'text-gray-400'">{{ sample.ready_at ? formatDate(sample.ready_at) : ctrans("Not yet") }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="whitespace-nowrap text-xs text-gray-500">{{ sample.ready_at ? ctrans("Waited") : ctrans("Waiting") }}</dt>
-                                                <dd class="flex items-center gap-1 whitespace-nowrap tabular-nums" :class="!sample.ready_at && (sample.waiting_days ?? 0) > 7 ? 'text-amber-700' : 'text-gray-900'"><FontAwesomeIcon icon="fal fa-hourglass-half" class="text-gray-400" fixed-width aria-hidden="true" />{{ waitingLabel(sample.waiting_days) }}</dd>
-                                            </div>
-                                            <div>
-                                                <dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Made on") }}</dt>
-                                                <dd class="whitespace-nowrap text-gray-900">{{ sample.artefact ?? "—" }}</dd>
-                                            </div>
-                                        </dl>
-                                        <div class="flex items-start gap-3">
-                                            <dl class="grid min-w-0 flex-1 gap-x-6 gap-y-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
-                                                <div>
-                                                    <dt class="text-xs text-gray-500">{{ ctrans("Batch size") }}</dt>
-                                                    <dd class="font-medium text-gray-900">{{ batchLabel(sample) }}</dd>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <dt class="text-xs text-gray-500">{{ ctrans("Notes on the formulation") }}</dt>
-                                                    <dd class="whitespace-pre-line text-gray-800" :class="sample.notes ? '' : 'text-gray-400'">{{ sample.notes || ctrans("No notes") }}</dd>
-                                                </div>
-                                            </dl>
-                                            <button v-if="sample.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Edit batch size and notes')" v-tooltip="ctrans('Edit batch size and notes')" @click="openEdit(sample)">
-                                                <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
-                                            </button>
-                                        </div>
-
-                                        <div v-if="sample.photos.length || sample.can_edit">
-                                            <p class="mb-1 text-xs text-gray-500">{{ ctrans("Photos") }}</p>
-                                            <ProductDevelopmentPhotoStrip :photos="sample.photos" :uploadRoute="sample.can_edit ? sample.routes.photos : null" />
-                                        </div>
-
-                                        <p v-if="sample.reviewed_at" class="text-xs text-gray-600">
-                                            {{ sample.status.value === "approved"
-                                                ? ctrans("Approved by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) })
-                                                : ctrans("Changes asked by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) }) }}<template v-if="sample.review_comment">: <span class="text-gray-800">{{ sample.review_comment }}</span></template>
+                                    <div class="space-y-2 p-3">
+                                        <p v-if="!samplesOf(selected, formulation).length" class="flex items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 px-3 py-3 text-xs text-gray-500">
+                                            <FontAwesomeIcon icon="fal fa-flask" fixed-width aria-hidden="true" />{{ ctrans("No trial runs yet") }}
                                         </p>
 
-                                        <p v-if="(sample.can_edit && sample.artefact === formulation.artefact?.code && !(formulation.recipe?.ingredients ?? []).length) || (sample.can_review && !(sample.recipe?.ingredients ?? []).length)" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                                            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
-                                            {{ sample.can_edit ? ctrans("The recipe in Production has no ingredients yet. Add them before sending this trial run for review.") : ctrans("This trial run was made from a recipe with no ingredients.") }}
-                                        </p>
+                                        <article v-for="sample in samplesOf(selected, formulation)" :key="sample.id" class="overflow-hidden rounded-lg border" :class="formulation.approved === sample.number ? 'border-green-200' : 'border-gray-200'">
+                                            <header class="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5" :class="formulation.approved === sample.number ? 'bg-green-50/60' : 'bg-gray-50'" role="button" tabindex="0" :aria-expanded="isRunOpen(sample)" @click="toggleRun(sample)" @keydown.enter="toggleRun(sample)">
+                                                <span class="whitespace-nowrap text-sm font-semibold text-gray-900">{{ ctrans("Trial run :number", { number: sample.number }) }}</span>
+                                                <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs" :class="productDevelopmentColor(sample.status.color).active">
+                                                    <FontAwesomeIcon :icon="sample.status.icon" fixed-width aria-hidden="true" />{{ sample.status.label }}
+                                                </span>
+                                                <span v-if="formulation.approved === sample.number" class="whitespace-nowrap rounded-full bg-green-600 px-2 py-0.5 text-xs text-white">{{ formulation.type.value === "finished_product" ? ctrans("Production formula") : ctrans("Approved formulation") }}</span>
+                                                <dl class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+                                                        <dt class="text-gray-500">{{ ctrans("Requested") }}</dt>
+                                                        <dd class="whitespace-nowrap text-gray-900">{{ formatDate(sample.created_at) || "—" }}</dd>
+                                                    </div>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <FontAwesomeIcon icon="fal fa-flask" class="text-gray-400" fixed-width aria-hidden="true" />
+                                                        <dt class="text-gray-500">{{ ctrans("Sample done") }}</dt>
+                                                        <dd class="whitespace-nowrap" :class="sample.ready_at ? 'text-gray-900' : 'text-gray-400'">{{ sample.ready_at ? formatDate(sample.ready_at) : ctrans("Not yet") }}</dd>
+                                                    </div>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-gray-400" fixed-width aria-hidden="true" />
+                                                        <dt class="text-gray-500">{{ sample.ready_at ? ctrans("Waited") : ctrans("Waiting") }}</dt>
+                                                        <dd class="whitespace-nowrap tabular-nums" :class="!sample.ready_at && (sample.waiting_days ?? 0) > 7 ? 'text-amber-700' : 'text-gray-900'">{{ waitingLabel(sample.waiting_days) }}</dd>
+                                                    </div>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <FontAwesomeIcon icon="fal fa-industry" class="text-gray-400" fixed-width aria-hidden="true" />
+                                                        <dt class="text-gray-500">{{ ctrans("Made on") }}</dt>
+                                                        <dd class="whitespace-nowrap font-medium text-gray-900">{{ sample.artefact ?? "—" }}</dd>
+                                                    </div>
+                                                </dl>
+                                                <FontAwesomeIcon icon="fal fa-chevron-down" class="ml-auto text-gray-500 transition-transform" :class="isRunOpen(sample) ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
+                                            </header>
 
-                                        <div v-if="sample.can_edit" class="flex flex-wrap items-center gap-2">
-                                            <span class="text-xs text-gray-500">{{ ctrans("When the trial run is made, send it for review. Its recipe is kept as it is then.") }}</span>
-                                            <Button type="tertiary" size="xs" :label="ctrans('Ready for review')" class="ml-auto" :loading="working === `submit-${sample.id}`" @click="submit(sample)">
-                                                <template #icon><FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" /></template>
-                                            </Button>
-                                        </div>
+                                            <div v-if="isRunOpen(sample)" class="space-y-2.5 border-t border-gray-100 px-3 py-2.5 text-sm">
+                                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                                    <span>{{ ctrans("Made by :name", { name: sample.made_by ?? "—" }) }}</span>
+                                                    <component :is="sample.job.route ? 'a' : 'span'" v-if="sample.job" :href="sample.job.route ? route(sample.job.route.name, sample.job.route.parameters) : undefined" class="whitespace-nowrap" :class="{ 'hover:text-[var(--app-accent)]': sample.job.route }">
+                                                        <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
+                                                        {{ sample.job.reference }} · <span :class="{ 'text-amber-700': sample.job.waiting }">{{ sample.job.status }}</span> · {{ ctrans(":received of :quantity at the office", { received: String(sample.job.received), quantity: String(sample.job.quantity) }) }}<template v-if="sample.job.assignee"> · {{ sample.job.assignee }}</template>
+                                                    </component>
+                                                </div>
+        <div class="flex items-start gap-3">
+                                                    <dl class="grid min-w-0 flex-1 gap-x-6 gap-y-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
+                                                        <div>
+                                                            <dt class="text-xs text-gray-500">{{ ctrans("Batch size") }}</dt>
+                                                            <dd class="font-medium text-gray-900">{{ batchLabel(sample) }}</dd>
+                                                        </div>
+                                                        <div class="min-w-0">
+                                                            <dt class="text-xs text-gray-500">{{ ctrans("Notes on the formulation") }}</dt>
+                                                            <dd class="whitespace-pre-line text-gray-800" :class="sample.notes ? '' : 'text-gray-400'">{{ sample.notes || ctrans("No notes") }}</dd>
+                                                        </div>
+                                                    </dl>
+                                                    <button v-if="sample.can_edit" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Edit batch size and notes')" v-tooltip="ctrans('Edit batch size and notes')" @click="openEdit(sample)">
+                                                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                                    </button>
+                                                </div>
 
-                                        <div v-if="sample.can_review" class="space-y-2 rounded-md bg-gray-50 p-2.5">
-                                            <Textarea v-model="reviewComments[sample.id]" rows="2" autoResize class="w-full text-sm" :placeholder="ctrans('Comment (required to ask for changes)')" />
-                                            <div class="flex justify-end gap-2">
-                                                <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="working === `request_changes-${sample.id}`" @click="review(sample, 'request_changes')">
-                                                    <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
-                                                </Button>
-                                                <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="working === `approve-${sample.id}`" @click="review(sample, 'approve')">
-                                                    <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
-                                                </Button>
+                                                <div v-if="sample.photos.length || sample.can_edit">
+                                                    <p class="mb-1 text-xs text-gray-500">{{ ctrans("Photos") }}</p>
+                                                    <ProductDevelopmentPhotoStrip :photos="sample.photos" :uploadRoute="sample.can_edit ? sample.routes.photos : null" />
+                                                </div>
+
+                                                <p v-if="sample.reviewed_at" class="text-xs text-gray-600">
+                                                    {{ sample.status.value === "approved"
+                                                        ? ctrans("Approved by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) })
+                                                        : ctrans("Changes asked by :name on :date", { name: sample.reviewed_by ?? "", date: formatDate(sample.reviewed_at) }) }}<template v-if="sample.review_comment">: <span class="text-gray-800">{{ sample.review_comment }}</span></template>
+                                                </p>
+
+                                                <p v-if="(sample.can_edit && sample.artefact === formulation.artefact?.code && !(formulation.recipe?.ingredients ?? []).length) || (sample.can_review && !(sample.recipe?.ingredients ?? []).length)" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                                                    {{ sample.can_edit ? ctrans("The recipe in Production has no ingredients yet. Add them before sending this trial run for review.") : ctrans("This trial run was made from a recipe with no ingredients.") }}
+                                                </p>
+
+                                                <div v-if="sample.can_edit" class="flex flex-wrap items-center gap-2">
+                                                    <span class="text-xs text-gray-500">{{ ctrans("When the trial run is made, send it for review. Its recipe is kept as it is then.") }}</span>
+                                                    <Button type="tertiary" size="xs" :label="ctrans('Ready for review')" class="ml-auto" :loading="working === `submit-${sample.id}`" @click="submit(sample)">
+                                                        <template #icon><FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                                                    </Button>
+                                                </div>
+
+                                                <div v-if="sample.can_review" class="space-y-2 rounded-md bg-gray-50 p-2.5">
+                                                    <Textarea v-model="reviewComments[sample.id]" rows="2" autoResize class="w-full text-sm" :placeholder="ctrans('Comment (required to ask for changes)')" />
+                                                    <div class="flex justify-end gap-2">
+                                                        <Button type="tertiary" size="xs" :label="ctrans('Changes required')" :loading="working === `request_changes-${sample.id}`" @click="review(sample, 'request_changes')">
+                                                            <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-orange-500" fixed-width aria-hidden="true" /></template>
+                                                        </Button>
+                                                        <Button type="tertiary" size="xs" :label="ctrans('Approve')" :loading="working === `approve-${sample.id}`" @click="review(sample, 'approve')">
+                                                            <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <p v-if="actionErrors[sample.id]" class="text-xs text-red-600">{{ actionErrors[sample.id] }}</p>
+
+                                                <div class="flex flex-wrap gap-3 border-t border-gray-100 pt-2">
+                                                    <button v-if="sample.recipe" type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openRecipe[sample.id]" @click="openRecipe[sample.id] = !openRecipe[sample.id]">
+                                                        <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="openRecipe[sample.id] ? '' : '-rotate-90'" fixed-width aria-hidden="true" />
+                                                        {{ ctrans("Recipe of this trial run") }}
+                                                    </button>
+                                                    <button type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openThread[sample.id]" @click="openThread[sample.id] = !openThread[sample.id]">
+                                                        <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
+                                                        {{ ctrans("Discussion (:count)", { count: String(sample.comments) }) }}
+                                                    </button>
+                                                </div>
+                                                <div v-if="sample.recipe && openRecipe[sample.id]">
+                                                    <FormulationPercentages v-if="sample.recipe.formulation" :percentages="sample.recipe.formulation" class="mb-2" />
+                                                    <RecipeIngredients :ingredients="sample.recipe.ingredients" :previous="previousRecipe(selected, sample)" />
+                                                    <p v-if="previousRecipe(selected, sample)" class="mt-1 text-xs text-gray-400">{{ ctrans("Compared with the previous trial run: new in green, changed in amber, removed in red.") }}</p>
+                                                </div>
+                                                <SampleThread v-if="openThread[sample.id]" :commentsRoute="sample.routes.comments" :sampleId="sample.id" :count="sample.comments" />
                                             </div>
-                                        </div>
-                                        <p v-if="actionErrors[sample.id]" class="text-xs text-red-600">{{ actionErrors[sample.id] }}</p>
-
-                                        <div class="flex flex-wrap gap-3 border-t border-gray-100 pt-2">
-                                            <button v-if="sample.recipe" type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openRecipe[sample.id]" @click="openRecipe[sample.id] = !openRecipe[sample.id]">
-                                                <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-transform" :class="openRecipe[sample.id] ? '' : '-rotate-90'" fixed-width aria-hidden="true" />
-                                                {{ ctrans("Recipe of this trial run") }}
-                                            </button>
-                                            <button type="button" class="flex items-center gap-1.5 text-xs text-gray-600 hover:text-[var(--app-accent)]" :aria-expanded="!!openThread[sample.id]" @click="openThread[sample.id] = !openThread[sample.id]">
-                                                <FontAwesomeIcon icon="fal fa-comments" fixed-width aria-hidden="true" />
-                                                {{ ctrans("Discussion (:count)", { count: String(sample.comments) }) }}
-                                            </button>
-                                        </div>
-                                        <div v-if="sample.recipe && openRecipe[sample.id]">
-                                            <RecipeIngredients :ingredients="sample.recipe.ingredients" :previous="previousRecipe(selected, sample)" />
-                                            <p v-if="previousRecipe(selected, sample)" class="mt-1 text-xs text-gray-400">{{ ctrans("Compared with the previous trial run: new in green, changed in amber, removed in red.") }}</p>
-                                        </div>
-                                        <SampleThread v-if="openThread[sample.id]" :commentsRoute="sample.routes.comments" :sampleId="sample.id" :count="sample.comments" />
+                                        </article>
                                     </div>
-                                </article>
-                                </div>
+                                </section>
                             </div>
                         </article>
+                    </section>
+
+                    <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                        <h4 class="flex flex-wrap items-center gap-x-2 border-b border-gray-200 bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800">
+                            <FontAwesomeIcon icon="fal fa-box-open" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />{{ ctrans("Packaging & components") }}
+                            <span class="text-xs font-normal text-gray-500">{{ ctrans("(bought in, not part of the formulation)") }}</span>
+                        </h4>
+                        <div class="p-3">
+                            <div class="overflow-x-auto rounded-md border border-gray-200">
+                                <table class="w-full text-sm">
+                                    <thead class="whitespace-nowrap bg-gray-50 text-left text-xs text-gray-500">
+                                        <tr>
+                                            <th class="px-3 py-1.5 font-medium">{{ ctrans("Component") }}</th>
+                                            <th class="px-3 py-1.5 text-right font-medium">{{ ctrans("Needed to start") }}</th>
+                                            <th class="px-3 py-1.5 font-medium">{{ ctrans("Status") }}</th>
+                                            <th class="px-3 py-1.5" />
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr v-for="component in selected.components" :key="component.id">
+                                            <td class="px-3 py-1.5">
+                                                <a :href="route(component.route.name, component.route.parameters)" class="whitespace-nowrap font-medium text-gray-900 hover:text-[var(--app-accent)]">{{ component.code }}</a>
+                                                <span class="ml-1.5 text-gray-600">{{ component.name }}</span>
+                                                <div v-if="component.note" class="text-xs text-gray-500">{{ component.note }}</div>
+                                            </td>
+                                            <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{{ formatQuantity(component.quantity) }}</td>
+                                            <td class="px-3 py-1.5">
+                                                <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs" :class="productDevelopmentColor(component.status.color).active" v-tooltip="component.approved_by ? ctrans('Approved by :name on :date', { name: component.approved_by, date: formatDate(component.approved_at) }) : undefined">
+                                                    <FontAwesomeIcon :icon="component.status.icon" fixed-width aria-hidden="true" />
+                                                    {{ component.status.label }}
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-1.5">
+                                                <div class="flex items-center justify-end gap-1">
+                                                    <Button v-if="component.can_approve" type="tertiary" size="xs" :label="component.status.value === 'approved' ? ctrans('Take back') : ctrans('Approve')" :loading="working === `approval-${component.id}`" @click="setApproval(component, component.status.value !== 'approved')">
+                                                        <template #icon><FontAwesomeIcon :icon="component.status.value === 'approved' ? 'fal fa-undo' : 'fal fa-check'" :class="component.status.value === 'approved' ? 'text-orange-500' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
+                                                    </Button>
+                                                    <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)]" :aria-label="ctrans('Change component')" v-tooltip="ctrans('Change component')" @click="openComponent(component)">
+                                                        <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                                    </button>
+                                                    <button v-if="component.can_edit" type="button" class="flex h-7 w-7 items-center justify-center rounded text-red-500 hover:bg-red-50" :aria-label="ctrans('Remove component')" v-tooltip="ctrans('Remove component')" :disabled="working === `remove-${component.id}`" @click="removeComponent(component)">
+                                                        <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="!selected.components.length">
+                                            <td colspan="4" class="px-3 py-3 text-center text-xs text-gray-400">{{ ctrans("No components yet") }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div v-if="selected.can_add_component" class="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_minmax(0,12rem)_auto]">
+                                <ProductDevelopmentRemoteSelect v-model="newComponent.trade_unit_id" :searchRoute="data.component_search" :placeholder="ctrans('Search a component by code')" />
+                                <InputNumber v-model="newComponent.quantity" :min="0" :maxFractionDigits="3" :placeholder="ctrans('Quantity')" class="w-full" inputClass="w-full" />
+                                <InputText v-model="newComponent.note" maxlength="255" :placeholder="ctrans('Note (optional)')" class="w-full" />
+                                <Button type="tertiary" :label="ctrans('Add')" :loading="working === `component-${selected.id}`" :disabled="!newComponent.trade_unit_id || !newComponent.quantity" @click="addComponent(selected)">
+                                    <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                                </Button>
+                            </div>
+                            <p v-if="!componentDialog && Object.keys(componentErrors).length" class="mt-1 text-xs text-red-600">{{ firstError(componentErrors) }}</p>
+                        </div>
                     </section>
                 </div>
             </div>

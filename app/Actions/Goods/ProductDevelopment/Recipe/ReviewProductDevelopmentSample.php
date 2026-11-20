@@ -13,6 +13,7 @@ use App\Actions\Goods\ProductDevelopment\RecordProductDevelopmentActivity;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentSampleStatusEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Actions\Production\Artefact\SetArtefactAsMix;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
@@ -80,7 +81,7 @@ class ReviewProductDevelopmentSample extends OrgAction
         ProductDevelopmentRecipes::notifyProduction($sample, $user);
 
         if ($approved) {
-            $this->offerAsIngredient($sample);
+            self::offerAsIngredient($sample);
         }
 
         return $sample;
@@ -88,12 +89,15 @@ class ReviewProductDevelopmentSample extends OrgAction
 
     /**
      * An approved blend or intermediate made on its stage's own artefact becomes an in-house ingredient, so the
-     * finished product's recipe can use it by its code instead of repeating its ingredients.
+     * finished product's recipe can use it by its code instead of repeating its ingredients. While some of its
+     * shares still wait for their units it stays a draft (HELP-4852): the units entered last make it one. A run in
+     * shares counts for a new artefact made after its own was cancelled, since that artefact was seeded from it.
      */
-    private function offerAsIngredient(ProductDevelopmentSample $sample): void
+    public static function offerAsIngredient(ProductDevelopmentSample $sample): void
     {
         $formulation = $sample->formulation;
-        if (!$formulation?->type->hasOwnArtefact() || !$formulation->artefact || $sample->artefact_id !== $formulation->artefact_id) {
+        $madeOnItOrInShares = $sample->artefact_id === $formulation?->artefact_id || isset($sample->recipe['formulation']);
+        if (!$formulation?->type->hasOwnArtefact() || !$formulation->artefact || $formulation->artefact->state === ArtefactStateEnum::CANCELLED || !$madeOnItOrInShares || FormulationPercentages::hasPendingUnits($sample)) {
             return;
         }
 

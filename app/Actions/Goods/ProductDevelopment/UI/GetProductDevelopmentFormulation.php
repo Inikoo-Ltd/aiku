@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\ProductDevelopment\UI;
 
+use App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages;
 use App\Actions\Goods\ProductDevelopment\Recipe\ProductDevelopmentRecipes;
 use App\Actions\Goods\ProductDevelopment\UploadProductDevelopmentFiles;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
@@ -28,6 +29,7 @@ use App\Models\Production\JobOrder;
 use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -55,7 +57,7 @@ class GetProductDevelopmentFormulation
         $canManage = $access->canManageSamples($viewer, $productDevelopment);
         $canReview = $access->canReviewSamples($viewer, $productDevelopment);
         $items     = $productDevelopment->items()
-            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems.tasks', 'formulations.artisan', 'formulations.artefact.production.organisation', 'samples.artefact', 'components.tradeUnit', 'components.approvedBy'])
+            ->with(['tradeUnit', 'artefact.production.organisation', 'artefact.branchedFrom', 'samples.madeBy', 'samples.reviewedBy', 'samples.photos.media', 'samples.jobOrder.employee', 'samples.jobOrder.jobOrderItems.tasks', 'formulations.artisan', 'formulations.artefact.production.organisation', 'samples.artefact', 'samples.formulation', 'components.tradeUnit', 'components.approvedBy'])
             ->orderBy('position')->orderBy('id')
             ->get();
 
@@ -192,7 +194,7 @@ class GetProductDevelopmentFormulation
             'notes'          => $sample->notes,
             'artefact'       => $sample->artefact?->code,
             'waiting_days'   => self::waitingDays($sample),
-            'made_by'        => $sample->madeBy?->contact_name ?: $sample->madeBy?->username ?: $jobOrder?->employee?->contact_name,
+            'made_by'        => self::madeBy($sample),
             'created_at'     => $sample->created_at?->toIso8601String(),
             'ready_at'       => $sample->ready_at?->toIso8601String(),
             'review_comment' => $sample->review_comment,
@@ -245,22 +247,68 @@ class GetProductDevelopmentFormulation
             'artisan'     => $formulation->artisan?->contact_name,
             'approved'    => $approved?->reference(),
             'approved_at' => $approved?->reviewed_at?->toIso8601String(),
+            'approved_by' => $approved ? ($approved->reviewedBy?->contact_name ?: $approved->reviewedBy?->username) : null,
+            'approved_recipe' => $approved?->recipe,
+            'blends_made_on_sku' => $formulation->type->hasOwnArtefact() || !$item->artefact_id ? [] : $samples
+                ->filter(fn (ProductDevelopmentSample $sample) => $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED && $sample->artefact_id === $item->artefact_id && $sample->product_development_formulation_id !== $formulation->id && $sample->formulation?->type->hasOwnArtefact())
+                ->map(fn (ProductDevelopmentSample $sample) => ['stage' => $sample->formulation->name, 'number' => $sample->reference()])
+                ->values()->all(),
             'is_current'  => $isCurrent,
             'status'      => $latest ? $this->status($latest->status) : null,
             'assignment'  => $latest?->jobOrder ? self::assignment($latest->jobOrder) : null,
             'artefact'    => $artefact ? $this->artefactRow($artefact) : null,
             'recipe'      => $artefact ? ProductDevelopmentRecipes::recipe($artefact) : null,
             'in_finished_recipe' => $formulation->type->hasOwnArtefact() && $artefact ? in_array($artefact->id, $ingredientIds, true) : null,
+            'percentages' => $this->percentages($formulation, $own, $approved, $canEdit),
             'trial_runs'  => ['total' => $own->count(), 'reviewed' => $own->filter(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::APPROVED, ProductDevelopmentSampleStatusEnum::CHANGES_REQUIRED], true))->count()],
             'can_edit'    => $canEdit,
             'can_change_type' => $canChangeType && !$approved,
-            'can_create_artefact' => $canEdit && $formulation->type->hasOwnArtefact() && !$formulation->artefact_id && (bool) $item->artefact_id && !$own->contains(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::IN_PROGRESS, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW], true)),
+            'can_create_artefact' => $canEdit && $formulation->type->hasOwnArtefact() && (!$formulation->artefact_id || $formulation->artefact?->state === ArtefactStateEnum::CANCELLED) && (bool) $item->artefact_id && !$own->contains(fn (ProductDevelopmentSample $sample) => in_array($sample->status, [ProductDevelopmentSampleStatusEnum::IN_PROGRESS, ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW], true)),
             'can_delete'  => $canRemove && !$latest,
             'routes'      => [
                 'update' => ['name' => 'grp.models.product_development.formulation.update', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
                 'delete'   => ['name' => 'grp.models.product_development.formulation.delete', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
                 'artefact' => ['name' => 'grp.models.product_development.formulation.artefact', 'parameters' => ['productDevelopmentFormulation' => $formulation->id]],
             ],
+        ];
+    }
+
+    private static function madeBy(ProductDevelopmentSample $sample): ?string
+    {
+        return $sample->madeBy?->contact_name ?: $sample->madeBy?->username ?: $sample->jobOrder?->employee?->contact_name;
+    }
+
+    /**
+     * A blend's formulation as shares of the sample (HELP-4852): that of its approved trial run, else of the latest
+     * one recorded that way, with who made and approved it and the units per kg of blend the recipe in Production
+     * asks for. Shares that do not convert on their own wait for their units, entered on the stage's latest run.
+     *
+     * @param \Illuminate\Support\Collection<int, ProductDevelopmentSample> $own the stage's samples, newest first
+     *
+     * @return array<string, mixed>|null
+     */
+    private function percentages(ProductDevelopmentFormulation $formulation, $own, ?ProductDevelopmentSample $approved, bool $canEdit): ?array
+    {
+        if (!FormulationPercentages::isFor($formulation)) {
+            return null;
+        }
+
+        $sample = $approved && isset($approved->recipe['formulation']) ? $approved : $own->first(fn (ProductDevelopmentSample $sample) => isset($sample->recipe['formulation']));
+        if (!$sample) {
+            return null;
+        }
+        $isApproved = $sample->status === ProductDevelopmentSampleStatusEnum::APPROVED;
+
+        return [
+            ...Arr::only($sample->recipe['formulation'], ['sample_size', 'sample_unit', 'lines']),
+            'trial_run'     => $sample->reference(),
+            'status'        => $this->status($sample->status),
+            'made_by'       => self::madeBy($sample),
+            'approved_by'   => $isApproved ? ($sample->reviewedBy?->contact_name ?: $sample->reviewedBy?->username) : null,
+            'approved_at'   => $isApproved ? $sample->reviewed_at?->toIso8601String() : null,
+            'pending'       => count(FormulationPercentages::pendingLines($sample->recipe)),
+            'can_set_units' => $canEdit && (int) $sample->number === (int) $own->max('number'),
+            'units_route'   => ['name' => 'grp.models.product_development.sample.units', 'parameters' => ['productDevelopmentSample' => $sample->id]],
         ];
     }
 
@@ -273,6 +321,7 @@ class GetProductDevelopmentFormulation
             'code'  => $artefact->code,
             'name'  => $artefact->name,
             'state' => ArtefactStateEnum::labels()[$artefact->state->value] ?? $artefact->state->value,
+            'is_cancelled' => $artefact->state === ArtefactStateEnum::CANCELLED,
             'route' => ['name' => 'grp.org.productions.show.crafts.artefacts.show', 'parameters' => [$artefact->production->organisation->slug, $artefact->production->slug, $artefact->slug]],
         ];
     }
