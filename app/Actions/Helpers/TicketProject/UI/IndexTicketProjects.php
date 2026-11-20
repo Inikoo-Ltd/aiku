@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\TicketProject\UI;
 
 use App\Actions\Helpers\Ticket\UI\WithTicketsScope;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Ticket\TicketProjectHealthEnum;
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
@@ -112,8 +113,11 @@ class IndexTicketProjects extends OrgAction
                 'staffTasks',
                 'staffTasks as done_staff_tasks_count'      => fn ($query) => $query->where('status', StaffTaskStatusEnum::DONE),
                 'staffTasks as cancelled_staff_tasks_count' => fn ($query) => $query->where('status', StaffTaskStatusEnum::CANCELLED),
+                'milestones',
+                'milestones as done_milestones_count' => fn ($query) => $query->whereNotNull('done_at'),
             ])
-            ->addSelect(DB::raw(self::LAST_ACTIVITY_SQL.' as last_activity_at'));
+            ->addSelect(DB::raw(self::LAST_ACTIVITY_SQL.' as last_activity_at'))
+            ->addSelect(DB::raw(self::MILESTONES_SCORE_SQL.' as milestones_score'));
     }
 
     /**
@@ -127,6 +131,48 @@ class IndexTicketProjects extends OrgAction
         (select max(greatest(t.created_at, t.resolved_at, t.closed_at, case when t.status not in ('resolved', 'cancelled') then t.updated_at end)) from tickets t where t.ticket_project_id = ticket_projects.id and t.deleted_at is null),
         (select max(greatest(s.created_at, s.closed_at, case when s.status not in ('done', 'cancelled') then s.updated_at end)) from staff_tasks s where s.ticket_project_id = ticket_projects.id and s.deleted_at is null)
     )";
+
+    /**
+     * Milestones reached, counting a milestone not yet marked done by the share of its work done, up
+     * to 0.9: only marking it done completes it, so finished tickets alone never read as a finished plan.
+     */
+    private const string MILESTONES_SCORE_SQL = "(select coalesce(sum(case when m.done_at is not null then 1 else least(0.9, coalesce(w.done::numeric / nullif(w.counted, 0), 0)) end), 0)
+        from ticket_project_milestones m
+        cross join lateral (
+            select count(*) filter (where x.status <> 'cancelled') as counted, count(*) filter (where x.is_done) as done
+            from (
+                select t.status::text as status, t.status = 'resolved' as is_done from tickets t where t.ticket_project_milestone_id = m.id and t.deleted_at is null
+                union all
+                select s.status::text, s.status = 'done' from staff_tasks s where s.ticket_project_milestone_id = m.id and s.deleted_at is null
+            ) x
+        ) w
+        where m.ticket_project_id = ticket_projects.id)";
+
+    /**
+     * The health to show. An active project's own state wins over the last posted health, which only
+     * says how it looked on the day it was written: past its target date it is overdue, with no work
+     * yet it has not started, and with every piece of work done it is waiting to be closed.
+     *
+     * @param  array{total: int, open: int, milestones: int, milestones_done: int}  $progress
+     *
+     * @return array{health: string|null, health_label: string|null}
+     */
+    public static function health(TicketProject $project, ?TicketProjectHealthEnum $posted, array $progress): array
+    {
+        if ($project->status === TicketProjectStatusEnum::ACTIVE) {
+            if ($project->target_date?->lt(Carbon::today())) {
+                return ['health' => 'overdue', 'health_label' => __('Overdue')];
+            }
+            if ($progress['total'] === 0) {
+                return ['health' => 'not_started', 'health_label' => __('Not started')];
+            }
+            if ($progress['milestones'] > 0 ? $progress['milestones_done'] === $progress['milestones'] : $progress['open'] === 0) {
+                return ['health' => 'work_done', 'health_label' => __('Work done')];
+            }
+        }
+
+        return ['health' => $posted?->value, 'health_label' => $posted ? TicketProjectHealthEnum::labels()[$posted->value] : null];
+    }
 
     /**
      * Days since the last real activity of an active project or any of its sub-projects; null for
@@ -163,17 +209,23 @@ class IndexTicketProjects extends OrgAction
             $project,
             $projects->sum(fn (TicketProject $item) => $item->tickets_count + $item->staff_tasks_count),
             $projects->sum(fn (TicketProject $item) => $item->done_tickets_count + $item->done_staff_tasks_count),
-            $projects->sum(fn (TicketProject $item) => $item->cancelled_tickets_count + $item->cancelled_staff_tasks_count)
+            $projects->sum(fn (TicketProject $item) => $item->cancelled_tickets_count + $item->cancelled_staff_tasks_count),
+            $projects->sum('milestones_count'),
+            $projects->sum('done_milestones_count'),
+            (float) $projects->sum('milestones_score')
         );
     }
 
     /**
-     * Time is measured in days between the start and target dates; work is tickets done out of
-     * those not cancelled, so a project falling behind shows a work bar shorter than its time bar.
+     * Time is measured in days between the start and target dates. Work is measured by milestones
+     * when the project has them, each advanced by its share of work done, since tickets keep being
+     * added and finishing them all does not finish the plan; without milestones it is tickets and
+     * tasks done out of those not cancelled. A project falling behind shows a work bar shorter than
+     * its time bar.
      *
-     * @return array{total: int, done: int, open: int, percent: int|null, time_percent: int|null, week: int, weeks: int|null, days_left: int|null}
+     * @return array{total: int, done: int, open: int, milestones: int, milestones_done: int, percent: int|null, time_percent: int|null, week: int, weeks: int|null, days_left: int|null}
      */
-    public static function progress(TicketProject $project, int $total, int $done, int $cancelled): array
+    public static function progress(TicketProject $project, int $total, int $done, int $cancelled, int $milestones = 0, int $milestonesDone = 0, float $milestonesScore = 0): array
     {
         $counted   = $total - $cancelled;
         $today     = Carbon::today();
@@ -183,8 +235,10 @@ class IndexTicketProjects extends OrgAction
         return [
             'total'        => $total,
             'done'         => $done,
-            'open'         => $counted - $done,
-            'percent'      => $counted > 0 ? (int) round(100 * $done / $counted) : null,
+            'open'            => $counted - $done,
+            'milestones'      => $milestones,
+            'milestones_done' => $milestonesDone,
+            'percent'         => $milestones > 0 ? (int) floor(100 * $milestonesScore / $milestones) : ($counted > 0 ? (int) round(100 * $done / $counted) : null),
             'time_percent' => $totalDays ? (int) min(100, round(100 * $elapsed / $totalDays)) : null,
             'week'         => intdiv($elapsed, 7) + 1,
             'weeks'        => $totalDays ? (int) ceil($totalDays / 7) : null,
@@ -195,7 +249,7 @@ class IndexTicketProjects extends OrgAction
     /**
      * Work of the project and its sub-projects.
      *
-     * @return array{total: int, done: int, cancelled: int}
+     * @return array{total: int, done: int, cancelled: int, milestones: int, milestonesDone: int, milestonesScore: float}
      */
     public static function workTotals(TicketProject $project): array
     {
@@ -207,11 +261,19 @@ class IndexTicketProjects extends OrgAction
         $tasks = StaffTask::whereIn('ticket_project_id', $projectIds)
             ->selectRaw("count(*) as total, count(*) filter (where status = 'done') as done, count(*) filter (where status = 'cancelled') as cancelled")
             ->toBase()->first();
+        $milestones = DB::table('ticket_projects')->whereIn('id', $projectIds)
+            ->selectRaw('coalesce(sum((select count(*) from ticket_project_milestones m where m.ticket_project_id = ticket_projects.id)), 0) as total')
+            ->selectRaw('coalesce(sum((select count(m.done_at) from ticket_project_milestones m where m.ticket_project_id = ticket_projects.id)), 0) as done')
+            ->selectRaw('coalesce(sum('.self::MILESTONES_SCORE_SQL.'), 0) as score')
+            ->first();
 
         return [
             'total'     => (int) $tickets->total + (int) $tasks->total,
             'done'      => (int) $tickets->done + (int) $tasks->done,
-            'cancelled' => (int) $tickets->cancelled + (int) $tasks->cancelled,
+            'cancelled'       => (int) $tickets->cancelled + (int) $tasks->cancelled,
+            'milestones'      => (int) $milestones->total,
+            'milestonesDone'  => (int) $milestones->done,
+            'milestonesScore' => (float) $milestones->score,
         ];
     }
 
@@ -279,7 +341,7 @@ class IndexTicketProjects extends OrgAction
                 ->column(key: 'time', label: __('Time used'), canBeHidden: false, className: 'whitespace-nowrap w-px')
                 ->column(key: 'start_date', label: __('Start'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
                 ->column(key: 'target_date', label: __('Target'), canBeHidden: false, sortable: true, className: 'whitespace-nowrap w-px')
-                ->column(key: 'owner', label: __('Owner'), canBeHidden: false, className: 'whitespace-nowrap w-px')
+                ->column(key: 'owner', label: __('Leader'), canBeHidden: false, className: 'whitespace-nowrap w-px')
                 ->column(key: 'members', label: __('Team'), canBeHidden: false, className: 'whitespace-nowrap w-px')
                 ->defaultSort('status');
         };

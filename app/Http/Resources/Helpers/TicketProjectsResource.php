@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Helpers;
 
 use App\Actions\Helpers\TicketProject\UI\IndexTicketProjects;
-use App\Enums\Helpers\Ticket\TicketProjectHealthEnum;
 use App\Enums\Helpers\Ticket\TicketProjectStatusEnum;
 use App\Models\Helpers\TicketProject;
 use App\Models\SysAdmin\User;
@@ -24,7 +23,8 @@ class TicketProjectsResource extends JsonResource
     {
         /** @var TicketProject $project */
         $project = $this->resource;
-        $health  = $project->updates->first()?->health;
+        $progress = IndexTicketProjects::rolledUpProgress($project);
+        $health   = IndexTicketProjects::health($project, $project->updates->first()?->health, $progress);
 
         return [
             'slug'         => $project->slug,
@@ -32,13 +32,13 @@ class TicketProjectsResource extends JsonResource
             'status'       => $project->status->value,
             'is_pinned'    => $project->is_pinned,
             'status_label' => TicketProjectStatusEnum::labels()[$project->status->value],
-            'health'       => $health?->value,
-            'health_label' => $health ? TicketProjectHealthEnum::labels()[$health->value] : null,
+            'health'       => $health['health'],
+            'health_label' => $health['health_label'],
             'start_date'   => $project->start_date->toDateString(),
             'target_date'  => $project->target_date?->toDateString(),
             'owner'        => IndexTicketProjects::person($project->owner),
             'members'      => $project->members->map(fn (User $member) => IndexTicketProjects::person($member))->values()->all(),
-            'progress'     => IndexTicketProjects::rolledUpProgress($project),
+            'progress'     => $progress,
             'quiet_days'   => IndexTicketProjects::quietDays($project),
             'children'     => $project->relationLoaded('children')
                 ? $project->children->map(fn (TicketProject $child) => (new self($child))->toArray($request))->values()->all()

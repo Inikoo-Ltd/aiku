@@ -33,7 +33,7 @@ library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
-type Health = "on_track" | "at_risk" | "off_track"
+type Health = "on_track" | "at_risk" | "off_track" | "overdue" | "not_started" | "work_done"
 type WorkState = "todo" | "in_progress" | "done" | "cancelled"
 type Milestone = { id?: number; name: string; description: string | null; start_date: string | null; due_date: string | null; done_at: string | null; total: number; done: number }
 type WorkItem = {
@@ -78,10 +78,10 @@ const props = defineProps<{
         quiet_days: number | null
         parent: { id: number; slug: string; name: string } | null
     }
-    sub_projects: { slug: string; name: string; status: string; status_label: string; health: Health | null; health_label: string | null; owner: Person | null; quiet_days: number | null; progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; days_left: number | null } }[]
+    sub_projects: { slug: string; name: string; status: string; status_label: string; health: Health | null; health_label: string | null; owner: Person | null; quiet_days: number | null; progress: { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; days_left: number | null } }[]
     indicators: { key: string; level: "info" | "warning" | "danger"; text: string }[]
     milestones: Milestone[]
-    progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
+    progress: { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
     hidden_work: number
     work: WorkItem[]
     burn_up: { date: string; scope: number; done: number }[]
@@ -134,8 +134,11 @@ const healthClasses: Record<string, string> = {
     on_track: "bg-green-100 text-green-700",
     at_risk: "bg-amber-100 text-amber-700",
     off_track: "bg-red-100 text-red-700",
+    overdue: "bg-red-100 text-red-700",
+    not_started: "bg-gray-100 text-gray-600",
+    work_done: "bg-gray-100 text-gray-600",
 }
-const healthDots: Record<string, string> = { on_track: "bg-green-500", at_risk: "bg-amber-500", off_track: "bg-red-500" }
+const healthDots: Record<string, string> = { on_track: "bg-green-500", at_risk: "bg-amber-500", off_track: "bg-red-500", overdue: "bg-red-500", not_started: "bg-gray-400", work_done: "bg-gray-400" }
 const priorityClasses: Record<string, string> = { urgent: "font-medium text-red-600", high: "text-amber-600" }
 const indicatorStyles: Record<string, { icon: string; class: string }> = {
     danger: { icon: "fal fa-exclamation-triangle", class: "text-red-700" },
@@ -551,7 +554,7 @@ const burnUpOptions = {
                     <thead class="whitespace-nowrap text-left text-xs text-gray-500">
                         <tr>
                             <th class="py-1 pr-3 font-normal">{{ ctrans("Project") }}</th>
-                            <th class="py-1 pr-3 font-normal">{{ ctrans("Owner") }}</th>
+                            <th class="py-1 pr-3 font-normal">{{ ctrans("Leader") }}</th>
                             <th class="py-1 pr-3 font-normal">{{ ctrans("Status") }}</th>
                             <th class="py-1 text-right font-normal">{{ ctrans("Work done") }}</th>
                         </tr>
@@ -576,7 +579,7 @@ const burnUpOptions = {
                                     <span class="h-2 overflow-hidden rounded-full bg-gray-100">
                                         <span class="block h-full rounded-full bg-green-500" :style="{ width: (sub.progress.percent ?? 0) + '%' }" />
                                     </span>
-                                    <span class="text-right tabular-nums text-gray-600">{{ sub.progress.done }} / {{ sub.progress.done + sub.progress.open }} · {{ sub.progress.percent === null ? "—" : sub.progress.percent + "%" }}</span>
+                                    <span class="text-right tabular-nums text-gray-600">{{ sub.progress.milestones > 0 ? ctrans(":done / :total milestones", { done: sub.progress.milestones_done, total: sub.progress.milestones }) : sub.progress.done + " / " + (sub.progress.done + sub.progress.open) }} · {{ sub.progress.percent === null ? "—" : sub.progress.percent + "%" }}</span>
                                 </span>
                             </td>
                         </tr>
@@ -588,7 +591,7 @@ const burnUpOptions = {
                 <span v-if="project.health" class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium" :class="healthClasses[project.health]">
                     <span class="size-2 rounded-full" :class="healthDots[project.health]" />
                     {{ project.health_label }}
-                    <span class="font-normal opacity-75">· {{ ctrans("as of :date", { date: useFormatTime(project.health_at ?? undefined, { formatTime: "mdy" }) }) }}</span>
+                    <span v-if="project.health_at" class="font-normal opacity-75">· {{ ctrans(project.health === "overdue" ? "target was :date" : "as of :date", { date: useFormatTime(project.health_at ?? undefined, { formatTime: "mdy" }) }) }}</span>
                 </span>
                 <span v-else class="text-xs text-gray-400">{{ ctrans("No health set") }}</span>
                 <span v-if="project.is_pinned" class="inline-flex items-center gap-1 rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs text-[var(--app-accent-deep)]">
@@ -597,9 +600,9 @@ const burnUpOptions = {
                 <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ project.status_label }}</span>
                 <TicketProjectQuietBadge :days="project.quiet_days" />
                 <div class="flex items-center gap-1">
-                    <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Owner') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-[var(--app-accent-strong)]" />
+                    <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Leader') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-[var(--app-accent-strong)]" />
                     <TicketUserAvatar v-for="member in project.members" :key="member.id" v-tooltip="member.name" :name="member.name" :avatar="member.avatar" size="sm" />
-                    <span v-if="!project.owner && !project.members.length" class="text-xs text-gray-400">{{ ctrans("No owner or team") }}</span>
+                    <span v-if="!project.owner && !project.members.length" class="text-xs text-gray-400">{{ ctrans("No leader or team") }}</span>
                 </div>
                 <span class="text-xs text-gray-500">
                     <template v-if="daysSinceUpdate === null">{{ ctrans("No progress updates yet") }}</template>
@@ -1151,7 +1154,7 @@ const burnUpOptions = {
                 <p v-if="editForm.errors.parent_id" class="mt-1 text-xs text-red-600">{{ editForm.errors.parent_id }}</p>
             </div>
             <div>
-                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Owner") }}</label>
+                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Leader") }}</label>
                 <Select v-model="editForm.owner_id" :options="options.staff" option-label="label" option-value="value" filter show-clear class="w-full" />
             </div>
             <div>

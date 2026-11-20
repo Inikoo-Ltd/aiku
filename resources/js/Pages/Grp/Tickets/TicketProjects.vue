@@ -11,6 +11,7 @@ import { Dialog, Select, MultiSelect, InputText, Textarea, DatePicker } from "pr
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Table from "@/Components/Table/Table.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -25,7 +26,7 @@ import { faProjectDiagram, faPlus, faTable, faThLarge, faTimes, faCheck, faLevel
 library.add(faProjectDiagram, faPlus, faTable, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
-type Progress = { total: number; done: number; open: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
+type Progress = { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
 type ProjectRow = {
     slug: string
     name: string
@@ -94,9 +95,20 @@ const healthClasses: Record<string, string> = {
     on_track: "bg-green-100 text-green-700",
     at_risk: "bg-amber-100 text-amber-700",
     off_track: "bg-red-100 text-red-700",
+    overdue: "bg-red-100 text-red-700",
+    not_started: "bg-gray-100 text-gray-600",
+    work_done: "bg-gray-100 text-gray-600",
 }
 
 const isBehind = (progress: Progress) => progress.percent !== null && progress.time_percent !== null && progress.percent + 10 < progress.time_percent
+const shortDate = (date: string | null) => (date ? useFormatTime(date + "T00:00:00", { formatTime: "d MMM yy" }) : "—")
+const workLabel = (progress: Progress) =>
+    (progress.milestones > 0
+        ? ctrans(":done / :total milestones", { done: progress.milestones_done, total: progress.milestones })
+        : progress.done + " / " + (progress.done + progress.open)) +
+    " · " +
+    (progress.percent === null ? "—" : progress.percent + "%")
+const workTooltip = (progress: Progress) => (progress.milestones > 0 ? ctrans(":done / :total tickets and tasks done", { done: progress.done, total: progress.done + progress.open }) : undefined)
 const percentLabel = (value: number | null) => (value === null ? "—" : value + "%")
 const timeLabel = (progress: Progress) => {
     if (progress.days_left === null) return ctrans("Week :week", { week: progress.week })
@@ -128,19 +140,19 @@ const timeLabel = (progress: Progress) => {
                         <TicketProjectQuietBadge :days="child.quiet_days" />
                     </span>
                     <span>
-                        <TicketUserAvatar v-if="child.owner" v-tooltip="ctrans('Owner') + ': ' + child.owner.name" :name="child.owner.name" :avatar="child.owner.avatar" size="xs" />
+                        <TicketUserAvatar v-if="child.owner" v-tooltip="ctrans('Leader') + ': ' + child.owner.name" :name="child.owner.name" :avatar="child.owner.avatar" size="xs" />
                     </span>
                     <span class="h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <span class="block h-full rounded-full" :class="isBehind(child.progress) ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (child.progress.percent ?? 0) + '%' }" />
                     </span>
-                    <span class="text-right tabular-nums" :class="isBehind(child.progress) && 'font-semibold text-red-600'">{{ child.progress.done }} / {{ child.progress.done + child.progress.open }} · {{ percentLabel(child.progress.percent) }}</span>
+                    <span v-tooltip="workTooltip(child.progress)" class="whitespace-nowrap text-right tabular-nums" :class="isBehind(child.progress) && 'font-semibold text-red-600'">{{ workLabel(child.progress) }}</span>
                 </div>
             </div>
         </template>
         <template #cell(status)="{ item }">
             <span class="flex gap-1">
                 <span v-if="item.health" class="rounded-full px-2 py-0.5 text-xs" :class="healthClasses[item.health]">{{ item.health_label }}</span>
-                <span class="rounded-full px-2 py-0.5 text-xs" :class="statusClasses[item.status]">{{ item.status_label }}</span>
+                <span v-if="item.status !== 'active'" class="rounded-full px-2 py-0.5 text-xs" :class="statusClasses[item.status]">{{ item.status_label }}</span>
                 <TicketProjectQuietBadge :days="item.quiet_days" />
             </span>
         </template>
@@ -149,7 +161,7 @@ const timeLabel = (progress: Progress) => {
                 <span class="h-2 overflow-hidden rounded-full bg-gray-100">
                     <span class="block h-full rounded-full" :class="isBehind(item.progress) ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (item.progress.percent ?? 0) + '%' }" />
                 </span>
-                <span class="text-right tabular-nums" :class="isBehind(item.progress) ? 'font-semibold text-red-600' : 'text-gray-600'">{{ item.progress.done }} / {{ item.progress.done + item.progress.open }} · {{ percentLabel(item.progress.percent) }}</span>
+                <span v-tooltip="workTooltip(item.progress)" class="whitespace-nowrap text-right tabular-nums" :class="isBehind(item.progress) ? 'font-semibold text-red-600' : 'text-gray-600'">{{ workLabel(item.progress) }}</span>
             </span>
         </template>
         <template #cell(time)="{ item }">
@@ -160,8 +172,11 @@ const timeLabel = (progress: Progress) => {
                 <span class="text-right tabular-nums text-gray-600">{{ percentLabel(item.progress.time_percent) }}</span>
             </span>
         </template>
+        <template #cell(start_date)="{ item }">
+            <span class="whitespace-nowrap tabular-nums">{{ shortDate(item.start_date) }}</span>
+        </template>
         <template #cell(target_date)="{ item }">
-            <span class="tabular-nums" :class="item.progress.days_left !== null && item.progress.days_left < 0 && item.status === 'active' ? 'text-red-600' : ''">{{ item.target_date ?? "—" }}</span>
+            <span class="whitespace-nowrap tabular-nums" :class="item.progress.days_left !== null && item.progress.days_left < 0 && item.status === 'active' ? 'text-red-600' : ''">{{ shortDate(item.target_date) }}</span>
         </template>
         <template #cell(owner)="{ item }">
             <span v-if="item.owner" class="flex items-center gap-1.5">
@@ -188,7 +203,7 @@ const timeLabel = (progress: Progress) => {
                     </Link>
                     <div class="flex shrink-0 flex-wrap justify-end gap-1">
                         <span v-if="project.health" class="rounded-full px-2 py-0.5 text-xs" :class="healthClasses[project.health]">{{ project.health_label }}</span>
-                        <span class="rounded-full px-2 py-0.5 text-xs" :class="statusClasses[project.status]">{{ project.status_label }}</span>
+                        <span v-if="project.status !== 'active'" class="rounded-full px-2 py-0.5 text-xs" :class="statusClasses[project.status]">{{ project.status_label }}</span>
                         <TicketProjectQuietBadge :days="project.quiet_days" />
                     </div>
                 </div>
@@ -205,11 +220,11 @@ const timeLabel = (progress: Progress) => {
                         <span class="h-1.5 overflow-hidden rounded-full bg-gray-100">
                             <span class="block h-full rounded-full" :class="isBehind(child.progress) ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (child.progress.percent ?? 0) + '%' }" />
                         </span>
-                        <span class="text-right tabular-nums" :class="isBehind(child.progress) && 'font-semibold text-red-600'">{{ child.progress.done }} / {{ child.progress.done + child.progress.open }} · {{ percentLabel(child.progress.percent) }}</span>
+                        <span v-tooltip="workTooltip(child.progress)" class="whitespace-nowrap text-right tabular-nums" :class="isBehind(child.progress) && 'font-semibold text-red-600'">{{ workLabel(child.progress) }}</span>
                     </div>
                 </div>
                 <div class="mt-3 flex items-center gap-1">
-                    <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Owner') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-gray-400" />
+                    <TicketUserAvatar v-if="project.owner" v-tooltip="ctrans('Leader') + ': ' + project.owner.name" :name="project.owner.name" :avatar="project.owner.avatar" size="sm" class="ring-2 ring-gray-400" />
                     <TicketUserAvatar v-for="member in project.members" :key="member.id" v-tooltip="member.name" :name="member.name" :avatar="member.avatar" size="sm" />
                 </div>
             </div>
@@ -245,7 +260,7 @@ const timeLabel = (progress: Progress) => {
                 </div>
             </div>
             <div>
-                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Owner") }}</label>
+                <label class="mb-1 block text-xs text-gray-500">{{ ctrans("Leader") }}</label>
                 <Select v-model="form.owner_id" :options="staff" option-label="label" option-value="value" filter show-clear class="w-full" />
             </div>
             <div>

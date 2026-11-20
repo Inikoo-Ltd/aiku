@@ -9,7 +9,7 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
-    progress: { total: number; done: number; open: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
+    progress: { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
     startDate: string
     targetDate: string | null
 }>()
@@ -28,8 +28,8 @@ const timeLabel = computed(() => {
     <div class="space-y-2 text-xs text-gray-500">
         <div>
             <div class="mb-0.5 flex justify-between">
-                <span>{{ ctrans("Tickets done") }}</span>
-                <span class="tabular-nums" :class="isBehind && 'font-semibold text-red-600'">{{ progress.done }} / {{ progress.done + progress.open }}<template v-if="progress.percent !== null"> · {{ progress.percent }}%</template></span>
+                <span>{{ progress.milestones > 0 ? ctrans("Milestones") : ctrans("Tickets done") }}</span>
+                <span class="tabular-nums" :class="isBehind && 'font-semibold text-red-600'">{{ progress.milestones > 0 ? progress.milestones_done + " / " + progress.milestones : progress.done + " / " + (progress.done + progress.open) }}<template v-if="progress.percent !== null"> · {{ progress.percent }}%</template></span>
             </div>
             <div class="h-2 overflow-hidden rounded-full bg-gray-100">
                 <div class="h-full rounded-full transition-all" :class="isBehind ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (progress.percent ?? 0) + '%' }" />

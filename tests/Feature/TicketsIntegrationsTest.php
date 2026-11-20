@@ -561,7 +561,9 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->where('project.health', 'at_risk')
         ->where('progress.total', 3)
         ->where('progress.done', 1)
-        ->where('progress.percent', 33)
+        ->where('progress.milestones', 2)
+        ->where('progress.milestones_done', 1)
+        ->where('progress.percent', 50)
         ->where('progress.week', 2)
         ->has('work', 3)
         ->where('work', fn ($work) => collect($work)->pluck('reference')->all() === collect($work)->pluck('reference')->sort(SORT_NATURAL)->values()->all())
@@ -575,6 +577,12 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->has('workload')
         ->has('activity'));
     get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('data.data.0.progress.done', 1)->where('data.data.0.health', 'at_risk')->where('view', 'table'));
+    UpdateTicket::make()->action($second->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->where('data.data.0.progress.percent', 95)->where('data.data.0.progress.open', 1)->where('data.data.0.health', 'at_risk'));
+    $project->update(['target_date' => now()->subDay()->toDateString()]);
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('project.health', 'overdue')->where('project.health_at', $project->target_date->toDateString())->where('updates.0.health', 'at_risk'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->where('data.data.0.health', 'overdue'));
+    $project->update(['target_date' => null]);
     get(str_replace('/projects', '/tickets/projects', route('grp.projects.show', $project->slug)))->assertRedirect(route('grp.projects.show', $project->slug))->assertStatus(301);
     expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['projects']['route']['name'])->toBe('grp.projects.index')
         ->and(collect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($member)['tickets']['topMenu']['subSections'])->pluck('label'))->not->toContain('Projects');
@@ -598,6 +606,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
     actingAs($outsider);
     $otherProject->update(['owner_id' => $outsider->id]);
     post(route('grp.models.ticket_project.work.attach', $otherProject->id), ['references' => $first->reference])->assertSessionHasErrors('references');
+    get(route('grp.projects.show', $otherProject->slug))->assertInertia(fn (AssertableInertia $page) => $page->where('project.health', 'not_started')->where('project.health_at', null));
     expect($first->fresh()->ticket_project_id)->toBe($project->id);
     post(route('grp.models.ticket_project.update.store', $project->id), ['body' => 'hello'])->assertForbidden();
     patch(route('grp.models.ticket.project.update', $first->id), ['ticket_project_id' => null])->assertForbidden();
@@ -679,10 +688,11 @@ test('the project page warns about a stale update, overdue milestones and untrac
 
     get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page
         ->where('progress.open', 0)
-        ->where('indicators', fn ($indicators) => collect($indicators)->pluck('key')->all() === ['stale_update', 'milestone_ready', 'milestone_overdue', 'untracked_work'])
+        ->where('indicators', fn ($indicators) => collect($indicators)->pluck('key')->all() === ['stale_update', 'behind', 'milestone_ready', 'milestone_overdue', 'untracked_work'])
         ->where('indicators.0.text', 'The last progress update was 20 days ago')
-        ->where('indicators.1.text', '“All jobs in Aiku” has all its work done but is not marked done')
-        ->where('indicators.3.text', 'All tracked work is done but 3 milestones are still open: add the remaining work as tickets or tasks')
+        ->where('indicators.1.text', 'Work done (30%) is behind time used (67%)')
+        ->where('indicators.2.text', '“All jobs in Aiku” has all its work done but is not marked done')
+        ->where('indicators.4.text', 'All tracked work is done but 3 milestones are still open: add the remaining work as tickets or tasks')
         ->has('queryBuilderProps.work.columns', 8)
         ->has('queryBuilderProps.commits.columns', 5));
 

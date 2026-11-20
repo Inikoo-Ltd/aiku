@@ -308,8 +308,14 @@ class ShowTicketProject extends OrgAction
             ]);
 
         $commits    = self::commits($work);
-        $health     = $updates->firstWhere('health', '!==', null);
-        $progress   = IndexTicketProjects::progress($project, $totals['total'], $totals['done'], $totals['cancelled']);
+        $progress     = IndexTicketProjects::progress($project, ...$totals);
+        $postedHealth = $updates->firstWhere('health', '!==', null);
+        $health       = IndexTicketProjects::health($project, TicketProjectHealthEnum::tryFrom($postedHealth['health'] ?? ''), $progress);
+        $health['created_at'] = match ($health['health']) {
+            'overdue'                  => $project->target_date->toDateString(),
+            'not_started', 'work_done' => null,
+            default                    => $postedHealth['created_at'] ?? null,
+        };
         $milestones = $project->milestones->map(function (TicketProjectMilestone $milestone) use ($work) {
             $items = $work->where('milestone_id', $milestone->id)->where('state', '!=', 'cancelled');
 

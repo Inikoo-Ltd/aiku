@@ -10,6 +10,7 @@ namespace App\Mcp\Tools;
 
 use App\Actions\Helpers\TicketProject\UI\IndexTicketProjects;
 use App\Actions\Helpers\TicketProject\UI\ShowTicketProject;
+use App\Enums\Helpers\Ticket\TicketProjectHealthEnum;
 use App\Models\Helpers\TicketProject;
 use App\Models\Helpers\TicketProjectMilestone;
 use App\Models\Helpers\TicketProjectUpdate;
@@ -63,7 +64,7 @@ class ProjectsTool extends Tool
             'sub_projects' => $project->children->pluck('slug')->all(),
             'status'      => $project->status->value,
             'pinned'      => $project->is_pinned,
-            'health'      => $project->updates->first()?->health?->value,
+            'health'      => IndexTicketProjects::health($project, $project->updates->first()?->health, IndexTicketProjects::rolledUpProgress($project))['health'],
             'owner'       => $project->owner?->username,
             'team'        => $project->members->pluck('username')->all(),
             'start_date'  => $project->start_date->toDateString(),
@@ -97,18 +98,18 @@ class ProjectsTool extends Tool
                 'project'  => $child->slug,
                 'name'     => $child->name,
                 'status'   => $child->status->value,
-                'health'   => $child->updates->first()?->health?->value,
+                'health'   => IndexTicketProjects::health($child, $child->updates->first()?->health, IndexTicketProjects::rolledUpProgress($child))['health'],
                 'owner'    => $child->owner?->username,
                 'progress' => IndexTicketProjects::rolledUpProgress($child),
             ])->values()->all(),
             'status'      => $project->status->value,
             'pinned'      => $project->is_pinned,
-            'health'      => $updates->firstWhere('health', '!==', null)['health'] ?? null,
+            'health'      => IndexTicketProjects::health($project, TicketProjectHealthEnum::tryFrom($updates->firstWhere('health', '!==', null)['health'] ?? ''), IndexTicketProjects::progress($project, ...$totals))['health'],
             'owner'       => $project->owner?->username,
             'team'        => $project->members->pluck('username')->all(),
             'start_date'  => $project->start_date->toDateString(),
             'target_date' => $project->target_date?->toDateString(),
-            'progress'    => IndexTicketProjects::progress($project, $totals['total'], $totals['done'], $totals['cancelled']),
+            'progress'    => IndexTicketProjects::progress($project, ...$totals),
             'quiet_days'  => IndexTicketProjects::quietDays($project),
             'hidden_work' => $totals['total'] - $work->count(),
             'milestones'  => $project->milestones->map(fn (TicketProjectMilestone $milestone) => [
