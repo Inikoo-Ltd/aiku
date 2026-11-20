@@ -183,8 +183,10 @@ class GetAgentMoneyRequestLines
         $depositPayments = DB::table('purchase_order_deposit_payments')
             ->where('purchase_order_deposit_payments.organisation_id', $client->id)
             ->whereNull('purchase_order_deposit_payments.deleted_at')
-            ->groupBy('purchase_order_deposit_payments.purchase_order_id')
-            ->selectRaw('purchase_order_deposit_payments.purchase_order_id, sum(purchase_order_deposit_payments.amount) as amount');
+            ->orderBy('purchase_order_deposit_payments.purchase_order_id')
+            ->orderBy('purchase_order_deposit_payments.date')
+            ->orderBy('purchase_order_deposit_payments.id')
+            ->selectRaw('distinct on (purchase_order_deposit_payments.purchase_order_id) purchase_order_deposit_payments.purchase_order_id, purchase_order_deposit_payments.amount');
 
         $orders = PurchaseOrder::query()
             ->where('purchase_orders.organisation_id', $client->id)
@@ -209,7 +211,6 @@ class GetAgentMoneyRequestLines
                 'purchase_orders.currency_id',
                 'purchase_orders.submitted_at',
                 'purchase_orders.deposit_paid_at',
-                'purchase_orders.deposit_amount',
                 'deposit_payments.amount as deposit_paid_amount',
                 'purchase_orders.supplier_id',
                 'purchase_orders.cost_items',
@@ -240,7 +241,7 @@ class GetAgentMoneyRequestLines
                     'is_open'               => $isOpen,
                     'submitted_at'          => $purchaseOrder->submitted_at?->toDateString(),
                     'deposit_paid_at'       => $purchaseOrder->deposit_paid_at?->toDateString(),
-                    'deposit_paid_amount'   => round((float) ($purchaseOrder->deposit_paid_amount ?? $purchaseOrder->deposit_amount), 2),
+                    'deposit_paid_amount'   => round((float) $purchaseOrder->deposit_paid_amount, 2),
                     'placed_by'             => $purchaseOrder->buyer_name ?: $purchaseOrder->buyer_username,
                     'supplier_id'           => $purchaseOrder->supplier_id,
                     'supplier_slug'         => $purchaseOrder->supplier_slug,
