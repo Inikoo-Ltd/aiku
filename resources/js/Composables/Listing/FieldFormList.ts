@@ -84,6 +84,7 @@ import BoxPackingListDestinations from '@/Components/Forms/Fields/BoxPackingList
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import LanguageReadiness from '@/Components/Forms/Fields/LanguageReadiness.vue'
 import OrderedSelectList from '@/Components/Forms/Fields/OrderedSelectList.vue'
 import BarcodeChoice from '@/Components/Forms/Fields/BarcodeChoice.vue'
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
@@ -226,6 +227,7 @@ export const componentsList: { [key: string]: Component } = {
     'select-improved': SelectImproved,
     'brands-trade-unit': BrandsTradeUnit,
     'multiselect-tags': MultiselectTagsInfiniteScroll,
+    'language_readiness': LanguageReadiness,
     'ordered-select-list': OrderedSelectList,
     'input-dimension': InputDimensions,
     'invoice_serial_references': invoiceSerialReferences,

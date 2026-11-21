@@ -753,3 +753,40 @@ test('fill translations marks a rejected product, leaves it alone on later runs 
         ->and((new FillShopProductTranslations())->invalidReason(['name' => ['translate' => '1,000 beads']], ['name' => '1.000 Perlen']))->toBeNull()
         ->and((new FillShopProductTranslations())->invalidReason(['name' => ['translate' => '1,000 beads']], ['name' => 'Perlen']))->toContain('numbers lost');
 });
+
+test('fill translations lets inline emphasis move, merge or drop but keeps block structure, nesting, links and images', function () {
+    $check  = fn (string $source, string $output) => (new FillShopProductTranslations())->invalidReason(['description' => ['translate' => $source]], ['description' => $output]);
+    $source = '<p><strong>AWGifts - Dropshipping</strong> presents<strong>&nbsp;Stamford Premium Incense</strong> with a higher fragrance load.</p><p>- <strong>hand rolled top quality</strong> incense</p>';
+
+    expect($check($source, '<p><strong>AWGifts - Dropshipping präsentiert Stamford Premium Räucherstäbchen</strong> mit mehr Duft.</p><p>- handgerollte Räucherstäbchen bester Qualität</p>'))->toBeNull()
+        ->and($check($source, '<p><strong>AWGifts</strong> präsentiert <strong>Stamford</strong> mit <em>mehr</em> Duft.</p><p>- <strong>handgerollt</strong></p>'))->toContain('HTML tags changed')
+        ->and($check($source, '<p><strong>AWGifts</strong> präsentiert <strong>Stamford</strong> <strong>Premium</strong> mit mehr Duft.</p><p>- <strong>handgerollt</strong></p>'))->toContain('HTML tags changed')
+        ->and($check($source, '<p><strong>AWGifts präsentiert Stamford mit mehr Duft.</p><p>- handgerollt</strong></p>'))->toContain('HTML tags changed')
+        ->and($check($source, '<p><strong>AWGifts</strong> präsentiert Stamford mit mehr Duft.</p>- handgerollt'))->toContain('HTML tags changed')
+        ->and($check('<p>See <a href="https://www.aw-dropship.eu/ish">holders</a></p>', '<p>Siehe <a href="https://www.aw-dropship.eu/ish">Halter</a></p>'))->toBeNull()
+        ->and($check('<p>See <a href="https://www.aw-dropship.eu/ish">holders</a></p>', '<p>Siehe <a href="https://www.aw-dropship.eu/de/ish">Halter</a></p>'))->toContain('HTML tags changed')
+        ->and($check('<p>Fine</p><img src="a.jpg" alt="x">', '<p>Gut</p>'))->toContain('HTML tags changed');
+});
+
+test('fill translations reads a comma list of sizes as a list, and still rejects a size that is dropped', function () {
+    $check = fn (string $source, string $output) => (new FillShopProductTranslations())->invalidReason(['name' => ['translate' => $source]], ['name' => $output]);
+
+    expect($check('Tamper Evident Cap & Dropper for 10,50,100ml', 'Originalitätsverschluss mit Pipette für 10, 50, 100 ml'))->toBeNull()
+        ->and($check('Tamper Evident Cap & Dropper for 10,50,100ml', 'Originalitätsverschluss mit Pipette für 10, 50 ml'))->toContain('numbers lost')
+        ->and($check('Pack of 1,000 beads', 'Packung mit 1000 Perlen'))->toBeNull()
+        ->and($check('Lrg Natural 6oz Cotton Bag 38x42cm', 'Große Baumwolltasche 170 g 38x42 cm'))->toContain('numbers lost (6)');
+});
+
+test('fill translations rejects unfinished tags, added attributes, emphasis wrapping blocks and self closing emphasis', function () {
+    $check = fn (string $source, string $output) => (new FillShopProductTranslations())->invalidReason(['description' => ['translate' => $source]], ['description' => $output]);
+
+    expect($check('<p>Fine</p>', '<p>Gut</p><img src=x onerror=alert(1) '))->toContain('HTML tags changed')
+        ->and($check('<p>Fine <b>soap</b></p>', '<p>Gut</p><b'))->toContain('HTML tags changed')
+        ->and($check('<p>Fine soap</p>', '<p onclick="alert(1)">Gute Seife</p>'))->toContain('HTML tags changed')
+        ->and($check('<p>Fine <strong>soap</strong></p>', '<p>Gute <strong onmouseover="alert(1)">Seife</strong></p>'))->toContain('HTML tags changed')
+        ->and($check('<p>Fine <span style="color:red">soap</span></p>', '<p>Gute <span style="color:red">Seife</span></p>'))->toBeNull()
+        ->and($check('<p>Fine <span style="color:red">soap</span></p>', '<p>Gute <span style="color:blue">Seife</span></p>'))->toContain('HTML tags changed')
+        ->and($check('<p>A <strong>fine</strong> soap</p><p>Lasts</p>', '<strong><p>Eine feine Seife</p><p>Hält</p></strong>'))->toContain('HTML tags changed')
+        ->and($check('<p>A <strong>fine</strong> soap</p>', '<p>Eine <strong/>feine Seife</p>'))->toContain('HTML tags changed')
+        ->and($check('<p>A <strong>fine</strong> soap<br />now</p>', '<p>Eine feine <strong>Seife</strong><br />jetzt</p>'))->toBeNull();
+});

@@ -45,6 +45,10 @@ class FillShopProductTranslations
 
     public const string MACHINE = 'machine';
 
+    private const array INLINE_TAGS = ['strong', 'b', 'em', 'i', 'u', 'span'];
+
+    private const array VOID_TAGS = ['br', 'img', 'hr', 'wbr'];
+
     public string $commandSignature = 'products:fill-translations
         {shop : shop id or slug}
         {language : language code, e.g. de}
@@ -261,13 +265,13 @@ EOT;
             if (!is_string($output) || trim($output) === '') {
                 return "$field: empty";
             }
-            if ($this->tags($source) !== $this->tags($output)) {
+            if (!$this->sameHtml($source, $output)) {
                 return "$field: HTML tags changed";
             }
             if ($this->placeholders($source) !== $this->placeholders($output)) {
                 return "$field: placeholders changed";
             }
-            if ($lost = array_diff($this->numbers($source), $this->numbers($output))) {
+            if ($lost = $this->lostNumbers($source, $output)) {
                 return "$field: numbers lost (".implode(', ', $lost).')';
             }
             if ($output === $source && mb_strlen($source) > 25) {
@@ -278,11 +282,87 @@ EOT;
         return null;
     }
 
+    /**
+     * Every tag outside inline emphasis must come back character for character and in the same
+     * order. Inline emphasis may move, merge or drop, because word order differs between languages,
+     * but never grows past the source, is bare or copied exactly from the source, and wraps no block
+     * the source does not wrap. Every tag must still nest, and a "<" that opens no complete tag fails.
+     * A source that does not nest itself keeps the strict comparison of every tag.
+     */
+    private function sameHtml(string $source, string $output): bool
+    {
+        $sourceTags = $this->tags($source);
+        $outputTags = $this->tags($output);
+
+        if (preg_match_all('/<\s*\/?\s*[a-z]/i', $output) !== count($outputTags)) {
+            return false;
+        }
+
+        $raw = fn (array $tags) => array_column($tags, 'raw');
+        if (!$this->nests($sourceTags, $sourceWrapsBlock)) {
+            return $raw($sourceTags) === $raw($outputTags);
+        }
+
+        $isEmphasis = fn (array $tag) => in_array($tag['name'], self::INLINE_TAGS);
+        $structure  = fn (array $tags) => $raw(array_values(array_filter($tags, fn (array $tag) => !$isEmphasis($tag))));
+        $count      = fn (array $tags) => array_count_values(array_column(array_filter($tags, fn (array $tag) => !$tag['closing'] && $isEmphasis($tag)), 'name'));
+
+        $sourceRaw   = $raw($sourceTags);
+        $sourceCount = $count($sourceTags);
+        foreach ($outputTags as $tag) {
+            if (str_ends_with($tag['raw'], '/>') && !in_array($tag['name'], self::VOID_TAGS) && !in_array($tag['raw'], $sourceRaw)) {
+                return false;
+            }
+            if ($isEmphasis($tag) && !preg_match('/^<\/?'.$tag['name'].'>$/i', $tag['raw']) && !in_array($tag['raw'], $sourceRaw)) {
+                return false;
+            }
+        }
+        foreach ($count($outputTags) as $name => $times) {
+            if ($times > ($sourceCount[$name] ?? 0)) {
+                return false;
+            }
+        }
+
+        return $structure($sourceTags) === $structure($outputTags)
+            && $this->nests($outputTags, $outputWrapsBlock)
+            && (!$outputWrapsBlock || $sourceWrapsBlock);
+    }
+
+    /**
+     * @return list<array{closing: string, name: string, raw: string}>
+     */
     private function tags(string $text): array
     {
-        preg_match_all('/<\s*(\/?)\s*([a-z][a-z0-9]*)/i', $text, $matches, PREG_SET_ORDER);
+        preg_match_all('/<\s*(\/?)\s*([a-z][a-z0-9]*)[^<>]*>/i', $text, $matches, PREG_SET_ORDER);
 
-        return array_map(fn (array $match) => $match[1].strtolower($match[2]), $matches);
+        return array_map(fn (array $match) => [
+            'closing' => $match[1],
+            'name'    => strtolower($match[2]),
+            'raw'     => preg_replace(['/\s+/', '/^<\s*(\/?)\s*([a-z][a-z0-9]*)/i', '/\s*>$/'], [' ', '<$1$2', '>'], $match[0]),
+        ], $matches);
+    }
+
+    private function nests(array $tags, ?bool &$emphasisWrapsBlock = false): bool
+    {
+        $open               = [];
+        $emphasisWrapsBlock = false;
+        foreach ($tags as $tag) {
+            if (in_array($tag['name'], self::VOID_TAGS) || str_ends_with($tag['raw'], '/>')) {
+                continue;
+            }
+            if ($tag['closing']) {
+                if (array_pop($open) !== $tag['name']) {
+                    return false;
+                }
+                continue;
+            }
+            if ($tag['name'] !== 'a' && !in_array($tag['name'], self::INLINE_TAGS) && array_intersect($open, self::INLINE_TAGS)) {
+                $emphasisWrapsBlock = true;
+            }
+            $open[] = $tag['name'];
+        }
+
+        return $open === [];
     }
 
     private function placeholders(string $text): array
@@ -293,9 +373,26 @@ EOT;
         return $matches[0];
     }
 
-    private function numbers(string $text): array
+    /**
+     * A separator before three digits is read both as a thousands separator (1,000) and as a list
+     * (10,50,100ml): a number is lost only when the output misses it under both readings.
+     *
+     * @return list<string>
+     */
+    private function lostNumbers(string $source, string $output): array
     {
-        $plain = preg_replace('/(?<=\d)[.,\x{00A0}\x{202F}](?=\d{3}(?!\d))/u', '', html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5));
+        $found = array_merge($this->numbers($output, true), $this->numbers($output, false));
+        $lost  = array_values(array_diff($this->numbers($source, true), $found));
+
+        return $lost && array_diff($this->numbers($source, false), $found) ? $lost : [];
+    }
+
+    private function numbers(string $text, bool $thousands): array
+    {
+        $plain = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5);
+        if ($thousands) {
+            $plain = preg_replace('/(?<=\d)[.,\x{00A0}\x{202F}](?=\d{3}(?!\d))/u', '', $plain);
+        }
         preg_match_all('/\d+/', $plain, $matches);
 
         return array_values(array_unique($matches[0]));

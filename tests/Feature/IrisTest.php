@@ -1736,3 +1736,23 @@ test('a customer display currency is saved on the web user, limited to the shop 
 
     setShopDisplayCurrencies($this->shop, null);
 });
+
+test('language readiness counts active products with a name and a description per language, the main language first', function () {
+    [, $product] = createProduct($this->shop);
+    [$otherCode] = otherLanguageCodes($this->shop);
+    $product->state = \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE;
+    $product->name  = 'Lavender soap';
+    $product->setTranslation('name_i8n', $otherCode, '')->setTranslation('description_i8n', $otherCode, '')->saveQuietly();
+    $row = fn (string $code) => collect(\App\Actions\Catalogue\Shop\UI\GetShopLanguageReadiness::run($this->shop->fresh()))->firstWhere('code', $code);
+
+    $before = $row($otherCode) ?? ['names' => 0, 'descriptions' => 0];
+    $product->setTranslation('name_i8n', $otherCode, 'Seife')->setTranslation('description_i8n', $otherCode, '  ')->saveQuietly();
+    $after = $row($otherCode);
+    $rows  = \App\Actions\Catalogue\Shop\UI\GetShopLanguageReadiness::run($this->shop->fresh());
+
+    expect($after['names'])->toBe($before['names'] + 1)
+        ->and($after['descriptions'])->toBe($before['descriptions'])
+        ->and($after['products'])->toBe($this->shop->products()->where('state', \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE)->whereNull('deleted_at')->count())
+        ->and($rows[0]['code'])->toBe($this->shop->language->code)
+        ->and($rows[0]['names'])->toBeGreaterThanOrEqual(1);
+});
