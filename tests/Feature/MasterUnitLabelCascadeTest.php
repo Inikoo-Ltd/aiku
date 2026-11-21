@@ -640,8 +640,11 @@ function fillTranslationsFixture(object $test, float $siblingUnits = 1): Product
 {
     Config::set('services.openrouter.api_key', 'test-key');
     Http::fake(['openrouter.ai/*' => function (Request $request) use ($test) {
+        if ($test->aiDown ?? false) {
+            return Http::response('down', 503);
+        }
         $texts = collect(json_decode($request['messages'][1]['content'], true))
-            ->map(fn (array $input) => ($test->aiPrefix ?? 'DE ').$input['translate']);
+            ->map(fn (array $input) => isset($input['clean']) ? ($test->cleanAnswer ?? str_replace(' en gros', '', $input['clean'])) : ($test->aiPrefix ?? 'DE ').$input['translate']);
 
         return Http::response(['choices' => [['message' => ['content' => json_encode($texts)]]], 'usage' => ['cost' => 0.001]]);
     }]);
@@ -789,4 +792,83 @@ test('fill translations rejects unfinished tags, added attributes, emphasis wrap
         ->and($check('<p>A <strong>fine</strong> soap</p><p>Lasts</p>', '<strong><p>Eine feine Seife</p><p>Hält</p></strong>'))->toContain('HTML tags changed')
         ->and($check('<p>A <strong>fine</strong> soap</p>', '<p>Eine <strong/>feine Seife</p>'))->toContain('HTML tags changed')
         ->and($check('<p>A <strong>fine</strong> soap<br />now</p>', '<p>Eine feine <strong>Seife</strong><br />jetzt</p>'))->toBeNull();
+});
+
+test('fill translations cleans copied descriptions of reseller wording, leaves names and hand written text alone and never sends a cleaned one again', function () {
+    fillTranslationsFixture($this);
+    fillTranslations($this);
+    $clean    = fn () => FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
+    $requests = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"clean"'))->count();
+
+    $result = $clean();
+
+    $product = $this->product->refresh();
+    expect($result['stats']['cleaned'])->toBe(1)
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife</p>')
+        ->and($product->getTranslation('name_i8n', 'de', false))->toBe('Lavendelseife 100g en gros')
+        ->and($product->data['translation_sources']['de']['fields'])->toMatchArray(['name' => FillShopProductTranslations::COPIED, 'description' => FillShopProductTranslations::CLEANED])
+        ->and(data_get($this->masterAsset->refresh()->description_i8n, 'de'))->toBeEmpty();
+
+    $afterFirst = $requests();
+    $clean();
+    fillTranslations($this, force: true);
+    expect($requests())->toBe($afterFirst)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife</p>');
+});
+
+test('fill translations keeps the copy when the cleaned answer adds markup, a number or guts the text, and does not try that product again', function (string $answer, string $reason) {
+    fillTranslationsFixture($this);
+    fillTranslations($this);
+    $this->cleanAnswer = $answer;
+    $clean             = fn () => FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
+
+    $result = $clean();
+
+    $product = $this->product->refresh();
+    expect($result['stats']['failed'])->toBe(1)
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife en gros</p>')
+        ->and($product->data['translation_sources']['de']['clean_failed'])->toContain($reason)
+        ->and($product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::COPIED)
+        ->and($clean()['stats']['failed'])->toBe(0);
+})->with([
+    'added tag'       => ['<p>Schöne Seife</p><img src="x">', 'HTML tags changed'],
+    'added attribute' => ['<p onclick="x()">Schöne Seife</p>', 'HTML tags changed'],
+    'unclosed tag'    => ['<p>Schöne Seife</p><img src=x ', 'HTML tags changed'],
+    'added number'    => ['<p>Schöne Seife 500 g</p>', 'numbers added'],
+    'rewritten'       => ['<p>Tolles feines mildes Stück hier</p>', 'rewritten'],
+    'comment opened'  => ['<p>Schöne Seife</p><!--', 'HTML tags changed'],
+]);
+
+test('fill translations does not clean a copied description a person corrected', function () {
+    fillTranslationsFixture($this);
+    fillTranslations($this);
+    $this->product->setTranslation('description_i8n', 'de', '<p>Von Hand korrigiert en gros</p>')->save();
+
+    FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
+
+    expect($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Von Hand korrigiert en gros</p>');
+});
+
+test('fill translations does not mark a copied description when the cleaning call itself fails, and a forced run keeps the clean marks', function () {
+    fillTranslationsFixture($this);
+    fillTranslations($this);
+    $clean = fn () => FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
+
+    $this->aiDown = true;
+    expect($clean()['stats']['failed'])->toBe(1)
+        ->and($this->product->refresh()->data['translation_sources']['de'])->not->toHaveKey('clean_failed');
+
+    $this->aiDown      = false;
+    $this->cleanAnswer = '<p>Tolles feines mildes Stück hier</p>';
+    $clean();
+    fillTranslations($this, force: true);
+
+    expect($this->product->refresh()->data['translation_sources']['de']['clean_failed'])->toContain('rewritten')
+        ->and($this->product->data['translation_sources']['de']['from_product_id'])->not->toBeNull();
+
+    $long = '<p>Großhandel Seife für Ihr Geschäft.</p><p>'.str_repeat('Diese Seife duftet nach Lavendel und pflegt die Haut. ', 6).'</p>';
+    $kept = '<p>'.str_repeat('Diese Seife duftet nach Lavendel und pflegt die Haut. ', 6).'</p>';
+    $check = fn (string $answer) => (new FillShopProductTranslations())->invalidReason(['description' => ['clean' => $long]], ['description' => $answer]);
+    expect($check($kept))->toBeNull()
+        ->and($check('<p>Diese Seife duftet nach Lavendel und pflegt die Haut.</p>'))->toContain('too much removed');
 });

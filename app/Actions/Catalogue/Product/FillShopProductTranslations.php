@@ -45,6 +45,10 @@ class FillShopProductTranslations
 
     public const string MACHINE = 'machine';
 
+    public const string CLEANED = 'copied_cleaned';
+
+    private const array CLEANABLE_FIELDS = ['description_title', 'description', 'description_extra'];
+
     private const array INLINE_TAGS = ['strong', 'b', 'em', 'i', 'u', 'span'];
 
     private const array VOID_TAGS = ['br', 'img', 'hr', 'wbr'];
@@ -58,6 +62,7 @@ class FillShopProductTranslations
         {--apply : write the texts (without it nothing is saved, but texts to translate still go to the AI and are paid for)}
         {--force : redo products whose texts this command already made}
         {--retry-failed : only the products whose translation was rejected in an earlier run}
+        {--clean-copies : only the copied descriptions: the AI removes what speaks to a reseller and changes nothing else}
         {--model= : OpenRouter model (default: the catalogue translation model)}';
 
     private array $stats = [];
@@ -68,14 +73,16 @@ class FillShopProductTranslations
 
     private ?string $lastFailure = null;
 
+    private bool $lastFailureWasRejection = false;
+
     private ?Shop $sourceShop = null;
 
     /**
      * @return array{stats: array<string, int>, cost: float}
      */
-    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null, bool $retryFailed = false): array
+    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null, bool $retryFailed = false, bool $cleanCopies = false): array
     {
-        $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
+        $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'cleaned' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
         $this->cost  = 0;
         $this->sourceShop = $sourceShop;
         $model ??= config('auto-translations.drivers.catalogue.model');
@@ -86,7 +93,12 @@ class FillShopProductTranslations
             ->where('state', ProductStateEnum::ACTIVE)
             ->whereNull('deleted_at');
 
-        if ($retryFailed) {
+        if ($cleanCopies) {
+            $query->whereRaw(
+                "exists (select 1 from jsonb_each_text(coalesce(data->'translation_sources'->?->'fields', '{}'::jsonb)) field where field.key <> 'name' and field.value = ?)",
+                [$locale, self::COPIED]
+            )->whereRaw("data->'translation_sources'->?->>'clean_failed' is null", [$locale]);
+        } elseif ($retryFailed) {
             $query->whereRaw("data->'translation_sources'->?->>'failed' is not null", [$locale]);
         } elseif ($force) {
             $query->where(fn ($query) => $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->orWhereRaw("data->'translation_sources' ?? ?", [$locale]));
@@ -94,8 +106,8 @@ class FillShopProductTranslations
             $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->whereRaw("NOT (coalesce(data->'translation_sources', '{}') ?? ?)", [$locale]);
         }
 
-        $query->chunkById($chunk, function (Collection $products) use ($sourceShop, $language, $locale, $apply, $model, $limit, $report, &$processed) {
-            $siblings     = $sourceShop ? $this->siblings($products, $sourceShop) : collect();
+        $query->chunkById($chunk, function (Collection $products) use ($sourceShop, $language, $locale, $apply, $model, $limit, $report, $cleanCopies, &$processed) {
+            $siblings     = $sourceShop && !$cleanCopies ? $this->siblings($products, $sourceShop) : collect();
             $this->briefs = [];
 
             foreach ($products as $product) {
@@ -103,7 +115,9 @@ class FillShopProductTranslations
                     return false;
                 }
                 $processed++;
-                $this->fillProduct($product, $siblings->get(strtolower($product->code)), $language, $locale, $apply, $model, $report);
+                $cleanCopies
+                    ? $this->cleanProduct($product, $language, $locale, $apply, $model, $report)
+                    : $this->fillProduct($product, $siblings->get(strtolower($product->code)), $language, $locale, $apply, $model, $report);
             }
 
             return $limit === null || $processed < $limit;
@@ -120,7 +134,7 @@ class FillShopProductTranslations
         foreach (self::FIELDS as $field) {
             $copy  = $sibling ? trim((string) $sibling->{$field}) : '';
             $shopText = trim((string) $product->{$field});
-            if (!$this->isOurs($product, $field, $locale)) {
+            if (!$this->isOurs($product, $field, $locale) || Arr::get($product->data, "translation_sources.$locale.fields.$field") === self::CLEANED) {
                 continue;
             }
             if ($copy !== '' && $copy !== $shopText) {
@@ -162,13 +176,61 @@ class FillShopProductTranslations
             $product->setTranslation($field.'_i8n', $locale, $text);
         }
         $data = $product->data ?? [];
+        $existing = (array) Arr::get($data, "translation_sources.$locale", []);
         data_set($data, "translation_sources.$locale", array_filter(['failed' => $failure]) + [
-            'fields'          => Arr::only($sources, array_keys($texts)) + Arr::get($data, "translation_sources.$locale.fields", []),
-            'hashes'          => array_map('md5', $texts) + Arr::get($data, "translation_sources.$locale.hashes", []),
-            'from_product_id' => in_array(self::COPIED, $sources) ? $sibling->id : null,
+            'fields'          => Arr::only($sources, array_keys($texts)) + Arr::get($existing, 'fields', []),
+            'hashes'          => array_map('md5', $texts) + Arr::get($existing, 'hashes', []),
+            'from_product_id' => in_array(self::COPIED, $sources) ? $sibling->id : Arr::get($existing, 'from_product_id'),
             'model'           => in_array(self::MACHINE, Arr::only($sources, array_keys($texts))) ? $model : null,
             'at'              => now()->toIso8601String(),
-        ]);
+        ] + Arr::except($existing, 'failed'));
+        $product->data = $data;
+        $product->save();
+    }
+
+    /**
+     * Copied descriptions were written for trade buyers: the AI removes what speaks to a reseller and keeps the
+     * rest word for word. A cleaned field is marked copied_cleaned and is not sent again; a rejected answer leaves
+     * the copy as it was and marks the product clean_failed, while a call that failed (timeout, provider error) marks
+     * nothing, so the next run tries it again.
+     */
+    private function cleanProduct(Product $product, Language $language, string $locale, bool $apply, string $model, ?callable $report): void
+    {
+        $sources = (array) Arr::get($product->data, "translation_sources.$locale.fields", []);
+        $fields  = [];
+        foreach (self::CLEANABLE_FIELDS as $field) {
+            $text = trim((string) $product->getTranslation($field.'_i8n', $locale, false));
+            if (($sources[$field] ?? null) === self::COPIED && $text !== '' && $this->isOurs($product, $field, $locale)) {
+                $fields[$field] = ['clean' => $text];
+            }
+        }
+
+        $texts     = $fields ? $this->askWithRetry($fields, $product, $language, $model) : null;
+        $failure   = $fields ? ($texts === null ? $this->lastFailure : null) : 'nothing of ours to clean';
+        $transient = $fields && $failure !== null && !$this->lastFailureWasRejection;
+
+        $this->stats[$failure === null ? 'cleaned' : ($fields ? 'failed' : 'nothing_to_translate')]++;
+        $report && $report($product, $fields, $texts, array_fill_keys(array_keys($fields), self::CLEANED), $failure);
+
+        if (!$apply || $transient) {
+            return;
+        }
+
+        $product = $product->fresh();
+        $data    = $product->data ?? [];
+        if ($failure !== null) {
+            data_set($data, "translation_sources.$locale.clean_failed", $failure);
+        } else {
+            foreach ($texts as $field => $text) {
+                if (!$this->isOurs($product, $field, $locale)) {
+                    continue;
+                }
+                $product->setTranslation($field.'_i8n', $locale, $text);
+                data_set($data, "translation_sources.$locale.fields.$field", self::CLEANED);
+                data_set($data, "translation_sources.$locale.hashes.$field", md5($text));
+            }
+            data_set($data, "translation_sources.$locale.cleaned_at", now()->toIso8601String());
+        }
         $product->data = $data;
         $product->save();
     }
@@ -191,8 +253,10 @@ class FillShopProductTranslations
     {
         foreach ([0, 1] as $attempt) {
             try {
-                $texts             = $this->ask($product, $fields, $language, $model);
-                $this->lastFailure = $this->invalidReason($fields, $texts);
+                $this->lastFailureWasRejection = false;
+                $texts                         = $this->ask($product, $fields, $language, $model);
+                $this->lastFailure             = $this->invalidReason($fields, $texts);
+                $this->lastFailureWasRejection = true;
                 if ($this->lastFailure === null) {
                     return Arr::only($texts, array_keys($fields));
                 }
@@ -216,7 +280,7 @@ class FillShopProductTranslations
             'temperature'     => 0.2,
             'response_format' => ['type' => 'json_object'],
             'messages'        => [
-                ['role' => 'system', 'content' => $this->prompt($product, $language)],
+                ['role' => 'system', 'content' => Arr::has(Arr::first($fields), 'clean') ? $this->cleanPrompt($language) : $this->prompt($product, $language)],
                 ['role' => 'user', 'content' => json_encode($fields, JSON_UNESCAPED_UNICODE)],
             ],
         ], config('services.openrouter.model_options')[$model] ?? []))->throw()->json();
@@ -241,6 +305,17 @@ Reply with a JSON object with the same keys, each holding only the final {$langu
 EOT;
     }
 
+    private function cleanPrompt(Language $language): string
+    {
+        return <<<EOT
+You edit product texts of an online retail store. They are written in {$language->name} and were written for trade buyers; the reader is now the consumer who buys the item.
+
+You get a JSON object whose keys are fields of one product, each holding {"clean": "..."}. Return the same text with only this change: remove or minimally reword what speaks to a reseller, such as wholesale, bulk buyers, minimum order, cartons or outer packs as the selling unit, trade prices, margins and profit, "for your shop", "your customers", "your range".
+Keep every other word exactly as it is: do not translate, correct, shorten, improve, reorder or add anything, and do not change any number, size, measurement or placeholder in braces. Add no HTML tag; when you remove a whole sentence, remove the tags left empty around it. If nothing speaks to a reseller, return the text unchanged.
+Reply with a JSON object with the same keys, each holding only the final {$language->name} text as a string.
+EOT;
+    }
+
     /**
      * The family with the same code in the shop we copy from, whose published names in the target
      * language the brief shows as examples. The product's own family would show English beside English.
@@ -261,9 +336,19 @@ EOT;
     {
         foreach ($fields as $field => $input) {
             $output = Arr::get($texts, $field);
-            $source = $input['translate'];
+            $source = $input['translate'] ?? $input['clean'];
             if (!is_string($output) || trim($output) === '') {
                 return "$field: empty";
+            }
+            if (preg_match('/<\s*[!?]/', $output) && !preg_match('/<\s*[!?]/', $source)) {
+                return "$field: HTML tags changed";
+            }
+            if (isset($input['clean'])) {
+                if ($reason = $this->invalidCleanReason($source, $output)) {
+                    return "$field: $reason";
+                }
+
+                continue;
             }
             if (!$this->sameHtml($source, $output)) {
                 return "$field: HTML tags changed";
@@ -277,6 +362,53 @@ EOT;
             if ($output === $source && mb_strlen($source) > 25) {
                 return "$field: not translated";
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * A cleaned copy may lose sentences and the tags around them, never gain any: its tags are the source's, in
+     * order, with some left out; it adds no number, keeps most of the text and nearly all of its words are the source's.
+     */
+    private function invalidCleanReason(string $source, string $output): ?string
+    {
+        $outputTags = $this->tags($output);
+        if (preg_match_all('/<\s*\/?\s*[a-z]/i', $output) !== count($outputTags)) {
+            return 'HTML tags changed';
+        }
+
+        $remaining = array_column($this->tags($source), 'raw');
+        foreach (array_column($outputTags, 'raw') as $raw) {
+            $position = array_search($raw, $remaining, true);
+            if ($position === false) {
+                return 'HTML tags changed';
+            }
+            $remaining = array_slice($remaining, $position + 1);
+        }
+        if ($this->nests($this->tags($source)) && !$this->nests($outputTags)) {
+            return 'HTML tags changed';
+        }
+        if (array_diff($this->numbers($output, false), $this->numbers($source, false))) {
+            return 'numbers added';
+        }
+        if (array_diff($this->placeholders($output), $this->placeholders($source))) {
+            return 'placeholders changed';
+        }
+        $sourceLength = mb_strlen(strip_tags($source));
+        if ($sourceLength - mb_strlen(strip_tags($output)) > max(40, 0.3 * $sourceLength)) {
+            return 'too much removed';
+        }
+        if (mb_strlen(strip_tags($output)) > $sourceLength + 20) {
+            return 'text added';
+        }
+
+        $words       = fn (string $text) => preg_split('/[^\p{L}]+/u', mb_strtolower(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5)), -1, PREG_SPLIT_NO_EMPTY);
+        $longWords   = fn (string $text) => array_values(array_filter($words($text), fn (string $word) => mb_strlen($word) >= 3));
+        $outputWords = $longWords($output);
+        $newWords    = array_diff($outputWords, $longWords($source));
+        if (count($newWords) > max(3, 0.1 * count($outputWords))) {
+            return 'rewritten';
         }
 
         return null;
@@ -494,7 +626,8 @@ EOT;
                     }
                 }
             },
-            (bool) $command->option('retry-failed')
+            (bool) $command->option('retry-failed'),
+            (bool) $command->option('clean-copies')
         );
 
         $command->table(['source', 'products'], collect($result['stats'])->map(fn ($count, $source) => [$source, $count])->values()->all());
