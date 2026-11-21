@@ -48,6 +48,13 @@ use Throwable;
  * same pack in another shop written in the same language, cleaning a borrowed text that carries reseller wording
  * first; written like --clean-shop-text and marked borrowed / borrowed_cleaned per field. --redo-cleaned then
  * translates those fields into the languages already filled.
+ *
+ * --replace-uncleanable replaces, in the target language, the copied field that --clean-copies could not clean (the
+ * field named in translation_sources.<locale>.clean_failed) with a translation of the shop's own text, when that text
+ * is there and clean; marked in translation_sources.<locale>.replaced.
+ *
+ * A target-language field marked blanked (wholesale text removed by hand, details in translation_sources.<locale>.blanked)
+ * is left alone by every mode; only --redo-cleaned translates it, once the shop has its own text for that field.
  */
 class FillShopProductTranslations
 {
@@ -80,6 +87,12 @@ class FillShopProductTranslations
 
     public const string BORROW_FAILED = 'borrow_failed';
 
+    public const string REPLACED = 'done';
+
+    public const string BLANKED = 'blanked';
+
+    public const string REPLACE_FAILED = 'failed';
+
     public const string SHOP_SPECIFIC = 'deliver(y|ies|ed)|(^|[^p])shipp(ing|ed)|dispatch|postage|courier|(business|working) days|uk mainland|mainland uk|(within|outside( of)?|across|throughout) (the )?(uk|united kingdom|eu|europe)|uk (orders|customers|delivery|stock)|£ ?[0-9]|€ ?[0-9]|[0-9] ?€|\$ ?[0-9]|[0-9] ?(gbp|eur)([^a-z]|$)|(^|[^a-z])(prices?|priced|rrp)([^a-z]|$)';
 
     public const string RESELLER_WORDING = 'customers|you can sell|your customer|your (e-?shop|shop|store|range)|wholesale|retailer|stock (up|a range|them|these)|profit|margin|awgifts|aw gifts|ancient wisdom|drop ?ship|(^|[^a-z])presents';
@@ -105,6 +118,7 @@ class FillShopProductTranslations
         {--clean-shop-text : the shop own-language descriptions matching the reseller wording: the AI removes it and our own branding, nothing else (language = the shop language)}
         {--redo-cleaned : only the machine-made fields whose shop text was cleaned, and the empty ones whose shop text was borrowed, after they were made, translated from the new text (with --retry-failed: only the redos that were rejected)}
         {--fill-from-shop= : shop id or slug written in the same language: fill the empty description fields of this shop from the same pack there (language = the shop language; with --retry-failed: only the borrowed texts whose cleaning was rejected)}
+        {--replace-uncleanable : only the copied field --clean-copies could not clean: replaced by a translation of the shop text when it is there and clean (with --retry-failed: only the replacements that were rejected)}
         {--model= : OpenRouter model (default: the catalogue translation model)}';
 
     private array $stats = [];
@@ -128,9 +142,10 @@ class FillShopProductTranslations
     /**
      * @return array{stats: array<string, int>, cost: float}
      */
-    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null, bool $retryFailed = false, bool $cleanCopies = false, bool $cleanShopText = false, bool $redoCleaned = false, ?Shop $fillFromShop = null): array
+    public function handle(Shop $shop, Language $language, ?Shop $sourceShop = null, bool $apply = false, bool $force = false, ?int $limit = null, int $chunk = 50, ?string $model = null, ?callable $report = null, bool $retryFailed = false, bool $cleanCopies = false, bool $cleanShopText = false, bool $redoCleaned = false, ?Shop $fillFromShop = null, bool $replaceUncleanable = false): array
     {
-        $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'cleaned' => 0, 'unchanged' => 0, 'nothing_to_translate' => 0, 'failed' => 0];
+        $this->stats = ['copied' => 0, 'machine' => 0, 'mixed' => 0, 'cleaned' => 0, 'unchanged' => 0, 'nothing_to_translate' => 0, 'failed' => 0]
+            + ($replaceUncleanable ? ['replaced' => 0, 'skipped_shop_text_wording' => 0, 'skipped_no_shop_text' => 0, 'kept_person_text' => 0] : []);
         $this->cost  = 0;
         $this->sourceShop     = $sourceShop;
         $this->cleaningShopText = $cleanShopText || $fillFromShop !== null;
@@ -183,8 +198,17 @@ class FillShopProductTranslations
                             array_merge([$shopLocale, $field], $shopMarks, $translatedMark ? [$locale, $field, $translatedMark] : [$locale, $locale, $field], [$locale, $field], $retryFailed ? [] : [$locale, $shopLocale])
                         );
                     }
+                    $query->orWhereRaw(
+                        "(data->'translation_sources'->?->'fields'->>? = ? and coalesce(regexp_replace($field, '<[^>]*>|&nbsp;|\\s', '', 'g'), '') <> '' and data->'translation_sources'->?->'redo'->>? "
+                        .($retryFailed ? "= '".self::REDO_FAILED."')" : 'is null)'),
+                        [$locale, $field, self::BLANKED, $locale, $field]
+                    );
                 }
             });
+        } elseif ($replaceUncleanable) {
+            $namedField = "split_part(data->'translation_sources'->?->>'clean_failed', ':', 1)";
+            $query->whereRaw("data->'translation_sources'->?->'fields'->>$namedField = ?", [$locale, $locale, self::COPIED])
+                ->whereRaw("data->'translation_sources'->?->'replaced'->>$namedField ".($retryFailed ? '= ?' : 'is null'), array_merge([$locale, $locale], $retryFailed ? [self::REPLACE_FAILED] : []));
         } elseif ($cleanCopies) {
             $query->where(function ($query) use ($locale) {
                 foreach (self::CLEANABLE_FIELDS as $field) {
@@ -199,10 +223,10 @@ class FillShopProductTranslations
             $query->whereRaw('NOT (coalesce(name_i8n, \'{}\') ?? ?)', [$locale])->whereRaw("NOT (coalesce(data->'translation_sources', '{}') ?? ?)", [$locale]);
         }
 
-        $query->chunkById($chunk, function (Collection $products) use ($sourceShop, $language, $locale, $shopLocale, $apply, $model, $limit, $report, $cleanCopies, $cleanShopText, $redoCleaned, $retryFailed, $fillFromShop, &$processed) {
+        $query->chunkById($chunk, function (Collection $products) use ($sourceShop, $language, $locale, $shopLocale, $apply, $model, $limit, $report, $cleanCopies, $cleanShopText, $redoCleaned, $retryFailed, $fillFromShop, $replaceUncleanable, &$processed) {
             $siblings     = match (true) {
                 $fillFromShop !== null                                     => $this->siblings($products, $fillFromShop, activeOnly: true),
-                $sourceShop && !$cleanCopies && !$cleanShopText && !$redoCleaned => $this->siblings($products, $sourceShop),
+                $sourceShop && !$cleanCopies && !$cleanShopText && !$redoCleaned && !$replaceUncleanable => $this->siblings($products, $sourceShop),
                 default                                                    => collect(),
             };
             $this->briefs = [];
@@ -210,6 +234,11 @@ class FillShopProductTranslations
             foreach ($products as $product) {
                 if ($limit !== null && $processed >= $limit) {
                     return false;
+                }
+                if ($replaceUncleanable) {
+                    $processed += (int) $this->replaceUncleanable($product, $language, $locale, $shopLocale, $retryFailed, $apply, $model, $report);
+
+                    continue;
                 }
                 $processed++;
                 match (true) {
@@ -243,7 +272,8 @@ class FillShopProductTranslations
         foreach (self::FIELDS as $field) {
             $copy  = $sibling ? trim((string) $sibling->{$field}) : '';
             $shopText = trim((string) $product->{$field});
-            if (!$this->isOurs($product, $field, $locale) || Arr::get($product->data, "translation_sources.$locale.fields.$field") === self::CLEANED) {
+            if (!$this->isOurs($product, $field, $locale) || in_array(Arr::get($product->data, "translation_sources.$locale.fields.$field"), [self::CLEANED, self::BLANKED], true)
+                || Arr::get($product->data, "translation_sources.$locale.replaced.$field") === self::REPLACED) {
                 continue;
             }
             if ($copy !== '' && $copy !== $shopText) {
@@ -342,6 +372,75 @@ class FillShopProductTranslations
         }
         $product->data = $data;
         $product->save();
+    }
+
+    /**
+     * The copy --clean-copies rejected (the field named in clean_failed) is replaced by a translation of the shop's own
+     * text, unless that text is empty, still carries reseller wording or failed its own clean (translating it would
+     * bring the wording back), or a person corrected the copy. Returns whether a translation was asked for, which is
+     * what --limit counts. A rejected answer keeps the copy and marks replaced.<field> failed; a failed call marks nothing.
+     */
+    private function replaceUncleanable(Product $product, Language $language, string $locale, string $shopLocale, bool $retryFailed, bool $apply, string $model, ?callable $report): bool
+    {
+        $sources = (array) Arr::get($product->data, "translation_sources.$locale", []);
+        $field   = explode(':', (string) Arr::get($sources, 'clean_failed'))[0];
+        if (!in_array($field, self::CLEANABLE_FIELDS, true) || Arr::get($sources, "fields.$field") !== self::COPIED
+            || Arr::get($sources, "replaced.$field") !== ($retryFailed ? self::REPLACE_FAILED : null)) {
+            return false;
+        }
+
+        $shopText = trim((string) $product->{$field});
+        $skip     = match (true) {
+            !$this->isOurs($product, $field, $locale) => 'kept_person_text',
+            $this->isBlankText($shopText)             => 'skipped_no_shop_text',
+            Arr::get($product->data, "translation_sources.$shopLocale.fields.$field") === self::SHOP_TEXT_FAILED,
+            (bool) preg_match('/'.self::RESELLER_WORDING.'/iu', $shopText) => 'skipped_shop_text_wording',
+            default => null,
+        };
+        if ($skip) {
+            $this->stats[$skip]++;
+            $report && $report($product, [$field => ['translate' => $shopText]], [], [$field => $skip]);
+
+            return false;
+        }
+
+        $fields    = [$field => ['translate' => $shopText]];
+        $texts     = $this->askWithRetry($fields, $product, $language, $model);
+        $failure   = $texts === null ? $this->lastFailure : null;
+        $transient = $failure !== null && !$this->lastFailureWasRejection;
+
+        $kept = false;
+        if ($apply && !$transient) {
+            try {
+                $product = $product->fresh();
+                $data    = $product->data ?? [];
+                $kept    = $failure === null && !$this->isOurs($product, $field, $locale);
+                if ($failure !== null) {
+                    data_set($data, "translation_sources.$locale.replaced.$field", self::REPLACE_FAILED);
+                    data_set($data, "translation_sources.$locale.replace_failures.$field", $failure);
+                } elseif ($this->isOurs($product, $field, $locale)) {
+                    $product->setTranslation($field.'_i8n', $locale, $texts[$field]);
+                    data_set($data, "translation_sources.$locale.fields.$field", self::MACHINE);
+                    data_set($data, "translation_sources.$locale.hashes.$field", md5($texts[$field]));
+                    data_set($data, "translation_sources.$locale.model", $model);
+                    data_set($data, "translation_sources.$locale.replaced.$field", self::REPLACED);
+                    data_set($data, "translation_sources.$locale.redo.$field", self::REDONE);
+                    data_set($data, "translation_sources.$locale.replaced_copy_from.$field", Arr::get($sources, 'from_product_id'));
+                    data_set($data, "translation_sources.$locale.replaced_clean_failure.$field", Arr::get($sources, 'clean_failed'));
+                    data_set($data, "translation_sources.$locale.replaced_at", now()->toIso8601String());
+                    Arr::forget($data, ["translation_sources.$locale.clean_failed", "translation_sources.$locale.replace_failures.$field"]);
+                }
+                $product->data = $data;
+                $product->save();
+            } catch (Throwable $exception) {
+                $failure = $exception->getMessage();
+            }
+        }
+
+        $this->stats[$failure !== null ? 'failed' : ($kept ? 'kept_person_text' : 'replaced')]++;
+        $report && $report($product, $fields, $failure === null && !$kept ? $texts : [], [$field => $kept ? 'kept_person_text' : self::MACHINE], $failure);
+
+        return true;
     }
 
     /**
@@ -469,8 +568,9 @@ class FillShopProductTranslations
             $wasMachine = $shopMark === self::SHOP_TEXT_CLEANED && Arr::get($translated, "fields.$field") === self::MACHINE;
             $wasEmpty   = in_array($shopMark, [self::BORROWED, self::BORROWED_CLEANED], true) && Arr::has($product->data ?? [], "translation_sources.$locale") && Arr::get($translated, "fields.$field") === null;
             $since      = $wasMachine ? 'cleaned_at' : 'borrowed_at';
-            if ((!$wasMachine && !$wasEmpty)
-                || ($retryFailed ? $redo !== self::REDO_FAILED : ($redo !== null || (string) Arr::get($translated, 'at') >= (string) Arr::get($cleaned, $since)))) {
+            $wasBlanked = Arr::get($translated, "fields.$field") === self::BLANKED && !$this->isBlankText($product->{$field});
+            if ((!$wasMachine && !$wasEmpty && !$wasBlanked)
+                || ($retryFailed ? $redo !== self::REDO_FAILED : ($redo !== null || (!$wasBlanked && (string) Arr::get($translated, 'at') >= (string) Arr::get($cleaned, $since))))) {
                 continue;
             }
             if ($this->isOurs($product, $field, $locale)) {
@@ -1022,7 +1122,7 @@ EOT;
             (int) $command->option('chunk'),
             $command->option('model'),
             function (Product $product, array $fields, ?array $texts, array $sources, ?string $failure = null) use ($command) {
-                $command->line("<comment>{$product->code}</comment> ".($texts === null ? "<error>FAILED</error> $failure" : implode(', ', array_unique(array_intersect_key($sources, $texts))).($failure !== null ? " <error>FAILED</error> $failure" : '')));
+                $command->line("<comment>{$product->code}</comment> ".($texts === null ? "<error>FAILED</error> $failure" : implode(', ', array_unique($texts ? array_intersect_key($sources, $texts) : $sources)).($failure !== null ? " <error>FAILED</error> $failure" : '')));
                 if ($command->getOutput()->isVerbose() && $texts !== null) {
                     foreach ($texts as $field => $text) {
                         if (isset($fields[$field]['clean'])) {
@@ -1039,7 +1139,8 @@ EOT;
             (bool) $command->option('clean-copies'),
             (bool) $command->option('clean-shop-text'),
             (bool) $command->option('redo-cleaned'),
-            $command->option('fill-from-shop') ? $this->findShop($command->option('fill-from-shop')) : null
+            $command->option('fill-from-shop') ? $this->findShop($command->option('fill-from-shop')) : null,
+            (bool) $command->option('replace-uncleanable')
         );
 
         $command->table(['source', 'products'], collect($result['stats'])->map(fn ($count, $source) => [$source, $count])->values()->all());

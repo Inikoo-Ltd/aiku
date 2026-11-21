@@ -41,6 +41,7 @@ use App\Models\Helpers\TranslationTerm;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -1242,4 +1243,144 @@ test('fill translations redo cleaned leaves a borrowed text of a product never f
     $product = $this->product->refresh();
     expect($product->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
         ->and($product->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Calming soap</p>');
+});
+
+function uncleanableCopyFixture(object $test, string $shopDescription = '<p>Lovely soap</p>'): Product
+{
+    $sibling = fillTranslationsFixture($test);
+    plainOtherShopProducts($test);
+    fillTranslations($test);
+    $test->cleanAnswer = ['description' => '<p>Tolles feines mildes Stück hier</p>'];
+    FillShopProductTranslations::run($test->shop, Language::where('code', 'de')->first(), $test->germanShop, true, false, null, 50, null, null, false, true);
+    $test->cleanAnswer = null;
+    $test->product->refresh()->updateQuietly(['description' => $shopDescription]);
+
+    return $sibling;
+}
+
+function replaceUncleanable(object $test, bool $apply = true, bool $retryFailed = false): array
+{
+    return FillShopProductTranslations::run($test->shop, Language::where('code', 'de')->first(), $test->germanShop, $apply, false, null, 50, null, null, $retryFailed, false, false, false, null, true);
+}
+
+test('fill translations replaces a copy the clean rejected with a translation of the shop text, and a dry run writes nothing', function () {
+    $sibling = uncleanableCopyFixture($this);
+    $empty   = $this->product->replicate();
+    $empty->fill(['slug' => 'em-'.Str::random(10), 'code' => 'EM'.Str::random(8), 'master_product_id' => null, 'data' => ['translation_sources' => ['de' => ['failed' => 'name: empty', 'fields' => [], 'hashes' => []]]]]);
+    $empty->saveQuietly();
+    expect($this->product->data['translation_sources']['de']['clean_failed'])->toContain('description: rewritten');
+
+    $dry = replaceUncleanable($this, apply: false);
+    expect($dry['stats']['replaced'])->toBe(1)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife en gros</p>');
+
+    replaceUncleanable($this);
+
+    $german = $this->product->refresh()->data['translation_sources']['de'];
+    expect($this->product->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap</p>')
+        ->and($this->product->getTranslation('name_i8n', 'de', false))->toBe('Lavendelseife 100g en gros')
+        ->and($german['fields'])->toMatchArray(['name' => FillShopProductTranslations::COPIED, 'description' => FillShopProductTranslations::MACHINE])
+        ->and($german['hashes']['description'])->toBe(md5('DE <p>Lovely soap</p>'))
+        ->and($german['replaced']['description'])->toBe(FillShopProductTranslations::REPLACED)
+        ->and($german['replaced_copy_from']['description'])->toBe($sibling->id)
+        ->and($german)->not->toHaveKey('clean_failed')
+        ->and($empty->refresh()->data['translation_sources']['de']['fields'])->toBe([])
+        ->and($this->masterAsset->refresh()->getTranslation('description_i8n', 'de', false))->toBeEmpty()
+        ->and(replaceUncleanable($this)['stats']['replaced'])->toBe(0);
+});
+
+test('fill translations does not replace a rejected copy a person corrected, nor translate a shop text that still has reseller wording', function () {
+    uncleanableCopyFixture($this);
+    $this->product->refresh()->setTranslation('description_i8n', 'de', '<p>Von Hand korrigiert</p>')->save();
+
+    expect(replaceUncleanable($this)['stats']['kept_person_text'])->toBe(1)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Von Hand korrigiert</p>');
+
+    $this->product->setTranslation('description_i8n', 'de', '<p>Schöne Seife en gros</p>')->save();
+    $this->product->updateQuietly(['description' => '<p>Lovely soap, wholesale for your shop</p>']);
+    $translations = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', 'wholesale for your shop'))->count();
+
+    expect(replaceUncleanable($this)['stats']['skipped_shop_text_wording'])->toBe(1)
+        ->and($translations())->toBe(0)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife en gros</p>');
+});
+
+test('fill translations keeps the copy when the replacing translation is rejected, and tries it again only with retry failed', function () {
+    uncleanableCopyFixture($this);
+    $this->aiPrefix = '<b>';
+    $translations   = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"translate":"<p>Lovely soap<\/p>"'))->count();
+
+    expect(replaceUncleanable($this)['stats']['failed'])->toBe(1)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('<p>Schöne Seife en gros</p>')
+        ->and($this->product->data['translation_sources']['de']['replaced']['description'])->toBe(FillShopProductTranslations::REPLACE_FAILED)
+        ->and($this->product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::COPIED);
+
+    $afterFailure = $translations();
+    replaceUncleanable($this);
+    expect($translations())->toBe($afterFailure);
+
+    $this->aiPrefix = 'DE ';
+    replaceUncleanable($this, retryFailed: true);
+
+    expect($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap</p>')
+        ->and($this->product->data['translation_sources']['de']['replaced']['description'])->toBe(FillShopProductTranslations::REPLACED)
+        ->and(data_get($this->product->data, 'translation_sources.de.replace_failures.description'))->toBeNull();
+});
+
+test('fill translations keeps a replaced copy through a forced fill and never redoes it after the shop text is cleaned', function () {
+    uncleanableCopyFixture($this);
+    replaceUncleanable($this);
+    $this->aiPrefix = 'NEU ';
+
+    fillTranslations($this, force: true);
+
+    expect($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap</p>')
+        ->and($this->product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::MACHINE);
+
+    $data = $this->product->data;
+    data_set($data, 'translation_sources.en', ['fields' => ['description' => FillShopProductTranslations::SHOP_TEXT_CLEANED], 'cleaned_at' => now()->addDay()->toIso8601String()]);
+    data_set($data, 'translation_sources.de.at', now()->subDay()->toIso8601String());
+    $this->product->updateQuietly(['data' => $data]);
+
+    expect(fillShopTextMode($this, 'redo')['stats'])->toMatchArray(['machine' => 0, 'failed' => 0])
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap</p>');
+});
+
+test('fill translations leaves a blanked german field alone in every mode, and redo cleaned translates it once the shop has its own text', function () {
+    fillTranslationsFixture($this);
+    plainOtherShopProducts($this);
+    $this->product->updateQuietly(['description' => null]);
+    fillTranslations($this);
+    $product = $this->product->refresh();
+    expect($product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::COPIED);
+
+    $product->forgetTranslation('description_i8n', 'de');
+    $data = $product->data;
+    data_set($data, 'translation_sources.de.fields.description', FillShopProductTranslations::BLANKED);
+    data_set($data, 'translation_sources.de.blanked.description', ['at' => now()->toIso8601String(), 'was' => '<p>Schöne Seife en gros</p>', 'why' => 'wholesale pitch']);
+    Arr::forget($data, 'translation_sources.de.hashes.description');
+    $product->data = $data;
+    $product->save();
+
+    fillTranslations($this, force: true);
+    FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
+    replaceUncleanable($this);
+    fillShopTextMode($this, 'redo');
+
+    expect($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBeEmpty()
+        ->and($this->product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::BLANKED);
+
+    $this->product->updateQuietly(['description' => '<p>Lovely soap</p>']);
+    $this->aiPrefix = 'NEU ';
+    fillTranslations($this, force: true);
+    expect($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBeEmpty();
+
+    fillShopTextMode($this, 'redo');
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('description_i8n', 'de', false))->toBe('NEU <p>Lovely soap</p>')
+        ->and($product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::MACHINE)
+        ->and($product->data['translation_sources']['de']['redo']['description'])->toBe(FillShopProductTranslations::REDONE)
+        ->and($product->data['translation_sources']['de']['blanked']['description']['why'])->toBe('wholesale pitch')
+        ->and(fillShopTextMode($this, 'redo')['stats']['machine'])->toBe(0);
 });
