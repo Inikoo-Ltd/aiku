@@ -37,6 +37,7 @@ enum McpChangeTypeEnum: string
     case PRODUCT_PACKAGING = 'product_packaging';
     case STAFF_CHAT_LISTS = 'staff_chat_lists';
     case CUSTOMS_INVOICE = 'customs_invoice';
+    case MASTER_PRE_ORDER = 'master_pre_order';
 
     public static function labels(): array
     {
@@ -64,6 +65,7 @@ enum McpChangeTypeEnum: string
             'product_packaging'     => __('Product packaging weighed'),
             'staff_chat_lists'      => __('Who gets Ask CRM and Ask warehouse questions'),
             'customs_invoice'       => __('Customs invoices for a truck to a partner'),
+            'master_pre_order'      => __('Master products on pre-order'),
         ];
     }
 
@@ -78,7 +80,7 @@ enum McpChangeTypeEnum: string
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING, McpChangeTypeEnum::CUSTOMS_INVOICE => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
-            McpChangeTypeEnum::MASTER_PRICES => 'can_use_mcp_prices',
+            McpChangeTypeEnum::MASTER_PRICES, McpChangeTypeEnum::MASTER_PRE_ORDER => 'can_use_mcp_prices',
             McpChangeTypeEnum::STOCK_DELIVERY_COSTS => 'can_use_mcp_costing',
             McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CHAT_SPAM, McpChangeTypeEnum::CHAT_CLOSED => 'can_use_mcp_customer_service',
             McpChangeTypeEnum::TRADE_UNIT_PROPERTIES, McpChangeTypeEnum::PRODUCT_PACKAGING => 'can_use_mcp_goods',

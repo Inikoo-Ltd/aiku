@@ -2557,6 +2557,43 @@ describe('master prices tool', function () {
         $tool(['prices' => [['code' => $this->masterAsset->code, 'prices' => ['GBP' => 9]]], 'allow_large_changes' => true])->assertHasErrors(['no price yet']);
         expect(data_get($this->masterAsset->fresh()->master_prices, 'GBP.value'))->toBeNull();
     });
+
+    test('pre-order tool shows master products, switches made-to-order after confirmation, logs and reverts', function () {
+        $this->masterAsset->updateQuietly(['is_back_order' => false, 'is_made_to_order' => false, 'pre_order_lead_time_days' => null]);
+        $tool = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\MasterPreOrderTool::class, [
+            'master_shop' => $this->masterShop->slug,
+            ...$arguments,
+        ]);
+
+        $tool(['family' => $this->masterFamily->code])->assertOk()->assertSee($this->masterAsset->code)->assertSee('"is_made_to_order":false');
+        $tool(['codes' => [$this->masterAsset->code], 'is_made_to_order' => true])->assertHasErrors(['request_text is required']);
+        $tool(['codes' => [$this->masterAsset->code, 'NOPE-999'], 'is_made_to_order' => true, 'request_text' => 'yes'])->assertHasErrors(['nope-999']);
+        expect($this->masterAsset->fresh()->is_made_to_order)->toBeFalse();
+
+        $this->user->update(['can_use_mcp_prices' => false]);
+        $tool(['codes' => [$this->masterAsset->code], 'is_made_to_order' => true, 'request_text' => 'yes'])->assertHasErrors(['not enabled']);
+        $this->user->update(['can_use_mcp_prices' => true]);
+
+        $tool([
+            'codes'                    => [strtolower($this->masterAsset->code)],
+            'is_made_to_order'         => true,
+            'pre_order_lead_time_days' => 42,
+            'request_text'             => 'yes, made to order, 6 weeks',
+        ])->assertOk()->assertSee('change_log_id');
+
+        $masterAsset = $this->masterAsset->fresh();
+        $change      = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::MASTER_PRE_ORDER)->latest('id')->first();
+        expect($masterAsset->is_made_to_order)->toBeTrue()
+            ->and($masterAsset->pre_order_lead_time_days)->toBe(42)
+            ->and($change->request_text)->toBe('yes, made to order, 6 weeks')
+            ->and($change->data['after_text'])->toContain('is_made_to_order=true')
+            ->and($change->canBeRevertedBy($this->user))->toBeTrue();
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $this->user);
+        $masterAsset = $this->masterAsset->fresh();
+        expect($masterAsset->is_made_to_order)->toBeFalse()
+            ->and($masterAsset->pre_order_lead_time_days)->toBeNull();
+    });
 });
 
 describe('trade unit properties tool', function () {

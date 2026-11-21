@@ -418,6 +418,7 @@ class EditUser extends OrgAction
                     __('Save new master prices in the main currencies. The other currencies follow the exchange rate, except prices set by hand.'),
                     __('Every shop following the master sells at the new price.'),
                     __('A price that more than doubles or drops by more than 60% is refused unless they say it is meant.'),
+                    __('Put master products on pre-order (back-order or made-to-order) and set their lead time, deposit and maximum per order, in every shop following the master.'),
                     __('Every change is kept in the AI changes list with their name and request, and can be undone there.'),
                     __('Only where this person can edit the master catalogue in Aiku.'),
                 ],

@@ -51,6 +51,7 @@ use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -128,6 +129,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::CHAT_SPAM => UnmarkChatSessionAsSpam::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user), unblockSender: false),
                 McpChangeTypeEnum::CHAT_CLOSED => ReopenChatSession::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user)),
                 McpChangeTypeEnum::MASTER_PRICES => $this->revertMasterPrices($mcpChange->before),
+                McpChangeTypeEnum::MASTER_PRE_ORDER => $this->revertMasterPreOrder($mcpChange->before),
                 McpChangeTypeEnum::STOCK_DELIVERY_COSTS => $this->revertStockDeliveryCosts($target, $mcpChange->before),
                 McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => $this->revertTradeUnitProperties($target, $mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->revertWebsiteRedirects($mcpChange->before),
@@ -274,6 +276,13 @@ class RevertMcpChange
     {
         foreach ($before['redirects'] as $redirectId => $toWebpageId) {
             UpdateRedirect::make()->action(Redirect::findOrFail($redirectId), ['to_webpage_id' => $toWebpageId]);
+        }
+    }
+
+    private function revertMasterPreOrder(array $before): void
+    {
+        foreach ($before['master_assets'] as $masterAssetId => $settings) {
+            UpdateMasterAsset::make()->action(MasterAsset::findOrFail($masterAssetId), Arr::except($settings, 'code'));
         }
     }
 

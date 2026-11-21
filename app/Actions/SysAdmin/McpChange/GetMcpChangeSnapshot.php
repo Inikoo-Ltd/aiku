@@ -8,6 +8,8 @@
 
 namespace App\Actions\SysAdmin\McpChange;
 
+use App\Mcp\Tools\MasterPreOrderTool;
+use App\Models\Masters\MasterAsset;
 use App\Mcp\Tools\OrgStockFlagsTool;
 use App\Actions\Chat\ChatSession\WaitForCustomerReply;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
@@ -79,6 +81,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PRODUCTION_RECIPE => $this->productionRecipes($target),
             McpChangeTypeEnum::PLACED_ORDER => $this->placedOrder($target),
             McpChangeTypeEnum::MASTER_PRICES => $this->masterPrices($target),
+            McpChangeTypeEnum::MASTER_PRE_ORDER => $this->masterPreOrder($target),
             McpChangeTypeEnum::STOCK_DELIVERY_COSTS => $this->stockDeliveryCosts($target),
             McpChangeTypeEnum::CUSTOMER_SERVICE => $this->customerService($target),
             McpChangeTypeEnum::CHAT_SPAM => $this->chatSpam($target),
@@ -154,6 +157,12 @@ class GetMcpChangeSnapshot
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.($orgStock['do_not_auto_order'] ? 'kept out of order suggestions' : 'suggested'))
                 ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::MASTER_PRE_ORDER) {
+            return collect($snapshot['master_assets'])
+                ->map(fn (array $masterAsset) => $masterAsset['code'].': '.collect(Arr::except($masterAsset, 'code'))->map(fn ($value, string $field) => $field.'='.json_encode($value))->implode(', '))
+                ->implode('; ');
         }
 
         if ($type === McpChangeTypeEnum::ORG_STOCK_FLAGS) {
@@ -367,6 +376,19 @@ class GetMcpChangeSnapshot
         return (array) DB::table('trade_units')
             ->where('id', $target['trade_unit_id'])
             ->first([...self::TRADE_UNIT_FIELDS, 'barcode_id', 'barcode']);
+    }
+
+    private function masterPreOrder(array $target): array
+    {
+        $tool = new MasterPreOrderTool();
+
+        return [
+            'master_assets' => MasterAsset::whereIn('id', $target['master_asset_ids'])
+                ->orderBy('id')
+                ->get()
+                ->mapWithKeys(fn (MasterAsset $masterAsset) => [$masterAsset->id => ['code' => $masterAsset->code, ...$tool->settings($masterAsset)]])
+                ->all(),
+        ];
     }
 
     /**

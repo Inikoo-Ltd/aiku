@@ -358,7 +358,7 @@ class UpdateMasterAsset extends OrgAction
             }
         }
 
-        $changedPreOrderFields = array_intersect(Product::PRE_ORDER_FIELDS, array_keys($masterAsset->getChanges()));
+        $changedPreOrderFields = array_intersect(Product::PRE_ORDER_FIELDS, array_keys($changes));
         if ($changedPreOrderFields) {
             foreach ($masterAsset->products as $product) {
                 UpdateProduct::run($product, $masterAsset->only($changedPreOrderFields));

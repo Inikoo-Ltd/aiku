@@ -88,7 +88,7 @@ class McpChange extends Model
             return false;
         }
 
-        if ($this->type === McpChangeTypeEnum::MASTER_PRICES) {
+        if (in_array($this->type, [McpChangeTypeEnum::MASTER_PRICES, McpChangeTypeEnum::MASTER_PRE_ORDER])) {
             return $user->authTo('masters.edit');
         }
 
