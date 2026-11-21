@@ -644,7 +644,9 @@ function fillTranslationsFixture(object $test, float $siblingUnits = 1): Product
             return Http::response('down', 503);
         }
         $texts = collect(json_decode($request['messages'][1]['content'], true))
-            ->map(fn (array $input) => isset($input['clean']) ? ($test->cleanAnswer ?? str_replace(' en gros', '', $input['clean'])) : ($test->aiPrefix ?? 'DE ').$input['translate']);
+            ->map(fn (array $input, string $field) => isset($input['clean'])
+                ? (is_array($test->cleanAnswer ?? null) ? ($test->cleanAnswer[$field] ?? $input['clean']) : ($test->cleanAnswer ?? str_replace(' en gros', '', $input['clean'])))
+                : ($test->aiPrefix ?? 'DE ').$input['translate']);
 
         return Http::response(['choices' => [['message' => ['content' => json_encode($texts)]]], 'usage' => ['cost' => 0.001]]);
     }]);
@@ -874,4 +876,194 @@ test('fill translations does not mark a copied description when the cleaning cal
     $check = fn (string $answer) => (new FillShopProductTranslations())->invalidReason(['description' => ['clean' => $long]], ['description' => $answer]);
     expect($check($kept))->toBeNull()
         ->and($check('<p>Diese Seife duftet nach Lavendel und pflegt die Haut.</p>'))->toContain('too much removed');
+});
+
+function plainOtherShopProducts(object $test): void
+{
+    Product::where('shop_id', $test->shop->id)->whereKeyNot($test->product->id)->update(['description' => '<p>Plain</p>', 'description_title' => null, 'description_extra' => null, 'data' => '{}']);
+}
+
+function fillShopTextMode(object $test, string $mode, bool $apply = true, bool $retryFailed = false): array
+{
+    $language = Language::where('code', $mode === 'clean' ? 'en' : 'de')->first();
+
+    return FillShopProductTranslations::run($test->shop, $language, $test->germanShop, $apply, false, null, 50, null, null, $retryFailed, false, $mode === 'clean', $mode === 'redo');
+}
+
+test('fill translations leaves customer bundles out of every mode, but fills a product exclusive to a customer', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    $own = collect([['is_bundle' => true, 'code' => 'B-1-'.Str::random(4)], ['is_bundle' => false, 'code' => 'EX'.Str::random(6)]])
+        ->map(function (array $attributes) {
+            $product = $this->product->replicate();
+            $product->fill($attributes + ['slug' => 'own-'.Str::random(10), 'master_product_id' => null, 'exclusive_for_customer_id' => 1, 'name' => 'Customer own '.$attributes['code'], 'description' => '<p>Wholesale for your shop</p>', 'data' => []]);
+            $product->saveQuietly();
+
+            return $product;
+        });
+    [$bundle, $exclusive] = $own->all();
+    $requestsFor          = fn (string $text) => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', $text))->count();
+
+    fillTranslations($this);
+    fillTranslations($this, force: true);
+    fillShopTextMode($this, 'clean');
+    fillShopTextMode($this, 'redo');
+
+    expect($requestsFor($bundle->code))->toBe(0)
+        ->and($bundle->refresh()->data)->toBeEmpty()
+        ->and($requestsFor($exclusive->code))->toBeGreaterThan(0)
+        ->and($exclusive->refresh()->getTranslation('name_i8n', 'de', false))->toBe('DE Customer own '.$exclusive->code);
+});
+
+test('fill translations pins that the product update copies a shop description into the master english translation, which the shop text cleanup must avoid', function () {
+    UpdateProduct::make()->action($this->product->refresh(), ['description' => '<p>Written in the shop</p>'], strict: false);
+
+    expect($this->masterAsset->refresh()->getTranslation('description_i8n', 'en', false))->toBe('<p>Written in the shop</p>');
+});
+
+test('fill translations cleans the shop own description on the product only, audited, keeps the german, the master and other shops, and never sends a cleaned field again', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    plainOtherShopProducts($this);
+    $this->product->updateQuietly(['description' => '<p>Lovely soap. Your customers will love it.</p>', 'description_title' => 'Soap for your shop']);
+    fillTranslations($this);
+    $germanHash = $this->product->refresh()->data['translation_sources']['de']['hashes']['description'];
+    $untouched  = $this->product->replicate();
+    $untouched->fill(['slug' => 'un-'.Str::random(10), 'code' => 'UN'.Str::random(8), 'master_product_id' => null, 'description' => '<p>Plain soap</p>', 'data' => ['translation_sources' => ['de' => ['failed' => 'name: empty', 'fields' => [], 'hashes' => []]]]]);
+    $untouched->saveQuietly();
+    $otherShop    = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['language_id' => Language::where('code', 'en')->first()->id]));
+    $otherEnglish = $this->product->replicate();
+    $otherEnglish->fill(['shop_id' => $otherShop->id, 'slug' => 'oe-'.Str::random(10), 'description' => '<p>Lovely soap. Your customers will love it.</p>', 'data' => []]);
+    $otherEnglish->saveQuietly();
+    $this->cleanAnswer = ['description' => '<p>Lovely soap.</p>'];
+    $requests          = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"clean"'))->count();
+
+    $dry = fillShopTextMode($this, 'clean', apply: false);
+    expect($dry['stats']['cleaned'])->toBe(1)
+        ->and($this->product->refresh()->description)->toBe('<p>Lovely soap. Your customers will love it.</p>');
+
+    $result = fillShopTextMode($this, 'clean');
+
+    $product = $this->product->refresh();
+    expect($result['stats']['cleaned'])->toBe(1)
+        ->and($product->description)->toBe('<p>Lovely soap.</p>')
+        ->and($product->getTranslation('description_i8n', 'en', false))->toBe('<p>Lovely soap.</p>')
+        ->and($product->name)->toBe('Lavender soap 100g')
+        ->and($product->description_title)->toBe('Soap for your shop')
+        ->and($product->data['translation_sources']['en']['fields'])->toEqual(['description_title' => FillShopProductTranslations::SHOP_TEXT_CHECKED, 'description' => FillShopProductTranslations::SHOP_TEXT_CLEANED])
+        ->and($product->data['translation_sources']['en']['hashes']['description'])->toBe(md5('<p>Lovely soap.</p>'))
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap. Your customers will love it.</p>')
+        ->and($product->data['translation_sources']['de']['hashes']['description'])->toBe($germanHash)
+        ->and($untouched->refresh()->description)->toBe('<p>Plain soap</p>')
+        ->and($product->audits()->get()->contains(fn ($audit) => ($audit->new_values['description'] ?? null) === '<p>Lovely soap.</p>'))->toBeTrue()
+        ->and($this->masterAsset->refresh()->getTranslation('description_i8n', 'en', false))->toBeEmpty()
+        ->and($otherEnglish->refresh()->description)->toBe('<p>Lovely soap. Your customers will love it.</p>');
+
+    $afterFirst = $requests();
+    fillShopTextMode($this, 'clean');
+    expect($requests())->toBe($afterFirst);
+});
+
+test('fill translations rejects a cleaned shop text that loses a number, marks only that field and still cleans the others', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    plainOtherShopProducts($this);
+    $this->product->updateQuietly(['description' => '<p>Box of 12 soaps for your shop.</p>', 'description_extra' => '<p>Your customers will love it. Lasts long.</p>']);
+    $this->cleanAnswer = ['description' => '<p>Box of soaps.</p>', 'description_extra' => '<p>Lasts long.</p>'];
+
+    $first = fillShopTextMode($this, 'clean');
+
+    $marks = $this->product->refresh()->data['translation_sources']['en'];
+    expect($first['stats']['failed'])->toBe(1)
+        ->and($marks['fields'])->toBe(['description' => FillShopProductTranslations::SHOP_TEXT_FAILED])
+        ->and($marks['failures']['description'])->toContain('numbers lost (12)')
+        ->and($this->product->description)->toBe('<p>Box of 12 soaps for your shop.</p>');
+
+    $second = fillShopTextMode($this, 'clean');
+
+    expect($second['stats']['cleaned'])->toBe(1)
+        ->and($this->product->refresh()->description_extra)->toBe('<p>Lasts long.</p>')
+        ->and($this->product->description)->toBe('<p>Box of 12 soaps for your shop.</p>')
+        ->and(fillShopTextMode($this, 'clean')['stats'])->toMatchArray(['cleaned' => 0, 'failed' => 0, 'unchanged' => 0]);
+});
+
+test('fill translations redoes only the machine german of fields whose shop text was cleaned afterwards, never the name, once, and a rejected redo only with retry failed', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    plainOtherShopProducts($this);
+    $this->product->updateQuietly(['description' => '<p>Lovely soap. Your customers will love it.</p>']);
+    fillTranslations($this);
+    $this->travel(1)->minutes();
+    $this->cleanAnswer = ['description' => '<p>Lovely soap.</p>'];
+    fillShopTextMode($this, 'clean');
+    $this->travel(1)->minutes();
+    $translations = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"translate"'))->count();
+
+    $dry = fillShopTextMode($this, 'redo', apply: false);
+    expect($dry['stats']['machine'])->toBe(1)
+        ->and($this->product->refresh()->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Lovely soap. Your customers will love it.</p>');
+
+    $this->aiPrefix = '<b>';
+    expect(fillShopTextMode($this, 'redo')['stats']['failed'])->toBe(1)
+        ->and($this->product->refresh()->data['translation_sources']['de']['redo']['description'])->toBe(FillShopProductTranslations::REDO_FAILED)
+        ->and($this->product->data['translation_sources']['de'])->not->toHaveKey('failed');
+    $afterFailure = $translations();
+    fillShopTextMode($this, 'redo');
+    expect($translations())->toBe($afterFailure);
+
+    $this->aiPrefix = 'NEU ';
+    fillShopTextMode($this, 'redo', retryFailed: true);
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('description_i8n', 'de', false))->toBe('NEU <p>Lovely soap.</p>')
+        ->and($product->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
+        ->and($product->data['translation_sources']['de']['hashes']['description'])->toBe(md5('NEU <p>Lovely soap.</p>'))
+        ->and($product->data['translation_sources']['de']['redo']['description'])->toBe(FillShopProductTranslations::REDONE);
+
+    $afterRedo = $translations();
+    fillShopTextMode($this, 'redo');
+    fillShopTextMode($this, 'redo', retryFailed: true);
+    expect($translations())->toBe($afterRedo);
+});
+
+test('fill translations redo records a german a person corrected and comes back empty after', function () {
+    fillTranslationsFixture($this, siblingUnits: 6);
+    plainOtherShopProducts($this);
+    $this->product->updateQuietly(['description' => '<p>Lovely soap. Your customers will love it.</p>']);
+    fillTranslations($this);
+    $this->product->refresh()->setTranslation('description_i8n', 'de', '<p>Von Hand</p>')->save();
+    $this->travel(1)->minutes();
+    $this->cleanAnswer = ['description' => '<p>Lovely soap.</p>'];
+    fillShopTextMode($this, 'clean');
+    $this->travel(1)->minutes();
+
+    fillShopTextMode($this, 'redo');
+
+    expect($this->product->refresh()->data['translation_sources']['de']['redo']['description'])->toBe(FillShopProductTranslations::REDO_KEPT)
+        ->and($this->product->getTranslation('description_i8n', 'de', false))->toBe('<p>Von Hand</p>')
+        ->and(fillShopTextMode($this, 'redo')['stats'])->toMatchArray(['machine' => 0, 'failed' => 0, 'nothing_to_translate' => 0]);
+});
+
+test('fill translations accepts a cleaned shop text that only drops our own branding, and shows what was removed', function () {
+    $fill   = new FillShopProductTranslations();
+    $source = '<p>These <strong>AWGifts Dropship Europe Satya incense sticks</strong> are hand rolled in India, 15 sticks per pack.</p>';
+    $clean  = '<p>These <strong>Satya incense sticks</strong> are hand rolled in India, 15 sticks per pack.</p>';
+
+    expect($fill->invalidReason(['description' => ['clean' => $source]], ['description' => $clean]))->toBeNull()
+        ->and($fill->changedSpan($source, $clean))->toBe(['AWGifts Dropship Europe', ''])
+        ->and(preg_match('/'.FillShopProductTranslations::RESELLER_WORDING.'/iu', 'It represents strength'))->toBe(0)
+        ->and(preg_match('/'.FillShopProductTranslations::RESELLER_WORDING.'/iu', 'AWGifts presents Satya'))->toBe(1);
+});
+
+test('fill translations lets the imperial equivalent beside a metric size drop, never the metric size or a lone imperial one', function () {
+    $check = fn (string $field, string $source, string $output) => (new FillShopProductTranslations())->invalidReason([$field => ['translate' => $source]], [$field => $output]);
+
+    expect($check('description', '<p><strong>Dimensions:</strong> 34 x 18 x 5 cm (13.4 x 7.1 x 2 inch)&nbsp;</p><p>Strap: 51 - 96 cm (20.1 x 37.8 inch)</p>', '<p><strong>Maße:</strong> 34 x 18 x 5 cm</p><p>Riemen: 51 - 96 cm</p>'))->toBeNull()
+        ->and($check('description', '<li>Teapot Capacity: 200ml (6.8 fluid ounces)</li>', '<li>Fassungsvermögen: 200 ml</li>'))->toBeNull()
+        ->and($check('description_extra', '<p>Size: 62 x 200 cm (approx. 24 x 79 in)</p>', '<p>Größe: 62 x 200 cm</p>'))->toBeNull()
+        ->and($check('name', 'Crystal Gemstone Necklace Cord 45cm/18inch - Green', 'Kristall-Edelstein-Halskette Kordel 45 cm - Grün'))->toBeNull()
+        ->and($check('name', 'Crystal Gemstone Necklace Cord 45cm/18inch - Green', 'Kristall-Edelstein-Halskette Kordel 18 Zoll - Grün'))->toContain('numbers lost (45)')
+        ->and($check('name', 'Carved Mango Wood Ashcatcher 10"', 'Geschnitzter Aschefänger aus Mangoholz 25 cm'))->toContain('numbers lost (10)')
+        ->and($check('name', 'Lrg Natural 6oz Cotton Bag 38x42cm', 'Große Baumwolltasche 170 g 38x42 cm'))->toContain('numbers lost (6)')
+        ->and($check('description', '<p>Heavy cotton bag (8 oz)</p>', '<p>Schwere Baumwolltasche (227 g)</p>'))->toContain('numbers lost (8)')
+        ->and($check('description', '<p>Weight 250g (6 inch tall)</p>', '<p>Gewicht 250 g</p>'))->toContain('numbers lost (6)')
+        ->and($check('description', '<p>Weight 250g (6 inch)</p>', '<p>Gewicht 250 g</p>'))->toContain('numbers lost (6)')
+        ->and($check('description', '<p>Net weight 100g (3.5 oz)</p>', '<p>Nettogewicht 100 g</p>'))->toBeNull()
+        ->and($check('description', '<p>Lotion 250ml (8.45 oz)</p>', '<p>Lotion 250 ml</p>'))->toContain('numbers lost (8, 45)');
 });
