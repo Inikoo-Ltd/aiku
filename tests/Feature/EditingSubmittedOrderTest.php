@@ -1301,3 +1301,278 @@ test('a product listing two SKOs of the same stock is refused for cross dispatch
         ->and($secondOrder->deliveryNotes()->count())->toBe(0)
         ->and($secondOrder->fresh()->state)->toBe(OrderStateEnum::SUBMITTED);
 });
+
+function crossAndHomeNotes($test): array
+{
+    [$order, $dispatcher, , , $orgPartner] = crossDispatchOrder($test, 10);
+    $crossNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);
+
+    $warehouseAddress                 = $test->shop->address->replicate();
+    $warehouseAddress->address_line_1 = 'Dispatcher Dock 7';
+    $warehouseAddress->save();
+    $crossNote->warehouse->updateQuietly(['address_id' => $warehouseAddress->id]);
+
+    [$homeOrder] = submittedOrderWithTransaction($test->customer, $test->product, 10);
+    $homeNote    = SendOrderToWarehouse::make()->action($homeOrder, []);
+
+    return [$crossNote->refresh(), $homeNote->refresh(), $dispatcher, $order->refresh(), $homeOrder->refresh(), $orgPartner];
+}
+
+function shipperOf(\App\Models\SysAdmin\Organisation $organisation, string $tradeAs = 'carrier'): \App\Models\Dispatching\Shipper
+{
+    return StoreShipper::make()->action($organisation, ['code' => 'XS'.Str::upper(Str::random(6)), 'name' => 'Carrier '.Str::random(5), 'trade_as' => $tradeAs]);
+}
+
+function shipmentRefusals(\App\Models\Dispatching\DeliveryNote $deliveryNote, \App\Models\Dispatching\Shipper $shipper): array
+{
+    $deliveryNote = $deliveryNote->fresh();
+    $reasons      = $deliveryNote->isCrossDispatch()
+        ? array_map(fn ($reason) => $reason->value, ResolveCrossDispatch::make()->shipmentRefusals($deliveryNote, $shipper))
+        : [];
+
+    try {
+        \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(6)]);
+        $stored = true;
+    } catch (\Illuminate\Validation\ValidationException $exception) {
+        $stored = false;
+        expect(array_keys($exception->errors()))->toBe(['shipper'])
+            ->and($exception->errors()['shipper'])->toHaveCount(1);
+    }
+
+    expect($stored)->toBe($reasons === []);
+
+    return $reasons;
+}
+
+test('on a note worked in another company\'s warehouse the shipper lists and every way of creating a shipment take that company\'s shippers, and a home note keeps its own', function () {
+    [$crossNote, $homeNote, $dispatcher] = crossAndHomeNotes($this);
+    $theirs   = shipperOf($dispatcher);
+    $ours     = shipperOf($this->organisation);
+    $inactive = shipperOf($dispatcher);
+    $inactive->update(['status' => false]);
+
+    $mobileList  = fn ($note) => array_column((new \App\Actions\Api\Group\GoodsOut\IndexMobileShippers())->handle($note)['data'], 'id');
+    $companiesOf = fn (array $shipperIds) => \App\Models\Dispatching\Shipper::whereIn('id', $shipperIds)->pluck('organisation_id')->unique()->values()->all();
+    $webList     = fn ($note) => \App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments::make()->jsonResponse($note)['shipment']['shipments_routes']['fetch_route']['parameters']['organisation'];
+    $mobilePick  = new class () {
+        use \App\Actions\Api\Group\GoodsOut\WithMobileShipments;
+
+        public function pick(\App\Models\Dispatching\DeliveryNote $deliveryNote, int $shipperId): \App\Models\Dispatching\Shipper
+        {
+            return $this->storableShipper($deliveryNote, $shipperId, false);
+        }
+    };
+
+    expect($mobileList($crossNote))->toContain($theirs->id)->not->toContain($ours->id)->not->toContain($inactive->id)
+        ->and($companiesOf($mobileList($crossNote)))->toBe([$dispatcher->id])
+        ->and($mobileList($homeNote))->toContain($ours->id)->not->toContain($theirs->id)
+        ->and($companiesOf($mobileList($homeNote)))->toBe([$this->organisation->id])
+        ->and($webList($crossNote))->toBe($dispatcher->slug)
+        ->and($webList($homeNote))->toBe($this->organisation->slug)
+        ->and($mobilePick->pick($crossNote, $theirs->id)->id)->toBe($theirs->id)
+        ->and($mobilePick->pick($homeNote, $ours->id)->id)->toBe($ours->id)
+        ->and(fn () => $mobilePick->pick($crossNote, $ours->id))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => $mobilePick->pick($crossNote, $inactive->id))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => $mobilePick->pick($homeNote, $theirs->id))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $this->actingAs(userWithOnlyPermissions($dispatcher, ["org-admin.$dispatcher->id"]));
+    $this->post(route('grp.models.delivery_note.shipment.store', [$crossNote->id]), ['shipper_id' => $ours->id, 'tracking' => 'WEB1'])->assertSessionHasErrors('shipper_id');
+    expect($crossNote->shipments()->count())->toBe(0);
+    $this->post(route('grp.models.delivery_note.shipment.store', [$crossNote->id]), ['shipper_id' => $theirs->id, 'tracking' => 'WEB2', 'cost' => 7.5])->assertSessionHasNoErrors();
+    $shipment = $crossNote->shipments()->sole();
+    expect([$shipment->shipper_id, $shipment->organisation_id, $shipment->shop_id, $shipment->tracking, (float) $shipment->cost])
+        ->toBe([$theirs->id, $dispatcher->id, $this->shop->id, 'WEB2', 7.5]);
+
+    $this->actingAs($this->user);
+    $this->post(route('grp.models.delivery_note.shipment.store', [$homeNote->id]), ['shipper_id' => $theirs->id, 'tracking' => 'WEB3'])->assertSessionHasErrors('shipper_id');
+    $this->post(route('grp.models.delivery_note.shipment.store', [$homeNote->id]), ['shipper_id' => $ours->id, 'tracking' => 'WEB4'])->assertSessionHasNoErrors();
+    $homeShipment = $homeNote->shipments()->sole();
+    expect([$homeShipment->shipper_id, $homeShipment->organisation_id, $homeShipment->number_parcels])->toBe([$ours->id, $this->organisation->id, null])
+        ->and($homeShipment->data)->not->toHaveKey('cross_dispatch');
+
+    expect(shipmentRefusals($crossNote, $ours))->toBe(['shipper_of_another_company'])
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::make()->handle($crossNote->fresh(), $ours, []))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Choose one of its shippers')
+        ->and($crossNote->shipments()->count())->toBe(1);
+});
+
+test('the label of a note worked in another company\'s warehouse is asked from that company\'s carrier account with its warehouse as sender, and the shipment records what the charge between companies needs', function () {
+    [$crossNote, $homeNote, $dispatcher] = crossAndHomeNotes($this);
+    $theirs = shipperOf($dispatcher, 'GLS');
+    $theirs->update(['api_shipper' => 'gls-sk']);
+    $ours = shipperOf($this->organisation, 'GLS');
+    $ours->update(['api_shipper' => 'gls-sk']);
+
+    \App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping::mock()
+        ->shouldReceive('handle')
+        ->once()
+        ->withArgs(fn ($parent, $shipper) => $parent->is($crossNote) && $shipper->is($theirs))
+        ->andReturn(['status' => 'success', 'modelData' => ['tracking' => 'GLS1 GLS2', 'trackings' => ['GLS1', 'GLS2'], 'tracking_urls' => [], 'number_parcels' => 2]]);
+
+    expect(shipmentRefusals($crossNote, $ours))->toBe(['shipper_of_another_company']);
+
+    $shipment = \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($crossNote->fresh(), $theirs, []);
+    expect([$shipment->shipper_id, $shipment->organisation_id, $shipment->trade_as, $shipment->tracking, $shipment->number_parcels])
+        ->toBe([$theirs->id, $dispatcher->id, 'GLS', 'GLS1 GLS2', 2])
+        ->and($shipment->data['cross_dispatch'])->toEqual(['cost_currency' => $dispatcher->currency->code, 'cost_source' => 'missing']);
+    app()->forgetInstance(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping::class);
+
+    $crossNote->updateQuietly(['parcels' => [['weight' => 1], ['weight' => 2], ['weight' => 3]]]);
+    $typed = \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($crossNote->fresh(), shipperOf($dispatcher), ['tracking' => 'MAN1', 'cost' => 12.5]);
+    expect([$typed->number_parcels, (float) $typed->cost])->toBe([3, 12.5])
+        ->and($typed->data['cross_dispatch'])->toEqual(['cost_currency' => $dispatcher->currency->code, 'cost_source' => 'typed']);
+
+    $homeNote->updateQuietly(['parcels' => [['weight' => 1], ['weight' => 2]]]);
+    $homeShipment = \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($homeNote->fresh(), shipperOf($this->organisation), ['tracking' => 'MAN2', 'cost' => 3]);
+    expect($homeShipment->number_parcels)->toBeNull()
+        ->and($homeShipment->data)->not->toHaveKey('cross_dispatch');
+
+    $sender     = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($crossNote->fresh());
+    $homeSender = \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($homeNote->fresh());
+    $merchant   = ['from_first_name', 'from_last_name', 'from_company_name', 'from_contact_name', 'from_phone', 'from_email'];
+
+    $partlyLoaded = fn ($note) => \App\Models\Dispatching\DeliveryNote::with('shop:id')->find($note->id);
+    $partLine     = fn ($note) => \App\Models\Dispatching\DeliveryNoteItem::with('shop:id')->where('delivery_note_id', $note->id)->firstOrFail();
+    expect($partlyLoaded($crossNote)->isCrossDispatch())->toBeTrue()
+        ->and($partlyLoaded($homeNote)->isCrossDispatch())->toBeFalse()
+        ->and($partLine($crossNote)->isCrossDispatch())->toBeTrue()
+        ->and($partLine($homeNote)->isCrossDispatch())->toBeFalse()
+        ->and(\App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($partlyLoaded($crossNote))['from_address']['id'])->toBe($crossNote->warehouse->address_id);
+
+    expect($sender['from_address']['id'])->toBe($crossNote->warehouse->address_id)
+        ->and($sender['from_address']['address_line_1'])->toBe('Dispatcher Dock 7')
+        ->and($homeSender['from_address']['id'])->toBe($this->shop->address_id)
+        ->and($homeSender['from_address']['address_line_1'])->toBe((string) $this->shop->address->address_line_1)
+        ->and(\Illuminate\Support\Arr::only($sender, $merchant))->toBe(\Illuminate\Support\Arr::only($homeSender, $merchant));
+
+    $shopWithoutAddress = $homeNote->fresh();
+    $shopWithoutAddress->setRelation('shop', $this->shop->fresh()->setRelation('address', null));
+    expect(fn () => \App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData::run($shopWithoutAddress))->toThrow(\ErrorException::class);
+
+    $labelRequest = new ReflectionMethod(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping::class, 'prepareParcelList');
+    $pickup       = fn (array $data) => $labelRequest->invoke(new \App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping(), array_merge($data, ['reference' => 'DN-1', 'shipping_notes' => '']), 1234, null)[0]->PickupAddress;
+
+    expect($pickup($sender)->Street)->toStartWith('Dispatcher Dock 7')
+        ->and($pickup($sender)->Name)->toBe($pickup($homeSender)->Name)
+        ->and($pickup($homeSender)->Street)->toStartWith((string) $this->shop->address->address_line_1);
+});
+
+test('a shipper the customer locked stops the label of a note worked in another company\'s warehouse, and the ordering company\'s own shipper choices give way to the dispatching company\'s rules', function () {
+    [$crossNote, $homeNote, $dispatcher, $order, $homeOrder] = crossAndHomeNotes($this);
+    $ours      = shipperOf($this->organisation);
+    $ourRule   = shipperOf($this->organisation);
+    $theirs    = shipperOf($dispatcher);
+    $theirRule = shipperOf($dispatcher);
+    $scope     = \App\Actions\Dispatching\Shipment\StoreShipment::make()->tradeScopeForShopType($this->shop->type);
+    $directive = fn ($note) => \Illuminate\Support\Arr::only(\App\Actions\Dispatching\Shipment\StoreShipment::make()->getShipperDirective($note->fresh()), ['locked_shipper_id', 'preferred_shipper_id', 'locked_by']);
+    $lockedOut = fn ($note) => collect((new \App\Actions\Api\Group\GoodsOut\IndexMobileShippers())->handle($note->fresh())['data'])->where('is_locked_out', true)->pluck('id')->all();
+
+    $order->updateQuietly(['shipper_id' => $ours->id, 'is_shipper_locked' => true]);
+    $homeOrder->updateQuietly(['shipper_id' => $ours->id, 'is_shipper_locked' => true]);
+
+    $rules = [
+        \App\Models\Catalogue\PreferredShipping::create(['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'shop_id' => $this->shop->id, 'shipper_id' => $ourRule->id, 'trade_scope' => $scope, 'important' => true]),
+        \App\Models\Catalogue\PreferredShipping::create(['group_id' => $this->group->id, 'organisation_id' => $dispatcher->id, 'shipper_id' => $theirRule->id, 'trade_scope' => $scope, 'important' => true]),
+    ];
+
+    try {
+        $customerLock = ['locked_shipper_id' => $ours->id, 'preferred_shipper_id' => $ours->id, 'locked_by' => 'customer'];
+        expect($directive($homeNote))->toBe($customerLock)
+            ->and($directive($crossNote))->toBe($customerLock)
+            ->and($lockedOut($crossNote))->toContain($theirs->id, $theirRule->id)
+            ->and(shipmentRefusals($crossNote, $theirs))->toBe(['locked_shipper'])
+            ->and(shipmentRefusals($crossNote, $ours))->toBe(['shipper_of_another_company', 'locked_shipper'])
+            ->and(fn () => \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($crossNote->fresh(), $theirs, ['tracking' => 'LOCK0']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class, 'The customer chose a shipper for this order, and it cannot be used')
+            ->and(fn () => \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($homeNote->fresh(), shipperOf($this->organisation), ['tracking' => 'LOCK1']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class, 'The customer chose a shipper for this order. Contact customer services')
+            ->and($crossNote->shipments()->count() + $homeNote->shipments()->count())->toBe(0);
+
+        $order->updateQuietly(['is_shipper_locked' => false]);
+        $homeOrder->updateQuietly(['is_shipper_locked' => false]);
+        expect($directive($homeNote))->toBe(['locked_shipper_id' => null, 'preferred_shipper_id' => $ours->id, 'locked_by' => null])
+            ->and($directive($crossNote))->toBe(['locked_shipper_id' => $theirRule->id, 'preferred_shipper_id' => $theirRule->id, 'locked_by' => 'preferred_shipping']);
+
+        $homeOrder->updateQuietly(['shipper_id' => null]);
+        expect($directive($homeNote))->toBe(['locked_shipper_id' => $ourRule->id, 'preferred_shipper_id' => $ourRule->id, 'locked_by' => 'preferred_shipping']);
+
+        $rules[1]->delete();
+        expect($directive($crossNote))->toBe(['locked_shipper_id' => null, 'preferred_shipper_id' => null, 'locked_by' => null])
+            ->and($lockedOut($crossNote))->toBe([])
+            ->and(shipmentRefusals($crossNote, $theirs))->toBe([])
+            ->and($crossNote->shipments()->sole()->shipper_id)->toBe($theirs->id);
+    } finally {
+        collect($rules)->each->delete();
+    }
+});
+
+test('a label is refused on a note worked in another company\'s warehouse when the parcel would cross customs, or the order turned out to be TikTok, cash on delivery or for collection, and never for a home note', function () {
+    [$crossNote, $homeNote, $dispatcher, $order, $homeOrder, $orgPartner] = crossAndHomeNotes($this);
+    $theirs    = shipperOf($dispatcher);
+    $countryId = fn (string $code) => Country::where('code', $code)->firstOrFail()->id;
+    $shipFrom  = fn (string $code) => $crossNote->warehouse->address->updateQuietly(['country_id' => $countryId($code), 'country_code' => $code]);
+    $deliverTo = fn (string $code) => $crossNote->deliveryAddress->updateQuietly(['country_id' => $countryId($code), 'country_code' => $code]);
+    $refused   = fn () => array_map(fn ($reason) => $reason->value, ResolveCrossDispatch::make()->shipmentRefusals($crossNote->fresh(), $theirs));
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $dispatcher, ['allow_customs_crossing' => false]);
+    $shipFrom('ES');
+    $deliverTo('FR');
+    expect($refused())->toBe([]);
+
+    $deliverTo('GB');
+    expect($refused())->toBe(['customs_crossing'])
+        ->and(shipmentRefusals($crossNote, $theirs))->toBe(['customs_crossing'])
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::make()->handle($crossNote->fresh(), $theirs, []))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'customs border');
+    $deliverTo('US');
+    expect($refused())->toBe(['customs_crossing']);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $this->organisation, ['allow_customs_crossing' => true]);
+    expect($refused())->toBe([]);
+    $deliverTo('ES');
+
+    $crossNote->updateQuietly(['is_cash_on_delivery' => true]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['cash_on_delivery']);
+    $crossNote->updateQuietly(['is_cash_on_delivery' => false]);
+    $order->updateQuietly(['to_be_paid_by' => OrderToBePaidByEnum::CASH_ON_DELIVERY]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['cash_on_delivery']);
+    $order->updateQuietly(['to_be_paid_by' => null]);
+
+    $crossNote->updateQuietly(['collection_address_id' => $crossNote->address_id]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['collection']);
+    $crossNote->updateQuietly(['collection_address_id' => null]);
+
+    $order->updateQuietly(['platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK)->firstOrFail()->id]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['tiktok']);
+    $order->updateQuietly(['platform_id' => null]);
+
+    $crossNote->orders()->attach($homeOrder->id);
+    $homeOrder->updateQuietly(['to_be_paid_by' => OrderToBePaidByEnum::CASH_ON_DELIVERY, 'platform_id' => Platform::where('type', PlatformTypeEnum::TIKTOK)->firstOrFail()->id]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['tiktok', 'cash_on_delivery']);
+    $homeOrder->updateQuietly(['to_be_paid_by' => null, 'platform_id' => null]);
+    $crossNote->orders()->detach($homeOrder->id);
+
+    $warehouse        = $crossNote->warehouse;
+    $warehouseAddress = $warehouse->address_id;
+    $warehouse->updateQuietly(['address_id' => null]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['warehouse_without_address'])
+        ->and(fn () => \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($crossNote->fresh(), $theirs, ['tracking' => 'NOADDR']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'has no address');
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['allow_customs_crossing' => false]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['warehouse_without_address']);
+    $warehouse->updateQuietly(['address_id' => $warehouseAddress]);
+    $deliverTo('GB');
+    expect(shipmentRefusals($crossNote, $theirs))->toBe(['customs_crossing']);
+    $deliverTo('ES');
+
+    expect($crossNote->shipments()->count())->toBe(0);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => false]);
+    expect(shipmentRefusals($crossNote, $theirs))->toBe([])
+        ->and($crossNote->shipments()->count())->toBe(1);
+
+    $homeNote->deliveryAddress->updateQuietly(['country_id' => $countryId('US'), 'country_code' => 'US']);
+    $homeNote->updateQuietly(['is_cash_on_delivery' => true, 'collection_address_id' => $homeNote->address_id]);
+    expect(shipmentRefusals($homeNote, shipperOf($this->organisation)))->toBe([])
+        ->and($homeNote->shipments()->count())->toBe(1);
+});

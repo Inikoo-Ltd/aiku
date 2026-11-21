@@ -17,6 +17,7 @@ use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Transaction;
+use App\Models\Catalogue\Shop;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -227,7 +228,9 @@ class DeliveryNoteItem extends Model
             return (bool) DeliveryNote::withTrashed()->find($this->delivery_note_id ?? $this->newQueryWithoutScopes()->whereKey($this->getKey())->value('delivery_note_id'))?->isCrossDispatch();
         }
 
-        $shopOrganisationId = $this->shop?->organisation_id;
+        $shopOrganisationId = $this->relationLoaded('shop') && $this->shop && !array_key_exists('organisation_id', $this->shop->getAttributes())
+            ? Shop::whereKey($this->shop_id)->value('organisation_id')
+            : $this->shop?->organisation_id;
 
         return $this->organisation_id !== null && $shopOrganisationId !== null && (int) $this->organisation_id !== (int) $shopOrganisationId;
     }

@@ -73,6 +73,11 @@ trait WithPreferredShipperResolver
         );
     }
 
+    /**
+     * INI-484. On a note worked in another company's warehouse the customer's lock still shows (StoreShipment refuses
+     * the label), but the order's unlocked shipper and its zone's shippers are the ordering company's and cannot print a
+     * label there, so the dispatching company's rules choose.
+     */
     private function getShipperChoiceDirective(DeliveryNote $deliveryNote): array
     {
         $order = $deliveryNote->orders->first();
@@ -85,6 +90,10 @@ trait WithPreferredShipperResolver
                 'locked_scope'         => null,
                 'preferred_shipper'    => $this->describeShipper($order->shipper_id),
             ];
+        }
+
+        if ($deliveryNote->isCrossDispatch()) {
+            $order = null;
         }
 
         $zoneShippers = collect($order?->shippingZone?->shippers_price ?? []);

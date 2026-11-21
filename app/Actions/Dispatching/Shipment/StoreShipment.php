@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\External\Shopify\UpdateShippingShopifyOrder;
 use App\Actions\Catalogue\Shop\External\Wix\UpdateShippingWixOrder;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
@@ -26,6 +27,7 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiCttEsShipping;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\CrossDispatch\CrossDispatchRefusalEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -72,7 +74,13 @@ class StoreShipment extends OrgAction
      */
     private function storeShipment(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
+        $isCrossDispatch = $parent instanceof DeliveryNote && $parent->isCrossDispatch();
+
         if ($parent instanceof DeliveryNote) {
+            if ($isCrossDispatch) {
+                $this->guardCrossDispatch($parent, $shipper);
+            }
+
             $order = $parent->orders->first();
             if ($order?->is_shipper_locked && $order->shipper_id && $order->shipper_id != $shipper->id) {
                 throw ValidationException::withMessages([
@@ -138,6 +146,10 @@ class StoreShipment extends OrgAction
             data_set($modelData, 'tracking_urls', []);
         }
 
+        if ($isCrossDispatch) {
+            $modelData = $this->withCrossDispatchChargeData($parent, $modelData);
+        }
+
         if ($parent instanceof DeliveryNote && !Arr::has($modelData, 'delivery_type')) {
             $modelData = array_merge($modelData, GetShipmentDeliveryType::run($parent));
         }
@@ -191,6 +203,52 @@ class StoreShipment extends OrgAction
         }
 
         FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote);
+    }
+
+    /**
+     * INI-484. Checked for every flow, staff or system: nothing may put another company's label on these goods.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function guardCrossDispatch(DeliveryNote $deliveryNote, Shipper $shipper): void
+    {
+        $reasons = ResolveCrossDispatch::make()->shipmentRefusals($deliveryNote, $shipper);
+
+        if (!$reasons) {
+            return;
+        }
+
+        $home = __('Cancel the delivery note so the order ships from its own warehouse.');
+
+        throw ValidationException::withMessages([
+            'shipper' => implode(' ', array_map(fn (CrossDispatchRefusalEnum $reason) => match ($reason) {
+                CrossDispatchRefusalEnum::SHIPPER_OF_ANOTHER_COMPANY => __('This delivery note is dispatched from the warehouse of :organisation. Choose one of its shippers.', ['organisation' => $deliveryNote->organisation->name]),
+                CrossDispatchRefusalEnum::LOCKED_SHIPPER             => __('The customer chose a shipper for this order, and it cannot be used from another company\'s warehouse.').' '.$home,
+                CrossDispatchRefusalEnum::WAREHOUSE_WITHOUT_ADDRESS  => __('The warehouse :warehouse has no address, so the label has no sender. Add the address in the warehouse settings.', ['warehouse' => $deliveryNote->warehouse?->name]),
+                CrossDispatchRefusalEnum::CUSTOMS_CROSSING           => __('This parcel would cross the customs border from the warehouse of :organisation, which is not allowed between the two companies.', ['organisation' => $deliveryNote->organisation->name]).' '.$home,
+                CrossDispatchRefusalEnum::CASH_ON_DELIVERY           => __('A cash on delivery order cannot be shipped from another company\'s warehouse.').' '.$home,
+                CrossDispatchRefusalEnum::COLLECTION                 => __('An order for collection cannot be shipped from another company\'s warehouse.').' '.$home,
+                default                                              => __('A TikTok order cannot be shipped from another company\'s warehouse.').' '.$home,
+            }, $reasons)),
+        ]);
+    }
+
+    /**
+     * INI-484. What the charge between the two companies reads later: the parcels shipped, and the currency of a cost
+     * typed by the dispatching warehouse. A manual shipper counts no parcels, so the packed parcels of the note stand in.
+     */
+    private function withCrossDispatchChargeData(DeliveryNote $deliveryNote, array $modelData): array
+    {
+        if (!Arr::get($modelData, 'number_parcels')) {
+            data_set($modelData, 'number_parcels', max(1, count($deliveryNote->parcels ?? [])));
+        }
+
+        data_set($modelData, 'data.cross_dispatch', [
+            'cost_currency' => $deliveryNote->organisation->currency->code,
+            'cost_source'   => filled(Arr::get($modelData, 'cost')) ? 'typed' : 'missing',
+        ]);
+
+        return $modelData;
     }
 
     /**

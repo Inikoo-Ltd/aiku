@@ -37,4 +37,6 @@ enum CrossDispatchRefusalEnum: string
     case SKO_CONTENT_DIFFERS = 'sko_content_differs';
     case SKO_WITHOUT_COMMERCIAL_VALUE = 'sko_without_commercial_value';
     case NOT_ENOUGH_STOCK = 'not_enough_stock';
+    case SHIPPER_OF_ANOTHER_COMPANY = 'shipper_of_another_company';
+    case WAREHOUSE_WITHOUT_ADDRESS = 'warehouse_without_address';
 }

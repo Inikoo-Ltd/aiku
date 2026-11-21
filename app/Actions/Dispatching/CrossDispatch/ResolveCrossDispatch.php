@@ -21,6 +21,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\OrgPartner;
@@ -336,10 +337,18 @@ class ResolveCrossDispatch
         return array_map(fn (CrossDispatchRefusalEnum $reason) => ['reason' => $reason->value], $reasons);
     }
 
+    private function crossesCustomsBorder(Order $order, Organisation $dispatcher): bool
+    {
+        return self::crossesCustomsBorderBetween(
+            $dispatcher->warehouses()->orderBy('id')->first()?->address?->country_code ?? $dispatcher->country?->code,
+            $order->deliveryAddress?->country_code
+        );
+    }
+
     /**
      * A parcel stays inside one customs territory only when it leaves and arrives in the UK, or leaves and arrives in the EU; anywhere else counts as a crossing.
      */
-    private function crossesCustomsBorder(Order $order, Organisation $dispatcher): bool
+    public static function crossesCustomsBorderBetween(?string $fromCountryCode, ?string $toCountryCode): bool
     {
         $territory = fn (?string $countryCode) => match (true) {
             in_array($countryCode, ['GB', 'IM'], true)       => 'uk',
@@ -347,10 +356,50 @@ class ResolveCrossDispatch
             default                                          => null,
         };
 
-        $from = $territory($dispatcher->warehouses()->orderBy('id')->first()?->address?->country_code ?? $dispatcher->country?->code);
-        $to   = $territory($order->deliveryAddress?->country_code);
+        $from = $territory($fromCountryCode);
 
-        return $from === null || $from !== $to;
+        return $from === null || $from !== $territory($toCountryCode);
+    }
+
+    /**
+     * What stops a label on a note worked in another company's warehouse. The order was checked when the note was raised,
+     * but its delivery address, its shipper lock, the shipper asked for and the pair's customs setting can all differ by
+     * the time it is packed. A direction switched off since does not stop it: goods already picked still leave.
+     * The warehouse address is the one origin: the customs rule reads it and the label carries it as sender.
+     *
+     * @return array<int, CrossDispatchRefusalEnum>
+     */
+    public function shipmentRefusals(DeliveryNote $deliveryNote, Shipper $shipper): array
+    {
+        $orders  = $deliveryNote->orders;
+        $origin  = $deliveryNote->warehouse?->address;
+        $reasons = [];
+
+        if ((int) $shipper->organisation_id !== $deliveryNote->crossDispatchOrganisationId()) {
+            $reasons[] = CrossDispatchRefusalEnum::SHIPPER_OF_ANOTHER_COMPANY;
+        }
+        if ($orders->contains(fn (Order $order) => $order->is_shipper_locked && $order->shipper_id)) {
+            $reasons[] = CrossDispatchRefusalEnum::LOCKED_SHIPPER;
+        }
+        if ($orders->contains(fn (Order $order) => in_array(PlatformTypeEnum::TIKTOK, [$order->platform?->type, $order->customerSalesChannel?->platform?->type], true))) {
+            $reasons[] = CrossDispatchRefusalEnum::TIKTOK;
+        }
+        if ($deliveryNote->is_cash_on_delivery || $orders->contains(fn (Order $order) => $order->to_be_paid_by === OrderToBePaidByEnum::CASH_ON_DELIVERY)) {
+            $reasons[] = CrossDispatchRefusalEnum::CASH_ON_DELIVERY;
+        }
+        if ($deliveryNote->collection_address_id) {
+            $reasons[] = CrossDispatchRefusalEnum::COLLECTION;
+        }
+        if (!$origin) {
+            $reasons[] = CrossDispatchRefusalEnum::WAREHOUSE_WITHOUT_ADDRESS;
+        } elseif (
+            self::crossesCustomsBorderBetween($origin->country_code, $deliveryNote->deliveryAddress?->country_code)
+            && !self::direction($deliveryNote->shop->organisation_id, $deliveryNote->organisation_id)?->crossDispatchSettings()['allow_customs_crossing']
+        ) {
+            $reasons[] = CrossDispatchRefusalEnum::CUSTOMS_CROSSING;
+        }
+
+        return $reasons;
     }
 
     /**

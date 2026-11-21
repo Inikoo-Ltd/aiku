@@ -496,11 +496,18 @@ class DeliveryNote extends Model implements Auditable
     public function isCrossDispatch(): bool
     {
         $organisationId     = $this->crossDispatchOrganisationId();
-        $shopOrganisationId = array_key_exists('shop_id', $this->attributes)
-            ? $this->shop?->organisation_id
-            : Shop::whereKey($this->newQueryWithoutScopes()->whereKey($this->getKey())->select('shop_id'))->value('organisation_id');
+        $shopOrganisationId = match (true) {
+            !array_key_exists('shop_id', $this->attributes) => Shop::whereKey($this->newQueryWithoutScopes()->whereKey($this->getKey())->select('shop_id'))->value('organisation_id'),
+            $this->shopLoadedWithoutOrganisation()          => Shop::whereKey($this->shop_id)->value('organisation_id'),
+            default                                         => $this->shop?->organisation_id,
+        };
 
         return $organisationId !== null && $shopOrganisationId !== null && (int) $organisationId !== (int) $shopOrganisationId;
+    }
+
+    private function shopLoadedWithoutOrganisation(): bool
+    {
+        return $this->relationLoaded('shop') && $this->shop && !array_key_exists('organisation_id', $this->shop->getAttributes());
     }
 
     /**

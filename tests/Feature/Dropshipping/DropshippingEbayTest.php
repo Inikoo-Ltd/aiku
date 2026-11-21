@@ -3081,3 +3081,42 @@ test('a channel language saves through the eBay settings, and re-translating an 
 
     UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });
+
+require_once __DIR__.'/../../Support/ProcurementHelpers.php';
+
+test('an eBay order shipped from another company\'s warehouse uploads that company\'s tracking, and a carrier eBay has no code for goes by its name', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $order        = dispatchedEbayOrder($this, $ebayUser, withShipment: false);
+    $deliveryNote = $order->deliveryNotes()->sole();
+
+    $dispatcher = deliveryNoteTakenOverByDispatcher($deliveryNote);
+    $deliveryNote->refresh();
+    $shipper = StoreShipper::make()->action($dispatcher, ['code' => 'ZK'.Str::random(4), 'name' => 'Zasielkovna (api)', 'trade_as' => 'Zasielkovna']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'ZK484484']);
+
+    expect($deliveryNote->isCrossDispatch())->toBeTrue()
+        ->and($order->refresh()->organisation_id)->toBe($this->organisation->id)
+        ->and($order->currentDeliveryNote()->id)->toBe($deliveryNote->id);
+
+    Queue::fake();
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        \App\Actions\Ordering\Order\UpdateState\DispatchOrder::make()->action($order, $deliveryNote);
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    Queue::assertPushedOn('ebay', JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof FulfillOrderToEbay && $job->getParameters()[0]->is($order));
+    Queue::assertPushed(JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof \App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer && $job->getParameters()[0]->is($order));
+
+    $order->transactions()->update(['quantity_dispatched' => 2]);
+    fakeEbay($this, [
+        '/shipping_fulfillment' => fn () => Http::response('', 201),
+    ]);
+    FulfillOrderToEbay::run($order->refresh());
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/sell/fulfillment/v1/order/'.$order->platform_order_id.'/shipping_fulfillment')
+        && $request->data()['trackingNumber'] === 'ZK484484'
+        && $request->data()['shippingCarrierCode'] === 'Zasielkovna');
+});

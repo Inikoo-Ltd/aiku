@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\Shipment;
 
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -101,7 +102,7 @@ class GetShippingDeliveryNoteData
             'from_contact_name'  => $fromContactName,
             'from_phone'         => $fromPhone,
             'from_email'         => $fromEmail,
-            'from_address'       => $this->getAddress($shop->address),
+            'from_address'       => $this->getAddress($this->senderAddress($deliveryNote)),
             'to_address'         => $this->getAddress($address),
             'to_contact_name'    => $contactName,
             'to_first_name'      => $toFirstName,
@@ -111,6 +112,16 @@ class GetShippingDeliveryNoteData
             'to_email'           => $toEmail,
             'cash_on_delivery'   => $cashOnDelivery,
         ];
+    }
+
+    /**
+     * INI-484. A parcel leaving another company's warehouse carries that warehouse as its sender, so a return goes back
+     * to where the goods came from; the sender's name, phone and email stay the merchant's. StoreShipment refuses the
+     * label when that warehouse has no address, the same origin its customs check reads.
+     */
+    private function senderAddress(DeliveryNote $deliveryNote): ?Address
+    {
+        return $deliveryNote->isCrossDispatch() ? $deliveryNote->warehouse?->address : $deliveryNote->shop->address;
     }
 
     private function getAddress($address): array

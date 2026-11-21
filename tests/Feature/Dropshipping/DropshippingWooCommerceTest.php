@@ -1909,3 +1909,57 @@ test('a store whose size unit cannot be read keeps it unset, so the next check a
     CheckWooChannel::run($wooCommerceUser->refresh());
     expect(Arr::get($wooCommerceUser->refresh()->settings, 'dimension_option'))->toBe('mm');
 });
+
+require_once __DIR__.'/../../Support/ProcurementHelpers.php';
+
+test('a woo order shipped from another company\'s warehouse is completed on the merchant\'s store with that company\'s carrier and tracking', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    wooPortfolio($channel, $this->product, '484');
+
+    wooFake(['GET orders' => Http::response([wooOrder(4840, [wooLineItem(1, 484)])])]);
+    FetchWooUserOrders::run($wooCommerceUser);
+
+    $order        = $channel->orders()->first();
+    $deliveryNote = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN-WOO-4840',
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+441140000000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => createWarehouse()->id,
+    ]);
+    $dispatcher = deliveryNoteTakenOverByDispatcher($deliveryNote);
+    $deliveryNote->refresh();
+    $shipper = \App\Actions\Dispatching\Shipper\StoreShipper::make()->action($dispatcher, ['code' => 'ZK'.Str::random(4), 'name' => 'Zasielkovna (api)', 'trade_as' => 'Zasielkovna']);
+    \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'ZK4840']);
+
+    expect($deliveryNote->isCrossDispatch())->toBeTrue()
+        ->and($order->refresh()->organisation_id)->toBe($this->organisation->id)
+        ->and($order->currentDeliveryNote()->id)->toBe($deliveryNote->id);
+
+    Queue::fake();
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        \App\Actions\Ordering\Order\UpdateState\DispatchOrder::make()->action($order, $deliveryNote);
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    Queue::assertPushedOn('woo', JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof FulfillOrderToWooCommerce && $job->getParameters()[0]->is($order));
+    Queue::assertPushed(JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof \App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer && $job->getParameters()[0]->is($order));
+
+    wooFake([
+        'PUT orders/4840'        => Http::response(array_merge(wooOrder(4840, []), ['status' => 'completed'])),
+        'POST orders/4840/notes' => Http::response(['id' => 484, 'note' => 'x', 'customer_note' => true], 201),
+    ]);
+    FulfillOrderToWooCommerce::run($order->refresh());
+
+    $update = wooSent('PUT', 'orders/4840')->first()->data();
+    expect($update['status'])->toBe('completed')
+        ->and($update['meta_data'][0]['value'])->toHaveCount(1)
+        ->and($update['meta_data'][0]['value'][0]['tracking_number'])->toBe('ZK4840')
+        ->and($update['meta_data'][0]['value'][0]['tracking_provider'])->toBe('Zasielkovna')
+        ->and(wooSent('POST', 'orders/4840/notes')->first()->data()['note'])->toContain('ZK4840')->toContain('Zasielkovna');
+});

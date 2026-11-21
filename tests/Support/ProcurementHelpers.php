@@ -618,3 +618,27 @@ function userWithOnlyPermissions(Organisation $organisation, array $permissions)
 
     return $user->refresh();
 }
+
+/**
+ * Puts an order's delivery note where a take-over by another company's warehouse leaves it: the note under that company
+ * and its warehouse, a cancelled home note left behind on the order, and the pair free to ship to any address.
+ */
+function deliveryNoteTakenOverByDispatcher(\App\Models\Dispatching\DeliveryNote $deliveryNote): Organisation
+{
+    $orgPartner = crossDispatchDirection($deliveryNote->shop->organisation);
+    $dispatcher = $orgPartner->partner;
+    $orgPartner->mergeIntoData('cross_dispatch', ['enabled_by_origin' => true, 'enabled_by_dispatcher' => true, 'allow_customs_crossing' => true]);
+
+    $homeNote            = $deliveryNote->replicate(['slug']);
+    $homeNote->reference = $deliveryNote->reference.'-home';
+    $homeNote->state     = \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::CANCELLED;
+    $homeNote->save();
+    $homeNote->orders()->attach($deliveryNote->orders()->pluck('orders.id')->all());
+
+    \Illuminate\Support\Facades\DB::table('delivery_notes')->where('id', $deliveryNote->id)->update([
+        'organisation_id' => $dispatcher->id,
+        'warehouse_id'    => $dispatcher->warehouses()->orderBy('id')->value('id'),
+    ]);
+
+    return $dispatcher;
+}

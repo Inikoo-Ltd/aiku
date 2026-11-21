@@ -2029,3 +2029,60 @@ test('each on-hold email names the order and says whether it is the notice, a re
         app()->setLocale('en');
     }
 });
+
+require_once __DIR__.'/../../Support/ProcurementHelpers.php';
+
+test('a shopify order shipped from another company\'s warehouse sends the fulfilment to the merchant\'s store with that company\'s carrier and tracking', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-cross-dispatch');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6484'])]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+    $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6484')->firstOrFail();
+
+    $deliveryNote = StoreDeliveryNote::make()->action($order, [
+        'reference'        => 'DN'.Str::random(6),
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id,
+    ]);
+    $dispatcher = deliveryNoteTakenOverByDispatcher($deliveryNote);
+    $deliveryNote->refresh();
+    $shipper = StoreShipper::make()->action($dispatcher, ['code' => 'ZK'.Str::random(4), 'name' => 'Zasielkovna (api)', 'trade_as' => 'Zasielkovna']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'ZK900']);
+
+    expect($deliveryNote->isCrossDispatch())->toBeTrue()
+        ->and($deliveryNote->shipments()->sole()->organisation_id)->toBe($dispatcher->id)
+        ->and($order->refresh()->organisation_id)->toBe($this->organisation->id)
+        ->and($order->currentDeliveryNote()->id)->toBe($deliveryNote->id);
+
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        \App\Actions\Ordering\Order\UpdateState\DispatchOrder::make()->action($order, $deliveryNote);
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    Queue::assertPushedOn('shopify', JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof FulfillOrderToShopify
+        && $job->getParameters()[0]->is($order)
+        && $job->getParameters()[1]->is($deliveryNote));
+    Queue::assertPushed(JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof \App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer && $job->getParameters()[0]->is($order));
+
+    ShopifyFake::fake([
+        'fulfillmentCreate' => ShopifyFake::graphql(['fulfillmentCreate' => ['fulfillment' => ['id' => 'gid://shopify/Fulfillment/2'], 'userErrors' => []]]),
+    ]);
+    FulfillOrderToShopify::run($order->refresh(), $deliveryNote->refresh());
+
+    $variables = ShopifyFake::calls('fulfillmentCreate')[0]['variables'];
+    expect($variables['fulfillment']['lineItemsByFulfillmentOrder'])->toBe([['fulfillmentOrderId' => 'gid://shopify/FulfillmentOrder/6484']])
+        ->and($variables['fulfillment']['notifyCustomer'])->toBeTrue()
+        ->and($variables['fulfillment']['trackingInfo'])->toBe(['numbers' => ['ZK900'], 'company' => 'Zasielkovna'])
+        ->and($variables['message'])->toBe('Shipper: Zasielkovna, ZK900');
+});
