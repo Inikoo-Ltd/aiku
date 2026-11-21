@@ -4412,3 +4412,33 @@ test('a combined category offer counts the spend across all its families togethe
     SuspendOffer::run($reachedOffer);
     SuspendOffer::run($notReachedOffer);
 });
+
+test('a gold reward member invoiced less than a day ago still sees the gift selector (PRE-129)', function () {
+    $shop               = $this->shop;
+    $originalOffersData = $shop->offers_data;
+    $offersData         = $originalOffersData ?? [];
+    data_set($offersData, 'gr.interval', 30);
+    data_set($offersData, 'gr.gifts_products', [['id' => $this->product->id, 'name' => $this->product->name]]);
+    $shop->forceFill(['offers_data' => $offersData])->saveQuietly();
+
+    $customer = $this->customer;
+    $customer->forceFill(['last_invoiced_at' => now()->subHours(2)])->saveQuietly();
+    Cache::forget("customer_last_invoiced_at_$customer->id");
+
+    $order = StoreOrder::make()->action($customer, []);
+
+    $basket = new class () {
+        use \App\Actions\Traits\HasBasketDetails;
+
+        public function grGifts(Order $order): array
+        {
+            return $this->getGrGifts($order);
+        }
+    };
+
+    expect($basket->grGifts($order->fresh())['status'])->toBeTrue();
+
+    Cache::forget("customer_last_invoiced_at_$customer->id");
+    $order->delete();
+    $shop->forceFill(['offers_data' => $originalOffersData])->saveQuietly();
+});

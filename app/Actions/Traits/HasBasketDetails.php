@@ -82,7 +82,7 @@ trait HasBasketDetails
         });
 
         $daysSinceLastInvoiced = $lastInvoiced ? (int)-now()->diffInDays($lastInvoiced) : null;
-        if (($daysSinceLastInvoiced != null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension()) {
+        if (($daysSinceLastInvoiced !== null && $daysSinceLastInvoiced <= Arr::get($offersData, 'gr.interval', 30)) || $order->customer->hasActiveGrExtension()) {
             $eligible = true;
         }
 
