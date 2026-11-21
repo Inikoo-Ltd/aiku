@@ -331,7 +331,7 @@ const listProducts = computed(() => {
                         {{ ctrans('Choose :axis & quantities', { axis: dialogAxisLabel || ctrans('variant') }) }}
                     </div>
                     <div class="mt-1 text-xl font-bold leading-tight text-gray-900 md:text-2xl">
-                        {{ displayedProduct.name }}
+                        {{ displayedProduct.variant_title || displayedProduct.name }}
                     </div>
                 </div>
             </template>
