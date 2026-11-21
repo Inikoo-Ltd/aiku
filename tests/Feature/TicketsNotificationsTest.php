@@ -11,6 +11,7 @@ use App\Actions\Helpers\Ticket\GetRetinaTicketBadgeData;
 use App\Actions\Helpers\Ticket\SyncTicketCollaborators;
 use Illuminate\Support\Str;
 use App\Actions\Helpers\Ticket\LinkTicketsToAppDeployment;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\DevOps\AppDeployment;
 use App\Actions\Helpers\Ticket\ReceiveSlackTicketReaction;
 use App\Actions\Helpers\Ticket\RepairSlackTicketReporters;
@@ -246,18 +247,21 @@ test('slack slash command raises a bug ticket for the matching aiku user', funct
 
 test('deployed commits that name a ticket are recorded on it once', function () {
     $ticket     = StoreTicket::make()->action($this->group, ['subject' => 'Labels blank']);
+    $engineer   = StoreTicket::make()->action($this->group, ['subject' => 'Slack sync', 'type' => TicketTypeEnum::ENGINEER->value]);
     $deployment = AppDeployment::create(['commit_hash' => 'abc123abc123', 'semantic_version' => 'v2.360.0']);
     $commits    = [
         ['hash' => 'deadbeef0001', 'subject' => "🐛 dispatching: labels print blank, fixes {$ticket->reference}", 'name' => 'x', 'email' => 'x@x'],
         ['hash' => 'deadbeef0002', 'subject' => 'chore: unrelated', 'name' => 'x', 'email' => 'x@x'],
         ['hash' => 'deadbeef0003', 'subject' => 'HELP-999999 does not exist', 'name' => 'x', 'email' => 'x@x'],
+        ['hash' => 'deadbeef0004', 'subject' => "{$engineer->reference} feat(chat): ✨ Slack channels", 'name' => 'x', 'email' => 'x@x'],
     ];
 
     $linked = LinkTicketsToAppDeployment::run($deployment, $commits);
     LinkTicketsToAppDeployment::run($deployment, $commits);
 
     $ticket->refresh();
-    expect($linked)->toBe([$ticket->reference => 1])
+    expect($linked)->toBe([$ticket->reference => 1, $engineer->reference => 1])
+        ->and($engineer->fresh()->data['commits'][0]['hash'])->toBe('deadbeef0004')
         ->and($ticket->data['commits'])->toHaveCount(1)
         ->and($ticket->data['commits'][0]['version'])->toBe('v2.360.0')
         ->and($ticket->comments()->count())->toBe(1)

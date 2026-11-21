@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket;
 
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Models\DevOps\AppDeployment;
 use App\Models\Helpers\Ticket;
 use Illuminate\Support\Str;
@@ -24,10 +25,11 @@ class LinkTicketsToAppDeployment
      */
     public function handle(AppDeployment $appDeployment, array $commits): array
     {
-        $linked = [];
+        $linked   = [];
+        $prefixes = implode('|', TicketTypeEnum::searchPrefixes());
 
         foreach ($commits as $commit) {
-            preg_match_all('/\b(HELP|AD)-(\d+)\b/i', $commit['subject'], $matches);
+            preg_match_all("/\\b($prefixes)-(\\d+)\\b/i", $commit['subject'], $matches);
             foreach (array_unique(array_map('strtoupper', $matches[0])) as $reference) {
                 $ticket = Ticket::where('reference', $reference)->first();
                 if (!$ticket) {
