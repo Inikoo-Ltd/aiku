@@ -94,10 +94,11 @@ class FillShopProductTranslations
             ->whereNull('deleted_at');
 
         if ($cleanCopies) {
-            $query->whereRaw(
-                "exists (select 1 from jsonb_each_text(coalesce(data->'translation_sources'->?->'fields', '{}'::jsonb)) field where field.key <> 'name' and field.value = ?)",
-                [$locale, self::COPIED]
-            )->whereRaw("data->'translation_sources'->?->>'clean_failed' is null", [$locale]);
+            $query->where(function ($query) use ($locale) {
+                foreach (self::CLEANABLE_FIELDS as $field) {
+                    $query->orWhereRaw("data->'translation_sources'->?->'fields'->>? = ?", [$locale, $field, self::COPIED]);
+                }
+            })->whereRaw("data->'translation_sources'->?->>'clean_failed' is null", [$locale]);
         } elseif ($retryFailed) {
             $query->whereRaw("data->'translation_sources'->?->>'failed' is not null", [$locale]);
         } elseif ($force) {

@@ -842,6 +842,9 @@ test('fill translations keeps the copy when the cleaned answer adds markup, a nu
 test('fill translations does not clean a copied description a person corrected', function () {
     fillTranslationsFixture($this);
     fillTranslations($this);
+    $rejected = $this->product->replicate();
+    $rejected->fill(['slug' => 'rj-'.Str::random(10), 'code' => 'RJ'.Str::random(8), 'master_product_id' => null, 'data' => ['translation_sources' => ['de' => ['failed' => 'name: empty', 'fields' => [], 'hashes' => []]]]]);
+    $rejected->saveQuietly();
     $this->product->setTranslation('description_i8n', 'de', '<p>Von Hand korrigiert en gros</p>')->save();
 
     FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, true, false, null, 50, null, null, false, true);
