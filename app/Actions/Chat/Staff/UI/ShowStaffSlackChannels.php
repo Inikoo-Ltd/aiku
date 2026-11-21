@@ -20,6 +20,7 @@ use App\Models\Chat\SlackMessage;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -72,9 +73,16 @@ class ShowStaffSlackChannels extends OrgAction
                 ->orderByDesc('ts')
                 ->limit(1)])
             ->get();
-        $ids = $channels->pluck('id')->all();
-        MarkSlackChannelRead::make()->upToNow($user, $ids, onlyMissing: true);
-        $reads = GetSlackChannelUnreadCounts::make()->handle($user, $ids);
+        if ($channels->isEmpty()) {
+            return [];
+        }
+        $ids     = $channels->pluck('id')->all();
+        $reads   = GetSlackChannelUnreadCounts::make()->handle($user, $ids);
+        $unseen  = array_values(array_diff($ids, array_keys($reads)));
+        if ($unseen !== []) {
+            MarkSlackChannelRead::make()->upToNow($user, $unseen, onlyMissing: true);
+            $reads += GetSlackChannelUnreadCounts::make()->handle($user, $unseen);
+        }
 
         return $channels
             ->sortBy([['last_message_at', 'desc'], ['name', 'asc']])
@@ -90,6 +98,29 @@ class ShowStaffSlackChannels extends OrgAction
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * The channel list and its live channel, computed once and only when a response asks for them. Deferred, they
+     * come as one group after the page has opened; a person who is not active cannot read Slack, so they get none.
+     *
+     * @return array{slack_channels: mixed, slack_live_channel: mixed}
+     */
+    public function listProps(Group $group, User $user, bool $deferred = false): array
+    {
+        if (!$user->status) {
+            return ['slack_channels' => [], 'slack_live_channel' => null];
+        }
+
+        $memo        = null;
+        $channels    = function () use (&$memo, $user): array {
+            return $memo ??= $this->channels($user);
+        };
+        $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
+
+        return $deferred
+            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack')]
+            : ['slack_channels' => $channels, 'slack_live_channel' => $liveChannel];
     }
 
     private function tsParameter(ActionRequest $request, string $key): ?string
@@ -123,19 +154,9 @@ class ShowStaffSlackChannels extends OrgAction
     {
         $title         = __('Internal Messages');
         $slackChannel  = $this->slackChannel;
-        $slackChannels = null;
-        $channels      = function () use (&$slackChannels, $request): array {
-            return $slackChannels ??= $this->channels($request->user());
-        };
+        $list          = $this->listProps($group, $request->user());
 
         $breadcrumbs   = ShowStaffMessaging::make()->getBreadcrumbs(null);
-        $breadcrumbs[] = [
-            'type'   => 'simple',
-            'simple' => [
-                'route' => ['name' => 'grp.chat.staff.slack.index'],
-                'label' => __('Slack'),
-            ],
-        ];
         if ($slackChannel) {
             $breadcrumbs[] = [
                 'type'   => 'simple',
@@ -159,8 +180,7 @@ class ShowStaffSlackChannels extends OrgAction
                     ],
                 ],
                 'selected_ulid'  => null,
-                'slack_channels'     => $channels,
-                'slack_live_channel' => fn () => $channels() === [] ? null : 'grp.slack.'.$group->id,
+                ...$list,
                 'slack_channel'      => fn () => $slackChannel ? [
                     'id'           => $slackChannel->id,
                     'name'         => $slackChannel->name,
@@ -170,7 +190,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'member_count' => $slackChannel->members()->count(),
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
-                    'last_read_ts' => collect($channels())->firstWhere('id', $slackChannel->id)['last_read_ts'] ?? null,
+                    'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,

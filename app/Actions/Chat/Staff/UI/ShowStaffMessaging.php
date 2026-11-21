@@ -75,6 +75,8 @@ class ShowStaffMessaging extends OrgAction
                 'selected_conversation' => $conversation
                     ? (new StaffConversationResource($conversation->load('participants')))->resolve()
                     : null,
+                'slack_channel'         => null,
+                ...ShowStaffSlackChannels::make()->listProps($group, $request->user(), deferred: true),
             ]
         );
     }

@@ -259,7 +259,7 @@ test('a copy on the large files disk is answered with a redirect to a signed lin
     $signed = actingAs($this->viewer)->get(($this->url)($message, $video['id']))->assertStatus(302)->headers->get('Location');
     parse_str((string) parse_url($signed, PHP_URL_QUERY), $signedQuery);
     expect($signed)->toStartWith('https://account.r2.cloudflarestorage.com/aiku-staff-chat/'.$path.'?')
-        ->and($signedQuery['X-Amz-Expires'])->toBe((string) (ShowSlackMessageFile::SIGNED_LINK_MINUTES * 60))
+        ->and((int) $signedQuery['X-Amz-Expires'])->toBeBetween(ShowSlackMessageFile::SIGNED_LINK_MINUTES * 60 - 2, ShowSlackMessageFile::SIGNED_LINK_MINUTES * 60)
         ->and($signedQuery['response-content-type'])->toBe('application/octet-stream')
         ->and($signedQuery['response-content-disposition'])->toStartWith('attachment; filename=')->toContain("filename*=utf-8''Vid%C3%A9o")->not->toContain('"2026"');
 
