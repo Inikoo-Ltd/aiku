@@ -245,11 +245,11 @@ class MatchAgentMoneyTransfers
      * Takes back what was set as paid from one bank line (wrong match, or the bank reversed it): its transfers are
      * removed, their requests open again, and the line is offered again but never recorded on its own.
      *
-     * @return int transfers removed
+     * @return Collection<int, AgentPayment> the transfers removed
      */
-    public function undo(OrgAgent $orgAgent, string $key): int
+    public function undo(OrgAgent $orgAgent, string $key, ?User $undoer = null): Collection
     {
-        return DB::transaction(function () use ($orgAgent, $key) {
+        $transfers = DB::transaction(function () use ($orgAgent, $key) {
             $orgAgent  = OrgAgent::whereKey($orgAgent->id)->lockForUpdate()->firstOrFail();
             $transfers = self::recordedFromLine($orgAgent, $key)->get();
             if ($transfers->isEmpty()) {
@@ -262,8 +262,18 @@ class MatchAgentMoneyTransfers
             $settings[self::DISMISSED] = array_values(array_diff(Arr::get($settings, self::DISMISSED, []), [$key]));
             $orgAgent->update(['settings' => $settings]);
 
-            return $transfers->count();
+            return $transfers;
         });
+
+        foreach ($transfers->groupBy('deposit_request_id') as $requestTransfers) {
+            try {
+                NotifyMoneyRequestPaymentUndone::run($requestTransfers->first()->depositRequest, round($requestTransfers->sum(fn (AgentPayment $transfer) => (float) $transfer->amount), 2), $undoer);
+            } catch (Throwable $exception) {
+                Sentry::captureException($exception);
+            }
+        }
+
+        return $transfers;
     }
 
     /**

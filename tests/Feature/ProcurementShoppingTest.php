@@ -4877,7 +4877,15 @@ test('a payer undoes what was set as paid from a bank transfer: the request open
         ->etc());
     $wrong->update(['status' => \App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum::BOOKED]);
 
+    $request->updateQuietly(['created_by' => $agentStaff->id]);
+    \Illuminate\Support\Facades\Notification::fake();
     $this->patch($undoRoute)->assertRedirect()->assertSessionHasNoErrors();
+    \Illuminate\Support\Facades\Notification::assertSentTo($agentStaff, \App\Notifications\MoneyRequestPaymentUndoneNotification::class, fn ($notification) => $notification->depositRequest->id === $request->id
+        && $notification->isRequester
+        && str_contains($notification->body(), '300')
+        && str_contains($notification->body(), 'open to pay again')
+        && $notification->route['name'] === 'grp.org.agent.accounting.deposit_requests.index');
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($payer, \App\Notifications\MoneyRequestPaymentUndoneNotification::class);
     expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
         ->and($recorded->refresh()->trashed())->toBeTrue()
         ->and(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);

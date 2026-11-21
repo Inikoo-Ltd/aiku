@@ -29,6 +29,7 @@ enum UserNotificationEnum: string
     case MONEY_REQUEST_PAID = 'money_request_paid';
     case MONEY_REQUEST_REJECTED = 'money_request_rejected';
     case MONEY_REQUEST_CANCELLED = 'money_request_cancelled';
+    case MONEY_REQUEST_PAYMENT_UNDONE = 'money_request_payment_undone';
     case SUPPLIER_PRODUCT_AVAILABILITY = 'supplier_product_availability';
     case SUPPLIER_MATERIAL_PLANNING = 'supplier_material_planning';
     case SUPPLIER_PLANNING_OVERDUE = 'supplier_planning_overdue';
@@ -66,6 +67,7 @@ enum UserNotificationEnum: string
         self::MONEY_REQUEST_PAID,
         self::MONEY_REQUEST_REJECTED,
         self::MONEY_REQUEST_CANCELLED,
+        self::MONEY_REQUEST_PAYMENT_UNDONE,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
         self::SUPPLIER_MATERIAL_PLANNING,
         self::SUPPLIER_PLANNING_OVERDUE,
@@ -92,6 +94,7 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
             self::MONEY_REQUEST_REJECTED        => __('The client declines a money request I asked for or am copied on'),
             self::MONEY_REQUEST_CANCELLED       => __('An agent withdraws a money request I approve, pay or am copied on'),
+            self::MONEY_REQUEST_PAYMENT_UNDONE  => __('The client undoes a payment set from its bank on a money request I asked for or am copied on'),
             self::SUPPLIER_PRODUCT_AVAILABILITY => __('An agent changes the availability of a product my organisation buys'),
             self::SUPPLIER_MATERIAL_PLANNING    => __('A supplier sends material planning notes or documents for a product my organisation buys'),
             self::SUPPLIER_PLANNING_OVERDUE     => __('A supplier material planning note is still not answered after the days set in the supplier page settings'),
@@ -181,6 +184,7 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',
             self::MONEY_REQUEST_REJECTED        => 'fal fa-ban',
             self::MONEY_REQUEST_CANCELLED       => 'fal fa-times-circle',
+            self::MONEY_REQUEST_PAYMENT_UNDONE  => 'fal fa-undo',
             self::SUPPLIER_PRODUCT_AVAILABILITY => 'fal fa-box-check',
             self::SUPPLIER_MATERIAL_PLANNING    => 'fal fa-tree',
             self::SUPPLIER_PLANNING_OVERDUE     => 'fal fa-hourglass-end',

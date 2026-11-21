@@ -41,7 +41,7 @@ class UndoAgentMoneyBankTransfer extends OrgAction
         $this->key      = $key;
         $this->initialisation($orgAgent->organisation, $request);
 
-        MatchAgentMoneyTransfers::make()->undo($orgAgent, $key);
+        MatchAgentMoneyTransfers::make()->undo($orgAgent, $key, $request->user());
 
         return back();
     }
