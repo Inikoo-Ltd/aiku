@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack;
 
+use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackMessageReaction;
 use Illuminate\Console\Command;
@@ -42,7 +43,7 @@ class StoreSlackMessageReaction
 
         $message = SlackMessage::query()
             ->where('ts', (string) Arr::get($event, 'item.ts'))
-            ->whereHas('channel', fn ($channel) => $channel->where('slack_id', Arr::get($event, 'item.channel'))->where('is_public', true)->where('is_ignored', false))
+            ->whereHas('channel', fn ($channel) => $channel->kept()->where('slack_id', Arr::get($event, 'item.channel')))
             ->first();
         if (!$message) {
             return;
@@ -52,12 +53,14 @@ class StoreSlackMessageReaction
         if (Arr::get($event, 'type') === 'reaction_removed') {
             SlackMessageReaction::where($key)->delete();
             $message->update(['data' => ['reactions' => $this->withoutReaction((array) Arr::get($message->data, 'reactions', []), $name, $slackUserId)] + (array) $message->data]);
+            rescue(fn () => SlackChannelMessageChanged::dispatch($message->channel, $message, 'reaction'));
 
             return;
         }
 
         $eventTs = Arr::get($event, 'event_ts');
         SlackMessageReaction::firstOrCreate($key, ['reacted_at' => $eventTs ? Carbon::createFromTimestamp((float) $eventTs) : now()]);
+        rescue(fn () => SlackChannelMessageChanged::dispatch($message->channel, $message, 'reaction'));
     }
 
     /**

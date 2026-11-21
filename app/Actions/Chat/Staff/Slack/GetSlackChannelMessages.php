@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack;
 
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
+use App\Models\Chat\SlackMessageVersion;
 use App\Models\Chat\SlackMessageReaction;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
@@ -114,6 +115,9 @@ class GetSlackChannelMessages
         $threads = $this->threadStats($slackChannel, $messages);
         $files   = GetSlackMessageFiles::make()->handle($live);
 
+        $editedIds  = $live->whereNotNull('edited_at')->pluck('id')->all();
+        $withVersions = $editedIds === [] ? [] : array_flip(SlackMessageVersion::whereIn('slack_message_id', $editedIds)->distinct()->pluck('slack_message_id')->all());
+
         $peopleIds = $live->flatMap(fn (SlackMessage $message) => $message->reactions->pluck('slack_user_id'))
             ->merge(collect($threads)->flatMap(fn (array $thread) => $thread['repliers']))
             ->unique()->values()->all();
@@ -133,7 +137,7 @@ class GetSlackChannelMessages
         $reactors   = $people->map(fn (SlackUser $slackUser) => $personUser($slackUser)?->chatName() ?? $this->personName($slackUser));
         $mySlackIds = $viewer ? $people->filter(fn (SlackUser $slackUser) => $slackUser->user_id === $viewer->id)->keys()->all() : [];
 
-        return $messages->map(function (SlackMessage $message) use ($nodes, $formatter, $reactors, $users, $threads, $people, $personUser, $mySlackIds, $files) {
+        return $messages->map(function (SlackMessage $message) use ($nodes, $formatter, $reactors, $users, $threads, $people, $personUser, $mySlackIds, $files, $withVersions, $slackChannel) {
             $isParent = $message->thread_ts === $message->ts;
             $thread   = $isParent ? ($threads[$message->ts] ?? null) : null;
             $common   = [
@@ -161,6 +165,7 @@ class GetSlackChannelMessages
                     'is_system'    => false,
                     'author'       => ['key' => null, 'user_id' => null, 'name' => null, 'avatar' => null, 'is_bot' => false],
                     'is_edited'    => false,
+                    'versions_url' => null,
                     'is_pinned'    => false,
                     'nodes'        => [],
                     'reactions'    => [],
@@ -173,6 +178,7 @@ class GetSlackChannelMessages
                 'is_system'    => in_array($message->subtype, self::SYSTEM_SUBTYPES, true),
                 'author'       => $this->author($message, $users->get($this->linkedUserId($message) ?? 0)),
                 'is_edited'    => $message->edited_at !== null,
+                'versions_url' => isset($withVersions[$message->id]) ? route('grp.chat.staff.slack.versions', ['slackChannel' => $slackChannel->id, 'ts' => $message->ts]) : null,
                 'is_pinned'    => $message->pinned_at !== null,
                 'nodes'        => $nodes[$message->id] ?? [],
                 'reactions'    => $this->reactions($message, $formatter->resolvedEmoji, $reactors->all()),

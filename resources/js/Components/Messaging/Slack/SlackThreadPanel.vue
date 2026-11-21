@@ -5,8 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import axios from "axios"
+import { usePage } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faChevronDown, faLink, faTimes } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -14,6 +15,7 @@ import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
+import { myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
 library.add(faCheck, faChevronDown, faLink, faTimes)
 
@@ -22,6 +24,7 @@ const props = defineProps<{
     ts: string
     focusTs?: string | null
     channelLinks: Record<string, number>
+    liveChannel?: string | null
 }>()
 
 const emit = defineEmits<{ (e: "close"): void }>()
@@ -80,6 +83,43 @@ watch(() => props.ts, async () => {
 }, { immediate: true })
 watch(() => props.focusTs, (ts, previous) => {
     if (ts && ts !== previous && parent.value) focusReply()
+})
+
+const myId = computed<number | null>(() => (usePage().props as any)?.auth?.user?.id ?? null)
+let liveAt: Record<string, number> = {}
+watch(slackReloads, async () => {
+    liveAt = {}
+    await load()
+})
+
+useSlackLive(() => props.liveChannel, async (event: SlackLiveEvent) => {
+    const message = event.message
+    if (event.channel_id !== props.channelId || !message || !parent.value || (liveAt[message.ts] ?? 0) > event.at) return
+    liveAt[message.ts] = event.at
+    const row = { ...message, my_reactions: myReactions(event.reactors, myId.value) }
+    if (message.ts === props.ts) {
+        parent.value = row
+        return
+    }
+    if (message.thread_ts !== props.ts) return
+    if (event.parent) parent.value = { ...event.parent, my_reactions: parent.value.my_reactions }
+    const index = replies.value.findIndex((reply) => reply.ts === message.ts)
+    if (message.is_deleted) {
+        if (index >= 0) replies.value.splice(index, 1)
+        return
+    }
+    if (index >= 0) {
+        replies.value[index] = row
+        return
+    }
+    if (nextCursor.value || loading.value) return
+    const container = bodyEl.value
+    const atBottom = !container || container.scrollHeight - container.scrollTop - container.clientHeight < 120
+    replies.value = [...replies.value, row].sort((a, b) => (a.ts < b.ts ? -1 : 1))
+    if (atBottom) {
+        await nextTick()
+        if (bodyEl.value) bodyEl.value.scrollTop = bodyEl.value.scrollHeight
+    }
 })
 
 const copyLink = async () => {

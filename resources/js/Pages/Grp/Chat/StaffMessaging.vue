@@ -10,7 +10,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks } from "@fal"
+import { faArchive, faCheck, faCheckDouble, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks } from "@fal"
 import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -24,8 +24,10 @@ import { useTruncate } from "@/Composables/useTruncate"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faArchive, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks)
+library.add(faArchive, faCheck, faCheckDouble, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks)
 
 interface SlackChannelListItem {
     id: number
@@ -34,6 +36,8 @@ interface SlackChannelListItem {
     topic: string | null
     is_archived: boolean
     last_message_at: string | null
+    unread_count?: number
+    last_read_ts?: string | null
 }
 
 const props = defineProps<{
@@ -41,6 +45,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     selected_ulid: string | null
     slack_channels?: SlackChannelListItem[]
+    slack_live_channel?: string | null
     slack_channel?: SlackChannelHeader | null
     slack_messages?: { data: SlackStreamMessage[] } | null
     slack_thread_ts?: string | null
@@ -62,6 +67,79 @@ const filteredSlackChannels = computed(() => {
 })
 const activeSlackChannels = computed(() => filteredSlackChannels.value.filter((channel) => !channel.is_archived))
 const archivedSlackChannels = computed(() => filteredSlackChannels.value.filter((channel) => channel.is_archived))
+const slackUnread = ref<Record<number, { count: number; lastReadTs: string | null; counted: string[] }>>({})
+const slackLastMessageAt = ref<Record<number, string>>({})
+const slackReadError = ref<string | null>(null)
+watch(() => props.slack_channels, (channels) => {
+    slackUnread.value = Object.fromEntries((channels ?? []).map((channel) => [channel.id, { count: channel.unread_count ?? 0, lastReadTs: channel.last_read_ts ?? null, counted: [] }]))
+    slackLastMessageAt.value = {}
+}, { immediate: true })
+const unreadOf = (channelId: number) => slackUnread.value[channelId]?.count ?? 0
+const unreadLabel = (channelId: number) => (unreadOf(channelId) > 99 ? "99+" : String(unreadOf(channelId)))
+const hasSlackUnread = computed(() => Object.values(slackUnread.value).some((state) => state.count > 0))
+
+const onSlackLive = (event: SlackLiveEvent) => {
+    const state = slackUnread.value[event.channel_id]
+    const message = event.message
+    if (!message) {
+        reloadSlack(props.slack_channel?.id === event.channel_id ? ["slack_channels", "slack_messages"] : ["slack_channels"])
+        return
+    }
+    if (!state || !isInSlackStream(message) || message.is_system) return
+    if (event.kind === "deleted") {
+        if (state.counted.includes(message.ts)) {
+            state.counted = state.counted.filter((ts) => ts !== message.ts)
+            state.count = Math.max(0, state.count - 1)
+        }
+        return
+    }
+    if (event.kind !== "new" || message.is_deleted) return
+    slackLastMessageAt.value[event.channel_id] = message.sent_at
+    if (message.author.user_id === myId.value || (state.lastReadTs && message.ts <= state.lastReadTs) || state.counted.includes(message.ts)) return
+    state.counted.push(message.ts)
+    state.count++
+}
+useSlackLive(() => props.slack_live_channel, onSlackLive)
+
+const onSlackChannelRead = (channelId: number, ts: string | null) => {
+    const state = slackUnread.value[channelId]
+    if (!state) return
+    state.count = ts ? state.counted.filter((counted) => counted > ts).length : 0
+    state.counted = ts ? state.counted.filter((counted) => counted > ts) : []
+    state.lastReadTs = ts
+}
+
+const markSlackChannelRead = async (channelId: number) => {
+    slackReadError.value = null
+    try {
+        await axios.post(route("grp.chat.staff.slack.read", { slackChannel: channelId }))
+        onSlackChannelRead(channelId, null)
+    } catch {
+        slackReadError.value = ctrans("The channel could not be marked as read, try again")
+    }
+}
+
+const markAllSlackChannelsRead = async () => {
+    slackReadError.value = null
+    try {
+        await axios.post(route("grp.chat.staff.slack.read-all"))
+        Object.keys(slackUnread.value).forEach((channelId) => onSlackChannelRead(Number(channelId), null))
+    } catch {
+        slackReadError.value = ctrans("The channels could not be marked as read, try again")
+    }
+}
+
+let slackConnectionDropped = false
+const onSlackConnectionState = ({ previous, current }: { previous: string; current: string }) => {
+    if (previous === "connected" && current !== "connected") {
+        slackConnectionDropped = true
+        return
+    }
+    if (current !== "connected" || !slackConnectionDropped || !isSlack.value) return
+    slackConnectionDropped = false
+    reloadSlack(props.slack_channel ? ["slack_channels", "slack_messages"] : ["slack_channels"])
+}
+
 const showArchived = computed(() => isArchivedOpen.value || (slackFilter.value.trim() !== "" && archivedSlackChannels.value.length > 0) || !!props.slack_channel?.is_archived)
 
 const store = useStaffMessaging()
@@ -165,6 +243,7 @@ watch(() => store.fullViewUlid, (ulid) => {
 
 onMounted(async () => {
     window.addEventListener('resize', handleResize)
+    window.Echo?.connector?.pusher?.connection?.bind("state_change", onSlackConnectionState)
     await store.fetchConversations()
 
     if (isMobile.value && props.selected_ulid) {
@@ -177,6 +256,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+    window.Echo?.connector?.pusher?.connection?.unbind("state_change", onSlackConnectionState)
     store.fullViewUlid = null
     window.removeEventListener('resize', handleResize)
     if (searchTimeout) clearTimeout(searchTimeout)
@@ -220,21 +300,38 @@ onUnmounted(() => {
                     <p>{{ ctrans("Public Slack channels show here once your aiku account is linked to your Slack account by the same email address.") }}</p>
                 </div>
                 <template v-else>
+                    <div v-if="hasSlackUnread || slackReadError" class="flex items-center justify-end gap-x-2 border-b border-gray-50 px-3 py-1.5">
+                        <span v-if="slackReadError" class="flex-1 text-xs text-red-600">{{ slackReadError }}</span>
+                        <Button v-if="hasSlackUnread" type="tertiary" size="xs" icon="fal fa-check-double" :label="ctrans('Mark all as read')" @click="markAllSlackChannelsRead" />
+                    </div>
                     <Link
                         v-for="channel in activeSlackChannels"
                         :key="'slack-' + channel.id"
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         preserve-state
                         preserve-scroll
-                        class="flex items-start gap-x-2 px-3 py-2 border-b border-gray-50 hover:bg-gray-50"
+                        class="group flex items-start gap-x-2 px-3 py-2 border-b border-gray-50 hover:bg-gray-50"
                         :class="slack_channel?.id === channel.id ? 'bg-[var(--app-accent-soft)]' : ''">
                         <FontAwesomeIcon icon="fal fa-hashtag" class="mt-1 text-gray-400 text-xs" fixed-width aria-hidden="true" />
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-x-1">
-                                <span class="text-sm font-medium text-gray-900 truncate">{{ channel.name }}</span>
-                                <span v-if="channel.last_message_at" class="text-xxs text-gray-400 shrink-0 whitespace-nowrap">{{ useFormatTime(channel.last_message_at, { formatTime: 'dd MMM' }) }}</span>
+                                <span class="text-sm truncate" :class="unreadOf(channel.id) ? 'font-semibold text-gray-900' : 'font-medium text-gray-900'">{{ channel.name }}</span>
+                                <span v-if="slackLastMessageAt[channel.id] ?? channel.last_message_at" class="text-xxs text-gray-400 shrink-0 whitespace-nowrap">{{ useFormatTime(slackLastMessageAt[channel.id] ?? channel.last_message_at, { formatTime: 'dd MMM' }) }}</span>
                             </div>
-                            <div v-if="channel.topic" class="text-xs text-gray-500 truncate">{{ channel.topic }}</div>
+                            <div class="flex items-center gap-x-1">
+                                <span class="min-w-0 flex-1 text-xs text-gray-500 truncate">{{ channel.topic }}</span>
+                                <template v-if="unreadOf(channel.id)">
+                                    <Button
+                                        type="transparent"
+                                        size="xxs"
+                                        icon="fal fa-check"
+                                        class="hidden shrink-0 group-hover:inline-flex"
+                                        :aria-label="ctrans('Mark as read')"
+                                        v-tooltip="ctrans('Mark as read')"
+                                        @click.prevent.stop="markSlackChannelRead(channel.id)" />
+                                    <span class="shrink-0 whitespace-nowrap rounded-full bg-[var(--app-accent)] px-1.5 text-xxs font-semibold leading-4 text-[var(--app-accent-text)]" :aria-label="ctrans(':count unread', { count: unreadLabel(channel.id) })">{{ unreadLabel(channel.id) }}</span>
+                                </template>
+                            </div>
                         </div>
                     </Link>
                     <div v-if="!filteredSlackChannels.length" class="px-3 py-6 text-center text-xs text-gray-400">{{ ctrans('No matches') }}</div>
@@ -258,7 +355,8 @@ onUnmounted(() => {
                                 class="flex items-center gap-x-2 px-3 py-1.5 pl-8 text-gray-500 hover:bg-gray-50"
                                 :class="slack_channel?.id === channel.id ? 'bg-[var(--app-accent-soft)]' : ''">
                                 <FontAwesomeIcon icon="fal fa-hashtag" class="text-xs" fixed-width aria-hidden="true" />
-                                <span class="text-sm truncate">{{ channel.name }}</span>
+                                <span class="text-sm truncate flex-1" :class="unreadOf(channel.id) && 'font-semibold text-gray-900'">{{ channel.name }}</span>
+                                <span v-if="unreadOf(channel.id)" class="shrink-0 whitespace-nowrap rounded-full bg-[var(--app-accent)] px-1.5 text-xxs font-semibold leading-4 text-[var(--app-accent-text)]">{{ unreadLabel(channel.id) }}</span>
                             </Link>
                         </template>
                     </template>
@@ -329,6 +427,8 @@ onUnmounted(() => {
                 :thread-ts="slack_thread_ts"
                 :around-ts="slack_around_ts"
                 :reply-ts="slack_reply_ts"
+                :live-channel="slack_live_channel"
+                @read="onSlackChannelRead(slack_channel.id, $event)"
                 @back="router.visit(route('grp.chat.staff.slack.index'))" />
             <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
                 <FontAwesomeIcon icon="fal fa-hashtag" class="text-5xl mb-3" fixed-width aria-hidden="true" />

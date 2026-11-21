@@ -14,6 +14,7 @@ use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackMessageReaction;
+use App\Models\Chat\SlackMessageVersion;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
@@ -186,4 +187,28 @@ test('Slack pins, bookmarks and reactions: the pinned list, jump to a message re
 
     actingAs($this->stranger)->getJson(route('grp.chat.staff.slack.pins', $this->channel->id))->assertForbidden();
     actingAs($this->viewer)->getJson(route('grp.chat.staff.slack.pins', $this->hidden->id))->assertForbidden();
+});
+
+test('Slack message versions: earlier wordings newest first for a visible channel, 404 for a channel the person cannot see, empty for an unedited message, INI-449', function () {
+    $ts      = $this->ts;
+    $edited  = ($this->store)(1, 'third wording', ['edited_at' => now()]);
+    ($this->store)(2, 'never edited');
+    SlackMessageVersion::create(['slack_message_id' => $edited->id, 'text' => 'first wording', 'data' => [], 'replaced_at' => now()->subHours(2)]);
+    SlackMessageVersion::create(['slack_message_id' => $edited->id, 'text' => 'second wording', 'data' => [], 'replaced_at' => now()->subHour()]);
+
+    $url = fn (SlackChannel $channel, string $at) => route('grp.chat.staff.slack.versions', ['slackChannel' => $channel->id, 'ts' => $at]);
+
+    $versions = actingAs($this->viewer)->getJson($url($this->channel, $ts(1)))->assertOk()->json('versions');
+    expect(array_map($this->text, $versions))->toBe(['second wording', 'first wording']);
+
+    actingAs($this->viewer)->getJson($url($this->channel, $ts(2)))->assertOk()->assertJson(['versions' => []]);
+    actingAs($this->viewer)->getJson($url($this->channel, $ts(9)))->assertNotFound();
+    actingAs($this->stranger)->getJson($url($this->channel, $ts(1)))->assertNotFound();
+
+    $hiddenMessage = ($this->store)(3, 'hidden', ['edited_at' => now()], $this->hidden);
+    SlackMessageVersion::create(['slack_message_id' => $hiddenMessage->id, 'text' => 'old hidden', 'data' => [], 'replaced_at' => now()]);
+    actingAs($this->viewer)->getJson($url($this->hidden, $ts(3)))->assertNotFound();
+
+    $row = collect(slackStreamPage($this->viewer, ['slackChannel' => $this->channel->id])['data'])->firstWhere('ts', $ts(1));
+    expect($row['versions_url'])->toBe($url($this->channel, $ts(1)));
 });

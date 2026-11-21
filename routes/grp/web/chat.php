@@ -89,7 +89,10 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::get('/slack', \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class)->name('slack.index');
     Route::get('/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inSlackChannel'])->name('slack.show');
     Route::get('/slack/{slackChannel}/thread', \App\Actions\Chat\Staff\Json\GetSlackThread::class)->name('slack.thread');
+    Route::get('/slack/{slackChannel}/versions', \App\Actions\Chat\Staff\Json\GetSlackMessageVersions::class)->name('slack.versions');
     Route::get('/slack/{slackChannel}/pins', \App\Actions\Chat\Staff\Json\GetSlackChannelPins::class)->name('slack.pins');
+    Route::post('/slack/{slackChannel}/read', \App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class)->name('slack.read');
+    Route::post('/slack-read-all', [\App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class, 'inAllChannels'])->name('slack.read-all');
 });
 
 Route::prefix('staff')->name('staff.')->middleware('throttle:120,1,slack-search')->group(function () {

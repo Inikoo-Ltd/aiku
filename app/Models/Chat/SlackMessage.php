@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A message of a public Slack channel as Slack sent it; ts is Slack's own id of the message within its channel.
@@ -42,7 +43,7 @@ class SlackMessage extends Model
     {
         static::saved(function (SlackMessage $message) {
             if ($message->wasRecentlyCreated || $message->wasChanged('text')) {
-                rescue(fn () => RefreshSlackMessageSearch::make()->handle(collect([$message])));
+                DB::afterCommit(fn () => rescue(fn () => RefreshSlackMessageSearch::make()->handle(collect([$message]))));
             }
         });
     }

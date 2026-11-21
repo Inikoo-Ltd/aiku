@@ -10,6 +10,8 @@ namespace App\Actions\Chat\Staff\UI;
 
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
+use App\Actions\Chat\Staff\Slack\GetSlackChannelUnreadCounts;
+use App\Actions\Chat\Staff\Slack\MarkSlackChannelRead;
 use App\Actions\Chat\Staff\Slack\ResolveSlackEmoji;
 use App\Actions\OrgAction;
 use App\Models\Chat\SlackChannel;
@@ -56,18 +58,25 @@ class ShowStaffSlackChannels extends OrgAction
     }
 
     /**
-     * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, last_message_at: string|null}>
+     * Each channel with this person's unread count and read position; a channel seen for the first time starts read.
+     *
+     * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, last_message_at: string|null, unread_count: int, last_read_ts: string|null}>
      */
     public function channels(User $user): array
     {
-        return SlackChannel::visibleTo($user)
+        $channels = SlackChannel::visibleTo($user)
             ->select(['id', 'slack_id', 'name', 'is_archived', 'data'])
             ->addSelect(['last_message_at' => SlackMessage::select('sent_at')
                 ->whereColumn('slack_messages.slack_channel_id', 'slack_channels.id')
                 ->whereNull('deleted_at')
                 ->orderByDesc('ts')
                 ->limit(1)])
-            ->get()
+            ->get();
+        $ids = $channels->pluck('id')->all();
+        MarkSlackChannelRead::make()->upToNow($user, $ids, onlyMissing: true);
+        $reads = GetSlackChannelUnreadCounts::make()->handle($user, $ids);
+
+        return $channels
             ->sortBy([['last_message_at', 'desc'], ['name', 'asc']])
             ->map(fn (SlackChannel $channel) => [
                 'id'              => $channel->id,
@@ -76,6 +85,8 @@ class ShowStaffSlackChannels extends OrgAction
                 'topic'           => ($channel->data['topic']['value'] ?? null) ?: ($channel->data['purpose']['value'] ?? null) ?: null,
                 'is_archived'     => $channel->is_archived,
                 'last_message_at' => $channel->last_message_at ? Carbon::parse($channel->last_message_at)->toIso8601String() : null,
+                'unread_count'    => $reads[$channel->id]['count'] ?? 0,
+                'last_read_ts'    => $reads[$channel->id]['last_read_ts'] ?? null,
             ])
             ->values()
             ->all();
@@ -110,8 +121,12 @@ class ShowStaffSlackChannels extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title        = __('Internal Messages');
-        $slackChannel = $this->slackChannel;
+        $title         = __('Internal Messages');
+        $slackChannel  = $this->slackChannel;
+        $slackChannels = null;
+        $channels      = function () use (&$slackChannels, $request): array {
+            return $slackChannels ??= $this->channels($request->user());
+        };
 
         $breadcrumbs   = ShowStaffMessaging::make()->getBreadcrumbs(null);
         $breadcrumbs[] = [
@@ -144,8 +159,9 @@ class ShowStaffSlackChannels extends OrgAction
                     ],
                 ],
                 'selected_ulid'  => null,
-                'slack_channels' => $this->channels($request->user()),
-                'slack_channel'  => $slackChannel ? [
+                'slack_channels'     => $channels,
+                'slack_live_channel' => fn () => $channels() === [] ? null : 'grp.slack.'.$group->id,
+                'slack_channel'      => fn () => $slackChannel ? [
                     'id'           => $slackChannel->id,
                     'name'         => $slackChannel->name,
                     'topic'        => ($slackChannel->data['topic']['value'] ?? null) ?: null,
@@ -154,6 +170,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'member_count' => $slackChannel->members()->count(),
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
+                    'last_read_ts' => collect($channels())->firstWhere('id', $slackChannel->id)['last_read_ts'] ?? null,
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,

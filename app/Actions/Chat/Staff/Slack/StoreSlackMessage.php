@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack;
 
+use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
@@ -36,22 +37,34 @@ class StoreSlackMessage
             return null;
         }
 
-        $channel = $channelType === 'channel'
-            ? SlackChannel::firstOrCreate(['slack_id' => $slackChannelId], ['group_id' => Group::firstOrFail()->id, 'is_member' => true])
-            : SlackChannel::where('slack_id', $slackChannelId)->first();
-        if (!$channel || !$channel->is_public || $channel->is_ignored) {
+        if ($channelType === 'channel') {
+            SlackChannel::firstOrCreate(['slack_id' => $slackChannelId], ['group_id' => Group::firstOrFail()->id, 'is_member' => true]);
+        }
+        $channel = SlackChannel::kept()->where('slack_id', $slackChannelId)->first();
+        if (!$channel) {
             return null;
         }
 
-        $message = match (Arr::get($event, 'subtype')) {
+        $subtype = Arr::get($event, 'subtype');
+        $message = match ($subtype) {
             'message_deleted' => $this->delete($channel, (string) Arr::get($event, 'deleted_ts')),
             'message_changed' => $this->store($channel, (array) Arr::get($event, 'message', [])),
             default           => $this->store($channel, $event),
         };
 
-        if ($message && !$message->trashed()) {
+        if (!$message) {
+            return null;
+        }
+
+        $isNew = $message->wasRecentlyCreated && $subtype !== 'message_changed';
+        rescue(fn () => SlackChannelMessageChanged::dispatch($channel, $message, $message->trashed() ? 'deleted' : ($isNew ? 'new' : 'changed')));
+
+        if (!$message->trashed()) {
             foreach ((array) Arr::get($message->data, 'files', []) as $file) {
                 CopySlackMessageFile::dispatch($message, (array) $file);
+            }
+            if ($isNew || !$message->wasRecentlyCreated) {
+                rescue(fn () => NotifySlackMentions::run($message));
             }
         }
 

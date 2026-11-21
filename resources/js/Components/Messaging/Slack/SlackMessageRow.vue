@@ -12,6 +12,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import SlackNodes, { type SlackNode } from "@/Components/Messaging/Slack/SlackNodes.vue"
+import SlackMessageVersions from "@/Components/Messaging/Slack/SlackMessageVersions.vue"
 import SlackMessageFiles, { type SlackMessageFile } from "@/Components/Messaging/Slack/SlackMessageFiles.vue"
 
 library.add(faCommentDots, faFile, faReply, faRobot, faThumbtack)
@@ -26,6 +27,7 @@ export interface SlackStreamMessage {
     author: { key: string | null; user_id: number | null; name: string | null; avatar: Record<string, string> | null; is_bot: boolean }
     sent_at: string
     is_edited: boolean
+    versions_url: string | null
     is_pinned: boolean
     nodes: SlackNode[]
     reactions: { name: string; unicode: string | null; url: string | null; count: number; people: string[] }[]
@@ -98,7 +100,8 @@ const isMine = (name: string) => props.message.my_reactions?.includes(name)
 
                 <div class="text-gray-800" :class="message.is_edited && '[&>p:last-of-type]:inline'">
                     <SlackNodes :nodes="message.nodes" :channel-links="channelLinks" />
-                    <span v-if="message.is_edited" class="ml-1 text-xxs text-gray-400" v-tooltip="ctrans('Edited in Slack')">({{ ctrans("edited") }})</span>
+                    <SlackMessageVersions v-if="message.is_edited && message.versions_url" :url="message.versions_url" :channel-links="channelLinks" />
+                    <span v-else-if="message.is_edited" class="ml-1 text-xxs text-gray-400" v-tooltip="ctrans('Edited in Slack')">({{ ctrans("edited") }})</span>
                 </div>
 
                 <SlackMessageFiles v-if="message.files.length" :files="message.files" />

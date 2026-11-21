@@ -45,6 +45,7 @@ enum UserNotificationEnum: string
     case RESTOCK_QUESTION = 'restock_question';
     case ASSISTANT_QUESTION = 'assistant_question';
     case DELIVERY_FEEDBACK = 'delivery_feedback';
+    case SLACK_MENTION = 'slack_mention';
 
     public const array PRODUCT_DEVELOPMENT_EVENTS = [
         self::PRODUCT_DEVELOPMENT_TASK,
@@ -110,6 +111,7 @@ enum UserNotificationEnum: string
             self::RESTOCK_QUESTION              => __('A customer of my organisation asks the AI assistant when a product will be back in stock and we have no reliable date, and when nobody has answered yet'),
             self::ASSISTANT_QUESTION            => __('A customer of my organisation asks the AI assistant something only our team can answer, and I am the person or the backup who answers'),
             self::DELIVERY_FEEDBACK             => __('Someone gives feedback on a delivery I bought'),
+            self::SLACK_MENTION                 => __('Someone @mentions me in a Slack channel (off until you pick a channel; the notification inside Aiku comes with it)'),
         };
     }
 
@@ -136,7 +138,7 @@ enum UserNotificationEnum: string
             return array_values(array_intersect($chosen, self::CHANNELS));
         }
 
-        if ($this === self::TICKET_COMMENT) {
+        if ($this === self::TICKET_COMMENT || $this === self::SLACK_MENTION) {
             return [];
         }
 
@@ -199,6 +201,7 @@ enum UserNotificationEnum: string
             self::RESTOCK_QUESTION              => 'fal fa-box-open',
             self::ASSISTANT_QUESTION            => 'fal fa-head-side-brain',
             self::DELIVERY_FEEDBACK             => 'fal fa-star',
+            self::SLACK_MENTION                 => 'fal fa-at',
         };
     }
 

@@ -13,6 +13,7 @@ use App\Actions\SysAdmin\User\GetUserOrderAlerts;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
+use App\Models\Chat\SlackChannel;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Ticket;
@@ -66,6 +67,10 @@ Broadcast::channel('magento.{amazonUserId}.upload-product.{portfolioId}', functi
 
 Broadcast::channel('grp.personal.{userID}', function (User $user, int $userID) {
     return $userID === $user->id;
+});
+
+Broadcast::channel('grp.slack.{groupId}', function (User $user, int $groupId) {
+    return $user->group_id === $groupId && SlackChannel::visibleTo($user)->exists();
 });
 
 Broadcast::channel('grp.employee.{employeeID}.clocking', function (User $user, int $employeeID) {

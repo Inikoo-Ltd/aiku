@@ -120,14 +120,24 @@ class SearchSlackMessages
                 'sent_at'  => $message->sent_at?->toIso8601String(),
                 'is_reply' => $isReply,
                 'segments' => $this->segments(RefreshSlackMessageSearch::readableText($nodes[$message->id] ?? [], $message->data ?? []), $terms),
-                'url'      => route('grp.chat.staff.slack.show', array_filter([
-                    'slackChannel' => $message->slack_channel_id,
-                    'around'       => $isReply ? $message->thread_ts : $message->ts,
-                    'thread'       => $isReply ? $message->thread_ts : null,
-                    'reply'        => $isReply ? $message->ts : null,
-                ])),
+                'url'      => self::messageUrl($message),
             ];
         })->values()->all();
+    }
+
+    /**
+     * Opens the channel at the message; a thread reply opens its thread too, scrolled to the reply.
+     */
+    public static function messageUrl(SlackMessage $message): string
+    {
+        $isReply = $message->thread_ts !== null && $message->thread_ts !== $message->ts && $message->subtype !== 'thread_broadcast';
+
+        return route('grp.chat.staff.slack.show', array_filter([
+            'slackChannel' => $message->slack_channel_id,
+            'around'       => $isReply ? $message->thread_ts : $message->ts,
+            'thread'       => $isReply ? $message->thread_ts : null,
+            'reply'        => $isReply ? $message->ts : null,
+        ]));
     }
 
     /**

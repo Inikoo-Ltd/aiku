@@ -5,12 +5,12 @@
   -->
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import axios from "axios"
-import { Deferred, InfiniteScroll, router } from "@inertiajs/vue3"
+import { Deferred, InfiniteScroll, router, usePage } from "@inertiajs/vue3"
 import { Popover } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers } from "@fal"
+import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isToday, isYesterday } from "date-fns"
 import { ctrans } from "@/Composables/useTrans"
@@ -20,10 +20,11 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackNodes from "@/Components/Messaging/Slack/SlackNodes.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 import SlackThreadPanel from "@/Components/Messaging/Slack/SlackThreadPanel.vue"
+import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
 export type { SlackStreamMessage }
 
-library.add(faArchive, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers)
+library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers)
 
 export interface SlackChannelHeader {
     id: number
@@ -34,6 +35,7 @@ export interface SlackChannelHeader {
     member_count?: number
     pinned_count?: number
     bookmarks?: { id: number; title: string; url: string | null; emoji: { unicode?: string; url?: string | null } | null }[]
+    last_read_ts?: string | null
 }
 
 const props = defineProps<{
@@ -43,9 +45,21 @@ const props = defineProps<{
     threadTs?: string | null
     aroundTs?: string | null
     replyTs?: string | null
+    liveChannel?: string | null
 }>()
 
-const emit = defineEmits<{ (e: "back"): void }>()
+const emit = defineEmits<{ (e: "back"): void; (e: "read", ts: string): void }>()
+
+const myId = computed<number | null>(() => (usePage().props as any)?.auth?.user?.id ?? null)
+const live = ref<Record<string, SlackStreamMessage | null>>({})
+let liveAt: Record<string, number> = {}
+const newBelow = ref(0)
+watch(slackReloads, () => {
+    live.value = {}
+    liveAt = {}
+    newBelow.value = 0
+})
+const unreadFromTs = props.channel.last_read_ts ?? null
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000
 
@@ -59,7 +73,17 @@ const dayLabel = (iso: string) => {
 }
 
 const rows = computed(() => {
-    const ordered = [...(props.messages?.data ?? [])].reverse()
+    const base = props.messages?.data ?? []
+    const newestTs = base[0]?.ts
+    const loaded = new Set(base.map((message) => message.ts))
+    const merged = base.map((message) => (message.ts in live.value ? live.value[message.ts] : message)).filter((message): message is SlackStreamMessage => !!message).reverse()
+    const arrived = props.aroundTs
+        ? []
+        : Object.values(live.value)
+            .filter((message): message is SlackStreamMessage => !!message && !loaded.has(message.ts) && (!newestTs || message.ts > newestTs))
+            .sort((a, b) => (a.ts < b.ts ? -1 : 1))
+    const ordered = [...merged, ...arrived]
+    const firstUnread = unreadFromTs ? ordered.findIndex((message) => loaded.has(message.ts) && message.ts > unreadFromTs && !message.is_system && message.author.user_id !== myId.value) : -1
     return ordered.map((message, index) => {
         const previous = ordered[index - 1]
         const startsDay = !previous || dayKey(previous.sent_at) !== dayKey(message.sent_at)
@@ -73,7 +97,7 @@ const rows = computed(() => {
             && message.author.key !== null
             && previous.author.key === message.author.key
             && new Date(message.sent_at).getTime() - new Date(previous.sent_at).getTime() < GROUP_WINDOW_MS
-        return { message, startsDay, continues }
+        return { message, startsDay, continues, startsUnread: index === firstUnread }
     })
 })
 
@@ -143,12 +167,81 @@ const jumpTo = (pin: SlackStreamMessage) => {
     }
 }
 
+const isNearBottom = () => {
+    const container = streamEl.value
+    return !container || container.scrollHeight - container.scrollTop - container.clientHeight < 120
+}
+
+const scrollToBottom = () => {
+    const container = streamEl.value
+    if (container) container.scrollTop = container.scrollHeight
+    newBelow.value = 0
+}
+
+let readUpTo = props.channel.last_read_ts ?? ""
+let readTimer: ReturnType<typeof setTimeout> | null = null
+const markRead = async () => {
+    const newest = rows.value[rows.value.length - 1]?.message.ts
+    if (!newest || newest <= readUpTo || document.visibilityState !== "visible" || !isNearBottom()) return
+    const previous = readUpTo
+    readUpTo = newest
+    try {
+        await axios.post(route("grp.chat.staff.slack.read", { slackChannel: props.channel.id }), { ts: newest })
+        emit("read", newest)
+    } catch {
+        readUpTo = previous
+    }
+}
+const markReadSoon = () => {
+    if (readTimer) clearTimeout(readTimer)
+    readTimer = setTimeout(markRead, 800)
+}
+
+const onStreamScroll = () => {
+    if (!isNearBottom()) return
+    newBelow.value = 0
+    markReadSoon()
+}
+
+watch(() => props.messages?.data.length, markReadSoon, { immediate: true })
+onMounted(() => document.addEventListener("visibilitychange", markReadSoon))
+onUnmounted(() => {
+    document.removeEventListener("visibilitychange", markReadSoon)
+    if (readTimer) clearTimeout(readTimer)
+})
+
+const isHeld = (ts: string) => ts in live.value || !!props.messages?.data.some((message) => message.ts === ts)
+
+const applyLive = (row: SlackStreamMessage, at: number, reactors?: Record<string, number[]>) => {
+    if (!isInSlackStream(row) || (liveAt[row.ts] ?? 0) > at) return
+    liveAt[row.ts] = at
+    const held = live.value[row.ts] ?? props.messages?.data.find((message) => message.ts === row.ts)
+    const next = { ...row, my_reactions: reactors ? myReactions(reactors, myId.value) : held?.my_reactions ?? [] }
+    live.value = { ...live.value, [row.ts]: row.is_deleted && !row.reply_count ? null : next }
+}
+
+useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => {
+    if (event.channel_id !== props.channel.id || !event.message) return
+    const atBottom = isNearBottom()
+    const arrives = event.kind === "new" && isInSlackStream(event.message) && !isHeld(event.message.ts) && !props.aroundTs
+    applyLive(event.message, event.at, event.reactors)
+    if (event.parent) applyLive(event.parent, event.at)
+    if (atBottom) {
+        nextTick(() => {
+            scrollToBottom()
+            markReadSoon()
+        })
+    } else if (arrives) {
+        newBelow.value++
+    }
+})
+
 const showPurpose = computed(() => props.channel.purpose && props.channel.purpose !== props.channel.topic)
 </script>
 
 <template>
     <div class="relative flex h-full w-full min-w-0 bg-white text-gray-900">
-        <div class="flex h-full min-w-0 flex-1 flex-col">
+        <div class="relative flex h-full min-w-0 flex-1 flex-col">
             <div class="shrink-0 border-b border-gray-200 bg-gray-50">
                 <div class="flex items-center gap-x-2 px-3 py-2">
                     <button type="button" :aria-label="ctrans('Back')" class="-ml-2 p-2 text-gray-600 md:hidden" @click="emit('back')">
@@ -202,7 +295,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 </div>
             </div>
 
-            <div ref="streamEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+            <div ref="streamEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-3" @scroll.passive="onStreamScroll">
                 <Deferred data="slack_messages">
                     <template #fallback>
                         <div class="space-y-4 py-4" :aria-label="ctrans('Loading…')" aria-busy="true">
@@ -216,7 +309,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                         </div>
                     </template>
 
-                    <div v-if="!messages?.data.length" class="flex h-full flex-col items-center justify-center gap-1 py-16 text-center text-sm text-gray-400">
+                    <div v-if="!rows.length" class="flex h-full flex-col items-center justify-center gap-1 py-16 text-center text-sm text-gray-400">
                         <FontAwesomeIcon icon="fal fa-comment-dots" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
                         {{ ctrans("No messages in this channel yet") }}
                     </div>
@@ -231,7 +324,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                         </template>
 
                         <div
-                            v-for="{ message, startsDay, continues } in rows"
+                            v-for="{ message, startsDay, continues, startsUnread } in rows"
                             :key="message.id"
                             :data-slack-ts="message.ts"
                             class="rounded transition-colors duration-700"
@@ -241,14 +334,26 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                                 <span class="whitespace-nowrap rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xxs font-medium text-gray-600">{{ dayLabel(message.sent_at) }}</span>
                                 <span class="h-px flex-1 bg-gray-200" />
                             </div>
+                            <div v-if="startsUnread" class="flex items-center gap-x-2 py-1" role="separator">
+                                <span class="h-px flex-1 bg-[var(--app-accent)]" />
+                                <span class="whitespace-nowrap text-xxs font-semibold text-[var(--app-accent)]">{{ ctrans("New messages") }}</span>
+                            </div>
                             <SlackMessageRow :message="message" :continues="continues" :channel-links="channelLinks" @open-thread="openThread($event)" />
                         </div>
                     </InfiniteScroll>
                 </Deferred>
             </div>
+            <Button
+                v-if="newBelow"
+                type="tertiary"
+                size="xs"
+                icon="fal fa-arrow-down"
+                class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
+                :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
+                @click="scrollToBottom" />
         </div>
 
-        <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" @close="openThreadTs = null" />
+        <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" @close="openThreadTs = null" />
 
         <Popover ref="pinsPopover">
             <div class="w-[min(24rem,calc(100vw-2rem))]">
