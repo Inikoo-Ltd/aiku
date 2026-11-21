@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\DepositRequest;
 
+use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
@@ -46,6 +47,8 @@ class MatchAgentMoneyTransfers
     public string $commandSignature = 'agent-money:match-bank {organisation? : organisation slug}';
 
     public const string DISMISSED = 'agent_money_dismissed';
+
+    public const string UNDONE = 'agent_money_undone';
 
     public const string LINE_KEY = 'bank_line_key';
 
@@ -86,7 +89,7 @@ class MatchAgentMoneyTransfers
                 return collect();
             }
 
-            $lines   = $this->candidates($orgAgent, $since);
+            $lines   = $this->candidates($orgAgent, $since)->reject(fn (array $line) => $line['dismissed'] || $line['undone'])->values();
             $allSum  = $lines->isNotEmpty() && $lines->every(fn (array $line) => $line['received'] !== null) && abs($lines->sum('received') - $due) <= 0.005;
             $oneLine = $lines->filter(fn (array $line) => $line['received'] !== null && abs($line['received'] - $due) <= 0.005);
             $exact   = $allSum ? $lines : ($oneLine->count() === 1 ? $oneLine : collect());
@@ -176,7 +179,10 @@ class MatchAgentMoneyTransfers
      * window opens the day before the oldest approved open request: Fio and Tatra book lines at local midnight, the
      * previous day in UTC.
      *
-     * @return Collection<int, array{line: BankTransaction, received: float|null, key: string}>
+     * A line set aside ("Not this one") or whose record was undone is still listed, flagged, so a payer can still
+     * set it as paid; neither is ever recorded on its own again.
+     *
+     * @return Collection<int, array{line: BankTransaction, received: float|null, key: string, dismissed: bool, undone: bool}>
      */
     public function candidates(OrgAgent $orgAgent, ?Carbon $since = null): Collection
     {
@@ -188,9 +194,11 @@ class MatchAgentMoneyTransfers
         $since      = $lastByHand && $lastByHand->gt($since) ? $lastByHand : $since;
         $agent      = $orgAgent->agent;
         $currency   = $agent->organisation->currency->code;
-        $dismissed  = array_flip(Arr::get($orgAgent->refresh()->settings ?? [], self::DISMISSED, []));
+        $settings   = $orgAgent->refresh()->settings ?? [];
+        $dismissed  = array_flip(Arr::get($settings, self::DISMISSED, []));
+        $undone     = array_flip(Arr::get($settings, self::UNDONE, []));
 
-        $used     = AgentPayment::withTrashed()
+        $used     = AgentPayment::query()
             ->where('organisation_id', $orgAgent->organisation_id)
             ->where(fn ($query) => $query->whereNotNull('data->'.self::LINE_KEY)->orWhereNotNull('bank_transaction_id'))
             ->get(['data', 'bank_transaction_id']);
@@ -211,8 +219,8 @@ class MatchAgentMoneyTransfers
             ->orderBy('booked_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (BankTransaction $line) => ['line' => $line, 'received' => self::received($line, $currency), 'key' => self::lineKey($line)])
-            ->reject(fn (array $line) => $usedKeys->has($line['key']) || $usedIds->has($line['line']->id) || isset($dismissed[$line['key']]))
+            ->map(fn (BankTransaction $line) => ['line' => $line, 'received' => self::received($line, $currency), 'key' => $key = self::lineKey($line), 'dismissed' => isset($dismissed[$key]), 'undone' => isset($undone[$key])])
+            ->reject(fn (array $line) => $usedKeys->has($line['key']) || $usedIds->has($line['line']->id))
             ->values();
     }
 
@@ -223,7 +231,7 @@ class MatchAgentMoneyTransfers
     {
         DB::transaction(function () use ($orgAgent, $bankTransaction) {
             $orgAgent = OrgAgent::whereKey($orgAgent->id)->lockForUpdate()->firstOrFail();
-            $line     = $this->candidates($orgAgent)->first(fn (array $line) => $line['line']->id === $bankTransaction->id);
+            $line     = $this->candidates($orgAgent)->first(fn (array $line) => $line['line']->id === $bankTransaction->id && !$line['dismissed']);
             if (!$line) {
                 throw ValidationException::withMessages(['bank_transaction' => __('This bank transfer is no longer offered.')]);
             }
@@ -231,6 +239,42 @@ class MatchAgentMoneyTransfers
             $settings[self::DISMISSED][] = $line['key'];
             $orgAgent->update(['settings' => $settings]);
         });
+    }
+
+    /**
+     * Takes back what was set as paid from one bank line (wrong match, or the bank reversed it): its transfers are
+     * removed, their requests open again, and the line is offered again but never recorded on its own.
+     *
+     * @return int transfers removed
+     */
+    public function undo(OrgAgent $orgAgent, string $key): int
+    {
+        return DB::transaction(function () use ($orgAgent, $key) {
+            $orgAgent  = OrgAgent::whereKey($orgAgent->id)->lockForUpdate()->firstOrFail();
+            $transfers = self::recordedFromLine($orgAgent, $key)->get();
+            if ($transfers->isEmpty()) {
+                throw ValidationException::withMessages(['bank_transaction' => __('Nothing set as paid from this bank transfer is left to undo.')]);
+            }
+            $transfers->each(fn (AgentPayment $transfer) => DeleteAgentPayment::make()->handle($transfer));
+
+            $settings                 = $orgAgent->settings ?? [];
+            $settings[self::UNDONE]   = array_values(array_unique([...Arr::get($settings, self::UNDONE, []), $key]));
+            $settings[self::DISMISSED] = array_values(array_diff(Arr::get($settings, self::DISMISSED, []), [$key]));
+            $orgAgent->update(['settings' => $settings]);
+
+            return $transfers->count();
+        });
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<AgentPayment>
+     */
+    public static function recordedFromLine(OrgAgent $orgAgent, string $key): \Illuminate\Database\Eloquent\Builder
+    {
+        return AgentPayment::where('agent_id', $orgAgent->agent_id)
+            ->where('organisation_id', $orgAgent->organisation_id)
+            ->whereNotNull('deposit_request_id')
+            ->where('data->'.self::LINE_KEY, $key);
     }
 
     /**

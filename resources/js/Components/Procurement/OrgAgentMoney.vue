@@ -14,13 +14,13 @@ import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBan, faCheck, faHandHoldingUsd, faInfoCircle, faPaperclip, faTimes } from "@fal"
+import { faBan, faCheck, faHandHoldingUsd, faInfoCircle, faPaperclip, faTimes, faUndo } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableAgentMoneyRequests, { MoneyRequestRow } from "@/Components/Tables/Grp/Org/Procurement/TableAgentMoneyRequests.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faBan, faCheck, faHandHoldingUsd, faInfoCircle, faPaperclip, faTimes)
+library.add(faBan, faCheck, faHandHoldingUsd, faInfoCircle, faPaperclip, faTimes, faUndo)
 
 type BankLine = {
 	id: number
@@ -34,8 +34,23 @@ type BankLine = {
 	currency_code: string
 	amount_to_record: number
 	too_much: boolean
+	set_aside: boolean
 	pay_route: { name: string; parameters: Record<string, unknown> }
 	dismiss_route: { name: string; parameters: Record<string, unknown> }
+}
+
+type BankTransfer = {
+	id: number
+	date: string | null
+	bank: string | null
+	reference: string | null
+	amount: number
+	currency_code: string
+	sent_amount: number | null
+	sent_currency: string | null
+	requests: string[]
+	problem: boolean
+	undo_route: { name: string; parameters: Record<string, unknown> } | null
 }
 
 const props = defineProps<{
@@ -46,6 +61,7 @@ const props = defineProps<{
 		wallet: { received: number; paid: number; balance: number }
 		pay_route: { name: string; parameters: Record<string, unknown> } | null
 		bank_lines: BankLine[]
+		bank_transfers: BankTransfer[]
 		to_pay: {
 			currency_code: string | null
 			amount: number
@@ -137,6 +153,22 @@ const answerBankLine = (line: BankLine, isPayment: boolean) => {
 }
 const shortDate = (isoDate: string) => new Date(`${isoDate}T00:00:00`).toLocaleDateString(locale.locale_iso || locale.language.code, { day: "numeric", month: "short", year: "numeric" })
 
+const offeredLines = computed(() => (props.data.bank_lines ?? []).filter((line) => !line.set_aside))
+const setAsideLines = computed(() => (props.data.bank_lines ?? []).filter((line) => line.set_aside))
+const isSetAsideOpen = ref(false)
+const confirmUndoId = ref<number | null>(null)
+const undo = (transfer: BankTransfer) => {
+	if (!transfer.undo_route) return
+	bankLineError.value = null
+	router.patch(route(transfer.undo_route.name, transfer.undo_route.parameters), {}, {
+		preserveScroll: true,
+		onStart: () => (bankLineBusyId.value = -transfer.id),
+		onFinish: () => (bankLineBusyId.value = null),
+		onSuccess: () => (confirmUndoId.value = null),
+		onError: (errors) => (bankLineError.value = firstError(errors)),
+	})
+}
+
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
 const pay = () => {
@@ -195,10 +227,10 @@ const pay = () => {
 		{{ ctrans(":amount more is waiting for approval. Do not pay it until it is approved.", { amount: bank(toPayCurrency, data.to_pay.waiting_approval) }) }}
 	</p>
 
-	<div v-if="data.bank_lines?.length" class="mx-4 mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+	<div v-if="offeredLines.length" class="mx-4 mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
 		<div class="text-sm font-semibold text-gray-900">{{ ctrans("Is this the payment?") }}</div>
 		<p class="mt-1 text-sm text-gray-600">{{ ctrans("Your bank sent these transfers to the agent, but they do not add up exactly to the amount to pay.") }}</p>
-		<div v-for="line in data.bank_lines" :key="line.id" class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-amber-200 bg-white p-3">
+		<div v-for="line in offeredLines" :key="line.id" class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-amber-200 bg-white p-3">
 			<div class="min-w-0 flex-1 text-sm">
 				<div class="font-semibold text-gray-900">
 					{{ bank(line.sent_currency, line.sent_amount) }}
@@ -225,8 +257,62 @@ const pay = () => {
 				</Button>
 			</div>
 		</div>
-		<p v-if="bankLineError" class="mt-2 text-xs text-red-600">{{ bankLineError }}</p>
 	</div>
+
+	<div v-if="setAsideLines.length" class="mx-4 mt-3 text-sm">
+		<button type="button" class="text-gray-600 underline hover:text-gray-900" @click="isSetAsideOpen = !isSetAsideOpen">
+			{{ ctrans("Transfers you said were not the payment (:count)", { count: setAsideLines.length }) }}
+		</button>
+		<div v-if="isSetAsideOpen" class="mt-2 space-y-2">
+			<div v-for="line in setAsideLines" :key="line.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-gray-200 bg-white p-3">
+				<div class="min-w-0 flex-1">
+					<span class="font-semibold text-gray-900">{{ bank(line.sent_currency, line.sent_amount) }}</span>
+					<span class="text-gray-600"> {{ ctrans("sent on :date from :bank", { date: shortDate(line.date), bank: line.bank }) }}</span>
+					<span v-if="line.reference" class="text-xs text-gray-500"> · {{ line.reference }}</span>
+				</div>
+				<Button v-if="!line.too_much" type="tertiary" size="xs" :label="ctrans('Yes, set :amount as paid', { amount: bank(line.currency_code, line.amount_to_record) })" :loading="bankLineBusyId === line.id" @click="answerBankLine(line, true)">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
+		</div>
+	</div>
+
+	<div v-if="data.bank_transfers?.length" class="mx-4 mt-4">
+		<div class="text-sm font-semibold text-gray-900">{{ ctrans("Set as paid from your bank") }}</div>
+		<div v-for="transfer in data.bank_transfers" :key="transfer.id" class="mt-2 rounded-md border p-3 text-sm" :class="transfer.problem ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'">
+			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+				<div class="min-w-0 flex-1">
+					<span class="font-semibold text-gray-900">{{ bank(transfer.currency_code, transfer.amount) }}</span>
+					<span v-if="transfer.sent_amount !== null && transfer.sent_currency" class="text-gray-600"> ({{ ctrans("sent :amount", { amount: bank(transfer.sent_currency, transfer.sent_amount) }) }})</span>
+					<span class="text-gray-600"> · {{ transfer.date ? shortDate(transfer.date) : "" }}<span v-if="transfer.bank"> · {{ transfer.bank }}</span></span>
+					<div class="text-xs text-gray-500">
+						{{ ctrans("Paid requests :requests", { requests: transfer.requests.join(", ") }) }}<span v-if="transfer.reference"> · {{ transfer.reference }}</span>
+					</div>
+					<div v-if="transfer.problem" class="mt-1 text-xs font-medium text-red-700">{{ ctrans("The bank reversed or changed this transfer. If the agent did not get the money, undo it.") }}</div>
+				</div>
+				<template v-if="transfer.undo_route">
+					<Button v-if="confirmUndoId !== transfer.id" type="tertiary" size="xs" :label="ctrans('Undo')" @click="confirmUndoId = transfer.id">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-undo" class="text-gray-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<div v-else class="flex flex-wrap items-center gap-2">
+						<span class="text-xs text-gray-700">{{ ctrans("Requests :requests will be waiting to be paid again.", { requests: transfer.requests.join(", ") }) }}</span>
+						<Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="confirmUndoId = null" />
+						<Button type="tertiary" size="xs" :label="ctrans('Yes, undo')" :loading="bankLineBusyId === -transfer.id" @click="undo(transfer)">
+							<template #icon>
+								<FontAwesomeIcon icon="fal fa-undo" class="text-red-500" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+					</div>
+				</template>
+			</div>
+		</div>
+	</div>
+
+	<p v-if="bankLineError" class="mx-4 mt-2 text-xs text-red-600">{{ bankLineError }}</p>
 
 	<div class="mx-4 mt-4 text-xs text-gray-500">{{ ctrans("Your account with the agent, for information only. These are not amounts to pay.") }}</div>
 	<div class="mx-4 mt-1 grid grid-cols-1 gap-3 sm:grid-cols-3">

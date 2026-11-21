@@ -32,6 +32,11 @@ use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers;
+use App\Models\SysAdmin\User;
+use App\Models\SupplyChain\AgentPayment;
+use App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
+use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequests;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SupplyChain\DepositRequestItem;
@@ -320,6 +325,7 @@ class ShowOrgAgent extends OrgAction
                 ? ['name' => 'grp.models.org_agent.money_requests.pay', 'parameters' => ['orgAgent' => $orgAgent->id], 'method' => 'post']
                 : null,
             'bank_lines'           => $canPay ? $this->bankLines($orgAgent) : [],
+            'bank_transfers'       => $this->bankTransfers($orgAgent, $user),
             'requests'            => IndexAgentMoneyRequests::make()->handle($agent, $this->organisation, OrgAgentTabsEnum::MONEY->value)
                 ->through(fn (DepositRequest $depositRequest) => IndexAgentMoneyRequests::row($depositRequest, $user, true)),
         ];
@@ -352,10 +358,54 @@ class ShowOrgAgent extends OrgAction
                 'currency_code'     => $agentCurrency,
                 'amount_to_record'  => $amount,
                 'too_much'          => $amount > $due + 0.005,
+                'set_aside'         => $candidate['dismissed'],
                 'pay_route'         => ['name' => 'grp.models.org_agent.money_requests.pay_from_bank', 'parameters' => ['orgAgent' => $orgAgent->id, 'bankTransaction' => $line->id]],
                 'dismiss_route'     => ['name' => 'grp.models.org_agent.money_requests.bank_line.dismiss', 'parameters' => ['orgAgent' => $orgAgent->id, 'bankTransaction' => $line->id]],
             ];
         })->values()->all();
+    }
+
+    /**
+     * Transfers set as paid from the client's bank in the last 60 days, and older ones the bank has since reversed or
+     * changed, one row per bank line, each with what it paid and the undo when the user may pay all of it.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function bankTransfers(OrgAgent $orgAgent, ?User $user): array
+    {
+        return AgentPayment::where('agent_id', $orgAgent->agent_id)
+            ->where('organisation_id', $orgAgent->organisation_id)
+            ->whereNotNull('deposit_request_id')
+            ->whereNotNull('data->'.MatchAgentMoneyTransfers::LINE_KEY)
+            ->with(['depositRequest.agent', 'currency:id,code', 'bankTransaction.bankConnection:id,name', 'originalCurrency:id,code'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy(fn (AgentPayment $transfer) => $transfer->data[MatchAgentMoneyTransfers::LINE_KEY])
+            ->map(function ($transfers) use ($orgAgent, $user) {
+                $first   = $transfers->first();
+                $line    = $transfers->firstWhere('bank_transaction_id', '!==', null)?->bankTransaction;
+                $problem = $line && ($line->status !== BankTransactionStatusEnum::BOOKED || $line->match_state === BankTransactionMatchStateEnum::REVIEW);
+
+                return [
+                    'id'            => $first->id,
+                    'date'          => $first->date?->toDateString(),
+                    'bank'          => $line?->bankConnection?->name,
+                    'reference'     => $first->reference,
+                    'amount'        => round($transfers->sum(fn (AgentPayment $transfer) => (float) $transfer->amount), 2),
+                    'currency_code' => $first->currency->code,
+                    'sent_amount'   => $transfers->every(fn (AgentPayment $transfer) => $transfer->original_amount !== null) ? round($transfers->sum(fn (AgentPayment $transfer) => (float) $transfer->original_amount), 2) : null,
+                    'sent_currency' => $first->originalCurrency?->code,
+                    'requests'      => $transfers->map(fn (AgentPayment $transfer) => $transfer->depositRequest->reference ?? '#'.$transfer->deposit_request_id)->unique()->values()->all(),
+                    'problem'       => $problem,
+                    'undo_route'    => $transfers->every(fn (AgentPayment $transfer) => ApproveAgentMoneyRequest::canPay($transfer->depositRequest, $user))
+                        ? ['name' => 'grp.models.org_agent.money_requests.bank_transfer.undo', 'parameters' => ['orgAgent' => $orgAgent->id, 'agentPayment' => $first->id]]
+                        : null,
+                ];
+            })
+            ->filter(fn (array $row) => $row['problem'] || $row['date'] >= now()->subDays(60)->toDateString())
+            ->values()
+            ->all();
     }
 
     /**

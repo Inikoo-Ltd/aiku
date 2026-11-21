@@ -4792,7 +4792,7 @@ test('a transfer to the agent that does not add up, or follows one recorded by h
     expect($beforeHand->id)->not->toBeIn([$exact->id]);
 
     $this->patch(route('grp.models.org_agent.money_requests.bank_line.dismiss', [$orgAgent->id, $tooMuch->id]))->assertRedirect()->assertSessionHasNoErrors();
-    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $tooMuch->id]), ['amount' => 500])->assertSessionHasErrors('bank_transaction');
+    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $tooMuch->id]), ['amount' => 500])->assertSessionHasErrors('amount');
     $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $sentInOther->id]), ['amount' => 250])->assertSessionHasErrors('bank_transaction');
     $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $sentInOther->id]), ['amount' => 200])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -4851,4 +4851,48 @@ test('a bank line booked at Prague midnight on the request\'s day counts, a hand
     $line(60, null, now()->setTimezone('Europe/Prague')->startOfDay()->addHours(2));
     expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0)
         ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED);
+});
+
+test('a payer undoes what was set as paid from a bank transfer: the request opens again and the line is offered but never recorded on its own again; a reversed line is flagged and a line set aside can still be paid (HELP-4864)', function () {
+    [$orgAgent, $client, $ask, $line] = agentMoneyBankFixture($this, 'H4864U');
+    $request = $ask(300);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($request, null);
+    $wrong = $line(300, 300, now()->subMinutes(10));
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(1);
+    $recorded = \App\Models\SupplyChain\AgentPayment::where('bank_transaction_id', $wrong->id)->sole();
+
+    $agentStaff = agentOrganisationAdmin($orgAgent->agent->organisation, 'h4864u-a-'.Str::lower(Str::random(6)));
+    actingAs($agentStaff);
+    $undoRoute = route('grp.models.org_agent.money_requests.bank_transfer.undo', [$orgAgent->id, $recorded->id]);
+    $this->patch($undoRoute)->assertForbidden();
+
+    $payer = agentOrganisationAdmin($client, 'h4864u-c-'.Str::lower(Str::random(6)));
+    actingAs($payer);
+    $moneyTab = route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']);
+    $wrong->update(['status' => \App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum::CANCELLED]);
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('money.bank_transfers.0.amount', 300)
+        ->where('money.bank_transfers.0.problem', true)
+        ->where('money.bank_transfers.0.undo_route.name', 'grp.models.org_agent.money_requests.bank_transfer.undo')
+        ->etc());
+    $wrong->update(['status' => \App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum::BOOKED]);
+
+    $this->patch($undoRoute)->assertRedirect()->assertSessionHasNoErrors();
+    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
+        ->and($recorded->refresh()->trashed())->toBeTrue()
+        ->and(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+    $this->patch($undoRoute)->assertNotFound();
+
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('money.bank_transfers', [])
+        ->where('money.bank_lines.0.id', $wrong->id)
+        ->where('money.bank_lines.0.set_aside', false)
+        ->etc());
+
+    $this->patch(route('grp.models.org_agent.money_requests.bank_line.dismiss', [$orgAgent->id, $wrong->id]))->assertRedirect()->assertSessionHasNoErrors();
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page->where('money.bank_lines.0.set_aside', true)->etc());
+    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $wrong->id]), ['amount' => 300])->assertRedirect()->assertSessionHasNoErrors();
+    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+
+    actingAs($this->adminGuest->getUser());
 });

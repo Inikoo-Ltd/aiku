@@ -785,6 +785,7 @@ use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequests;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequestsFromBank;
 use App\Actions\SupplyChain\DepositRequest\DismissAgentMoneyBankLine;
+use App\Actions\SupplyChain\DepositRequest\UndoAgentMoneyBankTransfer;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAdvancePercentage;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAgentFeePercentage;
 use App\Actions\GoodsIn\StockDelivery\AcknowledgeStockDeliveriesCostingReminder;
@@ -2068,6 +2069,7 @@ Route::post('deposit-request/{depositRequest:id}/pay', PayAgentMoneyRequest::cla
 Route::post('org-agent/{orgAgent:id}/money-requests/pay', PayAgentMoneyRequests::class)->name('org_agent.money_requests.pay');
 Route::post('org-agent/{orgAgent:id}/money-requests/pay-from-bank/{bankTransaction}', PayAgentMoneyRequestsFromBank::class)->name('org_agent.money_requests.pay_from_bank');
 Route::patch('org-agent/{orgAgent:id}/money-requests/bank-line/{bankTransaction}/dismiss', DismissAgentMoneyBankLine::class)->name('org_agent.money_requests.bank_line.dismiss');
+Route::patch('org-agent/{orgAgent:id}/money-requests/bank-transfer/{agentPayment}/undo', UndoAgentMoneyBankTransfer::class)->name('org_agent.money_requests.bank_transfer.undo');
 Route::post('deposit-request/{depositRequest:id}/remind', RemindAgentMoneyRequest::class)->name('deposit_request.remind');
 Route::patch('supplier/{supplier:id}/advance-percentage', UpdateSupplierAdvancePercentage::class)->name('supplier.advance_percentage.update');
 Route::patch('supplier/{supplier:id}/agent-fee', UpdateSupplierAgentFeePercentage::class)->name('supplier.agent_fee.update');

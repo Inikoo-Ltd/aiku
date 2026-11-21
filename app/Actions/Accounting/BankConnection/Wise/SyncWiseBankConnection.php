@@ -340,7 +340,7 @@ class SyncWiseBankConnection
 
     private function paidLineChanged(BankTransaction $stored, array $values): bool
     {
-        return ($stored->payment_id !== null || AgentPayment::withTrashed()->where(fn ($query) => $query->where('bank_transaction_id', $stored->id)->orWhere('data->'.MatchAgentMoneyTransfers::LINE_KEY, MatchAgentMoneyTransfers::lineKey($stored)))->exists())
+        return ($stored->payment_id !== null || AgentPayment::where(fn ($query) => $query->where('bank_transaction_id', $stored->id)->orWhere('data->'.MatchAgentMoneyTransfers::LINE_KEY, MatchAgentMoneyTransfers::lineKey($stored)))->exists())
             && $stored->match_state !== BankTransactionMatchStateEnum::REVIEW && $this->lineChanged($stored, $values);
     }
 
