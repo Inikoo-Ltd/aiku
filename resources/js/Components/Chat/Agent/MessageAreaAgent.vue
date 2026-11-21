@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
+import { ref, reactive, watch, onMounted, onUnmounted, inject, computed, nextTick, defineAsyncComponent, getCurrentInstance } from "vue"
 import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
@@ -20,6 +20,7 @@ import {
     faEye,
     faArchive,
     faAngleDown,
+    faAngleLeft,
     faLock,
     faExclamationCircle,
     faCircle,
@@ -42,9 +43,11 @@ import SavedRepliesPicker from "@/Components/Chat/Agent/SavedRepliesPicker.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
+import ToggleSwitch from "primevue/toggleswitch"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
 import Image from "@common/Components/Image.vue"
-import { faUser, faSpinner } from "@far"
+import { faUser, faSpinner, faReply } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
@@ -908,7 +911,60 @@ const clearAiDraft = () => {
     aiDraftText.value = null
 }
 
+const putAiDraftBack = () => {
+    const draftId = aiDraftBox.value?.draft?.id
+    try {
+        if (draftId) localStorage.removeItem(clearedKey(draftId))
+    } finally {
+        aiDraftBox.value?.offerToEditor()
+    }
+}
+
+const AURA_COLLAPSED_KEY = "chat-aura-collapsed"
+const auraCollapsed = ref((() => {
+    try {
+        return localStorage.getItem(AURA_COLLAPSED_KEY) === "1"
+    } catch {
+        return false
+    }
+})())
+const setAuraCollapsed = (collapsed: boolean) => {
+    auraCollapsed.value = collapsed
+    try {
+        localStorage.setItem(AURA_COLLAPSED_KEY, collapsed ? "1" : "0")
+    } catch {
+        return
+    }
+}
+
+const lockedEditorHeight = ref<number | null>(null)
+watch(() => props.session?.ulid, () => (lockedEditorHeight.value = null))
+
+const confirmingAuraSwap = ref(false)
+let confirmingAuraSwapTimer: ReturnType<typeof setTimeout> | null = null
+const useAuraDraft = () => {
+    if (newMessage.value.trim() && !confirmingAuraSwap.value) {
+        confirmingAuraSwap.value = true
+        if (confirmingAuraSwapTimer) clearTimeout(confirmingAuraSwapTimer)
+        confirmingAuraSwapTimer = setTimeout(() => (confirmingAuraSwap.value = false), 5000)
+        return
+    }
+    confirmingAuraSwap.value = false
+    newMessage.value = ""
+    aiDraftText.value = null
+    putAiDraftBack()
+}
+
+const clearReplyBox = () => {
+    const editorElement = (messageEditor.value as any)?.$el as HTMLElement | undefined
+    if (editorElement) lockedEditorHeight.value = editorElement.offsetHeight
+    aiDraftBox.value?.dismiss()
+    newMessage.value = ""
+    onEditorInput("")
+}
+
 const aiDraftInEditor = computed(() => aiDraftText.value !== null && !!newMessage.value.trim())
+const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== aiDraftText.value)
 
 watch(newMessage, (value) => {
     if (aiDraftText.value !== null && value.trim() && value !== aiDraftText.value) aiDraftBox.value?.take()
@@ -935,8 +991,11 @@ const openMailIds = computed(() => {
     return new Set([...mails.slice(lastAgentIndex + 1), mails[mails.length - 1]].filter(Boolean).map((message) => message.id))
 })
 
+const isFromCustomer = (message: { sender_type?: string }) => message.sender_type === "user" || message.sender_type === "guest"
+
 const unansweredMessageId = computed(() =>
-    messagesLocal.value.find((message) => (message.sender_type === "user" || message.sender_type === "guest") && openMailIds.value.has(message.id))?.id
+    messagesLocal.value.find((message) => isFromCustomer(message) && openMailIds.value.has(message.id))?.id
+        ?? messagesLocal.value.findLast(isFromCustomer)?.id
 )
 
 const emailCopyCandidates = computed<{ address: string; name: string | null }[]>(() => {
@@ -1004,6 +1063,8 @@ const isInlinePicture = (attachment: SelectedAttachment) =>
 
 const onEditorInput = (text: string) => {
     if (!text.trim() && aiDraftText.value !== null && aiDraftId) {
+        const editorElement = (messageEditor.value as any)?.$el as HTMLElement | undefined
+        if (editorElement?.contains(document.activeElement)) aiDraftBox.value?.dismiss()
         markCleared(aiDraftId)
         aiDraftText.value = null
     }
@@ -1211,6 +1272,7 @@ const followDraft = () => {
 }
 
 const sendMessage = async () => {
+    lockedEditorHeight.value = null
     if (storedFilesSession !== (props.session?.ulid ?? null) || dropLostPictures()) return
 
     // Every file still here goes: the agent removes a picture by deleting it from the text, which
@@ -1397,6 +1459,50 @@ type TimelineEntry =
 
 // Messages and status events share one chronological stream so the agent can see what
 // happened to the conversation exactly where it happened.
+const firstTimelineDate = computed(() => Object.keys(groupedTimeline.value)[0])
+const firstMessageId = computed(() => messagesLocal.value[0]?.id)
+const replySlotId = `reply-slot-${instance?.uid ?? 0}`
+const replySlot = ref<HTMLElement | null>(null)
+const isReplySlotVisible = ref(true)
+let replySlotObserver: IntersectionObserver | null = null
+watch([replySlot, messagesContainer], ([slot, container]) => {
+    replySlotObserver?.disconnect()
+    replySlotObserver = null
+    if (!slot || !container) {
+        isReplySlotVisible.value = true
+        return
+    }
+    replySlotObserver = new IntersectionObserver(([entry]) => {
+        isReplySlotVisible.value = entry.isIntersecting
+    }, { root: container, threshold: 0.05 })
+    replySlotObserver.observe(slot)
+})
+onUnmounted(() => replySlotObserver?.disconnect())
+const goToReply = async () => {
+    messageEditor.value?.editor?.commands?.focus?.("end", { scrollIntoView: false })
+    await scrollBottom()
+}
+const TRANSLATE_ALL_KEY = "chat-translate-all"
+const readTranslateAll = () => {
+    try {
+        return localStorage.getItem(TRANSLATE_ALL_KEY) === "1"
+    } catch {
+        return false
+    }
+}
+const translateAll = ref(readTranslateAll())
+const toggleTranslateAll = () => {
+    translateAll.value = !translateAll.value
+    try {
+        localStorage.setItem(TRANSLATE_ALL_KEY, translateAll.value ? "1" : "0")
+    } catch {
+        return
+    }
+}
+const lastMailId = computed(() => messagesLocal.value.findLast((message) => message.sender_type !== "system")?.id)
+const openAutoReplyIds = reactive(new Set<number>())
+const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
+
 const groupedTimeline = computed(() => {
     const entries: TimelineEntry[] = [
         ...messagesLocal.value.map((message) => ({
@@ -1712,17 +1818,20 @@ const handleClickOutside = (e: MouseEvent) => {
         <!-- Header -->
         <!-- When the thread is too narrow for the name and the buttons side by side, the name and
              the menu keep the first row and the buttons drop to a second one beneath it. -->
-        <header ref="headerRef" class="flex items-center gap-3 px-3 py-1.5 border-b"
+        <header ref="headerRef" class="flex items-center gap-3 px-3 py-1 border-b"
             :class="isHeaderStacked ? 'flex-wrap gap-y-1.5 justify-end' : ''">
             <button :class="{ '-order-2': isHeaderStacked }" @click="$emit('back')" :aria-label="ctrans('Back')">
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
-            <div class="flex-1 min-w-0 cursor-pointer" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
-                <div class="text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
+            <div class="flex flex-1 min-w-0 cursor-pointer items-center gap-2" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
+                <div class="max-w-[40%] shrink-0 text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
-                <div class="flex items-center gap-1.5 mt-0.5">
+                <span v-if="isEmailChat && emailRecipient && emailRecipient !== (session?.guest_identifier || session?.contact_name)" class="max-w-[25%] shrink truncate text-xs text-gray-500">{{ emailRecipient }}</span>
+                <span v-if="session?.shop?.code" v-tooltip="session.shop.name"
+                    class="shrink-0 rounded border border-gray-300 px-1 text-[10px] font-semibold uppercase leading-4 text-gray-600">{{ session.shop.code }}</span>
+                <div class="flex min-w-0 items-center gap-1.5">
                     <span v-if="session?.status"
                         class="text-[10px] font-medium capitalize rounded-full px-1.5 py-0.5"
                         :class="statusBadgeClass">
@@ -1758,9 +1867,6 @@ const handleClickOutside = (e: MouseEvent) => {
                         <option value="" disabled>⏳ {{ ctrans("Wait for reply") }}</option>
                         <option v-for="option in waitingOptions" :key="option.hours" :value="option.hours">{{ option.label() }}</option>
                     </select>
-                    <span v-if="showShop && session?.shop?.name" class="text-[11px] text-gray-400 truncate">
-                        {{ session.shop.name }}
-                    </span>
                 </div>
             </div>
 
@@ -1788,6 +1894,15 @@ const handleClickOutside = (e: MouseEvent) => {
                     </button>
                 </template>
             </ModalConfirmationDelete>
+
+            <button type="button" :aria-pressed="translateAll"
+                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border transition"
+                :class="translateAll ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-gray-900' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
+                v-tooltip="translateAll ? ctrans('Show every message as written') : ctrans('Show every message in my language')"
+                @click="toggleTranslateAll">
+                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" fixed-width aria-hidden="true" />
+                {{ ctrans("Translate all") }}
+            </button>
 
             <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
                  an imported mailbox, and a choice nobody finds does not get made. -->
@@ -1969,7 +2084,6 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <ChatAssistantTranscript v-if="(chatSession as any)?.assistant_hand_over" :ulid="chatSession!.ulid" :base-url="baseUrl" :hand-over="(chatSession as any).assistant_hand_over" />
 
-            <h2 v-if="emailSubject" class="px-1 pt-1 text-base font-semibold text-gray-900 break-words">{{ emailSubject }}</h2>
 
             <div v-if="isLoadingThread && !messagesLocal.length" aria-busy="true" :aria-label="ctrans('Loading messages')" class="space-y-3">
                 <template v-if="isEmailChat">
@@ -1992,14 +2106,22 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <template v-for="(entries, date) in groupedTimeline" :key="date">
-                <div class="text-center text-xs text-gray-400">{{ date }}</div>
-                <template v-for="entry in entries" :key="entry.key">
-                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" />
+                <div v-if="!isEmailChat && (entries[0]?.kind !== 'event' || entries[0].event?.event_type === 'internal_note')" class="text-center text-xs text-gray-400">{{ date }}</div>
+                <template v-for="(entry, position) in entries" :key="entry.key">
+                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" :date="position === 0 && entry.event?.event_type !== 'internal_note' && !(emailSubject && date === firstTimelineDate) ? String(date) : undefined" />
+                    <button v-else-if="isFoldedAutoReply(entry.message)" type="button" :data-message-id="entry.message.id"
+                        class="!mt-1 ml-auto flex max-w-full items-center gap-1.5 pr-1 text-[11px] text-gray-500 hover:text-gray-700"
+                        v-tooltip="ctrans('Show the automatic reply')" @click="openAutoReplyIds.add(entry.message.id)">
+                        <FontAwesomeIcon :icon="faReply" class="shrink-0 text-[10px] text-gray-400" fixed-width aria-hidden="true" />
+                        <span class="shrink-0 font-medium">{{ ctrans("Automatic reply") }}:</span>
+                        <span class="min-w-0 truncate">{{ String(entry.message.message_text ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() }}</span>
+                        <span class="shrink-0 text-[10px] text-gray-400">· {{ new Date(entry.message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }}</span>
+                    </button>
                     <div v-else class="flex rounded-lg transition-colors"
                         :data-message-id="entry.message.id"
                         :class="isEmailChat ? '' : entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent" format-markup
-                            :mail="isEmailChat" :mail-collapsed="!openMailIds.has(entry.message.id)"
+                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translateAll" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)"
                             :mail-recipient="isEmailChat ? chatEmailRecipient((session as any)?.metadata) : null"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"
@@ -2020,12 +2142,21 @@ const handleClickOutside = (e: MouseEvent) => {
             </template>
             <ChatAiDraftBox v-if="readOnly" :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
-            <ChatAiDraftBox v-else-if="isEmailChat && !isTrashed && !isClosed" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid"
-                @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <template v-else-if="isEmailChat && !isTrashed && !isClosed" />
             <ChatAiDraftBox v-else-if="!isTrashed && !isClosed" :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text"
                 @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
-            <ChatBackToNewest :target="messagesContainer" />
+            <ChatBackToNewest v-if="!isEmailChat" :target="messagesContainer" />
+            <button v-if="isEmailChat && !isReplySlotVisible && !readOnly && !isClosed && !isTrashed" type="button"
+                class="sticky bottom-0 z-10 !mt-2 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-xs text-gray-600 shadow-md hover:bg-gray-50"
+                @click="goToReply">
+                <FontAwesomeIcon :icon="faReply" class="text-gray-400" fixed-width aria-hidden="true" />
+                <span class="font-medium text-gray-800">{{ ctrans("Reply") }}</span>
+                <span v-if="newMessage.trim()" class="truncate text-gray-500">· {{ aiDraftInEditor ? ctrans("Aura's draft is ready") : ctrans("Your draft, not sent") }}</span>
+                <span class="ml-auto text-gray-400">↓</span>
+            </button>
+            <div v-if="isEmailChat" :id="replySlotId" ref="replySlot" class="!mt-2" />
         </div>
+        <Teleport defer :to="`#${replySlotId}`" :disabled="!isEmailChat">
         <div v-if="chatSession?.ulid && chatDrafters[chatSession.ulid]"
             class="mx-3 mb-1 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
             ✎ {{ ctrans(":name is writing a reply to this conversation", { name: chatDrafters[chatSession.ulid].name }) }}
@@ -2137,14 +2268,15 @@ const handleClickOutside = (e: MouseEvent) => {
         </footer>
 
         <!-- Footer: Normal message input -->
-        <footer v-else class="px-3 py-2 bg-white">
+        <footer v-else class="px-3 py-2 bg-white" :class="isEmailChat ? 'rounded-r-xl border border-gray-200 shadow-sm' : ''"
+            :style="isEmailChat ? { borderLeft: `3px dashed ${layout?.app?.theme?.[4] ?? 'var(--app-accent)'}` } : undefined">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" :accept="FILE_EXTENSIONS.map((extension) => `.${extension}`).join(',')" multiple class="hidden" @change="handleDocSelect" />
 
-            <div v-if="emailRecipientLabel" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
-                <span class="font-medium">{{ ctrans("To") }}</span>
-                <span class="text-gray-700">{{ emailRecipientLabel }}</span>
+            <div v-if="emailRecipientLabel" class="-mx-3 -mt-2 mb-2 flex items-baseline gap-3 border-b border-gray-200 px-4 py-3 text-sm">
+                <span v-if="emailSubject" class="min-w-0 truncate font-semibold text-gray-900">Re: {{ emailSubject.replace(/^(re|fw|fwd|aw|odp|sv)\s*:\s*/i, "") }}</span>
+
             </div>
 
             <div v-if="emailCopyCandidates.length" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
@@ -2166,7 +2298,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
-            <div class="relative min-w-0 flex-1 basis-[28rem] rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
+            <div class="relative flex min-w-0 flex-1 basis-[28rem] flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-soft)]' : aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
                 <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
                     v-tooltip="ctrans('Drag to resize, double-click to reset')"
@@ -2174,10 +2306,34 @@ const handleClickOutside = (e: MouseEvent) => {
                     @pointerdown="startComposerResize" @dblclick="resetComposerHeight">
                     <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
                 </div>
-                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 px-4 pt-2 text-[11px] font-medium" :class="aiDraftTranslationOf ? 'text-[var(--app-accent)]' : 'text-gray-500'">
-                    <img src="/art/invader.svg" class="h-3 select-none" alt="" />
+                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium" :class="aiDraftTranslationOf ? 'text-[var(--app-accent)]' : 'text-gray-500'">
+                    <span class="shrink-0" :title="aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
+                        <AuraAvatar class="h-4 w-4" :angry="aiDraftBox?.draft?.aura_angry" :label="ctrans('Draft by Aura')" />
+                    </span>
                     <template v-if="aiDraftTranslationOf && aiDraftLanguages">{{ ctrans("Draft by Aura in :mine: change what you need, it is sent in :theirs", aiDraftLanguages) }}</template>
+                    <template v-else-if="aiDraftEdited">{{ ctrans("Your reply, based on Aura's draft") }}</template>
                     <template v-else>{{ ctrans("Draft by Aura: read it, change what you need, then send") }}</template>
+                    <label v-if="aiDraftBox?.draft?.translate_for_me && aiDraftBox.draft.text" class="ml-auto flex shrink-0 cursor-pointer items-center gap-1.5 font-normal"
+                        :class="aiDraftBox.draft.edit_in_my_language ? 'text-[var(--app-accent)]' : 'text-gray-600'"
+                        :title="aiDraftBox.draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: aiDraftBox.draft.customer_language }) : undefined">
+                        <ToggleSwitch :model-value="!!aiDraftBox.draft.edit_in_my_language" :disabled="aiDraftBox.savingEditLanguage || aiDraftBox.translating"
+                            class="scale-75" :pt="aiDraftBox.editSwitchPt" @update:model-value="aiDraftBox.setEditInMyLanguage" />
+                        {{ aiDraftBox.draft.my_language && aiDraftBox.draft.customer_language ? ctrans("Edit in :mine, send in :theirs", { mine: aiDraftBox.draft.my_language, theirs: aiDraftBox.draft.customer_language }) : ctrans("Edit in my language") }}
+                    </label>
+                    <button v-if="aiDraftBox?.draft" type="button" :disabled="aiDraftBox.translating" :aria-pressed="aiDraftBox.showTranslation"
+                        class="shrink-0 rounded px-1 text-gray-400 hover:text-gray-700 disabled:opacity-50"
+                        :class="aiDraftBox.draft.translate_for_me && aiDraftBox.draft.text ? '' : 'ml-auto'"
+                        v-tooltip="aiDraftBox.showTranslation ? ctrans('Show the original') : ctrans('Translate the draft and the notes into my language')"
+                        @click="aiDraftBox.toggleTranslation()">
+                        <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
+                    </button>
+                    <button v-if="!aiDraftEdited" type="button"
+                        class="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-100"
+                        v-tooltip="ctrans('Empties the reply box so you can write your own; Aura\'s notes stay')"
+                        @click="clearReplyBox">
+                        <FontAwesomeIcon :icon="faTimesLight" class="text-red-500" fixed-width aria-hidden="true" />
+                        {{ ctrans("Dismiss Aura draft") }}
+                    </button>
                 </div>
                 <ChatMessageEditor ref="messageEditor" :key="isEmailChat ? 'email' : 'chat'" v-model="newMessage" @update:model-value="onEditorInput"
                     @picture-refused="composerError = PICTURE_NOT_TAKEN()"
@@ -2187,13 +2343,13 @@ const handleClickOutside = (e: MouseEvent) => {
                     :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : ctrans('Type message...')"
                     :picture-source="pictureSource"
                     class="px-4 pt-3 pb-1"
-                    :style="isEmailChat && composerHeight ? { '--composer-height': `${composerHeight}px` } : undefined"
+                    :style="{ ...(isEmailChat && composerHeight ? { '--composer-height': `${composerHeight}px` } : {}), ...(isEmailChat && lockedEditorHeight ? { minHeight: `${lockedEditorHeight}px` } : {}) }"
                     :class="isEmailChat && composerHeight
                         ? '[&_.ProseMirror]:min-h-[--composer-height] [&_.ProseMirror]:max-h-[--composer-height]'
                         : isEmailChat && isComposerExpanded
                         ? '[&_.ProseMirror]:min-h-[30vh] [&_.ProseMirror]:max-h-[55vh]'
                         : isEmailChat
-                            ? '[&_.ProseMirror]:min-h-28 [&_.ProseMirror]:max-h-60 [@media(max-height:800px)]:[&_.ProseMirror]:min-h-14 [@media(max-height:800px)]:[&_.ProseMirror]:max-h-32'
+                            ? '[&_.ProseMirror]:min-h-28'
                             : '[&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20'" />
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
@@ -2244,6 +2400,28 @@ const handleClickOutside = (e: MouseEvent) => {
                     <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
                 </div>
             </div>
+            <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
+                :class="auraCollapsed && aiDraftBox?.draft ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
+                    class="flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
+                    v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
+                    <AuraAvatar class="h-4 w-4" :angry="aiDraftBox.draft.aura_angry" />
+                    <FontAwesomeIcon :icon="faAngleLeft" class="text-[11px] text-pink-500" fixed-width aria-hidden="true" />
+                </button>
+                <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid"
+                    class="min-w-0 flex-1"
+                    @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
+                    @collapse="setAuraCollapsed(true)" />
+                <button v-if="!auraCollapsed && aiDraftBox?.draft?.text && (!aiDraftInEditor || aiDraftEdited)" type="button"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition"
+                    :class="confirmingAuraSwap ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100' : 'border-pink-300 bg-white text-pink-800 hover:bg-pink-50'"
+                    @click="useAuraDraft">
+                    <AuraAvatar class="h-3.5 w-3.5" />
+                    <template v-if="confirmingAuraSwap">{{ ctrans("Replace your text? Your changes will be lost") }}</template>
+                    <template v-else-if="newMessage.trim()">{{ ctrans("Use Aura draft instead") }}</template>
+                    <template v-else>{{ ctrans("Bring back Aura draft") }}</template>
+                </button>
+            </div>
             </div>
             <p v-if="composerError" role="alert" class="mt-1 px-1 text-xs text-red-600">{{ composerError }}</p>
             <p v-if="carriedOnBy !== null" role="alert" class="mt-1 px-1 text-xs text-amber-700">
@@ -2255,6 +2433,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ ctrans("This draft is not saved yet, so colleagues cannot see it. It will be saved when you type again.") }}
             </p>
         </footer>
+        </Teleport>
 
         <ChatFilesDialog v-if="session?.ulid" v-model:visible="isFilesDialogOpen" :session-ulid="session.ulid" :is-whatsapp="false" />
 

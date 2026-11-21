@@ -21014,6 +21014,7 @@
     ":actor updated the chat": ":actor a mis à jour le chat",
     ":from transferred the chat to :actor": ":from a transféré le chat à :actor",
     "Internal note by Aiku, not visible to the customer": "Note interne d'Aiku, non visible par le client",
+    "Internal note by Aura, not visible to the customer": "Note interne d'Aura, non visible par le client",
     "The chat was transferred to :actor": "Le chat a été transféré à :actor",
     "Login form": "Formulaire de connexion",
     "No webpage": "Aucune page web",

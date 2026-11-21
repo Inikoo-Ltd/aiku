@@ -1183,6 +1183,26 @@ test('an Aiku note naming another chat by id links to that conversation with its
     ]]);
 });
 
+test('an Aiku note naming a ticket shows it with its live status', function () {
+    actingAs($this->user);
+    $chat   = noiseTestEmailSession($this->shop, 'buyer@example.com', 'New user?', 'Who is the new user?');
+    $ticket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->user->group, ['subject' => 'Sign-up sends the new user email']);
+    $ticket->update(['status' => \App\Enums\Helpers\Ticket\TicketStatusEnum::PENDING_DEPLOY]);
+
+    $note = $chat->chatEvents()->create([
+        'event_type' => \App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE,
+        'actor_type' => 'ai',
+        'payload'    => ['text' => "{$ticket->reference} HELP-999999999"],
+    ]);
+
+    expect((new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($note))->resolve()['note_tickets'])->toBe([[
+        'reference'   => $ticket->reference,
+        'subject'     => 'Sign-up sends the new user email',
+        'status_icon' => \App\Enums\Helpers\Ticket\TicketStatusEnum::stateIcon()['pending_deploy'],
+        'url'         => route('grp.tickets.show', $ticket->reference),
+    ]]);
+});
+
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 

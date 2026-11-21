@@ -14,6 +14,7 @@ use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatSession;
+use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +29,7 @@ use Throwable;
 /**
  * The buttons an assistant puts on its draft: settle a claim the way the Claim panel does, ask a
  * department to do something as a staff task, put a chat that is probably spam in spam, never
- * blocking the sender, or close as done an email that only thanks us. The assistant only proposes them; each runs once,
+ * blocking the sender, close as done an email that only thanks us, or link the chat to its customer. The assistant only proposes them; each runs once,
  * when a staff member who may do it clicks, as that staff member, and the draft keeps what came of it.
  */
 class RunChatAiDraftAction
@@ -93,6 +94,15 @@ class RunChatAiDraftAction
             CloseChatAfterThanks::closeForAssistant($session, untouchedOnly: false);
 
             return ['label' => __('Closed as done'), 'reference' => null];
+        }
+
+        if ($action['type'] === 'link') {
+            $customer = self::customerToLink($session, $action['customer']);
+            abort_unless($customer, 422, __('No customer :customer with a login in :shop', ['customer' => $action['customer'], 'shop' => $session->shop->name]));
+
+            self::link($session, $customer, $agent);
+
+            return ['label' => __('Linked to :customer', ['customer' => $customer->reference]), 'reference' => $customer->reference];
         }
 
         if ($action['type'] === 'task') {
@@ -161,6 +171,17 @@ class RunChatAiDraftAction
             return $view + ['label' => $action['label'] ?? $action['subject']];
         }
 
+        if ($action['type'] === 'link') {
+            $customer = self::customerToLink($session, $action['customer']);
+            $linked   = $customer && $session->webUser?->customer_id === $customer->id;
+
+            return array_replace($view, [
+                'available' => $customer && !$linked,
+                'why'       => $customer ? ($linked ? __('Already linked') : null) : __('Customer not found'),
+                'label'     => __('Link to :customer', ['customer' => $customer?->reference ?? $action['customer']]),
+            ]);
+        }
+
         if ($action['type'] === 'spam') {
             $refused = MarkChatSessionAsSpam::refusedForAssistant($session, untouchedOnly: false);
 
@@ -186,6 +207,29 @@ class RunChatAiDraftAction
                 default             => __('Add free to next order: :items', ['items' => $items]),
             },
         ]);
+    }
+
+    public static function customerToLink(ChatSession $session, string $identifier): ?Customer
+    {
+        $identifier = strtolower(trim($identifier));
+
+        return Customer::where('shop_id', $session->shop_id)
+            ->whereHas('webUsers')
+            ->where(fn ($query) => $query->whereRaw('lower(reference) = ?', [$identifier])
+                ->orWhereRaw('lower(slug) = ?', [$identifier])
+                ->orWhereRaw('lower(email) = ?', [$identifier]))
+            ->first();
+    }
+
+    public static function link(ChatSession $session, Customer $customer, ChatAgent $agent): void
+    {
+        $session->update([
+            'suggested_customer_id'  => $customer->id,
+            'suggestion_basis'       => SuggestChatSessionCustomer::BASIS_MANUAL,
+            'suggestion_rejected_at' => null,
+        ]);
+
+        ConfirmSuggestedChatCustomer::make()->handle($session, $agent, true);
     }
 
     public static function order(ChatSession $session, string $reference): ?Order

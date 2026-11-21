@@ -302,6 +302,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
         </Menu>
 
         <div class="h-full flex justify-end items-center pr-2 space-x-2 text-sm md:text-lg text-gray-700 font-semibold">
+            <div id="breadcrumb-actions" class="flex h-full items-center gap-1 text-xs font-normal empty:hidden" />
             <!-- Button: Help article -->
             <a v-if="help" :href="help.url" target="_blank" rel="noopener"
                 class="rounded flex items-center justify-center w-12 xl:w-8 h-full opacity-70 hover:opacity-100 cursor-pointer hover:text-[var(--app-accent)]"

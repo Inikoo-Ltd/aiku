@@ -10,6 +10,7 @@ namespace App\Http\Resources\CRM\Livechat;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
+use App\Models\Helpers\Ticket;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -33,6 +34,7 @@ class ChatTimelineEventResource extends JsonResource
             'description' => $this->describe($eventType),
             'note'        => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->payload('text') : null,
             'note_links'  => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->noteLinks((string) $this->payload('text'), auth()->user()?->group_id) : [],
+            'note_tickets' => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->noteTickets((string) $this->payload('text'), auth()->user()?->group_id) : [],
             'created_at'  => $this->created_at,
             'timestamp'   => $this->created_at?->timestamp,
         ];
@@ -63,6 +65,31 @@ class ChatTimelineEventResource extends JsonResource
             ])->values()->all();
     }
 
+    /**
+     * Tickets a note names become a chip with the ticket's live status, so staff see at a glance
+     * whether engineers are still on it or it is done, without the note having to say so.
+     *
+     * @return array<int, array{reference: string, subject: string, status_icon: array, url: string}>
+     */
+    protected function noteTickets(string $text, ?int $groupId): array
+    {
+        preg_match_all('/\\b(?:PRE|HELP|INI|CUS|MER)-\\d+\\b/', $text, $matches);
+
+        if (!$groupId || !$matches[0]) {
+            return [];
+        }
+
+        return Ticket::where('group_id', $groupId)
+            ->whereIn('reference', array_unique($matches[0]))
+            ->get(['reference', 'subject', 'status'])
+            ->map(fn (Ticket $ticket) => [
+                'reference'   => $ticket->reference,
+                'subject'     => $ticket->subject,
+                'status_icon' => $ticket->status->stateIcon()[$ticket->status->value],
+                'url'         => route('grp.tickets.show', $ticket->reference),
+            ])->values()->all();
+    }
+
     protected function payload(string $key, $default = null)
     {
         return Arr::get($this->payload ?? [], $key, $default);
@@ -76,13 +103,13 @@ class ChatTimelineEventResource extends JsonResource
             ?? $this->payload('to_agent_name');
 
         if ($fromPayload) {
-            return $fromPayload;
+            return $fromPayload === 'Aiku' ? 'Aura' : $fromPayload;
         }
 
         $actorType = is_object($this->actor_type) ? $this->actor_type->value : $this->actor_type;
 
         if ($actorType === 'ai') {
-            return 'Aiku';
+            return 'Aura';
         }
 
         if ($actorType !== 'agent') {
@@ -108,7 +135,7 @@ class ChatTimelineEventResource extends JsonResource
             ChatEventTypeEnum::MOVED_TO_COURIERS => __(':actor moved the chat to Couriers and added :domain to the courier list', ['actor' => $actor, 'domain' => $this->payload('domain')]),
             ChatEventTypeEnum::FORWARDED_BY_EMAIL => __(':actor forwarded the chat by email to :recipients', ['actor' => $actor, 'recipients' => implode(', ', (array) $this->payload('recipients', []))]),
             ChatEventTypeEnum::MOVED_TO_SHOP => __(':actor moved the chat from :from to :to', ['actor' => $actor, 'from' => $this->payload('from_shop_name'), 'to' => $this->payload('to_shop_name')]),
-            ChatEventTypeEnum::INTERNAL_NOTE => __('Internal note by Aiku, not visible to the customer'),
+            ChatEventTypeEnum::INTERNAL_NOTE => __('Internal note by Aura, not visible to the customer'),
             default => __(':actor updated the chat', ['actor' => $actor]),
         };
     }

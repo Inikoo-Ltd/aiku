@@ -3,6 +3,11 @@ import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore } from "@far"
 import { ctrans } from "@/Composables/useTrans"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCircle, faUserCheck as faUserCheckLight, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle as faCheckCircleLight, faBan as faBanLight } from "@fal"
+
+library.add(faCircle, faUserCheck as faUserCheckLight, faSpinner, faClock, faCommentDots, faRocket, faCheckCircleLight, faBanLight)
 
 const props = defineProps<{
     event: {
@@ -11,9 +16,11 @@ const props = defineProps<{
         description?: string
         note?: string | null
         note_links?: { ulid: string, shop: string | null, url: string }[]
+        note_tickets?: { reference: string, subject: string, status_icon: { icon: string, class: string, tooltip: string }, url: string }[]
         payload?: Record<string, any> | null
         created_at?: string
     }
+    date?: string
 }>()
 
 const ICONS: Record<string, any> = {
@@ -98,6 +105,8 @@ const headline = computed(() => {
     return parts.join(" ")
 })
 
+const time = computed(() => props.event.created_at ? new Date(props.event.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "")
+
 const stamp = computed(() => {
     if (!props.event.created_at) return ""
 
@@ -115,22 +124,24 @@ const stamp = computed(() => {
     <div v-if="isInternalNote" class="flex justify-center py-2">
         <div class="w-full max-w-xl rounded-lg border border-pink-300 bg-pink-50 px-3 py-2 text-left shadow-sm">
             <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-700">
-                <img src="/art/invader.svg" alt="aiku" class="h-4 select-none" />
+                <AuraAvatar class="h-4 w-4" />
                 <span>{{ headline }}</span>
+                <span class="ml-auto flex flex-wrap justify-end gap-1 text-xs font-normal"><span v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" class="group relative inline-block align-middle"><a :href="ticket.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded bg-white px-1.5 py-0.5 font-semibold text-gray-700 ring-1 ring-gray-200 hover:text-gray-900"><FontAwesomeIcon :icon="ticket.status_icon.icon" :class="ticket.status_icon.class" fixed-width />{{ ticket.reference }}</a><span class="pointer-events-none absolute right-0 top-full z-30 mt-1 hidden w-64 whitespace-normal rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-lg group-hover:block"><span class="flex items-center gap-1.5 text-xs font-semibold text-gray-800"><FontAwesomeIcon :icon="ticket.status_icon.icon" :class="ticket.status_icon.class" fixed-width />{{ ticket.status_icon.tooltip }}</span><span class="mt-1 block text-xs text-gray-600">{{ ticket.subject }}</span></span></span></span>
             </div>
             <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950"><template v-for="(part, index) in noteParts" :key="index"><a v-if="part.link" :href="part.link.url" target="_blank" rel="noopener" class="font-semibold text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the chat in :shop", { shop: part.link.shop ?? "" }) }}</a><template v-else>{{ part.text }}</template></template></div>
             <div class="mt-1 text-right text-[10px] text-pink-400">{{ stamp }}</div>
         </div>
     </div>
-    <div v-else class="flex flex-col items-center gap-1 py-1 text-center">
-        <span class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <FontAwesomeIcon :icon="icon" class="text-[9px]" :class="tone" fixed-width />
-        </span>
-        <div class="text-[11px] leading-snug max-w-xs" :class="event.event_type === 'email_bounce' ? 'text-red-600' : 'text-gray-500'">{{ headline }}</div>
+    <div v-else class="flex flex-col items-center py-0.5 text-center">
+        <div class="flex max-w-full items-center gap-1.5 text-[11px] leading-snug" :class="event.event_type === 'email_bounce' ? 'text-red-600' : 'text-gray-500'">
+            <span v-if="date" class="shrink-0 text-gray-400">{{ date }} ·</span>
+            <FontAwesomeIcon :icon="icon" class="shrink-0 text-[10px]" :class="tone" fixed-width aria-hidden="true" />
+            <span class="min-w-0">{{ headline }}</span>
+            <span class="shrink-0 text-[10px] text-gray-400">· {{ time }}</span>
+        </div>
         <div v-if="isPhoneCall && payload.notes"
-            class="max-w-md whitespace-pre-line rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-[11px] leading-snug text-emerald-900">
+            class="mt-1 max-w-md whitespace-pre-line rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-[11px] leading-snug text-emerald-900">
             {{ payload.notes }}
         </div>
-        <div class="text-[10px] text-gray-400">{{ stamp }}</div>
     </div>
 </template>

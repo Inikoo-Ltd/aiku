@@ -22659,6 +22659,7 @@
     ":actor updated the chat": ":actor zaktualizował(a) czat",
     ":from transferred the chat to :actor": ":from przekazał(a) czat do: :actor",
     "Internal note by Aiku, not visible to the customer": "Notatka wewnętrzna Aiku, niewidoczna dla klienta",
+    "Internal note by Aura, not visible to the customer": "Notatka wewnętrzna Aura, niewidoczna dla klienta",
     "The chat was transferred to :actor": "Czat został przekazany do: :actor",
     "Login form": "Formularz logowania",
     "Abandoned cart mailshots sent": "Wysłane kampanie e-mailowe o porzuconych koszykach",

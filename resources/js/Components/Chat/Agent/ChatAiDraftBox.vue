@@ -7,10 +7,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
-import { onClickOutside } from "@vueuse/core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faChevronUp, faStar as faStarEmpty, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faTrashAlt, faCommentsAlt } from "@fal"
-import { faStar } from "@fas"
+import { faChevronDown, faChevronUp, faChevronRight, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faTrashAlt, faCommentsAlt } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { formatChatTime } from "@/Composables/chatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -25,11 +23,11 @@ const props = defineProps<{
     inline?: boolean
 }>()
 
-const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: { mine: string, theirs: string } | null): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void }>()
+const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: { mine: string, theirs: string } | null): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void, (e: "collapse"): void }>()
 
 interface DraftAction {
     index: number
-    type: "claim" | "task" | "spam" | "close"
+    type: "claim" | "task" | "spam" | "close" | "link"
     label: string
     done: boolean
     available: boolean
@@ -59,6 +57,8 @@ interface Draft {
 
 const draft = ref<Draft | null>(null)
 const checkedOpen = ref(false)
+const questionsOpen = ref(!!props.inline)
+const noteOpen = ref(false)
 const staffTranslation = ref<{ language: string, language_id?: number, editable?: boolean, text?: string | null, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
 const showTranslation = ref(false)
 const translating = ref(false)
@@ -76,7 +76,7 @@ const readHidden = () => {
         return false
     }
 }
-const hidden = ref(readHidden())
+const hidden = ref(!props.inline && readHidden())
 const toggleHidden = () => {
     hidden.value = !hidden.value
     try {
@@ -98,6 +98,8 @@ const clear = () => {
     confirming.value = null
     actionBusy.value = false
     checkedOpen.value = false
+    questionsOpen.value = !!props.inline
+    noteOpen.value = false
     staffTranslation.value = null
     showTranslation.value = false
     if (confirmTimer) clearTimeout(confirmTimer)
@@ -176,6 +178,15 @@ const take = () => {
     axios.post(route("grp.api.chats.ai_drafts.take", [draft.value.id])).catch(() => null)
 }
 
+// Inline, dismissing only empties the reply box: the draft is recorded as discarded for the
+// suggestions report, while her notes and buttons stay beside it.
+const dismissedId = ref<number | null>(null)
+const dismiss = () => {
+    if (!draft.value || dismissedId.value === draft.value.id) return
+    dismissedId.value = draft.value.id
+    axios.post(route("grp.api.chats.ai_drafts.discard", [draft.value.id])).catch(() => null)
+}
+
 // Copying the text instead of pressing Use is recorded once per draft, quietly.
 const copiedId = ref<number | null>(null)
 const copied = () => {
@@ -186,7 +197,6 @@ const copied = () => {
 
 watch(() => draft.value?.id, () => offerToEditor())
 
-defineExpose({ take })
 
 const runAction = async (action: DraftAction) => {
     if (!draft.value || actionBusy.value) return
@@ -322,29 +332,11 @@ const sinceLine = computed(() => {
         : ctrans("Customer wrote :count times (first at :first, last at :last).", replacements)
 })
 const actionLabel = (action: DraftAction) => !action.done && showTranslation.value && staffTranslation.value?.labels?.[action.index] ? staffTranslation.value.labels[action.index] : action.label
+const questionsToCheck = computed(() => draft.value?.questions?.filter((question) => question.status !== "answered").length ?? 0)
 const isQuestion = (action: DraftAction) => action.type === "spam" || action.type === "close"
 const questionActions = computed(() => draft.value?.actions?.filter(isQuestion) ?? [])
 const staffActions = computed(() => draft.value?.actions?.filter((action) => !isQuestion(action)) ?? [])
 const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.checked?.length || draft.value?.questions?.length || draft.value?.actions?.some((action) => action.type === "task")))
-
-const ratingReasons = computed(() => [
-    { key: "missing_info", label: ctrans("Missing info we know") },
-    { key: "wrong_fact", label: ctrans("Wrong fact") },
-    { key: "too_long", label: ctrans("Too long / wrong tone") },
-    { key: "no_reply_needed", label: ctrans("No reply needed") },
-])
-
-const askingWhy = ref(false)
-const whyPanel = ref<HTMLElement | null>(null)
-onClickOutside(whyPanel, () => askingWhy.value = false)
-
-const rate = (rating: number, reason: string | null = null) => {
-    if (!draft.value) return
-    draft.value.rating = rating
-    draft.value.reason = reason
-    askingWhy.value = rating <= 3 && !reason
-    axios.post(route("grp.api.chats.ai_drafts.rate", [draft.value.id]), { rating, reason }).catch(() => null)
-}
 
 const listen = () => {
     if (!props.sessionUlid || !(window as any).Echo) return
@@ -373,25 +365,32 @@ watch(() => props.sessionUlid, () => {
 }, { immediate: true })
 
 onBeforeUnmount(stopListening)
+
+defineExpose({ take, draft, busy, offerToEditor, dismiss, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
 </script>
 
 <template>
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <template v-if="!hidden">
-            <div v-if="shown && draft" class="relative rounded-xl border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2">
-                <button v-if="hasStaffText || draft.text" type="button" :disabled="translating" @click="toggleTranslation"
+            <div v-if="shown && draft" class="relative rounded-xl border border-pink-300 bg-pink-50 px-3 py-2">
+                <button v-if="!inline && (hasStaffText || draft.text)" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
                     :aria-pressed="showTranslation"
                     :title="showTranslation ? ctrans('Show the original') : ctrans('Translate the draft and the notes into my language')">
                     <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                     <span class="sr-only">{{ showTranslation ? ctrans("Show the original") : ctrans("Translate") }}</span>
                 </button>
-                <span class="absolute right-1.5 top-1.5 select-none"
+                <span v-if="!inline" class="absolute right-1.5 top-1.5 select-none"
                     :title="draft.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) + (draft.assistant.client ? ` · ${draft.assistant.client}` : '') : ctrans('Draft by Aura')">
                     <AuraAvatar class="h-5 w-5" :angry="draft.aura_angry" :label="draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) : ctrans('Draft by Aura')" />
                 </span>
-                <p v-if="inline" class="mb-1 mr-12 font-semibold text-gray-800">{{ ctrans("Draft by Aura") }}</p>
+                <div v-if="inline" class="mb-1 flex items-center gap-2">
+                    <p class="min-w-0 flex-1 font-semibold text-gray-800">{{ ctrans("Draft by Aura") }}</p>
+                    <button type="button" class="rounded p-0.5 text-pink-400 hover:bg-pink-100 hover:text-pink-700" v-tooltip="ctrans('Make it a thin bar')" :aria-label="ctrans('Make it a thin bar')" @click="emit('collapse')">
+                        <FontAwesomeIcon :icon="faChevronRight" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
                 <div v-for="action in questionActions" :key="action.index" class="mr-12 flex flex-wrap items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
                     :class="action.type === 'spam' ? 'border-red-200 bg-red-50 text-red-900' : 'border-green-200 bg-green-50 text-green-900'">
                     <FontAwesomeIcon :icon="action.type === 'spam' ? faTrashAlt : faCheck" :class="action.type === 'spam' ? 'text-red-500' : 'text-green-600'" fixed-width aria-hidden="true" />
@@ -403,9 +402,9 @@ onBeforeUnmount(stopListening)
                         </template>
                     </Button>
                 </div>
-                <div v-if="staffNote || staffActions.length" :class="inline ? 'flex-col items-start' : 'mr-12 flex-wrap items-center'" class="flex gap-x-2 gap-y-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[11px] text-violet-900">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-violet-600" fixed-width aria-hidden="true" />
-                    <span v-if="staffNote" class="min-w-0 flex-1 whitespace-pre-line">{{ staffNote }}</span>
+                <div v-if="staffNote || staffActions.length" :class="inline ? 'flex-col items-start' : 'mr-12 flex-wrap items-center'" class="flex gap-x-2 gap-y-1 rounded-md border border-pink-200 bg-pink-100 px-2 py-1 text-[11px] text-pink-950">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-pink-600" fixed-width aria-hidden="true" />
+                    <span v-if="staffNote" role="button" tabindex="0" class="min-w-0 flex-1 cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
                     <template v-for="action in staffActions" :key="action.index">
                         <span v-if="action.done" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 ring-1 ring-inset ring-emerald-200">
                             <FontAwesomeIcon :icon="faCheck" fixed-width />{{ action.label }}
@@ -414,7 +413,7 @@ onBeforeUnmount(stopListening)
                             :tooltip="action.why ?? undefined"
                             :label="confirming === `${draft.id}:${action.index}` ? ctrans('Confirm: :label', { label: actionLabel(action) }) : actionLabel(action)">
                             <template #icon>
-                                <FontAwesomeIcon :icon="faClipboardCheck" class="text-violet-600" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon :icon="faClipboardCheck" class="text-pink-600" fixed-width aria-hidden="true" />
                             </template>
                         </Button>
                     </template>
@@ -427,9 +426,17 @@ onBeforeUnmount(stopListening)
                         {{ premonition.reference }} · {{ premonition.fixed ? ctrans("fixed") : ctrans("engineers are on it") }}
                     </a>
                 </div>
-                <div v-if="draft.questions?.length" class="mt-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700">
-                    <p class="font-semibold text-gray-800">{{ ctrans("Since our last reply") }}</p>
-                    <p v-if="sinceLine" class="text-gray-500">{{ sinceLine }}</p>
+                <div v-if="draft.questions?.length" class="mt-1 rounded-md border border-pink-200 bg-white/50 px-2 py-1 text-[11px] text-gray-700">
+                    <button type="button" class="flex w-full items-center gap-1.5 rounded text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-300" :aria-expanded="questionsOpen" @click="questionsOpen = !questionsOpen">
+                        <FontAwesomeIcon :icon="questionsToCheck ? faExclamationTriangle : faCheck" :class="questionsToCheck ? 'text-amber-500' : 'text-green-600'" fixed-width aria-hidden="true" />
+                        <span class="min-w-0 flex-1 font-medium" :class="questionsToCheck ? 'text-amber-700' : 'text-gray-700'">
+                            {{ questionsToCheck
+                                ? ctrans(":count questions, :check to check", { count: draft.questions.length, check: questionsToCheck })
+                                : draft.questions.length === 1 ? ctrans("1 question, answered") : ctrans(":count questions, all answered", { count: draft.questions.length }) }}
+                        </span>
+                    </button>
+                    <template v-if="questionsOpen">
+                    <p v-if="sinceLine" class="mt-0.5 text-gray-500">{{ sinceLine }}</p>
                     <ol class="mt-0.5 space-y-0.5">
                         <li v-for="(question, position) in draft.questions" :key="position" class="flex items-start gap-1.5">
                             <span class="w-4 shrink-0 text-right tabular-nums text-gray-400">{{ position + 1 }}.</span>
@@ -447,6 +454,7 @@ onBeforeUnmount(stopListening)
                             {{ [other.shop, other.channel].filter(Boolean).join(" · ") }}
                         </a>
                     </div>
+                    </template>
                 </div>
                 <template v-if="inline && editsInMyLanguage && staffTranslation?.editable">
                     <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aura's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
@@ -467,44 +475,24 @@ onBeforeUnmount(stopListening)
                         <li v-for="(line, position) in checkedLines" :key="position">{{ line }}</li>
                     </ul>
                 </div>
-                <div v-if="!preview" class="mt-2 flex flex-wrap items-center gap-2">
+                <div v-if="!preview && !inline" class="mt-2 flex flex-wrap items-center gap-2">
                     <Button v-if="!inline && draft.text" type="tertiary" size="xs" class="bg-white" :disabled="busy" :label="ctrans('Use')" @click="decide('take')">
                         <template #icon>
                             <FontAwesomeIcon :icon="faArrowDown" class="text-green-600" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                    <Button type="tertiary" size="xs" class="bg-white" :disabled="busy" :label="inline ? ctrans('Discard draft') : ctrans('Discard')"
+                    <Button v-if="!inline" type="tertiary" size="xs" class="bg-white" :disabled="busy" :label="inline ? ctrans('Discard draft') : ctrans('Discard')"
                         :tooltip="inline ? ctrans('Clears the reply box; a newer suggestion takes its place if there is one') : undefined" @click="decide('discard')">
                         <template #icon>
                             <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
-                    <label v-if="inline && draft.translate_for_me && draft.text" class="flex cursor-pointer items-center gap-1.5 text-[11px]"
-                        :class="draft.edit_in_my_language ? 'font-medium text-[var(--app-accent)]' : 'text-gray-600'"
-                        :title="draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: draft.customer_language }) : undefined">
-                        <ToggleSwitch :model-value="!!draft.edit_in_my_language" :disabled="savingEditLanguage || translating"
-                            class="scale-75" :pt="editSwitchPt" @update:model-value="setEditInMyLanguage" />
-                        {{ draft.my_language && draft.customer_language ? ctrans("Edit in :mine, send in :theirs", { mine: draft.my_language, theirs: draft.customer_language }) : ctrans("Edit in my language") }}
-                    </label>
-                    <span class="relative ml-auto flex items-center" :title="ctrans('How good is this draft?')">
-                        <button v-for="star in 5" :key="star" type="button" class="px-0.5 text-amber-500 hover:scale-110" :aria-label="ctrans(':count stars', { count: star })" @click="rate(star)">
-                            <FontAwesomeIcon :icon="(draft.rating ?? 0) >= star ? faStar : faStarEmpty" fixed-width />
-                        </button>
-                        <div v-if="askingWhy && draft.rating" ref="whyPanel"
-                            class="absolute bottom-full right-0 z-20 mb-1 w-48 rounded-lg border border-gray-200 bg-white p-1 text-[11px] shadow-lg">
-                            <p class="px-2 py-1 text-gray-500">{{ ctrans("What was wrong?") }}</p>
-                            <button v-for="reason in ratingReasons" :key="reason.key" type="button" @click="rate(draft.rating, reason.key)"
-                                class="block w-full rounded px-2 py-1 text-left text-gray-800 hover:bg-[var(--app-accent-soft)]">
-                                {{ reason.label }}
-                            </button>
-                        </div>
-                    </span>
                 </div>
             </div>
 
         </template>
-        <div v-if="shown" class="mt-1 flex items-center justify-end gap-3 px-1 text-[11px] text-gray-400">
-            <Button v-if="!hidden" type="tertiary" size="xs" class="bg-white" :label="ctrans('Jump to the message')" @click="emit('jump-to-message')">
+        <div v-if="shown && !inline" class="mt-1 flex items-center justify-end gap-3 px-1 text-[11px] text-gray-400">
+            <Button v-if="!hidden && !inline" type="tertiary" size="xs" class="bg-white" :label="ctrans('Jump to the message')" @click="emit('jump-to-message')">
                 <template #icon>
                     <FontAwesomeIcon :icon="faArrowUp" class="text-gray-600" fixed-width aria-hidden="true" />
                 </template>

@@ -27,7 +27,7 @@ import Dialog from "primevue/dialog"
 import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch, faTimes } from "@far"
+import { faSearch, faTimes, faArrowUp } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
 import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
@@ -2361,6 +2361,24 @@ const openMyShops = () => {
     selectedShopIds.value = [...myShops.value]
     afterSelectionChanged()
 }
+const MOVED_HINT_KEY = "inbox-apps-moved-hint-seen"
+const showMovedHint = ref((() => {
+    try {
+        return localStorage.getItem(MOVED_HINT_KEY) !== "1"
+    } catch {
+        return false
+    }
+})())
+const closeMovedHint = () => {
+    if (!showMovedHint.value) return
+    showMovedHint.value = false
+    try {
+        localStorage.setItem(MOVED_HINT_KEY, "1")
+    } catch {
+        return
+    }
+}
+
 type RailApp = "chat" | "email"
 
 const RAIL_APPS: Array<{ key: RailApp; label: string; icon: any }> = [
@@ -3551,41 +3569,47 @@ onUnmounted(() => {
             </template>
 
             <div v-else class="flex min-h-0 flex-1">
-                <nav :aria-label="ctrans('Channels')" class="flex w-16 shrink-0 flex-col items-center gap-3 pt-3 pb-2">
+                <Teleport defer to="#breadcrumb-actions">
+                <nav :aria-label="ctrans('Channels')" class="relative flex items-center gap-1 rounded-full" :class="showMovedHint ? 'ring-2 ring-[var(--app-accent)] ring-offset-2' : ''" @click="closeMovedHint">
+                    <div v-if="showMovedHint" role="note"
+                        class="absolute right-0 top-full z-40 mt-3 flex w-72 items-start gap-2 rounded-xl bg-[var(--app-accent)] p-3 text-sm font-semibold text-[var(--app-accent-text)] shadow-2xl ring-4 ring-[var(--app-accent-soft)]">
+                        <span class="absolute -top-1.5 right-24 h-3 w-3 rotate-45 bg-[var(--app-accent)]" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faArrowUp" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                        <span class="min-w-0 flex-1">{{ ctrans("Chat, Mail and Calls moved here, to give the conversation more room.") }}</span>
+                        <button type="button" class="shrink-0 rounded p-0.5 opacity-80 hover:opacity-100" :aria-label="ctrans('Close')" @click.stop="closeMovedHint">
+                            <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
                     <button v-for="app in RAIL_APPS" :key="app.key" type="button"
                         :disabled="!appIsAvailable(app.key)"
-                        class="flex flex-col items-center gap-1 text-[11px] font-semibold text-gray-700 disabled:opacity-40"
+                        class="relative flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold transition-colors disabled:opacity-40"
+                        :class="activeApp === app.key ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-100'"
                         @click="openApp(app.key)">
-                        <span class="relative flex h-8 w-12 items-center justify-center rounded-full transition-colors"
-                            :class="activeApp === app.key ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'">
-                            <FontAwesomeIcon :icon="app.icon" class="text-base" fixed-width aria-hidden="true" />
-                            <span v-if="appWaiting(app.key)"
-                                v-tooltip="ctrans(':count waiting', { count: String(appWaiting(app.key)) })"
-                                class="absolute -top-1 right-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
-                                {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
-                            </span>
-                        </span>
+                        <FontAwesomeIcon :icon="app.icon" fixed-width aria-hidden="true" />
                         {{ app.label }}
-                    </button>
-
-                    <button type="button" class="flex flex-col items-center gap-1 text-[11px] font-semibold text-gray-700" @click="openPhoneCallView('all')">
-                        <span class="relative flex h-8 w-12 items-center justify-center rounded-full transition-colors"
-                            :class="phoneView ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'">
-                            <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width aria-hidden="true" />
-                            <span v-if="phoneOnNow"
-                                v-tooltip="ctrans(':count on the phone right now', { count: String(phoneOnNow) })"
-                                class="absolute -top-1 right-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
-                                {{ phoneOnNow }}
-                            </span>
+                        <span v-if="appWaiting(app.key)"
+                            v-tooltip="ctrans(':count waiting', { count: String(appWaiting(app.key)) })"
+                            class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
+                            {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
                         </span>
-                        {{ ctrans("Calls") }}
                     </button>
-
+                    <button type="button" class="relative flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold transition-colors"
+                        :class="phoneView ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-100'"
+                        @click="openPhoneCallView('all')">
+                        <FontAwesomeIcon :icon="faPhone" fixed-width aria-hidden="true" />
+                        {{ ctrans("Calls") }}
+                        <span v-if="phoneOnNow"
+                            v-tooltip="ctrans(':count on the phone right now', { count: String(phoneOnNow) })"
+                            class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
+                            {{ phoneOnNow }}
+                        </span>
+                    </button>
                     <button type="button" @click="toggleRail" v-tooltip="ctrans('Collapse')" :aria-label="ctrans('Collapse')"
-                        class="mt-auto rounded-full p-2 text-gray-500 hover:bg-gray-200">
-                        <FontAwesomeIcon :icon="faAngleLeft" class="text-xs" fixed-width />
+                        class="rounded-full p-1.5 text-gray-500 hover:bg-gray-100">
+                        <FontAwesomeIcon :icon="faAngleLeft" fixed-width />
                     </button>
                 </nav>
+                </Teleport>
 
                 <div class="min-w-0 flex-1 overflow-y-auto pb-4 [scrollbar-width:thin]">
                     <template v-if="menuApp === 'phone'">

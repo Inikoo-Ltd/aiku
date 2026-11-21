@@ -3303,7 +3303,7 @@ describe('customer service tools', function () {
             ->and($note->payload['requested_by_user_id'])->toBe($this->user->id)
             ->and($note->actor_type)->toBe(App\Enums\CRM\Livechat\ChatActorTypeEnum::AI)
             ->and($timeline['note'])->toBe($text)
-            ->and($timeline['description'])->toBe('Internal note by Aiku, not visible to the customer')
+            ->and($timeline['description'])->toBe('Internal note by Aura, not visible to the customer')
             ->and($this->chat->messages()->count())->toBe($messages)
             ->and($this->chat->refresh()->status)->toBe($status);
 
@@ -3523,6 +3523,31 @@ describe('customer service tools', function () {
 
         expect(App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->asController($this->chat)->getData(true)['data']['premonitions'][0]['fixed'])->toBeTrue()
             ->and($listed->firstWhere('chat_id', $this->chat->ulid))->toMatchArray(['premonition_fixed' => true]);
+    });
+
+    test('a draft keeps its staff note to one line and links an unlinked chat to its customer with one click', function () {
+        App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
+        $webUserId = $this->chat->web_user_id;
+        $this->chat->update(['web_user_id' => null]);
+        $link = ['type' => 'link', 'customer' => $this->csCustomer->reference];
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'staff_note' => str_repeat('a', App\Mcp\Tools\CustomerServiceChatWriteTool::STAFF_NOTE_MAX + 1)])
+            ->assertHasErrors();
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'actions' => [['type' => 'link', 'customer' => 'nobody-'.uniqid()]]])
+            ->assertHasErrors(['no customer with a login']);
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'staff_note' => 'Link the chat first.', 'actions' => [$link]])
+            ->assertOk();
+
+        $draft = App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($this->chat);
+        $this->actingAs($this->user);
+        $shown = App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->asController($this->chat)->getData(true)['data'];
+
+        expect($shown['actions'][0])->toMatchArray(['type' => 'link', 'available' => true, 'label' => 'Link to '.$this->csCustomer->reference]);
+
+        postJson(route('grp.api.chats.ai_drafts.action', [$draft->id, 0]))->assertOk()->assertJsonPath('data.label', 'Linked to '.$this->csCustomer->reference);
+
+        expect($this->chat->refresh()->webUser?->customer_id)->toBe($this->csCustomer->id);
+        $this->chat->update(['web_user_id' => $webUserId]);
     });
 
     test('a pack of several stocks is claimed in the products ordered, not the stocks picked', function () {

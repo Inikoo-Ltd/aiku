@@ -147,6 +147,10 @@ const props = defineProps<{
     flagChannel?: "chat" | "whatsapp"
     mail?: boolean
     mailCollapsed?: boolean
+    mailSubject?: string
+    threadSubject?: string
+    forwardable?: boolean
+    translateAll?: boolean
     mailRecipient?: MailPerson | null
 }>()
 
@@ -160,6 +164,7 @@ const emit = defineEmits<{
     (e: "jump-to-message", id: number): void
     (e: "resend", message: Message): void
     (e: "resend-email", payload: { id: number }): void
+    (e: "forward"): void
 }>()
 
 const RETRACT_WINDOW_MS = 30 * 60 * 1000
@@ -593,7 +598,13 @@ const displayText = computed(() => {
     return cleanEmailText(activeMessage.value.original?.text || props.message.message_text)
 })
 
-const formattedText = computed(() => formatWhatsappMarkup(displayText.value, props.message.sender_type === "agent"))
+const QUOTED_MAIL = /\n[ \t>]*(-{2,}\s*(Original Message|Mensaje original|Ursprüngliche Nachricht|Pôvodná správa|Původní zpráva)|(On|El|Am|Le|Il|Op|Dňa|Dne|W dniu)\s[^\n]*\d[^\n]*(wrote|escribió|schrieb|a écrit|ha scritto|schreef|napísal|napsal|napisał)\s*:|(From|De|Von|Od|Da|Van|Från|Fra)\s*:[^\n]*\n[ \t>]*(Sent|Enviado|Gesendet|Odoslané|Odesláno|Envoyé|Inviato|Verzonden|Skickat|Sendt|Date|Datum)\s*:)/i
+const quotedMailAt = computed(() => props.mail ? displayText.value.search(QUOTED_MAIL) : -1)
+const showQuotedMail = ref(false)
+const quotedTranslationAt = computed(() => (latestTranslation.value?.translated_text ?? "").search(QUOTED_MAIL))
+const mailHasTranslation = computed(() => props.mail && canShowTranslation.value && !writtenAs.value && !!latestTranslation.value && !shouldHideTranslationBlock.value)
+const shownText = computed(() => quotedMailAt.value > 0 && !showQuotedMail.value ? displayText.value.slice(0, quotedMailAt.value).trimEnd() : displayText.value)
+const formattedText = computed(() => formatWhatsappMarkup(shownText.value, props.message.sender_type === "agent"))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
@@ -621,6 +632,10 @@ const emailSubject = computed(() => props.mail ? "" : (props.message.metadata?.e
 
 // An email conversation reads like a mail client: each message a card with who wrote it to whom,
 // older ones folded to a line so a long thread can be scanned, as staff were used to in Gmail.
+const mailTitle = computed(() => props.mailSubject || (props.threadSubject ? `Re: ${props.threadSubject.replace(/^(re|fw|fwd|aw|odp|sv)\s*:\s*/i, "")}` : ""))
+const mailSender = computed(() => {
+    return (!isFromViewer.value && mailFrom.value.address) || mailPersonLabel(mailFrom.value) || senderLabel.value
+})
 const isMailFolded = ref(!!props.mailCollapsed)
 watch(() => props.mailCollapsed, (collapsed) => isMailFolded.value = !!collapsed)
 
@@ -651,7 +666,7 @@ const mailTo = computed<MailPerson[]>(() => {
 
 const mailCc = computed<MailPerson[]>(() => props.message.metadata?.email_cc ?? [])
 
-const mailSnippet = computed(() => displayText.value.replace(/\s+/g, " ").trim())
+const mailSnippet = computed(() => shownText.value.replace(/\s+/g, " ").trim())
 
 const writtenAs = computed(() => {
     const original = props.message.original?.text?.trim()
@@ -837,7 +852,7 @@ const canForwardToSlack = computed(() =>
 const isForwardModalOpen = ref(false)
 
 // feature hover toolbar (quick reactions) — persisted per message reactor
-const showHoverToolbar = computed(() => !props.readonly && !!props.message.id)
+const showHoverToolbar = computed(() => !props.readonly && !props.mail && !!props.message.id)
 const quickReactions = ["✅", "👀", "👏"] as const
 
 const reactionState = ref<ReactionGroup[]>([])
@@ -985,6 +1000,18 @@ const verifyImage = async () => {
 
 const verificationReasoning = computed(() => activeMessage.value.ai_verification?.reasoning ?? "")
 
+watch(() => props.translateAll, (on) => {
+    if (!on) {
+        showTranslation.value = false
+        return
+    }
+    if (latestTranslation.value) {
+        showTranslation.value = true
+    } else if (props.viewerType === "agent" && !isUnsupportedMessage.value && props.message.sender_type !== "system" && !isTranslating.value) {
+        translateMessage()
+    }
+}, { immediate: !!props.translateAll })
+
 onMounted(() => {
     if (canTranslate.value) fetchLanguages()
     document.addEventListener("click", handleClickOutsideEmojiPicker)
@@ -1091,16 +1118,33 @@ watch(selectedLanguage, async (val) => {
                     : ['px-3.5 py-2.5 rounded-2xl', bubbleClass, isShowingEmailBody ? 'w-full' : '', showHoverToolbar && viewerType === 'agent' ? 'md:min-w-[260px]' : '']">
 
             <div v-if="mail" role="button" tabindex="0" :aria-expanded="!isMailFolded" class="flex cursor-pointer items-start gap-3"
-                :class="isMailFolded ? '' : 'mb-2 border-b border-gray-100 pb-2'"
+                :class="isMailFolded ? '-mx-4 mb-1 border-b border-gray-200 px-4 pb-1' : '-mx-4 mb-2 border-b border-gray-200 px-4 pb-2'"
                 @click="toggleMailFold" @keydown.enter.prevent="toggleMailFold">
                 <div class="min-w-0 flex-1">
                     <div class="flex min-w-0 items-baseline gap-1.5">
                         <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px] text-gray-400" fixed-width />
-                        <span class="truncate font-semibold text-gray-900">{{ mailPersonLabel(mailFrom) || senderLabel }}</span>
-                        <span v-if="mailFrom.name && mailFrom.address && !isMailFolded" class="truncate text-xs text-gray-500">&lt;{{ mailFrom.address }}&gt;</span>
+                        <span v-if="mailTitle" class="truncate font-semibold text-gray-900">{{ mailTitle }}</span>
+                        <template v-else>
+                            <span class="truncate font-semibold text-gray-900">{{ mailPersonLabel(mailFrom) || senderLabel }}</span>
+                            <span v-if="mailFrom.name && mailFrom.address && !isMailFolded" class="truncate text-xs text-gray-500">&lt;{{ mailFrom.address }}&gt;</span>
+                        </template>
+                        <button v-if="forwardable" type="button" class="ml-1 inline-flex shrink-0 items-center gap-1 self-center opacity-0 transition-opacity focus:opacity-100 group-hover/msg:opacity-100 rounded-md border border-gray-300 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-100"
+                            v-tooltip="ctrans('Forward the whole conversation')" @click.stop="emit('forward')">
+                            <FontAwesomeIcon :icon="faShare" class="text-[10px]" fixed-width aria-hidden="true" />
+                            {{ ctrans("Forward") }}
+                        </button>
+                        <button v-if="mailHasTranslation" type="button" :aria-pressed="showTranslation"
+                            class="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-md px-1.5 py-0.5 text-[11px] text-gray-500 hover:bg-gray-100"
+                            :class="showTranslation && !isMailFolded ? 'bg-gray-100 text-gray-800' : 'opacity-0 transition-opacity focus:opacity-100 group-hover/msg:opacity-100'"
+                            v-tooltip="showTranslation ? ctrans('Hide translation') : ctrans('Show translation')"
+                            @click.stop="isMailFolded ? (isMailFolded = false, showTranslation = true) : (showTranslation = !showTranslation)">
+                            <img v-if="latestTranslation?.language_flag" :src="latestTranslation.language_flag" class="h-3 w-3 rounded-sm" loading="lazy" decoding="async" alt="" />
+                            <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
+                            {{ translationDirection }}
+                        </button>
+                        <LoadingIcon v-else-if="mail && isTranslating" class="self-center text-[11px]" />
                     </div>
-                    <div v-if="isMailFolded" class="truncate text-xs text-gray-500">{{ mailSnippet }}</div>
-                    <div v-else-if="mailTo.length || mailCc.length" class="truncate text-xs text-gray-500"
+                    <div v-if="!isMailFolded && (mailTo.length > 1 || mailCc.length)" class="truncate text-xs text-gray-500"
                         :title="[...mailTo, ...mailCc].map((person) => person.address).filter(Boolean).join(', ')">
                         <template v-if="mailTo.length">{{ ctrans("to") }} {{ mailTo.map(mailPersonLabel).join(", ") }}</template>
                         <template v-if="mailCc.length"><span v-if="mailTo.length"> · </span>{{ ctrans("cc") }} {{ mailCc.map(mailPersonLabel).join(", ") }}</template>
@@ -1112,10 +1156,11 @@ watch(selectedLanguage, async (val) => {
                         <FontAwesomeIcon :icon="faExclamationCircle" fixed-width aria-hidden="true" />
                         {{ ctrans("Not sent") }}
                     </span>
-                    <template v-else>{{ time }}</template>
+                    <template v-else><template v-if="mailTitle">{{ mailSender }} · </template>{{ time }}</template>
                 </span>
             </div>
 
+            <div v-if="mail && isMailFolded" role="button" tabindex="0" class="cursor-pointer truncate text-xs text-gray-500" @click="toggleMailFold" @keydown.enter.prevent="toggleMailFold">{{ mailSnippet }}</div>
             <template v-if="!(mail && isMailFolded)">
             <div v-if="showSenderLabel && !mail" class="flex items-center gap-1 text-[11px] font-semibold mb-0.5 opacity-70">
                 <FontAwesomeIcon v-if="isCampaign" :icon="faBullhorn" class="text-[10px]" fixed-width />
@@ -1329,8 +1374,10 @@ watch(selectedLanguage, async (val) => {
                 v-html="formattedText" />
 
             <p v-else-if="!location && !sharedContacts.length" class="whitespace-pre-wrap break-words">
-                {{ displayText }}
+                {{ shownText }}
             </p>
+            <button v-if="quotedMailAt > 0 && !showEmailBody" type="button" class="mt-1 w-fit rounded bg-gray-100 px-1.5 text-xs leading-4 text-gray-500 hover:bg-gray-200"
+                :aria-expanded="showQuotedMail" v-tooltip="showQuotedMail ? ctrans('Hide the quoted email') : ctrans('Show the quoted email')" @click="showQuotedMail = !showQuotedMail">···</button>
 
             <button v-if="emailSummary && showFullEmail" type="button" class="mt-1 w-fit text-xs font-medium text-gray-500 hover:underline" @click="showFullEmail = false">
                 {{ ctrans("Show summary") }}
@@ -1356,7 +1403,7 @@ watch(selectedLanguage, async (val) => {
                 {{ ctrans('Automatic reply') }}
             </div>
 
-            <div v-if="canShowTranslation && !writtenAs && (latestTranslation || isTranslating)"
+            <div v-if="canShowTranslation && !writtenAs && (latestTranslation || isTranslating) && (!mail || showTranslation || isTranslating)"
                 class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
                 <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
                     <LoadingIcon />
@@ -1364,9 +1411,9 @@ watch(selectedLanguage, async (val) => {
                 </div>
 
                 <template v-else-if="!shouldHideTranslationBlock">
-                    <div v-if="showTranslation" class="whitespace-pre-line">{{ latestTranslation!.translated_text }}</div>
+                    <div v-if="showTranslation" class="whitespace-pre-line">{{ mail && quotedTranslationAt > 0 && !showQuotedMail ? latestTranslation!.translated_text.slice(0, quotedTranslationAt).trimEnd() : latestTranslation!.translated_text }}</div>
 
-                    <div class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
+                    <div v-if="!mail" class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
                             class="w-3 h-3 rounded-sm" loading="lazy" decoding="async" />
                         <FontAwesomeIcon :icon="faLanguage" fixed-width />
@@ -1381,7 +1428,7 @@ watch(selectedLanguage, async (val) => {
 
             <!-- One click, into the agent's own language. Somebody who genuinely wants another
                  language has the picker on the conversation; this is the common case. -->
-            <div v-if="canTranslate" class="mt-1">
+            <div v-if="canTranslate && !latestTranslation" class="mt-1">
                 <button :disabled="isTranslating" @click="translateMessage"
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" fixed-width />
@@ -1502,6 +1549,8 @@ watch(selectedLanguage, async (val) => {
 
 .mail-card-own {
     border-left: 3px solid v-bind("layout.app.theme[4]");
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
 }
 
 .bubble-own-agent {
