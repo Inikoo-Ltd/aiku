@@ -21,6 +21,7 @@ const document = computed(() => `<!doctype html><html><head><meta charset="utf-8
 <base target="_blank" rel="noreferrer noopener">
 <style>
   html,body{margin:0;padding:0;background:#fff;}
+  body{display:flow-root;}
   body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#1f2937;word-break:break-word;}
   img{max-width:100%;height:auto;}
   table{max-width:100%;}
