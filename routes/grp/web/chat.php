@@ -25,7 +25,6 @@ use App\Actions\Chat\UI\IndexChatAiCoverageChats;
 use App\Actions\Chat\UI\IndexChatAikuDrafts;
 use App\Actions\Chat\UI\IndexChatVerifiedFacts;
 use App\Actions\Chat\UI\UpdateChatVerifiedFactStatus;
-use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Actions\Chat\UI\FlagChatAutomatedMessage;
 use App\Actions\Chat\UI\IndexChatAiConfidenceMap;
 use App\Actions\Chat\UI\ShowGroupChatAutomation;
@@ -43,9 +42,6 @@ Route::get('/ai/verified-facts', IndexChatVerifiedFacts::class)->name('ai.verifi
 Route::post('/ai/verified-facts/{chatKnowledgeEntry}/status', UpdateChatVerifiedFactStatus::class)->name('ai.verified_facts.status');
 Route::post('/ai/drafts/{chatAiDraft}/flag', FlagChatAiDraft::class)->name('ai.drafts.flag');
 Route::post('/ai/sent/{channel}/{messageId}/flag', FlagChatAutomatedMessage::class)->where('channel', 'chat|whatsapp')->name('ai.sent.flag');
-Route::post('/ai/summaries/messages/{chatMessage}/flag', FlagChatAiSummary::class)->name('ai.summaries.message.flag');
-Route::post('/ai/summaries/sessions/{chatSession:ulid}/flag', [FlagChatAiSummary::class, 'inChatSession'])->name('ai.summaries.session.flag');
-Route::post('/ai/summaries/meta-sessions/{metaChatSession:ulid}/flag', [FlagChatAiSummary::class, 'inMetaChatSession'])->name('ai.summaries.meta_session.flag');
 Route::get('/inbox', RedirectToOrgChatInbox::class)->name('inbox');
 Route::post('/presence', TrackChatAgentPresence::class)->name('presence.track');
 Route::post('/inbox-timings', StoreChatInboxTimings::class)->name('inbox_timings.store')->middleware('throttle:60,1');

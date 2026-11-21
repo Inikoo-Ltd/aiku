@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ctrans } from "@/Composables/useTrans"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import { stripPictureTokens } from "@/Composables/useWhatsappMarkup"
 import { Head, router } from '@inertiajs/vue3'
 import { ref, inject, onMounted, watch, computed } from 'vue'
@@ -559,8 +561,8 @@ const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
                         <!-- AI Summary -->
                         <div v-if="chatSession.ai_summary?.summary" class="px-4 py-3">
                             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
-                                AI Summary
+                                <AuraAvatar class="h-3.5 w-3.5" />
+                                {{ ctrans("Aura's summary") }}
                                 <span
                                     v-if="chatSession.ai_summary.sentiment"
                                     class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"

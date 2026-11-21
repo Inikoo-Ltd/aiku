@@ -384,6 +384,11 @@ test('a chat another agent is holding can only be disposed of by them or a super
 
     $response->assertStatus(403);
     expect($response->json('message'))->toContain($holder->contact_name);
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.close', [$this->organisation->slug, $session->ulid]))
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.message.0', $response->json('message'));
+    expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::ACTIVE);
 });
 
 test('a website guest who gave a customer\'s email is suggested, never linked, until an agent confirms', function () {

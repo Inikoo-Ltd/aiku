@@ -49,6 +49,9 @@ import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner, faReply } from "@far"
+import { faExpandAlt as falExpandAlt, faCompressAlt as falCompressAlt } from "@fal"
+import { faHeadset as fasHeadset, faLock as fasLock } from "@fas"
+import { faComments as farComments, faTicket as farTicket, faAddressCard as farAddressCard, faHistory as farClockRotateLeft } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
@@ -129,6 +132,7 @@ const lastMessageStamp = computed(() => {
 
 const emit = defineEmits([
     "send-message",
+    "view-session-info",
     "back",
     "close-session",
     "view-history",
@@ -302,6 +306,22 @@ const hasTicketsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.
 const hasMessageDetailsPanel = computed(() => Boolean((instance?.vnode?.props as any)?.onViewMessageDetails))
 
 const openTicketsCount = computed(() => Number((props.session as any)?.open_tickets_count ?? 0))
+
+// The panel's Chats and Tickets icons only show when there is something behind them.
+const hasPastChats = ref(false)
+const hasTickets = ref(false)
+watch(() => props.session?.ulid, async (ulid) => {
+    hasPastChats.value = false
+    hasTickets.value = false
+    if (!ulid) return
+    const [history, tickets] = await Promise.all([
+        axios.get(`${baseUrl}/app/api/chats/sessions/${ulid}/history`, { params: { limit: 1 } }).catch(() => null),
+        axios.get(`${baseUrl}/app/api/chats/sessions/${ulid}/tickets`).catch(() => null),
+    ])
+    if (props.session?.ulid !== ulid) return
+    hasPastChats.value = (history?.data?.data?.sessions?.length ?? 0) > 0
+    hasTickets.value = ((tickets?.data?.data ?? tickets?.data ?? []) as any[]).length > 0
+}, { immediate: true })
 const blockingTicketsCount = computed(() => Number((props.session as any)?.blocking_tickets_count ?? 0))
 
 const openTicketsTooltip = computed(() =>
@@ -336,14 +356,14 @@ const heldByAnotherAgent = computed(() =>
 )
 
 const canIgnore = computed(() =>
-    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value
+    (props.session as any)?.channel !== "whatsapp" && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value && isMyChat.value
 )
 
-const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value)
+const canReportSpam = computed(() => isGuest.value && !isClosed.value && !isTrashed.value && !props.readOnly && canDispose.value && isMyChat.value)
 
 // Offered before anybody has replied too: customers often open a second chat with the same
 // question, and once it is answered on one the duplicate has to be closed without a reply.
-const canEndChat = computed(() => !isClosed.value && !isTrashed.value && !props.readOnly)
+const canEndChat = computed(() => !isClosed.value && !isTrashed.value && !props.readOnly && isMyChat.value)
 
 // The header goes to two rows by the width it actually has, not the screen's: on a tablet the
 // app menu and the conversation list leave the thread a phone's width on an lg screen.
@@ -993,6 +1013,11 @@ const openMailIds = computed(() => {
 })
 
 const isFromCustomer = (message: { sender_type?: string }) => message.sender_type === "user" || message.sender_type === "guest"
+
+const mailFoldAll = ref<{ open: boolean, at: number } | null>(null)
+const foldAllMails = (open: boolean) => {
+    mailFoldAll.value = { open, at: Date.now() }
+}
 
 const unansweredMessageId = computed(() =>
     messagesLocal.value.find((message) => isFromCustomer(message) && openMailIds.value.has(message.id))?.id
@@ -1822,6 +1847,12 @@ const handleClickOutside = (e: MouseEvent) => {
                         :class="statusBadgeClass">
                         {{ session.status }}
                     </span>
+                    <span v-if="!isMyChat && session?.assigned_agent?.name" class="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow-300 px-2 py-0.5 text-[11px] font-semibold text-gray-900"
+                        v-tooltip="ctrans(':agent has this chat. Take it over at the bottom of the chat to answer, end, ignore or spam it', { agent: session.assigned_agent.name })">
+                        <FontAwesomeIcon :icon="fasHeadset" class="text-[10px]" fixed-width aria-hidden="true" />
+                        {{ session.assigned_agent.name }}
+                        <FontAwesomeIcon :icon="fasLock" class="text-[9px]" fixed-width aria-hidden="true" />
+                    </span>
                     <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
                         :class="isCustomer ? 'border-green-300 text-green-500' : 'border-blue-300 text-blue-400'"
                         v-tooltip="isCustomer ? ctrans('Customer') : ctrans('Guest')">
@@ -1940,11 +1971,41 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span class="truncate">{{ ctrans("Waiting") }}: {{ task.subject }}</span>
             </a>
 
-            <button type="button" v-tooltip="ctrans('Customer details')" :aria-label="ctrans('Customer details')"
-                class="hidden lg:inline-flex items-center justify-center shrink-0 h-6 w-6 rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100"
-                @click="onViewUserProfile">
-                <FontAwesomeIcon :icon="faUser" class="text-[11px]" fixed-width />
-            </button>
+            <template v-if="isEmailChat">
+                <button type="button" v-tooltip="ctrans('Open every email')" :aria-label="ctrans('Open every email')"
+                    class="inline-flex items-center justify-center shrink-0 h-5 w-5 rounded text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                    @click="foldAllMails(true)">
+                    <FontAwesomeIcon :icon="falExpandAlt" class="text-[11px]" fixed-width />
+                </button>
+                <button type="button" v-tooltip="ctrans('Fold every email')" :aria-label="ctrans('Fold every email')"
+                    class="inline-flex items-center justify-center shrink-0 h-5 w-5 rounded text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                    @click="foldAllMails(false)">
+                    <FontAwesomeIcon :icon="falCompressAlt" class="text-[11px]" fixed-width />
+                </button>
+            </template>
+
+            <div class="hidden lg:inline-flex shrink-0 items-stretch divide-x divide-gray-300 rounded-md border border-gray-300">
+                <button type="button" v-tooltip="ctrans('Overview')" :aria-label="ctrans('Overview')"
+                    class="inline-flex items-center justify-center h-6 w-6 rounded-l-md text-gray-600 transition hover:bg-gray-100"
+                    @click="onViewUserProfile">
+                    <FontAwesomeIcon :icon="farAddressCard" class="text-[11px]" fixed-width />
+                </button>
+                <button v-if="hasPastChats" type="button" v-tooltip="ctrans('Chats')" :aria-label="ctrans('Chats')"
+                    class="inline-flex items-center justify-center h-6 w-6 text-gray-600 transition hover:bg-gray-100"
+                    @click="emit('view-history')">
+                    <FontAwesomeIcon :icon="farComments" class="text-[11px]" fixed-width />
+                </button>
+                <button v-if="hasTicketsPanel && (hasTickets || openTicketsCount > 0)" type="button" v-tooltip="ctrans('Tickets')" :aria-label="ctrans('Tickets')"
+                    class="inline-flex items-center justify-center h-6 w-6 text-gray-600 transition hover:bg-gray-100"
+                    @click="onViewTickets">
+                    <FontAwesomeIcon :icon="farTicket" class="text-[11px]" fixed-width />
+                </button>
+                <button type="button" v-tooltip="ctrans('Log')" :aria-label="ctrans('Log')"
+                    class="inline-flex items-center justify-center h-6 w-6 rounded-r-md text-gray-600 transition hover:bg-gray-100"
+                    @click="emit('view-session-info')">
+                    <FontAwesomeIcon :icon="farClockRotateLeft" class="text-[11px]" fixed-width />
+                </button>
+            </div>
 
             <div class="relative" :class="{ '-order-1': isHeaderStacked }" ref="menuRef">
                 <button @click.stop="isMenuOpen = !isMenuOpen" :aria-label="ctrans('Toggle menu')">
@@ -2098,7 +2159,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         :data-message-id="entry.message.id"
                         :class="isEmailChat ? '' : entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent" format-markup
-                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)"
+                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)" :mail-fold-all="mailFoldAll"
                             :mail-recipient="isEmailChat ? chatEmailRecipient((session as any)?.metadata) : null"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"
@@ -2228,11 +2289,13 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Takeover banner for team chats -->
         <footer v-else-if="!isMyChat" class="px-3 py-3 bg-white border-t">
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[--app-accent-soft] border border-[--app-accent-muted]">
-                <div class="text-xs text-[--app-accent-strong]">
-                    <span class="font-semibold">{{ props.session?.assigned_agent?.name }}</span>
-                    {{ ctrans(' is handling this chat') }}
-                </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow-300 px-2 py-0.5 text-xs font-semibold text-gray-900">
+                    <FontAwesomeIcon :icon="fasHeadset" class="text-[11px]" fixed-width aria-hidden="true" />
+                    {{ props.session?.assigned_agent?.name }}
+                    <FontAwesomeIcon :icon="fasLock" class="text-[10px]" fixed-width aria-hidden="true" />
+                </span>
+                <span class="text-xs text-gray-500">{{ ctrans("is handling this chat") }}</span>
                 <Button
                     @click="takeoverChat"
                     :loading="isTakingOver"
@@ -2378,7 +2441,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="auraCollapsed && aiDraftBox?.draft ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="!aiDraftBox?.draft ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">

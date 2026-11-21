@@ -43,7 +43,7 @@ class TranslateSingleMessage
             return;
         }
 
-        TranslateChatMessage::dispatch(messageId: $chatMessage->id, targetLanguageId: $targetLanguageId, requestFrom: 'translate-single');
+        TranslateChatMessage::run($chatMessage->id, $targetLanguageId, 'translate-single');
     }
 
     public function asController(ActionRequest $request, ChatMessage $chatMessage): JsonResponse

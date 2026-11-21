@@ -146,6 +146,12 @@ class CloseChatSession
             ]);
         }
 
+        if (!$this->userCanDisposeOfChat($agent->user, $chatSession)) {
+            throw ValidationException::withMessages([
+                'message' => $this->chatHeldByAnotherAgentMessage($chatSession),
+            ]);
+        }
+
         try {
             $this->handle($chatSession, $agent->id);
         } catch (Exception $e) {

@@ -62,11 +62,13 @@ const props = defineProps<{
             label?: string,
             route?: routeType
             url?: string
+            action?: () => void
         }
         previous?: {
             label?: string,
             route?: routeType
             url?: string
+            action?: () => void
         }
         position?: string | null
     }
@@ -361,7 +363,12 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
 
             <!-- Button: Previous -->
             <div class="flex justify-center items-center w-11 xl:w-9 h-full">
-                <Link v-if="props.navigation.previous"
+                <button v-if="props.navigation.previous?.action" type="button" @click="props.navigation.previous.action()"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"
+                    v-tooltip="props.navigation.previous?.label" :aria-label="ctrans('Previous')">
+                    <FontAwesomeIcon icon="fas fa-arrow-left" fixed-width aria-hidden="true" />
+                </button>
+                <Link v-else-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
@@ -396,7 +403,12 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
 
             <!-- Button: Next -->
             <div class="flex justify-center items-center w-11 xl:w-9 h-full">
-                <Link v-if="props.navigation.next"
+                <button v-if="props.navigation.next?.action" type="button" @click="props.navigation.next.action()"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"
+                    v-tooltip="props.navigation.next?.label" :aria-label="ctrans('Next')">
+                    <FontAwesomeIcon icon="fas fa-arrow-right" fixed-width aria-hidden="true" />
+                </button>
+                <Link v-else-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
                     class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-gray-100 cursor-pointer hover:text-[var(--app-accent)]"

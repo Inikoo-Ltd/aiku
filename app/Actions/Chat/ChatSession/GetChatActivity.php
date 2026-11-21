@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatSessionReadAuthorisation;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
@@ -90,7 +91,7 @@ class GetChatActivity
             switch ($event->actor_type->value) {
                 case ChatActorTypeEnum::GUEST->value:
                     $actor['id'] = null;
-                    $actor['name'] = $chatSession->guest_identifier ?? 'Guest';
+                    $actor['name'] = ($this->isEmail($chatSession) ? data_get($chatSession->metadata, 'email_from') : null) ?? $chatSession->guest_identifier ?? 'Guest';
                     break;
 
                 case ChatActorTypeEnum::AGENT->value:
@@ -171,7 +172,16 @@ class GetChatActivity
                 break;
         }
 
+        if ($this->isEmail($chatSession) && isset($formatted['details']['description'])) {
+            $formatted['details']['description'] = str_replace('Chat session', 'Email conversation', $formatted['details']['description']);
+        }
+
         return $formatted;
+    }
+
+    private function isEmail(ChatSession $chatSession): bool
+    {
+        return $chatSession->channel === ChatChannelEnum::EMAIL;
     }
 
     private function formatPhoneCallEvent($event): array

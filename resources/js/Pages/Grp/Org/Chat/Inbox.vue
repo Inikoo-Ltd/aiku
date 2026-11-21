@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, inject, provide, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
+import { ref, reactive, computed, watchEffect, inject, provide, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
 import axios, { type AxiosResponse } from "axios"
@@ -1143,6 +1143,18 @@ const pickedAgentOpen = computed(() => pickedAgent.value?.open ?? null)
 
 const pickedAgentName = computed(() =>
     pickedAgent.value?.name ?? null
+)
+
+const folderLabel = computed<string | null>(() =>
+    trashView.value ? ctrans("Trash") : rubbishView.value ? ctrans("Ignored") : spamView.value ? ctrans("Spam")
+        : unclaimedView.value ? ctrans("Unclaimed") : highlightView.value ? ctrans("Starred") : carrierView.value ? ctrans("Couriers")
+        : colleagueView.value ? ctrans("Colleagues") : marketingView.value ? ctrans("Marketing")
+        : activeInboxView.value === "unread" ? ctrans("Unread") : activeInboxView.value === "replied" ? ctrans("Replied")
+        : activeInboxView.value === "offline" ? ctrans("Offline messages") : activeInboxView.value === "label" ? (labelFilter.value?.name ?? ctrans("Label"))
+        : agentView.value ? (pickedAgentName.value ?? null) : null
+)
+const shopLabel = computed<string | null>(() =>
+    crossShopView.value ? null : selectedShopIds.value.length > 1 ? ctrans("Selected shops") : (selectedInbox.value?.name ?? null)
 )
 
 const availableAgents = computed(() => {
@@ -2493,6 +2505,26 @@ const activeApp = computed<RailApp | null>(() =>
 
 const MAIL_ONLY_FOLDERS = computed(() => carrierView.value || colleagueView.value || marketingView.value)
 
+const breadcrumbExtras = computed(() => [
+    RAIL_APPS.find((app) => app.key === activeApp.value)?.label,
+    shopLabel.value,
+    folderLabel.value,
+    selectedSession.value ? ((selectedSession.value as any).guest_identifier || (selectedSession.value as any).contact_name) : null,
+].filter((label): label is string => !!label).map((label) => ({ type: "simple", simple: { label }, inbox_extra: true })))
+
+watchEffect(() => {
+    const page = usePage()
+    const base = (page.props.breadcrumbs as any[] ?? []).filter((crumb) => !crumb.inbox_extra)
+    const next = [...base, ...breadcrumbExtras.value]
+    if (JSON.stringify(next) !== JSON.stringify(page.props.breadcrumbs)) {
+        page.props.breadcrumbs = next
+    }
+})
+onUnmounted(() => {
+    const page = usePage()
+    page.props.breadcrumbs = (page.props.breadcrumbs as any[] ?? []).filter((crumb) => !crumb.inbox_extra)
+})
+
 const waitingOn = (inbox: { channels?: Array<any> }, app: RailApp | null, kinds: ChatKind[] = ["customer", "guest"]) =>
     liveChannels(inbox)
         .filter((channel: any) => !app || channelsOf(app).includes(channel.key))
@@ -2879,6 +2911,23 @@ const stepConversation = (step: number) => {
     }
 }
 
+const contactName = (contact: any) => contact?.guest_identifier || contact?.contact_name || ""
+const baseNavigation = usePage().props.navigation
+watchEffect(() => {
+    if (isEmbedded) return
+    const list = filteredContacts.value
+    const at = list.findIndex((c) => c.ulid === selectedSession.value?.ulid)
+    const page = usePage()
+    page.props.navigation = at < 0 ? baseNavigation : {
+        previous: at > 0 ? { label: contactName(list[at - 1]), action: () => stepConversation(-1) } : null,
+        next: at < list.length - 1 ? { label: contactName(list[at + 1]), action: () => stepConversation(1) } : null,
+        position: `${at + 1} / ${list.length}`,
+    } as any
+})
+onUnmounted(() => {
+    usePage().props.navigation = baseNavigation
+})
+
 const onChatPaneMessage = (event: MessageEvent) => {
     if (event.source === window.parent && typeof event.data?.chatPaneStep === "number") {
         stepConversation(event.data.chatPaneStep)
@@ -2990,11 +3039,11 @@ const handleSendMessage = async ({ text, files, message_type, is_email_notif, em
     }
 }
 
-const sidePanelTab = ref<'profile' | 'tickets' | 'history'>('profile')
+const sidePanelTab = ref<'profile' | 'tickets' | 'history' | 'log'>('profile')
 
 // Asking for a tab is asking for that tab, never for the panel to go away: these used to
 // toggle, so pressing View Profile with the panel already open closed it instead.
-const openSidePanelOn = (tab: 'profile' | 'tickets' | 'history') => {
+const openSidePanelOn = (tab: 'profile' | 'tickets' | 'history' | 'log') => {
     sidePanelTab.value = tab
     sidePanelVisible.value = true
     sidePanelPreferred.value = true
@@ -3272,6 +3321,7 @@ onUnmounted(() => {
 
     <template v-if="!isEmbedded">
     <div class="mx-4 my-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-gray-500">
+        <div id="chat-channels" class="flex w-[17rem] shrink-0 items-center self-stretch border-r border-gray-200 empty:hidden" />
         <template v-if="inboxes.length > 1">
             <span v-tooltip="ctrans('Customers waiting, every shop')" class="inline-flex items-center gap-1">
                 <FontAwesomeIcon :icon="faUser" class="text-red-500" fixed-width aria-hidden="true" />
@@ -3378,7 +3428,7 @@ onUnmounted(() => {
              a tablet or a 14" laptop has no room for both, and squeezed, the thread header's buttons ran over the name. It stays
              lifted while folded too, or closing would animate it back in the flow and shove the
              thread sideways before letting go. -->
-        <div v-show="!isEmbedded" ref="railElement" class="shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-[1439px]:absolute max-[1439px]:inset-y-0 max-[1439px]:left-0 max-[1439px]:z-40"
+        <div v-show="!isEmbedded" ref="railElement" class="relative shrink-0 border-r border-gray-200 flex flex-col bg-gray-50 transition-all duration-200 max-[1439px]:absolute max-[1439px]:inset-y-0 max-[1439px]:left-0 max-[1439px]:z-40"
             :class="[railCollapsed ? 'w-16' : 'w-72 max-[1439px]:shadow-xl', railCollapsed && (selectedSession || phoneView) ? 'max-md:hidden' : '']"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
@@ -3403,16 +3453,6 @@ onUnmounted(() => {
                     <span v-if="appWaiting(app.key)"
                         class="absolute -top-1 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white tabular-nums">
                         {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
-                    </span>
-                </button>
-                <button type="button" :aria-label="ctrans('Calls')" v-tooltip="ctrans('Calls')"
-                    class="relative flex h-9 w-11 items-center justify-center rounded-full transition-colors"
-                    :class="phoneView ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'"
-                    @click="openPhoneCallView('all')">
-                    <FontAwesomeIcon :icon="faPhone" class="text-base" fixed-width aria-hidden="true" />
-                    <span v-if="phoneOnNow"
-                        class="absolute -top-1 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[9px] font-semibold leading-none text-white tabular-nums">
-                        {{ phoneOnNow }}
                     </span>
                 </button>
             </nav>
@@ -3616,11 +3656,11 @@ onUnmounted(() => {
             </template>
 
             <div v-else class="flex min-h-0 flex-1">
-                <Teleport defer to="#breadcrumb-actions">
-                <nav :aria-label="ctrans('Channels')" class="relative flex items-center gap-1 rounded-full" :class="showMovedHint ? 'ring-2 ring-[var(--app-accent)] ring-offset-2' : ''" @click="closeMovedHint">
+                <Teleport defer to="#chat-channels">
+                <nav :aria-label="ctrans('Channels')" class="relative flex items-stretch divide-x divide-gray-200 rounded-md border border-gray-200 bg-white" :class="showMovedHint ? 'ring-2 ring-[var(--app-accent)] ring-offset-2' : ''" @click="closeMovedHint">
                     <div v-if="showMovedHint" role="note"
-                        class="absolute right-0 top-full z-40 mt-3 flex w-72 items-start gap-2 rounded-xl bg-[var(--app-accent)] p-3 text-sm font-semibold text-[var(--app-accent-text)] shadow-2xl ring-4 ring-[var(--app-accent-soft)]">
-                        <span class="absolute -top-1.5 right-24 h-3 w-3 rotate-45 bg-[var(--app-accent)]" aria-hidden="true" />
+                        class="absolute left-0 top-full z-40 mt-3 flex w-72 items-start gap-2 rounded-xl bg-[var(--app-accent)] p-3 text-sm font-semibold text-[var(--app-accent-text)] shadow-2xl ring-4 ring-[var(--app-accent-soft)]">
+                        <span class="absolute -top-1.5 left-24 h-3 w-3 rotate-45 bg-[var(--app-accent)]" aria-hidden="true" />
                         <FontAwesomeIcon :icon="faArrowUp" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
                         <span class="min-w-0 flex-1">{{ ctrans("Chat, Mail and Calls moved here, to give the conversation more room.") }}</span>
                         <button type="button" class="shrink-0 rounded p-0.5 opacity-80 hover:opacity-100" :aria-label="ctrans('Close')" @click.stop="closeMovedHint">
@@ -3629,8 +3669,8 @@ onUnmounted(() => {
                     </div>
                     <button v-for="app in RAIL_APPS" :key="app.key" type="button"
                         :disabled="!appIsAvailable(app.key)"
-                        class="relative flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold transition-colors disabled:opacity-40"
-                        :class="activeApp === app.key ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-100'"
+                        class="relative flex items-center gap-1.5 px-2.5 py-0.5 font-semibold transition-colors first:rounded-l-md last:rounded-r-md disabled:opacity-40"
+                        :class="activeApp === app.key ? 'bg-[var(--app-accent-soft)] text-gray-900 shadow-[inset_0_-2px_0_var(--app-accent)]' : 'text-gray-600 hover:bg-gray-50'"
                         @click="openApp(app.key)">
                         <FontAwesomeIcon :icon="app.icon" fixed-width aria-hidden="true" />
                         {{ app.label }}
@@ -3640,23 +3680,13 @@ onUnmounted(() => {
                             {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
                         </span>
                     </button>
-                    <button type="button" class="relative flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold transition-colors"
-                        :class="phoneView ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-100'"
-                        @click="openPhoneCallView('all')">
-                        <FontAwesomeIcon :icon="faPhone" fixed-width aria-hidden="true" />
-                        {{ ctrans("Calls") }}
-                        <span v-if="phoneOnNow"
-                            v-tooltip="ctrans(':count on the phone right now', { count: String(phoneOnNow) })"
-                            class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
-                            {{ phoneOnNow }}
-                        </span>
-                    </button>
-                    <button type="button" @click="toggleRail" v-tooltip="ctrans('Collapse')" :aria-label="ctrans('Collapse')"
-                        class="rounded-full p-1.5 text-gray-500 hover:bg-gray-100">
-                        <FontAwesomeIcon :icon="faAngleLeft" fixed-width />
-                    </button>
                 </nav>
                 </Teleport>
+
+                <button type="button" @click="toggleRail" v-tooltip="ctrans('Collapse')" :aria-label="ctrans('Collapse')"
+                    class="absolute right-2 top-2 z-10 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700">
+                    <FontAwesomeIcon :icon="faAngleLeft" class="text-xs" fixed-width />
+                </button>
 
                 <div class="min-w-0 flex-1 overflow-y-auto pb-4 [scrollbar-width:thin]">
                     <template v-if="menuApp === 'phone'">
@@ -3971,7 +4001,7 @@ onUnmounted(() => {
             <div class="px-3 py-1.5 border-b flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-800 truncate mb-0.5">
-                        {{ trashView ? ctrans("Trash") : rubbishView ? ctrans("Ignored") : spamView ? ctrans("Spam") : unclaimedView ? ctrans("Unclaimed") : highlightView ? ctrans("Starred") : carrierView ? ctrans("Couriers") : colleagueView ? ctrans("Colleagues") : activeInboxView === "unread" ? ctrans("Unread") : activeInboxView === "replied" ? ctrans("Replied") : activeInboxView === "offline" ? ctrans("Offline messages") : activeInboxView === "label" ? (labelFilter?.name ?? ctrans("Label")) : agentView ? (pickedAgentName ?? ctrans("Inbox")) : selectedShopIds.length > 1 ? ctrans("Selected shops") : (selectedInbox?.name ?? ctrans("Inbox")) }}
+                        {{ folderLabel ?? shopLabel ?? ctrans("Inbox") }}
                     </div>
                     <div v-if="agentView" class="text-[11px] text-gray-500">
                         {{ ctrans("Across every shop") }}
@@ -4279,7 +4309,7 @@ onUnmounted(() => {
                     :read-only="isReadOnly" :ignore-reasons="ignoreReasons" :show-shop="crossShopView"
                     @back="leaveConversation" @send-message="handleSendMessage"
                     @close-session="closeSession" @view-history="showHistoryPanel"
-                    @view-user-profile="showProfilePanel"
+                    @view-user-profile="showProfilePanel" @view-session-info="openSidePanelOn('log')"
                     @transfer-agent-success="onTransferAgentSuccess"
                     @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"

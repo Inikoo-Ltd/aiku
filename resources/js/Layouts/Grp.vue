@@ -260,8 +260,11 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4 md:pr-[calc(1rem_+_var(--chat-pane,0px))]"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
             :class="[
+				layout.messagingSidebar.show
+					? 'md:pr-[calc(1rem_+_var(--chat-pane,0px))]'
+					: (layout.messagingSidebar.micro ? 'md:pr-[calc(2.5rem_+_var(--chat-pane,0px))]' : 'md:pr-[calc(4rem_+_var(--chat-pane,0px))]'),
 				layout.leftSidebar.show
 					? (layout.messagingSidebar.show
 						? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-416px)] lg:w-[calc(100%-416px)]'

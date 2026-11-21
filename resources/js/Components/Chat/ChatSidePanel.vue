@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import { ref, type Ref, inject, onMounted, watch, computed, nextTick } from "vue"
 import { ctrans } from "@/Composables/useTrans"
-import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 import { Link } from "@inertiajs/vue3"
 import axios from "axios"
 import MessageHistory from "@/Components/Chat/MessageHistory.vue"
@@ -513,7 +513,7 @@ onMounted(async () => {
 								<!-- AI Summary -->
 								<div class="bg-gray-50 rounded-lg p-3 border border-gray-100">
 									<div class="flex items-center justify-between mb-2">
-										<span class="text-xs font-bold text-indigo-600">{{ ctrans("AI Summary") }}</span>
+										<span class="flex items-center gap-1.5 text-xs font-bold text-gray-700"><AuraAvatar class="h-3.5 w-3.5" />{{ ctrans("Aura's summary") }}</span>
 										<span class="text-[10px] text-gray-400">{{ ctrans("Auto generated") }}</span>
 									</div>
 
@@ -547,16 +547,11 @@ onMounted(async () => {
 											</span>
 										</div>
 
-										<div class="mt-2" @click.stop>
-											<FlagWrongButton :url="route('grp.chat.ai.summaries.session.flag', [s.ulid])" :flagged="!!s.ai_summary.flagged"
-												:question="ctrans('Why is this summary wrong? We use this to improve the summaries.')"
-												:placeholder="ctrans('e.g. longer than the chat itself, or it missed what the customer asked')" />
-										</div>
 									</template>
 
 									<!-- Fallback -->
 									<div v-else class="text-xs text-gray-400 italic">
-										{{ ctrans("AI summary not available.") }}
+										{{ ctrans("Aura has not summarised this conversation yet.") }}
 									</div>
 								</div>
 							</div>

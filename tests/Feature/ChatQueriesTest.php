@@ -956,7 +956,14 @@ test('GetChatActivity returns formatted events for a chat session', function () 
     $result = GetChatActivity::make()->handle($chatSession);
 
     expect($result['success'])->toBeTrue()
-        ->and($result['events'])->toHaveCount(1);
+        ->and($result['events'])->toHaveCount(1)
+        ->and($result['events'][0]['details']['description'])->toBe('Chat session was created');
+
+    $chatSession->update(['channel' => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL, 'metadata' => ['email_from' => 'buyer@example.com']]);
+    $email = GetChatActivity::make()->handle($chatSession->refresh());
+
+    expect($email['events'][0]['details']['description'])->toBe('Email conversation was created')
+        ->and($email['events'][0]['actor']['name'])->toBe('buyer@example.com');
 });
 
 test('SummarizeChatSession returns session unchanged when there are no messages', function () {
@@ -1071,8 +1078,7 @@ test('GetChatAgents returns only available agents who may work the shop', functi
     expect(collect($result)->pluck('agent_id'))->toContain($agent->id);
 });
 
-test('TranslateSingleMessage dispatches a translation job when no translation exists yet', function () {
-    TranslateChatMessage::shouldRun();
+test('TranslateSingleMessage translates straight away when no translation exists yet, so the agent sees it', function () {
 
     $chatSession = ChatSession::create([
         'ulid'             => (string)Str::ulid(),
@@ -1097,9 +1103,9 @@ test('TranslateSingleMessage dispatches a translation job when no translation ex
         'updated_at'      => now(),
     ]);
 
-    TranslateSingleMessage::make()->handle($chatMessage, 68);
+    TranslateChatMessage::shouldRun()->once()->with($chatMessage->id, 68, 'translate-single');
 
-    expect(true)->toBeTrue();
+    TranslateSingleMessage::make()->handle($chatMessage, 68);
 });
 
 test('HandleChatTyping handle broadcasts a typing indicator event', function () {

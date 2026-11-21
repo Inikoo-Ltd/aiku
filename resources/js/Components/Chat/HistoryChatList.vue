@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ctrans } from "@/Composables/useTrans"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import { stripPictureTokens } from "@/Composables/useWhatsappMarkup"
 import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -120,8 +122,8 @@ const onScroll = (event: Event) => {
 						class="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-left overflow-y-auto"
 						:style="popStyle">
 						<p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-							<FontAwesomeIcon :icon="faRobot" class="text-indigo-400" fixed-width />
-							AI Summary
+							<AuraAvatar class="h-3.5 w-3.5" />
+							{{ ctrans("Aura's summary") }}
 							<span v-if="s.ai_summary.topic_label" class="normal-case tracking-normal text-gray-600">· {{ s.ai_summary.topic_label }}</span>
 							<span v-if="s.ai_summary.sentiment"
 								class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"

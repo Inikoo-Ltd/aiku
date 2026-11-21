@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ctrans } from "@/Composables/useTrans"
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import Table from '@/Components/Table/Table.vue'
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -111,8 +113,8 @@ const sentimentColor: Record<string, string> = {
                     <div class="bg-white border border-gray-200 rounded-lg shadow-xl p-4 text-left">
                         <!-- Header -->
                         <div class="flex items-center gap-2 mb-3">
-                            <FontAwesomeIcon icon="fal fa-robot" class="text-indigo-400 text-sm" fixed-width />
-                            <span class="text-xs font-semibold text-gray-700">AI Summary</span>
+                            <AuraAvatar class="h-4 w-4" />
+                            <span class="text-xs font-semibold text-gray-700">{{ ctrans("Aura's summary") }}</span>
                             <span
                                 v-if="item.ai_summary.sentiment"
                                 class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"

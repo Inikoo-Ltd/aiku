@@ -2386,3 +2386,10 @@ test('a mail fetch keeps the shop settings saved while it was reading the mailbo
         ->and(Arr::get($stored, 'gmail.last_fetched_at'))->not->toBeNull()
         ->and(Arr::get($readAtStartOfFetch->settings, 'gmail.history_id'))->toBe('200');
 });
+
+test('the bullets Outlook draws by hand show without its if and endif markers, in new and stored emails', function () {
+    $outlook = '<p><![if !supportLists]><span>·</span><![endif]><b>Tige noire</b></p>';
+
+    expect(app(\App\Services\HTMLSanitizer::class)->cleanEmail($outlook))->toBe('<p><span>·</span><b>Tige noire</b></p>')
+        ->and(\App\Services\HTMLSanitizer::dropOutlookConditionals('<p>&lt;![if !supportLists]&gt;<span>·</span>&lt;![endif]&gt;<b>Tige noire</b></p>'))->toBe('<p><span>·</span><b>Tige noire</b></p>');
+});

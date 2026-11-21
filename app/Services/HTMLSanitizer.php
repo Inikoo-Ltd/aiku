@@ -114,7 +114,17 @@ class HTMLSanitizer
         $config->set('HTML.TargetNoreferrer', true);
         $config->set('HTML.TargetNoopener', true);
 
-        return $this->dropTrackingPixels((new HTMLPurifier($config))->purify($html));
+        return $this->dropTrackingPixels((new HTMLPurifier($config))->purify(self::dropOutlookConditionals($html)));
+    }
+
+    /**
+     * Outlook marks the bullets it draws by hand with <![if !supportLists]> and <![endif]>. A
+     * browser ignores them, but the purifier keeps them as text, so they showed in the email.
+     * Emails stored before this was cleaned still carry them escaped.
+     */
+    public static function dropOutlookConditionals(string $html): string
+    {
+        return preg_replace('/(?:<|&lt;)!\[(?:if\b[^\]]*|endif)\](?:>|&gt;)/i', '', $html) ?? $html;
     }
 
     /**

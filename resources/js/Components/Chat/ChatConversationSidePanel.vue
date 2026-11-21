@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
+import { faAddressCard as farAddressCard, faComments as farComments, faTicket as farTicket, faChartBar as farChartBar, faStream as farStream, faHistory as farHistory } from "@far"
 import { ref, computed, inject, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ctrans } from '@/Composables/useTrans'
@@ -17,7 +19,6 @@ import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import SelectQuery from '@/Components/SelectQuery.vue'
-import FlagWrongButton from '@/Components/Chat/FlagWrongButton.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
 import { faArrowLeft, faLink, faUnlink, faEnvelope, faGlobe, faLock, faPhone, faCompressAlt } from '@fal'
@@ -117,9 +118,6 @@ watch(() => props.session.ulid, () => {
 
 // WhatsApp has no route for handing a conversation to a named agent yet, so there it stays
 // what it was: the name of whoever holds it.
-const summaryFlagUrl = computed(() => props.session.channel === 'whatsapp'
-    ? route('grp.chat.ai.summaries.meta_session.flag', [props.session.ulid])
-    : route('grp.chat.ai.summaries.session.flag', [props.session.ulid]))
 const canAssignAgent = computed(() => props.session.channel !== 'whatsapp')
 const pendingAgent = ref<{ id: number; name: string } | null>(null)
 const currentAgentName = computed(() => pendingAgent.value?.name ?? props.session.assigned_agent ?? null)
@@ -282,13 +280,13 @@ const statusColors: Record<string, string> = {
     closed:      'bg-gray-100 text-gray-600',
 }
 
-const tabs: { key: SidePanelTab; label: string; onlyRegistered?: boolean }[] = [
-    { key: 'profile',    label: ctrans('Overview') },
-    { key: 'history',    label: ctrans('Chats') },
-    { key: 'tickets',    label: ctrans('Tickets') },
-    { key: 'statistics', label: ctrans('Stats'), onlyRegistered: true },
-    { key: 'timeline',   label: ctrans('Timeline'), onlyRegistered: true },
-    { key: 'log',        label: ctrans('Log') },
+const tabs: { key: SidePanelTab; label: string; icon: any; onlyRegistered?: boolean }[] = [
+    { key: 'profile',    label: ctrans('Overview'), icon: farAddressCard },
+    { key: 'history',    label: ctrans('Chats'), icon: farComments },
+    { key: 'tickets',    label: ctrans('Tickets'), icon: farTicket },
+    { key: 'statistics', label: ctrans('Stats'), icon: farChartBar, onlyRegistered: true },
+    { key: 'timeline',   label: ctrans('Timeline'), icon: farStream, onlyRegistered: true },
+    { key: 'log',        label: ctrans('Log'), icon: farHistory },
 ]
 
 const sessionApiBase = computed(() =>
@@ -930,11 +928,13 @@ const copyChatId = async () => {
         <div class="flex border-b border-gray-100 shrink-0 text-xs pl-2">
             <template v-for="tab in tabs" :key="tab.key">
                 <button v-if="!tab.onlyRegistered || !session.is_guest"
-                    class="flex-1 py-2.5 font-medium transition-colors whitespace-nowrap"
+                    v-tooltip="activeTab === tab.key ? undefined : tab.label" :aria-label="tab.label"
+                    class="flex flex-1 items-center justify-center gap-1 px-1 py-2.5 font-medium transition-colors whitespace-nowrap"
                     :class="activeTab === tab.key ? 'border-b-2' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
                     :style="activeTab === tab.key ? { color: themePrimary, borderBottomColor: themePrimary } : {}"
                     @click="activeTab = tab.key">
-                    {{ tab.label }}
+                    <FontAwesomeIcon :icon="tab.icon" class="text-[12px]" fixed-width aria-hidden="true" />
+                    <span v-if="activeTab === tab.key">{{ tab.label }}</span>
                 </button>
             </template>
             <button class="px-3 text-gray-400 hover:text-gray-600" @click="emit('close')" aria-label="Close">
@@ -1364,8 +1364,8 @@ const copyChatId = async () => {
 
                 <div v-if="session.ai_summary?.summary" class="px-4 py-3">
                     <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <FontAwesomeIcon :icon="['fal', 'fa-robot']" class="text-indigo-400" fixed-width />
-                        AI Summary
+                        <AuraAvatar class="h-3.5 w-3.5" />
+                        {{ ctrans("Aura's summary") }}
                         <span v-if="session.ai_summary.sentiment"
                             class="ml-auto text-[10px] font-medium capitalize px-1.5 py-0.5 rounded-full"
                             :class="{
@@ -1387,11 +1387,6 @@ const copyChatId = async () => {
                             </li>
                         </ul>
                     </template>
-                    <div class="mt-2">
-                        <FlagWrongButton :key="session.ulid + session.ai_summary.summary" :url="summaryFlagUrl" :flagged="!!session.ai_summary.flagged"
-                            :question="ctrans('Why is this summary wrong? We use this to improve the summaries.')"
-                            :placeholder="ctrans('e.g. longer than the chat itself, or it missed what the customer asked')" />
-                    </div>
                 </div>
             </div>
 
