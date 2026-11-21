@@ -8,6 +8,7 @@
 
 namespace App\Models\Chat;
 
+use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -93,15 +94,16 @@ class SlackChannel extends Model
     /**
      * Public channels are open to every member of the Slack workspace, so an active aiku user linked to an active
      * Slack person may read them. The link counts only when both hold the same email, as anyone can type a Slack id
-     * into their own profile, and never for a Slack guest. To open them to all staff instead, delete the SlackUser lines.
+     * into their own profile, and never for a Slack guest. Engineers see them without a Slack account, as they build and
+     * review these screens. To open them to all staff instead, delete the condition in the brackets.
      */
     public static function userMayReadPublicChannels(User $user): bool
     {
         return $user->status
             && !$user->worksOnlyForAgents()
-            && SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
+            && (Ticket::canBeManagedBy($user) || SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
                 ->whereRaw('lower(email) = ?', [strtolower((string) $user->email)])
                 ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
-                ->exists();
+                ->exists());
     }
 }

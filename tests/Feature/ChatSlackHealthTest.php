@@ -87,6 +87,20 @@ test('engineers see the Slack sync health page with figures, nightly runs and th
             ->where('data.data.0.history_complete', true));
 });
 
+test('engineers see the public Slack channels without a Slack account, other staff without one do not', function () {
+    $channel  = \App\Models\Chat\SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => 'CENGSEE'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)), 'name' => 'for-engineers']);
+    $ignored  = \App\Models\Chat\SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => 'CENGIGN'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)), 'is_ignored' => true]);
+    $engineer = ($this->makeUser)('help-desk-clerk');
+    $staff    = ($this->makeUser)(null);
+
+    expect($channel->isVisibleTo($engineer))->toBeTrue()
+        ->and($ignored->isVisibleTo($engineer))->toBeFalse()
+        ->and($channel->isVisibleTo($staff))->toBeFalse();
+
+    $engineer->update(['status' => false]);
+    expect($channel->isVisibleTo($engineer->refresh()))->toBeFalse();
+});
+
 test('the Slack sync health page is for engineers only', function () {
     actingAs(($this->makeUser)('group-admin'))->get(route('grp.devops.slack_sync'))->assertForbidden();
     actingAs(($this->makeUser)(null))->get(route('grp.devops.slack_sync'))->assertForbidden();
