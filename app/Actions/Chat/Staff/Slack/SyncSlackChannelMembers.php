@@ -11,6 +11,7 @@ namespace App\Actions\Chat\Staff\Slack;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelMember;
+use App\Models\Chat\SlackSyncRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -74,7 +75,7 @@ class SyncSlackChannelMembers
     {
         Nightwatch::dontSample();
 
-        $totals = $this->handle();
+        $totals = SlackSyncRun::record($this->commandSignature, fn () => $this->handle());
         $command->info("Channels: {$totals['channels']}, members: {$totals['members']}");
         foreach ($totals['failed'] as $failure) {
             $command->error($failure);

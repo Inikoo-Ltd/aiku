@@ -444,7 +444,7 @@ class FormatSlackMessages
         return ['type' => 'link', 'url' => $url, 'text' => $label ?? preg_replace('/^mailto:/i', '', $url)];
     }
 
-    private function isSafeUrl(?string $url): bool
+    public static function isSafeUrl(?string $url): bool
     {
         return is_string($url)
             && preg_match('/^(https?:\/\/|mailto:)/i', $url) === 1

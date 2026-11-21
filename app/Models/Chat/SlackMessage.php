@@ -8,6 +8,7 @@
 
 namespace App\Models\Chat;
 
+use App\Actions\Chat\Staff\Slack\RefreshSlackMessageSearch;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,15 @@ class SlackMessage extends Model
     use SoftDeletes;
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::saved(function (SlackMessage $message) {
+            if ($message->wasRecentlyCreated || $message->wasChanged('text')) {
+                rescue(fn () => RefreshSlackMessageSearch::make()->handle(collect([$message])));
+            }
+        });
+    }
 
     protected function casts(): array
     {

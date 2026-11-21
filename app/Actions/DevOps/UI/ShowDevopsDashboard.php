@@ -21,6 +21,7 @@ use App\Actions\UI\WithInertia;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Models\Helpers\Ticket;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -69,6 +70,15 @@ class ShowDevopsDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-tools'],
                         'title' => $title,
                     ],
+                    'actions' => Ticket::canBeManagedBy($request->user()) ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => 'fal fa-chart-line',
+                            'label' => __('Slack sync'),
+                            'route' => ['name' => 'grp.devops.slack_sync'],
+                        ],
+                    ] : [],
                 ],
                 'servers'          => $servers = $this->getServerSummaries(),
                 'databaseReplicas' => rescue(fn () => MonitorDatabaseReplicas::make()->report(), []),

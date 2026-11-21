@@ -149,7 +149,7 @@ class SyncSlackPublicChannels
     {
         Nightwatch::dontSample();
 
-        $run = SlackSyncRun::create(['started_at' => now()]);
+        $run = SlackSyncRun::create(['command' => 'slack:sync-public-channels', 'started_at' => now()]);
         try {
             $totals = $this->handle(Group::firstOrFail(), (bool) $command->option('join'), (bool) $command->option('history'), (bool) $command->option('catch-up'));
         } catch (Throwable $exception) {

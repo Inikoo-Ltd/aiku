@@ -1945,6 +1945,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:refresh-message-search')->dailyAt('04:05')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'RefreshSlackMessageSearch',
+                ),
+                name: 'RefreshSlackMessageSearch',
+                type: 'command',
+                scheduledAt: '04:05'
+            );
+
+            $this->logSchedule(
                 $schedule->command('production:release_pre_pick')->everyTenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ReleaseFullyStockedPrePickLines',
                 ),

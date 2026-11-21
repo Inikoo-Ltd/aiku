@@ -80,4 +80,17 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::get('/gifs', \App\Actions\Chat\Staff\Json\SearchGifs::class)->name('gifs.search');
     Route::get('/slack', \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class)->name('slack.index');
     Route::get('/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inSlackChannel'])->name('slack.show');
+    Route::get('/slack/{slackChannel}/thread', \App\Actions\Chat\Staff\Json\GetSlackThread::class)->name('slack.thread');
+    Route::get('/slack/{slackChannel}/pins', \App\Actions\Chat\Staff\Json\GetSlackChannelPins::class)->name('slack.pins');
 });
+
+Route::prefix('staff')->name('staff.')->middleware('throttle:120,1,slack-search')->group(function () {
+    Route::get('/slack-search', \App\Actions\Chat\Staff\Json\SearchSlackMessages::class)->name('slack.search');
+    Route::get('/slack-search/people', [\App\Actions\Chat\Staff\Json\SearchSlackMessages::class, 'inPeople'])->name('slack.search.people');
+});
+
+Route::get('staff/slack/messages/{slackMessage}/files/{slackFile}', \App\Actions\Chat\Staff\UI\ShowSlackMessageFile::class)
+    ->whereNumber('slackMessage')
+    ->where('slackFile', \App\Actions\Chat\Staff\Slack\GetSlackMessageFiles::ID_PATTERN)
+    ->middleware('throttle:900,1,slack-files')
+    ->name('staff.slack.files.show');

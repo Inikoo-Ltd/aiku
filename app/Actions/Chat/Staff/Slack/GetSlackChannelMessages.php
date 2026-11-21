@@ -13,8 +13,11 @@ use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackMessageReaction;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\Cursor;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -36,54 +39,175 @@ class GetSlackChannelMessages
         'pinned_item', 'unpinned_item',
     ];
 
-    public function handle(SlackChannel $slackChannel, int $perPage = self::PER_PAGE): CursorPaginator
+    public const array COLUMNS = ['id', 'slack_channel_id', 'ts', 'thread_ts', 'slack_user_id', 'user_id', 'subtype', 'text', 'sent_at', 'edited_at', 'pinned_at', 'data', 'deleted_at'];
+
+    public const int REPLIERS_SHOWN = 3;
+
+    /**
+     * @return array<string, \Closure|string>
+     */
+    public static function relations(): array
     {
-        $page = SlackMessage::where('slack_channel_id', $slackChannel->id)
+        return [
+            'slackUser:id,slack_id,user_id,name,real_name,display_name,is_bot,is_deleted',
+            'reactions' => fn ($query) => $query->select(['id', 'slack_message_id', 'name', 'slack_user_id'])->orderBy('id'),
+        ];
+    }
+
+    /**
+     * The main stream: top-level messages, thread parents and replies also sent to the channel. A deleted parent stays
+     * while its thread has live replies, so the thread can still be opened.
+     */
+    public static function streamQuery(SlackChannel $slackChannel): Builder
+    {
+        return SlackMessage::withTrashed()
+            ->where('slack_channel_id', $slackChannel->id)
             ->where(function ($query) {
                 $query->whereNull('thread_ts')->orWhereColumn('thread_ts', 'ts')->orWhere('subtype', 'thread_broadcast');
             })
-            ->with([
-                'slackUser:id,slack_id,user_id,name,real_name,display_name,is_bot,is_deleted',
-                'reactions:id,slack_message_id,name,slack_user_id',
-            ])
+            ->where(function ($query) {
+                $query->whereNull('deleted_at')->orWhere(function ($query) {
+                    $query->whereColumn('thread_ts', 'ts')->whereExists(fn ($replies) => $replies->from('slack_messages as replies')
+                        ->whereColumn('replies.slack_channel_id', 'slack_messages.slack_channel_id')
+                        ->whereColumn('replies.thread_ts', 'slack_messages.ts')
+                        ->whereColumn('replies.ts', '!=', 'slack_messages.ts')
+                        ->whereNull('replies.deleted_at'));
+                });
+            });
+    }
+
+    /**
+     * $aroundTs opens the stream with that message near the bottom, a few newer ones under it, for "jump to message".
+     */
+    public function handle(SlackChannel $slackChannel, int $perPage = self::PER_PAGE, ?string $aroundTs = null): CursorPaginator
+    {
+        $cursor = null;
+        if ($aroundTs !== null && !request()->has(self::CURSOR_NAME)) {
+            $newer  = self::streamQuery($slackChannel)->where('ts', '>', $aroundTs)->orderBy('ts')->offset(min(9, $perPage - 1))->limit(1)->value('ts');
+            $cursor = $newer ? new Cursor(['ts' => $newer]) : null;
+        }
+
+        $page = self::streamQuery($slackChannel)
+            ->with(self::relations())
             ->orderByDesc('ts')
-            ->cursorPaginate($perPage, ['id', 'slack_channel_id', 'ts', 'thread_ts', 'slack_user_id', 'user_id', 'subtype', 'text', 'sent_at', 'edited_at', 'pinned_at', 'data'], self::CURSOR_NAME);
+            ->cursorPaginate($perPage, self::COLUMNS, self::CURSOR_NAME, $cursor);
 
-        $messages      = $page->getCollection();
-        $reactionNames = $messages->flatMap(fn (SlackMessage $message) => $message->reactions->pluck('name'))->unique()->values()->all();
+        return $page->setCollection(collect($this->rows($slackChannel, $page->getCollection())));
+    }
+
+    /**
+     * Shapes messages for the screen in a fixed number of queries: reactions, the people who reacted or replied,
+     * reply counts from our own rows (Slack's reply_count goes stale), and the formatter's names and emoji. Messages
+     * must be loaded with relations() and COLUMNS.
+     *
+     * @param  Collection<int, SlackMessage>  $messages
+     * @return list<array<string, mixed>>
+     */
+    public function rows(SlackChannel $slackChannel, Collection $messages, ?User $viewer = null): array
+    {
+        $viewer ??= request()->user();
+        $live          = $messages->filter(fn (SlackMessage $message) => $message->deleted_at === null);
+        $reactionNames = $live->flatMap(fn (SlackMessage $message) => $message->reactions->pluck('name'))->unique()->values()->all();
         $formatter     = FormatSlackMessages::make();
-        $nodes         = $formatter->handle($messages, $reactionNames);
+        $nodes         = $formatter->handle($live->values(), $reactionNames);
 
-        $reactorIds = $messages->flatMap(fn (SlackMessage $message) => $message->reactions->pluck('slack_user_id'))->unique()->values()->all();
-        $reactorPeople = $reactorIds === [] ? collect() : SlackUser::whereIn('slack_id', $reactorIds)
-            ->get(['slack_id', 'user_id', 'name', 'real_name', 'display_name', 'is_bot']);
+        $threads = $this->threadStats($slackChannel, $messages);
+        $files   = GetSlackMessageFiles::make()->handle($live);
 
-        $userIds = $messages->map(fn (SlackMessage $message) => $this->linkedUserId($message))
-            ->merge($reactorPeople->where('is_bot', false)->pluck('user_id'))
+        $peopleIds = $live->flatMap(fn (SlackMessage $message) => $message->reactions->pluck('slack_user_id'))
+            ->merge(collect($threads)->flatMap(fn (array $thread) => $thread['repliers']))
+            ->unique()->values()->all();
+        $people = $peopleIds === [] ? collect() : SlackUser::whereIn('slack_id', $peopleIds)
+            ->get(['slack_id', 'user_id', 'name', 'real_name', 'display_name', 'is_bot'])
+            ->keyBy('slack_id');
+
+        $userIds = $live->map(fn (SlackMessage $message) => $this->linkedUserId($message))
+            ->merge($people->where('is_bot', false)->pluck('user_id'))
             ->filter()->unique()->values()->all();
         $users = $userIds === [] ? collect() : User::whereIn('id', $userIds)
             ->with('image')
             ->get(['id', 'username', 'nickname', 'contact_name', 'image_id'])
             ->keyBy('id');
 
-        $reactors = $reactorPeople->mapWithKeys(fn (SlackUser $slackUser) => [
-            $slackUser->slack_id => (!$slackUser->is_bot && $slackUser->user_id ? $users->get($slackUser->user_id)?->chatName() : null) ?? $this->personName($slackUser),
-        ]);
+        $personUser = fn (SlackUser $slackUser) => !$slackUser->is_bot && $slackUser->user_id ? $users->get($slackUser->user_id) : null;
+        $reactors   = $people->map(fn (SlackUser $slackUser) => $personUser($slackUser)?->chatName() ?? $this->personName($slackUser));
+        $mySlackIds = $viewer ? $people->filter(fn (SlackUser $slackUser) => $slackUser->user_id === $viewer->id)->keys()->all() : [];
 
-        return $page->setCollection($messages->map(fn (SlackMessage $message) => [
-            'id'              => $message->id,
-            'ts'              => $message->ts,
-            'is_system'       => in_array($message->subtype, self::SYSTEM_SUBTYPES, true),
-            'author'          => $this->author($message, $users->get($this->linkedUserId($message) ?? 0)),
-            'sent_at'         => $message->sent_at?->toIso8601String(),
-            'is_edited'       => $message->edited_at !== null,
-            'is_pinned'       => $message->pinned_at !== null,
-            'nodes'           => $nodes[$message->id] ?? [],
-            'reactions'       => $this->reactions($message, $formatter->resolvedEmoji, $reactors->all()),
-            'reply_count'     => $message->thread_ts === $message->ts ? (int) ($message->data['reply_count'] ?? 0) : 0,
-            'latest_reply_at' => $message->thread_ts === $message->ts ? $this->tsToIso($message->data['latest_reply'] ?? null) : null,
-            'files'           => $this->files($message->data ?? []),
-        ]));
+        return $messages->map(function (SlackMessage $message) use ($nodes, $formatter, $reactors, $users, $threads, $people, $personUser, $mySlackIds, $files) {
+            $isParent = $message->thread_ts === $message->ts;
+            $thread   = $isParent ? ($threads[$message->ts] ?? null) : null;
+            $common   = [
+                'id'              => $message->id,
+                'ts'              => $message->ts,
+                'thread_ts'       => $message->thread_ts,
+                'is_broadcast'    => $message->subtype === 'thread_broadcast',
+                'is_deleted'      => $message->deleted_at !== null,
+                'sent_at'         => $message->sent_at?->toIso8601String(),
+                'reply_count'     => $thread['count'] ?? 0,
+                'latest_reply_at' => $thread ? $this->tsToIso($thread['latest']) : null,
+                'reply_users'     => collect($thread['repliers'] ?? [])->map(function (string $slackId) use ($people, $personUser) {
+                    $slackUser = $people->get($slackId);
+                    $user      = $slackUser ? $personUser($slackUser) : null;
+
+                    return [
+                        'name'   => $user?->chatName() ?? ($slackUser ? $this->personName($slackUser) : null),
+                        'avatar' => $user?->image_id ? User::chatAvatarOf($user->imageSources(0, 48)) : null,
+                    ];
+                })->values()->all(),
+            ];
+
+            if ($message->deleted_at !== null) {
+                return array_merge($common, [
+                    'is_system'    => false,
+                    'author'       => ['key' => null, 'user_id' => null, 'name' => null, 'avatar' => null, 'is_bot' => false],
+                    'is_edited'    => false,
+                    'is_pinned'    => false,
+                    'nodes'        => [],
+                    'reactions'    => [],
+                    'my_reactions' => [],
+                    'files'        => [],
+                ]);
+            }
+
+            return array_merge($common, [
+                'is_system'    => in_array($message->subtype, self::SYSTEM_SUBTYPES, true),
+                'author'       => $this->author($message, $users->get($this->linkedUserId($message) ?? 0)),
+                'is_edited'    => $message->edited_at !== null,
+                'is_pinned'    => $message->pinned_at !== null,
+                'nodes'        => $nodes[$message->id] ?? [],
+                'reactions'    => $this->reactions($message, $formatter->resolvedEmoji, $reactors->all()),
+                'my_reactions' => $message->reactions->whereIn('slack_user_id', $mySlackIds)->pluck('name')->unique()->values()->all(),
+                'files'        => $files[$message->id] ?? [],
+            ]);
+        })->values()->all();
+    }
+
+    /**
+     * Reply count, last reply and the latest repliers of every thread parent among $messages, in one grouped query.
+     *
+     * @param  Collection<int, SlackMessage>  $messages
+     * @return array<string, array{count: int, latest: string, repliers: list<string>}>
+     */
+    private function threadStats(SlackChannel $slackChannel, Collection $messages): array
+    {
+        $parents = $messages->filter(fn (SlackMessage $message) => $message->thread_ts === $message->ts)->pluck('ts')->values()->all();
+        if ($parents === []) {
+            return [];
+        }
+
+        return SlackMessage::where('slack_channel_id', $slackChannel->id)
+            ->whereIn('thread_ts', $parents)
+            ->whereColumn('ts', '!=', 'thread_ts')
+            ->groupBy('thread_ts')
+            ->selectRaw('thread_ts, count(*) as replies, max(ts) as latest, array_to_json(array_agg(slack_user_id order by ts desc)) as repliers')
+            ->toBase()
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->thread_ts => [
+                'count'    => (int) $row->replies,
+                'latest'   => $row->latest,
+                'repliers' => array_slice(array_values(array_unique(array_filter(json_decode($row->repliers, true) ?? []))), 0, self::REPLIERS_SHOWN),
+            ]])
+            ->all();
     }
 
     /**
@@ -141,19 +265,6 @@ class GetSlackChannelMessages
                 'count'   => $group->count(),
                 'people'  => $group->map(fn (SlackMessageReaction $reaction) => $reactors[$reaction->slack_user_id] ?? null)->filter()->values()->all(),
             ])
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return list<array{name: string}>
-     */
-    private function files(array $data): array
-    {
-        return collect(is_array($data['files'] ?? null) ? $data['files'] : [])
-            ->filter(fn ($file) => is_array($file))
-            ->map(fn (array $file) => ['name' => $this->stringOrNull($file['name'] ?? null) ?? $this->stringOrNull($file['title'] ?? null) ?? __('file')])
             ->values()
             ->all();
     }

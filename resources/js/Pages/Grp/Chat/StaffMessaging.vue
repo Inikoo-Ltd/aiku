@@ -21,7 +21,8 @@ import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useTruncate } from "@/Composables/useTruncate"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
-import SlackChannelStream, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
+import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
+import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 
 library.add(faArchive, faChevronRight, faComments, faHashtag, faPlus, faSearch, faUser, faTasks)
 
@@ -39,8 +40,11 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     selected_ulid: string | null
     slack_channels?: SlackChannelListItem[]
-    slack_channel?: { id: number; name: string | null; topic: string | null; is_archived: boolean } | null
+    slack_channel?: SlackChannelHeader | null
     slack_messages?: { data: SlackStreamMessage[] } | null
+    slack_thread_ts?: string | null
+    slack_around_ts?: string | null
+    slack_reply_ts?: string | null
 }>()
 
 const isSlack = computed(() => props.slack_channels !== undefined)
@@ -314,17 +318,22 @@ onUnmounted(() => {
 
         <!-- RIGHT: conversation -->
         <div class="flex-1 h-full min-w-0" :class="selectedUlid || slack_channel ? 'flex' : 'hidden md:flex'">
+            <SlackMessageSearch v-if="isSlack" :channels="slack_channels ?? []">
             <SlackChannelStream
-                v-if="isSlack && slack_channel"
+                v-if="slack_channel"
                 :key="'slack-' + slack_channel.id"
                 :channel="slack_channel"
                 :messages="slack_messages ?? undefined"
                 :channel-links="slackChannelLinks"
+                :thread-ts="slack_thread_ts"
+                :around-ts="slack_around_ts"
+                :reply-ts="slack_reply_ts"
                 @back="router.visit(route('grp.chat.staff.slack.index'))" />
-            <div v-else-if="isSlack" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
                 <FontAwesomeIcon icon="fal fa-hashtag" class="text-5xl mb-3" fixed-width aria-hidden="true" />
                 <span class="text-sm">{{ ctrans('Select a Slack channel') }}</span>
             </div>
+            </SlackMessageSearch>
             <MessagingConversation
                 v-else-if="selectedConversation"
                 :conversation="selectedConversation"

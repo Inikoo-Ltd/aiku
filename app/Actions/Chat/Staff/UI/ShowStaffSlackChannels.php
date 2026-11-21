@@ -8,9 +8,12 @@
 
 namespace App\Actions\Chat\Staff\UI;
 
+use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
+use App\Actions\Chat\Staff\Slack\ResolveSlackEmoji;
 use App\Actions\OrgAction;
 use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
@@ -78,6 +81,33 @@ class ShowStaffSlackChannels extends OrgAction
             ->all();
     }
 
+    private function tsParameter(ActionRequest $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        return is_string($value) && preg_match('/^\d{1,12}\.\d{1,8}$/', $value) ? $value : null;
+    }
+
+    /**
+     * A bookmark link is whatever someone typed in Slack: it is linked only when it passes the formatter's check.
+     *
+     * @return list<array{id: int, title: string, url: string|null, emoji: array<string, mixed>|null}>
+     */
+    public function bookmarks(SlackChannel $slackChannel): array
+    {
+        $bookmarks = $slackChannel->bookmarks()->whereNull('removed_in_slack_at')->orderBy('position')->orderBy('id')
+            ->get(['id', 'title', 'link', 'emoji']);
+        $emojiName = fn (?string $emoji) => $emoji ? trim($emoji, ':') : null;
+        $emoji     = ResolveSlackEmoji::make()->many($bookmarks->map(fn (SlackChannelBookmark $bookmark) => $emojiName($bookmark->emoji))->filter()->unique()->values()->all());
+
+        return $bookmarks->map(fn (SlackChannelBookmark $bookmark) => [
+            'id'    => $bookmark->id,
+            'title' => $bookmark->title ?: ($bookmark->link ?? ''),
+            'url'   => FormatSlackMessages::isSafeUrl($bookmark->link) ? $bookmark->link : null,
+            'emoji' => $emoji[$emojiName($bookmark->emoji) ?? ''] ?? null,
+        ])->values()->all();
+    }
+
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
         $title        = __('Internal Messages');
@@ -116,13 +146,20 @@ class ShowStaffSlackChannels extends OrgAction
                 'selected_ulid'  => null,
                 'slack_channels' => $this->channels($request->user()),
                 'slack_channel'  => $slackChannel ? [
-                    'id'          => $slackChannel->id,
-                    'name'        => $slackChannel->name,
-                    'topic'       => ($slackChannel->data['topic']['value'] ?? null) ?: null,
-                    'is_archived' => $slackChannel->is_archived,
+                    'id'           => $slackChannel->id,
+                    'name'         => $slackChannel->name,
+                    'topic'        => ($slackChannel->data['topic']['value'] ?? null) ?: null,
+                    'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
+                    'is_archived'  => $slackChannel->is_archived,
+                    'member_count' => $slackChannel->members()->count(),
+                    'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
+                    'bookmarks'    => $this->bookmarks($slackChannel),
                 ] : null,
-                'slack_messages' => $slackChannel
-                    ? Inertia::scroll(fn () => GetSlackChannelMessages::make()->handle($slackChannel))->defer()
+                'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
+                'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,
+                'slack_reply_ts'  => $slackChannel ? $this->tsParameter($request, 'reply') : null,
+                'slack_messages'  => $slackChannel
+                    ? Inertia::scroll(fn () => GetSlackChannelMessages::make()->handle($slackChannel, aroundTs: $this->tsParameter($request, 'around')))->defer()
                     : null,
             ]
         );

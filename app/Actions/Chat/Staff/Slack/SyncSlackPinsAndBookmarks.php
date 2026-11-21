@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackSyncRun;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
@@ -93,7 +94,7 @@ class SyncSlackPinsAndBookmarks
     {
         Nightwatch::dontSample();
 
-        $totals = $this->handle();
+        $totals = SlackSyncRun::record($this->commandSignature, fn () => $this->handle());
         $command->info("Channels: {$totals['channels']}, pinned messages kept: {$totals['pinned']}, bookmarks: {$totals['bookmarks']}");
 
         return 0;

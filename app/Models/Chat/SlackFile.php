@@ -56,9 +56,9 @@ class SlackFile extends Model implements HasMedia
     /**
      * A link to a copy kept on the large files disk, good for a few minutes; give it only to someone allowed to see the channel.
      */
-    public function temporaryUrl(int $minutes = 5): ?string
+    public function temporaryUrl(int $minutes = 5, array $options = []): ?string
     {
-        return $this->disk && $this->path ? Storage::disk($this->disk)->temporaryUrl($this->path, now()->addMinutes($minutes)) : null;
+        return $this->disk && $this->path ? Storage::disk($this->disk)->temporaryUrl($this->path, now()->addMinutes($minutes), $options) : null;
     }
 
     public function copy(): BelongsTo

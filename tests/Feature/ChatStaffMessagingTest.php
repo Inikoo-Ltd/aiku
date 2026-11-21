@@ -1979,7 +1979,8 @@ test('Slack channels are read in the staff chat by linked staff only: the list, 
         ])
         ->and(json_encode($firstPage))->not->toContain('slack-edge')
         ->and($byText['Message 51 👍']['reactions'])->toBe([['name' => 'tada', 'unicode' => '🎉', 'url' => null, 'count' => 2, 'people' => ['Ann Author', $viewer->chatName()]]])
-        ->and($byText['']['files'])->toBe([['name' => 'sheet.xlsx']])
+        ->and($byText['']['files'])->toHaveCount(1)
+        ->and($byText['']['files'][0])->toMatchArray(['name' => 'sheet.xlsx', 'type' => 'XLSX', 'state' => 'pending', 'url' => null])
         ->and($firstPage['next_cursor'])->not->toBeNull();
 
     $countQueries = function (int $perPage) use ($channel) {

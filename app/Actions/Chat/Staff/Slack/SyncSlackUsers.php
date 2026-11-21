@@ -11,6 +11,7 @@ namespace App\Actions\Chat\Staff\Slack;
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
+use App\Models\Chat\SlackSyncRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -55,7 +56,7 @@ class SyncSlackUsers
     {
         Nightwatch::dontSample();
 
-        $totals = $this->handle();
+        $totals = SlackSyncRun::record($this->commandSignature, fn () => $this->handle());
         $command->info("Slack people: {$totals['people']}, matched to aiku users: {$totals['matched']}, messages by people not matched to an aiku user: {$totals['messages_without_aiku_user']}");
 
         return 0;

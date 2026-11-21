@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Chat\SlackEmoji;
+use App\Models\Chat\SlackSyncRun;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -48,7 +49,7 @@ class SyncSlackEmojis
     {
         Nightwatch::dontSample();
 
-        $totals = $this->handle();
+        $totals = SlackSyncRun::record($this->commandSignature, fn () => $this->handle());
         $command->info("Slack custom emoji: {$totals['emojis']}, removed in Slack now: {$totals['removed']}, images not copied: {$totals['without_copy']}");
 
         return 0;
