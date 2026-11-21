@@ -219,6 +219,11 @@ return [
         'url'   => env('TIMESFM_URL'),
         'token' => env('TIMESFM_TOKEN'),
     ],
+    'livekit' => [
+        'url'        => env('LIVEKIT_URL'),
+        'api_key'    => env('LIVEKIT_API_KEY'),
+        'api_secret' => env('LIVEKIT_API_SECRET'),
+    ],
 
     'sentry_issues_url' => env('SENTRY_ISSUES_URL', 'https://inikoo-ltd.sentry.io/issues/'),
 

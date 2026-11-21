@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Json;
 
 use App\Http\Resources\Chat\StaffConversationResource;
 use App\Models\Chat\StaffConversation;
+use App\Models\Chat\StaffCall;
 use App\Models\Chat\StaffMessage;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
@@ -43,9 +44,15 @@ class GetStaffConversations
                 'unread_count' => StaffMessage::selectRaw('count(*)')
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
                     ->where('user_id', '!=', $user->id)
+                    ->where(fn ($query) => $query->whereNull('staff_call_id')->orWhereIn('body', StaffCall::MISSED_ENTRY_MARKERS))
                     ->whereRaw('staff_messages.created_at > coalesce(me.last_read_at, ?)', ['1970-01-01'])
                     ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)'),
                 'last_message_body' => StaffMessage::select('body')
+                    ->whereColumn('staff_conversation_id', 'staff_conversations.id')
+                    ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)')
+                    ->latest('id')
+                    ->limit(1),
+                'last_message_user_id' => StaffMessage::select('user_id')
                     ->whereColumn('staff_conversation_id', 'staff_conversations.id')
                     ->whereRaw('(me.left_at is null or staff_messages.created_at <= me.left_at)')
                     ->latest('id')

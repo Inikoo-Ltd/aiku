@@ -46,6 +46,7 @@ Route::name('webhooks.')->group(function () {
     Route::post('slack-interactivity', ReceiveSlackInteraction::class)->name('slack_interactivity');
     Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
     Route::post('traffic-source-costs', ReceiveTrafficSourceCostWebhook::class)->name('traffic_source_costs');
+    Route::post('livekit', \App\Actions\Chat\Staff\Call\ReceiveLiveKitWebhook::class)->name('livekit');
 
     Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
         Route::get('/', VerifyWhatsappWebhook::class)->name('verify');

@@ -57,6 +57,7 @@ trait WithMobileStaffChat
 
         return $conversation->messages()
             ->where('user_id', '!=', $user->id)
+            ->where(fn ($query) => $query->whereNull('staff_call_id')->orWhereIn('body', \App\Models\Chat\StaffCall::MISSED_ENTRY_MARKERS))
             ->where('created_at', '>', $myParticipation?->last_read_at ?? '1970-01-01')
             ->when($myParticipation?->left_at, fn ($query, $leftAt) => $query->where('created_at', '<=', $leftAt))
             ->count();
@@ -71,7 +72,7 @@ trait WithMobileStaffChat
             'id'         => $message->id,
             'user'       => ['id' => $message->user_id, 'name' => $message->user?->chatName()],
             'is_mine'    => $message->user_id === $user->id,
-            'body'       => $message->body,
+            'body'       => \App\Models\Chat\StaffCall::entryText($message->body),
             'image_url'  => $message->media_id ? Arr::get($message->imageSources(0, 0, 'attachment'), 'original') : null,
             'created_at' => $message->created_at?->toIso8601String(),
         ];

@@ -62,6 +62,7 @@ initialiseApp()
 
 const MessagingDock = defineAsyncComponent(() => import("@/Components/Messaging/MessagingDock.vue"))
 const PhoneCallDock = defineAsyncComponent(() => import("@/Components/Chat/PhoneCallDock.vue"))
+const StaffCallHost = defineAsyncComponent(() => import("@/Components/Messaging/Call/StaffCallHost.vue"))
 
 
 const layout = useLayoutStore()
@@ -312,6 +313,9 @@ const safeTheme = computed(() => {
              thing that ends it is somebody remembering they are on it. -->
         <Teleport to="body">
             <PhoneCallDock />
+        </Teleport>
+        <Teleport to="body">
+            <StaffCallHost v-if="usePage().props.staff_calls" />
         </Teleport>
 
         <!-- Sidebar: Right -->

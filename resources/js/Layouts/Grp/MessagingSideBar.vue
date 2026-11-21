@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import StaffConversationPreview from "@/Components/Messaging/StaffConversationPreview.vue"
 import { useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -752,7 +753,7 @@ onUnmounted(() => {
                                 <FontAwesomeIcon v-if="conversation.task.status_icon" :icon="conversation.task.status_icon.icon" :class="conversation.task.status_icon.class" fixed-width aria-hidden="true" />
                                 {{ conversation.task.status_label }}
                             </span>
-                            <span class="truncate" :class="!conversation.last_message && 'italic opacity-70'">{{ lastMessagePreview(conversation) }}</span>
+                            <StaffConversationPreview class="min-w-0" :class="!conversation.last_message && 'italic opacity-70'" :conversation="conversation" :text="lastMessagePreview(conversation)" />
                         </div>
                     </div>
                     <span v-if="conversation.unread_count > 0" class="rounded-full h-4 min-w-[1rem] px-1 flex items-center justify-center text-xxs shrink-0" :class="unreadBadgeClass(conversation)">{{ conversation.unread_count }}</span>

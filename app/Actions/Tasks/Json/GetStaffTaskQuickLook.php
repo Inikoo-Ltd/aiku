@@ -49,7 +49,7 @@ class GetStaffTaskQuickLook
             ...$show->projectControls($task, $request->user()),
             'messages'      => $canReadChat
                 ? StaffMessageResource::collection(
-                    $conversation->messages()->with(['user', 'translations', 'reactions', 'conversation'])->latest('id')->limit(self::RECENT_MESSAGES)->get()->reverse()->values()
+                    $conversation->messages()->with(['user', 'translations', 'reactions', 'conversation', 'call.users'])->latest('id')->limit(self::RECENT_MESSAGES)->get()->reverse()->values()
                 )->resolve()
                 : null,
             'message_count' => $canReadChat ? $conversation->messages()->count() : 0,

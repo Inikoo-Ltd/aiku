@@ -17,6 +17,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import Image from "@/Common/Components/Image.vue"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
+import StaffConversationPreview from "@/Components/Messaging/StaffConversationPreview.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useTruncate } from "@/Composables/useTruncate"
@@ -300,7 +301,7 @@ onUnmounted(() => {
                                 <span class="text-sm font-medium text-gray-900 truncate">{{ conversationTitle(conversation) }}</span>
                                 <span v-if="conversation.last_message_at" class="text-xxs text-gray-400 shrink-0 ml-1">{{ useFormatTime(conversation.last_message_at, { formatTime: 'hm' }) }}</span>
                             </div>
-                            <div class="text-xs text-gray-500 truncate">{{ useTruncate(conversation.last_message ?? '', 40) }}</div>
+                            <div class="text-xs text-gray-500 truncate"><StaffConversationPreview :conversation="conversation" :text="useTruncate(conversation.last_message ?? '', 40)" /></div>
                         </div>
                         <span v-if="conversation.unread_count > 0" class="bg-[var(--app-accent)] text-[var(--app-accent-text)] rounded-full h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center text-xxs shrink-0">{{ conversation.unread_count }}</span>
                     </button>

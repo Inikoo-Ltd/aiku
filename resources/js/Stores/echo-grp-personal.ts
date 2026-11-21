@@ -11,6 +11,7 @@ import { differenceInMilliseconds } from 'date-fns'
 import { defineStore } from "pinia";
 import { useLayoutStore } from "@/Stores/layout"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
+import { useStaffCalls, type StaffCall } from "@/Stores/staff-calls"
 import { ctrans } from "@/Composables/useTrans"
 import { alertOnce, alertWayIsOn, chosenAlertSound, showAssignedPopup, showTicketPopup, type AlertSoundKind } from "@/Composables/useNotificationSound"
 import { openChatPane } from "@/Composables/useChatPane"
@@ -224,6 +225,15 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
             })
             .listen('.staff-conversation-read', (e: { conversation_ulid: string; user_id: number; last_read_at: string }) => {
                 useStaffMessaging().handleRead(e)
+            })
+            .listen('.staff-conversation-delivered', (e: { conversation_ulid: string; user_id: number; last_delivered_at: string }) => {
+                useStaffMessaging().handleDelivered(e)
+            })
+            .listen('.staff-typing', (e: { conversation_ulid: string; user_id: number; user_name: string }) => {
+                useStaffMessaging().handleTyping(e)
+            })
+            .listen('.staff-call', (call: StaffCall) => {
+                useStaffCalls().handleBroadcast(call)
             })
         },
 

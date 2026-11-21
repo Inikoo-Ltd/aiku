@@ -99,7 +99,7 @@ class SendStaffMessage
     public function asController(StaffConversation $staffConversation, ActionRequest $request): StaffMessageResource
     {
         $message = $this->handle($staffConversation, $request->user(), $request->validated() + ['image' => $request->file('image')]);
-        $message->load(['user', 'translations', 'reactions', 'conversation']);
+        $message->load(['user', 'translations', 'reactions', 'conversation', 'call.users']);
 
         return new StaffMessageResource($message);
     }

@@ -83,6 +83,7 @@ class StaffConversationResource extends JsonResource
             ...($this->avatarsApart ? [] : ['avatar' => $user->image_id ? User::chatAvatarOf($user->imageSources(0, 48)) : null]),
             'last_seen_at' => Cache::remember('staff-last-seen:'.$user->id, 120, fn () => UserRequest::where('user_id', $user->id)->max('date')),
             'last_read_at' => $user->pivot?->last_read_at ? Carbon::parse($user->pivot->last_read_at)->toIso8601ZuluString('microsecond') : null,
+            'last_delivered_at' => $user->pivot?->last_delivered_at ? Carbon::parse($user->pivot->last_delivered_at)->toIso8601ZuluString('microsecond') : null,
         ])->values();
 
         return [
@@ -97,8 +98,10 @@ class StaffConversationResource extends JsonResource
             'participants'    => $participants,
             'my_left_at'      => $myLeftAt ? Carbon::parse($myLeftAt)->toIso8601ZuluString() : null,
             'is_watching'     => (bool) ($myPivot?->is_watching ?? false),
+            'can_call'        => $myPivot && !$myLeftAt && \App\Models\Chat\StaffCall::isEnabled() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource),
             'last_message_at' => $this->last_message_at,
-            'last_message'    => $this->last_message_body ?? null,
+            'last_message'    => \App\Models\Chat\StaffCall::entryText($this->last_message_body ?? null),
+            'last_message_user_id' => $this->last_message_user_id ?? null,
             'unread_count'    => (int) ($this->unread_count ?? 0),
             'has_mention'     => (bool) ($this->has_mention ?? false),
         ];

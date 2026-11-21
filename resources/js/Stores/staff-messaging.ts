@@ -30,6 +30,7 @@ export interface StaffMessage {
     reactions: StaffMessageReactions
     image: any
     gif_url?: string | null
+    call?: { ulid: string; kind?: "voice" | "video" | "screen"; outcome: "answered" | "declined" | "missed" | "cancelled" | null; started_by_user_id: number; duration_seconds: number | null; joined: string[] } | null
     created_at: string
     client_status?: "sending" | "failed"
     client_key?: string
@@ -42,9 +43,44 @@ export interface StaffParticipant {
     avatar: any
     last_seen_at?: string | null
     last_read_at?: string | null
+    last_delivered_at?: string | null
 }
 
+export type TickState = "sent" | "received" | "read"
+
+const timeOf = (value?: string | null) => (value ? Date.parse(value) : 0)
+
+export const deliveredAtOf = (participant: StaffParticipant) =>
+    Math.max(timeOf(participant.last_delivered_at), timeOf(participant.last_read_at), participant.last_delivered_at ? 0 : timeOf(participant.last_seen_at))
+
+export const tickStateOf = (others: StaffParticipant[], sentAt: string): TickState => {
+    const sent = Date.parse(sentAt)
+    if (!others.length) return "sent"
+    if (others.every((participant) => timeOf(participant.last_read_at) >= sent)) return "read"
+    if (others.every((participant) => deliveredAtOf(participant) >= sent)) return "received"
+    return "sent"
+}
+
+const TYPING_SEND_EVERY_MS = 3000
+const TYPING_SHOWN_FOR_MS = 5000
+const DELIVERED_FLUSH_MS = 1500
+const lastTypingSentAt: Record<string, number> = {}
+const deliveredQueue = new Set<string>()
+let deliveredTimer: ReturnType<typeof setTimeout> | null = null
+
 const GIF_URL = /^https:\/\/\S+\.(gif|webp)$/i
+
+export const callEntryText = (call: NonNullable<StaffMessage["call"]>, myId?: number): string => {
+    const isScreen = call.kind === "screen"
+    if (call.outcome === "missed") return call.started_by_user_id === myId ? ctrans("No answer") : isScreen ? ctrans("Missed screen share") : ctrans("Missed call")
+    if (call.outcome === "declined") return isScreen ? ctrans("Screen share declined") : ctrans("Call declined")
+    if (call.outcome === "cancelled") return isScreen ? ctrans("Screen share cancelled") : ctrans("Call cancelled")
+    const seconds = call.duration_seconds ?? 0
+    const duration = seconds < 60 ? ctrans(":seconds s", { seconds: String(seconds) }) : ctrans(":minutes min", { minutes: String(Math.round(seconds / 60)) })
+    return isScreen ? ctrans("Screen share, :duration", { duration }) : ctrans("Call, :duration", { duration })
+}
+
+const previewOf = (message: StaffMessage): string => message.call ? callEntryText(message.call, usePage().props?.auth?.user?.id) : message.body
 
 export interface StaffConversation {
     ulid: string
@@ -61,6 +97,8 @@ export interface StaffConversation {
     task?: StaffConversationTask | null
     my_left_at?: string | null
     is_watching?: boolean
+    can_call?: boolean
+    last_message_user_id?: number | null
 }
 
 export interface StaffConversationTask {
@@ -147,6 +185,7 @@ export const isAlerting = (conversation: StaffConversation) => conversation.has_
 
 export const useStaffMessaging = defineStore("staff-messaging", {
     state: () => ({
+        typingByUlid: {} as Record<string, Record<number, { name: string; until: number }>>,
         conversations: [] as StaffConversation[],
         visitingConversations: [] as StaffConversation[],
         messagesByUlid: {} as Record<string, StaffMessage[]>,
@@ -179,6 +218,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             }
             this.conversations = data.data
             this.fetched = true
+            this.conversations.filter((conversation) => conversation.unread_count > 0).forEach((conversation) => this.queueDelivered(conversation.ulid))
 
             const userId = currentUserId()
             if (userId && !isCachePruned) {
@@ -514,6 +554,56 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             Object.assign(existing, { participants: fresh.participants, my_left_at: fresh.my_left_at ?? null, task: fresh.task ?? existing.task, name: fresh.name })
         },
 
+        typingText(ulid: string): string | null {
+            const now = Date.now()
+            const names = Object.values(this.typingByUlid[ulid] ?? {}).filter((typist) => typist.until > now).map((typist) => typist.name.split(/\s+/)[0])
+            if (!names.length) return null
+            if (names.length === 1) return ctrans(":name is typing", { name: names[0] })
+            if (names.length === 2) return ctrans(":first and :second are typing", { first: names[0], second: names[1] })
+            return ctrans("Several people are typing")
+        },
+
+        handleTyping(e: { conversation_ulid: string; user_id: number; user_name: string }) {
+            if (e.user_id === currentUserId()) return
+            const typists = { ...(this.typingByUlid[e.conversation_ulid] ?? {}) }
+            typists[e.user_id] = { name: e.user_name, until: Date.now() + TYPING_SHOWN_FOR_MS }
+            this.typingByUlid[e.conversation_ulid] = typists
+            setTimeout(() => this.forgetTyping(e.conversation_ulid, e.user_id, true), TYPING_SHOWN_FOR_MS + 100)
+        },
+
+        forgetTyping(ulid: string, userId: number, onlyIfExpired = false) {
+            const typist = this.typingByUlid[ulid]?.[userId]
+            if (!typist || (onlyIfExpired && typist.until > Date.now())) return
+            const typists = { ...this.typingByUlid[ulid] }
+            delete typists[userId]
+            this.typingByUlid[ulid] = typists
+        },
+
+        sendTyping(ulid: string) {
+            const now = Date.now()
+            if (now - (lastTypingSentAt[ulid] ?? 0) < TYPING_SEND_EVERY_MS) return
+            lastTypingSentAt[ulid] = now
+            axios.post(route("grp.chat.staff.conversations.typing", ulid), {}, { headers: { "X-Background-Request": "1" } }).catch(() => { })
+        },
+
+        queueDelivered(ulid: string) {
+            deliveredQueue.add(ulid)
+            if (deliveredTimer) return
+            deliveredTimer = setTimeout(() => {
+                deliveredTimer = null
+                const ulids = [...deliveredQueue].slice(0, 50)
+                ulids.forEach((queued) => deliveredQueue.delete(queued))
+                if (!ulids.length) return
+                axios.post(route("grp.chat.staff.conversations.delivered"), { conversation_ulids: ulids }, { headers: { "X-Background-Request": "1" } }).catch(() => { })
+                if (deliveredQueue.size) this.queueDelivered([...deliveredQueue][0])
+            }, DELIVERED_FLUSH_MS)
+        },
+
+        handleDelivered(e: { conversation_ulid: string; user_id: number; last_delivered_at: string }) {
+            const participant = this.conversationByUlid(e.conversation_ulid)?.participants.find((p) => p.id === e.user_id)
+            if (participant) participant.last_delivered_at = e.last_delivered_at
+        },
+
         handleRead(e: { conversation_ulid: string; user_id: number; last_read_at: string }) {
             const participant = this.conversationByUlid(e.conversation_ulid)?.participants.find((p) => p.id === e.user_id)
             if (participant) participant.last_read_at = e.last_read_at
@@ -575,7 +665,8 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const conversation = this.conversationByUlid(ulid)
             if (!conversation) return
             conversation.last_message_at = message.created_at
-            conversation.last_message = message.body
+            conversation.last_message = previewOf(message)
+            conversation.last_message_user_id = message.user_id
             const index = this.conversations.indexOf(conversation)
             if (index > 0) {
                 this.conversations.splice(index, 1)
@@ -602,7 +693,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 event: "colleague",
                 key: `staff:${message.id}`,
                 title: message.user_name,
-                body: message.body ?? "",
+                body: previewOf(message) ?? "",
                 tag: `staff-${ulid}`,
                 sound: chosenAlertSound("colleague"),
                 spoken: ctrans("You have a message from :name", { name: message.user_name }),
@@ -646,9 +737,12 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             }
 
             if (message.user_id !== myId) {
+                this.forgetTyping(ulid, message.user_id)
+                if (!(isOpen && document.hasFocus())) this.queueDelivered(ulid)
                 const isMentioned = !!message.mentions?.includes(myId)
+                const isQuietCallEntry = !!message.call && message.call.outcome !== "missed"
 
-                if (!isOpen) {
+                if (!isOpen && !isQuietCallEntry) {
                     conversation.unread_count = (conversation.unread_count || 0) + 1
                     if (alertWayIsOn("colleague", "popup")) this.showAsBubble(ulid)
                 }
@@ -657,7 +751,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 }
 
                 const isSeen = (isOpen && document.hasFocus()) || isOpenInFront(ulid)
-                if (isAlerting(conversation) && !isSeen) {
+                if (isAlerting(conversation) && !isSeen && !isQuietCallEntry) {
                     alertMessage()
                 }
             }

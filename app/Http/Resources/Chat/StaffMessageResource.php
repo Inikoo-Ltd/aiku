@@ -39,7 +39,7 @@ class StaffMessageResource extends JsonResource
             'user_id'           => $this->user_id,
             'user_name'         => $this->user->chatName(),
             'parent_id'         => $this->parent_id,
-            'body'              => $this->body,
+            'body'              => $this->staff_call_id ? \App\Models\Chat\StaffCall::entryText($this->body) : $this->body,
             'mentions'          => $this->mentions ?? [],
             'mentioned_me'      => in_array($request?->user()?->id ?? auth()->id(), $this->mentions ?? []),
             'language_id'       => $this->language_id,
@@ -47,6 +47,7 @@ class StaffMessageResource extends JsonResource
             'reactions'         => $reactions,
             'image'             => $this->media_id ? $this->imageSources(0, 0, 'attachment') : null,
             'gif_url'           => $gifUrl,
+            'call'              => $this->staff_call_id ? $this->call?->entrySummary() : null,
             'created_at'        => $this->created_at,
         ];
     }

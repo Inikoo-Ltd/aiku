@@ -43,7 +43,7 @@ class StaffMessageSent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
-        $this->message->load(['user', 'translations', 'reactions', 'conversation']);
+        $this->message->load(['user', 'translations', 'reactions', 'conversation', 'call.users']);
 
         return (new StaffMessageResource($this->message))->resolve();
     }

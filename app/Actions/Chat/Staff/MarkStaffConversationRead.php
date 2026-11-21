@@ -22,7 +22,11 @@ class MarkStaffConversationRead
     {
         $readAt = now();
 
-        $conversation->participants()->updateExistingPivot($user->id, ['last_read_at' => $readAt->format(StaffConversation::PRECISE_DATE_FORMAT),'archived_at' => null]);
+        $conversation->participants()->updateExistingPivot($user->id, [
+            'last_read_at'      => $readAt->format(StaffConversation::PRECISE_DATE_FORMAT),
+            'last_delivered_at' => $readAt->format(StaffConversation::PRECISE_DATE_FORMAT),
+            'archived_at'       => null,
+        ]);
 
         StaffConversationRead::dispatch($conversation, $user, $readAt->toIso8601ZuluString('microsecond'));
     }

@@ -158,6 +158,7 @@ class HandleInertiaGrpRequests extends Middleware
                 ],
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'can_move_stock' => fn () => $this->canMoveStockInRouteWarehouse($request, $user),
+                'staff_calls'    => \App\Models\Chat\StaffCall::isEnabled(),
                 'organisationSelector' => fn () => AgentOrganisationSelection::fromRequest($request)?->selector(),
                 'costing_reminder' => fn () => $user && !str_starts_with($routeName, 'grp.clocking_employees.') ? GetStockDeliveriesCostingReminder::run($user) : null,
                 'ziggy' => [

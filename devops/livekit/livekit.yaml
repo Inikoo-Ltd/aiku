@@ -1,0 +1,70 @@
+# LiveKit media server for staff calls (INI-444). Runs on its own Hetzner Cloud box, see README.md.
+# Install: sed the three {{...}} values (README step 9) into /etc/livekit/livekit.yaml, mode 644.
+# No secrets in this file: the API key and secret live in /etc/livekit/keys.yaml (key_file).
+# Every key below exists in livekit-server v1.13.11; reference: github.com/livekit/livekit/blob/v1.13.11/config-sample.yaml
+
+# Signalling (WebSocket + room API). Plain HTTP on the box; HAProxy terminates TLS on 443 and
+# forwards here. ufw and the Hetzner firewall keep 7880 closed from outside.
+port: 7880
+
+# One key: secret pair per line, read at start. LiveKit refuses the file if "others" have any
+# permission bit, and logs an error for a secret under 32 characters.
+key_file: /etc/livekit/keys.yaml
+
+rtc:
+  # ICE/TCP fallback for networks that block UDP. Must be reachable directly, no proxy, no TLS.
+  tcp_port: 7881
+  # All WebRTC UDP media on one port (UDP mux) instead of the default 50000-60000 range:
+  # one firewall rule, and plenty for a handful of small calls. To scale, LiveKit's sample
+  # suggests a range of mux ports >= vCPUs, e.g. 7882-7885 (open the same range in both firewalls).
+  udp_port: 7882
+  # Hetzner Cloud puts the public IPv4 on the interface, so no STUN lookup is needed at start.
+  # node_ip only applies when use_external_ip is false.
+  use_external_ip: false
+  node_ip: {{PUBLIC_IPV4}}
+
+# Built-in TURN for people behind strict firewalls.
+#  - TURN/TLS: LiveKit always advertises turns:<domain>:443, so 443 is shared with signalling by
+#    SNI in HAProxy. HAProxy terminates TLS (one certificate for both names) and passes plain TURN
+#    to 127.0.0.1:5349 (external_tls), so a certificate renewal never restarts LiveKit or drops calls.
+#  - proxy_protocol: HAProxy sends a PROXY v2 header so TURN sees the client's real address
+#    (Firefox abandons the allocation when TURN reports the proxy's loopback address).
+#  - TURN/UDP on 443/udp (HAProxy does not use UDP 443), advertised as turn:<node_ip>:443.
+turn:
+  enabled: true
+  domain: {{TURN_DOMAIN}}
+  tls_port: 5349
+  external_tls: true
+  proxy_protocol: true
+  proxy_protocol_trusted_cidrs:
+    - "127.0.0.0/8"
+    - "::1/128"
+  udp_port: 443
+
+# Defaults for rooms created on join. The app may set its own per room with CreateRoom.
+room:
+  auto_create: true
+  # seconds a room created but never joined stays open
+  empty_timeout: 300
+  # seconds a room stays open after the last person leaves (reconnects within this keep the room)
+  departure_timeout: 20
+  # sanity cap; staff calls are small
+  max_participants: 25
+
+logging:
+  level: info
+  pion_level: error
+  json: false
+
+# Metrics on :6789/metrics, closed by both firewalls; read with curl on the box.
+prometheus:
+  port: 6789
+
+# Room events to aiku (ReceiveLiveKitWebhook). Signed with the secret of this key; {{LIVEKIT_API_KEY}}
+# is filled in from /etc/livekit/keys.yaml (README step 9). Goes out through Cloudflare like any visitor.
+webhook:
+  api_key: {{LIVEKIT_API_KEY}}
+  urls:
+    - https://aiku.io/webhooks/livekit
+
+# Single server: no redis (rooms live in memory). No Egress (no recording).

@@ -46,7 +46,7 @@ class ToggleStaffMessageReaction
     public function asController(StaffMessage $staffMessage, ActionRequest $request): StaffMessageResource
     {
         $message = $this->handle($staffMessage, $request->user(), $request->validated()['emoji']);
-        $message->load(['user', 'translations', 'reactions', 'conversation']);
+        $message->load(['user', 'translations', 'reactions', 'conversation', 'call.users']);
 
         return new StaffMessageResource($message);
     }

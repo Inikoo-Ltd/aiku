@@ -34,7 +34,7 @@ class GetStaffMessages
         $leftAt = $staffConversation->leftAtFor($request->user());
 
         $messages = $staffConversation->messages()
-            ->with(['user', 'translations', 'reactions', 'conversation'])
+            ->with(['user', 'translations', 'reactions', 'conversation', 'call.users'])
             ->when($leftAt, fn ($query) => $query->where('created_at', '<=', $leftAt))
             ->when($request->validated('before_id'), fn ($query, $beforeId) => $query->where('id', '<', $beforeId))
             ->latest('id')

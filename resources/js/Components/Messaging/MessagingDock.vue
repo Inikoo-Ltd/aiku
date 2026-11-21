@@ -18,6 +18,7 @@ import Image from "@/Common/Components/Image.vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { useStaffMessaging, bubblesStorageKey, isAlerting, isWorkThread, isHiddenChat, type StaffConversation, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useTruncate } from "@/Composables/useTruncate"
+import StaffConversationPreview from "@/Components/Messaging/StaffConversationPreview.vue"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
@@ -366,7 +367,7 @@ onUnmounted(() => {
                                     class="shrink-0 text-xs"
                                     aria-hidden="true" />
                             </div>
-                            <div class="text-sm text-gray-500 truncate">{{ lastMessagePreview(conversation.last_message) }}</div>
+                            <div class="text-sm text-gray-500 truncate"><StaffConversationPreview :conversation="conversation" :text="lastMessagePreview(conversation.last_message)" /></div>
                         </div>
                         <span v-if="conversation.unread_count > 0" class="bg-[--app-accent] text-[--app-accent-text] rounded-full h-6 min-w-[1.5rem] px-1.5 flex items-center justify-center text-xs shrink-0">{{ conversation.unread_count }}</span>
                     </button>

@@ -1,0 +1,10 @@
+#!/bin/sh
+# certbot deploy hook (INI-444): HAProxy wants certificate and key in one file.
+# Install: /etc/letsencrypt/renewal-hooks/deploy/haproxy-cert-deploy, mode 755.
+# certbot sets RENEWED_LINEAGE on renewals; on the first run pass it by hand (README step 10).
+set -eu
+umask 077
+mkdir -p /etc/haproxy/certs
+cat "$RENEWED_LINEAGE/fullchain.pem" "$RENEWED_LINEAGE/privkey.pem" > /etc/haproxy/certs/calls.pem.new
+mv /etc/haproxy/certs/calls.pem.new /etc/haproxy/certs/calls.pem
+systemctl reload haproxy 2>/dev/null || true

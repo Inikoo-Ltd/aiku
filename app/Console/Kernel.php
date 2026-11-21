@@ -125,6 +125,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('tickets:cancel_stale')->everyFifteenMinutes()->onOneServer();
         $schedule->call(fn () => StoreTicketUpload::pruneAbandoned())->name('ticket-uploads:prune')->daily()->onOneServer();
         $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
+        $schedule->command('staff-calls:close-stale')->everyMinute()->onOneServer()->withoutOverlapping();
         $schedule->command('webpages:break_new_in_pages_cache')->dailyAt('03:10')->timezone('Europe/London')->onOneServer()->withoutOverlapping();
         $schedule->command('accounting:refresh-payment-methods-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('accounting:refresh-invoice-countries-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();

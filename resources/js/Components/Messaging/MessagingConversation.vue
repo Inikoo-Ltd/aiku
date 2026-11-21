@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { useLiveUsers } from "@/Stores/active-users"
-import { useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
+import { callEntryText as callEntryTextFor, deliveredAtOf, tickStateOf, useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useStaffTaskMembers } from "@/Composables/useStaffTaskMembers"
 import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
@@ -24,6 +24,9 @@ import { notify } from "@kyvg/vue3-notification"
 import { Drawer, Popover } from "primevue"
 import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
 import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
+import { canShareScreen, pickScreen, useStaffCalls } from "@/Stores/staff-calls"
+import StaffMessageTicks from "@/Components/Messaging/StaffMessageTicks.vue"
+import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
 
@@ -44,6 +47,22 @@ const emit = defineEmits<{
 }>()
 
 const store = useStaffMessaging()
+const calls = useStaffCalls()
+library.add(faPhone, faPhoneSlash, faVideo, faDesktop)
+
+const liveCall = computed(() => calls.liveCallIn(props.conversation.ulid))
+const isInThisCall = computed(() => calls.active?.call.conversation_ulid === props.conversation.ulid)
+const canStartCall = computed(() => !!props.conversation.can_call && !props.embedded && !calls.active && !calls.joining)
+const callError = computed(() => calls.error?.conversationUlid === props.conversation.ulid ? calls.error.text : null)
+const showScreenCallButton = canShareScreen()
+
+const startScreenCall = () => {
+    if (!canStartCall.value) return
+    const ulid = props.conversation.ulid
+    pickScreen().then((stream) => calls.start(ulid, "screen", stream)).catch(() => { })
+}
+
+const callEntryText = (call: NonNullable<StaffMessage["call"]>) => callEntryTextFor(call, myId.value)
 
 const isDescriptionOpen = ref(false)
 
@@ -83,13 +102,20 @@ const readersOf = (message: StaffMessage) => {
     return otherParticipants.value.filter((participant) => participant.last_read_at && Date.parse(participant.last_read_at) >= sentAt)
 }
 
-const isReadByEveryone = (message: StaffMessage) => otherParticipants.value.length > 0 && readersOf(message).length === otherParticipants.value.length
+const receiversOf = (message: StaffMessage) => {
+    const sentAt = Date.parse(message.created_at)
+    return otherParticipants.value.filter((participant) => deliveredAtOf(participant) >= sentAt)
+}
+
+const tickOf = (message: StaffMessage) => tickStateOf(otherParticipants.value, message.created_at)
 
 const showsMessageMeta = (message: StaffMessage, index: number) => !isGroupChat.value || endsRun(index) || !!message.client_status
 
 const ticksTooltip = (message: StaffMessage) => {
-    if (!isGroupChat.value) return isReadByEveryone(message) ? ctrans("Read") : ctrans("Sent")
-    if (isReadByEveryone(message)) return ctrans("Read by everyone · click to see")
+    const state = tickOf(message)
+    if (!isGroupChat.value) return state === "read" ? ctrans("Read") : state === "received" ? ctrans("Received") : ctrans("Sent")
+    if (state === "read") return ctrans("Read by everyone · click to see")
+    if (state === "received") return ctrans("Received by everyone, :read of :total read · click to see who", { read: String(readersOf(message).length), total: String(otherParticipants.value.length) })
     return ctrans(":read of :total read · click to see who", { read: String(readersOf(message).length), total: String(otherParticipants.value.length) })
 }
 
@@ -103,13 +129,15 @@ const openReadInfo = (event: Event, message: StaffMessage) => {
 }
 
 const readInfo = computed(() => {
-    if (!readInfoMessage.value) return { read: [], unread: [] }
+    if (!readInfoMessage.value) return { read: [], received: [], unread: [] }
     const readers = readersOf(readInfoMessage.value)
     const readerIds = new Set(readers.map((participant) => participant.id))
+    const receiverIds = new Set(receiversOf(readInfoMessage.value).map((participant) => participant.id))
 
     return {
         read: [...readers].sort((a, b) => Date.parse(a.last_read_at!) - Date.parse(b.last_read_at!)),
-        unread: otherParticipants.value.filter((participant) => !readerIds.has(participant.id)),
+        received: otherParticipants.value.filter((participant) => !readerIds.has(participant.id) && receiverIds.has(participant.id)),
+        unread: otherParticipants.value.filter((participant) => !readerIds.has(participant.id) && !receiverIds.has(participant.id)),
     }
 })
 
@@ -380,6 +408,9 @@ watch(
 )
 
 const emojiPickerContainer = ref<HTMLElement | null>(null)
+const gifPickerContainer = ref<HTMLElement | null>(null)
+const gifButton = ref<HTMLElement | null>(null)
+const emojiButton = ref<HTMLElement | null>(null)
 
 const closePickers = () => {
     showGifPicker.value = false
@@ -392,27 +423,45 @@ const handleEscapeKey = (event: KeyboardEvent) => {
     }
 }
 
+const isInside = (element: HTMLElement | null, target: Node) => !!element?.contains(target)
+
 const handleClickOutside = (event: MouseEvent) => {
-    if (!emojiPickerContainer.value?.contains(event.target as Node)) {
+    const target = event.target as Node
+    if (showEmojiPicker.value && !isInside(emojiPickerContainer.value, target) && !isInside(emojiButton.value, target)) {
         showEmojiPicker.value = false
+    }
+    if (showGifPicker.value && !isInside(gifPickerContainer.value, target) && !isInside(gifButton.value, target)) {
+        showGifPicker.value = false
     }
 }
 
 onMounted(() => {
     scrollBottom()
     window.addEventListener("keydown", handleEscapeKey)
-    document.addEventListener("click", handleClickOutside)
+    document.addEventListener("click", handleClickOutside, true)
 })
 
 onUnmounted(() => {
     window.removeEventListener("keydown", handleEscapeKey)
-    document.removeEventListener("click", handleClickOutside)
+    document.removeEventListener("click", handleClickOutside, true)
 })
 
 const handleTypingInput = () => {
     autoResize()
     updateMentionQuery()
+    closePickers()
+    if (newMessage.value.trim() && !leftAt.value) store.sendTyping(props.conversation.ulid)
 }
+
+const typingText = computed(() => store.typingText(props.conversation.ulid))
+
+watch(
+    () => !!typingText.value,
+    (isTyping) => {
+        if (isTyping && isNearBottom) scrollBottom()
+    },
+    { flush: "post" }
+)
 
 const setReply = (message: StaffMessage) => {
     parentMessage.value = message
@@ -531,6 +580,39 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 @click="store.toggleWatch(conversation.ulid)">
                 <FontAwesomeIcon :icon="listedConversation?.is_watching ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width aria-hidden="true" />
             </button>
+            <template v-if="conversation.can_call && !embedded">
+                <button
+                    type="button"
+                    v-tooltip="ctrans('Call')"
+                    :aria-label="ctrans('Call')"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
+                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :disabled="!canStartCall"
+                    @click="calls.start(conversation.ulid, 'voice')">
+                    <FontAwesomeIcon icon="fal fa-phone" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    v-tooltip="ctrans('Video call')"
+                    :aria-label="ctrans('Video call')"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
+                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :disabled="!canStartCall"
+                    @click="calls.start(conversation.ulid, 'video')">
+                    <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" />
+                </button>
+                <button
+                    v-if="showScreenCallButton"
+                    type="button"
+                    v-tooltip="ctrans('Call and share your screen')"
+                    :aria-label="ctrans('Call and share your screen')"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
+                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :disabled="!canStartCall"
+                    @click="startScreenCall">
+                    <FontAwesomeIcon icon="fal fa-desktop" fixed-width aria-hidden="true" />
+                </button>
+            </template>
             <slot name="header-actions" />
             <button
                 v-if="taskInfo && !embedded"
@@ -553,6 +635,22 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </button>
         </div>
 
+        <div v-if="callError" class="shrink-0 border-b border-gray-200 bg-white px-3 py-1.5 text-xs text-red-600" role="alert">{{ callError }}</div>
+        <div
+            v-if="liveCall && !isInThisCall && !embedded"
+            class="flex shrink-0 items-center justify-between gap-2 border-b border-gray-200 bg-[var(--app-accent-soft)] px-3 py-1.5 text-xs text-gray-700">
+            <span class="flex min-w-0 items-center gap-1.5 truncate">
+                <FontAwesomeIcon icon="fal fa-phone" class="text-[var(--app-accent-strong)]" fixed-width aria-hidden="true" />
+                {{ liveCall.kind === "screen" ? ctrans(":name is sharing their screen", { name: liveCall.started_by_name }) : ctrans(":name started a call", { name: liveCall.started_by_name }) }}
+            </span>
+            <button
+                type="button"
+                class="flex shrink-0 items-center gap-1 rounded-md bg-green-600 px-2.5 py-1 font-medium text-white transition duration-200 hover:bg-green-700 disabled:opacity-50"
+                :disabled="!!calls.joining"
+                @click="calls.accept(liveCall, false)">
+                {{ ctrans("Join") }}
+            </button>
+        </div>
         <div
             v-if="canToggleWatch"
             class="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-1 text-xs"
@@ -626,11 +724,17 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 :key="message.id"
                 class="flex"
                 :class="[
-                    message.user_id === myId ? 'justify-end' : 'justify-start',
+                    message.call ? 'justify-center' : message.user_id === myId ? 'justify-end' : 'justify-start',
                     messageIndex === 0 ? '' : isGroupChat && !startsRun(messageIndex) ? 'mt-0.5' : 'mt-2.5',
                 ]"
             >
-            <div v-if="isGroupChat && message.user_id !== myId" class="mr-1.5 w-7 shrink-0">
+            <div v-if="message.call" class="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <FontAwesomeIcon :icon="message.call.outcome === 'answered' ? 'fal fa-phone' : 'fal fa-phone-slash'" :class="message.call.outcome === 'missed' && message.call.started_by_user_id !== myId ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                <span v-tooltip="message.call.joined.length > 1 ? message.call.joined.join(', ') : undefined">{{ callEntryText(message.call) }}</span>
+                <span v-if="isGroupChat || message.call.started_by_user_id !== myId" class="text-gray-400">· {{ message.user_name }}</span>
+                <span class="text-gray-400">· {{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</span>
+            </div>
+            <div v-else-if="isGroupChat && message.user_id !== myId" class="mr-1.5 w-7 shrink-0">
                 <TicketUserAvatar
                     v-if="startsRun(messageIndex)"
                     v-tooltip="message.user_name"
@@ -639,6 +743,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                     size="md" />
             </div>
             <div
+                v-if="!message.call"
                 class="group flex min-w-0 flex-1 flex-col"
                 :class="message.user_id === myId ? 'items-end' : 'items-start'"
             >
@@ -741,9 +846,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                                 v-tooltip="ticksTooltip(message)"
                                 :aria-label="ticksTooltip(message)"
                                 class="rounded leading-none transition duration-200"
-                                :class="[isReadByEveryone(message) ? 'text-[--app-accent]' : 'text-gray-400', isGroupChat ? 'cursor-pointer hover:bg-gray-100 active:!bg-gray-200' : 'cursor-default']"
+                                :class="isGroupChat ? 'cursor-pointer hover:bg-gray-100 active:!bg-gray-200' : 'cursor-default'"
                                 @click.stop="openReadInfo($event, message)">
-                                <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+                                <StaffMessageTicks :state="tickOf(message)" />
                             </button>
                         </template>
                     </template>
@@ -751,6 +856,10 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </div>
             </div>
 
+            <div v-if="typingText" class="mt-2 flex items-center gap-1.5 px-1 text-xs text-gray-500" aria-live="polite">
+                <span class="typing-dots" aria-hidden="true"><span /><span /><span /></span>
+                {{ typingText }}
+            </div>
             <div
                 v-for="note in store.notesByUlid[conversation.ulid]"
                 :key="note.id"
@@ -762,7 +871,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 
         <Popover ref="readInfoPopover" @hide="readInfoMessage = null">
             <div class="w-60 text-sm">
-                <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[--app-accent-strong]">
+                <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-sky-600">
                     <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
                     {{ ctrans("Read by") }}
                 </p>
@@ -775,10 +884,22 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 </ul>
                 <p v-else class="mb-3 text-xs text-gray-400">{{ ctrans("Nobody yet") }}</p>
 
+                <template v-if="readInfo.received.length">
+                    <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
+                        <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+                        {{ ctrans("Received, not read yet") }}
+                    </p>
+                    <ul class="mb-3 space-y-1.5">
+                        <li v-for="participant in readInfo.received" :key="participant.id" class="flex items-center gap-2">
+                            <TicketUserAvatar :name="participant.name" :avatar="participant.avatar" size="sm" />
+                            <span class="min-w-0 flex-1 truncate text-gray-700" :title="participant.name">{{ participant.name }}</span>
+                        </li>
+                    </ul>
+                </template>
                 <template v-if="readInfo.unread.length">
                     <p class="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-400">
                         <FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
-                        {{ ctrans("Not read yet") }}
+                        {{ ctrans("Not received yet") }}
                     </p>
                     <ul class="space-y-1.5">
                         <li v-for="participant in readInfo.unread" :key="participant.id" class="flex items-center gap-2 opacity-70">
@@ -819,6 +940,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                 <div class="flex items-center gap-x-1 shrink-0">
                     <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="onImageSelect" />
                     <button
+                        ref="gifButton"
                         v-tooltip="ctrans('Send a GIF')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
@@ -827,6 +949,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
                         <span :class="fullScreen ? 'text-xs' : 'text-xxs'" class="font-medium">GIF</span>
                     </button>
                     <button
+                        ref="emojiButton"
                         v-tooltip="ctrans('Emoji')"
                         class="rounded-full border border-gray-300 text-gray-500 flex items-center justify-center hover:bg-gray-100"
                         :class="fullScreen ? 'h-8 min-w-[36px] text-xs' : 'h-[22px] min-w-[28px] px-1.5 text-xxs'"
@@ -852,7 +975,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
             </div>
 
             <div class="relative flex items-end gap-x-2 pb-2">
-                <div v-if="showGifPicker" class="absolute bottom-full left-0 mb-1 z-20" :class="fullScreen ? 'w-full max-w-md' : ''">
+                <div v-if="showGifPicker" ref="gifPickerContainer" class="absolute bottom-full left-0 mb-1 z-20" :class="fullScreen ? 'w-full max-w-md' : ''">
                     <GifPicker class="w-full" @pick="pickGif" @close="showGifPicker = false" />
                 </div>
                 <div v-if="showEmojiPicker" ref="emojiPickerContainer" class="absolute bottom-full left-0 mb-1 z-20">
@@ -908,6 +1031,27 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 </template>
 
 <style scoped>
+.typing-dots {
+    display: inline-flex;
+    gap: 2px;
+}
+.typing-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: typing-dot 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+@keyframes typing-dot {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-2px); }
+}
 .reaction-pop-enter-active {
     animation: reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

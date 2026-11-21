@@ -67,6 +67,11 @@ class StaffMessage extends Model implements HasMedia
         return $this->hasMany(StaffMessageTranslation::class);
     }
 
+    public function call(): BelongsTo
+    {
+        return $this->belongsTo(StaffCall::class, 'staff_call_id');
+    }
+
     public function attachment(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'media_id');

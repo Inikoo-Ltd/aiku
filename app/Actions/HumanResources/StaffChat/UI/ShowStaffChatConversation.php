@@ -54,7 +54,7 @@ class ShowStaffChatConversation extends OrgAction
             ->implode(', ');
 
         $messages = $conversation->messages()
-            ->with(['user', 'translations', 'reactions', 'conversation'])
+            ->with(['user', 'translations', 'reactions', 'conversation', 'call.users'])
             ->orderBy('id')
             ->limit(1000)
             ->get();
