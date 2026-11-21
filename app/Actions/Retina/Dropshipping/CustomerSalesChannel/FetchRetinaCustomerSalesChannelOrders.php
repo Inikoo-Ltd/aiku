@@ -20,6 +20,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\PlatformResponseFormatter;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -36,6 +37,13 @@ use Lorisleiva\Actions\ActionRequest;
 class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
 {
     private const COOLDOWN_SECONDS = 120;
+
+    private const NAMED_AWAITING_ORDERS = 5;
+
+    /**
+     * @var array<int, string>
+     */
+    private array $ordersAwaitingFulfilmentRequest = [];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -102,7 +110,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
 
         $newOrders = $this->countImportedOrders($customerSalesChannel) - $ordersBefore;
 
-        if ($newOrders < 1) {
+        if ($newOrders < 1 && !$this->ordersAwaitingFulfilmentRequest) {
             return $this->notification(
                 'success',
                 __('No new orders'),
@@ -110,10 +118,34 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             );
         }
 
+        if ($newOrders < 1) {
+            return $this->notification('warning', __('No new orders'), $this->awaitingFulfilmentRequestMessage());
+        }
+
         return $this->notification(
-            'success',
+            $this->ordersAwaitingFulfilmentRequest ? 'warning' : 'success',
             __('Orders fetched'),
-            trans_choice('{1} :count new order was imported.|[2,*] :count new orders were imported.', $newOrders, ['count' => $newOrders])
+            trim(trans_choice('{1} :count new order was imported.|[2,*] :count new orders were imported.', $newOrders, ['count' => $newOrders]).' '.$this->awaitingFulfilmentRequestMessage())
+        );
+    }
+
+    private function awaitingFulfilmentRequestMessage(): string
+    {
+        if (!$this->ordersAwaitingFulfilmentRequest) {
+            return '';
+        }
+
+        $count = count($this->ordersAwaitingFulfilmentRequest);
+        $names = implode(', ', array_slice($this->ordersAwaitingFulfilmentRequest, 0, self::NAMED_AWAITING_ORDERS));
+
+        if ($count > self::NAMED_AWAITING_ORDERS) {
+            $names .= ' '.__('and :count more', ['count' => $count - self::NAMED_AWAITING_ORDERS]);
+        }
+
+        return trans_choice(
+            '{1} Order :orders is waiting in Shopify: request fulfilment for it there and it will reach AW.|[2,*] Orders :orders are waiting in Shopify: request fulfilment for them there and they will reach AW.',
+            $count,
+            ['orders' => $names]
         );
     }
 
@@ -146,7 +178,7 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
     private function fetch(CustomerSalesChannel $customerSalesChannel, $platformUser): void
     {
         match ($customerSalesChannel->platform->type) {
-            PlatformTypeEnum::SHOPIFY => FetchShopifyOrdersFromApi::run($platformUser),
+            PlatformTypeEnum::SHOPIFY => $this->fetchShopify($platformUser),
             PlatformTypeEnum::WOOCOMMERCE => FetchWooUserOrders::run($platformUser),
             PlatformTypeEnum::TIKTOK => GetTiktokOrdersApi::run($platformUser),
             PlatformTypeEnum::EBAY => FetchEbayUserOrders::run($platformUser),
@@ -156,6 +188,16 @@ class FetchRetinaCustomerSalesChannelOrders extends RetinaAction
             PlatformTypeEnum::WIX => GetWixOrdersFromApi::run($platformUser),
             default => null,
         };
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function fetchShopify(ShopifyUser $shopifyUser): void
+    {
+        $fetcher = FetchShopifyOrdersFromApi::make();
+        $fetcher->handle($shopifyUser);
+        $this->ordersAwaitingFulfilmentRequest = $fetcher->ordersAwaitingFulfilmentRequest;
     }
 
     /**

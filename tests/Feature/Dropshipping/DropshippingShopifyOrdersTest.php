@@ -973,6 +973,50 @@ test('a request the poller declines in shopify is not announced to the customer 
         ->and($notification['title'])->toBe('No new orders');
 });
 
+test('fetch orders tells the customer which shopify orders wait for them to request fulfilment, and never takes them', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-poll-unsubmitted');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $waiting = shopifyPolledOrder('gid://shopify/Order/5080', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6080', 'OPEN', 'UNSUBMITTED')]);
+    $otherLocation = shopifyPolledOrder('gid://shopify/Order/5081', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6081', 'OPEN', 'UNSUBMITTED', 'gid://shopify/Location/9999')]);
+    data_set($otherLocation, 'name', '#1041');
+    $requested = shopifyPolledOrder('gid://shopify/Order/5082', [shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6082', 'OPEN', 'SUBMITTED')]);
+    data_set($requested, 'name', '#1042');
+
+    ShopifyFake::fake(['getUnfulfilledOrders' => shopifyUnfulfilledOrdersReply([$waiting, $otherLocation])]);
+    $notification = FetchRetinaCustomerSalesChannelOrders::make()->handle($shopifyUser->customerSalesChannel);
+
+    expect($shopifyUser->customerSalesChannel->orders()->count())->toBe(0)
+        ->and($notification['status'])->toBe('warning')
+        ->and($notification['title'])->toBe('No new orders')
+        ->and($notification['description'])->toBe('Order #1040 is waiting in Shopify: request fulfilment for it there and it will reach AW.');
+
+    Cache::flush();
+    ShopifyFake::fake([
+        'getUnfulfilledOrders'     => shopifyUnfulfilledOrdersReply([$waiting, $requested]),
+        'acceptFulfillmentRequest' => shopifyAcceptReply(),
+    ]);
+    $notification = FetchRetinaCustomerSalesChannelOrders::make()->handle($shopifyUser->customerSalesChannel);
+
+    expect($shopifyUser->customerSalesChannel->orders()->pluck('platform_order_id')->all())->toBe(['gid://shopify/FulfillmentOrder/6082'])
+        ->and($notification['status'])->toBe('warning')
+        ->and($notification['description'])->toBe('1 new order was imported. Order #1040 is waiting in Shopify: request fulfilment for it there and it will reach AW.');
+
+    $manyWaiting = array_map(function (int $index) {
+        $order = shopifyPolledOrder("gid://shopify/Order/51$index", [shopifyPolledFulfilmentOrder("gid://shopify/FulfillmentOrder/61$index", 'OPEN', 'UNSUBMITTED')]);
+        data_set($order, 'name', "#20$index");
+
+        return $order;
+    }, range(1, 7));
+
+    Cache::flush();
+    ShopifyFake::fake(['getUnfulfilledOrders' => shopifyUnfulfilledOrdersReply($manyWaiting)]);
+    $notification = FetchRetinaCustomerSalesChannelOrders::make()->handle($shopifyUser->customerSalesChannel);
+
+    expect($notification['description'])->toBe('Orders #201, #202, #203, #204, #205 and 2 more are waiting in Shopify: request fulfilment for them there and they will reach AW.');
+});
+
 test('an accept shopify refuses leaves no order and the poll carries on with the next request', function () {
     Queue::fake();
     $shopifyUser = shopifyOrderChannel($this, 'orders-poll-refused');

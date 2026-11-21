@@ -41,6 +41,15 @@ class FetchShopifyOrdersFromApi
     private const int MAX_PAGES = 10;
 
     /**
+     * Names of orders the store assigned to our location but never asked us to fulfil (UNSUBMITTED):
+     * no webhook comes for them until the merchant requests fulfilment in Shopify, and AW must not
+     * take them before that, so the customer is told instead (PRE-130).
+     *
+     * @var array<int, string>
+     */
+    public array $ordersAwaitingFulfilmentRequest = [];
+
+    /**
      * @return int number of fulfilment orders that failed to import
      * @throws \Exception
      */
@@ -70,6 +79,7 @@ class FetchShopifyOrdersFromApi
         ];
 
         $failed = 0;
+        $this->ordersAwaitingFulfilmentRequest = [];
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
             try {
@@ -103,6 +113,10 @@ class FetchShopifyOrdersFromApi
                     continue;
                 }
 
+                if ($this->isAwaitingFulfilmentRequest($shopifyUser, $order)) {
+                    $this->ordersAwaitingFulfilmentRequest[] = (string) data_get($order, 'name');
+                }
+
                 foreach ($this->buildFulfilmentOrderPayloads($shopifyUser, $order) as $fulfilmentOrder) {
                     if ($acceptedOnly && Arr::get($fulfilmentOrder, 'requestStatus') === 'SUBMITTED') {
                         continue;
@@ -126,6 +140,14 @@ class FetchShopifyOrdersFromApi
         }
 
         return $failed;
+    }
+
+    private function isAwaitingFulfilmentRequest(ShopifyUser $shopifyUser, array $order): bool
+    {
+        return collect(data_get($order, 'fulfillmentOrders.edges', []))->pluck('node')
+            ->contains(fn ($fulfilmentOrder) => data_get($fulfilmentOrder, 'assignedLocation.location.id') === $shopifyUser->shopify_location_id
+                && data_get($fulfilmentOrder, 'requestStatus') === 'UNSUBMITTED'
+                && data_get($fulfilmentOrder, 'status') === 'OPEN');
     }
 
     /**

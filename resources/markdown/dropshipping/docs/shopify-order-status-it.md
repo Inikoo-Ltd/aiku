@@ -64,7 +64,7 @@ Per saperne di più sulla pagina dell'ordine, vedi [Controllare i tuoi ordini](/
 
 ## Un ordine non è nei miei Orders
 
-Apri il canale e premi <b>Fetch orders</b>. <b>Controlla Shopify per gli ordini che non ci sono ancora arrivati</b>: guarda gli ordini recenti non evasi e importa quelli per la nostra sede. Se non c'è nulla di nuovo vedi <b>No new orders</b>. Puoi premerlo di nuovo dopo un paio di minuti.
+Apri il canale e premi <b>Fetch orders</b>. <b>Controlla Shopify per gli ordini che non ci sono ancora arrivati</b>: guarda gli ordini recenti non evasi e importa quelli per la nostra sede. Se non c'è nulla di nuovo vedi <b>No new orders</b>. Puoi premerlo di nuovo dopo un paio di minuti. Se Shopify ha un ordine per la nostra sede che non ci è mai stato inviato, il messaggio lo indica e ti chiede di richiederne l'evasione in Shopify: apri l'ordine in Shopify e premi <b>Request fulfillment</b>. Ci arriva poco dopo. Perché non succeda più, lascia che Shopify richieda l'evasione automaticamente per la nostra sede <b>aiku-</b>.
 
 Se l'ordine ancora non arriva, controlla questi punti:
 

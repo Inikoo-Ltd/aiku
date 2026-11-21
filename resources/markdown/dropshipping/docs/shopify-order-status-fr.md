@@ -64,7 +64,7 @@ Pour en savoir plus sur la page de commande, voir [Consulter vos commandes](/doc
 
 ## Une commande n'est pas dans mes Orders
 
-Ouvrez le canal et appuyez sur <b>Fetch orders</b>. Cela <b>Checks Shopify for orders that have not reached us yet</b> : cela regarde les commandes récentes non traitées et rapatrie celles pour notre emplacement. S'il n'y a rien de nouveau, vous voyez <b>No new orders</b>. Vous pouvez réessayer après quelques minutes.
+Ouvrez le canal et appuyez sur <b>Fetch orders</b>. Cela <b>Checks Shopify for orders that have not reached us yet</b> : cela regarde les commandes récentes non traitées et rapatrie celles pour notre emplacement. S'il n'y a rien de nouveau, vous voyez <b>No new orders</b>. Vous pouvez réessayer après quelques minutes. Si Shopify a une commande pour notre emplacement qui ne nous a jamais été envoyée, le message la nomme et vous demande d'en demander le traitement dans Shopify : ouvrez la commande dans Shopify et appuyez sur <b>Request fulfillment</b>. Elle nous parvient peu après. Pour éviter que cela se reproduise, laissez Shopify demander le traitement automatiquement pour notre emplacement <b>aiku-</b>.
 
 Si la commande ne remonte toujours pas, vérifiez ces points :
 

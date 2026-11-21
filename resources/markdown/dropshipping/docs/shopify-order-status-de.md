@@ -64,7 +64,7 @@ Mehr zur Bestellseite finden Sie unter [Reviewing your orders](/docs/reviewing-o
 
 ## Eine Bestellung fehlt in meinen Orders
 
-Öffnen Sie den Kanal und drücken Sie <b>Fetch orders</b>. Es <b>Checks Shopify for orders that have not reached us yet</b>: Es schaut sich kürzliche, nicht erfüllte Bestellungen an und holt die für unseren Standort. Gibt es nichts Neues, sehen Sie <b>No new orders</b>. Sie können es nach ein paar Minuten erneut drücken.
+Öffnen Sie den Kanal und drücken Sie <b>Fetch orders</b>. Es <b>Checks Shopify for orders that have not reached us yet</b>: Es schaut sich kürzliche, nicht erfüllte Bestellungen an und holt die für unseren Standort. Gibt es nichts Neues, sehen Sie <b>No new orders</b>. Sie können es nach ein paar Minuten erneut drücken. Hat Shopify eine Bestellung für unseren Standort, die nie an uns gesendet wurde, nennt die Meldung sie und bittet Sie, in Shopify die Erfüllung anzufordern: Öffnen Sie die Bestellung in Shopify und drücken Sie <b>Request fulfillment</b>. Kurz danach kommt sie bei uns an. Damit das nicht wieder passiert, lassen Sie Shopify die Erfüllung für unseren <b>aiku-</b> Standort automatisch anfordern.
 
 Kommt die Bestellung immer noch nicht, prüfen Sie Folgendes:
 

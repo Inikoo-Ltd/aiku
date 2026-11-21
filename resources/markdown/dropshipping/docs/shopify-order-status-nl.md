@@ -64,7 +64,7 @@ Voor meer over de bestelpagina, zie [Uw bestellingen bekijken](/docs/reviewing-o
 
 ## Een bestelling staat niet in mijn Orders
 
-Open het kanaal en druk op <b>Fetch orders</b>. Dit <b>Checks Shopify for orders that have not reached us yet</b>: het kijkt naar recente niet-afgehandelde bestellingen en haalt de bestellingen voor onze locatie binnen. Is er niets nieuws, dan ziet u <b>No new orders</b>. U kunt na een paar minuten opnieuw drukken.
+Open het kanaal en druk op <b>Fetch orders</b>. Dit <b>Checks Shopify for orders that have not reached us yet</b>: het kijkt naar recente niet-afgehandelde bestellingen en haalt de bestellingen voor onze locatie binnen. Is er niets nieuws, dan ziet u <b>No new orders</b>. U kunt na een paar minuten opnieuw drukken. Heeft Shopify een bestelling voor onze locatie die nooit naar ons is gestuurd, dan noemt de melding haar en vraagt u in Shopify om fulfilment te verzoeken: open de bestelling in Shopify en druk op <b>Request fulfillment</b>. Kort daarna komt ze bij ons binnen. Om dit te voorkomen, laat u Shopify automatisch fulfilment aanvragen voor onze <b>aiku-</b> locatie.
 
 Komt de bestelling nog steeds niet, controleer dan het volgende:
 

@@ -64,7 +64,7 @@ Para mais sobre a página da encomenda, vê [Rever as tuas encomendas](/docs/rev
 
 ## Uma encomenda não está nas minhas Orders
 
-Abre o canal e clica em <b>Fetch orders</b>. Isto <b>Checks Shopify for orders that have not reached us yet</b> ("Verifica no Shopify encomendas que ainda não nos chegaram"): olha para as encomendas recentes não expedidas e traz as do nosso local. Se não houver nada de novo vês <b>No new orders</b>. Podes clicar outra vez passados alguns minutos.
+Abre o canal e clica em <b>Fetch orders</b>. Isto <b>Checks Shopify for orders that have not reached us yet</b> ("Verifica no Shopify encomendas que ainda não nos chegaram"): olha para as encomendas recentes não expedidas e traz as do nosso local. Se não houver nada de novo vês <b>No new orders</b>. Podes clicar outra vez passados alguns minutos. Se o Shopify tiver uma encomenda para o nosso local que nunca nos foi enviada, a mensagem indica-a e pede-te que peças a expedição no Shopify: abre a encomenda no Shopify e clica em <b>Request fulfillment</b>. Chega-nos pouco depois. Para que não volte a acontecer, deixa o Shopify pedir a expedição automaticamente para o nosso local <b>aiku-</b>.
 
 Se a encomenda continuar sem aparecer, verifica isto:
 

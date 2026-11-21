@@ -64,7 +64,7 @@ Para más sobre la página del pedido, consulta [Revisar tus pedidos](/docs/revi
 
 ## Un pedido no está en mis Orders
 
-Abre el canal y pulsa <b>Fetch orders</b>. <b>Checks Shopify for orders that have not reached us yet</b>: revisa los pedidos recientes sin completar y trae los de nuestra ubicación. Si no hay nada nuevo, verás <b>No new orders</b>. Puedes volver a pulsarlo pasados un par de minutos.
+Abre el canal y pulsa <b>Fetch orders</b>. <b>Checks Shopify for orders that have not reached us yet</b>: revisa los pedidos recientes sin completar y trae los de nuestra ubicación. Si no hay nada nuevo, verás <b>No new orders</b>. Puedes volver a pulsarlo pasados un par de minutos. Si Shopify tiene un pedido para nuestra ubicación que nunca nos envió, el mensaje lo nombra y te pide solicitar el fulfilment en Shopify: abre el pedido en Shopify y pulsa <b>Request fulfillment</b>. Nos llega un momento después. Para que no vuelva a pasar, deja que Shopify solicite el fulfilment automáticamente para nuestra ubicación <b>aiku-</b>.
 
 Si el pedido sigue sin llegar, comprueba esto:
 

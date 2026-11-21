@@ -64,7 +64,7 @@ For more about the order page, see [Reviewing your orders](/docs/reviewing-order
 
 ## An order is not in my Orders
 
-Open the channel and press <b>Fetch orders</b>. It <b>Checks Shopify for orders that have not reached us yet</b>: it looks at recent unfulfilled orders and brings in the ones for our location. If there is nothing new you see <b>No new orders</b>. You can press it again after a couple of minutes.
+Open the channel and press <b>Fetch orders</b>. It <b>Checks Shopify for orders that have not reached us yet</b>: it looks at recent unfulfilled orders and brings in the ones for our location. If there is nothing new you see <b>No new orders</b>. You can press it again after a couple of minutes. If Shopify has an order for our location that was never sent to us, the message names it and asks you to request fulfilment for it in Shopify: open the order in Shopify and press <b>Request fulfillment</b>. It reaches us a moment later. To stop this happening, let Shopify request fulfilment automatically for our <b>aiku-</b> location.
 
 If the order still does not come, check these:
 
