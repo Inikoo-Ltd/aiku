@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -182,7 +183,7 @@ class SaveOrderModification extends OrgAction
 
         $beingPicked = in_array($deliveryNote->state, [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED]);
 
-        foreach ($product->orgStocks as $orgStock) {
+        foreach (ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNote, $product->orgStocks) as $orgStock) {
             $quantity         = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
             $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
                 'org_stock_id'               => $orgStock->id,

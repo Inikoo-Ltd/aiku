@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\WaitingCrmItem;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
@@ -108,6 +109,8 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                     $isFree = (bool)$deliveryNoteItem->transaction?->is_gift
                         || $deliveryNoteItem->deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT;
 
+                    $orgStocks = ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNoteItem->deliveryNote, $product->orgStocks);
+
                     $transaction = StoreTransaction::make()->action(
                         order: $order,
                         historicAsset: $product->currentHistoricProduct,
@@ -121,7 +124,7 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                         ]
                     );
 
-                    foreach ($product->orgStocks as $orgStock) {
+                    foreach ($orgStocks as $orgStock) {
                         $quantity = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                         if ($quantity > 0) {
                             $deliveryNoteItemData = [

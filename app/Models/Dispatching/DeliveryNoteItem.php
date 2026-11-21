@@ -217,6 +217,21 @@ class DeliveryNoteItem extends Model
         return $this->belongsTo(DeliveryNote::class);
     }
 
+    /**
+     * INI-484. A line copies its note's company, so a line worked in another company's warehouse is told apart from its own
+     * columns and its shop, without loading the note. A line loaded without them asks its note.
+     */
+    public function isCrossDispatch(): bool
+    {
+        if (!array_key_exists('organisation_id', $this->attributes) || !array_key_exists('shop_id', $this->attributes)) {
+            return (bool) DeliveryNote::withTrashed()->find($this->delivery_note_id ?? $this->newQueryWithoutScopes()->whereKey($this->getKey())->value('delivery_note_id'))?->isCrossDispatch();
+        }
+
+        $shopOrganisationId = $this->shop?->organisation_id;
+
+        return $this->organisation_id !== null && $shopOrganisationId !== null && (int) $this->organisation_id !== (int) $shopOrganisationId;
+    }
+
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);

@@ -9,13 +9,16 @@
 
 namespace App\Actions\Dispatching\DeliveryNoteItem;
 
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateCompositionDirtyItems;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
 use App\Notifications\Work\WorkNotifier;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -47,15 +50,17 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
     public function handle(OrgStock $orgStock): void
     {
         $deliveryNoteItems = $orgStock->deliveryNoteItems()
-            ->with('transaction.historicAsset', 'transaction.model')
+            ->with('transaction.historicAsset', 'transaction.model', 'shop')
             ->whereIn('state', collect(self::SYNCED_STATES)->merge(self::DIRTY_STATES)->map(fn ($state) => $state->value))
-            ->get();
+            ->get()
+            ->concat($this->crossDispatchedItems($orgStock));
 
         $touchedDeliveryNoteIds = [];
 
         foreach ($deliveryNoteItems as $deliveryNoteItem) {
             $touchedDeliveryNoteIds[$deliveryNoteItem->delivery_note_id] = true;
-            $quantityRequired = $this->getQuantityRequired($orgStock, $deliveryNoteItem);
+            $lineOrgStock     = $deliveryNoteItem->org_stock_id === $orgStock->id ? $orgStock : $deliveryNoteItem->orgStock;
+            $quantityRequired = $this->getQuantityRequired($lineOrgStock, $deliveryNoteItem);
 
             if (is_null($quantityRequired)) {
                 continue;
@@ -98,7 +103,7 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
             UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
                 'quantity_required'          => $quantityRequired,
                 'original_quantity_required' => $quantityRequired,
-                'estimated_required_weight'  => (int)($quantityRequired * ($orgStock->stock?->gross_weight ?? 0)),
+                'estimated_required_weight'  => (int)($quantityRequired * ($lineOrgStock->stock?->gross_weight ?? 0)),
             ], strict: false);
             WorkNotifier::modified($deliveryNoteItem->deliveryNote, 'lines');
 
@@ -113,6 +118,26 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
         foreach (array_keys($touchedDeliveryNoteIds) as $deliveryNoteId) {
             DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteId);
         }
+    }
+
+    /**
+     * INI-484. Lines worked in another company's warehouse hold that company's SKO of the same stock, so a change to the
+     * ordering company's SKO or product would never reach them through the SKO's own lines.
+     *
+     * @return Collection<int, DeliveryNoteItem>
+     */
+    private function crossDispatchedItems(OrgStock $orgStock): Collection
+    {
+        if (!$orgStock->stock_id) {
+            return new Collection();
+        }
+
+        return DeliveryNoteItem::with('transaction.historicAsset', 'transaction.model', 'shop')
+            ->where('stock_id', $orgStock->stock_id)
+            ->where('organisation_id', '!=', $orgStock->organisation_id)
+            ->whereIn('shop_id', Shop::where('organisation_id', $orgStock->organisation_id)->select('id'))
+            ->whereIn('state', collect(self::SYNCED_STATES)->merge(self::DIRTY_STATES)->map(fn ($state) => $state->value))
+            ->get();
     }
 
     /**
@@ -133,10 +158,12 @@ class SyncDeliveryNoteItemsRequiredPickQuantity
             return null;
         }
 
-        $quantityPerProduct = DB::table('product_has_org_stocks')
-            ->where('product_id', $transaction->model_id)
-            ->where('org_stock_id', $orgStock->id)
-            ->value('quantity');
+        $quantityPerProduct = $deliveryNoteItem->isCrossDispatch()
+            ? ResolveCrossDispatch::make()->quantityPerProductOnCrossDispatchLine($deliveryNoteItem, $transaction->model_id)
+            : DB::table('product_has_org_stocks')
+                ->where('product_id', $transaction->model_id)
+                ->where('org_stock_id', $orgStock->id)
+                ->value('quantity');
 
         if (is_null($quantityPerProduct)) {
             return null;

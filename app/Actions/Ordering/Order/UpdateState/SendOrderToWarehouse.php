@@ -18,6 +18,7 @@ use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\FulfilmentGate\GetGateCoverage;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -39,6 +40,7 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +70,9 @@ class SendOrderToWarehouse extends OrgAction
 
     /** Set from the "send it anyway" button: the customer could not be reached for an address */
     private bool $withoutAnAddress = false;
+
+    /** INI-484. The company whose warehouse gets the note when it is not the one the order was placed in; only RaiseCrossDispatchDeliveryNote sets it */
+    private ?Organisation $dispatcher = null;
 
 
     /**
@@ -237,7 +242,8 @@ class SendOrderToWarehouse extends OrgAction
             $this->update($order, ['private_warehouse_note' => self::withoutHeldNote($order->private_warehouse_note)]);
         }
 
-        if (!$this->releaseFromGate
+        if (!$this->dispatcher
+            && !$this->releaseFromGate
             && $order->organisation->hasFulfilmentGate()
             && !GetGateCoverage::make()->isFullyCoverable($order)
         ) {
@@ -284,7 +290,7 @@ class SendOrderToWarehouse extends OrgAction
                 $transaction->update($transactionData);
             }
 
-            $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);
+            $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData, dispatcher: $this->dispatcher);
 
             $transactions = $order->transactions()->where('model_type', 'Product')->get();
 
@@ -294,7 +300,7 @@ class SendOrderToWarehouse extends OrgAction
                 $product = Product::find($transaction->model_id);
 
 
-                foreach ($product->orgStocks as $orgStock) {
+                foreach (ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNote, $product->orgStocks) as $orgStock) {
                     $quantity             = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                     $deliveryNoteItemData = [
                         'org_stock_id'               => $orgStock->id,
@@ -334,9 +340,13 @@ class SendOrderToWarehouse extends OrgAction
             SalesChannelTypeEnum::EMAIL,
             SalesChannelTypeEnum::OTHER
         ])) {
-            SendNewOrderEmailToSubscribers::dispatch($order->id);
-            SendNewOrderEmailToCustomer::dispatch($order->id);
-            SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+            $sendConfirmations = function () use ($order) {
+                SendNewOrderEmailToSubscribers::dispatch($order->id);
+                SendNewOrderEmailToCustomer::dispatch($order->id);
+                SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+            };
+            /** INI-484. A cross dispatch is raised inside a transaction that can still refuse it, so nothing is sent before it commits */
+            $this->dispatcher ? DB::afterCommit($sendConfirmations) : $sendConfirmations();
         }
 
         return $deliveryNote;
@@ -405,7 +415,7 @@ class SendOrderToWarehouse extends OrgAction
             'warehouse_id' => [
                 'required',
                 Rule::exists('warehouses', 'id')
-                    ->where('organisation_id', $this->organisation->id),
+                    ->where('organisation_id', ($this->dispatcher ?? $this->organisation)->id),
             ],
             'without_an_address' => ['sometimes', 'boolean'],
         ];
@@ -415,7 +425,7 @@ class SendOrderToWarehouse extends OrgAction
     {
         if (!$this->has('warehouse_id')) {
             /** @var Warehouse $warehouse */
-            $warehouse = $this->shop->organisation->warehouses()->first();
+            $warehouse = ($this->dispatcher ?? $this->shop->organisation)->warehouses()->first();
             if ($warehouse) {
                 $this->set('warehouse_id', $warehouse->id);
             }
@@ -442,8 +452,12 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData, bool $releaseFromGate = false, bool $withoutAnAddress = false): ?DeliveryNote
+    public function action(Order $order, array $modelData, bool $releaseFromGate = false, bool $withoutAnAddress = false, ?Organisation $dispatcher = null): ?DeliveryNote
     {
+        $this->dispatcher       = $dispatcher?->id === $order->organisation_id ? null : $dispatcher;
+        if ($this->dispatcher) {
+            ResolveCrossDispatch::ensureDirectionEnabled($order->organisation_id, $this->dispatcher->id);
+        }
         $this->asAction         = true;
         $this->releaseFromGate  = $releaseFromGate;
         $this->withoutAnAddress = $withoutAnAddress;

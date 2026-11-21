@@ -1277,9 +1277,9 @@ class ShowDeliveryNote extends OrgAction
         return $timeline;
     }
 
-    public function quickGetPickers(): array
+    public function quickGetPickers(?Organisation $organisation = null): array
     {
-        return PickersResource::collection(GetPickerUsers::run($this->organisation, true))->resolve();
+        return PickersResource::collection(GetPickerUsers::run($organisation ?? $this->organisation, true))->resolve();
     }
 
     public function getTariffCodesExportFields(): array
@@ -1385,7 +1385,10 @@ class ShowDeliveryNote extends OrgAction
          */
         $showChangePickerPacker = $deliveryNote->pickingSessions()->doesntExist();
 
-        $allowWaiting = (bool)data_get($this->organisation->settings, 'orders.allow_waiting', false);
+        /** INI-484. The actions take these rules from the company that works the note, so the page reads them there too */
+        $warehouseOrganisation = $deliveryNote->isCrossDispatch() ? $deliveryNote->organisation : $this->organisation;
+
+        $allowWaiting = (bool)data_get($warehouseOrganisation->settings, 'orders.allow_waiting', false);
 
         if ($deliveryNote->state == DeliveryNoteStateEnum::PACKING) {
             $this->tab = DeliveryNoteTabsEnum::PENDING_ITEMS->value;
@@ -1397,7 +1400,7 @@ class ShowDeliveryNote extends OrgAction
          */
         $scanToPick = null;
         if (
-            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pick', false)
+            (bool)data_get($warehouseOrganisation->settings, 'orders.allow_scan_to_pick', false)
             && $deliveryNote->state == DeliveryNoteStateEnum::HANDLING
             && $isEditable
             && $allowAction
@@ -1464,7 +1467,7 @@ class ShowDeliveryNote extends OrgAction
             $this->tab = DeliveryNoteTabsEnum::ITEMS->value;
         }
 
-        $allowScanToPack = (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false);
+        $allowScanToPack = (bool)data_get($warehouseOrganisation->settings, 'orders.allow_scan_to_pack', false);
 
         $scanToPack = null;
         if (
@@ -1536,7 +1539,7 @@ class ShowDeliveryNote extends OrgAction
             'margin_summary'      => $this->getMarginSummary($deliveryNote),
             'shop_type'           => $deliveryNote->shop->type,
             'notes'               => $this->getDeliveryNoteNotes($deliveryNote),
-            'quick_pickers'       => $this->quickGetPickers(),
+            'quick_pickers'       => $this->quickGetPickers($warehouseOrganisation),
             'routes'              => [
                 'update'                => [
                     'name'       => 'grp.models.delivery_note.update',
@@ -1610,7 +1613,7 @@ class ShowDeliveryNote extends OrgAction
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
 
             'allow_waiting'               => $allowWaiting,
-            'allow_picker_set_not_picked' => static::allowsPickerToSetNotPicked($this->organisation),
+            'allow_picker_set_not_picked' => static::allowsPickerToSetNotPicked($warehouseOrganisation),
             'can_cancel_items'            => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->itemsCanBeCancelledBy(request()->user())
                 && $deliveryNote->deliveryNoteItems()->whereRaw('COALESCE(quantity_not_picked, 0) < quantity_required')->count() > 1,
             'showChangePickerPacker'      => $showChangePickerPacker,

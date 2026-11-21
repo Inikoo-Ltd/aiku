@@ -54,7 +54,7 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): DeliveryNoteItem
     {
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $request);
 
         return $this->handle($deliveryNoteItem);
     }

@@ -214,7 +214,7 @@ class UpdateDeliveryNote extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->deliveryNote   = $deliveryNote;
 
-        $this->initialisationFromShop($deliveryNote->shop, $modelData);
+        $this->initialisationFromDeliveryNote($deliveryNote, $modelData);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }
@@ -228,7 +228,7 @@ class UpdateDeliveryNote extends OrgAction
     {
         $this->deliveryNote   = $deliveryNote;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromDeliveryNote($deliveryNote, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }

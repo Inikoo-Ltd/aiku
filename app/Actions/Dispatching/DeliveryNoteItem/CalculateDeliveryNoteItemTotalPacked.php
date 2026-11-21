@@ -49,7 +49,7 @@ class CalculateDeliveryNoteItemTotalPacked extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem): DeliveryNoteItem
     {
-        $this->initialisationFromShop($deliveryNoteItem->shop, []);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, []);
 
         return $this->handle($deliveryNoteItem);
     }

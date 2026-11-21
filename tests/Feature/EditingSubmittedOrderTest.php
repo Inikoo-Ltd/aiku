@@ -774,3 +774,530 @@ test('a cross dispatch needs an SKO behind every product, a commercial value on 
     $emptyOrder->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
     expect(crossDispatchRefusals($emptyOrder, $dispatcher))->toBe(['nothing_to_dispatch']);
 });
+
+/**
+ * The fields of a delivery note and its lines that the cross dispatch steps touch, in line order.
+ */
+function deliveryNoteFingerprint(\App\Models\Dispatching\DeliveryNote $deliveryNote): array
+{
+    return [
+        'note'  => \Illuminate\Support\Arr::only($deliveryNote->fresh()->getAttributes(), ['group_id', 'organisation_id', 'shop_id', 'customer_id', 'warehouse_id', 'reference', 'state', 'type', 'shop_type']),
+        'lines' => $deliveryNote->deliveryNoteItems()->orderBy('id')->get()->map(fn ($item) => [
+            'organisation_id'            => $item->organisation_id,
+            'shop_id'                    => $item->shop_id,
+            'transaction_id'             => $item->transaction_id,
+            'org_stock_id'               => $item->org_stock_id,
+            'stock_id'                   => $item->stock_id,
+            'org_stock_family_id'        => $item->org_stock_family_id,
+            'quantity_required'          => (float) $item->quantity_required,
+            'original_quantity_required' => (float) $item->original_quantity_required,
+            'quantity_picked'            => (float) $item->quantity_picked,
+            'is_dirty'                   => (bool) $item->is_dirty,
+        ])->all(),
+    ];
+}
+
+test('a home order sent to the warehouse gets the same delivery note and lines as before cross dispatch existed', function () {
+    [$order, $transaction] = submittedOrderWithTransaction($this->customer, $this->product, 10);
+    crossDispatchDirection($this->organisation);
+    $homeWarehouse = $this->organisation->warehouses()->first();
+    $homeSkos      = $this->product->orgStocks()->get();
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+
+    $expectedLines = fn (float $quantity, bool $dirty) => $homeSkos->map(fn (OrgStock $sko) => [
+        'organisation_id'            => $this->organisation->id,
+        'shop_id'                    => $this->shop->id,
+        'transaction_id'             => $transaction->id,
+        'org_stock_id'               => $sko->id,
+        'stock_id'                   => $sko->stock_id,
+        'org_stock_family_id'        => $sko->org_stock_family_id,
+        'quantity_required'          => (float) $sko->pivot->quantity * $quantity,
+        'original_quantity_required' => (float) $sko->pivot->quantity * 10,
+        'quantity_picked'            => 0.0,
+        'is_dirty'                   => $dirty,
+    ])->all();
+
+    expect($homeSkos)->not->toBeEmpty()
+        ->and($deliveryNote->isCrossDispatch())->toBeFalse()
+        ->and(deliveryNoteFingerprint($deliveryNote))->toEqual([
+            'note'  => [
+                'group_id'        => $this->group->id,
+                'organisation_id' => $this->organisation->id,
+                'shop_id'         => $this->shop->id,
+                'customer_id'     => $this->customer->id,
+                'warehouse_id'    => $homeWarehouse->id,
+                'reference'       => $order->reference,
+                'state'           => 'unassigned',
+                'type'            => 'order',
+                'shop_type'       => $this->shop->type->value,
+            ],
+            'lines' => $expectedLines(10, false),
+        ]);
+
+    UpdateTransactionProductQuantityOrdered::make()->action($transaction, ['quantity_ordered' => 6], $this->user);
+    expect(deliveryNoteFingerprint($deliveryNote)['lines'])->toBe($expectedLines(6, true));
+});
+
+/**
+ * Picks every line of the note in full from a fresh location of its own warehouse, packs, ships, finalises and dispatches it.
+ */
+function pickPackAndDispatch(\App\Models\Dispatching\DeliveryNote $deliveryNote, \App\Models\SysAdmin\User $user): \App\Models\Dispatching\DeliveryNote
+{
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $user);
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartHandlingDeliveryNote::make()->action($deliveryNote, $user);
+
+    foreach ($deliveryNote->deliveryNoteItems()->get() as $item) {
+        $location         = \App\Actions\Inventory\Location\StoreLocation::make()->action($deliveryNote->warehouse, \App\Models\Inventory\Location::factory()->definition());
+        $locationOrgStock = \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(
+            orgStock: $item->orgStock,
+            location: $location,
+            modelData: ['quantity' => 100, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+            strict: false
+        );
+        \App\Actions\Dispatching\Picking\StorePicking::make()->action($item, $user, [
+            'picker_user_id'        => $user->id,
+            'location_org_stock_id' => $locationOrgStock->id,
+            'quantity'              => (float) $item->quantity_required,
+        ]);
+    }
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote->refresh());
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $user);
+    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
+    foreach ($deliveryNote->deliveryNoteItems()->get() as $item) {
+        \App\Actions\Dispatching\Packing\StorePacking::make()->action($item, $user, []);
+    }
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $user);
+
+    $shipper = StoreShipper::make()->action($deliveryNote->organisation, ['code' => 'XD'.Str::random(4), 'name' => 'Xd', 'trade_as' => 'xd']);
+    \App\Actions\Dispatching\Shipment\StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(6)]);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
+
+    return \App\Actions\Dispatching\DeliveryNote\UpdateState\DispatchDeliveryNote::make()->action($deliveryNote->refresh());
+}
+
+/**
+ * What the customer is invoiced, without anything that names the invoice itself.
+ */
+function invoicedFigures(\App\Models\Ordering\Order $order): array
+{
+    $invoice = $order->invoices()->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->sole();
+
+    return [
+        'organisation_id' => $invoice->organisation_id,
+        'shop_id'         => $invoice->shop_id,
+        'customer_id'     => $invoice->customer_id,
+        'currency_id'     => $invoice->currency_id,
+        'totals'          => array_map('floatval', \Illuminate\Support\Arr::only($invoice->getAttributes(), ['goods_amount', 'net_amount', 'tax_amount', 'total_amount'])),
+        'lines'           => $invoice->invoiceTransactions()->orderBy('id')->get()->map(fn ($line) => [
+            'model_type'      => $line->model_type,
+            'model_id'        => $line->model_id,
+            'organisation_id' => $line->organisation_id,
+            'shop_id'         => $line->shop_id,
+            'quantity'        => (float) $line->quantity,
+            'net_amount'      => (float) $line->net_amount,
+        ])->all(),
+    ];
+}
+
+test('a submitted order is raised, picked and dispatched in another company\'s warehouse, and the customer is invoiced exactly as when it ships from home', function () {
+    [$order, $dispatcher, $sko, $homeSko] = crossDispatchOrder($this, 10);
+    $transaction         = $order->transactions()->where('model_type', 'Product')->first();
+    $dispatcherWarehouse = $dispatcher->warehouses()->first();
+    $homeStock           = fn () => \Illuminate\Support\Arr::except($homeSko->fresh()->getAttributes(), ['updated_at']);
+    $homeMovements       = fn () => \App\Models\Inventory\OrgStockMovement::where('organisation_id', $this->organisation->id)->count();
+    $homeBefore          = [$homeStock(), $homeMovements(), \App\Models\Dispatching\DeliveryNote::where('organisation_id', $this->organisation->id)->count()];
+
+    $deliveryNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);
+
+    expect($deliveryNote->isCrossDispatch())->toBeTrue()
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->deliveryNotes()->count())->toBe(1)
+        ->and(deliveryNoteFingerprint($deliveryNote))->toEqual([
+            'note'  => [
+                'group_id'        => $this->group->id,
+                'organisation_id' => $dispatcher->id,
+                'shop_id'         => $this->shop->id,
+                'customer_id'     => $this->customer->id,
+                'warehouse_id'    => $dispatcherWarehouse->id,
+                'reference'       => $order->reference,
+                'state'           => 'unassigned',
+                'type'            => 'order',
+                'shop_type'       => 'dropshipping',
+            ],
+            'lines' => [[
+                'organisation_id'            => $dispatcher->id,
+                'shop_id'                    => $this->shop->id,
+                'transaction_id'             => $transaction->id,
+                'org_stock_id'               => $sko->id,
+                'stock_id'                   => $homeSko->stock_id,
+                'org_stock_family_id'        => $sko->org_stock_family_id,
+                'quantity_required'          => 10.0,
+                'original_quantity_required' => 10.0,
+                'quantity_picked'            => 0.0,
+                'is_dirty'                   => false,
+            ]],
+        ]);
+
+    $toBePicked = fn (OrgStock $orgStock) => \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::make()->getQuantityToBePicked($orgStock->id);
+    $homeToBePicked = $toBePicked($homeSko);
+    expect($toBePicked($sko))->toBe(10.0);
+
+    $deliveryNote = pickPackAndDispatch($deliveryNote, $this->user);
+    $picking      = $deliveryNote->pickings()->sole();
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and([$picking->organisation_id, $picking->org_stock_id, (float) $picking->quantity])->toBe([$dispatcher->id, $sko->id, 10.0])
+        ->and($picking->location->warehouse_id)->toBe($dispatcherWarehouse->id)
+        ->and((float) \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $sko->id)->where('location_id', $picking->location_id)->value('quantity'))->toBe(90.0)
+        ->and($deliveryNote->shipments()->sole()->organisation_id)->toBe($dispatcher->id)
+        ->and(\App\Models\Inventory\OrgStockMovement::where('org_stock_id', $sko->id)->where('organisation_id', $dispatcher->id)->where('warehouse_id', $dispatcherWarehouse->id)->exists())->toBeTrue()
+        ->and($toBePicked($sko))->toBe(0.0)
+        ->and($toBePicked($homeSko))->toBe($homeToBePicked)
+        ->and([$homeStock(), $homeMovements(), \App\Models\Dispatching\DeliveryNote::where('organisation_id', $this->organisation->id)->count()])->toEqual($homeBefore);
+
+    [$homeOrder] = submittedOrderWithTransaction($this->customer, $this->product, 10);
+    $homeNote    = pickPackAndDispatch(SendOrderToWarehouse::make()->action($homeOrder, []), $this->user);
+
+    $cross = invoicedFigures($order->refresh());
+    $home  = invoicedFigures($homeOrder->refresh());
+
+    expect($homeNote->isCrossDispatch())->toBeFalse()
+        ->and($cross)->toEqual($home)
+        ->and($cross['organisation_id'])->toBe($this->organisation->id)
+        ->and($cross['shop_id'])->toBe($this->shop->id)
+        ->and($cross['lines'])->not->toBeEmpty()
+        ->and((float) $order->transactions()->where('model_type', 'Product')->first()->quantity_dispatched)->toBe(10.0);
+});
+
+test('an order the other company cannot ship whole, or whose direction is switched off, raises nothing', function () {
+    [$order, $dispatcher, $sko, , $orgPartner] = crossDispatchOrder($this, 10);
+    $snapshot = fn () => [
+        \Illuminate\Support\Arr::except($order->fresh()->getAttributes(), ['updated_at']),
+        $order->transactions()->orderBy('id')->get()->map(fn ($line) => \Illuminate\Support\Arr::except($line->getAttributes(), ['updated_at']))->all(),
+        \App\Models\Dispatching\DeliveryNote::count(),
+        \App\Models\Dispatching\DeliveryNoteItem::count(),
+    ];
+    $before  = $snapshot();
+    $refused = function (string $reason) use ($order, $dispatcher, $snapshot, $before) {
+        try {
+            \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher->fresh());
+            $this->fail('The order was raised although it should be refused for '.$reason);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            expect($exception->errors()['cross_dispatch'][0])->toContain($reason)
+                ->and(array_column(array_map(fn ($refusal) => json_decode($refusal, true), $exception->errors()['refusals']), 'reason'))->toContain($reason);
+        }
+        expect($snapshot())->toEqual($before);
+    };
+
+    $sko->updateQuietly(['quantity_available' => 9]);
+    $refused('not_enough_stock');
+    $sko->updateQuietly(['quantity_available' => 1000]);
+
+    foreach ([$this->organisation, $dispatcher] as $side) {
+        UpdateCrossDispatchSettings::make()->action($orgPartner, $side, ['enabled' => false]);
+        $refused('not_enabled');
+        expect(fn () => SendOrderToWarehouse::make()->action($order->fresh(), [], dispatcher: $dispatcher))->toThrow(\Illuminate\Validation\ValidationException::class);
+        expect($snapshot())->toEqual($before);
+        UpdateCrossDispatchSettings::make()->action($orgPartner, $side, ['enabled' => true]);
+    }
+
+    $order->updateQuietly(['delivery_address_id' => null]);
+    $this->customer->updateQuietly(['delivery_address_id' => null]);
+    $withoutAddress = $snapshot();
+    try {
+        \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher);
+        $this->fail('An order held for its address was raised');
+    } catch (\Illuminate\Validation\ValidationException $exception) {
+        expect(json_encode($exception->errors()))->toContain('order_held');
+    }
+    expect($snapshot())->toEqual($withoutAddress);
+    $order->updateQuietly(['delivery_address_id' => $before[0]['delivery_address_id']]);
+    $this->customer->updateQuietly(['delivery_address_id' => $before[0]['delivery_address_id']]);
+
+    $homeNote = SendOrderToWarehouse::make()->action($order->fresh(), []);
+    expect($homeNote->isCrossDispatch())->toBeFalse()
+        ->and(fn () => \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($order->deliveryNotes()->count())->toBe(1);
+});
+
+test('edits to an order being picked in another company\'s warehouse reach that company\'s SKOs, or are refused whole', function () {
+    [$order, $dispatcher, $sko, $homeSko] = crossDispatchOrder($this, 10);
+    $transaction  = $order->transactions()->where('model_type', 'Product')->first();
+    $deliveryNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);
+    $lines        = fn () => $deliveryNote->deliveryNoteItems()->orderBy('id')->get()->map(fn ($item) => [$item->transaction_id, $item->org_stock_id, $item->organisation_id, (float) $item->quantity_required])->all();
+
+    UpdateTransactionProductQuantityOrdered::make()->action($transaction, ['quantity_ordered' => 6], $this->user);
+    expect($lines())->toBe([[$transaction->id, $sko->id, $dispatcher->id, 6.0]])
+        ->and($deliveryNote->deliveryNoteItems()->first()->is_dirty)->toBeTrue();
+
+    $lateProduct = productAddedLater($this->product);
+    $lateProduct->orgStocks()->sync([$homeSko->id => ['quantity' => 2]]);
+    SaveOrderModification::make()->action($order->refresh(), ['products' => [$lateProduct->id => ['quantity_ordered' => 3]]], $this->user);
+    $lateTransaction = $order->transactions()->where('model_id', $lateProduct->id)->sole();
+    expect($lines())->toBe([[$transaction->id, $sko->id, $dispatcher->id, 6.0], [$lateTransaction->id, $sko->id, $dispatcher->id, 6.0]]);
+
+    $deliveryNote->deliveryNoteItems()->where('transaction_id', $lateTransaction->id)->forceDelete();
+    expect(\App\Actions\Dispatching\DeliveryNoteItem\StoreMissingDeliveryNoteItemsOfProduct::run($lateProduct))->toBe(1)
+        ->and(array_slice($lines()[1], 0, 4))->toBe([$lateTransaction->id, $sko->id, $dispatcher->id, 6.0]);
+
+    $pivot = DB::table('product_has_org_stocks')->where('product_id', $this->product->id)->where('org_stock_id', $homeSko->id);
+    $skosPerProduct = $pivot->value('quantity');
+    try {
+        (clone $pivot)->update(['quantity' => 3]);
+        \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::run($homeSko->fresh());
+        expect($lines()[0])->toBe([$transaction->id, $sko->id, $dispatcher->id, 18.0]);
+
+        (clone $pivot)->update(['quantity' => 2]);
+        \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::run($sko->fresh());
+        expect($lines()[0])->toBe([$transaction->id, $sko->id, $dispatcher->id, 12.0]);
+    } finally {
+        (clone $pivot)->update(['quantity' => $skosPerProduct]);
+    }
+    \App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity::run($homeSko->fresh());
+    expect($lines()[0])->toBe([$transaction->id, $sko->id, $dispatcher->id, 6.0]);
+
+    $firstLine = $deliveryNote->deliveryNoteItems()->orderBy('id')->first();
+    $firstLine->updateQuietly(['quantity_waiting_crm' => 2, 'state' => DeliveryNoteItemStateEnum::HANDLING_BLOCKED]);
+    $swapProduct = productAddedLater($this->product);
+    $swapProduct->orgStocks()->sync([$homeSko->id => ['quantity' => 1]]);
+    $this->post(route('grp.models.delivery_note_item.waiting_items_replace_product', [$firstLine->id]), ['quantity' => 1, 'products' => [['id' => $swapProduct->id, 'quantity' => 1]]])->assertSessionHasNoErrors();
+    $swapLine = $deliveryNote->deliveryNoteItems()->where('transaction_id', $order->transactions()->where('model_id', $swapProduct->id)->sole()->id)->sole();
+    expect([$swapLine->org_stock_id, $swapLine->organisation_id, (float) $swapLine->quantity_required])->toBe([$sko->id, $dispatcher->id, 1.0])
+        ->and((float) $firstLine->fresh()->quantity_waiting_crm)->toBe(1.0);
+
+    $sko->updateQuietly(['packed_in' => ((int) $homeSko->packed_in) + 6]);
+    $before = [$lines(), $order->transactions()->count(), (float) $transaction->fresh()->quantity_ordered];
+    $unmapped = productAddedLater($this->product);
+    $unmapped->orgStocks()->sync([$homeSko->id => ['quantity' => 1]]);
+
+    expect(fn () => UpdateTransactionProductQuantityOrdered::make()->action($transaction->fresh(), ['quantity_ordered' => 4], $this->user))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_content_differs')
+        ->and(fn () => SaveOrderModification::make()->action($order->refresh(), ['products' => [$unmapped->id => ['quantity_ordered' => 1]]], $this->user))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_content_differs')
+        ->and([$lines(), $order->transactions()->count(), (float) $transaction->fresh()->quantity_ordered])->toBe($before);
+    $this->post(route('grp.models.delivery_note_item.waiting_items_replace_product', [$firstLine->id]), ['quantity' => 1, 'products' => [['id' => $unmapped->id, 'quantity' => 1]]])->assertSessionHasErrors('cross_dispatch');
+    expect([$lines(), $order->transactions()->count(), (float) $firstLine->fresh()->quantity_waiting_crm])->toBe([$before[0], $before[1], 1.0]);
+
+    $sko->updateQuietly(['packed_in' => $homeSko->packed_in]);
+    $sko->delete();
+    expect(fn () => UpdateTransactionProductQuantityOrdered::make()->action($transaction->fresh(), ['quantity_ordered' => 4], $this->user))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_missing')
+        ->and([$lines(), $order->transactions()->count(), (float) $transaction->fresh()->quantity_ordered])->toBe($before);
+    $sko->restore();
+});
+
+test('the dispatching company works a cross dispatched note with its own trolleys, staff, settings and rights, and the ordering company\'s do not apply', function () {
+    [$order, $dispatcher, $sko] = crossDispatchOrder($this, 10);
+    $deliveryNote        = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);
+    $item                = $deliveryNote->deliveryNoteItems()->sole();
+    $dispatcherWarehouse = $dispatcher->warehouses()->first();
+    $homeSettings        = $this->organisation->settings;
+    $theirSettings       = $dispatcher->settings;
+
+    $homeAdmin  = userWithOnlyPermissions($this->organisation, ["org-admin.{$this->organisation->id}"]);
+    $shopStaff  = userWithOnlyPermissions($this->organisation, ["orders.{$this->shop->id}.edit"]);
+    $theirAdmin = userWithOnlyPermissions($dispatcher, ["org-admin.$dispatcher->id"]);
+
+    expect($deliveryNote->canBeWorkedOnBy($theirAdmin))->toBeTrue()
+        ->and($deliveryNote->canBeViewedBy($theirAdmin))->toBeTrue()
+        ->and($deliveryNote->canBeWorkedOnBy($homeAdmin))->toBeFalse()
+        ->and($deliveryNote->canBeViewedBy($homeAdmin))->toBeFalse()
+        ->and($deliveryNote->canBeWorkedOnBy($shopStaff))->toBeFalse()
+        ->and($deliveryNote->canBeViewedBy($shopStaff))->toBeTrue()
+        ->and($deliveryNote->canBeShippedBy($shopStaff))->toBeTrue()
+        ->and($deliveryNote->canBeCancelledBy($shopStaff))->toBeTrue();
+
+    $homeTrolley  = \App\Actions\Dispatching\Trolley\StoreTrolley::make()->handle($this->warehouse, ['name' => 'home_'.Str::random(5)]);
+    $theirTrolley = \App\Actions\Dispatching\Trolley\StoreTrolley::make()->handle($dispatcherWarehouse, ['name' => 'their_'.Str::random(5)]);
+
+    try {
+        $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $theirAdmin);
+        $this->actingAs($theirAdmin);
+
+        $this->patch(route('grp.models.delivery_note.state.handling_with_trolley', [$deliveryNote->id]), ['trolley' => $homeTrolley->id])->assertSessionHasErrors('trolley');
+        expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::QUEUED);
+
+        $this->patch(route('grp.models.delivery_note.state.handling_with_trolley', [$deliveryNote->id]), ['trolley' => $theirTrolley->id])->assertSessionHasNoErrors();
+        expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING)
+            ->and(DB::table('delivery_note_has_trolleys')->where('delivery_note_id', $deliveryNote->id)->get(['organisation_id', 'trolley_id'])->map(fn ($row) => (array) $row)->all())->toBe([['organisation_id' => $dispatcher->id, 'trolley_id' => $theirTrolley->id]]);
+
+        $this->patch(route('grp.models.delivery_note.state.change_trolley', [$deliveryNote->id]), ['trolley' => $homeTrolley->id])->assertSessionHasErrors('trolley');
+
+        $homeBay  = \App\Actions\Dispatching\PickedBay\StorePickedBay::make()->handle($this->warehouse, ['code' => 'hb'.Str::random(5)]);
+        $theirBay = \App\Actions\Dispatching\PickedBay\StorePickedBay::make()->handle($dispatcherWarehouse, ['code' => 'tb'.Str::random(5)]);
+        $this->patch(route('grp.models.delivery_note.state.change_picked_bay', [$deliveryNote->id]), ['picked_bay' => $homeBay->id])->assertSessionHasErrors('picked_bay');
+        $this->patch(route('grp.models.delivery_note.state.set_as_picked_with_picked_bay', [$deliveryNote->id]), ['picked_bay' => $homeBay->id])->assertSessionHasErrors('picked_bay');
+        expect($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING);
+        $this->patch(route('grp.models.delivery_note.state.change_picked_bay', [$deliveryNote->id]), ['picked_bay' => $theirBay->id])->assertSessionHasNoErrors();
+        expect(DB::table('picked_bay_has_delivery_notes')->where('delivery_note_id', $deliveryNote->id)->pluck('picked_bay_id')->all())->toBe([$theirBay->id]);
+
+        $homeEmployee  = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($this->organisation, \App\Models\HumanResources\Employee::factory()->definition());
+        $theirEmployee = \App\Actions\HumanResources\Employee\StoreEmployee::make()->action($dispatcher, \App\Models\HumanResources\Employee::factory()->definition());
+        expect(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->fresh(), ['picker_id' => $homeEmployee->id]))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(\App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->fresh(), ['picker_id' => $theirEmployee->id])->picker_id)->toBe($theirEmployee->id)
+            ->and(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->fresh(), ['packer_id' => $homeEmployee->id]))->toThrow(\Illuminate\Validation\ValidationException::class)
+            ->and(\App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($deliveryNote->fresh(), ['packer_id' => $theirEmployee->id])->packer_id)->toBe($theirEmployee->id);
+
+        $this->organisation->update(['settings' => array_replace_recursive($homeSettings ?? [], ['orders' => ['allow_waiting' => true]])]);
+        $dispatcher->update(['settings' => array_replace_recursive($theirSettings ?? [], ['orders' => ['allow_waiting' => false]])]);
+        $this->post(route('grp.models.delivery_note_item.set_as_waiting_warehouse', [$item->id]), ['quantity' => 2])->assertForbidden();
+        expect((float) $item->fresh()->quantity_waiting_warehouse)->toBe(0.0);
+
+        $this->organisation->update(['settings' => array_replace_recursive($homeSettings ?? [], ['orders' => ['allow_waiting' => false]])]);
+        $dispatcher->update(['settings' => array_replace_recursive($theirSettings ?? [], ['orders' => ['allow_waiting' => true]])]);
+        $this->post(route('grp.models.delivery_note_item.set_as_waiting_warehouse', [$item->id]), ['quantity' => 2])->assertSessionHasNoErrors();
+        expect((float) $item->fresh()->quantity_waiting_warehouse)->toBe(2.0);
+
+        $this->actingAs($this->user);
+        $this->get(route('grp.org.shops.show.ordering.orders.show.delivery-note', [$this->organisation->slug, $this->shop->slug, $order->slug, $deliveryNote->slug]))
+            ->assertOk()
+            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->where('allow_waiting', true));
+    } finally {
+        $this->organisation->update(['settings' => $homeSettings]);
+        $dispatcher->update(['settings' => $theirSettings]);
+        $this->actingAs($this->user);
+    }
+});
+
+/**
+ * Production's return_stats has number_items_state_waiting_to_receive, which StoreReturnItem writes; a database built from
+ * the migrations gets number_items_state_pending instead, so an order return cannot be stored in the test database as it is.
+ */
+function giveReturnStatsTheColumnProductionHas(): void
+{
+    if (!\Illuminate\Support\Facades\Schema::hasColumn('return_stats', 'number_items_state_waiting_to_receive')) {
+        \Illuminate\Support\Facades\Schema::table('return_stats', fn (\Illuminate\Database\Schema\Blueprint $table) => $table->unsignedSmallInteger('number_items_state_waiting_to_receive')->default(0));
+    }
+}
+
+test('a note picked in another company\'s warehouse cannot be deleted, and its returns and replacements belong to that company', function () {
+    giveReturnStatsTheColumnProductionHas();
+    [$order, $dispatcher, $sko, , $orgPartner] = crossDispatchOrder($this, 10);
+    $dispatcherWarehouse = $dispatcher->warehouses()->first();
+    $deliveryNote        = pickPackAndDispatch(\App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher), $this->user);
+    $item                = $deliveryNote->deliveryNoteItems()->sole();
+
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote::make()->action($deliveryNote, []))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($deliveryNote->fresh()->trashed())->toBeFalse()
+        ->and($deliveryNote->pickings()->count())->toBe(1);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => false]);
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote::make()->action($order->refresh(), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class, 'not_enabled')
+        ->and($order->deliveryNotes()->count())->toBe(1);
+
+    $returnNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->action($deliveryNote->fresh());
+    expect([$returnNote->organisation_id, $returnNote->warehouse_id, $returnNote->shop_id])->toBe([$dispatcher->id, $dispatcherWarehouse->id, $this->shop->id]);
+
+    $orderReturn = \App\Actions\GoodsIn\Return\StoreReturn::make()->action($order->refresh(), []);
+    expect([$orderReturn->organisation_id, $orderReturn->warehouse_id, $orderReturn->shop_id])->toBe([$dispatcher->id, $dispatcherWarehouse->id, $this->shop->id])
+        ->and(DB::table('return_items')->where('return_id', $orderReturn->id)->get(['organisation_id', 'org_stock_id'])->map(fn ($row) => (array) $row)->all())->toBe([['organisation_id' => $dispatcher->id, 'org_stock_id' => $sko->id]]);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => true]);
+    $replacement = \App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote::make()->action($order->refresh(), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ]);
+    $replacementLine = $replacement->deliveryNoteItems()->sole();
+    expect($replacement->isCrossDispatch())->toBeTrue()
+        ->and([$replacement->organisation_id, $replacement->warehouse_id, $replacement->shop_id])->toBe([$dispatcher->id, $dispatcherWarehouse->id, $this->shop->id])
+        ->and([$replacementLine->organisation_id, $replacementLine->org_stock_id, (float) $replacementLine->quantity_required])->toBe([$dispatcher->id, $sko->id, 1.0]);
+
+    [$homeOrder] = submittedOrderWithTransaction($this->customer, $this->product, 10);
+    $homeNote    = pickPackAndDispatch(SendOrderToWarehouse::make()->action($homeOrder, []), $this->user);
+    $homeReturn  = \App\Actions\GoodsIn\Return\StoreReturn::make()->action($homeOrder->refresh(), []);
+    $homeReplacement = \App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote::make()->action($homeOrder->refresh(), [
+        'delivery_note_items' => [['id' => $homeNote->deliveryNoteItems()->first()->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ]);
+    expect([$homeReturn->organisation_id, $homeReturn->warehouse_id])->toBe([$this->organisation->id, $this->organisation->warehouses()->first()->id])
+        ->and([$homeReplacement->organisation_id, $homeReplacement->warehouse_id, $homeReplacement->isCrossDispatch()])->toBe([$this->organisation->id, $this->organisation->warehouses()->first()->id, false]);
+
+    \App\Actions\Dispatching\DeliveryNote\DeleteDeliveryNote::make()->action($homeNote->fresh(), []);
+    expect($homeNote->fresh()->trashed())->toBeTrue();
+});
+
+test('a note is told apart as cross dispatched however it was loaded, and a home note never reads as one', function () {
+    [$order, $dispatcher] = crossDispatchOrder($this, 10);
+    $crossNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order, $dispatcher);
+    [$homeOrder] = submittedOrderWithTransaction($this->customer, $this->product, 10);
+    $homeNote  = SendOrderToWarehouse::make()->action($homeOrder, []);
+
+    foreach ([[$crossNote, true, $dispatcher->id], [$homeNote, false, $this->organisation->id]] as [$note, $isCross, $organisationId]) {
+        $withStringIds = \App\Models\Dispatching\DeliveryNote::find($note->id);
+        $withStringIds->setRawAttributes(array_map(fn ($value) => is_int($value) ? (string) $value : $value, $withStringIds->getAttributes()), true);
+        $item = $note->deliveryNoteItems()->first();
+
+        foreach ([
+            \App\Models\Dispatching\DeliveryNote::find($note->id),
+            \App\Models\Dispatching\DeliveryNote::select(['id', 'shop_id'])->find($note->id),
+            \App\Models\Dispatching\DeliveryNote::select(['id', 'organisation_id'])->find($note->id),
+            \App\Models\Dispatching\DeliveryNote::select(['id'])->find($note->id),
+            $withStringIds,
+        ] as $loaded) {
+            expect($loaded->isCrossDispatch())->toBe($isCross)
+                ->and($loaded->crossDispatchOrganisationId())->toBe($organisationId);
+        }
+
+        expect($item->isCrossDispatch())->toBe($isCross)
+            ->and(\App\Models\Dispatching\DeliveryNoteItem::select(['id', 'delivery_note_id'])->find($item->id)->isCrossDispatch())->toBe($isCross)
+            ->and(\App\Models\Dispatching\DeliveryNoteItem::select(['id'])->find($item->id)->isCrossDispatch())->toBe($isCross);
+
+        $partial = \App\Models\Dispatching\DeliveryNote::select(['id', 'shop_id', 'state', 'reference'])->find($note->id);
+        \App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote::make()->action($partial, ['phone' => '+44 1234 '.$note->id]);
+        expect($note->fresh()->phone)->toBe('+44 1234 '.$note->id)
+            ->and($partial->relationLoaded('organisation'))->toBeFalse();
+
+        $freshItem = \App\Models\Dispatching\DeliveryNoteItem::find($item->id);
+        $queries   = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+        $freshItem->shop->organisation->group;
+        $queries = 0;
+        (new class () extends \App\Actions\OrgAction {
+            public function rules(): array
+            {
+                return [];
+            }
+        })->initialisationFromDeliveryNoteItem($freshItem, []);
+        expect($freshItem->relationLoaded('deliveryNote'))->toBeFalse()
+            ->and($queries)->toBe($isCross ? $queries : 0);
+    }
+});
+
+test('a product listing two SKOs of the same stock is refused for cross dispatch instead of losing a line, and a taken reference is a refusal', function () {
+    [$order, $dispatcher, $sko, $homeSko] = crossDispatchOrder($this, 10);
+    $transaction = $order->transactions()->where('model_type', 'Product')->first();
+    $twin        = StoreOrgStock::make()->action($this->organisation, $homeSko->stock, []);
+    $twin->updateQuietly(['packed_in' => $homeSko->packed_in]);
+    $twin->tradeUnits()->sync($homeSko->tradeUnits->mapWithKeys(fn ($tradeUnit) => [$tradeUnit->id => ['quantity' => $tradeUnit->pivot->quantity]])->all());
+    $pivot = DB::table('product_has_org_stocks')->where('product_id', $this->product->id)->get()->map(fn ($row) => (array) $row)->all();
+
+    try {
+        $this->product->orgStocks()->attach($twin->id, ['quantity' => 2]);
+
+        expect(crossDispatchRefusals($order, $dispatcher))->toBe(['sko_duplicate'])
+            ->and(fn () => \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_duplicate')
+            ->and($order->deliveryNotes()->count())->toBe(0);
+
+        $this->product->orgStocks()->detach($twin->id);
+        $deliveryNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher);
+        $this->product->orgStocks()->attach($twin->id, ['quantity' => 2]);
+
+        expect(fn () => ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNote, $this->product->fresh()->orgStocks))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_duplicate')
+            ->and(fn () => UpdateTransactionProductQuantityOrdered::make()->action($transaction->fresh(), ['quantity_ordered' => 4], $this->user))->toThrow(\Illuminate\Validation\ValidationException::class, 'sko_duplicate')
+            ->and((float) $transaction->fresh()->quantity_ordered)->toBe(10.0)
+            ->and($deliveryNote->deliveryNoteItems()->count())->toBe(1);
+    } finally {
+        DB::table('product_has_org_stocks')->where('product_id', $this->product->id)->delete();
+        DB::table('product_has_org_stocks')->insert($pivot);
+        $twin->delete();
+    }
+
+    [$secondOrder] = submittedOrderWithTransaction($this->customer, $this->product, 2);
+    $secondOrder->updateQuietly(['reference' => strtoupper($order->reference)]);
+    expect(fn () => \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($secondOrder->fresh(), $dispatcher))->toThrow(\Illuminate\Validation\ValidationException::class, 'reference_taken')
+        ->and($secondOrder->deliveryNotes()->count())->toBe(0)
+        ->and($secondOrder->fresh()->state)->toBe(OrderStateEnum::SUBMITTED);
+});

@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\OrgAction;
@@ -23,6 +24,7 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -76,6 +78,12 @@ class StoreReplacementDeliveryNote extends OrgAction
 
 
         $items = Arr::pull($modelData, 'delivery_note_items');
+
+        $crossDispatchNote = $this->crossDispatchNoteOf($order, $items);
+        if ($crossDispatchNote) {
+            data_set($modelData, 'organisation_id', $crossDispatchNote->organisation_id);
+            data_set($modelData, 'warehouse_id', $crossDispatchNote->warehouse_id);
+        }
         CheckClaimCompensation::ensure($order, RefundClaimToBalance::sharesByTransaction($order, collect($items)->filter(fn (array $item) => $item['quantity'] > 0)->values()->all(), false), checkAge: !$this->asAction);
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $items) {
@@ -131,6 +139,31 @@ class StoreReplacementDeliveryNote extends OrgAction
         $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
+    }
+
+    /**
+     * INI-484. Goods that left another company's warehouse are replaced from that warehouse, with its SKOs, so the
+     * replacement belongs to the company of the note its lines come from. Lines of notes of two companies cannot share one.
+     */
+    private function crossDispatchNoteOf(Order $order, array $items): ?DeliveryNote
+    {
+        $notes = $order->deliveryNotes()
+            ->whereIn('delivery_notes.id', DeliveryNoteItem::whereIn('id', collect($items)->where('quantity', '>', 0)->pluck('id'))->select('delivery_note_id'))
+            ->get();
+
+        if (!$notes->contains(fn (DeliveryNote $note) => $note->isCrossDispatch())) {
+            return null;
+        }
+
+        if ($notes->pluck('organisation_id')->unique()->count() > 1 || $notes->pluck('warehouse_id')->unique()->count() > 1) {
+            throw ValidationException::withMessages([
+                'delivery_note_items' => __('These items were dispatched from different warehouses, create one replacement for each warehouse'),
+            ]);
+        }
+
+        ResolveCrossDispatch::ensureDirectionEnabled($order->organisation_id, $notes->first()->crossDispatchOrganisationId());
+
+        return $notes->first();
     }
 
     public function htmlResponse(DeliveryNote $deliveryNote): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse

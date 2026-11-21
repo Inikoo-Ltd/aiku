@@ -65,7 +65,7 @@ class SetScanToPickDeliveryNote extends OrgAction
     {
         $this->deliveryNote = $deliveryNote;
 
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromDeliveryNote($deliveryNote, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }

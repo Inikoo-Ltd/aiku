@@ -19,12 +19,15 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class ResolveCrossDispatch
@@ -119,7 +122,7 @@ class ResolveCrossDispatch
 
             $content     = $tradeUnits[$sko->id] ?? [];
             $homeContent = $tradeUnits[$line->home_org_stock_id] ?? [];
-            if ($sko->packed_in != $line->packed_in || !$content || $content != $homeContent) {
+            if ($this->contentDiffers($sko->packed_in, $line->packed_in, $content, $homeContent)) {
                 $refuse(CrossDispatchRefusalEnum::SKO_CONTENT_DIFFERS, $sko->id);
             }
 
@@ -128,6 +131,10 @@ class ResolveCrossDispatch
             }
 
             $quantity = DeliveryNoteItem::requiredQuantity((float) $line->skos_per_product, (float) $line->quantity_ordered + (float) $line->quantity_bonus);
+
+            if (in_array($sko->id, array_column($mapping[$line->transaction_id] ?? [], 'org_stock_id'), true)) {
+                $refuse(CrossDispatchRefusalEnum::SKO_DUPLICATE, $sko->id);
+            }
 
             $needed[$sko->id]                 = ($needed[$sko->id] ?? 0) + $quantity;
             $mapping[$line->transaction_id][] = [
@@ -155,13 +162,133 @@ class ResolveCrossDispatch
     }
 
     /**
+     * The SKOs the lines of a delivery note are built from and resized by, for every path that creates or changes a line.
+     *
+     * A home note gets the product's own SKOs back untouched. A note worked in another company's warehouse gets that
+     * company's SKO of the same stock for each of them, carrying the product's quantity per SKO, keyed by its id. When one
+     * of them has no single SKO there with the same content the change is refused, so a line is never skipped in silence.
+     *
+     * @param  Collection<int, OrgStock>  $homeOrgStocks  the product's org stocks, each with its pivot
+     * @return Collection<int, OrgStock>
+     *
+     * @throws ValidationException
+     */
+    public function orgStocksForDeliveryNote(DeliveryNote $deliveryNote, Collection $homeOrgStocks): Collection
+    {
+        if (!$deliveryNote->isCrossDispatch()) {
+            return $homeOrgStocks;
+        }
+
+        $candidates = OrgStock::where('organisation_id', $deliveryNote->organisation_id)
+            ->whereIn('stock_id', $homeOrgStocks->pluck('stock_id')->filter()->unique())
+            ->get()
+            ->groupBy('stock_id');
+
+        $tradeUnits = $this->tradeUnitsOf($homeOrgStocks->pluck('id')->merge($candidates->flatten(1)->pluck('id'))->unique());
+
+        $refusals  = [];
+        $orgStocks = new Collection();
+        foreach ($homeOrgStocks as $homeOrgStock) {
+            $matches = $homeOrgStock->stock_id ? $candidates->get($homeOrgStock->stock_id, collect()) : collect();
+            $reason  = match (true) {
+                $matches->isEmpty()   => CrossDispatchRefusalEnum::SKO_MISSING,
+                $matches->count() > 1 => CrossDispatchRefusalEnum::SKO_DUPLICATE,
+                $this->contentDiffers($matches->first()->packed_in, $homeOrgStock->packed_in, $tradeUnits[$matches->first()->id] ?? [], $tradeUnits[$homeOrgStock->id] ?? []) => CrossDispatchRefusalEnum::SKO_CONTENT_DIFFERS,
+                default               => null,
+            };
+
+            if ($reason) {
+                $refusals[] = array_filter([
+                    'reason'            => $reason->value,
+                    'home_org_stock_id' => $homeOrgStock->id,
+                    'org_stock_id'      => $matches->count() === 1 ? $matches->first()->id : null,
+                    'stock_id'          => $homeOrgStock->stock_id,
+                ]);
+
+                continue;
+            }
+
+            /** @var OrgStock $orgStock */
+            $orgStock = $matches->first();
+            if ($orgStocks->has($orgStock->id)) {
+                $refusals[] = ['reason' => CrossDispatchRefusalEnum::SKO_DUPLICATE->value, 'home_org_stock_id' => $homeOrgStock->id, 'org_stock_id' => $orgStock->id, 'stock_id' => $homeOrgStock->stock_id];
+
+                continue;
+            }
+            $orgStocks->put($orgStock->id, $orgStock->setRelation('pivot', $homeOrgStock->pivot));
+        }
+
+        if ($refusals) {
+            throw self::refusal($refusals);
+        }
+
+        return $orgStocks;
+    }
+
+    /**
+     * How many of a cross dispatched line's SKO one unit of the ordered product needs. The line holds the dispatching
+     * company's SKO, which the product does not list, so it is read from the product's own SKO of the same stock.
+     */
+    public function quantityPerProductOnCrossDispatchLine(DeliveryNoteItem $deliveryNoteItem, int $productId): ?float
+    {
+        if (!$deliveryNoteItem->stock_id) {
+            return null;
+        }
+
+        $quantity = DB::table('product_has_org_stocks')
+            ->join('org_stocks', 'org_stocks.id', 'product_has_org_stocks.org_stock_id')
+            ->where('product_has_org_stocks.product_id', $productId)
+            ->where('org_stocks.stock_id', $deliveryNoteItem->stock_id)
+            ->whereNull('org_stocks.deleted_at')
+            ->orderBy('org_stocks.id')
+            ->value('product_has_org_stocks.quantity');
+
+        return is_null($quantity) ? null : (float) $quantity;
+    }
+
+    public static function direction(int $originOrganisationId, int $dispatcherOrganisationId): ?OrgPartner
+    {
+        return OrgPartner::where('organisation_id', $originOrganisationId)->where('partner_id', $dispatcherOrganisationId)->first();
+    }
+
+    /**
+     * New goods may leave the other company's warehouse for this company's orders only while both sides have the direction on.
+     *
+     * @throws ValidationException
+     */
+    public static function ensureDirectionEnabled(int $originOrganisationId, int $dispatcherOrganisationId): void
+    {
+        if (!self::direction($originOrganisationId, $dispatcherOrganisationId)?->isCrossDispatchEnabled()) {
+            throw self::refusal([['reason' => CrossDispatchRefusalEnum::NOT_ENABLED->value]]);
+        }
+    }
+
+    /**
+     * @param  array<int, array{reason: string, transaction_id?: int, home_org_stock_id?: int, org_stock_id?: int, stock_id?: int}>  $refusals
+     */
+    public static function refusal(array $refusals): ValidationException
+    {
+        $reasons = array_values(array_unique(array_column($refusals, 'reason')));
+
+        return ValidationException::withMessages([
+            'cross_dispatch' => [__('This order cannot be dispatched from the other warehouse: :reasons', ['reasons' => implode(', ', $reasons)])],
+            'refusals'       => array_map(fn (array $refusal) => json_encode($refusal), $refusals),
+        ]);
+    }
+
+    private function contentDiffers(mixed $packedIn, mixed $homePackedIn, array $content, array $homeContent): bool
+    {
+        return $packedIn != $homePackedIn || !$content || $content != $homeContent;
+    }
+
+    /**
      * @return array<int, array{reason: string}>
      */
     private function orderRefusals(Order $order, Organisation $dispatcher): array
     {
         $reasons = [];
 
-        $orgPartner = OrgPartner::where('organisation_id', $order->organisation_id)->where('partner_id', $dispatcher->id)->first();
+        $orgPartner = self::direction($order->organisation_id, $dispatcher->id);
 
         if ($dispatcher->id === $order->organisation_id || $dispatcher->group_id !== $order->group_id) {
             $reasons[] = CrossDispatchRefusalEnum::SAME_ORGANISATION;

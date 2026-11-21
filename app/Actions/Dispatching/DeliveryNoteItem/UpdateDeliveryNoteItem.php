@@ -95,14 +95,14 @@ class UpdateDeliveryNoteItem extends OrgAction
     {
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): DeliveryNoteItem
     {
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $request);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }

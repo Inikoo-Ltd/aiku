@@ -7,6 +7,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
@@ -43,6 +44,7 @@ trait WithDeliveryNoteQuantitySync
      */
     protected function syncDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, Collection $orgStocks, ?User $user): void
     {
+        $orgStocks       = ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNote, $orgStocks);
         $goBackToPicking = false;
         $waitingChanged  = false;
 

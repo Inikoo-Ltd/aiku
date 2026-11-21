@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -46,7 +47,7 @@ trait WithDeliveryNoteLineCreation
             $product = Product::find($transaction->model_id);
 
 
-            foreach ($product->orgStocks as $orgStock) {
+            foreach (ResolveCrossDispatch::make()->orgStocksForDeliveryNote($deliveryNote, $product->orgStocks) as $orgStock) {
                 $quantity             = DeliveryNoteItem::requiredQuantity((float) $orgStock->pivot->quantity, (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus);
                 $deliveryNoteItemData = [
                     'org_stock_id'               => $orgStock->id,

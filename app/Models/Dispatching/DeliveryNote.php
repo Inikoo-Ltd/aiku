@@ -489,6 +489,32 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsTo(Warehouse::class);
     }
 
+    /**
+     * INI-484. The note is worked in another company's warehouse than the shop the order was placed in:
+     * the note, its lines, picks and shipments belong to the dispatching company, the shop and customer stay the ordering company's.
+     */
+    public function isCrossDispatch(): bool
+    {
+        $organisationId     = $this->crossDispatchOrganisationId();
+        $shopOrganisationId = array_key_exists('shop_id', $this->attributes)
+            ? $this->shop?->organisation_id
+            : Shop::whereKey($this->newQueryWithoutScopes()->whereKey($this->getKey())->select('shop_id'))->value('organisation_id');
+
+        return $organisationId !== null && $shopOrganisationId !== null && (int) $organisationId !== (int) $shopOrganisationId;
+    }
+
+    /**
+     * The note's company even when the note was loaded without that column, so a partial select never reads as cross dispatched or as home by accident.
+     */
+    public function crossDispatchOrganisationId(): ?int
+    {
+        $organisationId = array_key_exists('organisation_id', $this->attributes)
+            ? $this->attributes['organisation_id']
+            : $this->newQueryWithoutScopes()->whereKey($this->getKey())->value('organisation_id');
+
+        return $organisationId === null ? null : (int) $organisationId;
+    }
+
     public function address(): BelongsTo
     {
         return $this->belongsTo(Address::class);

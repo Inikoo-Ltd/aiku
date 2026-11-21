@@ -9,7 +9,9 @@
 namespace App\Actions\GoodsIn\Return;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\GoodsIn\OrderReturn;
 use App\Models\GoodsIn\ReturnStats;
 use App\Models\Inventory\Warehouse;
@@ -17,6 +19,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -48,7 +51,13 @@ class StoreReturn extends OrgAction
 
         $items = Arr::pull($modelData, 'return_items', []);
 
-        $orderReturn = DB::transaction(function () use ($order, $modelData, $items) {
+        $crossDispatchNote = $this->crossDispatchNoteOf($order);
+        if ($crossDispatchNote) {
+            data_set($modelData, 'organisation_id', $crossDispatchNote->organisation_id);
+            data_set($modelData, 'warehouse_id', $crossDispatchNote->warehouse_id);
+        }
+
+        $orderReturn = DB::transaction(function () use ($order, $modelData, $items, $crossDispatchNote) {
             /** @var OrderReturn $orderReturn */
             $orderReturn = OrderReturn::create($modelData);
 
@@ -62,7 +71,7 @@ class StoreReturn extends OrgAction
 
             // If no items provided, automatically copy from order's delivery notes
             if (empty($items)) {
-                $items = $this->getItemsFromOrder($order);
+                $items = $this->getItemsFromOrder($order, $crossDispatchNote);
             }
 
             // Create return items
@@ -84,14 +93,38 @@ class StoreReturn extends OrgAction
     }
 
     /**
+     * INI-484. Goods dispatched from another company's warehouse come back to it: the return belongs to the company and
+     * warehouse of the note, whose SKOs its lines carry.
+     */
+    private function crossDispatchNoteOf(Order $order): ?DeliveryNote
+    {
+        $notes = $order->deliveryNotes()->where('delivery_notes.state', '!=', DeliveryNoteStateEnum::CANCELLED)->get();
+
+        if (!$notes->contains(fn (DeliveryNote $note) => $note->isCrossDispatch())) {
+            return null;
+        }
+
+        if ($notes->pluck('organisation_id')->unique()->count() > 1) {
+            throw ValidationException::withMessages([
+                'return_items' => __('This order was dispatched from more than one company, raise the return from each delivery note'),
+            ]);
+        }
+
+        return $notes->first();
+    }
+
+    /**
      * Get items from order's dispatched delivery notes
      */
-    protected function getItemsFromOrder(Order $order): array
+    protected function getItemsFromOrder(Order $order, ?DeliveryNote $crossDispatchNote = null): array
     {
         $items = [];
 
         // Get items from dispatched delivery notes
         foreach ($order->deliveryNotes as $deliveryNote) {
+            if ($crossDispatchNote && $deliveryNote->organisation_id !== $crossDispatchNote->organisation_id) {
+                continue;
+            }
             foreach ($deliveryNote->deliveryNoteItems as $dnItem) {
                 $items[] = [
                     'delivery_note_item_id' => $dnItem->id,

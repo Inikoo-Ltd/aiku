@@ -59,6 +59,11 @@ class ReusePicksFromCancelledDeliveryNote extends OrgAction
 
     private function reuse(ReturnDeliveryNoteItem $returnItem, DeliveryNote $deliveryNote): void
     {
+        /** INI-484. Goods picked in one company's warehouse never go onto a note worked in another's */
+        if ($returnItem->organisation_id !== null && (int) $returnItem->organisation_id !== $deliveryNote->crossDispatchOrganisationId()) {
+            return;
+        }
+
         $onTrolley = $this->outstandingOnReturn($returnItem);
         if ($onTrolley <= 0) {
             return;

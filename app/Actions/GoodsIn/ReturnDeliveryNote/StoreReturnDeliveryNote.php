@@ -62,7 +62,7 @@ class StoreReturnDeliveryNote extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->type           = $type;
-        $this->initialisationFromShop($deliveryNote->shop, $modelData);
+        $this->initialisationFromDeliveryNote($deliveryNote, $modelData);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }

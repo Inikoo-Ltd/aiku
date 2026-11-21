@@ -229,7 +229,7 @@ class PackDeliveryNoteItemByScan extends OrgAction
         $this->user         = $request->user();
         $this->deliveryNote = $deliveryNote;
 
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromDeliveryNote($deliveryNote, $request);
 
         return $this->handle($deliveryNote, $request->user(), $this->validatedData);
     }

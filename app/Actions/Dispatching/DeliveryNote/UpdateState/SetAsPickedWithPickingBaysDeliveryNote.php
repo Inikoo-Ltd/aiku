@@ -51,7 +51,7 @@ class SetAsPickedWithPickingBaysDeliveryNote extends OrgAction
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromDeliveryNote($deliveryNote, $request);
         $this->handle($deliveryNote, $this->validatedData);
     }
 

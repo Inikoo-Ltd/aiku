@@ -157,7 +157,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
     {
         $this->user = $request->user();
 
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $request);
 
         return $this->handle($deliveryNoteItem, $request->user());
     }
@@ -169,7 +169,7 @@ class UpdateDeliveryNoteItemPacking extends OrgAction
     {
         $this->user = $user;
 
-        $this->initialisationFromShop($deliveryNoteItem->shop, []);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, []);
 
         return $this->handle($deliveryNoteItem, $user, $quantity);
     }

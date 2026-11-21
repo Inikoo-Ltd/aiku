@@ -14,6 +14,8 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Inventory\Warehouse;
 use App\Models\Production\Production;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
@@ -74,6 +76,49 @@ class OrgAction
         $this->validatedData = $this->validateAttributes();
 
         return $this;
+    }
+
+    /**
+     * INI-484. Warehouse work on a delivery note takes its rules from the company that owns the note, which is the
+     * dispatching company when the order came from another company's shop. The shop stays the one the order was placed in.
+     */
+    public function initialisationFromDeliveryNote(DeliveryNote $deliveryNote, ActionRequest|array $request): static
+    {
+        if (!$deliveryNote->isCrossDispatch()) {
+            return $this->initialisationFromShop($deliveryNote->shop, $request);
+        }
+
+        $organisationWasLoaded = $deliveryNote->relationLoaded('organisation');
+
+        $this->shop         = $deliveryNote->shop;
+        $this->organisation = $deliveryNote->organisation ?? Organisation::findOrFail($deliveryNote->crossDispatchOrganisationId());
+        if (!$organisationWasLoaded) {
+            $deliveryNote->unsetRelation('organisation');
+        }
+        $this->group        = $this->organisation->group;
+        if (is_array($request)) {
+            $this->setRawAttributes($request);
+        } else {
+            $this->fillFromRequest($request);
+        }
+        $this->validatedData = $this->validateAttributes();
+
+        return $this;
+    }
+
+    public function initialisationFromDeliveryNoteItem(DeliveryNoteItem $deliveryNoteItem, ActionRequest|array $request): static
+    {
+        if (!$deliveryNoteItem->isCrossDispatch()) {
+            return $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        }
+
+        $deliveryNoteWasLoaded = $deliveryNoteItem->relationLoaded('deliveryNote');
+        $deliveryNote          = $deliveryNoteItem->deliveryNote;
+        if (!$deliveryNoteWasLoaded) {
+            $deliveryNoteItem->unsetRelation('deliveryNote');
+        }
+
+        return $this->initialisationFromDeliveryNote($deliveryNote, $request);
     }
 
     public function initialisationFromFulfilment(Fulfilment $fulfilment, ActionRequest|array $request): static

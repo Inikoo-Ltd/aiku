@@ -157,7 +157,7 @@ class ProcessReturnDeliveryNote extends OrgAction
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request)
     {
         $this->deliveryNote = $deliveryNote;
-        $this->initialisationFromShop($deliveryNote->shop, $request);
+        $this->initialisationFromDeliveryNote($deliveryNote, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }
@@ -171,7 +171,7 @@ class ProcessReturnDeliveryNote extends OrgAction
         $this->asAction     = true;
         $this->deliveryNote = $deliveryNote;
         $this->type         = $type;
-        $this->initialisationFromShop($deliveryNote->shop, $modelData);
+        $this->initialisationFromDeliveryNote($deliveryNote, $modelData);
 
         return $this->handle($deliveryNote, $this->validatedData);
     }

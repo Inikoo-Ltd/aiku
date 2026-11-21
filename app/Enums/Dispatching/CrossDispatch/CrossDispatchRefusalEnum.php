@@ -18,6 +18,8 @@ enum CrossDispatchRefusalEnum: string
     case NOT_ENABLED = 'not_enabled';
     case NOT_DROPSHIPPING = 'not_dropshipping';
     case ORDER_STATE = 'order_state';
+    case ORDER_HELD = 'order_held';
+    case REFERENCE_TAKEN = 'reference_taken';
     case NOTHING_TO_DISPATCH = 'nothing_to_dispatch';
     case TIKTOK = 'tiktok';
     case CASH_ON_DELIVERY = 'cash_on_delivery';

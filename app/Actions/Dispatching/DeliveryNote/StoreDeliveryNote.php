@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Dispatching\DeliveryNoteLeaflet\StoreDeliveryNoteLeafletsFromOrder;
 use App\Actions\OrgAction;
@@ -20,6 +21,7 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -37,6 +39,9 @@ class StoreDeliveryNote extends OrgAction
     use WithFixedAddressActions;
     use WithModelAddressActions;
     use HasDeliveryNoteHydrators;
+
+    /** INI-484. The company whose warehouse works the note when it is not the one the order was placed in */
+    private ?Organisation $dispatcher = null;
 
     /**
      * @throws \Throwable
@@ -56,7 +61,7 @@ class StoreDeliveryNote extends OrgAction
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
         data_set($modelData, 'group_id', $order->group_id);
-        data_set($modelData, 'organisation_id', $order->organisation_id);
+        data_set($modelData, 'organisation_id', $this->dispatcher?->id ?? $order->organisation_id);
         data_set($modelData, 'collection_address_id', $order->collection_address_id);
         data_set($modelData, 'shop_type', $order->shop->type);
 
@@ -137,7 +142,7 @@ class StoreDeliveryNote extends OrgAction
                 new IUnique(
                     table: 'delivery_notes',
                     extraConditions: [
-                        ['column' => 'organisation_id', 'value' => $this->organisation->id],
+                        ['column' => 'organisation_id', 'value' => ($this->dispatcher ?? $this->organisation)->id],
                     ]
                 ),
             ],
@@ -149,7 +154,7 @@ class StoreDeliveryNote extends OrgAction
             'warehouse_id'              => [
                 'required',
                 Rule::exists('warehouses', 'id')
-                    ->where('organisation_id', $this->organisation->id),
+                    ->where('organisation_id', ($this->dispatcher ?? $this->organisation)->id),
             ],
             'delivery_locked'           => ['sometimes', 'boolean'],
             'weight'                    => ['sometimes', 'nullable', 'integer', 'min:0'],
@@ -185,8 +190,13 @@ class StoreDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): DeliveryNote
+    public function action(Order $order, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true, ?Organisation $dispatcher = null): DeliveryNote
     {
+        $this->dispatcher = $dispatcher?->id === $order->organisation_id ? null : $dispatcher;
+        if ($this->dispatcher) {
+            ResolveCrossDispatch::ensureDirectionEnabled($order->organisation_id, $this->dispatcher->id);
+        }
+
         if (!$audit) {
             DeliveryNote::disableAuditing();
         }
@@ -202,7 +212,7 @@ class StoreDeliveryNote extends OrgAction
     {
         if (!$this->has('warehouse_id')) {
             /** @var Warehouse $warehouse */
-            $warehouse = $this->shop->organisation->warehouses()->first();
+            $warehouse = ($this->dispatcher ?? $this->shop->organisation)->warehouses()->first();
             $this->set('warehouse_id', $warehouse->id);
         }
     }

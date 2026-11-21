@@ -18,6 +18,7 @@ use App\Models\Dispatching\PartnerShipment;
 use App\Models\Dispatching\Trolley;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class DeleteDeliveryNote extends OrgAction
 {
@@ -29,6 +30,16 @@ class DeleteDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
+        /*
+         * INI-484. Deleting removes the picks without putting the goods back on the shelf. On a note worked in another
+         * company's warehouse that would leave that company's stock short for an order it does not own, so it is cancelled instead.
+         */
+        if ($deliveryNote->isCrossDispatch() && $deliveryNote->pickings()->exists()) {
+            throw ValidationException::withMessages([
+                'delivery_note' => __('This delivery note was picked in another company\'s warehouse and cannot be deleted. Cancel it, so the picked goods go back to the shelf.'),
+            ]);
+        }
+
         $pickingSessions = $deliveryNote->pickingSessions()->get();
 
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {

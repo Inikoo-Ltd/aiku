@@ -87,7 +87,7 @@ class SetAsWaitingCrm extends OrgAction
     {
         $this->user             = $request->user();
         $this->deliveryNoteItem = $deliveryNoteItem;
-        $this->initialisationFromShop($deliveryNoteItem->shop, $request);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $request);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
@@ -98,7 +98,7 @@ class SetAsWaitingCrm extends OrgAction
         $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
 
-        $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
+        $this->initialisationFromDeliveryNoteItem($deliveryNoteItem, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
