@@ -8,6 +8,8 @@
 
 namespace App\Actions\SysAdmin\User\UI;
 
+use App\Actions\Chat\ChatSession\GetChatLanguagesRead;
+use App\Models\Helpers\Language;
 use App\Actions\SysAdmin\User\BorrowUserPermissions;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\DevOps\MonitorDatabaseReplicas;
@@ -41,6 +43,7 @@ class GetLoggedUser
             'nickname'     => $user->nickname,
             'language_id'  => $user->language_id,
             'chat_language_id' => $user->chatAgent?->language_id ?? $user->language_id,
+            'chat_language_code' => Language::find($user->chatAgent?->language_id ?? $user->language_id)?->code,
             'email'        => $user->email,
             'is_agent'     => $isAgent,
             'works_only_for_agents' => $user->worksOnlyForAgents(),
@@ -63,6 +66,8 @@ class GetLoggedUser
                 'alert_preview_seconds' => Arr::get($user->settings, 'alert_preview_seconds'),
                 'rail_hidden_badges' => Arr::get($user->settings, 'rail_hidden_badges') ?? [],
                 'sales_quarters' => (int) Arr::get($user->settings, 'sales_quarters', 5),
+                'chat_auto_translate' => (bool) Arr::get($user->settings, 'chat_auto_translate', true),
+                'chat_languages' => GetChatLanguagesRead::run($user),
             ]
         ];
     }

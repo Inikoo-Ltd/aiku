@@ -13,6 +13,8 @@ import { faEye, faEyeSlash, faCircleInfo, faChevronDown, faArrowUpRightFromSquar
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { playNotificationSoundFile, buildStorageUrl, desktopAlerts } from "@/Composables/useNotificationSound"
 import { useChatLanguages } from "@/Composables/useLanguages"
+import MultiSelect from "primevue/multiselect"
+import { chatMyLanguages, chatOwnLanguage, saveChatTranslation } from "@/Composables/useChatTranslation"
 
 const props = defineProps<{
     contact?: any
@@ -26,7 +28,6 @@ const layout: any = inject("layout", {})
 const baseUrl = layout?.appUrl ?? ""
 const soundUrl = buildStorageUrl("sound/notification.mp3", baseUrl)
 const userId = layout?.user?.id
-const isEditMode = ref(false)
 const agent = ref<any>(null)
 
 const activeTab = ref<"general" | "slack">(props.initialTab ?? "general")
@@ -39,6 +40,11 @@ const form = ref({
 })
 
 const { languages, fetchLanguages } = useChatLanguages(baseUrl)
+
+const setMyLanguages = (codes: string[]) => {
+    chatMyLanguages.value = codes.filter((code) => code !== chatOwnLanguage.value)
+    saveChatTranslation()
+}
 
 const specializations = ref<
     { value: string; label: string }[]
@@ -80,27 +86,18 @@ const fetchAgentSetting = async () => {
 
 const saveSettings = async () => {
     try {
-        if (form.value.max_concurrent_chats > 100) {
-            notify({
-                title: "Failed",
-                text: "Max concurrent chats must not be greater than 100",
-                type: "error"
-            })
-            return
-        }
-
         await axios.put(
             `${baseUrl}/app/api/chats/agents/${userId}/update`,
             {
                 max_concurrent_chats: form.value.max_concurrent_chats,
                 is_available: form.value.is_available,
-                specialization: form.value.specialization,
+                specialization: specializationValue.value ? [specializationValue.value] : [],
                 language_id: form.value.language_id,
             }
         )
-        isEditMode.value = false
         if (layout?.user && form.value.language_id) {
             layout.user.chat_language_id = form.value.language_id
+            chatOwnLanguage.value = languages.value.find((language) => language.id === form.value.language_id)?.code ?? chatOwnLanguage.value
         }
         await fetchAgentSetting()
     } catch (e) {
@@ -291,14 +288,14 @@ onMounted(async () => {
         <div class="flex gap-1 border-b">
             <button
                 class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors"
-                :class="activeTab === 'general' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                :class="activeTab === 'general' ? 'border-[var(--app-accent)] text-[var(--app-accent)]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 @click="activeTab = 'general'"
             >
                 {{ ctrans("General") }}
             </button>
             <button
                 class="px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors flex items-center gap-1.5"
-                :class="activeTab === 'slack' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                :class="activeTab === 'slack' ? 'border-[var(--app-accent)] text-[var(--app-accent)]' : 'border-transparent text-gray-500 hover:text-gray-700'"
                 @click="activeTab = 'slack'"
             >
                 <FontAwesomeIcon :icon="faSlack" fixed-width />
@@ -310,24 +307,32 @@ onMounted(async () => {
         <div v-show="activeTab === 'general'" class="flex flex-col gap-5">
             <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500">{{ ctrans("Max Concurrent Chats") }}</label>
-                <InputNumber v-model="form.max_concurrent_chats" :disabled="!isEditMode" :min="1" class="w-full" />
+                <InputNumber v-model="form.max_concurrent_chats" :min="1" :max="100" class="w-full" @blur="saveSettings" />
             </div>
 
             <div class="flex items-center justify-between">
                 <span class="text-gray-700">{{ ctrans("Available for chats") }}</span>
-                <InputSwitch v-model="form.is_available" :disabled="!isEditMode" />
+                <InputSwitch v-model="form.is_available" @update:model-value="saveSettings" />
             </div>
 
             <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500">{{ ctrans("Specialization") }}</label>
                 <Dropdown v-model="specializationValue" :options="specializations" optionLabel="label" optionValue="value"
-                    placeholder="Select specialization" :disabled="!isEditMode" class="w-full" />
+                    placeholder="Select specialization" class="w-full" @change="saveSettings" />
             </div>
 
             <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500">{{ ctrans("Default Language") }}</label>
                 <Dropdown v-model="form.language_id" :options="languages" optionLabel="name" optionValue="id"
-                    placeholder="Select language" :disabled="!isEditMode" class="w-full" />
+                    placeholder="Select language" class="w-full" @change="saveSettings" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-500">{{ ctrans("Languages I read") }}</label>
+                <MultiSelect :model-value="[...new Set([chatOwnLanguage, ...chatMyLanguages].filter(Boolean))]" :options="languages"
+                    option-label="name" option-value="code" :option-disabled="(option: any) => option.code === chatOwnLanguage"
+                    filter display="chip" class="w-full" @update:model-value="setMyLanguages" />
+                <span class="text-xs text-gray-400">{{ ctrans("Chats and emails in these languages are not translated. The others are shown in your language.") }}</span>
             </div>
 
             <div class="flex flex-col gap-2 pt-3 border-t">
@@ -342,13 +347,6 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-3 border-t">
-                <Button v-if="!isEditMode" type="edit" label="Edit" @click="isEditMode = true" />
-                <template v-else>
-                    <Button label="Cancel" type="cancel" @click="isEditMode = false" />
-                    <Button label="Save" type="save" @click="saveSettings" />
-                </template>
-            </div>
         </div>
 
         <div v-show="activeTab === 'slack'" class="flex flex-col gap-4">

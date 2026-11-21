@@ -2061,3 +2061,71 @@ test('a shop with an active premium dispatch charge tells the assistant how an o
     $charge->update(['state' => \App\Enums\Catalogue\Charge\ChargeStateEnum::DISCONTINUED]);
     expect($fact())->toBeNull();
 });
+
+test('Aura notes in the organisation language are translated for an agent who reads another, even when the customer writes the agent language', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+
+    $english = Language::where('code', 'en')->value('id');
+    $slovak  = Language::where('code', 'sk')->value('id');
+    $this->shop->organisation->update(['language_id' => $slovak]);
+
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'shop_id'                 => $this->shop->id,
+        'user_language_id'        => $english,
+        'active_user_language_id' => $english,
+        'last_visitor_message_at' => now(),
+    ]);
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Hello, your order ships today.', 'test');
+
+    actingAs($this->user);
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk();
+    ChatAgent::where('user_id', $this->user->id)->firstOrFail()->update(['language_id' => $english]);
+
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()
+        ->assertJsonPath('data.translate_for_me', false)
+        ->assertJsonPath('data.notes_for_me', false);
+
+    $draft->update(['facts' => $draft->facts + ['staff_note' => 'Skontrolujte pred odoslaním.']]);
+
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()
+        ->assertJsonPath('data.translate_for_me', false)
+        ->assertJsonPath('data.notes_for_me', true);
+
+    $this->patchJson(route('grp.models.profile.update'), ['chat_auto_translate' => true, 'chat_languages' => ['sk', 'es']])->assertSuccessful();
+    expect($this->user->refresh()->settings['chat_languages'])->toBe(['sk', 'es']);
+
+    $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()
+        ->assertJsonPath('data.notes_for_me', false);
+});
+
+test('the languages staff read are taken from what they wrote themselves until they choose them', function () {
+    $german  = Language::where('code', 'de')->value('id');
+    $french  = Language::where('code', 'fr')->value('id');
+    $session = ChatSession::create([
+        'ulid'    => (string) Str::ulid(),
+        'status'  => ChatSessionStatusEnum::ACTIVE,
+        'channel' => ChatChannelEnum::EMAIL,
+        'shop_id' => $this->shop->id,
+    ]);
+    $this->user->update(['settings' => \Illuminate\Support\Arr::except($this->user->settings ?? [], 'chat_languages')]);
+    $agent = ChatAgent::firstOrCreate(['user_id' => $this->user->id]);
+    $write = fn (int $languageId, int $times) => collect(range(1, $times))->each(fn () => ChatMessage::create([
+        'chat_session_id'      => $session->id,
+        'message_type'         => ChatMessageTypeEnum::TEXT,
+        'sender_type'          => ChatSenderTypeEnum::AGENT,
+        'sender_id'            => $agent->id,
+        'message_text'         => 'Hallo',
+        'original_language_id' => $languageId,
+    ]));
+    $write($german, \App\Actions\Chat\ChatSession\GetChatLanguagesRead::MIN_MESSAGES);
+    $write($french, 2);
+
+    \Illuminate\Support\Facades\Cache::forget("chat-languages-read:{$this->user->id}");
+    expect(\App\Actions\Chat\ChatSession\GetChatLanguagesRead::make()->handle($this->user))->toBe(['de']);
+
+    $this->user->update(['settings' => array_replace($this->user->settings ?? [], ['chat_languages' => ['fr']])]);
+    expect(\App\Actions\Chat\ChatSession\GetChatLanguagesRead::make()->handle($this->user->refresh()))->toBe(['fr']);
+});

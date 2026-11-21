@@ -249,7 +249,7 @@ class ShowOrgChatSupervision extends OrgAction
 
     public function htmlResponse(Organisation $organisation, ActionRequest $request): Response
     {
-        $title = __('Supervision');
+        $title = __('Backlog');
 
         return Inertia::render(
             'Org/Chat/Supervision',
@@ -259,7 +259,7 @@ class ShowOrgChatSupervision extends OrgAction
                 'pageHead'     => [
                     'title' => $title,
                     'icon'  => [
-                        'icon'  => ['fal', 'fa-user-headset'],
+                        'icon'  => ['fal', 'fa-tasks'],
                         'title' => $title,
                     ],
                 ],
@@ -280,12 +280,12 @@ class ShowOrgChatSupervision extends OrgAction
                 [
                     'type'   => 'simple',
                     'simple' => [
-                        'icon'  => 'fal fa-user-headset',
+                        'icon'  => 'fal fa-tasks',
                         'route' => [
                             'name'       => 'grp.org.chat.supervision.dashboard',
                             'parameters' => ['organisation' => $organisation->slug],
                         ],
-                        'label' => __('Supervision'),
+                        'label' => __('Backlog'),
                     ],
                 ],
             ]

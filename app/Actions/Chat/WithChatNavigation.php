@@ -7,6 +7,8 @@
 
 namespace App\Actions\Chat;
 
+use Illuminate\Support\Facades\Route;
+
 trait WithChatNavigation
 {
     /**
@@ -36,6 +38,9 @@ trait WithChatNavigation
         $inbox       = $section('Customer Inbox', ['fal', 'fa-inbox'], 'inbox');
         $supervision = $section($isChatAgent && !$isChatSupervisor ? 'All chats' : 'Supervision', ['fal', 'fa-user-headset'], 'supervision');
         $settings    = $section('Settings', ['fal', 'fa-sliders-h'], 'settings');
+        $backlog   = $isChatSupervisor && Route::has($rootPrefix.'supervision.dashboard')
+            ? $section('Backlog', ['fal', 'fa-tasks'], 'supervision.dashboard')
+            : null;
 
         return [
             'label'   => __('Chat'),
@@ -46,6 +51,7 @@ trait WithChatNavigation
                 'subSections' => array_values(array_filter([
                     $isChatAgent ? $inbox : null,
                     $supervision,
+                    $backlog,
                     $reports,
                     $settings,
                 ])),

@@ -4,6 +4,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
 import axios, { type AxiosResponse } from "axios"
 import { ctrans } from "@/Composables/useTrans"
+import { chatAutoTranslate, loadChatTranslation, saveChatTranslation } from "@/Composables/useChatTranslation"
 import { myShopIds } from "@/Composables/chatMyShops"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
@@ -28,7 +29,7 @@ import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes, faArrowUp } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
+import { faCog, faLanguage, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faSortAmountDown, faSortAmountDownAlt } from "@fal"
 import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -353,6 +354,31 @@ const errorPerContact = ref<Record<string, string>>({})
 
 const selectedSession = ref<SessionAPI | null>(null)
 const messages = ref<ChatMessage[]>([])
+loadChatTranslation(layout.user)
+const toggleAutoTranslate = () => {
+    chatAutoTranslate.value = !chatAutoTranslate.value
+    saveChatTranslation()
+}
+const TRANSLATE_HINT_KEY = "chat-auto-translate-hint-seen"
+const showTranslateHint = ref((() => {
+    try {
+        return localStorage.getItem(TRANSLATE_HINT_KEY) !== "1"
+    } catch {
+        return false
+    }
+})())
+const closeTranslateHint = () => {
+    showTranslateHint.value = false
+    try {
+        localStorage.setItem(TRANSLATE_HINT_KEY, "1")
+    } catch {
+        return
+    }
+}
+const openMyLanguages = () => {
+    closeTranslateHint()
+    openChatSettings()
+}
 
 const panelSession = computed(() => {
     const s = selectedSession.value
@@ -3288,11 +3314,32 @@ onUnmounted(() => {
             </button>
         </template>
         <div class="ml-auto flex items-center gap-0.5">
-            <Link v-if="supervisor && !isEmbedded" :href="route('grp.org.chat.supervision.dashboard', [organisation.slug])"
-                class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800">
-                <FontAwesomeIcon :icon="faChartLine" fixed-width aria-hidden="true" />
-                <span>{{ ctrans("Dashboard") }}</span>
-            </Link>
+            <template v-if="selectedSession">
+                <div class="relative">
+                    <button type="button" :aria-pressed="chatAutoTranslate"
+                        class="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                        v-tooltip="ctrans('Every chat and email in a language you do not read is shown in yours')"
+                        @click="toggleAutoTranslate">
+                        <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
+                        <span>{{ ctrans("Auto translation") }}</span>
+                        <span class="font-semibold" :class="chatAutoTranslate ? 'text-green-600' : 'text-gray-400'">
+                            {{ chatAutoTranslate ? ctrans("ON") : ctrans("OFF") }}
+                        </span>
+                    </button>
+                    <div v-if="showTranslateHint && !showMovedHint" role="note"
+                        class="absolute right-0 top-full z-40 mt-3 flex w-80 items-start gap-2 rounded-xl bg-[var(--app-accent)] p-3 text-sm font-semibold text-[var(--app-accent-text)] shadow-2xl ring-4 ring-[var(--app-accent-soft)]">
+                        <span class="absolute -top-1.5 right-12 h-3 w-3 rotate-45 bg-[var(--app-accent)]" aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faLanguage" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                        <span class="min-w-0 flex-1">
+                            {{ ctrans("Chats and emails are now shown in your language. Add the languages you read, and they will not be translated.") }}
+                            <button type="button" class="mt-2 block rounded-md bg-white/20 px-2 py-1 text-xs hover:bg-white/30" @click="openMyLanguages">{{ ctrans("My languages") }}</button>
+                        </span>
+                        <button type="button" class="shrink-0 rounded p-0.5 opacity-80 hover:opacity-100" :aria-label="ctrans('Close')" @click.stop="closeTranslateHint">
+                            <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
+            </template>
             <button v-if="!isReadOnly && canLogPhoneCalls" type="button" @click="openPhoneCall"
                 v-tooltip="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"
                 :aria-label="phoneCallState.call ? ctrans('You are on a phone call') : ctrans('Log a phone call')"

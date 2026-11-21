@@ -3,6 +3,7 @@ import { ref, reactive, watch, onMounted, onUnmounted, inject, computed, nextTic
 import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { chatAutoTranslate, readsLanguage } from "@/Composables/useChatTranslation"
 import { chatDrafters, noteChatDrafting, stopChatDrafting } from "@/Composables/useChatDrafting"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { readComposerFiles, useComposerAttachmentDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
@@ -1482,23 +1483,7 @@ const goToReply = async () => {
     messageEditor.value?.editor?.commands?.focus?.("end", { scrollIntoView: false })
     await scrollBottom()
 }
-const TRANSLATE_ALL_KEY = "chat-translate-all"
-const readTranslateAll = () => {
-    try {
-        return localStorage.getItem(TRANSLATE_ALL_KEY) === "1"
-    } catch {
-        return false
-    }
-}
-const translateAll = ref(readTranslateAll())
-const toggleTranslateAll = () => {
-    translateAll.value = !translateAll.value
-    try {
-        localStorage.setItem(TRANSLATE_ALL_KEY, translateAll.value ? "1" : "0")
-    } catch {
-        return
-    }
-}
+const translatesFor = (message: any) => chatAutoTranslate.value && !!message.original?.language_code && !readsLanguage(message.original.language_code)
 const lastMailId = computed(() => messagesLocal.value.findLast((message) => message.sender_type !== "system")?.id)
 const openAutoReplyIds = reactive(new Set<number>())
 const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
@@ -1895,14 +1880,6 @@ const handleClickOutside = (e: MouseEvent) => {
                 </template>
             </ModalConfirmationDelete>
 
-            <button type="button" :aria-pressed="translateAll"
-                class="inline-flex items-center gap-1.5 shrink-0 h-6 px-2 text-[11px] font-medium rounded-md border transition"
-                :class="translateAll ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-gray-900' : 'border-gray-300 text-gray-600 hover:bg-gray-100'"
-                v-tooltip="translateAll ? ctrans('Show every message as written') : ctrans('Show every message in my language')"
-                @click="toggleTranslateAll">
-                <FontAwesomeIcon :icon="faLanguage" class="text-[11px]" fixed-width aria-hidden="true" />
-                {{ ctrans("Translate all") }}
-            </button>
 
             <!-- Out in the open, not behind the dots: clearing the queue is most of the work on
                  an imported mailbox, and a choice nobody finds does not get made. -->
@@ -2121,7 +2098,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         :data-message-id="entry.message.id"
                         :class="isEmailChat ? '' : entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent" format-markup
-                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translateAll" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)"
+                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)"
                             :mail-recipient="isEmailChat ? chatEmailRecipient((session as any)?.metadata) : null"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"

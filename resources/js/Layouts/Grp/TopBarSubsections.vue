@@ -19,10 +19,14 @@ const props = defineProps<{
     subSections: SubSection[]
 }>();
 
+const matchLength = (subSection: SubSection) => Math.max(0, ...[subSection.root, ...(subSection.roots ?? [])]
+    .filter((root): root is string => !!root && (layoutStore.currentRoute ?? "").includes(root))
+    .map((root) => root.length));
+
 const isSubSectionActive = (subSection: SubSection) => {
-    return [subSection.root, ...(subSection.roots ?? [])]
-        .filter(Boolean)
-        .some((root) => (layoutStore.currentRoute).includes(root));
+    const length = matchLength(subSection)
+
+    return length > 0 && length === Math.max(...props.subSections.map(matchLength))
 };
 
 const isLoading = ref<string | boolean>(false)

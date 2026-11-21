@@ -152,7 +152,10 @@ class HandleChatAiDraft
             'rating'      => $draft->rating,
             'reason'      => $draft->rating_reason,
             'aura_angry'  => GetChatAiAcceptance::make()->isAngryWith($agent->user_id),
-            'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user())),
+            'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user()))
+                && !self::reads(request()->user(), self::replyLanguageId($chatSession, $draft)),
+            'notes_for_me'     => self::notesInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user()))
+                && !self::reads(request()->user(), $chatSession->shop?->organisation?->language_id),
             'edit_in_my_language' => self::editsInOwnLanguage($agent, self::replyLanguageId($chatSession, $draft)),
             'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,
             'customer_language' => Language::find(self::replyLanguageId($chatSession, $draft) ?? 0)?->name,
@@ -210,6 +213,29 @@ class HandleChatAiDraft
         $replyLanguageId = self::replyLanguageId($chatSession, $draft);
 
         return $agentLanguageId !== null && $replyLanguageId !== null && $replyLanguageId !== $agentLanguageId;
+    }
+
+    /**
+     * Aura writes her notes, questions and buttons in the organisation's language, so an agent who
+     * reads another one gets them translated even when the customer writes the agent's language.
+     */
+    public static function notesInAnotherLanguage(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft, ?int $agentLanguageId): bool
+    {
+        $notesLanguageId = $chatSession->shop?->organisation?->language_id;
+        $hasNotes        = data_get($draft->facts, 'staff_note') || data_get($draft->facts, 'checked') || data_get($draft->facts, 'questions') || data_get($draft->facts, 'actions');
+
+        return $hasNotes && $agentLanguageId !== null && $notesLanguageId !== null && $notesLanguageId !== $agentLanguageId;
+    }
+
+    /**
+     * Besides the language they read chats in, the other languages staff read are left as
+     * written.
+     */
+    public static function reads(?User $user, ?int $languageId): bool
+    {
+        $codes = GetChatLanguagesRead::run($user);
+
+        return $languageId !== null && $codes !== [] && in_array(Language::find($languageId)?->code, $codes, true);
     }
 
     public static function replyLanguageId(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft): ?int
@@ -279,7 +305,7 @@ class HandleChatAiDraft
         $checked  = data_get($chatAiDraft->facts, 'checked', []);
         $labels   = collect(data_get($chatAiDraft->facts, 'actions', []))->filter(fn (array $action) => isset($action['label']))->map(fn (array $action) => $action['label']);
         $questions = array_column(data_get($chatAiDraft->facts, 'questions', []), 'text');
-        $from     = DetectLanguageWithJev::run(trim($note.' '.implode(' ', $checked).' '.$labels->implode(' ').' '.implode(' ', $questions))) ?? Language::where('code', 'en')->firstOrFail();
+        $from     = $session->shop?->organisation?->language ?? DetectLanguageWithJev::run(trim($note.' '.implode(' ', $checked).' '.$labels->implode(' ').' '.implode(' ', $questions))) ?? Language::where('code', 'en')->firstOrFail();
         $translate = fn (string $text) => Translate::run($text, $from, $to);
         $replyLanguageId = self::replyLanguageId($session, $chatAiDraft);
         $replyFrom = trim((string) $chatAiDraft->text) !== ''

@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { chatAutoTranslate } from "@/Composables/useChatTranslation"
 import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -50,6 +51,7 @@ interface Draft {
     reason: string | null
     aura_angry?: boolean
     translate_for_me?: boolean
+    notes_for_me?: boolean
     edit_in_my_language?: boolean
     my_language?: string | null
     customer_language?: string | null
@@ -315,7 +317,7 @@ const setEditInMyLanguage = async (on: boolean) => {
 // A draft in a language the agent does not read is shown translated from the start; the customer
 // still gets the original.
 const translateForMe = () => {
-    if (draft.value?.translate_for_me && !hidden.value && !staffTranslation.value) toggleTranslation()
+    if (chatAutoTranslate.value && (draft.value?.translate_for_me || draft.value?.notes_for_me) && !hidden.value && !staffTranslation.value) toggleTranslation()
 }
 
 const draftText = computed(() => showTranslation.value && staffTranslation.value?.text ? staffTranslation.value.text : draft.value?.text)

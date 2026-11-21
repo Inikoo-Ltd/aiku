@@ -212,6 +212,14 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['chat_theme'] = $chatTheme;
         }
 
+        if (Arr::exists($modelData, 'chat_auto_translate')) {
+            $modelData['settings']['chat_auto_translate'] = (bool) Arr::pull($modelData, 'chat_auto_translate');
+        }
+
+        if (Arr::exists($modelData, 'chat_languages')) {
+            $modelData['settings']['chat_languages'] = array_values(array_unique(Arr::pull($modelData, 'chat_languages') ?? []));
+        }
+
         if (Arr::exists($modelData, 'chat_signature')) {
             $signature = Arr::pull($modelData, 'chat_signature');
             if ($user->chatAgent) {
@@ -285,6 +293,9 @@ class UpdateProfile extends OrgAction
             'org_themes.themes.*.colour'          => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
+            'chat_auto_translate' => ['sometimes', 'boolean'],
+            'chat_languages'    => ['sometimes', 'nullable', 'array', 'max:20'],
+            'chat_languages.*'  => ['string', 'exists:languages,code'],
             'focus_minutes'     => ['sometimes', 'integer', Rule::in([0, 30, 60, 240, 480])],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_events'      => ['sometimes', 'array'],

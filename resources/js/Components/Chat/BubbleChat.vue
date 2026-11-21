@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject, computed, ref, onMounted, onUnmounted, watch } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { readsLanguage } from "@/Composables/useChatTranslation"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faCheckDouble, faExclamationCircle, faLanguage, faRobot, faShieldCheck, faEye, faClock } from "@far"
 import { faShare, faFaceSmile, faReply, faLocationDot, faPhone, faCopy, faCircleExclamation, faBullhorn } from "@fortawesome/free-solid-svg-icons"
@@ -772,6 +773,11 @@ const canTranslate = computed(() =>
     )
 )
 
+const viewerReadsOriginal = computed(() => {
+    const code = activeMessage.value.original?.language_code
+    return readsLanguage(code) || (!!code && code === layout?.user?.chat_language_code)
+})
+
 const latestTranslation = computed<Translation | null>(() => {
     const list = activeMessage.value.translations
     if (!Array.isArray(list) || list.length === 0) return null
@@ -1428,7 +1434,7 @@ watch(selectedLanguage, async (val) => {
 
             <!-- One click, into the agent's own language. Somebody who genuinely wants another
                  language has the picker on the conversation; this is the common case. -->
-            <div v-if="canTranslate && !latestTranslation" class="mt-1">
+            <div v-if="canTranslate && !latestTranslation && !viewerReadsOriginal" class="mt-1">
                 <button :disabled="isTranslating" @click="translateMessage"
                     class="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 underline disabled:opacity-50">
                     <FontAwesomeIcon :icon="faLanguage" class="text-[10px]" fixed-width />
