@@ -69,7 +69,7 @@ class RegisterCustomer extends OrgAction
                 'email'        => Arr::get($modelData, 'email'),
                 'password'     => $password,
                 'is_root'      => true,
-            ]);
+            ], sendRegistrationEmail: false);
             if (Arr::get($modelData, 'poll_replies', []) != []) {
                 $storePollyRepliesData = [
                     'customer_id'  => $customer->id,

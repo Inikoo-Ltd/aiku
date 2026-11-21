@@ -46,6 +46,7 @@ use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\CRM\Favourite\UpdateFavourite;
 use App\Actions\Comms\Email\SendAccountErasedEmail;
+use App\Actions\Comms\Email\SendWebUserRegistrationEmail;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Actions\Comms\Email\SendAppointmentEmail;
 use App\Actions\Comms\Email\SendNewAppointmentEmailToShop;
@@ -3532,6 +3533,28 @@ test('web registration rejects a bare dial code when the shop requires a phone n
     } finally {
         $this->shop->update(['settings' => $originalSettings]);
     }
+});
+
+test('a customer registering on the website is not told a new user was added to their account', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    Queue::fake();
+
+    auth()->logout();
+    post(route('retina.register_from_standalone.store'), [
+        'contact_name'                  => 'Only Me',
+        'email'                         => 'registration-only-me@example.com',
+        'phone'                         => '+447700900123',
+        'password'                      => 'password',
+        'is_opt_in'                     => false,
+        'is_whatsapp_newsletter_opt_in' => false,
+        'contact_address'               => Address::factory()->definition(),
+    ])->assertSessionHasNoErrors();
+
+    expect(Customer::where('email', 'registration-only-me@example.com')->firstOrFail()->webUsers()->sole()->is_root)->toBeTrue();
+    SendWebUserRegistrationEmail::assertNotPushed();
 });
 
 function customerWithoutLogin(Website $website): Customer

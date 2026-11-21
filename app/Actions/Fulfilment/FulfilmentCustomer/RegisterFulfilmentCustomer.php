@@ -52,7 +52,7 @@ class RegisterFulfilmentCustomer extends OrgAction
             'email'        => Arr::get($modelData, 'email'),
             'password'     => $password,
             'is_root'      => true,
-        ]);
+        ], sendRegistrationEmail: false);
 
         data_set($fulfilmmentCustomerModelData, 'pallets_storage', in_array('pallets_storage', $modelData['interest']));
         data_set($fulfilmmentCustomerModelData, 'items_storage', in_array('items_storage', $modelData['interest']));
