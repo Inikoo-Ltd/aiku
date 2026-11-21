@@ -73,7 +73,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'chat_id'      => ['required_unless:action,'.implode(',', self::RUN_ACTIONS), 'nullable', 'string', 'max:40'],
             'action'       => ['required', 'in:'.implode(',', self::ACTIONS)],
             'message'      => ['required_if:action,reply,add_note', 'nullable', 'string', 'max:5000'],
-            'staff_note'   => ['sometimes', 'nullable', 'string', 'max:'.self::STAFF_NOTE_MAX],
+            'staff_note'   => ['sometimes', 'nullable', 'string', 'max:2000'],
             'checked'      => ['sometimes', 'nullable', 'array', 'max:12'],
             'checked.*'    => ['string', 'max:300'],
             'questions'          => ['sometimes', 'nullable', 'array', 'max:20'],
@@ -707,7 +707,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'chat_id'      => $schema->string()->description('Chat ID copied from the Overview panel of the chat; not needed for start_run, claim_chats and finish_run'),
             'action'       => $schema->string()->enum(self::ACTIONS)->description('What to do on the chat')->required(),
             'message'      => $schema->string()->description('For add_note: the note for staff. For save_draft (may be left out with a spam or close action) and reply: the full text for the customer, plain text, in the language reply_in names, signed as the user would sign it. Never [[gaps]]: write the shop\'s usual decision, or ask the customer for what is missing'),
-            'staff_note'   => $schema->string()->description('For save_draft only: one line for staff shown beside the reply box, never sent to the customer, in the user\'s language, at most '.self::STAFF_NOTE_MAX.' characters: what staff must do or check before sending, never how you found it out (that goes in checked). Start it with "Before sending:" when staff must do something first. Anything a button can do (link the customer, a claim, a task) goes in actions, not in the note'),
+            'staff_note'   => $schema->string()->description('For save_draft only: the note for staff shown beside the reply box, never sent to the customer, in the user\'s language. Keep it to ONE short line, under '.self::STAFF_NOTE_MAX.' characters, unless that is truly impossible: staff read it in a narrow column and skip long notes. Say only what staff must do or check before sending, never how you found it out or what you looked up (that goes in checked) and never repeat the draft. Start it with "Before sending:" when staff must do something first. Anything a button can do (link the customer, a claim, a task) goes in actions, not in the note. Leave it out when there is nothing for staff to do'),
             'checked'      => $schema->array()->items($schema->string())->description('For save_draft only: up to 12 short lines of what was checked in Aiku for this answer, each a fact with its reference (e.g. "AWD196419 dispatched 13 Oct, Royal Mail XQ573801258GB"), shown to staff on the draft'),
             'questions'    => $schema->array()->items($schema->object([
                 'text'   => $schema->string()->description('one short line, in the user\'s language')->required(),

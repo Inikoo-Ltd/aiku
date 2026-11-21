@@ -3525,14 +3525,12 @@ describe('customer service tools', function () {
             ->and($listed->firstWhere('chat_id', $this->chat->ulid))->toMatchArray(['premonition_fixed' => true]);
     });
 
-    test('a draft keeps its staff note to one line and links an unlinked chat to its customer with one click', function () {
+    test('a draft links an unlinked chat to its customer with one click', function () {
         App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
         $webUserId = $this->chat->web_user_id;
         $this->chat->update(['web_user_id' => null]);
         $link = ['type' => 'link', 'customer' => $this->csCustomer->reference];
 
-        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'staff_note' => str_repeat('a', App\Mcp\Tools\CustomerServiceChatWriteTool::STAFF_NOTE_MAX + 1)])
-            ->assertHasErrors();
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'actions' => [['type' => 'link', 'customer' => 'nobody-'.uniqid()]]])
             ->assertHasErrors(['no customer with a login']);
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'We are checking it.', 'staff_note' => 'Link the chat first.', 'actions' => [$link]])
