@@ -9,12 +9,17 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 
 const props = defineProps<{
-    progress: { total: number; done: number; open: number; milestones: number; milestones_done: number; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
+    progress: { total: number; done: number; open: number; milestones: number; milestones_done: number; tickets?: { done: number; total: number }; tasks?: { done: number; total: number }; percent: number | null; time_percent: number | null; week: number; weeks: number | null; days_left: number | null }
     startDate: string
     targetDate: string | null
 }>()
 
 const isBehind = computed(() => props.progress.percent !== null && props.progress.time_percent !== null && props.progress.percent + 10 < props.progress.time_percent)
+
+const workRows = computed(() => [
+    { label: ctrans("Tickets"), ...props.progress.tickets },
+    { label: ctrans("Tasks"), ...props.progress.tasks },
+].filter((row): row is { label: string; done: number; total: number } => (row.total ?? 0) > 0))
 
 const timeLabel = computed(() => {
     const { week, weeks, days_left } = props.progress
@@ -33,6 +38,15 @@ const timeLabel = computed(() => {
             </div>
             <div class="h-2 overflow-hidden rounded-full bg-gray-100">
                 <div class="h-full rounded-full transition-all" :class="isBehind ? 'bg-red-400' : 'bg-green-500'" :style="{ width: (progress.percent ?? 0) + '%' }" />
+            </div>
+        </div>
+        <div v-for="row in workRows" :key="row.label">
+            <div class="mb-0.5 flex justify-between">
+                <span>{{ row.label }}</span>
+                <span class="tabular-nums">{{ row.done }} / {{ row.total }} · {{ Math.round((100 * row.done) / row.total) }}%</span>
+            </div>
+            <div class="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                <div class="h-full rounded-full bg-green-400 transition-all" :style="{ width: (100 * row.done) / row.total + '%' }" />
             </div>
         </div>
         <div v-if="progress.time_percent !== null">

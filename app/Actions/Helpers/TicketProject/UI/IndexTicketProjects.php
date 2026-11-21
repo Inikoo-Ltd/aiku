@@ -212,7 +212,11 @@ class IndexTicketProjects extends OrgAction
             $projects->sum(fn (TicketProject $item) => $item->cancelled_tickets_count + $item->cancelled_staff_tasks_count),
             $projects->sum('milestones_count'),
             $projects->sum('done_milestones_count'),
-            (float) $projects->sum('milestones_score')
+            (float) $projects->sum('milestones_score'),
+            $projects->sum('done_tickets_count'),
+            $projects->sum(fn (TicketProject $item) => $item->tickets_count - $item->cancelled_tickets_count),
+            $projects->sum('done_staff_tasks_count'),
+            $projects->sum(fn (TicketProject $item) => $item->staff_tasks_count - $item->cancelled_staff_tasks_count)
         );
     }
 
@@ -223,9 +227,9 @@ class IndexTicketProjects extends OrgAction
      * tasks done out of those not cancelled. A project falling behind shows a work bar shorter than
      * its time bar.
      *
-     * @return array{total: int, done: int, open: int, milestones: int, milestones_done: int, percent: int|null, time_percent: int|null, week: int, weeks: int|null, days_left: int|null}
+     * @return array{total: int, done: int, open: int, milestones: int, milestones_done: int, tickets: array{done: int, total: int}, tasks: array{done: int, total: int}, percent: int|null, time_percent: int|null, week: int, weeks: int|null, days_left: int|null}
      */
-    public static function progress(TicketProject $project, int $total, int $done, int $cancelled, int $milestones = 0, int $milestonesDone = 0, float $milestonesScore = 0): array
+    public static function progress(TicketProject $project, int $total, int $done, int $cancelled, int $milestones = 0, int $milestonesDone = 0, float $milestonesScore = 0, int $ticketsDone = 0, int $ticketsCounted = 0, int $tasksDone = 0, int $tasksCounted = 0): array
     {
         $counted   = $total - $cancelled;
         $today     = Carbon::today();
@@ -238,6 +242,8 @@ class IndexTicketProjects extends OrgAction
             'open'            => $counted - $done,
             'milestones'      => $milestones,
             'milestones_done' => $milestonesDone,
+            'tickets'         => ['done' => $ticketsDone, 'total' => $ticketsCounted],
+            'tasks'           => ['done' => $tasksDone, 'total' => $tasksCounted],
             'percent'         => $milestones > 0 ? (int) floor(100 * $milestonesScore / $milestones) : ($counted > 0 ? (int) round(100 * $done / $counted) : null),
             'time_percent' => $totalDays ? (int) min(100, round(100 * $elapsed / $totalDays)) : null,
             'week'         => intdiv($elapsed, 7) + 1,
@@ -249,7 +255,7 @@ class IndexTicketProjects extends OrgAction
     /**
      * Work of the project and its sub-projects.
      *
-     * @return array{total: int, done: int, cancelled: int, milestones: int, milestonesDone: int, milestonesScore: float}
+     * @return array{total: int, done: int, cancelled: int, milestones: int, milestonesDone: int, milestonesScore: float, ticketsDone: int, ticketsCounted: int, tasksDone: int, tasksCounted: int}
      */
     public static function workTotals(TicketProject $project): array
     {
@@ -274,6 +280,10 @@ class IndexTicketProjects extends OrgAction
             'milestones'      => (int) $milestones->total,
             'milestonesDone'  => (int) $milestones->done,
             'milestonesScore' => (float) $milestones->score,
+            'ticketsDone'     => (int) $tickets->done,
+            'ticketsCounted'  => (int) $tickets->total - (int) $tickets->cancelled,
+            'tasksDone'       => (int) $tasks->done,
+            'tasksCounted'    => (int) $tasks->total - (int) $tasks->cancelled,
         ];
     }
 

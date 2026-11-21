@@ -564,6 +564,8 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->where('progress.milestones', 2)
         ->where('progress.milestones_done', 1)
         ->where('progress.percent', 50)
+        ->where('progress.tickets', ['done' => 1, 'total' => 2])
+        ->where('progress.tasks', ['done' => 0, 'total' => 1])
         ->where('progress.week', 2)
         ->has('work', 3)
         ->where('work', fn ($work) => collect($work)->pluck('reference')->all() === collect($work)->pluck('reference')->sort(SORT_NATURAL)->values()->all())
@@ -576,7 +578,7 @@ test('a project gathers tickets, tasks, milestones, commits and progress updates
         ->has('burn_up', 2)
         ->has('workload')
         ->has('activity'));
-    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('data.data.0.progress.done', 1)->where('data.data.0.health', 'at_risk')->where('view', 'table'));
+    get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Tickets/TicketProjects')->where('data.data.0.progress.done', 1)->where('data.data.0.progress.tickets', ['done' => 1, 'total' => 2])->where('data.data.0.progress.tasks', ['done' => 0, 'total' => 1])->where('data.data.0.health', 'at_risk')->where('view', 'table'));
     UpdateTicket::make()->action($second->fresh(), ['status' => TicketStatusEnum::RESOLVED->value]);
     get(route('grp.projects.index'))->assertInertia(fn (AssertableInertia $page) => $page->where('data.data.0.progress.percent', 95)->where('data.data.0.progress.open', 1)->where('data.data.0.health', 'at_risk'));
     $project->update(['target_date' => now()->subDay()->toDateString()]);
