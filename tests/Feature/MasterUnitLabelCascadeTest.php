@@ -8,6 +8,7 @@
 
 use App\Actions\Catalogue\Product\AskShopkeeperToReviewMasterText;
 use App\Actions\Catalogue\Product\FillShopProductTranslations;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Models\Catalogue\Shop;
 use App\Actions\Catalogue\Product\AskShopkeeperToUpdateProductUnit;
@@ -27,6 +28,7 @@ use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -44,6 +46,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 
@@ -1066,4 +1069,177 @@ test('fill translations lets the imperial equivalent beside a metric size drop, 
         ->and($check('description', '<p>Weight 250g (6 inch)</p>', '<p>Gewicht 250 g</p>'))->toContain('numbers lost (6)')
         ->and($check('description', '<p>Net weight 100g (3.5 oz)</p>', '<p>Nettogewicht 100 g</p>'))->toBeNull()
         ->and($check('description', '<p>Lotion 250ml (8.45 oz)</p>', '<p>Lotion 250 ml</p>'))->toContain('numbers lost (8, 45)');
+});
+
+function borrowFixture(object $test, array $target, array $source, float $sourceUnits = 1): Product
+{
+    fillTranslationsFixture($test, siblingUnits: 6);
+    plainOtherShopProducts($test);
+    $test->product->updateQuietly($target);
+    $test->englishShop = StoreShop::make()->action($test->organisation, array_merge(Shop::factory()->definition(), ['language_id' => Language::where('code', 'en')->first()->id]));
+    $twin              = $test->product->replicate();
+    $twin->fill(['shop_id' => $test->englishShop->id, 'slug' => 'en-'.Str::random(10), 'master_product_id' => null, 'units' => $sourceUnits, 'data' => []] + $source);
+    $twin->saveQuietly();
+    $twin->tradeUnits()->sync([$test->bottle => ['quantity' => $sourceUnits]]);
+
+    return $twin;
+}
+
+function borrow(object $test, bool $apply = true, bool $retryFailed = false): array
+{
+    return FillShopProductTranslations::run($test->shop, Language::where('code', 'en')->first(), null, $apply, false, null, 50, null, null, $retryFailed, false, false, false, $test->englishShop);
+}
+
+test('fill translations fills an empty description from the same pack in another shop, leaves text, names, the master and the source alone, and a dry run writes nothing', function () {
+    Queue::fake();
+    $twin = borrowFixture(
+        $this,
+        ['description' => '<p>&nbsp;</p>', 'description_title' => 'Own title', 'description_extra' => null, 'data' => ['translation_sources' => ['de' => ['failed' => 'name: empty', 'fields' => [], 'hashes' => []]]]],
+        ['name' => 'Other name', 'description' => '<p>Calming soap</p>', 'description_title' => 'Other title', 'description_extra' => '<p>Made in Wales</p>']
+    );
+
+    borrow($this, apply: false);
+    expect($this->product->refresh()->description)->toBe('<p>&nbsp;</p>');
+
+    borrow($this);
+
+    $product = $this->product->refresh();
+    expect($product->description)->toBe('<p>Calming soap</p>')
+        ->and($product->getTranslation('description_i8n', 'en', false))->toBe('<p>Calming soap</p>')
+        ->and($product->description_extra)->toBe('<p>Made in Wales</p>')
+        ->and($product->description_title)->toBe('Own title')
+        ->and($product->name)->toBe('Lavender soap 100g')
+        ->and($product->data['translation_sources']['en']['fields'])->toEqual(['description' => FillShopProductTranslations::BORROWED, 'description_extra' => FillShopProductTranslations::BORROWED])
+        ->and($product->data['translation_sources']['en']['borrowed_from']['description'])->toBe($twin->id)
+        ->and($product->data['translation_sources']['en']['hashes']['description'])->toBe(md5('<p>Calming soap</p>'))
+        ->and($product->data['translation_sources']['de']['failed'])->toBe('name: empty')
+        ->and($product->audits()->get()->contains(fn ($audit) => ($audit->new_values['description'] ?? null) === '<p>Calming soap</p>'))->toBeTrue()
+        ->and($this->masterAsset->refresh()->getTranslation('description_i8n', 'en', false))->toBeEmpty()
+        ->and($twin->refresh()->description)->toBe('<p>Calming soap</p>')
+        ->and($twin->data)->toBeEmpty();
+    ShopHydrateProductsWithNoDescription::assertPushed(1);
+});
+
+test('fill translations never borrows from a different pack', function () {
+    borrowFixture($this, ['description' => null], ['description' => '<p>Box of six soaps</p>'], sourceUnits: 6);
+
+    borrow($this);
+
+    expect($this->product->refresh()->description)->toBeNull()
+        ->and(data_get($this->product->data, 'translation_sources.en'))->toBeNull();
+});
+
+test('fill translations cleans a borrowed text with reseller wording first, and the shop text cleanup leaves it alone', function () {
+    borrowFixture($this, ['description' => null], ['description' => '<p>Calming soap. Your customers will love it.</p>']);
+    $this->cleanAnswer = ['description' => '<p>Calming soap.</p>'];
+    $cleanRequests     = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"clean"'))->count();
+
+    borrow($this);
+
+    expect($this->product->refresh()->description)->toBe('<p>Calming soap.</p>')
+        ->and($this->product->data['translation_sources']['en']['fields']['description'])->toBe(FillShopProductTranslations::BORROWED_CLEANED);
+
+    $afterBorrow = $cleanRequests();
+    fillShopTextMode($this, 'clean');
+    borrow($this);
+    expect($cleanRequests())->toBe($afterBorrow);
+});
+
+test('fill translations fills nothing when the borrowed text cleaning is rejected, and tries it again only with retry failed', function () {
+    borrowFixture($this, ['description' => null, 'description_extra' => null], ['description' => '<p>Calming soap. Your customers will love it.</p>', 'description_extra' => '<p>Made with olive oil</p>']);
+    $this->cleanAnswer = ['description' => '<p>Calming soap 500 g.</p>'];
+    $reported          = [];
+    $borrowReporting   = function () use (&$reported) {
+        FillShopProductTranslations::run($this->shop, Language::where('code', 'en')->first(), null, true, false, null, 50, null, function (Product $product, array $fields, ?array $texts, array $sources, ?string $failure = null) use (&$reported) {
+            $reported[] = [$texts, $failure];
+        }, false, false, false, false, $this->englishShop);
+    };
+    $cleanRequests     = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"clean"'))->count();
+
+    $borrowReporting();
+
+    expect($this->product->refresh()->description)->toBeNull()
+        ->and($this->product->description_extra)->toBe('<p>Made with olive oil</p>')
+        ->and($reported[0][0])->toBe(['description_extra' => '<p>Made with olive oil</p>'])
+        ->and($reported[0][1])->toContain('numbers added')
+        ->and($this->product->data['translation_sources']['en']['fields']['description'])->toBe(FillShopProductTranslations::BORROW_FAILED)
+        ->and($this->product->data['translation_sources']['en']['failures']['description'])->toContain('numbers added');
+
+    $afterFailure = $cleanRequests();
+    borrow($this);
+    expect($cleanRequests())->toBe($afterFailure);
+
+    $this->cleanAnswer = ['description' => '<p>Calming soap.</p>'];
+    borrow($this, retryFailed: true);
+
+    expect($this->product->refresh()->description)->toBe('<p>Calming soap.</p>')
+        ->and($this->product->data['translation_sources']['en']['fields']['description'])->toBe(FillShopProductTranslations::BORROWED_CLEANED)
+        ->and(data_get($this->product->data, 'translation_sources.en.failures.description'))->toBeNull();
+});
+
+test('fill translations translates a borrowed description into a language already filled with redo cleaned, never the name', function () {
+    borrowFixture($this, ['description' => null], ['description' => '<p>Calming soap</p>']);
+    fillTranslations($this);
+    $this->travel(1)->minutes();
+    borrow($this);
+    $this->travel(1)->minutes();
+    $this->aiPrefix = 'NEU ';
+
+    fillShopTextMode($this, 'redo');
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('description_i8n', 'de', false))->toBe('NEU <p>Calming soap</p>')
+        ->and($product->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
+        ->and($product->data['translation_sources']['de']['fields']['description'])->toBe(FillShopProductTranslations::MACHINE)
+        ->and(fillShopTextMode($this, 'redo')['stats'])->toMatchArray(['machine' => 0, 'failed' => 0]);
+});
+
+test('fill translations borrows only from an active product, and cleans delivery terms and prices out of a borrowed text but copies a plain mention of the UK', function () {
+    borrowFixture($this, ['description' => null, 'description_extra' => null], [
+        'description'       => '<p>Solid wood cabinet, 40 cm tall, handmade in the UK.</p><p>Standard delivery of 2 business days (UK Mainland). For orders outside of UK mainland, there will be an additional fee.</p>',
+        'description_extra' => '<p>Sizes 3.5-6.5 UK (36-40 EU), handmade in the UK.</p>',
+    ]);
+    $this->cleanAnswer = ['description' => '<p>Solid wood cabinet, 40 cm tall, handmade in the UK.</p>'];
+    $cleanRequests     = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', '"clean"'));
+
+    borrow($this);
+
+    $product = $this->product->refresh();
+    expect($product->description)->toBe('<p>Solid wood cabinet, 40 cm tall, handmade in the UK.</p>')
+        ->and($product->data['translation_sources']['en']['fields']['description'])->toBe(FillShopProductTranslations::BORROWED_CLEANED)
+        ->and($product->description_extra)->toBe('<p>Sizes 3.5-6.5 UK (36-40 EU), handmade in the UK.</p>')
+        ->and($product->data['translation_sources']['en']['fields']['description_extra'])->toBe(FillShopProductTranslations::BORROWED)
+        ->and($cleanRequests()->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'], 'Sizes'))->count())->toBe(0)
+        ->and($cleanRequests()->first()[0]['messages'][0]['content'])->toContain('delivery or shipping times');
+
+});
+
+test('fill translations never borrows from a discontinued product, nor lets a borrowed clean lose a number outside the delivery terms', function () {
+    $twin = borrowFixture($this, ['description' => null], ['description' => '<p>Calming soap</p>']);
+    $twin->updateQuietly(['state' => ProductStateEnum::DISCONTINUED]);
+
+    borrow($this);
+    expect($this->product->refresh()->description)->toBeNull();
+
+    $twin->updateQuietly(['state' => ProductStateEnum::ACTIVE, 'description' => '<p>Cabinet 40 cm tall, solid mango wood, hand carved.</p><p>Standard delivery of 2 business days.</p>']);
+    $this->cleanAnswer = ['description' => '<p>Cabinet, solid mango wood, hand carved.</p>'];
+    borrow($this);
+
+    expect($this->product->refresh()->description)->toBeNull()
+        ->and($this->product->data['translation_sources']['en']['failures']['description'])->toContain('numbers lost (40)');
+});
+
+test('fill translations redo cleaned leaves a borrowed text of a product never filled in that language to the normal fill, which then fills the name too', function () {
+    borrowFixture($this, ['description' => null, 'name_i8n' => ['en' => 'Lavender soap 100g'], 'data' => []], ['description' => '<p>Calming soap</p>']);
+    borrow($this);
+    $this->travel(1)->minutes();
+
+    fillShopTextMode($this, 'redo');
+    expect(data_get($this->product->refresh()->data, 'translation_sources.de'))->toBeNull();
+
+    FillShopProductTranslations::run($this->shop, Language::where('code', 'de')->first(), null, true);
+
+    $product = $this->product->refresh();
+    expect($product->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soap 100g')
+        ->and($product->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Calming soap</p>');
 });
