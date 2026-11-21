@@ -14,6 +14,7 @@ use App\Actions\Accounting\BankConnection\Tatra\SyncTatraBankConnection;
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
 use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
+use App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers;
 use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
@@ -107,6 +108,12 @@ class SyncBankConnection
 
         try {
             ClassifyBankOutgoing::run($bankConnection->group);
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+        }
+
+        try {
+            MatchAgentMoneyTransfers::run($bankConnection->organisation);
         } catch (Throwable $exception) {
             Sentry::captureException($exception);
         }

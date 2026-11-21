@@ -1550,7 +1550,7 @@ const getSeverity = (type?: string) => {
                                                         column.type === 'avatar' || column.type === 'icon'
                                                             ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                             : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                                ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
+                                                                ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-7 tabular-nums'
                                                                 : 'px-2 lg:px-3',
                                                         props.rowAlignTop ? 'align-top' : '',
                                                         queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
@@ -1628,8 +1628,8 @@ const getSeverity = (type?: string) => {
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'
-                                                            : 'px-2 lg:px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-7 tabular-nums'
+                                                            : 'px-2 lg:px-4',
                                                     props.rowAlignTop || isRowspanColumn(column.key) ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1703,8 +1703,8 @@ const getSeverity = (type?: string) => {
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.type === 'date' || column.type === 'date_hm' || column.type === 'date_hms' || column.align === 'right'
-                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-2 lg:px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-7 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-4',
                                                     props.rowAlignTop || isRowspanColumn(column.key) ? 'align-top' : '',
                                                     queryBuilderProps?.betweenDatesValue?.column === column.key ? 'bg-amber-50/60' : '',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
@@ -1752,8 +1752,8 @@ const getSeverity = (type?: string) => {
                                                     column.type === 'avatar' || column.type === 'icon'
                                                         ? 'text-center min-w-fit px-1.5 lg:px-3'  // if type = icon
                                                         : typeof item[column.key] == 'number' || column.type === 'number' || column.type === 'currency' || column.align === 'right'
-                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-9 tabular-nums'  // if the value is number
-                                                            : 'px-2 lg:px-6',
+                                                            ? 'text-right pl-1.5 pr-2 lg:pl-3 lg:pr-7 tabular-nums'  // if the value is number
+                                                            : 'px-2 lg:px-4',
                                                     { 'first:border-l-4 first:border-gray-700 bg-gray-200/75': selectedRow?.[name]?.includes(item[checkboxKey]) },
                                                     column.className
                                                 ]">

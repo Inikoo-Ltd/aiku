@@ -18,6 +18,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
+use Throwable;
 
 /**
  * The client agrees to send the money an agent asked for. Only an approved request can be paid. A request the
@@ -104,6 +106,15 @@ class ApproveAgentMoneyRequest extends OrgAction
         $depositRequest = $this->handle($depositRequest, $request->user());
 
         NotifyMoneyRequestApproved::run($depositRequest, $request->user());
+
+        $orgAgent = NotifyMoneyRequestCreated::clientOrgAgent($depositRequest);
+        if ($orgAgent) {
+            try {
+                MatchAgentMoneyTransfers::make()->autoRecord($orgAgent);
+            } catch (Throwable $exception) {
+                Sentry::captureException($exception);
+            }
+        }
 
         return $depositRequest;
     }

@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
 import { ref } from "vue"
-import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faPaperclip, faTimes } from "@fal"
+import { faBan, faCheck, faChevronDown, faChevronUp, faPaperPlane, faPaperclip, faTimes, faUndo } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
@@ -17,7 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faPaperclip, faTimes)
+library.add(faBan, faCheck, faChevronDown, faChevronUp, faPaperPlane, faPaperclip, faTimes, faUndo)
 
 export interface MoneyRequestRecipient {
 	name: string
@@ -62,23 +62,22 @@ export interface MoneyRequestRow {
 	cancel_route: routeType | null
 	remind_route: routeType | null
 	approve_route: routeType | null
-	unapprove_route: routeType | null
 	reject_route: routeType | null
-	pay_route: routeType | null
 }
 
-defineProps<{
+const props = defineProps<{
 	data: object
 	tab?: string
+	forClient?: boolean
+	clientCurrencyCode?: string | null
+	clientRate?: number | null
 	approvingId?: number | null
 	remindingId?: number | null
 }>()
 
 const emit = defineEmits<{
 	(e: "approve", row: MoneyRequestRow): void
-	(e: "unapprove", row: MoneyRequestRow): void
 	(e: "reject", row: MoneyRequestRow): void
-	(e: "pay", row: MoneyRequestRow): void
 	(e: "cancel", row: MoneyRequestRow): void
 	(e: "remind", row: MoneyRequestRow): void
 }>()
@@ -91,7 +90,9 @@ const lastReminderTitle = (row: MoneyRequestRow): string =>
 	})
 
 const locale = useLocaleStore()
-const money = (code: string, amount: number) => locale.currencyFormat(code, amount)
+const money = (code: string, amount: number) => (props.forClient ? `${code} ${new Intl.NumberFormat(locale.locale_iso || locale.language.code, { minimumFractionDigits: Number.isInteger(amount) ? 0 : 2, maximumFractionDigits: 2 }).format(amount)}` : locale.currencyFormat(code, amount))
+const isDue = (row: MoneyRequestRow) => row.state === "approved" && row.outstanding > 0
+const inClientCurrency = (amount: number) => (props.clientRate && props.clientCurrencyCode ? `≈ ${locale.currencyFormat(props.clientCurrencyCode, Math.round(amount * props.clientRate * 100) / 100)}` : "")
 
 const collapsedReferenceCount = 3
 const expandedReferences = ref(new Set<number>())
@@ -115,6 +116,7 @@ const toggleReferences = (id: number) => {
 
 const stateClass: Record<string, string> = {
 	requested: "bg-amber-50 text-amber-700",
+	approved: "bg-pink-50 text-pink-700",
 	settled: "bg-green-50 text-green-700",
 	cancelled: "bg-gray-100 text-gray-500",
 	rejected: "bg-red-50 text-red-700",
@@ -122,9 +124,9 @@ const stateClass: Record<string, string> = {
 </script>
 
 <template>
-	<Table :resource="data" :name="tab" class="mt-5">
+	<Table :resource="data" :name="tab" rowAlignTop class="mt-5">
 		<template #cell(requested_at)="{ item }">
-			<span class="whitespace-nowrap">{{ useFormatTime(item.requested_at) }}</span>
+			<span class="whitespace-nowrap">{{ useFormatTime(item.requested_at, { formatTime: 'd MMM yy' }) }}</span>
 		</template>
 
 		<template #cell(reference)="{ item }">
@@ -153,54 +155,62 @@ const stateClass: Record<string, string> = {
 		</template>
 
 		<template #cell(lines)="{ item }">
-			<ul class="space-y-0.5 text-sm">
-				<li v-for="(line, index) in item.lines" :key="index" class="flex items-baseline justify-between gap-4">
-					<span class="min-w-0">
-						<span class="whitespace-nowrap text-gray-700">
-							{{ line.description }}
-							<Link v-if="line.route" :href="route(line.route.name, line.route.parameters)" class="primaryLink">{{ line.reference }}</Link>
-							<template v-else-if="line.reference">{{ line.reference }}</template>
-						</span>
-						<span v-if="line.supplier_code" class="ml-1.5 text-xs text-gray-400" :title="line.supplier_name ?? undefined">{{ line.supplier_name ?? line.supplier_code }}</span>
-						<a v-if="line.receipt" :href="route('grp.media.download', { media: line.receipt, inline: 1 })" target="_blank" rel="noopener" class="ml-1.5 whitespace-nowrap text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
-							<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
-							{{ ctrans("Receipt") }}
-						</a>
-						<span v-else-if="line.no_receipt" class="ml-1.5 whitespace-nowrap rounded border border-amber-200 bg-amber-50 px-1.5 text-xs text-amber-700">{{ ctrans("No receipt") }}</span>
-					</span>
-					<span class="whitespace-nowrap tabular-nums text-gray-500">{{ money(item.currency_code, line.amount) }}</span>
-				</li>
-			</ul>
-			<div v-if="item.notes" class="text-xs text-gray-400">{{ item.notes }}</div>
+			<div class="max-w-2xl overflow-hidden rounded-md border border-gray-200 bg-white">
+				<table class="w-full table-fixed text-xs">
+					<tbody class="divide-y divide-gray-100">
+						<tr v-for="(line, index) in item.lines" :key="index" class="align-top odd:bg-gray-50/60">
+							<td class="px-2.5 py-1.5 text-gray-700">
+								{{ line.description }}
+								<Link v-if="line.route" :href="route(line.route.name, line.route.parameters)" class="primaryLink">{{ line.reference }}</Link>
+								<template v-else-if="line.reference">{{ line.reference }}</template>
+								<span v-if="line.supplier_code" class="ml-1 text-gray-400" :title="line.supplier_name ?? undefined">{{ line.supplier_name ?? line.supplier_code }}</span>
+							</td>
+							<td class="w-24 whitespace-nowrap px-2.5 py-1.5">
+								<a v-if="line.receipt" :href="route('grp.media.download', { media: line.receipt, inline: 1 })" target="_blank" rel="noopener" class="text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
+									<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+									{{ ctrans("Receipt") }}
+								</a>
+								<span v-else-if="line.no_receipt" class="rounded border border-red-200 bg-red-50 px-1.5 text-red-700">{{ ctrans("No receipt") }}</span>
+							</td>
+							<td class="w-32 whitespace-nowrap px-2.5 py-1.5 text-right tabular-nums text-gray-700">
+								{{ money(item.currency_code, line.amount) }}
+								<div v-if="clientRate" class="text-gray-400">{{ inClientCurrency(line.amount) }}</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div v-if="item.notes" class="mt-1 text-xs text-gray-400">{{ item.notes }}</div>
 		</template>
 
-		<template #cell(state)="{ item }">
-			<span class="whitespace-nowrap rounded px-1.5 py-0.5 text-xs" :class="stateClass[item.state]">{{ item.state_label }}</span>
-			<div v-if="item.state === 'requested'" class="mt-1 whitespace-nowrap text-xs" :class="item.approved_at ? 'text-green-700' : 'text-gray-400'">
-				{{ item.approved_at ? ctrans("Approved by :user", { user: item.approved_by ?? "-" }) : ctrans("Waiting for approval") }}
-			</div>
-			<div v-if="item.state === 'rejected'" class="mt-1 max-w-xs text-xs text-red-700">
-				{{ ctrans("Rejected by :user: :reason", { user: item.rejected_by ?? "-", reason: item.rejection_reason ?? "" }) }}
-			</div>
-			<div v-if="item.requested_by" class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Asked by :user", { user: item.requested_by }) }}</div>
-		</template>
 
 		<template #cell(total)="{ item }">
 			<span class="whitespace-nowrap" :class="item.state === 'cancelled' ? 'text-gray-400 line-through' : ''">{{ money(item.currency_code, item.total) }}</span>
+			<div v-if="clientRate" class="whitespace-nowrap text-xs text-gray-400">{{ inClientCurrency(item.total) }}</div>
 		</template>
 
 		<template #cell(paid)="{ item }">
 			<span class="whitespace-nowrap">{{ item.paid ? money(item.currency_code, item.paid) : "-" }}</span>
+			<div v-if="clientRate && item.paid" class="whitespace-nowrap text-xs text-gray-400">{{ inClientCurrency(item.paid) }}</div>
 		</template>
 
 		<template #cell(outstanding)="{ item }">
-			<span class="whitespace-nowrap font-medium" :class="item.outstanding > 0 ? 'text-gray-800' : 'text-gray-400'">
-				{{ item.outstanding > 0 ? money(item.currency_code, item.outstanding) : "-" }}
+			<span class="whitespace-nowrap font-medium" :class="isDue(item) ? 'text-gray-800' : 'text-gray-400'">
+				{{ isDue(item) ? money(item.currency_code, item.outstanding) : "-" }}
 			</span>
+			<div v-if="clientRate && isDue(item)" class="whitespace-nowrap text-xs text-gray-400">{{ inClientCurrency(item.outstanding) }}</div>
 		</template>
 
 		<template #cell(actions)="{ item }">
-			<div class="flex justify-end gap-2">
+			<div class="flex flex-col items-start gap-1.5">
+				<div v-if="!item.approve_route || item.requested_by" class="mb-0.5">
+					<span v-if="!item.approve_route" class="whitespace-nowrap rounded px-1.5 py-0.5 text-xs" :class="stateClass[item.state]">{{ item.state_label }}</span>
+					<span v-if="item.state === 'approved'" class="ml-1.5 whitespace-nowrap text-xs text-gray-500">{{ ctrans("by :user", { user: item.approved_by ?? "-" }) }}</span>
+					<div v-if="item.state === 'rejected'" class="mt-1 max-w-xs text-xs text-red-700">
+						{{ ctrans("Declined by :user: :reason", { user: item.rejected_by ?? "-", reason: item.rejection_reason ?? "" }) }}
+					</div>
+					<div v-if="item.requested_by" class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Asked by :user", { user: item.requested_by }) }}</div>
+				</div>
 				<div v-if="item.remind_route" class="flex flex-col items-end">
 					<span v-tooltip="item.next_reminder_at ? ctrans('One reminder an hour. Next one from :time', { time: useFormatTime(item.next_reminder_at, { formatTime: 'HH:mm' }) }) : undefined">
 						<Button
@@ -219,31 +229,23 @@ const stateClass: Record<string, string> = {
 						{{ item.last_reminded_at ? ctrans("Last sent :time", { time: useRangeFromNow(item.last_reminded_at, { addSuffix: true }) }) : ctrans("No reminder sent yet") }}
 					</span>
 				</div>
-				<Button v-if="item.approve_route" type="tertiary" size="xs" :label="ctrans('Approve')" :loading="approvingId === item.id" @click="emit('approve', item)">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button v-if="item.unapprove_route" type="tertiary" size="xs" :label="ctrans('Cancel approval')" :loading="approvingId === item.id" @click="emit('unapprove', item)">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button v-if="item.reject_route" type="tertiary" size="xs" :label="ctrans('Reject')" @click="emit('reject', item)">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-ban" class="text-amber-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button v-if="item.pay_route" type="tertiary" size="xs" :label="ctrans('Pay')" @click="emit('pay', item)">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button v-if="item.cancel_route" type="negative" size="xs" :label="ctrans('Cancel')" @click="emit('cancel', item)">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div class="grid w-max gap-1.5">
+					<Button v-if="item.approve_route" type="tertiary" size="xs" :label="ctrans('Approve')" :loading="approvingId === item.id" @click="emit('approve', item)">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button v-if="item.reject_route" v-tooltip="item.state === 'approved' ? ctrans('Changed your mind? Nothing will be paid. The agent gets your reason and can ask again with a new request.') : ctrans('Do not approve it. The agent gets your reason and can ask again with a new request.')" type="tertiary" size="xs" :label="ctrans('Decline')" @click="emit('reject', item)">
+						<template #icon>
+							<FontAwesomeIcon :icon="item.state === 'approved' ? 'fal fa-undo' : 'fal fa-ban'" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button v-if="item.cancel_route" type="negative" size="xs" :label="ctrans('Cancel')" @click="emit('cancel', item)">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</div>
 		</template>
 	</Table>

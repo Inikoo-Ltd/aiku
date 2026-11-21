@@ -81,6 +81,7 @@ interface EntryRow {
 	reference: string | null
 	notes: string | null
 	receipt: string | null
+	from_bank?: boolean
 	expected_arrival: string | null
 	type: string
 	organisation_id: number
@@ -498,6 +499,7 @@ const confirmRemove = (row: EntryRow) =>
 			<a v-if="item.receipt" :href="route('grp.media.download', { id: item.receipt })" target="_blank" class="ml-2 text-gray-500 hover:text-gray-800" :title="ctrans('Receipt')">
 				<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
 			</a>
+			<span v-else-if="item.from_bank" class="ml-2 whitespace-nowrap rounded border border-gray-200 bg-gray-50 px-1.5 text-xs text-gray-600" :title="ctrans('Read from the client\'s bank, which stands as the bank statement')">{{ ctrans("From the bank") }}</span>
 		</template>
 
 		<template #cell(actions)="{ item }">

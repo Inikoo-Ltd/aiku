@@ -13,6 +13,8 @@ use App\Actions\OrgAction;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Models\Helpers\Media;
+use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;
 use App\Models\SupplyChain\DepositRequest;
 use Illuminate\Http\RedirectResponse;
@@ -36,55 +38,73 @@ class PayAgentMoneyRequest extends OrgAction
      */
     public function handle(DepositRequest $depositRequest, array $modelData): AgentPayment
     {
-        $client  = $depositRequest->organisation;
         $receipt = Arr::get($modelData, 'receipt');
-        $media   = $receipt ? SaveModelAttachment::make()->action($depositRequest->agent, [
+        $media   = $receipt ? self::saveBankStatement($depositRequest->agent, $receipt) : null;
+        $userId = $this->asAction ? null : request()->user()?->id;
+
+        return DB::transaction(function () use ($depositRequest, $modelData, $media, $userId) {
+            $depositRequest = DepositRequest::whereKey($depositRequest->id)->lockForUpdate()->firstOrFail();
+
+            return self::recordTransfer($depositRequest, $modelData, $media?->id, $userId);
+        });
+    }
+
+    /**
+     * Records one transfer against a request the caller has already locked, and settles the request once its transfers cover it.
+     *
+     * @param  array{date: string, amount: float|string, original_amount?: float|string|null, original_currency_id?: int|null, reference?: string|null, bank_transaction_id?: int|null, bank_line_key?: string|null}  $modelData
+     */
+    public static function recordTransfer(DepositRequest $depositRequest, array $modelData, ?int $mediaId, ?int $userId): AgentPayment
+    {
+        if ($depositRequest->state !== DepositRequestStateEnum::REQUESTED) {
+            throw ValidationException::withMessages(['request' => __('This request is no longer open.')]);
+        }
+        if (!$depositRequest->isApproved()) {
+            throw ValidationException::withMessages(['request' => __('Approve the request before paying it.')]);
+        }
+        if ((float) $modelData['amount'] > self::outstanding($depositRequest) + 0.005) {
+            throw ValidationException::withMessages(['amount' => __('That is more than is still due on this request.')]);
+        }
+
+        $client         = $depositRequest->organisation;
+        $originalAmount = Arr::get($modelData, 'original_amount');
+
+        $transfer = AgentPayment::create([
+            'group_id'             => $depositRequest->group_id,
+            'agent_id'             => $depositRequest->agent_id,
+            'organisation_id'      => $client->id,
+            'deposit_request_id'   => $depositRequest->id,
+            'type'                 => AgentPaymentTypeEnum::TRANSFER_RECEIVED,
+            'date'                 => $modelData['date'],
+            'amount'               => round((float) $modelData['amount'], 2),
+            'currency_id'          => $depositRequest->currency_id,
+            'original_amount'      => $originalAmount ? round((float) $originalAmount, 2) : null,
+            'original_currency_id' => $originalAmount ? (Arr::get($modelData, 'original_currency_id') ?? $client->currency_id) : null,
+            'reference'            => Arr::get($modelData, 'reference') ?: $depositRequest->reference,
+            'notes'                => __('Money request :reference', ['reference' => $depositRequest->reference ?? '#'.$depositRequest->id]),
+            'media_id'             => $mediaId,
+            'bank_transaction_id'  => Arr::get($modelData, 'bank_transaction_id'),
+            'created_by'           => $userId,
+            'data'                 => array_filter(['recorded_by' => AgentPayment::RECORDED_BY_CLIENT, MatchAgentMoneyTransfers::LINE_KEY => Arr::get($modelData, MatchAgentMoneyTransfers::LINE_KEY)]),
+        ]);
+
+        if ((float) $depositRequest->transfers()->sum('amount') >= (float) $depositRequest->items()->sum('amount') - 0.005) {
+            $depositRequest->update(['state' => DepositRequestStateEnum::SETTLED, 'settled_at' => now()]);
+            $depositRequest->items()->whereNull('paid_at')->update(['paid_at' => now()]);
+        }
+
+        return $transfer;
+    }
+
+    public static function saveBankStatement(Agent $agent, UploadedFile $receipt): Media
+    {
+        return SaveModelAttachment::make()->action($agent, [
             'path'         => $receipt->getPathName(),
             'originalName' => $receipt->getClientOriginalName(),
             'extension'    => $receipt->getClientOriginalExtension(),
             'scope'        => PurchaseOrderAttachmentScopeEnum::BANK_STATEMENT->value,
             'caption'      => pathinfo($receipt->getClientOriginalName(), PATHINFO_FILENAME),
-        ]) : null;
-
-        return DB::transaction(function () use ($depositRequest, $client, $modelData, $media) {
-            $depositRequest = DepositRequest::whereKey($depositRequest->id)->lockForUpdate()->firstOrFail();
-            if ($depositRequest->state !== DepositRequestStateEnum::REQUESTED) {
-                throw ValidationException::withMessages(['request' => __('This request is no longer open.')]);
-            }
-            if (!$depositRequest->isApproved()) {
-                throw ValidationException::withMessages(['request' => __('Approve the request before paying it.')]);
-            }
-            if ((float) $modelData['amount'] > self::outstanding($depositRequest) + 0.005) {
-                throw ValidationException::withMessages(['amount' => __('That is more than is still due on this request.')]);
-            }
-
-            $originalAmount = Arr::get($modelData, 'original_amount');
-
-            $transfer = AgentPayment::create([
-                'group_id'             => $depositRequest->group_id,
-                'agent_id'             => $depositRequest->agent_id,
-                'organisation_id'      => $client->id,
-                'deposit_request_id'   => $depositRequest->id,
-                'type'                 => AgentPaymentTypeEnum::TRANSFER_RECEIVED,
-                'date'                 => $modelData['date'],
-                'amount'               => round((float) $modelData['amount'], 2),
-                'currency_id'          => $depositRequest->currency_id,
-                'original_amount'      => $originalAmount ? round((float) $originalAmount, 2) : null,
-                'original_currency_id' => $originalAmount ? $client->currency_id : null,
-                'reference'            => Arr::get($modelData, 'reference') ?: $depositRequest->reference,
-                'notes'                => __('Money request :reference', ['reference' => $depositRequest->reference ?? '#'.$depositRequest->id]),
-                'media_id'             => $media?->id,
-                'created_by'           => $this->asAction ? null : request()->user()?->id,
-                'data'                 => ['recorded_by' => AgentPayment::RECORDED_BY_CLIENT],
-            ]);
-
-            if ((float) $depositRequest->transfers()->sum('amount') >= (float) $depositRequest->items()->sum('amount') - 0.005) {
-                $depositRequest->update(['state' => DepositRequestStateEnum::SETTLED, 'settled_at' => now()]);
-                $depositRequest->items()->whereNull('paid_at')->update(['paid_at' => now()]);
-            }
-
-            return $transfer;
-        });
+        ]);
     }
 
     public function rules(): array

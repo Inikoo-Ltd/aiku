@@ -60,8 +60,16 @@ class IndexAgentMoneyRequests extends OrgAction
 
         $query->whereElementGroup(
             key: 'state',
-            allowedElements: DepositRequestStateEnum::values(),
-            engine: fn ($query, $elements) => $query->whereIn('deposit_requests.state', $elements),
+            allowedElements: array_keys(self::shownStateLabels()),
+            engine: fn ($query, $elements) => $query->where(function ($query) use ($elements) {
+                foreach ($elements as $element) {
+                    $query->orWhere(fn ($query) => match ($element) {
+                        'requested' => $query->where('deposit_requests.state', DepositRequestStateEnum::REQUESTED)->whereNull('deposit_requests.approved_at'),
+                        'approved'  => $query->where('deposit_requests.state', DepositRequestStateEnum::REQUESTED)->whereNotNull('deposit_requests.approved_at'),
+                        default     => $query->where('deposit_requests.state', $element),
+                    });
+                }
+            }),
             prefix: $prefix,
         );
 
@@ -110,8 +118,8 @@ class IndexAgentMoneyRequests extends OrgAction
             'reference'     => $depositRequest->reference ?? '#'.$depositRequest->id,
             'client_code'   => $depositRequest->client_code,
             'requested_at'  => $depositRequest->requested_at,
-            'state'         => $depositRequest->state->value,
-            'state_label'   => DepositRequestStateEnum::labels()[$depositRequest->state->value],
+            'state'         => self::shownState($depositRequest),
+            'state_label'   => self::shownStateLabels()[self::shownState($depositRequest)],
             'currency_code' => $depositRequest->currency_code,
             'total'         => $total,
             'paid'          => $paid,
@@ -148,29 +156,57 @@ class IndexAgentMoneyRequests extends OrgAction
             'approve_route' => $canPay && !$depositRequest->isApproved()
                 ? ['name' => 'grp.models.deposit_request.approve', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
                 : null,
-            'unapprove_route' => $canPay && $depositRequest->isApproved() && $paid == 0
-                ? ['name' => 'grp.models.deposit_request.unapprove', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
-                : null,
             'reject_route'  => $canPay && $paid == 0
                 ? ['name' => 'grp.models.deposit_request.reject', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
-                : null,
-            'pay_route'     => $canPay && $depositRequest->isApproved()
-                ? ['name' => 'grp.models.deposit_request.pay', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'post']
                 : null,
         ];
     }
 
-    public function tableStructure(?string $prefix = null, bool $forClient = false): Closure
+    /**
+     * An open request waits for the client's approval, then is approved and waits to be paid: both are state requested in the database, told apart by approved_at.
+     */
+    public static function shownState(DepositRequest $depositRequest): string
     {
-        return function (InertiaTable $table) use ($prefix, $forClient) {
+        if ($depositRequest->state === DepositRequestStateEnum::REQUESTED) {
+            return $depositRequest->isApproved() ? 'approved' : 'requested';
+        }
+
+        return $depositRequest->state->value;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function shownStateLabels(): array
+    {
+        return [
+            'requested' => __('Waiting for approval'),
+            'approved'  => __('Approved'),
+            'settled'   => __('Paid'),
+            'cancelled' => __('Cancelled'),
+            'rejected'  => __('Declined'),
+        ];
+    }
+
+    public function tableStructure(Agent $agent, ?Organisation $client = null, ?string $prefix = null, bool $forClient = false): Closure
+    {
+        return function (InertiaTable $table) use ($agent, $client, $prefix, $forClient) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
+            $counts = DepositRequest::where('agent_id', $agent->id)
+                ->whereNotNull('organisation_id')
+                ->when($client, fn ($query) => $query->where('organisation_id', $client->id))
+                ->toBase()
+                ->selectRaw("case when state = 'requested' and approved_at is not null then 'approved' else state end as shown_state, count(*) as number")
+                ->groupByRaw('1')
+                ->pluck('number', 'shown_state');
+
             $table->elementGroup(
                 key: 'state',
                 label: __('State'),
-                elements: collect(DepositRequestStateEnum::labels())->map(fn ($label) => [$label, null])->all(),
+                elements: collect(self::shownStateLabels())->map(fn ($label, $state) => [$label, (int) ($counts[$state] ?? 0)])->all(),
             );
 
             $table->withGlobalSearch()->withEmptyState(['title' => __('No money requests')]);
@@ -180,11 +216,10 @@ class IndexAgentMoneyRequests extends OrgAction
                 $table->column(key: 'client_code', label: __('Client'), canBeHidden: false);
             }
             $table->column(key: 'lines', label: __('For'), canBeHidden: false)
-                ->column(key: 'state', label: __('State'), canBeHidden: false)
                 ->column(key: 'total', label: __('Asked'), canBeHidden: false, align: 'right')
                 ->column(key: 'paid', label: __('Paid'), canBeHidden: false, align: 'right')
                 ->column(key: 'outstanding', label: __('Due'), canBeHidden: false, align: 'right')
-                ->column(key: 'actions', label: '', canBeHidden: false, align: 'right')
+                ->column(key: 'actions', label: __('State'), canBeHidden: false)
                 ->defaultSort('-requested_at');
         };
     }
@@ -237,6 +272,6 @@ class IndexAgentMoneyRequests extends OrgAction
                     : null,
                 'data'        => $requests->through(fn (DepositRequest $depositRequest) => self::row($depositRequest->setRelation('agent', $this->agent), $user, false, $reminderRecipients[$depositRequest->id] ?? null)),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($this->agent));
     }
 }

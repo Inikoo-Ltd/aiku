@@ -34,7 +34,7 @@ class MoneyRequestRejectedNotification extends Notification
 
     public function title(): string
     {
-        return __(':client rejected money request :reference', [
+        return __(':client declined money request :reference', [
             'client'    => $this->depositRequest->organisation->code,
             'reference' => $this->depositRequest->reference ?? '#'.$this->depositRequest->id,
         ]);
@@ -42,7 +42,7 @@ class MoneyRequestRejectedNotification extends Notification
 
     public function body(): string
     {
-        return __(':user rejected it: :reason', ['user' => $this->rejecterName, 'reason' => $this->depositRequest->rejection_reason]);
+        return __(':user declined it: :reason', ['user' => $this->rejecterName, 'reason' => $this->depositRequest->rejection_reason]);
     }
 
     public function toArray($notifiable): array

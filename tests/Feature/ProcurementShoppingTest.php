@@ -4414,6 +4414,115 @@ test('a payer saved before the payer rules can no longer approve once they are t
     actingAs($this->adminGuest->getUser());
 });
 
+test('the money tab heads with what is still due on approved requests, not the balance with the agent (HELP-4864)', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'H4864-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $ask = function (float $amount) use ($agent, $client) {
+        $expense = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => $amount, 'notes' => 'H4864']);
+
+        return \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => $amount]]]);
+    };
+    $approved = $ask(300);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($approved, null);
+    \App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest::make()->action($approved->refresh(), ['date' => date('Y-m-d'), 'amount' => 100]);
+    $ask(50);
+    $secondApproved = $ask(25);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($secondApproved, null);
+
+    actingAs(agentOrganisationAdmin($client, 'h4864-'.Str::lower(Str::random(6))));
+    $this->withoutVite()->get(route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('money.to_pay.amount', 225)
+            ->where('money.to_pay.references', [$approved->refresh()->reference ?? '#'.$approved->id, $secondApproved->refresh()->reference ?? '#'.$secondApproved->id])
+            ->where('money.to_pay.waiting_approval', 50)
+            ->where('money.to_pay.requests.0.lines.0.amount', 300)
+            ->where('money.to_pay.requests.0.lines.0.description', fn ($description) => str_contains($description, 'H4864'))
+            ->where('money.to_pay.requests.0.total', 300)
+            ->where('money.to_pay.requests.0.paid', 100)
+            ->where('money.to_pay.requests.0.due', 200)
+            ->where('money.to_pay.client_amount', null)
+            ->where('queryBuilderProps.money.elementGroups.state.elements.requested.1', 1)
+            ->where('queryBuilderProps.money.elementGroups.state.elements.approved.1', 2)
+            ->where('money.requests.data', fn ($rows) => collect($rows)->pluck('state')->sort()->values()->all() === ['approved', 'approved', 'requested'])
+            ->where('queryBuilderProps.money.elementGroups.state.elements.settled.1', 0)
+            ->etc());
+
+    $otherCurrency = \App\Models\Helpers\Currency::where('id', '!=', $client->currency_id)->firstOrFail();
+    $agent->organisation->update(['currency_id' => $otherCurrency->id]);
+    \Illuminate\Support\Facades\Cache::put('current-currency-exchange:'.$otherCurrency->code.'-'.$client->currency->code, 0.5);
+    $this->withoutVite()->get(route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('money.to_pay.amount', 225)
+            ->where('money.to_pay.client_amount', 112.5)
+            ->where('money.client_rate', 0.5)
+            ->etc());
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('one transfer set as paid from the money tab settles the approved requests oldest first, with one bank statement and the amount sent split between them (HELP-4864)', function () {
+    $orgAgent      = createFreshOrgAgent($this);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($this, 'H4864P-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client        = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($this->group->id);
+
+    $ask = function (float $amount) use ($agent, $client) {
+        $expense = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => $amount, 'notes' => 'H4864P']);
+
+        return \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => $amount]]]);
+    };
+    $older   = $ask(300);
+    $newer   = $ask(100);
+    $waiting = $ask(40);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($older, null);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($newer, null);
+    $older->updateQuietly(['requested_at' => now()->subDay()]);
+
+    $agentStaff = agentOrganisationAdmin($agent->organisation, 'h4864p-a-'.Str::lower(Str::random(6)));
+    $agentStaff->givePermissionTo("procurement.$client->id.view");
+    actingAs($agentStaff);
+    $payRoute = route('grp.models.org_agent.money_requests.pay', $orgAgent->id);
+    $receipt  = fn () => \Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf');
+    $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 400, 'receipt' => $receipt()])->assertForbidden();
+
+    $payer = agentOrganisationAdmin($client, 'h4864p-c-'.Str::lower(Str::random(6)));
+    actingAs($payer);
+    $moneyTab = route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']);
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('money.pay_route.name', 'grp.models.org_agent.money_requests.pay')
+        ->where('money.requests.data', fn ($rows) => collect($rows)->every(fn ($row) => !array_key_exists('pay_route', $row)))
+        ->etc());
+
+    $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 400.01, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
+    $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 350, 'original_amount' => 70, 'receipt' => $receipt()])->assertSessionHasNoErrors();
+
+    $transfers = \App\Models\SupplyChain\AgentPayment::whereIn('deposit_request_id', [$older->id, $newer->id])->orderBy('id')->get();
+    expect($transfers->pluck('amount', 'deposit_request_id')->map(fn ($amount) => (float) $amount)->all())->toBe([$older->id => 300.0, $newer->id => 50.0])
+        ->and($transfers->sum(fn ($transfer) => (float) $transfer->original_amount))->toBe(70.0)
+        ->and($transfers->pluck('media_id')->unique()->count())->toBe(1)
+        ->and($transfers->first()->media_id)->not->toBeNull()
+        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
+        ->and(\App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest::outstanding($newer))->toBe(50.0)
+        ->and(\App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $waiting->id)->exists())->toBeFalse();
+
+    $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 50, 'receipt' => $receipt()])->assertSessionHasNoErrors();
+    expect($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+    $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 1, 'receipt' => $receipt()])->assertForbidden();
+
+    actingAs($this->adminGuest->getUser());
+});
+
 test('the agent ledger shows each client\'s suppliers with their own agent fee and loads the list of every supplier only for the fee dialog', function () {
     $orgAgent              = createFreshOrgAgent($this);
     $agent                 = $orgAgent->agent;
@@ -4576,4 +4685,170 @@ test('supplier prepare order puts out of stock SKOs on the supplier draft at the
         ->and($purchaseOrder->parent_id)->toBe($orgSupplier->id)
         ->and((float) $transaction->quantity_ordered)->toBe(800.0)
         ->and(collect($prepare->lines($orgSupplier))->firstWhere('org_supplier_product_id', $orgSupplierProduct->id))->toBeNull();
+});
+
+function agentMoneyBankFixture(object $test, string $tag): array
+{
+    $orgAgent      = createFreshOrgAgent($test);
+    $agent         = $orgAgent->agent;
+    $stockDelivery = createStockDeliveryWithItems($test, $tag.'-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
+    $client = $stockDelivery->organisation;
+    $agent->organisation->update(['currency_id' => $stockDelivery->currency_id]);
+    setPermissionsTeamId($test->group->id);
+
+    $ask = function (float $amount) use ($agent, $client, $tag) {
+        $expense = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => $amount, 'notes' => $tag]);
+        $request = \App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest::make()->action($agent, ['organisation_id' => $client->id, 'lines' => [['kind' => 'expense', 'agent_payment_id' => $expense->id, 'amount' => $amount]]]);
+        $request->updateQuietly(['requested_at' => now()->subHour()]);
+
+        return $request->refresh();
+    };
+
+    $connection = \App\Models\Accounting\BankConnection::create(['group_id' => $client->group_id, 'organisation_id' => $client->id, 'provider' => \App\Enums\Accounting\BankConnection\BankConnectionProviderEnum::WISE, 'name' => 'Wise '.$tag, 'external_id' => (string) random_int(100000, 999999)]);
+    $payeeKey   = \App\Models\Accounting\BankPayee::normalise('CV '.$tag.' Export '.Str::random(5));
+    \App\Models\Accounting\BankPayee::create(['group_id' => $client->group_id, 'key' => $payeeKey, 'name' => $payeeKey, 'category' => 'suppliers', 'model_type' => 'Organisation', 'model_id' => $agent->organisation_id, 'source' => 'auto']);
+    $agentCurrency = $agent->organisation->currency->code;
+
+    $line = function (float $sent, ?float $received, $bookedAt, ?int $currencyId = null, ?string $transferId = null, ?string $payee = null) use ($connection, $payeeKey, $agentCurrency, $stockDelivery) {
+        $transferId ??= (string) random_int(1000000, 9999999);
+
+        return \App\Models\Accounting\BankTransaction::create([
+            'group_id'                => $connection->group_id,
+            'organisation_id'         => $connection->organisation_id,
+            'bank_connection_id'      => $connection->id,
+            'provider_transaction_id' => 'TRANSFER-'.Str::random(8),
+            'provider_type'           => 'TRANSFER',
+            'direction'               => \App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum::OUT,
+            'amount'                  => -$sent,
+            'currency_id'             => $currencyId ?? $stockDelivery->currency_id,
+            'status'                  => \App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum::BOOKED,
+            'counterparty_name'       => $payee ?? $payeeKey,
+            'payee_key'               => $payee ? \App\Models\Accounting\BankPayee::normalise($payee) : $payeeKey,
+            'reference'               => 'Statement '.$transferId,
+            'booked_at'               => $bookedAt,
+            'data'                    => $received === null ? [] : ['transfer' => ['id' => $transferId, 'targetCurrency' => $agentCurrency, 'targetValue' => $received]],
+        ]);
+    };
+
+    return [$orgAgent, $client, $ask, $line];
+}
+
+test('transfers the client\'s bank sent the agent that add up exactly to what is approved and due are set as paid on their own, once, even when sent before the approval (HELP-4864)', function () {
+    [$orgAgent, $client, $ask, $line] = agentMoneyBankFixture($this, 'H4864B');
+    $request = $ask(300);
+
+    $first  = $line(100.50, 100, now()->subMinutes(30));
+    $second = $line(200.50, 200, now()->subMinutes(20));
+    $line(999, 999, now()->subMinutes(10), payee: 'Someone Else '.Str::random(5));
+
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($request, null);
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(2)
+        ->and(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+
+    $transfers = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $request->id)->orderBy('id')->get();
+    expect($transfers->map(fn ($transfer) => [(float) $transfer->amount, $transfer->bank_transaction_id, $transfer->original_amount])->all())->toBe([[100.0, $first->id, null], [200.0, $second->id, null]])
+        ->and($transfers->first()->date->toDateString())->toBe($first->booked_at->toDateString())
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+
+    $next = $ask(50);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($next, null);
+    $first->delete();
+    $line(100.50, 100, now()->subMinutes(30), transferId: $transfers->first()->data['bank_line_key'] ? explode(':', $transfers->first()->data['bank_line_key'])[1] : null);
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+
+    $third = $line(50.50, 50, now()->subMinutes(5));
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(1)
+        ->and(\App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $next->id)->value('bank_transaction_id'))->toBe($third->id)
+        ->and($next->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+});
+
+test('a transfer to the agent that does not add up, or follows one recorded by hand, waits on the money tab for the payer to confirm or set aside (HELP-4864)', function () {
+    [$orgAgent, $client, $ask, $line] = agentMoneyBankFixture($this, 'H4864S');
+    $request = $ask(300);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($request, null);
+
+    $beforeHand = $line(100.50, 100, now()->subMinutes(5));
+    \App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest::make()->action($request->refresh(), ['date' => date('Y-m-d'), 'amount' => 100]);
+    $exact        = $line(200.50, 200, now()->addMinute());
+    $otherCurrency = \App\Models\Helpers\Currency::where('id', '!=', $client->currency_id)->where('id', '!=', $orgAgent->agent->organisation->currency_id)->firstOrFail();
+    $sentInOther  = $line(9, null, now()->addMinutes(2), $otherCurrency->id);
+    $tooMuch      = $line(500.50, 500, now()->addMinutes(3));
+
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+
+    $payer = agentOrganisationAdmin($client, 'h4864s-'.Str::lower(Str::random(6)));
+    actingAs($payer);
+    $moneyTab = route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'money']);
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('money.bank_lines', fn ($lines) => collect($lines)->pluck('id')->all() === [$exact->id, $sentInOther->id, $tooMuch->id])
+        ->where('money.bank_lines.0.amount_to_record', 200)
+        ->where('money.bank_lines.1.received_amount', null)
+        ->where('money.bank_lines.1.amount_to_record', 200)
+        ->where('money.bank_lines.2.too_much', true)
+        ->etc());
+    expect($beforeHand->id)->not->toBeIn([$exact->id]);
+
+    $this->patch(route('grp.models.org_agent.money_requests.bank_line.dismiss', [$orgAgent->id, $tooMuch->id]))->assertRedirect()->assertSessionHasNoErrors();
+    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $tooMuch->id]), ['amount' => 500])->assertSessionHasErrors('bank_transaction');
+    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $sentInOther->id]), ['amount' => 250])->assertSessionHasErrors('bank_transaction');
+    $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $sentInOther->id]), ['amount' => 200])->assertRedirect()->assertSessionHasNoErrors();
+
+    $fromBank = \App\Models\SupplyChain\AgentPayment::where('bank_transaction_id', $sentInOther->id)->sole();
+    expect((float) $fromBank->amount)->toBe(200.0)
+        ->and((float) $fromBank->original_amount)->toBe(9.0)
+        ->and($fromBank->original_currency_id)->toBe($otherCurrency->id)
+        ->and($fromBank->created_by)->toBe($payer->id)
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+
+    $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page->where('money.bank_lines', [])->etc());
+
+    actingAs($this->adminGuest->getUser());
+});
+
+test('transfers split over two approved requests are recorded together, a same-day line booked at midnight counts, and a transfer the agent entered itself stops recording on its own (HELP-4864)', function () {
+    [$orgAgent, $client, $ask, $line] = agentMoneyBankFixture($this, 'H4864W');
+    $older = $ask(300);
+    $older->updateQuietly(['requested_at' => now()->subDays(2)]);
+    $newer = $ask(100);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($older, null);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($newer, null);
+
+    $line(250, 250, now()->subDays(2)->startOfDay());
+    $line(150, 150, now()->subDays(2)->startOfDay()->addHours(20));
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(2)
+        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
+        ->and(\App\Models\SupplyChain\AgentPayment::whereIn('deposit_request_id', [$older->id, $newer->id])->whereNotNull('created_by')->exists())->toBeFalse();
+
+    $third = $ask(80);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($third, null);
+    \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($orgAgent->agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'transfer_received', 'amount' => 80, 'notes' => 'H4864W agent entered']);
+    $line(80, 80, now()->addMinute());
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0)
+        ->and($third->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED);
+});
+
+test('a bank line booked at Prague midnight on the request\'s day counts, a hand record a few days before the window still stops recording on its own, and two equal lines wait for a person (HELP-4864)', function () {
+    [$orgAgent, $client, $ask, $line] = agentMoneyBankFixture($this, 'H4864T');
+    $paidByHand = $ask(60);
+    $paidByHand->updateQuietly(['requested_at' => now()->subDays(5)]);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($paidByHand, null);
+    \App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest::make()->action($paidByHand->refresh(), ['date' => date('Y-m-d'), 'amount' => 60]);
+    \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $paidByHand->id)->update(['created_at' => now()->subDays(3)]);
+
+    $request = $ask(60);
+    $request->updateQuietly(['requested_at' => now()->setTimezone('Europe/Prague')->startOfDay()->addHours(9)]);
+    \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($request, null);
+    $lateBooked = $line(60, null, now()->setTimezone('Europe/Prague')->startOfDay());
+
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::make()->candidates($orgAgent)->pluck('line.id')->all())->toBe([$lateBooked->id])
+        ->and(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
+
+    \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $paidByHand->id)->update(['created_at' => now()->subDays(30)]);
+    $line(60, null, now()->setTimezone('Europe/Prague')->startOfDay()->addHours(2));
+    expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0)
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED);
 });

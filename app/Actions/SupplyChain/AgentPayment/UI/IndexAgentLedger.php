@@ -415,6 +415,7 @@ class IndexAgentLedger extends OrgAction
                     'reference'              => $entry->reference,
                     'notes'                  => $entry->notes,
                     'receipt'                => $entry->receipt_ulid,
+                    'from_bank'              => $entry->bank_transaction_id !== null,
                     'expected_arrival'       => $entry->expectedArrival()?->gte(today()) ? $entry->expectedArrival()->toDateString() : null,
                     'purchase_order_id'      => $entry->purchase_order_id,
                     'stock_delivery_id'      => $entry->stock_delivery_id,

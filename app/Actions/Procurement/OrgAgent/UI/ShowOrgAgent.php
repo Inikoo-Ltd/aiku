@@ -28,7 +28,14 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Actions\SupplyChain\AgentPayment\UI\IndexAgentLedger;
 use App\Actions\SupplyChain\DepositRequest\UI\IndexAgentMoneyRequests;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Models\SupplyChain\Agent;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers;
+use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequests;
 use App\Models\SupplyChain\DepositRequest;
+use App\Models\SupplyChain\DepositRequestItem;
+use Illuminate\Support\Facades\DB;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
 use App\Http\Resources\Procurement\SupplierMessagesResource;
 use App\Http\Resources\History\HistoryResource;
@@ -177,7 +184,7 @@ class ShowOrgAgent extends OrgAction
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: OrgAgentTabsEnum::NOTES->value))
             ->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value, withRecordColumn: true))
             ->table(IndexSupplierMessages::make()->tableStructure($orgAgent, prefix: OrgAgentTabsEnum::INBOX->value))
-            ->table(IndexAgentMoneyRequests::make()->tableStructure(prefix: OrgAgentTabsEnum::MONEY->value, forClient: true))
+            ->table(IndexAgentMoneyRequests::make()->tableStructure($orgAgent->agent, $this->organisation, prefix: OrgAgentTabsEnum::MONEY->value, forClient: true))
             ->table(IndexAttachments::make()->tableStructure(prefix: OrgAgentTabsEnum::ATTACHMENTS->value));
     }
 
@@ -298,14 +305,105 @@ class ShowOrgAgent extends OrgAction
         $wallet        = collect(IndexAgentLedger::make()->wallets($agent))
             ->first(fn (array $wallet) => $wallet['organisation_id'] === $this->organisation->id && $wallet['currency_code'] === $agentCurrency)
             ?? ['received' => 0.0, 'paid' => 0.0, 'balance' => 0.0];
-        $user = $request->user();
+        $user       = $request->user();
+        $clientRate = $agent->organisation->currency_id !== $this->organisation->currency_id
+            ? GetCurrencyExchange::make()->cachedOrStored($agent->organisation->currency, $this->organisation->currency)
+            : null;
 
         return [
             'agent_currency_code'  => $agentCurrency,
             'client_currency_code' => $this->organisation->currency->code,
+            'client_rate'          => $clientRate,
             'wallet'               => ['received' => $wallet['received'], 'paid' => $wallet['paid'], 'balance' => $wallet['balance']],
-            'requests'             => IndexAgentMoneyRequests::make()->handle($agent, $this->organisation, OrgAgentTabsEnum::MONEY->value)
+            'to_pay'               => $this->toPay($agent, $clientRate),
+            'pay_route'            => ($canPay = PayAgentMoneyRequests::canPayAll($orgAgent, $user))
+                ? ['name' => 'grp.models.org_agent.money_requests.pay', 'parameters' => ['orgAgent' => $orgAgent->id], 'method' => 'post']
+                : null,
+            'bank_lines'           => $canPay ? $this->bankLines($orgAgent) : [],
+            'requests'            => IndexAgentMoneyRequests::make()->handle($agent, $this->organisation, OrgAgentTabsEnum::MONEY->value)
                 ->through(fn (DepositRequest $depositRequest) => IndexAgentMoneyRequests::row($depositRequest, $user, true)),
+        ];
+    }
+
+    /**
+     * Transfers the client's banks sent the agent that did not settle its approved requests on their own, for a payer to confirm.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function bankLines(OrgAgent $orgAgent): array
+    {
+        $matcher       = MatchAgentMoneyTransfers::make();
+        $due           = $matcher->due($orgAgent);
+        $agentCurrency = $orgAgent->agent->organisation->currency->code;
+
+        return $matcher->candidates($orgAgent)->map(function (array $candidate) use ($orgAgent, $due, $agentCurrency) {
+            $line   = $candidate['line'];
+            $amount = $candidate['received'] ?? $due;
+
+            return [
+                'id'                => $line->id,
+                'date'              => MatchAgentMoneyTransfers::bookedDate($line, $orgAgent),
+                'bank'              => $line->bankConnection->name,
+                'payee'             => $line->counterparty_name,
+                'reference'         => $line->reference,
+                'sent_amount'       => abs((float) $line->amount),
+                'sent_currency'     => $line->currency->code,
+                'received_amount'   => $candidate['received'],
+                'currency_code'     => $agentCurrency,
+                'amount_to_record'  => $amount,
+                'too_much'          => $amount > $due + 0.005,
+                'pay_route'         => ['name' => 'grp.models.org_agent.money_requests.pay_from_bank', 'parameters' => ['orgAgent' => $orgAgent->id, 'bankTransaction' => $line->id]],
+                'dismiss_route'     => ['name' => 'grp.models.org_agent.money_requests.bank_line.dismiss', 'parameters' => ['orgAgent' => $orgAgent->id, 'bankTransaction' => $line->id]],
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * What the client still has to send for its open money requests, across every page of the table: approved ones are the amount to pay now.
+     *
+     * Requests are always in the agent's currency, so the agent-to-client rate converts them.
+     *
+     * @return array{currency_code: string|null, amount: float, client_amount: float|null, references: list<string>, requests: list<array<string, mixed>>, waiting_approval: float}
+     */
+    private function toPay(Agent $agent, ?float $clientRate): array
+    {
+        $open = DepositRequest::query()
+            ->where('deposit_requests.agent_id', $agent->id)
+            ->where('deposit_requests.organisation_id', $this->organisation->id)
+            ->where('deposit_requests.state', DepositRequestStateEnum::REQUESTED)
+            ->join('currencies', 'currencies.id', 'deposit_requests.currency_id')
+            ->select(['deposit_requests.id', 'deposit_requests.reference', 'deposit_requests.approved_at', 'currencies.code as currency_code'])
+            ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
+            ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
+            ->with(['items.purchaseOrder:id,reference', 'items.stockDelivery:id,reference', 'items.agentPayment:id,type,notes'])
+            ->orderBy('deposit_requests.requested_at')
+            ->orderBy('deposit_requests.id')
+            ->get()
+            ->map(fn (DepositRequest $depositRequest) => [
+                'reference'     => $depositRequest->reference ?? '#'.$depositRequest->id,
+                'approved'      => $depositRequest->approved_at !== null,
+                'currency_code' => $depositRequest->currency_code,
+                'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
+                    'description' => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItem::describeExpense($item),
+                    'reference'   => $item->purchaseOrder?->reference ?? $item->stockDelivery?->reference,
+                    'amount'      => round((float) $item->amount, 2),
+                ])->values()->all(),
+                'total'         => round((float) $depositRequest->total, 2),
+                'paid'          => round((float) $depositRequest->paid, 2),
+                'due'           => max(0, round((float) $depositRequest->total - (float) $depositRequest->paid, 2)),
+            ])
+            ->filter(fn (array $request) => $request['due'] > 0);
+
+        $approved = $open->where('approved', true);
+        $amount   = round($approved->sum('due'), 2);
+
+        return [
+            'currency_code'    => $approved->first()['currency_code'] ?? $open->first()['currency_code'] ?? null,
+            'amount'           => $amount,
+            'client_amount'    => $clientRate && $amount > 0 ? round($amount * $clientRate, 2) : null,
+            'references'       => $approved->pluck('reference')->values()->all(),
+            'requests'         => $approved->map(fn (array $request) => Arr::except($request, ['approved']))->values()->all(),
+            'waiting_approval' => round($open->where('approved', false)->sum('due'), 2),
         ];
     }
 }

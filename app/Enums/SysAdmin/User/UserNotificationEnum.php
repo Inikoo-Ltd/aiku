@@ -27,7 +27,6 @@ enum UserNotificationEnum: string
     case MONEY_REQUEST_CREATED = 'money_request_created';
     case MONEY_REQUEST_APPROVED = 'money_request_approved';
     case MONEY_REQUEST_PAID = 'money_request_paid';
-    case MONEY_REQUEST_UNAPPROVED = 'money_request_unapproved';
     case MONEY_REQUEST_REJECTED = 'money_request_rejected';
     case MONEY_REQUEST_CANCELLED = 'money_request_cancelled';
     case SUPPLIER_PRODUCT_AVAILABILITY = 'supplier_product_availability';
@@ -65,7 +64,6 @@ enum UserNotificationEnum: string
         self::MONEY_REQUEST_CREATED,
         self::MONEY_REQUEST_APPROVED,
         self::MONEY_REQUEST_PAID,
-        self::MONEY_REQUEST_UNAPPROVED,
         self::MONEY_REQUEST_REJECTED,
         self::MONEY_REQUEST_CANCELLED,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
@@ -92,8 +90,7 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
             self::MONEY_REQUEST_APPROVED        => __('The client approves a money request I asked for or am copied on'),
             self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
-            self::MONEY_REQUEST_UNAPPROVED      => __('The client cancels its approval of a money request I asked for'),
-            self::MONEY_REQUEST_REJECTED        => __('The client rejects a money request I asked for or am copied on'),
+            self::MONEY_REQUEST_REJECTED        => __('The client declines a money request I asked for or am copied on'),
             self::MONEY_REQUEST_CANCELLED       => __('An agent withdraws a money request I approve, pay or am copied on'),
             self::SUPPLIER_PRODUCT_AVAILABILITY => __('An agent changes the availability of a product my organisation buys'),
             self::SUPPLIER_MATERIAL_PLANNING    => __('A supplier sends material planning notes or documents for a product my organisation buys'),
@@ -182,7 +179,6 @@ enum UserNotificationEnum: string
             self::MONEY_REQUEST_CREATED         => 'fal fa-money-check-alt',
             self::MONEY_REQUEST_APPROVED        => 'fal fa-thumbs-up',
             self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',
-            self::MONEY_REQUEST_UNAPPROVED      => 'fal fa-undo',
             self::MONEY_REQUEST_REJECTED        => 'fal fa-ban',
             self::MONEY_REQUEST_CANCELLED       => 'fal fa-times-circle',
             self::SUPPLIER_PRODUCT_AVAILABILITY => 'fal fa-box-check',

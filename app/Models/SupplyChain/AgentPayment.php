@@ -9,6 +9,7 @@
 namespace App\Models\SupplyChain;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum;
+use App\Models\Accounting\BankTransaction;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
@@ -55,6 +56,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $notes
  * @property PurchaseOrderPaymentMethodEnum|null $method
  * @property int|null $media_id
+ * @property int|null $bank_transaction_id the client's bank line this transfer was matched to, standing as its bank statement
  * @property int|null $created_by
  */
 class AgentPayment extends Model implements Auditable
@@ -247,5 +249,10 @@ class AgentPayment extends Model implements Auditable
     public function bankStatement(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'media_id');
+    }
+
+    public function bankTransaction(): BelongsTo
+    {
+        return $this->belongsTo(BankTransaction::class);
     }
 }

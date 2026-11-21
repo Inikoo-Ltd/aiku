@@ -15,6 +15,8 @@ use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Helpers\Currency;
+use App\Models\SupplyChain\AgentPayment;
+use App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -338,7 +340,8 @@ class SyncWiseBankConnection
 
     private function paidLineChanged(BankTransaction $stored, array $values): bool
     {
-        return $stored->payment_id !== null && $stored->match_state !== BankTransactionMatchStateEnum::REVIEW && $this->lineChanged($stored, $values);
+        return ($stored->payment_id !== null || AgentPayment::withTrashed()->where(fn ($query) => $query->where('bank_transaction_id', $stored->id)->orWhere('data->'.MatchAgentMoneyTransfers::LINE_KEY, MatchAgentMoneyTransfers::lineKey($stored)))->exists())
+            && $stored->match_state !== BankTransactionMatchStateEnum::REVIEW && $this->lineChanged($stored, $values);
     }
 
     /**
@@ -347,7 +350,7 @@ class SyncWiseBankConnection
      */
     private function flagPaidLineChanged(BankTransaction $stored): array
     {
-        Sentry::captureMessage("Bank line $stored->id changed after it paid order $stored->order_id (payment $stored->payment_id)");
+        Sentry::captureMessage("Bank line $stored->id changed after it was recorded as paid (order $stored->order_id, payment $stored->payment_id, or an agent transfer)");
 
         return [
             'match_state' => BankTransactionMatchStateEnum::REVIEW,
