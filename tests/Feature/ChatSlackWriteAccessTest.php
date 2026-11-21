@@ -1,0 +1,390 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 21 Nov 2026 21:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+/** @noinspection PhpUnhandledExceptionInspection */
+
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteClient;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteException;
+use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
+use App\Actions\SysAdmin\User\UpdateUser;
+use App\Models\Chat\SlackConnection;
+use App\Models\Chat\SlackUser;
+use App\Models\SysAdmin\User;
+use App\Models\Web\Website;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+
+beforeAll(function () {
+    loadDB();
+});
+
+beforeEach(function () {
+    $web = Website::has('shop')->first();
+    if (!$web) {
+        list($this->organisation, $this->user) = createShop();
+    } else {
+        $this->organisation = $web->organisation;
+        $this->user         = createAdminGuest($this->organisation->group)->getUser();
+    }
+    $this->group = $this->organisation->group;
+    app()->instance('group', $this->group);
+    setPermissionsTeamId($this->group->id);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    Config::set('services.slack.client_id', 'client-id-test');
+    Config::set('services.slack.client_secret', 'client-secret-test');
+    Config::set('services.slack.team_id', 'TOURTEAM');
+    Http::preventStrayRequests();
+
+    $this->token = 'xoxp-test-'.Str::random(24);
+
+    $this->makeUser = function (?string $role = 'help-desk-clerk', bool $linked = true): User {
+        $user = User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]);
+        if ($role) {
+            $user->assignRole($role);
+        }
+        if ($linked) {
+            SlackUser::create(['slack_id' => 'UW'.Str::upper(Str::random(9)), 'name' => 'person.'.$user->id, 'display_name' => 'Person '.$user->id, 'email' => $user->email, 'user_id' => $user->id]);
+        }
+
+        return $user;
+    };
+
+    $this->slackIdOf = fn (User $user): string => SlackUser::where('user_id', $user->id)->value('slack_id');
+
+    $this->connect = function (User $user, array $overrides = []): SlackConnection {
+        return SlackConnection::create(array_merge([
+            'user_id'       => $user->id,
+            'slack_user_id' => ($this->slackIdOf)($user),
+            'team_id'       => 'TOURTEAM',
+            'token'         => $this->token,
+            'scopes'        => implode(',', SlackWriteAccess::USER_SCOPES),
+            'connected_at'  => now(),
+        ], $overrides));
+    };
+
+    $this->fakeSlack = function (User $user, array $authedUser = [], string $teamId = 'TOURTEAM'): void {
+        Http::fake([
+            'slack.com/api/oauth.v2.access' => Http::response([
+                'ok'          => true,
+                'team'        => ['id' => $teamId],
+                'authed_user' => array_merge(['id' => ($this->slackIdOf)($user), 'scope' => 'chat:write,reactions:write', 'access_token' => $this->token, 'token_type' => 'user'], $authedUser),
+            ]),
+            'slack.com/api/auth.revoke' => Http::response(['ok' => true, 'revoked' => true]),
+        ]);
+    };
+
+    $this->startAndGetState = function (User $user): string {
+        $response = actingAs($user)->get(route('grp.chat.staff.slack.connect.start'));
+        $response->assertRedirect();
+        parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+        expect($response->headers->get('Location'))->toStartWith('https://slack.com/oauth/v2/authorize?')
+            ->and($query['user_scope'])->toBe(implode(',', SlackWriteAccess::USER_SCOPES))
+            ->and($query)->not->toHaveKey('scope')
+            ->and($query['client_id'])->toBe('client-id-test')
+            ->and($query['redirect_uri'])->toBe(StartSlackConnection::redirectUri())
+            ->and($query['state'])->toBe(session(StartSlackConnection::STATE_KEY)['value']);
+
+        return $query['state'];
+    };
+});
+
+test('connecting stores the Slack token encrypted and never shows it, and a replayed state stores nothing more', function () {
+    $user = ($this->makeUser)();
+    ($this->fakeSlack)($user);
+    $state = ($this->startAndGetState)($user);
+
+    $callback = actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-1', 'state' => $state]));
+    $callback->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::NOTICE_KEY)->assertSessionMissing(StartSlackConnection::STATE_KEY);
+    expect($callback->getContent())->not->toContain($this->token);
+
+    $connection = SlackConnection::where('user_id', $user->id)->first();
+    $stored     = DB::table('slack_connections')->where('user_id', $user->id)->value('token');
+    expect($connection->token)->toBe($this->token)
+        ->and($stored)->not->toContain($this->token)
+        ->and($connection->slack_user_id)->toBe(($this->slackIdOf)($user))
+        ->and($connection->team_id)->toBe('TOURTEAM')
+        ->and($connection->scopes)->toBe('chat:write,reactions:write')
+        ->and($connection->isLive())->toBeTrue()
+        ->and($connection->toArray())->not->toHaveKey('token')
+        ->and($connection->toJson())->not->toContain($this->token)
+        ->and(SlackWriteAccess::reasonUnavailable($user))->toBeNull()
+        ->and(SlackWriteClient::for($user))->toBeInstanceOf(SlackWriteClient::class);
+
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/oauth.v2.access'
+        && $request->hasHeader('Authorization', 'Basic '.base64_encode('client-id-test:client-secret-test'))
+        && $request['code'] === 'code-1'
+        && $request['redirect_uri'] === StartSlackConnection::redirectUri());
+
+    $page = actingAs($user)->get(route('grp.profile.edit'));
+    $page->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
+        ->where('formData.blueprint', function ($blueprint) {
+            $field = collect($blueprint)->pluck('fields')->map(fn ($fields) => $fields['slack_connection'] ?? null)->filter()->first();
+
+            return $field['connection']['state'] === 'connected' && str_starts_with($field['connection']['slack_name'], 'Person ');
+        }));
+    expect($page->getContent())->not->toContain($this->token)->not->toContain($stored);
+
+    $replay = actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-2', 'state' => $state]));
+    $replay->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    Http::assertSentCount(1);
+});
+
+test('a callback that cannot be trusted stores nothing and explains itself on the settings screen', function (string $case) {
+    $user  = ($this->makeUser)();
+    $other = ($this->makeUser)();
+    match ($case) {
+        'wrong team'   => ($this->fakeSlack)($user, [], 'TOTHERTEAM'),
+        'wrong person' => ($this->fakeSlack)($user, ['id' => ($this->slackIdOf)($other)]),
+        'rotating'     => ($this->fakeSlack)($user, ['refresh_token' => 'xoxe-1-refresh', 'expires_in' => 43200]),
+        'fewer scopes' => ($this->fakeSlack)($user, ['scope' => 'chat:write']),
+        'refused'      => Http::fake(['slack.com/api/oauth.v2.access' => Http::response(['ok' => false, 'error' => 'invalid_code'])]),
+        default        => ($this->fakeSlack)($user),
+    };
+    $state = ($this->startAndGetState)($user);
+
+    $query = match ($case) {
+        'bad state' => ['code' => 'code-1', 'state' => 'not-'.$state],
+        'no state'  => ['code' => 'code-1'],
+        'denied'    => ['error' => 'access_denied', 'state' => $state],
+        default     => ['code' => 'code-1', 'state' => $state],
+    };
+    $response = actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', $query));
+
+    $response->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY)->assertSessionMissing(StartSlackConnection::STATE_KEY);
+    expect(SlackConnection::where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(SlackConnection::where('user_id', $other->id)->exists())->toBeFalse()
+        ->and(session(StartSlackConnection::ERROR_KEY))->not->toContain($this->token);
+
+    if (in_array($case, ['bad state', 'no state', 'denied'])) {
+        Http::assertNothingSent();
+    }
+    if (in_array($case, ['wrong team', 'wrong person', 'rotating', 'fewer scopes'])) {
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/auth.revoke' && $request->hasHeader('Authorization', 'Bearer '.$this->token));
+    }
+
+    actingAs($user)->get(route('grp.profile.edit'))->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
+        ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->contains(fn ($fields) => ($fields['slack_connection']['connection']['state'] ?? null) === 'none')));
+})->with(['bad state', 'no state', 'wrong team', 'wrong person', 'denied', 'rotating', 'fewer scopes', 'refused']);
+
+test('a state made for one person is refused for another, and an expired one too', function () {
+    $user  = ($this->makeUser)();
+    $other = ($this->makeUser)();
+    ($this->fakeSlack)($other);
+    $state = ($this->startAndGetState)($user);
+
+    actingAs($other)->withSession([StartSlackConnection::STATE_KEY => session(StartSlackConnection::STATE_KEY)])
+        ->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-1', 'state' => $state]))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+
+    actingAs($other)->withSession([StartSlackConnection::STATE_KEY => ['value' => 'expired-state', 'user_id' => $other->id, 'expires_at' => now()->subMinute()->timestamp]])
+        ->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-1', 'state' => 'expired-state']))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+
+    expect(SlackConnection::whereIn('user_id', [$user->id, $other->id])->exists())->toBeFalse();
+    Http::assertNothingSent();
+});
+
+test('only engineers can start or see the Slack block, and one without a linked Slack person is told so', function () {
+    $staff = ($this->makeUser)(null);
+    actingAs($staff)->get(route('grp.chat.staff.slack.connect.start'))->assertForbidden();
+    actingAs($staff)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'c', 'state' => 's']))->assertForbidden();
+    actingAs($staff)->get(route('grp.profile.edit'))->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
+        ->where('formData.blueprint', fn ($blueprint) => !collect($blueprint)->pluck('fields')->contains(fn ($fields) => isset($fields['slack_connection']))));
+    expect(SlackWriteAccess::allows($staff))->toBeFalse()
+        ->and(SlackWriteAccess::reasonUnavailable($staff))->toBeString();
+
+    $unlinked = ($this->makeUser)('help-desk-clerk', false);
+    actingAs($unlinked)->get(route('grp.chat.staff.slack.connect.start'))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+
+    Config::set('services.slack.client_secret', null);
+    actingAs(($this->makeUser)())->get(route('grp.chat.staff.slack.connect.start'))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    Http::assertNothingSent();
+});
+
+test('the write client exists only for an engineer with a live connection on a machine allowed to write', function () {
+    $engineer = ($this->makeUser)();
+    expect(SlackWriteClient::for($engineer))->toBeNull()
+        ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('Connect');
+
+    $connection = ($this->connect)($engineer);
+    expect(SlackWriteClient::for($engineer))->toBeInstanceOf(SlackWriteClient::class)
+        ->and(SlackWriteAccess::reasonUnavailable($engineer))->toBeNull();
+
+    $staff = ($this->makeUser)(null);
+    ($this->connect)($staff);
+    expect(SlackWriteClient::for($staff))->toBeNull();
+
+    $environment = app()->environment();
+    app()->instance('env', 'local');
+    try {
+        expect(SlackWriteClient::for($engineer))->toBeNull()
+            ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('switched off');
+    } finally {
+        app()->instance('env', $environment);
+    }
+
+    $connection->update(['needs_reconnect' => true]);
+    expect(SlackWriteClient::for($engineer))->toBeNull()
+        ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('Reconnect');
+
+    $connection->update(['needs_reconnect' => false, 'revoked_at' => now()]);
+    expect(SlackWriteClient::for($engineer))->toBeNull();
+
+    $connection->update(['revoked_at' => null, 'scopes' => 'chat:write']);
+    expect(SlackWriteClient::for($engineer))->toBeNull()
+        ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('Reconnect')
+        ->and($connection->refresh()->needs_reconnect)->toBeFalse();
+    actingAs($engineer)->get(route('grp.profile.edit'))->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
+        ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->contains(fn ($fields) => ($fields['slack_connection']['connection']['state'] ?? null) === 'reconnect')));
+
+    $connection->update(['scopes' => implode(',', SlackWriteAccess::USER_SCOPES)]);
+    DB::table('slack_connections')->where('id', $connection->id)->update(['token' => 'encrypted-with-another-key']);
+    expect(SlackWriteClient::for($engineer))->toBeNull()
+        ->and($connection->refresh()->needs_reconnect)->toBeTrue()
+        ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('Reconnect');
+    DB::table('slack_connections')->where('id', $connection->id)->update(['token' => encrypt($this->token, false), 'needs_reconnect' => false]);
+    expect(SlackWriteClient::for($engineer))->toBeInstanceOf(SlackWriteClient::class);
+
+    $connection->update(['revoked_at' => null]);
+    $engineer->update(['status' => false]);
+    expect(SlackWriteClient::for($engineer->refresh()))->toBeNull();
+});
+
+test('the write client posts as the person, gives up at once on a rate limit and flags a refused token for reconnection', function () {
+    $engineer   = ($this->makeUser)();
+    $connection = ($this->connect)($engineer);
+
+    Http::fake(['slack.com/api/pins.add' => Http::response(['ok' => false, 'error' => 'ratelimited'], 429, ['Retry-After' => '120'])]);
+    expect(fn () => SlackWriteClient::for($engineer)->call('pins.add', ['channel' => 'C1']))
+        ->toThrow(fn (SlackWriteException $exception) => expect($exception->slackError)->toBe('ratelimited'))
+        ->and($connection->refresh()->needs_reconnect)->toBeFalse();
+    Http::assertSentCount(1);
+
+    Http::fake(['slack.com/api/chat.postMessage' => Http::response(['ok' => true, 'ts' => '1790000000.000100'])]);
+    $answer = SlackWriteClient::for($engineer)->call('chat.postMessage', ['channel' => 'C1', 'text' => 'hello', 'blocks' => [['type' => 'section']], 'unfurl_links' => false, 'thread_ts' => null]);
+    expect($answer['ts'])->toBe('1790000000.000100');
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/chat.postMessage'
+        && $request->hasHeader('Authorization', 'Bearer '.$this->token)
+        && $request['text'] === 'hello'
+        && $request['blocks'] === '[{"type":"section"}]'
+        && $request['unfurl_links'] === 'false'
+        && !isset($request['thread_ts'])
+        && !str_contains($request->body(), $this->token));
+
+    Http::fake(['slack.com/api/chat.update' => Http::response(['ok' => false, 'error' => 'cant_update_message'])]);
+    expect(fn () => SlackWriteClient::for($engineer)->call('chat.update', ['channel' => 'C1', 'ts' => '1.1', 'text' => 'x']))
+        ->toThrow(fn (SlackWriteException $exception) => expect($exception->slackError)->toBe('cant_update_message'))
+        ->and($connection->refresh()->needs_reconnect)->toBeFalse();
+
+    Http::fake(['slack.com/api/reactions.add' => Http::response(['ok' => false, 'error' => 'invalid_auth'])]);
+    $client = SlackWriteClient::for($engineer);
+    try {
+        $client->call('reactions.add', ['channel' => 'C1', 'timestamp' => '1.1', 'name' => 'thumbsup']);
+        $this->fail('The refused token did not throw');
+    } catch (SlackWriteException $exception) {
+        expect($exception->slackError)->toBe('invalid_auth')
+            ->and($exception->getMessage())->not->toContain($this->token);
+    }
+    expect($connection->refresh()->needs_reconnect)->toBeTrue()
+        ->and(SlackWriteClient::for($engineer))->toBeNull();
+});
+
+test('disconnecting withdraws the permission at Slack and clears the token, even when Slack cannot be reached', function () {
+    $engineer   = ($this->makeUser)();
+    $connection = ($this->connect)($engineer);
+    Http::fake(['slack.com/api/auth.revoke' => Http::response(['ok' => true, 'revoked' => true])]);
+
+    actingAs($engineer)->delete(route('grp.chat.staff.slack.connect.delete'))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::NOTICE_KEY);
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/auth.revoke'
+        && $request->method() === 'POST'
+        && $request->hasHeader('Authorization', 'Bearer '.$this->token)
+        && !str_contains($request->body(), $this->token));
+    expect(DB::table('slack_connections')->where('id', $connection->id)->value('token'))->toBeNull()
+        ->and($connection->refresh()->revoked_at)->not->toBeNull()
+        ->and(SlackWriteClient::for($engineer))->toBeNull();
+
+    $second           = ($this->makeUser)();
+    $secondConnection = ($this->connect)($second);
+    Http::fake(['slack.com/api/auth.revoke' => fn () => throw new Illuminate\Http\Client\ConnectionException('down')]);
+    actingAs($second)->delete(route('grp.chat.staff.slack.connect.delete'))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))
+        ->assertSessionHas(StartSlackConnection::NOTICE_KEY, fn (string $notice) => str_contains($notice, 'could not be reached'));
+    expect(DB::table('slack_connections')->where('id', $secondConnection->id)->value('token'))->toBeNull();
+
+    $third           = ($this->makeUser)();
+    $thirdConnection = ($this->connect)($third);
+    DB::table('slack_connections')->where('id', $thirdConnection->id)->update(['token' => 'not-encrypted-with-this-key']);
+    actingAs($third)->delete(route('grp.chat.staff.slack.connect.delete'))->assertRedirect(route('grp.profile.edit', ['section' => 'slack']));
+    expect(DB::table('slack_connections')->where('id', $thirdConnection->id)->value('token'))->toBeNull();
+});
+
+test('deactivating a user withdraws their Slack permission', function () {
+    $engineer   = ($this->makeUser)();
+    $connection = ($this->connect)($engineer);
+    Http::fake(['slack.com/api/auth.revoke' => Http::response(['ok' => true, 'revoked' => true])]);
+
+    UpdateUser::make()->action($engineer, ['status' => false]);
+
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/auth.revoke');
+    expect(DB::table('slack_connections')->where('id', $connection->id)->value('token'))->toBeNull();
+});
+
+test('a machine that is not production never connects, and disconnects only locally', function () {
+    $engineer   = ($this->makeUser)();
+    $connected  = ($this->makeUser)();
+    $connection = ($this->connect)($connected);
+    ($this->fakeSlack)($engineer);
+    $environment = app()->environment();
+
+    foreach (['local', 'staging'] as $machine) {
+        app()->instance('env', $machine);
+        try {
+            actingAs($engineer)->get(route('grp.chat.staff.slack.connect.start'))
+                ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))
+                ->assertSessionHas(StartSlackConnection::ERROR_KEY)->assertSessionMissing(StartSlackConnection::STATE_KEY);
+
+            actingAs($engineer)->withSession([StartSlackConnection::STATE_KEY => ['value' => 'state-1', 'user_id' => $engineer->id, 'expires_at' => now()->addMinutes(5)->timestamp]])
+                ->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-1', 'state' => 'state-1']))
+                ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+            expect(SlackConnection::where('user_id', $engineer->id)->exists())->toBeFalse();
+        } finally {
+            app()->instance('env', $environment);
+        }
+    }
+
+    app()->instance('env', 'local');
+    try {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+        actingAs($connected)->delete(route('grp.chat.staff.slack.connect.delete'))
+            ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))
+            ->assertSessionHas(StartSlackConnection::NOTICE_KEY, fn (string $notice) => str_contains($notice, 'this machine'));
+    } finally {
+        app()->instance('env', $environment);
+    }
+    expect(DB::table('slack_connections')->where('id', $connection->id)->value('token'))->toBeNull();
+    Http::assertNothingSent();
+});
+
+test('the connect routes have their own small limit', function () {
+    $engineer = ($this->makeUser)('help-desk-clerk', false);
+    foreach (range(1, 10) as $ignored) {
+        actingAs($engineer)->get(route('grp.chat.staff.slack.connect.start'))->assertRedirect();
+    }
+    actingAs($engineer)->get(route('grp.chat.staff.slack.connect.start'))->assertStatus(429);
+    actingAs($engineer)->delete(route('grp.chat.staff.slack.connect.delete'))->assertStatus(429);
+});

@@ -20,6 +20,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackNodes from "@/Components/Messaging/Slack/SlackNodes.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 import SlackThreadPanel from "@/Components/Messaging/Slack/SlackThreadPanel.vue"
+import SlackMessageComposer, { type SlackSentMessage, type SlackWriteState } from "@/Components/Messaging/Slack/SlackMessageComposer.vue"
 import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
 export type { SlackStreamMessage }
@@ -36,6 +37,7 @@ export interface SlackChannelHeader {
     pinned_count?: number
     bookmarks?: { id: number; title: string; url: string | null; emoji: { unicode?: string; url?: string | null } | null }[]
     last_read_ts?: string | null
+    write?: SlackWriteState | null
 }
 
 const props = defineProps<{
@@ -236,6 +238,27 @@ useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => {
     }
 })
 
+const write = computed(() => (props.channel.is_archived ? null : props.channel.write ?? null))
+const canWriteNow = computed(() => !!write.value?.allowed && !write.value.reason)
+
+const onSent = (sent: SlackSentMessage) => {
+    if (props.aroundTs) {
+        router.visit(route("grp.chat.staff.slack.show", { slackChannel: props.channel.id }))
+        return
+    }
+    if (sent.message) applyLive(sent.message, sent.at)
+    if (sent.parent) applyLive(sent.parent, sent.at)
+    nextTick(() => {
+        scrollToBottom()
+        markReadSoon()
+    })
+}
+
+const onThreadSent = (sent: SlackSentMessage) => {
+    if (sent.parent) applyLive(sent.parent, sent.at)
+    if (sent.message && isInSlackStream(sent.message)) onSent({ ...sent, parent: null })
+}
+
 const showPurpose = computed(() => props.channel.purpose && props.channel.purpose !== props.channel.topic)
 </script>
 
@@ -268,7 +291,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                         icon="fal fa-thumbtack"
                         :label="ctrans('Pinned (:count)', { count: String(channel.pinned_count) })"
                         @click="togglePins" />
-                    <span class="hidden shrink-0 whitespace-nowrap text-xxs text-gray-400 sm:inline">{{ ctrans("Read only, from Slack") }}</span>
+                    <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xxs text-gray-400 sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
                 <div v-if="channel.bookmarks?.length" class="flex gap-x-1.5 overflow-x-auto px-3 pb-2">
                     <template v-for="bookmark in channel.bookmarks" :key="bookmark.id">
@@ -351,9 +374,10 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
+            <SlackMessageComposer v-if="write" :channel-id="channel.id" :write="write" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 
-        <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" @close="openThreadTs = null" />
+        <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" :write="write" @close="openThreadTs = null" @sent="onThreadSent" />
 
         <Popover ref="pinsPopover">
             <div class="w-[min(24rem,calc(100vw-2rem))]">

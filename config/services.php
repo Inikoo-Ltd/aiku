@@ -111,6 +111,10 @@ return [
     ],
     'slack'     => [
         'signing_secret'  => env('SLACK_SIGNING_SECRET'),
+        'client_id'       => env('SLACK_CLIENT_ID'),
+        'client_secret'   => env('SLACK_CLIENT_SECRET'),
+        'team_id'         => env('SLACK_TEAM_ID'),
+        'connect_redirect_path' => env('SLACK_CONNECT_REDIRECT_PATH', '/chat/staff/slack-connect/callback'),
         'ticket_reaction' => env('SLACK_TICKET_REACTION', 'ticket'),
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

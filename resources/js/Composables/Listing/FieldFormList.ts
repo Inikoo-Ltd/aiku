@@ -100,6 +100,7 @@ import VariantOption from '@/Components/Forms/Fields/VariantOption.vue'
 import EditOffer from '@/Components/Forms/Fields/EditOffer.vue'
 import ToggleState2FA from '@/Components/Forms/Fields/ToggleState2FA.vue'
 import PasskeysManager from '@/Components/Forms/Fields/PasskeysManager.vue'
+import SlackConnection from '@/Components/Forms/Fields/SlackConnection.vue'
 import OfferFields from '@/Components/Forms/Fields/OfferFields.vue'
 import InputVolDiscount from '@/Components/Forms/Fields/InputVolDiscount.vue'
 import MapPickerField from '@/Components/Forms/Fields/MapPickerField.vue'
@@ -164,6 +165,7 @@ export const componentsList: { [key: string]: Component } = {
     'toggle': Toggle,
     'toggle2fa': ToggleState2FA,
     'passkeys': PasskeysManager,
+    'slack_connection': SlackConnection,
     'jobPosition': JobPosition,
     'senderEmail': SenderEmail,
     'employeePosition': EmployeePosition,

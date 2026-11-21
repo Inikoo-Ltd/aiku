@@ -8,9 +8,13 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
+use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
 use App\Actions\SysAdmin\User\UI\GetLoggedUser;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
+use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackConnection;
 use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,6 +137,22 @@ class EditProfile
                             ],
                         ],
                     ] : [],
+                    ...SlackWriteAccess::allows($user) ? [
+                        [
+                            'key'    => 'slack',
+                            'label'  => __('Slack'),
+                            'icon'   => 'fal fa-comments',
+                            'fields' => [
+                                'slack_connection' => [
+                                    'type'         => 'slack_connection',
+                                    'label'        => __('Your Slack account'),
+                                    'noSaveButton' => true,
+                                    'value'        => null,
+                                    'connection'   => $this->slackConnection($user),
+                                ],
+                            ],
+                        ],
+                    ] : [],
                     ...EditProfileSettings::make()->generateBlueprint($user)['formData']['blueprint'],
                 ],
                 "args"      => [
@@ -144,6 +164,30 @@ class EditProfile
             'auth'     => [
                 'user' => GetLoggedUser::run($user)
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function slackConnection(User $user): array
+    {
+        $connection  = SlackConnection::where('user_id', $user->id)->first();
+        $slackPerson = SlackChannel::linkedSlackPerson($user);
+
+        return [
+            'state'              => match (true) {
+                $connection?->isLive() && $connection->missingScopes() === [] => 'connected',
+                (bool) $connection?->needsReconnection() => 'reconnect',
+                default                              => 'none',
+            },
+            'slack_name'         => $slackPerson?->display_name ?: $slackPerson?->real_name ?: $slackPerson?->name,
+            'connected_at'       => $connection?->connected_at,
+            'unavailable_reason' => StartSlackConnection::unavailableReason($user),
+            'error'              => session()->pull(StartSlackConnection::ERROR_KEY),
+            'notice'             => session()->pull(StartSlackConnection::NOTICE_KEY),
+            'connect_url'        => route('grp.chat.staff.slack.connect.start'),
+            'disconnect_route'   => ['name' => 'grp.chat.staff.slack.connect.delete'],
         ];
     }
 

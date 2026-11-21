@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 import { myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
+import SlackMessageComposer, { type SlackSentMessage, type SlackWriteState } from "@/Components/Messaging/Slack/SlackMessageComposer.vue"
 
 library.add(faCheck, faChevronDown, faLink, faTimes)
 
@@ -25,9 +26,10 @@ const props = defineProps<{
     focusTs?: string | null
     channelLinks: Record<string, number>
     liveChannel?: string | null
+    write?: SlackWriteState | null
 }>()
 
-const emit = defineEmits<{ (e: "close"): void }>()
+const emit = defineEmits<{ (e: "close"): void; (e: "sent", sent: SlackSentMessage): void }>()
 
 const parent = ref<SlackStreamMessage | null>(null)
 const replies = ref<SlackStreamMessage[]>([])
@@ -92,7 +94,7 @@ watch(slackReloads, async () => {
     await load()
 })
 
-useSlackLive(() => props.liveChannel, async (event: SlackLiveEvent) => {
+const applyLive = async (event: SlackLiveEvent, scroll = false) => {
     const message = event.message
     if (event.channel_id !== props.channelId || !message || !parent.value || (liveAt[message.ts] ?? 0) > event.at) return
     liveAt[message.ts] = event.at
@@ -114,13 +116,25 @@ useSlackLive(() => props.liveChannel, async (event: SlackLiveEvent) => {
     }
     if (nextCursor.value || loading.value) return
     const container = bodyEl.value
-    const atBottom = !container || container.scrollHeight - container.scrollTop - container.clientHeight < 120
+    const atBottom = scroll || !container || container.scrollHeight - container.scrollTop - container.clientHeight < 120
     replies.value = [...replies.value, row].sort((a, b) => (a.ts < b.ts ? -1 : 1))
     if (atBottom) {
         await nextTick()
         if (bodyEl.value) bodyEl.value.scrollTop = bodyEl.value.scrollHeight
     }
-})
+}
+
+useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => applyLive(event))
+
+const onSent = async (sent: SlackSentMessage) => {
+    for (let page = 0; page < MAX_PAGES_TO_FOCUS && nextCursor.value && !error.value; page++) {
+        await load(nextCursor.value)
+    }
+    await applyLive({ channel_id: props.channelId, kind: "new", ts: sent.ts, at: sent.at, message: sent.message, parent: sent.parent, reactors: {} }, true)
+    await nextTick()
+    if (bodyEl.value) bodyEl.value.scrollTop = bodyEl.value.scrollHeight
+    emit("sent", sent)
+}
 
 const copyLink = async () => {
     try {
@@ -176,5 +190,7 @@ const copyLink = async () => {
 
             <p v-if="error" class="py-3 text-xs text-red-600">{{ error }}</p>
         </div>
+
+        <SlackMessageComposer v-if="write && parent && !parent.is_deleted" :channel-id="channelId" :write="write" :thread-ts="ts" :placeholder="ctrans('Reply…')" @sent="onSent" />
     </aside>
 </template>

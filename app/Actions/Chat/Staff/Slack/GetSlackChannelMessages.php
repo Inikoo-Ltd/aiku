@@ -137,7 +137,7 @@ class GetSlackChannelMessages
         $reactors   = $people->map(fn (SlackUser $slackUser) => $personUser($slackUser)?->chatName() ?? $this->personName($slackUser));
         $mySlackIds = $viewer ? $people->filter(fn (SlackUser $slackUser) => $slackUser->user_id === $viewer->id)->keys()->all() : [];
 
-        return $messages->map(function (SlackMessage $message) use ($nodes, $formatter, $reactors, $users, $threads, $people, $personUser, $mySlackIds, $files, $withVersions, $slackChannel) {
+        return $messages->map(function (SlackMessage $message) use ($nodes, $formatter, $reactors, $users, $threads, $people, $personUser, $mySlackIds, $files, $withVersions, $slackChannel, $viewer) {
             $isParent = $message->thread_ts === $message->ts;
             $thread   = $isParent ? ($threads[$message->ts] ?? null) : null;
             $common   = [
@@ -174,7 +174,9 @@ class GetSlackChannelMessages
                 ]);
             }
 
-            return array_merge($common, [
+            $isViewers = $viewer && $this->linkedUserId($message) === $viewer->id;
+
+            return array_merge($common, $isViewers ? ['text' => self::editableText($message->text)] : [], [
                 'is_system'    => in_array($message->subtype, self::SYSTEM_SUBTYPES, true),
                 'author'       => $this->author($message, $users->get($this->linkedUserId($message) ?? 0)),
                 'is_edited'    => $message->edited_at !== null,
@@ -217,11 +219,29 @@ class GetSlackChannelMessages
     }
 
     /**
+     * A bot wrote it: Slack's bot_message, no person as author, or an author that is a bot. A message a person sends
+     * through an app (aiku included) carries the app's bot_id beside the person's user and is still the person's.
+     */
+    public static function isBotMessage(SlackMessage $message): bool
+    {
+        return $message->subtype === 'bot_message' || !$message->slack_user_id || (bool) $message->slackUser?->is_bot;
+    }
+
+    /**
+     * The edit box's text: Slack's own, entities and mentions as they are, without the names of linked channels,
+     * which the formatter deliberately leaves out.
+     */
+    public static function editableText(?string $text): string
+    {
+        return (string) preg_replace('/<#(C[A-Z0-9]+)\|[^>]*>/', '<#$1>', (string) $text);
+    }
+
+    /**
      * The aiku user behind a human Slack author: the message's own user_id, else the Slack person's link.
      */
     private function linkedUserId(SlackMessage $message): ?int
     {
-        if ($message->slackUser?->is_bot || isset($message->data['bot_id'])) {
+        if (self::isBotMessage($message)) {
             return null;
         }
 
@@ -239,7 +259,7 @@ class GetSlackChannelMessages
         $data       = $message->data ?? [];
         $slackUser  = $message->slackUser;
         $botProfile = is_array($data['bot_profile'] ?? null) ? $data['bot_profile'] : [];
-        $isBot      = ($slackUser?->is_bot ?? false) || isset($data['bot_id']);
+        $isBot      = self::isBotMessage($message);
 
         $name = $slackUser ? $this->personName($slackUser) : null;
         if ($isBot) {

@@ -101,9 +101,14 @@ class SlackChannel extends Model
     {
         return $user->status
             && !$user->worksOnlyForAgents()
-            && (Ticket::canBeManagedBy($user) || SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
-                ->whereRaw('lower(email) = ?', [strtolower((string) $user->email)])
-                ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
-                ->exists());
+            && (Ticket::canBeManagedBy($user) || self::linkedSlackPerson($user) !== null);
+    }
+
+    public static function linkedSlackPerson(User $user): ?SlackUser
+    {
+        return SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
+            ->whereRaw('lower(email) = ?', [strtolower((string) $user->email)])
+            ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
+            ->first();
     }
 }

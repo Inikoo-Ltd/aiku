@@ -77,6 +77,7 @@ class UpdateUser extends OrgAction
                 $user->tokens()->each(function ($token) {
                     DeleteUserAccessToken::run($token);
                 });
+                rescue(fn () => \App\Actions\Chat\Staff\Slack\Write\DisconnectSlackAccount::run($user, app()->environment(\App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::WRITE_ENVIRONMENTS)));
             }
 
             // Losing the login hands the conversations back and suspends the profile;

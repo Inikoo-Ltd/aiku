@@ -49,7 +49,7 @@ onMounted(loadRecent)
                 :key="tab"
                 @click="activeTab = tab"
                 class="flex-1 px-2 py-1 text-xs font-medium rounded transition"
-                :class="activeTab === tab ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'"
+                :class="activeTab === tab ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]' : 'text-gray-600 hover:bg-gray-100'"
             >
                 {{ tab }}
             </button>

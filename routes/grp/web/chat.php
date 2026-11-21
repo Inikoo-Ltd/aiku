@@ -93,6 +93,16 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::get('/slack/{slackChannel}/pins', \App\Actions\Chat\Staff\Json\GetSlackChannelPins::class)->name('slack.pins');
     Route::post('/slack/{slackChannel}/read', \App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class)->name('slack.read');
     Route::post('/slack-read-all', [\App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class, 'inAllChannels'])->name('slack.read-all');
+    Route::middleware('throttle:10,1,slack-connect')->group(function () {
+        Route::get('/slack-connect', \App\Actions\Chat\Staff\Slack\Write\StartSlackConnection::class)->name('slack.connect.start');
+        Route::get('/slack-connect/callback', \App\Actions\Chat\Staff\Slack\Write\StoreSlackConnection::class)->name('slack.connect.callback');
+        Route::delete('/slack-connect', \App\Actions\Chat\Staff\Slack\Write\DisconnectSlackAccount::class)->name('slack.connect.delete');
+    });
+    Route::post('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\SendSlackMessage::class)->middleware('throttle:20,1,slack-send')->name('slack.messages.store');
+    Route::post('/slack/{slackChannel}/reactions', \App\Actions\Chat\Staff\Slack\Write\ToggleSlackMessageReaction::class)->middleware('throttle:40,1,slack-react')->name('slack.reactions.toggle');
+    Route::get('/slack/{slackChannel}/messages/own-text', \App\Actions\Chat\Staff\Slack\Write\GetOwnSlackMessageText::class)->middleware('throttle:60,1,slack-edit-text')->name('slack.messages.own-text');
+    Route::patch('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\EditSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.update');
+    Route::delete('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\DeleteSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.delete');
 });
 
 Route::prefix('staff')->name('staff.')->middleware('throttle:120,1,slack-search')->group(function () {

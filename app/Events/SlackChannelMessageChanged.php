@@ -15,12 +15,14 @@ use App\Models\Chat\SlackUser;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Support\Arr;
 
 /**
  * A Slack message arrived, changed, was deleted or got a reaction, through the events endpoint only. It goes to the
  * group's Slack channel (grp.slack.{group}), whose authorisation is SlackChannel::visibleTo: a kept public channel is
  * visible to every eligible person of the group, so one subscription serves every channel of the list. A channel that
  * is not kept never broadcasts; a channel visible to some people only (phase 4) needs its own broadcast channel.
+ * The raw text a row carries for its author's edit box is never broadcast.
  */
 class SlackChannelMessageChanged implements ShouldBroadcastNow
 {
@@ -56,7 +58,9 @@ class SlackChannelMessageChanged implements ShouldBroadcastNow
             ->whereIn('ts', array_values(array_unique(array_filter([$ts, $threadTs]))))
             ->with(GetSlackChannelMessages::relations())
             ->get(GetSlackChannelMessages::COLUMNS);
-        $rows = collect(GetSlackChannelMessages::make()->rows($this->channel, $messages))->keyBy('ts');
+        $rows = collect(GetSlackChannelMessages::make()->rows($this->channel, $messages))
+            ->map(fn (array $row) => Arr::except($row, ['text']))
+            ->keyBy('ts');
 
         $payload = [
             'channel_id' => $this->channel->id,

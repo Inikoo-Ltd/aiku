@@ -13,7 +13,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * Turns a Slack emoji name (":wave::skin-tone-3:", "wave::skin-tone-3", "+1", a custom one) into a Unicode character
- * or aiku's copy of a custom emoji image; null when unknown, to be shown as the name. STANDARD holds the common Slack names only.
+ * or aiku's copy of a custom emoji image; null when unknown, to be shown as the name. STANDARD holds the common Slack names only; a character with several names lists Slack's canonical one (emoji-data short_name) first, as reactions are sent by it.
  */
 class ResolveSlackEmoji
 {
@@ -121,8 +121,8 @@ class ResolveSlackEmoji
         'hugging_face'                   => '🤗',
         'shushing_face'                  => '🤫',
         'skull'                          => '💀',
-        'poop'                           => '💩',
         'hankey'                         => '💩',
+        'poop'                           => '💩',
         'clown_face'                     => '🤡',
         'see_no_evil'                    => '🙈',
         'hear_no_evil'                   => '🙉',
@@ -141,8 +141,8 @@ class ResolveSlackEmoji
         'point_down'                     => '👇',
         'point_left'                     => '👈',
         'point_right'                    => '👉',
-        'raised_hand'                    => '✋',
         'hand'                           => '✋',
+        'raised_hand'                    => '✋',
         'call_me_hand'                   => '🤙',
         'fist'                           => '✊',
         'facepunch'                      => '👊',
@@ -276,17 +276,17 @@ class ResolveSlackEmoji
         'woman-facepalming'              => '🤦‍♀️',
         'man-shrugging'                  => '🤷‍♂️',
         'woman-shrugging'                => '🤷‍♀️',
-        'flag-gb'                        => '🇬🇧',
         'gb'                             => '🇬🇧',
         'uk'                             => '🇬🇧',
-        'flag-de'                        => '🇩🇪',
+        'flag-gb'                        => '🇬🇧',
         'de'                             => '🇩🇪',
-        'flag-fr'                        => '🇫🇷',
+        'flag-de'                        => '🇩🇪',
         'fr'                             => '🇫🇷',
-        'flag-es'                        => '🇪🇸',
+        'flag-fr'                        => '🇫🇷',
         'es'                             => '🇪🇸',
-        'flag-it'                        => '🇮🇹',
+        'flag-es'                        => '🇪🇸',
         'it'                             => '🇮🇹',
+        'flag-it'                        => '🇮🇹',
         'flag-sk'                        => '🇸🇰',
         'flag-cz'                        => '🇨🇿',
         'flag-pl'                        => '🇵🇱',
@@ -297,13 +297,20 @@ class ResolveSlackEmoji
         'flag-my'                        => '🇲🇾',
         'flag-id'                        => '🇮🇩',
         'flag-in'                        => '🇮🇳',
-        'flag-cn'                        => '🇨🇳',
         'cn'                             => '🇨🇳',
-        'flag-us'                        => '🇺🇸',
+        'flag-cn'                        => '🇨🇳',
         'us'                             => '🇺🇸',
+        'flag-us'                        => '🇺🇸',
         'flag-eu'                        => '🇪🇺',
         'checkered_flag'                 => '🏁',
         'triangular_flag_on_post'        => '🚩',
+        'face_with_monocle'              => '🧐',
+        'cold_face'                      => '🥶',
+        'drooling_face'                  => '🤤',
+        'heart_hands'                    => '🫶',
+        'broom'                          => '🧹',
+        'speech_balloon'                 => '💬',
+        'face_exhaling'                  => '😮‍💨',
     ];
 
     /**

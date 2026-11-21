@@ -14,6 +14,7 @@ use App\Actions\Chat\Staff\Slack\GetSlackChannelUnreadCounts;
 use App\Actions\Chat\Staff\Slack\MarkSlackChannelRead;
 use App\Actions\Chat\Staff\Slack\ResolveSlackEmoji;
 use App\Actions\OrgAction;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
@@ -191,6 +192,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
+                    'write'        => $this->writeState($request->user()),
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,
@@ -200,5 +202,22 @@ class ShowStaffSlackChannels extends OrgAction
                     : null,
             ]
         );
+    }
+
+    /**
+     * Whether the composer shows, and when it cannot be used yet, the sentence saying why and the way to connect.
+     *
+     * @return array{allowed: bool, reason: string|null, connect_url: string|null}
+     */
+    public function writeState(User $user): array
+    {
+        $allowed = SlackWriteAccess::allows($user);
+        $reason  = $allowed ? SlackWriteAccess::reasonUnavailable($user) : null;
+
+        return [
+            'allowed'     => $allowed,
+            'reason'      => $reason,
+            'connect_url' => $reason && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) ? route('grp.profile.edit', ['section' => 'slack']) : null,
+        ];
     }
 }

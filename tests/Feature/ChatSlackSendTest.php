@@ -1,0 +1,284 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 21 Nov 2026 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+/** @noinspection PhpUnhandledExceptionInspection */
+
+use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Actions\Chat\Staff\Slack\Write\SendSlackMessage;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
+use App\Events\BroadcastPersonalNotification;
+use App\Events\SlackChannelMessageChanged;
+use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackConnection;
+use App\Models\Chat\SlackMessage;
+use App\Models\Chat\SlackUser;
+use App\Models\SysAdmin\User;
+use App\Models\Web\Website;
+use App\Notifications\SlackMentionNotification;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+
+beforeAll(function () {
+    loadDB();
+});
+
+beforeEach(function () {
+    Event::fake([SlackChannelMessageChanged::class, BroadcastPersonalNotification::class]);
+    $web = Website::has('shop')->first();
+    if (!$web) {
+        list($this->organisation, $this->user) = createShop();
+    } else {
+        $this->organisation = $web->organisation;
+        $this->user         = createAdminGuest($this->organisation->group)->getUser();
+    }
+    $this->group = $this->organisation->group;
+    app()->instance('group', $this->group);
+    setPermissionsTeamId($this->group->id);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $this->s       = Str::upper(Str::random(6));
+    $newUser       = fn (array $attributes = []) => User::factory()->create(array_merge(['group_id' => $this->group->id, 'language_id' => $this->user->language_id], $attributes));
+    $this->writer  = $newUser();
+    $this->writer->assignRole('help-desk-clerk');
+    $this->reader  = $newUser();
+    $this->bob     = $newUser(['settings' => ['notifications' => ['slack_mention' => ['browser']]]]);
+    SlackUser::create(['slack_id' => "UWRITE{$this->s}", 'user_id' => $this->writer->id, 'email' => $this->writer->email, 'real_name' => 'Writer Person']);
+    SlackUser::create(['slack_id' => "UREAD{$this->s}", 'user_id' => $this->reader->id, 'email' => $this->reader->email, 'real_name' => 'Reader Person']);
+    SlackUser::create(['slack_id' => "UBOB{$this->s}", 'user_id' => $this->bob->id, 'email' => $this->bob->email, 'real_name' => 'Bob Person']);
+    $this->token = 'xoxp-test-'.$this->s;
+    SlackConnection::create(['user_id' => $this->writer->id, 'slack_user_id' => "UWRITE{$this->s}", 'team_id' => 'T1', 'token' => $this->token, 'scopes' => implode(',', SlackWriteAccess::USER_SCOPES), 'connected_at' => now()]);
+
+    $channel        = fn (string $key, array $attributes = []) => SlackChannel::create(array_merge(['group_id' => $this->group->id, 'slack_id' => "C$key{$this->s}", 'name' => strtolower($key)."-{$this->s}", 'is_member' => true], $attributes));
+    $this->general  = $channel('GENERAL');
+    $this->archived = $channel('ARCHIVED', ['is_archived' => true]);
+    $this->ignored  = $channel('IGNORED', ['is_ignored' => true]);
+    $this->private  = $channel('PRIVATE', ['is_public' => false]);
+    $this->gone     = $channel('GONE', ['deleted_in_slack_at' => now()]);
+
+    $this->nextTs      = 0;
+    $this->slackAnswer = null;
+    Http::preventStrayRequests();
+    Http::fake(['slack.com/api/chat.postMessage' => function (Request $request) {
+        if ($this->slackAnswer instanceof Closure) {
+            return ($this->slackAnswer)($request);
+        }
+        if ($this->slackAnswer) {
+            return Http::response($this->slackAnswer);
+        }
+        $ts      = sprintf('%d.%06d', now()->timestamp, ++$this->nextTs);
+        $message = array_filter(['type' => 'message', 'user' => "UWRITE{$this->s}", 'text' => $request['text'], 'ts' => $ts, 'thread_ts' => $request['thread_ts'] ?? null]);
+
+        return Http::response(['ok' => true, 'channel' => $request['channel'], 'ts' => $ts, 'message' => $message]);
+    }]);
+    $this->slack = function (array|Closure|null $answer = null) {
+        $this->slackAnswer = $answer;
+    };
+    $this->send = fn (SlackChannel $channel, string $text, ?string $threadTs = null, ?string $key = null, ?User $as = null) => actingAs($as ?? $this->writer)
+        ->postJson(route('grp.chat.staff.slack.messages.store', ['slackChannel' => $channel->id]), array_filter(['text' => $text, 'thread_ts' => $threadTs, 'idempotency_key' => $key ?? Str::uuid()->toString()]));
+    $this->posts    = fn () => Http::recorded(fn (Request $request) => str_contains($request->url(), 'chat.postMessage'));
+    $this->messages = fn (SlackChannel $channel) => SlackMessage::withTrashed()->where('slack_channel_id', $channel->id)->orderBy('ts')->get();
+    $this->kinds    = fn () => Event::dispatched(SlackChannelMessageChanged::class)->map(fn (array $args) => $args[0]->kind.':'.$args[0]->message->ts)->values()->all();
+});
+
+test('a message is posted with the person own token, stored at once as that person from Slack\'s real answer and announced once; the echo event changes nothing and rings no one again, INI-454', function () {
+    ($this->slack)(function (Request $request) {
+        $ts = sprintf('%d.%06d', now()->timestamp, 700001);
+
+        return Http::response([
+            'ok'      => true,
+            'channel' => $request['channel'],
+            'ts'      => $ts,
+            'message' => [
+                'user'        => "UWRITE{$this->s}",
+                'type'        => 'message',
+                'ts'          => $ts,
+                'bot_id'      => 'B0AIKU',
+                'app_id'      => 'A0AIKU',
+                'text'        => "Hi <@UBOB{$this->s}>, the *blue* pallets are in &amp; ready",
+                'team'        => 'T1',
+                'bot_profile' => ['id' => 'B0AIKU', 'app_id' => 'A0AIKU', 'name' => 'aiku', 'deleted' => false, 'team_id' => 'T1'],
+                'blocks'      => [['type' => 'rich_text', 'block_id' => 'x', 'elements' => []]],
+            ],
+        ]);
+    });
+
+    $response = ($this->send)($this->general, 'Hi Bob, the *blue* pallets are in & ready')->assertOk();
+
+    $posts = ($this->posts)();
+    expect($posts)->toHaveCount(1);
+    [$request] = $posts[0];
+    expect($request->header('Authorization')[0])->toBe('Bearer '.$this->token)
+        ->and($request['channel'])->toBe($this->general->slack_id)
+        ->and($request['text'])->toBe('Hi Bob, the *blue* pallets are in &amp; ready')
+        ->and($request->data())->not->toHaveKeys(['link_names', 'parse', 'thread_ts']);
+
+    $stored = ($this->messages)($this->general);
+    expect($stored)->toHaveCount(1)
+        ->and($stored[0]->user_id)->toBe($this->writer->id)
+        ->and($stored[0]->slack_user_id)->toBe("UWRITE{$this->s}")
+        ->and($stored[0]->subtype)->toBeNull()
+        ->and($response->json('ts'))->toBe($stored[0]->ts)
+        ->and($response->json('message.ts'))->toBe($stored[0]->ts)
+        ->and(($this->kinds)())->toBe(['new:'.$stored[0]->ts])
+        ->and($this->bob->notifications()->where('type', SlackMentionNotification::class)->count())->toBe(1);
+
+    StoreSlackMessage::make()->handle([
+        'type'         => 'message',
+        'channel'      => $this->general->slack_id,
+        'channel_type' => 'channel',
+        'user'         => "UWRITE{$this->s}",
+        'text'         => $stored[0]->text,
+        'ts'           => $stored[0]->ts,
+        'bot_id'       => 'B0AIKU',
+        'app_id'       => 'A0AIKU',
+    ]);
+
+    expect(($this->messages)($this->general))->toHaveCount(1)
+        ->and(DB::table('slack_message_versions')->where('slack_message_id', $stored[0]->id)->count())->toBe(0)
+        ->and(($this->kinds)())->toBe(['new:'.$stored[0]->ts, 'changed:'.$stored[0]->ts])
+        ->and($this->bob->notifications()->where('type', SlackMentionNotification::class)->count())->toBe(1);
+});
+
+test('when the echo event is stored first, the send neither adds a row nor announces it as new a second time, INI-454', function () {
+    $ts = sprintf('%d.%06d', now()->timestamp, 900001);
+    ($this->slack)(['ok' => true, 'channel' => $this->general->slack_id, 'ts' => $ts, 'message' => ['type' => 'message', 'user' => "UWRITE{$this->s}", 'text' => 'Echo first', 'ts' => $ts]]);
+    StoreSlackMessage::make()->handle(['type' => 'message', 'channel' => $this->general->slack_id, 'channel_type' => 'channel', 'user' => "UWRITE{$this->s}", 'text' => 'Echo first', 'ts' => $ts]);
+
+    ($this->send)($this->general, 'Echo first')->assertOk()->assertJsonPath('message.ts', $ts);
+
+    expect(($this->messages)($this->general))->toHaveCount(1)
+        ->and(($this->kinds)())->toBe(['new:'.$ts]);
+});
+
+test('a thread reply goes to the root of the thread, also when answering a reply, and is stored under it, INI-456', function () {
+    ($this->slack)();
+    $rootTs = ($this->send)($this->general, 'Root')->json('ts');
+    $replyTs = ($this->send)($this->general, 'First reply', $rootTs)->assertOk()->json('ts');
+    $response = ($this->send)($this->general, 'Answer to the reply', $replyTs)->assertOk();
+
+    $posts = ($this->posts)();
+    expect($posts[1][0]['thread_ts'])->toBe($rootTs)
+        ->and($posts[2][0]['thread_ts'])->toBe($rootTs)
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->where('ts', $replyTs)->value('thread_ts'))->toBe($rootTs)
+        ->and($response->json('parent.ts'))->toBe($rootTs)
+        ->and($response->json('parent.reply_count'))->toBe(2);
+});
+
+test('a double submit or a retry with the same key posts once and answers with the same message, INI-454', function () {
+    ($this->slack)();
+
+    $first  = ($this->send)($this->general, 'Only once', key: 'key-1')->assertOk();
+    $second = ($this->send)($this->general, 'Only once', key: 'key-1')->assertOk();
+
+    expect(($this->posts)())->toHaveCount(1)
+        ->and($second->json('ts'))->toBe($first->json('ts'))
+        ->and(($this->messages)($this->general))->toHaveCount(1);
+});
+
+test('everything typed between < and > is sent as plain text, so no channel, user group, mention or disguised link reaches Slack; a bare web address stays a link, INI-454', function () {
+    ($this->slack)();
+
+    ($this->send)($this->general, "Look <!channel> <!channel > <!here|here> <!EVERYONE> <!group> <!subteam^S1|@team> <@UBOB{$this->s}> <#C1|general> <https://evil.test|aiku.io> <https://aiku.io/a?b=1&c=2> a<b>c")->assertOk();
+
+    expect(($this->posts)()[0][0]['text'])->toBe("Look &lt;!channel&gt; &lt;!channel &gt; &lt;!here|here&gt; &lt;!EVERYONE&gt; &lt;!group&gt; &lt;!subteam^S1|@team&gt; &lt;@UBOB{$this->s}&gt; &lt;#C1|general&gt; &lt;https://evil.test|aiku.io&gt; <https://aiku.io/a?b=1&c=2> a&lt;b&gt;c")
+        ->and($this->bob->notifications()->where('type', SlackMentionNotification::class)->count())->toBe(0);
+});
+
+test('when Slack does not answer, the key stays claimed so a retry posts nothing new; any other failure frees it and answers with a sentence, INI-454', function () {
+    ($this->slack)(fn () => throw new ConnectionException('timed out'));
+    ($this->send)($this->general, 'Hello', key: 'lost-1')->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'did not answer'));
+
+    ($this->slack)();
+    ($this->send)($this->general, 'Hello', key: 'lost-1')->assertUnprocessable()->assertJsonPath('message', 'This message is already being sent.');
+    expect(($this->posts)())->toHaveCount(0)
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->count())->toBe(0);
+
+    ($this->slack)(fn () => throw new RuntimeException('could not decrypt'));
+    ($this->send)($this->general, 'Hello', key: 'broken-1')->assertUnprocessable()->assertJsonPath('message', 'The message was not sent. Try again.');
+
+    ($this->slack)();
+    ($this->send)($this->general, 'Hello', key: 'broken-1')->assertOk();
+    expect(SlackMessage::where('slack_channel_id', $this->general->id)->count())->toBe(1);
+});
+
+test('when the webhook stores the same message between our check and our insert, the send reads that row and does not announce it as new, INI-454', function () {
+    ($this->slack)();
+    $store = StoreSlackMessage::partialMock();
+    $store->shouldReceive('store')->once()->andReturnUsing(function (SlackChannel $channel, array $message) {
+        SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => $message['ts'], 'slack_user_id' => "UWRITE{$this->s}", 'text' => $message['text'], 'sent_at' => now(), 'data' => $message]);
+        throw new UniqueConstraintViolationException('pgsql', 'insert into slack_messages', [], new Exception('duplicate key value'));
+    });
+    $store->shouldReceive('store')->passthru();
+
+    $response = ($this->send)($this->general, 'Raced')->assertOk();
+
+    expect(($this->messages)($this->general))->toHaveCount(1)
+        ->and($response->json('message.ts'))->toBe(($this->messages)($this->general)[0]->ts)
+        ->and(($this->kinds)())->toBe([]);
+});
+
+test('refused before Slack is called: a channel that is hidden, archived, not public, ignored or gone, a person who may not write or is not connected, an empty or too long text and an unknown thread, INI-454 INI-456', function () {
+    ($this->slack)();
+    $foreign = SlackMessage::create(['slack_channel_id' => $this->archived->id, 'ts' => '1700000000.000001', 'text' => 'Elsewhere', 'sent_at' => now()]);
+
+    foreach ([$this->archived, $this->ignored, $this->private, $this->gone] as $channel) {
+        ($this->send)($channel, 'Hello')->assertForbidden();
+    }
+    ($this->send)($this->general, 'Hello', as: $this->reader)->assertForbidden();
+    ($this->send)($this->general, '   ')->assertUnprocessable();
+    ($this->send)($this->general, str_repeat('a', SendSlackMessage::MAX_LENGTH + 1))->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'too long'));
+    ($this->send)($this->general, str_repeat('&', 1500))->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'too long'));
+    ($this->send)($this->general, 'Hello', $foreign->ts)->assertUnprocessable()->assertJsonPath('message', 'This thread is no longer in Slack.');
+    ($this->send)($this->general, 'Hello', '1700000000.999999')->assertUnprocessable();
+
+    SlackConnection::where('user_id', $this->writer->id)->update(['needs_reconnect' => true]);
+    ($this->send)($this->general, 'Hello')->assertUnprocessable()->assertJsonPath('message', 'Reconnect your Slack account to write here');
+
+    expect(($this->posts)())->toHaveCount(0)
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->count())->toBe(0);
+});
+
+test('a Slack error stores nothing, answers with a short sentence and lets the same key retry, INI-454', function () {
+    ($this->slack)(['ok' => false, 'error' => 'not_in_channel']);
+    ($this->send)($this->general, 'Hello', key: 'retry-1')->assertUnprocessable()->assertJsonPath('message', 'You are not a member of this channel in Slack. Join it in Slack, then send again.');
+
+    ($this->slack)(['ok' => false, 'error' => 'token_revoked']);
+    ($this->send)($this->general, 'Hello', key: 'retry-1')->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'needs renewing'));
+
+    expect(($this->posts)())->toHaveCount(2)
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->count())->toBe(0)
+        ->and(SlackConnection::where('user_id', $this->writer->id)->value('needs_reconnect'))->toBeTrue()
+        ->and(Event::dispatched(SlackChannelMessageChanged::class))->toHaveCount(0);
+});
+
+test('the channel screen tells the composer who may write, and why not yet, INI-454', function () {
+    $state = function (User $user): array {
+        $write = null;
+        actingAs($user)->get(route('grp.chat.staff.slack.show', ['slackChannel' => $this->general->id]))->assertOk()
+            ->assertInertia(function (AssertableInertia $page) use (&$write) {
+                $write = $page->toArray()['props']['slack_channel']['write'];
+            });
+
+        return $write;
+    };
+
+    expect($state($this->writer))->toMatchArray(['allowed' => true, 'reason' => null])
+        ->and($state($this->reader))->toMatchArray(['allowed' => false, 'reason' => null]);
+
+    SlackConnection::where('user_id', $this->writer->id)->delete();
+    expect($state($this->writer)['reason'])->toBe('Connect your Slack account to write here');
+});

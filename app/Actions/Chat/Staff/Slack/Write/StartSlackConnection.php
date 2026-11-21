@@ -1,0 +1,88 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 21 Nov 2026 21:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Chat\Staff\Slack\Write;
+
+use App\Models\Chat\SlackChannel;
+use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
+use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class StartSlackConnection
+{
+    use AsAction;
+
+    public const string STATE_KEY = 'slack_connect_state';
+
+    public const string ERROR_KEY = 'slack_connect_error';
+
+    public const string NOTICE_KEY = 'slack_connect_notice';
+
+    private const int STATE_MINUTES = 10;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return SlackWriteAccess::allows($request->user());
+    }
+
+    public static function isConfigured(): bool
+    {
+        return config('services.slack.client_id') && config('services.slack.client_secret') && config('services.slack.team_id');
+    }
+
+    public static function redirectUri(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/'.ltrim((string) config('services.slack.connect_redirect_path'), '/');
+    }
+
+    public static function unavailableReason(User $user): ?string
+    {
+        if (!app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
+            return __('Connecting a Slack account is switched off on this machine');
+        }
+        if (!self::isConfigured()) {
+            return __('Connecting a Slack account is not set up on this server');
+        }
+        if (!SlackChannel::linkedSlackPerson($user)) {
+            return __('Your aiku user is not linked to a Slack person with the same email, so it cannot be connected yet');
+        }
+
+        return null;
+    }
+
+    public static function backToSettings(string $key, string $message): RedirectResponse
+    {
+        session()->put($key, $message);
+
+        return redirect()->route('grp.profile.edit', ['section' => 'slack']);
+    }
+
+    public function asController(ActionRequest $request): RedirectResponse
+    {
+        if ($reason = self::unavailableReason($request->user())) {
+            return self::backToSettings(self::ERROR_KEY, $reason);
+        }
+
+        $state = Str::random(48);
+        $request->session()->put(self::STATE_KEY, [
+            'value'      => $state,
+            'user_id'    => $request->user()->id,
+            'expires_at' => now()->addMinutes(self::STATE_MINUTES)->timestamp,
+        ]);
+
+        return redirect()->away('https://slack.com/oauth/v2/authorize?'.http_build_query([
+            'client_id'    => config('services.slack.client_id'),
+            'user_scope'   => implode(',', SlackWriteAccess::USER_SCOPES),
+            'redirect_uri' => self::redirectUri(),
+            'state'        => $state,
+            'team'         => config('services.slack.team_id'),
+        ]));
+    }
+}
