@@ -650,7 +650,8 @@ function fillTranslationsFixture(object $test, float $siblingUnits = 1): Product
         $texts = collect(json_decode($request['messages'][1]['content'], true))
             ->map(fn (array $input, string $field) => isset($input['clean'])
                 ? (is_array($test->cleanAnswer ?? null) ? ($test->cleanAnswer[$field] ?? $input['clean']) : ($test->cleanAnswer ?? str_replace(' en gros', '', $input['clean'])))
-                : ($test->aiPrefix ?? 'DE ').$input['translate']);
+                : ($test->aiPrefix ?? 'DE ').$input['translate'])
+            ->map(fn (string $text) => ($test->aiEchoesWrapper ?? false) ? ['translate' => $text] : $text);
 
         return Http::response(['choices' => [['message' => ['content' => json_encode($texts)]]], 'usage' => ['cost' => 0.001]]);
     }]);
@@ -1464,6 +1465,16 @@ test('fill category translations marks a rejected translation and tries it again
     expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('');
 
     fillCategoryTranslations($this, retryFailed: true);
+    expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soaps')
+        ->and($family->data['translation_sources']['de'])->not->toHaveKey('failed');
+});
+
+test('fill category translations takes the text when the ai answers inside the translate wrapper it was sent', function () {
+    [$family] = fillCategoryTranslationsFixture($this);
+    $this->aiEchoesWrapper = true;
+
+    fillCategoryTranslations($this);
+
     expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soaps')
         ->and($family->data['translation_sources']['de'])->not->toHaveKey('failed');
 });

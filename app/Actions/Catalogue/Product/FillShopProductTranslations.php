@@ -756,7 +756,7 @@ class FillShopProductTranslations
         $this->cost += (float) $this->aiUsageCost((array) Arr::get($response, 'usage', []));
         $content     = trim(preg_replace('/^```(?:json)?|```$/m', '', (string) Arr::get($response, 'choices.0.message.content', '')));
 
-        return (array) json_decode($content, true);
+        return array_map(fn ($text) => is_array($text) ? ($text['translate'] ?? $text['clean'] ?? $text) : $text, (array) json_decode($content, true));
     }
 
     private function prompt(Product $product, Language $language): string
