@@ -2,6 +2,7 @@
 import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import MerlinImagePicker from "@/Components/Chat/Customer/MerlinImagePicker.vue"
+import CustomerClaimForm, { type ClaimSummary } from "@/Components/Chat/Customer/CustomerClaimForm.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
@@ -56,6 +57,7 @@ type Message =
         handed_over?: boolean
         feedback?: "up" | "down" | null
         groups: { must_haves: Card[], add_ons: Card[] }
+        claim?: { order_id: number, reference: string, made: ClaimSummary | null } | null
     }
 
 type AssistantMessage = Extract<Message, { role: "assistant" }>
@@ -1197,6 +1199,8 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                         <span class="merlin-card-arrow" aria-hidden="true">↗</span>
                                     </button>
                                 </div>
+
+                                <CustomerClaimForm v-if="message.claim" class="max-w-xl" :order-id="message.claim.order_id" source="merlin" :conversation="conversation" :made="message.claim.made" />
 
                                 <div v-if="message.hand_over_offer && (handOverAvailable || message.handed_over)" class="mt-3">
                                     <p v-if="message.handed_over" class="chat-muted text-xs">{{ ctrans("Passed to our team") }}</p>

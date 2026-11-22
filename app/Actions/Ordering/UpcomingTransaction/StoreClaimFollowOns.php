@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\UpcomingTransaction;
 
+use App\Actions\CRM\CustomerClaim\RecordStaffClaim;
 use App\Actions\Accounting\Invoice\RefundClaimToBalance;
 use App\Actions\OrgAction;
 use App\Actions\Ordering\Order\CheckClaimCompensation;
@@ -93,7 +94,12 @@ class StoreClaimFollowOns extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData['delivery_note_items'], $this->validatedData['reason'] ?? null, $this->validatedData['private_notes'] ?? null);
+        $items     = $this->validatedData['delivery_note_items'];
+        $value     = RecordStaffClaim::itemsValue($order, $items);
+        $followOns = $this->handle($order, $items, $this->validatedData['reason'] ?? null, $this->validatedData['private_notes'] ?? null);
+        RecordStaffClaim::make()->fromItems($order, 'next_order', $items, ['in_next_order' => $followOns->map(fn ($followOn) => $followOn->product?->code.' x'.(float) $followOn->quantity)->all()], $request->user(), $value, $this->validatedData['reason'] ?? null);
+
+        return $followOns;
     }
 
     public function jsonResponse(Collection $followOns): JsonResponse

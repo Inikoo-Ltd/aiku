@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faTimes } from "@fortawesome/free-solid-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
@@ -8,7 +8,8 @@ const MAX_IMAGES = 3
 const MAX_BYTES = 10 * 1024 * 1024
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 
-const props = defineProps<{ modelValue: File[], disabled?: boolean }>()
+const props = defineProps<{ modelValue: File[], disabled?: boolean, max?: number, label?: string }>()
+const maxImages = computed(() => props.max ?? MAX_IMAGES)
 const emit = defineEmits<{ (e: "update:modelValue", files: File[]): void }>()
 
 const input = ref<HTMLInputElement>()
@@ -36,10 +37,10 @@ const addFiles = (files: File[]) => {
         error.value = ctrans("Each image must be smaller than 10 MB.")
     }
     const next = [...props.modelValue, ...small]
-    if (next.length > MAX_IMAGES) {
-        error.value = ctrans("You can send up to :count images at a time.", { count: MAX_IMAGES })
+    if (next.length > maxImages.value) {
+        error.value = ctrans("You can send up to :count images at a time.", { count: maxImages.value })
     }
-    emit("update:modelValue", next.slice(0, MAX_IMAGES))
+    emit("update:modelValue", next.slice(0, maxImages.value))
 }
 
 const onPick = (event: Event) => {
@@ -76,10 +77,10 @@ defineExpose({ onPaste, onDrop })
         <div class="flex flex-wrap items-center gap-2">
             <input ref="input" type="file" class="hidden" :accept="ACCEPTED.join(',')" multiple @change="onPick" />
             <button type="button" class="flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded border px-2 text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50"
-                :disabled="disabled || modelValue.length >= MAX_IMAGES"
+                :disabled="disabled || modelValue.length >= maxImages"
                 @click="input?.click()">
                 <FontAwesomeIcon :icon="faImage" fixed-width aria-hidden="true" />
-                {{ ctrans("Add image") }}
+                {{ label ?? ctrans("Add image") }}
             </button>
             <div v-for="(preview, index) in previews" :key="preview" class="relative h-12 w-12 overflow-hidden rounded border bg-gray-50">
                 <img :src="preview" :alt="modelValue[index]?.name" class="h-full w-full object-cover" />

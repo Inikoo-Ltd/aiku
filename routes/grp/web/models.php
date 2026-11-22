@@ -6,6 +6,8 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\CRM\CustomerClaim\ApproveCustomerClaim;
+use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Actions\SupplyChain\SupplierAgreement\PublishSupplierAgreementVersion;
 use App\Actions\SupplyChain\SupplierAgreement\StoreSupplierAgreementVersion;
 use App\Actions\SupplyChain\SupplierAgreement\UpdateSupplierAgreementVersion;
@@ -2500,6 +2502,9 @@ Route::patch('trolleys/{trolley:id}', UpdateTrolley::class)->name('trolleys.upda
 Route::patch('payment-account-shop/{paymentAccountShop:id}', UpdatePaymentAccountShop::class)->name('payment_account_shop.update');
 
 
+
+Route::post('customer-claim/{customerClaim:ulid}/approve', ApproveCustomerClaim::class)->name('customer_claim.approve');
+Route::post('customer-claim/{customerClaim:ulid}/reject', RejectCustomerClaim::class)->name('customer_claim.reject');
 
 require __DIR__.'/models/inventory/warehouse.php';
 require __DIR__.'/models/goods_in/return.php';

@@ -300,7 +300,7 @@ class ShowTicketsReports extends OrgAction
     /**
      * @return array{0: Carbon, 1: Carbon}
      */
-    private function range(string $interval, ?string $oldestCreatedAt, string $timezone): array
+    public function range(string $interval, ?string $oldestCreatedAt, string $timezone): array
     {
         $now = fn () => now($timezone);
 

@@ -174,6 +174,25 @@ use App\Models\Billables\Charge;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use Illuminate\Validation\ValidationException;
+use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
+use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
+use App\Actions\CRM\CustomerClaim\BackfillCustomerClaims;
+use App\Actions\Accounting\InvoiceTransaction\CreateFullRefundInvoiceTransaction;
+use App\Actions\CRM\CustomerClaim\RecordStaffClaim;
+use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
+use App\Actions\Accounting\Invoice\UI\CreateTaxRefund;
+use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
+use App\Actions\CRM\CustomerClaim\StoreCustomerClaim;
+use App\Actions\CRM\CustomerClaim\SettleCustomerClaim;
+use App\Enums\CRM\CustomerClaim\CustomerClaimSourceEnum;
+use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
+use App\Models\CRM\CustomerClaim\CustomerClaim;
+use App\Models\Tasks\StaffTask;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
@@ -7887,4 +7906,317 @@ test('the recharge sales channel is refused on orders of customers that are not 
 
     expect(UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id)
         ->and(StoreOrder::make()->action($customer, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id);
+});
+
+test('a customer claims a damaged item from Merlin: the form opens on their order, the claim waits for customer services and settles with the Claim panel refund', function () {
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+
+    $attachedOrgStock = null;
+    if (!$this->product->orgStocks()->count()) {
+        $attachedOrgStock = OrgStock::where('organisation_id', $this->organisation->id)->firstOrFail();
+        $this->product->orgStocks()->attach($attachedOrgStock->id, ['quantity' => 1]);
+    }
+    $this->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+    $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
+    $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    $cardAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CCL'.mt_rand(1000, 9999), 'name' => 'Customer claim card account']
+    );
+    PayInvoice::make()->action($invoice->refresh(), $cardAccount, ['amount' => $invoice->total_amount, 'status' => PaymentStatusEnum::SUCCESS->value, 'state' => PaymentStateEnum::COMPLETED->value]);
+    $order->refresh()->update(['state' => OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+    $customer = $order->customer->refresh();
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::CHAT);
+    $tools        = GetShoppingAssistantTools::make();
+    $settings     = $this->shop->settings;
+    expect(collect($tools->definitions())->pluck('function.name'))->not->toContain('report_order_problem')
+        ->and($tools->execute($conversation, 'report_order_problem', [])['claim_order_id'] ?? null)->toBeNull();
+
+    expect(GetCustomerClaimSettings::DEFAULTS['auto_approve'])->toBeTrue();
+    $this->shop->update(['settings' => array_merge($settings ?? [], ['claims' => ['self_service' => true, 'auto_approve' => false]])]);
+    $customer->unsetRelation('shop');
+    $conversation->refresh();
+    $tool = $tools->execute($conversation, 'report_order_problem', ['reference' => strtolower($order->reference)]);
+    expect(collect($tools->definitions(claimsEnabled: true))->pluck('function.name'))->toContain('report_order_problem')
+        ->and($tool['claim_order_id'] ?? null)->toBe($order->id)
+        ->and($tool['content']['claimable'])->toBeTrue();
+
+    $form = GetCustomerClaimForm::run($customer, $order->refresh());
+    $line = collect($form['lines'])->firstWhere('transaction_id', $item->transaction_id);
+    expect($line['claimable'])->toBe(2)
+        ->and(collect($form['reasons'])->pluck('value'))->not->toContain('customer_error')
+        ->and($form['outcomes'])->toContain('refund_to_balance', 'next_order');
+
+    $damaged = ['transaction_id' => $item->transaction_id, 'quantity' => 1, 'reason' => 'damaged_in_transit'];
+    $store   = fn (array $data) => StoreCustomerClaim::run($customer, $order->refresh(), $data, CustomerClaimSourceEnum::MERLIN, $conversation);
+
+    expect(fn () => $store(['resolution' => 'refund_to_balance', 'lines' => [$damaged]]))->toThrow(ValidationException::class, 'photo')
+        ->and(fn () => $store(['resolution' => 'refund_to_balance', 'lines' => [array_merge($damaged, ['quantity' => 3, 'photos' => [UploadedFile::fake()->image('broken.jpg')]])], 'box_photo' => UploadedFile::fake()->image('box.jpg')]))->toThrow(ValidationException::class)
+        ->and(fn () => $store(['resolution' => 'next_order', 'lines' => [['transaction_id' => $item->transaction_id, 'quantity' => 0.5, 'reason' => 'missing_from_parcel']]]))->toThrow(ValidationException::class)
+        ->and(CustomerClaim::where('order_id', $order->id)->count())->toBe(0);
+
+    $claim = $store([
+        'resolution' => 'refund_to_balance',
+        'comment'    => 'The glass arrived smashed',
+        'lines'      => [array_merge($damaged, ['photos' => [UploadedFile::fake()->image('broken.jpg')]])],
+        'box_photo'  => UploadedFile::fake()->image('box.jpg'),
+    ]);
+
+    expect($claim->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($claim->reference)->toBe(mb_strtoupper($this->shop->code).'-'.$customer->reference.'-1')
+        ->and($claim->shopping_assistant_conversation_id)->toBe($conversation->id)
+        ->and((float) $claim->amount)->toBeGreaterThan(0.0)
+        ->and($claim->getMedia(CustomerClaim::PHOTOS))->toHaveCount(2)
+        ->and($claim->lines()->sole()->reason)->toBe(DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT)
+        ->and(StaffTask::where('data->customer_claim_id', $claim->id)->exists())->toBe(in_array('customer-services', array_column(StaffTask::departments($order->group_id), 'value'), true));
+
+    expect(collect(GetCustomerClaimForm::run($customer, $order->refresh())['lines'])->firstWhere('transaction_id', $item->transaction_id)['claimable'])->toBe(1);
+
+    $balanceBefore = (float) $customer->refresh()->balance;
+    $claimRoute    = ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug];
+    actingAs($this->user);
+    get(route('grp.org.shops.show.claims.pending', $claimRoute))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Shop/CRM/CustomerClaims')->where('data.data.0.reference', $claim->reference));
+    get(route('grp.org.shops.show.claims.show', array_merge($claimRoute, ['customerClaim' => $claim->ulid])))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Shop/CRM/CustomerClaim')
+            ->where('can_review', true)
+            ->where('claim.state', 'in_review')
+            ->has('claim.lines.0.photos', 1)
+            ->has('claim.box_photos', 1)
+            ->where('claim.timeline.0.detail', 'In Merlin'));
+
+    $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $claim->ulid]))->assertRedirect();
+    $settled = $claim->refresh();
+    expect($settled->reviewed_by_user_id)->toBe($this->user->id);
+    get(route('grp.org.shops.show.claims.pending', $claimRoute))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', []));
+    get(route('grp.org.shops.show.claims.done', $claimRoute).'?elements[state]=settled')
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data.0.reference', $claim->reference));
+    get(route('grp.org.shops.show.claims.show', array_merge($claimRoute, ['customerClaim' => $claim->ulid])))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_review', false)->where('claim.timeline', fn ($timeline) => collect($timeline)->contains(fn ($event) => str_starts_with($event['label'], 'Approved by')) && collect($timeline)->contains(fn ($event) => str_contains($event['label'], 'credited to the balance'))));
+    get(route('grp.org.shops.show.claims.dashboard', $claimRoute))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Shop/CRM/CustomerClaimsDashboard')->where('dashboard.settled', 1)->where('dashboard.from_merlin', 1)->where('dashboard.waiting', 0)
+            ->where('dashboard.claimed_orders', 1)->where('dashboard.lost', fn ($lost) => $lost > 0)
+            ->where('dashboard.top_customers.value.0.reference', $customer->reference)
+            ->has('dashboard.claim_rates', 7)
+            ->where('dashboard.claim_rates', fn ($bands) => collect($bands)->sum('customers') >= 1)
+            ->where('dashboard.first_orders_claimed', fn ($claimed) => $claimed >= 1));
+
+    expect($settled->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($settled->result['refund'] ?? null)->not->toBeNull()
+        ->and((float) $customer->refresh()->balance)->toEqual(round($balanceBefore + (float) $settled->amount, 2))
+        ->and(collect(GetCustomerClaimForm::run($customer, $order->refresh())['lines'])->firstWhere('transaction_id', $item->transaction_id)['claimable'])->toBe(1)
+        ->and(SettleCustomerClaim::run($settled)->result)->toBe($settled->result);
+
+    $missing = $store(['resolution' => 'next_order', 'lines' => [['transaction_id' => $item->transaction_id, 'quantity' => 1, 'reason' => 'missing_from_parcel']]]);
+    expect(GetCustomerClaimForm::run($customer, $order->refresh())['lines'])->toBe([]);
+    $this->post(route('grp.models.customer_claim.reject', ['customerClaim' => $missing->ulid]), ['reason' => 'other'])->assertSessionHasErrors('note');
+    $this->post(route('grp.models.customer_claim.reject', ['customerClaim' => $missing->ulid]), ['reason' => 'not_confirmed'])->assertRedirect();
+    expect($missing->refresh()->state)->toBe(CustomerClaimStateEnum::REJECTED)
+        ->and($missing->reference)->toBe(mb_strtoupper($this->shop->code).'-'.$customer->reference.'-2')
+        ->and(collect(GetCustomerClaimForm::run($customer, $order->refresh())['lines'])->firstWhere('transaction_id', $item->transaction_id)['claimable'])->toBe(1);
+
+    $this->shop->update(['settings' => $settings]);
+    if ($attachedOrgStock) {
+        $this->product->orgStocks()->detach($attachedOrgStock->id);
+    }
+});
+
+function dispatchedOrderToClaim(object $test, int $quantity = 4): Order
+{
+    $order = StoreOrder::make()->action(freshCustomerLike($test->shop, $test->customer), Order::factory()->definition());
+    StoreTransaction::make()->action($order, $test->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => $quantity]));
+
+    if (!$test->product->orgStocks()->count()) {
+        $test->product->orgStocks()->attach(OrgStock::where('organisation_id', $test->organisation->id)->firstOrFail()->id, ['quantity' => 1]);
+    }
+    $test->product->orgStocks()->update(['quantity_available' => 100000]);
+
+    SubmitOrder::make()->action($order);
+    $item = SendOrderToWarehouse::make()->action($order->refresh(), [])->deliveryNoteItems()->firstOrFail();
+    $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    PayInvoice::make()->action($invoice->refresh(), StoreOrgPaymentServiceProviderAccount::make()->action(
+        $test->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CCA'.mt_rand(1000, 9999), 'name' => 'Customer claim allowance account']
+    ), ['amount' => $invoice->total_amount, 'status' => PaymentStatusEnum::SUCCESS->value, 'state' => PaymentStateEnum::COMPLETED->value]);
+    $order->refresh()->update(['state' => OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+
+    return $order->refresh();
+}
+
+test('small customer claims settle with no person until the customer uses up their rolling allowance, set by org admins per shop', function () {
+    $settings = $this->shop->settings;
+    $order    = dispatchedOrderToClaim($this);
+    $customer = $order->customer;
+    $line     = GetCustomerClaimForm::run($customer->refresh(), $order)['lines'][0] ?? null;
+    $missing  = fn (int $quantity) => ['resolution' => 'next_order', 'lines' => [['transaction_id' => $line['transaction_id'], 'quantity' => $quantity, 'reason' => 'missing_from_parcel']]];
+    $store    = fn (int $quantity) => StoreCustomerClaim::run($customer->refresh(), $order->refresh(), $missing($quantity), CustomerClaimSourceEnum::ACCOUNT);
+
+    actingAs($this->user);
+    $this->patch(route('grp.org.shops.show.claims.settings.update', ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug]), [
+        'self_service' => true, 'auto_approve' => true, 'max_claim_amount' => 100000, 'window_days' => 90,
+        'allowance_floor' => 0, 'allowance_share' => 0, 'max_claims_in_window' => 5,
+    ])->assertRedirect();
+    $this->shop->refresh();
+    expect(GetCustomerClaimSettings::for($this->shop)['auto_approve'])->toBeTrue();
+
+    $refused = $store(1);
+    expect($refused->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and((float) $refused->value)->toBeGreaterThan(0.0);
+    RejectCustomerClaim::make()->handle($refused, $this->user, 'not_confirmed');
+
+    $oneItem = (float) $refused->value;
+    $this->shop->update(['settings' => array_merge($this->shop->settings, ['claims' => array_merge(GetCustomerClaimSettings::for($this->shop), ['allowance_floor' => $oneItem * 2 + 0.01])])]);
+    $customer->unsetRelation('shop');
+
+    $first = $store(1);
+    expect($first->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($first->reviewed_by_user_id)->toBeNull()
+        ->and($first->result['in_next_order'] ?? [])->not->toBe([]);
+
+    $second = $store(1);
+    expect($second->state)->toBe(CustomerClaimStateEnum::SETTLED);
+
+    $third = $store(1);
+    expect($third->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings, ['claims' => array_merge(GetCustomerClaimSettings::for($this->shop), ['allowance_floor' => 100000, 'max_claims_in_window' => 4])])]);
+    RejectCustomerClaim::make()->handle($third, $this->user, 'other', 'test');
+    expect($store(1)->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
+
+    UpcomingTransaction::where('customer_id', $customer->id)->delete();
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('every replacement, claim refund and invoice refund staff make is recorded as a settled claim, and tax corrections stay out of the allowance', function () {
+    $order    = dispatchedOrderToClaim($this);
+    $customer = $order->customer;
+    $item     = $order->deliveryNotes()->firstOrFail()->deliveryNoteItems()->firstOrFail();
+    $prefix   = mb_strtoupper($this->shop->code).'-'.$customer->reference.'-';
+    actingAs($this->user);
+
+    $this->post(route('grp.models.order.replacement_delivery_note.store', ['order' => $order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'damaged_in_transit']],
+    ])->assertSessionHasNoErrors();
+    $replacement = CustomerClaim::where('customer_id', $customer->id)->latest('id')->firstOrFail();
+    expect($replacement->reference)->toBe($prefix.'1')
+        ->and($replacement->source)->toBe(CustomerClaimSourceEnum::STAFF)
+        ->and($replacement->kind)->toBe(CustomerClaimKindEnum::ITEMS)
+        ->and($replacement->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($replacement->resolution)->toBe('replacement')
+        ->and($replacement->reviewed_by_user_id)->toBe($this->user->id)
+        ->and((float) $replacement->value)->toBeGreaterThan(0.0)
+        ->and($replacement->result['replacement'] ?? null)->not->toBeNull()
+        ->and($replacement->lines()->sole()->reason)->toBe(DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT);
+
+    $this->postJson(route('grp.models.order.claim_refund_to_balance', ['order' => $order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1]],
+    ])->assertOk();
+    $credit = CustomerClaim::where('customer_id', $customer->id)->latest('id')->firstOrFail();
+    expect($credit->reference)->toBe($prefix.'2')
+        ->and($credit->resolution)->toBe('refund_to_balance')
+        ->and((float) $credit->amount)->toBeGreaterThan(0.0)
+        ->and(CustomerClaim::where('customer_id', $customer->id)->count())->toBe(2);
+
+    $taxRefund = CreateTaxRefund::make()->handle($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->firstOrFail());
+    RecordStaffClaim::make()->fromRefund($taxRefund->refresh(), $this->user);
+    $tax = CustomerClaim::where('refund_id', $taxRefund->id)->firstOrFail();
+    expect($tax->kind)->toBe(CustomerClaimKindEnum::TAX_CORRECTION)
+        ->and($tax->reference)->toBe($prefix.'3')
+        ->and($tax->source)->toBe(CustomerClaimSourceEnum::STAFF);
+
+    RecordStaffClaim::make()->fromRefund($taxRefund->refresh(), $this->user);
+    expect(CustomerClaim::where('refund_id', $taxRefund->id)->count())->toBe(1);
+
+    UpcomingTransaction::where('customer_id', $customer->id)->delete();
+});
+
+test('a shop switched to claims only gets + Claim instead of + Replacement and Create refund, staff claims settle at once, and invoice refunds settle their claim when finalised', function () {
+    $settings = $this->shop->settings;
+    $order    = dispatchedOrderToClaim($this, 6);
+    $customer = $order->customer;
+    $line     = GetCustomerClaimForm::run($customer, $order)['lines'][0];
+    $shopRoute = ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug];
+    actingAs($this->user);
+
+    $keys = fn () => collect(GetEcomOrderActions::run($order->refresh(), true))->pluck('key')->filter()->values()->all();
+    expect($keys())->toContain('replacement')->not->toContain('claim');
+
+    $base = ['self_service' => false, 'auto_approve' => false, 'max_claim_amount' => 25, 'window_days' => 90, 'allowance_floor' => 50, 'allowance_share' => 3, 'max_claims_in_window' => 3];
+    $this->patch(route('grp.org.shops.show.claims.settings.update', $shopRoute), array_merge($base, ['framework' => true]))->assertRedirect();
+    $this->shop->refresh();
+    expect(GetCustomerClaimSettings::usesFramework($this->shop))->toBeTrue();
+    $this->patch(route('grp.org.shops.show.claims.settings.update', $shopRoute), array_merge($base, ['framework' => false]))->assertRedirect();
+    expect(GetCustomerClaimSettings::usesFramework($this->shop->refresh()))->toBeTrue();
+
+    $order->unsetRelation('shop');
+    expect($keys())->toContain('claim')->not->toContain('replacement');
+    $invoice = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->firstOrFail();
+    $this->post(route('grp.models.refund.create', ['invoice' => $invoice->id]))->assertSessionHasErrors('message');
+    get(route('grp.org.shops.show.claims.create', array_merge($shopRoute, ['order' => $order->slug])))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Shop/CRM/CreateCustomerClaim')->where('lines.0.transaction_id', $line['transaction_id']));
+
+    $this->post(route('grp.models.order.customer_claim.store', ['order' => $order->id]), [
+        'resolution' => 'refund_to_balance', 'percentage' => 50, 'comment' => 'Half refund, goodwill',
+        'lines'      => [['transaction_id' => $line['transaction_id'], 'quantity' => 1, 'reason' => 'other']],
+    ])->assertRedirect();
+    $credit = CustomerClaim::where('customer_id', $customer->id)->latest('id')->firstOrFail();
+    expect($credit->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($credit->source)->toBe(CustomerClaimSourceEnum::STAFF)
+        ->and($credit->reviewed_by_user_id)->toBe($this->user->id)
+        ->and($credit->result['percentage'])->toEqual(50.0)
+        ->and($credit->result['refund'] ?? null)->not->toBeNull()
+        ->and((float) $credit->amount)->toBeLessThan((float) $credit->value);
+
+    $this->post(route('grp.models.order.customer_claim.store', ['order' => $order->id]), ['resolution' => 'invoice_refund', 'comment' => 'Shipping charged twice'])->assertRedirect();
+    $refundClaim = CustomerClaim::where('customer_id', $customer->id)->latest('id')->firstOrFail();
+    expect($refundClaim->kind)->toBe(CustomerClaimKindEnum::REFUND)
+        ->and($refundClaim->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($refundClaim->refund_id)->not->toBeNull();
+
+    $refund = $refundClaim->refund;
+    CreateFullRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->whereNotNull('transaction_id')->firstOrFail());
+    $this->post(route('grp.models.refund.finalise', ['refund' => $refund->id]))->assertSessionHasNoErrors();
+    expect($refundClaim->refresh()->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($refundClaim->result['refund'])->toBe($refund->refresh()->reference)
+        ->and(CustomerClaim::where('refund_id', $refund->id)->count())->toBe(1);
+
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('the backfill records past refunds and replacements as claims, oldest first per customer, once, without counting them as automatic', function () {
+    $order    = dispatchedOrderToClaim($this);
+    $customer = $order->customer;
+    $item     = $order->deliveryNotes()->firstOrFail()->deliveryNoteItems()->firstOrFail();
+    $replacement = StoreReplacementDeliveryNote::make()->action($order, ['delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'wrong_item_sent']]], strict: false);
+    $replacement->update(['created_at' => now()->subYears(2)]);
+    $refund = CreateTaxRefund::make()->handle($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->firstOrFail());
+    $refund->update(['in_process' => false, 'date' => now()->subYear()]);
+
+    $dry = BackfillCustomerClaims::make()->handle($this->shop, true);
+    expect(CustomerClaim::where('customer_id', $customer->id)->count())->toBe(0)
+        ->and($dry['replacement'])->toBeGreaterThanOrEqual(1);
+
+    BackfillCustomerClaims::make()->handle($this->shop, false);
+    $claims = CustomerClaim::where('customer_id', $customer->id)->orderBy('created_at')->get();
+    expect($claims->pluck('reference')->all())->toBe([mb_strtoupper($this->shop->code).'-'.$customer->reference.'-1', mb_strtoupper($this->shop->code).'-'.$customer->reference.'-2'])
+        ->and($claims[0]->resolution)->toBe('replacement')
+        ->and($claims[0]->lines()->sole()->reason)->toBe(DeliveryNoteItemReplacementReasonEnum::WRONG_ITEM_SENT)
+        ->and($claims[0]->created_at->year)->toBe(now()->subYears(2)->year)
+        ->and($claims[1]->kind)->toBe(CustomerClaimKindEnum::TAX_CORRECTION)
+        ->and($claims->every(fn ($claim) => $claim->result['backfilled'] === true && $claim->source === CustomerClaimSourceEnum::STAFF))->toBeTrue();
+
+    BackfillCustomerClaims::make()->handle($this->shop, false);
+    expect(CustomerClaim::where('customer_id', $customer->id)->count())->toBe(2);
 });

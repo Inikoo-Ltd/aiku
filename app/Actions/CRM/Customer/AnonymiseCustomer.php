@@ -22,6 +22,7 @@ use App\Models\Comms\EmailAddress;
 use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\WipeShoppingAssistantConversations;
@@ -78,6 +79,7 @@ class AnonymiseCustomer extends OrgAction
             $this->anonymiseWebUsers($customer);
             $this->anonymiseChats($webUserIds->all());
             $this->anonymiseShoppingAssistantConversations($customer);
+            $this->anonymiseClaims($customer);
             $this->anonymiseDispatchedEmailRecipients($customer, $webUserIds->all());
             $this->unsubscribeFromAllComms($customer);
             $this->scrubEarlierAudits($customer, $webUserIds->all());
@@ -310,6 +312,18 @@ class AnonymiseCustomer extends OrgAction
 
         WipeShoppingAssistantConversations::run(ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id')->all());
         AnswerShoppingAssistantTeamQuestion::deleteKeptNotesOf($customer->id);
+    }
+
+    /**
+     * The customer's own claims keep their lines and amounts for the accounts; their comment and
+     * photos go.
+     */
+    private function anonymiseClaims(Customer $customer): void
+    {
+        CustomerClaim::where('customer_id', $customer->id)->each(function (CustomerClaim $claim) {
+            $claim->update(['comment' => null]);
+            $claim->clearMediaCollection(CustomerClaim::PHOTOS);
+        });
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void

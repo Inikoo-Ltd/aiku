@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\CRM\CustomerClaim\RecordStaffClaim;
 use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Accounting\Invoice\RunInvoiceHydrators;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -92,7 +93,10 @@ class FinaliseRefund extends OrgAction
 
         $this->initialisationFromShop($refund->shop, $request);
 
-        return $this->handle($refund);
+        $refund = $this->handle($refund);
+        RecordStaffClaim::make()->fromRefund($refund, $request->user());
+
+        return $refund;
     }
 
     public function action(Invoice $refund, array $modelData): Invoice

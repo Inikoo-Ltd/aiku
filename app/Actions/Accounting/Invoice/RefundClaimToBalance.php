@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\CRM\CustomerClaim\RecordStaffClaim;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\Payment\RefundPaymentToBalance;
@@ -158,7 +159,12 @@ class RefundClaimToBalance extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData['delivery_note_items'], (float) ($this->validatedData['percentage'] ?? 100));
+        $items  = $this->validatedData['delivery_note_items'];
+        $value  = RecordStaffClaim::itemsValue($order, $items);
+        $refund = $this->handle($order, $items, (float) ($this->validatedData['percentage'] ?? 100));
+        RecordStaffClaim::make()->fromItems($order, 'refund_to_balance', $items, ['refund' => $refund->reference, 'credited' => abs((float) $refund->total_amount)], $request->user(), $value);
+
+        return $refund;
     }
 
     public function jsonResponse(Invoice $refund): JsonResponse

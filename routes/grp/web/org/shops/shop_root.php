@@ -6,6 +6,11 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\CustomerClaim\UI\CreateStaffCustomerClaim;
+use App\Actions\CRM\CustomerClaim\UI\IndexCustomerClaims;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaimsDashboard;
+use App\Actions\CRM\CustomerClaim\UpdateCustomerClaimSettings;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaim;
 use App\Actions\Catalogue\Shop\UI\CreateExternalShop;
 use App\Actions\Catalogue\Shop\UI\CreateShop;
 use App\Actions\Catalogue\Shop\UI\IndexShops;
@@ -91,6 +96,17 @@ Route::prefix('{shop}')->name('show.')
             }
         );
 
+
+        Route::name("claims.")->prefix('claims')->group(
+            function () {
+                Route::get('', ShowCustomerClaimsDashboard::class)->name('dashboard');
+                Route::get('pending', [IndexCustomerClaims::class, 'pending'])->name('pending');
+                Route::get('done', [IndexCustomerClaims::class, 'done'])->name('done');
+                Route::patch('settings', UpdateCustomerClaimSettings::class)->name('settings.update');
+                Route::get('orders/{order}/create', CreateStaffCustomerClaim::class)->name('create')->withoutScopedBindings();
+                Route::get('{customerClaim:ulid}', ShowCustomerClaim::class)->name('show')->withoutScopedBindings();
+            }
+        );
 
         Route::name("ordering.")->prefix('ordering')
             ->group(__DIR__ . "/ordering.php");

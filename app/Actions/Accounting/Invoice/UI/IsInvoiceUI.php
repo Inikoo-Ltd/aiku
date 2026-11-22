@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
@@ -322,8 +323,23 @@ trait IsInvoiceUI
         }
 
         if ($this->canRefund($invoice, $request) && $payBoxData['invoice_pay']['total_refunds'] != $invoice->total_amount) {
-            $wrappedActions[] =
-                [
+            $wrappedActions[] = GetCustomerClaimSettings::usesFramework($invoice->shop) && $invoice->order
+                ? [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'icon'  => 'fal fa-plus',
+                    'label' => __('Claim'),
+                    'route' => [
+                        'method'     => 'get',
+                        'name'       => 'grp.org.shops.show.claims.create',
+                        'parameters' => [
+                            'organisation' => $invoice->organisation->slug,
+                            'shop'         => $invoice->shop->slug,
+                            'order'        => $invoice->order->slug,
+                        ],
+                    ],
+                ]
+                : [
                     'type'  => 'button',
                     'style' => 'edit',
                     'icon'  => 'fal fa-plus',

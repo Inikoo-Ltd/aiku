@@ -51,11 +51,7 @@ class GetChatClaimCase
 
         $text  = mb_strtolower($details['text']);
         $left  = CheckClaimCompensation::run($order);
-        $items = DeliveryNoteItem::query()
-            ->whereIn('delivery_note_id', $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED->value)->pluck('delivery_notes.id'))
-            ->with(['transaction.asset', 'orgStock'])
-            ->orderBy('id')
-            ->get();
+        $items = $this->deliveredItems($order);
 
         $lines = $items
             ->map(function (DeliveryNoteItem $item) use ($text, $left) {
@@ -118,6 +114,35 @@ class GetChatClaimCase
                 ->all(),
             ...$this->refund($order),
         ];
+    }
+
+    /**
+     * The part of a claim case that depends only on the order: what was delivered and is still
+     * claimable, and what each line was invoiced at. The customer's own claims (HELP-4869) plan from
+     * this, so they are capped exactly as the Claim panel is.
+     *
+     * @return array<string, mixed>
+     */
+    public function orderCase(Order $order): array
+    {
+        return [
+            'too_old'      => CheckClaimCompensation::isTooOld($order),
+            'max_age_days' => CheckClaimCompensation::MAX_AGE_DAYS,
+            'products'     => $this->products($this->deliveredItems($order), '', CheckClaimCompensation::run($order), CheckClaimCompensation::dispatched($order)),
+            ...$this->refund($order),
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem>
+     */
+    private function deliveredItems(Order $order)
+    {
+        return DeliveryNoteItem::query()
+            ->whereIn('delivery_note_id', $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED->value)->pluck('delivery_notes.id'))
+            ->with(['transaction.asset', 'orgStock'])
+            ->orderBy('id')
+            ->get();
     }
 
     /**

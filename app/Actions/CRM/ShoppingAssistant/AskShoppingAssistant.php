@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
@@ -366,6 +367,14 @@ class AskShoppingAssistant
             }
         }
 
+        if (!empty($turn['claim_order_id'])) {
+            $offerReason = null;
+            $flags[]     = 'claim_form';
+            if ($reply === '') {
+                $reply = __('I am sorry about that. Please tell us what went wrong in the form below and we will put it right.', [], $conversation->language_code);
+            }
+        }
+
         if ($offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$unsure && $premium && $model !== $premium && !$this->hasActed($turn)) {
             return $this->answer($conversation, $customerMessage, ['turn' => $turn, 'model' => $model, 'started_at' => $startedAt]);
         }
@@ -461,6 +470,7 @@ class AskShoppingAssistant
                 'source_kind'       => $citedSources ? $citedSources[0]['kind'] : null,
                 'sources'           => $citedSources ?: null,
                 'hand_over_offer'   => $offerReason,
+                'claim_order_id'    => $turn['claim_order_id'] ?? null,
             ]);
 
             foreach ($groups as $group => $products) {
@@ -589,7 +599,7 @@ class AskShoppingAssistant
      */
     private function hasActed(array $turn): bool
     {
-        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_our_team', 'ask_purchasing_team', 'notify_when_back_in_stock', 'big_order_lead', 'report_to_engineers'], true));
+        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_our_team', 'ask_purchasing_team', 'notify_when_back_in_stock', 'big_order_lead', 'report_to_engineers', 'report_order_problem'], true));
     }
 
     /**
@@ -640,7 +650,7 @@ class AskShoppingAssistant
 
         for ($call = 0; $call < (int) config('services.shopping_assistant.max_model_calls'); $call++) {
             $callStartedAt = hrtime(true);
-            $response      = $this->callModel($model, $messages, $tools->definitions($customer && GetShoppingAssistantTools::isDropshipping($customer), $hasSisterShop), $call + 1 === (int) config('services.shopping_assistant.max_model_calls'));
+            $response      = $this->callModel($model, $messages, $tools->definitions($customer && GetShoppingAssistantTools::isDropshipping($customer), $hasSisterShop, $customer && GetCustomerClaimForm::enabledFor($customer->shop)), $call + 1 === (int) config('services.shopping_assistant.max_model_calls'));
 
             if ($response === null) {
                 $turn['flags'][] = 'model_unavailable';
@@ -823,6 +833,9 @@ class AskShoppingAssistant
         $turn['names']   = array_merge($turn['names'], $result['names'] ?? []);
         $turn['basket']  = array_merge($turn['basket'], $result['basket'] ?? []);
         $turn['cleared'] = $turn['cleared'] || !empty($result['cleared']);
+        if (!empty($result['claim_order_id'])) {
+            $turn['claim_order_id'] = $result['claim_order_id'];
+        }
         if (isset($result['fact'])) {
             $turn['facts'][] = $result['fact'];
         }
@@ -1543,6 +1556,9 @@ class AskShoppingAssistant
     private function systemPrompt(ShoppingAssistantConversation $conversation, Customer $customer): string
     {
         $shopName     = $customer->shop->name;
+        $claimsRule   = GetCustomerClaimForm::enabledFor($customer->shop)
+            ? ' This replaces the person for items they received damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived, and for photos of them: call report_order_problem (with the order number when they gave one), which opens our claim form in the chat where they choose the items, add photos and pick credit, a replacement or the items in their next order. Then say in one or two short sentences that you are sorry and that the form below is the fastest way to put it right; never promise an outcome or an amount, and offer a person only when the tool says the order cannot be claimed on.'
+            : '';
         $language     = DB::table('languages')->where('code', $conversation->language_code)->value('name') ?: 'English';
         $businessName = $this->businessName($customer) ?? 'not given';
         $country      = DB::table('countries')->where('code', data_get($customer->location, 0))->value('name') ?: 'not given';
@@ -1651,7 +1667,7 @@ $priceRule
 - Ask at most one short question when the request is too vague to search; otherwise search first.
 - When the customer asks a general question about buying from us (payment, delivery, returns, how to order, minimum order, their account, our terms, how the website works), call shop_information with their question and answer only from the texts it returns, with answer_kind shop_answer and the ids of the texts you used in sources, and show no products with it (leave the product groups empty and do not say you are showing any; a product nudge goes in follow_ups). Never answer such a question from your own knowledge. If the texts do not answer it, do not guess: use answer_kind offer_person with offer_reason not_sure. $shippingTools
 - When the customer reports something broken on our side (a bug on our website or in their account, an integration with their store that misbehaves, products or stock not syncing, orders not arriving, tracking not updating, records of ours that look wrong), first check shop_information for a known fix and give it. When they already tried it, or our texts have none, and the evidence says it is broken on our side, call report_to_engineers once with that evidence, so a real problem goes straight to our engineers without waiting for customer services. When it may be their own mistake, a setting or their own platform, do not report it: help them or offer a person. Never promise a fix or a time.
-- When the customer asks where one of their own orders is, why it has not been dispatched yet, whether it was sent or for its tracking, call order_status and answer from it, even when they gave no order number: it finds their order. You cannot see their invoices or refunds, and you cannot change or cancel an order or chase a parcel: for those, and for a late, lost or damaged parcel already sent, use answer_kind offer_person with offer_reason order_question, after order_status when knowing where the order is helps them. An order still in our queue needs no person: tell them honestly where it is.
+- When the customer asks where one of their own orders is, why it has not been dispatched yet, whether it was sent or for its tracking, call order_status and answer from it, even when they gave no order number: it finds their order. You cannot see their invoices or refunds, and you cannot change or cancel an order or chase a parcel: for those, and for a late, lost or damaged parcel already sent, use answer_kind offer_person with offer_reason order_question, after order_status when knowing where the order is helps them.$claimsRule An order still in our queue needs no person: tell them honestly where it is.
 - When the customer asks for a person, a human or customer service, use answer_kind offer_person with offer_reason asked_for_person.
 - With offer_reason not_sure, put in reply only what your tool results and cited texts do show that helps with their question, in one to three short sentences and your own words, or leave reply empty when they show nothing useful. Never write that you are not sure, that you passed it on or that a person will help: the system adds that sentence, and shows your part only when it follows from your tool results.
 - When the customer just chats, jokes or vents about something that has nothing to do with this shop, play along in one or two friendly sentences (answer_kind off_topic), then bring it lightly back to their shop. Never be rude back, and give no opinions on politics, religion or other people. Decline politely anything else that has nothing to do with this shop.

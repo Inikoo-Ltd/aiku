@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\CustomerClaim\StoreStaffCustomerClaim;
 use App\Actions\Ordering\PreOrder\UpdatePreOrder;
 use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Billables\Charge\StoreDiscretionaryChargeTransaction;
@@ -105,6 +106,7 @@ Route::name('order.')->prefix('order/{order:id}')->middleware([EnsureNotHandledI
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
     Route::post('claim-refund-to-balance', RefundClaimToBalance::class)->name('claim_refund_to_balance');
     Route::post('claim-follow-on', StoreClaimFollowOns::class)->name('claim_follow_on');
+    Route::post('customer-claim', StoreStaffCustomerClaim::class)->name('customer_claim.store');
     Route::post('return', StoreReturn::class)->name('return.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
     Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');

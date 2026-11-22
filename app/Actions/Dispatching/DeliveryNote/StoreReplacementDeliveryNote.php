@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\CRM\CustomerClaim\RecordStaffClaim;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
@@ -213,7 +214,12 @@ class StoreReplacementDeliveryNote extends OrgAction
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData);
+        $items        = $this->validatedData['delivery_note_items'];
+        $value        = RecordStaffClaim::itemsValue($order, $items);
+        $deliveryNote = $this->handle($order, $this->validatedData);
+        RecordStaffClaim::make()->fromItems($order, 'replacement', $items, ['replacement' => $deliveryNote->reference, 'state' => $deliveryNote->state->value], $request->user(), $value);
+
+        return $deliveryNote;
     }
 
     public function prepareForValidation(ActionRequest $request): void

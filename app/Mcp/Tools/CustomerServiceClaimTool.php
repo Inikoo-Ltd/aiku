@@ -96,7 +96,7 @@ class CustomerServiceClaimTool extends AikuCustomerServiceTool
                 McpChangeTypeEnum::CUSTOMER_SERVICE,
                 str_replace('_', ' ', $resolution).' for '.collect($claimed)->map(fn (array $item) => $item['code'].' x'.$item['quantity'])->implode(', ').' of '.$order->reference,
                 ['chat_session_id' => $chatSession->id, 'order_id' => $order->id],
-                fn () => PlanChatClaim::make()->settle($order, $resolution, $claimed, $reason, $percentage, $request->get('note')),
+                fn () => PlanChatClaim::make()->settleAsStaff($order, $resolution, $claimed, $reason, $percentage, $request->get('note'), $request->user()),
                 ['action' => $resolution, 'items' => $claimed, 'percentage' => $percentage]
             );
         } catch (ValidationException $exception) {

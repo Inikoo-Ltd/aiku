@@ -19,6 +19,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -224,11 +225,14 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(bool $dropshipping = false, bool $hasSisterShop = false): array
+    public function definitions(bool $dropshipping = false, bool $hasSisterShop = false, bool $claimsEnabled = false): array
     {
         $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
         if (!$hasSisterShop) {
             $excluded[] = 'sister_shop_products';
+        }
+        if (!$claimsEnabled) {
+            $excluded[] = 'report_order_problem';
         }
 
         return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
@@ -341,6 +345,11 @@ class GetShoppingAssistantTools
                 'order_status',
                 'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, why it has not been dispatched yet, whether it was sent, or for its tracking. Pass the order or invoice number they wrote as reference (ours or their own); without one you get their oldest order not dispatched yet, else their latest, so never ask for the number first. It also says when an order waits for payment, and an order still waiting to be picked a day after it was placed may be moved to premium dispatch free of charge: only when the result gives priority. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
                 ['reference' => ['type' => 'string', 'description' => 'The order, basket or invoice number the customer wrote, exactly as written, also when they call it a product. Leave it out when they gave none.']]
+            ),
+            $this->tool(
+                'report_order_problem',
+                'Opens our claim form in the chat for one of the customer\'s own orders that arrived with items damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived. The customer fills it in themselves: items, quantities, photos and whether they want credit, a replacement or the items in their next order. Pass the order or invoice number they wrote as reference; without one you get their last dispatched order. Never ask for photos or details in the chat when the form opens: the form asks. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'coming_soon',
@@ -542,6 +551,7 @@ class GetShoppingAssistantTools
                 'ebay_listing_problems'          => GetEbayListingProblems::make()->handle($customer, $conversation->language_code, $conversation),
                 'coming_soon'                    => GetComingSoon::make()->handle($customer, $conversation->language_code, $this->sendsBackInStockEmails($customer)),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code, $conversation),
+                'report_order_problem'           => GetCustomerClaimForm::enabledFor($customer->shop) ? $this->reportOrderProblem($customer, $arguments) : $this->error('report_order_problem is not available on this shop.'),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -1272,6 +1282,42 @@ class GetShoppingAssistantTools
      *
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
+    /**
+     * Opens the customer's claim form (HELP-4869) on their own order: the one named, else their last
+     * dispatched one. The form, not the model, takes the items, photos and outcome; the message
+     * carries the order so the page shows the form under the reply.
+     */
+    private function reportOrderProblem(Customer $customer, array $arguments): array
+    {
+        $reference  = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
+        $orders     = Order::where('customer_id', $customer->id);
+
+        $order = $reference !== ''
+            ? $orders->where(fn ($query) => $query->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(customer_reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(platform_order_id), ' -', '') = ?", [$comparable])->orWhereHas('invoices', fn ($invoices) => $invoices->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])))->latest('id')->first()
+            : $orders->whereIn('state', [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])->latest('dispatched_at')->latest('id')->first();
+
+        if (!$order) {
+            return ['content' => ['found' => false, 'note' => $reference !== ''
+                ? 'No order with that number in their account. Say so and ask them to check the number.'
+                : 'They have no dispatched order. Say so; offer a person if they insist something went wrong.'], 'products' => [], 'error' => null];
+        }
+
+        $form = GetCustomerClaimForm::run($customer, $order);
+
+        if (!$form) {
+            return ['content' => ['found' => true, 'claimable' => false, 'note' => 'This order has not been dispatched yet, so there is nothing to claim on. Use order_status to tell them where it is.'], 'products' => [], 'error' => null];
+        }
+
+        if ($form['too_old'] || !$form['lines']) {
+            return ['content' => ['found' => true, 'claimable' => false, 'note' => $form['too_old']
+                ? 'This order was dispatched too long ago to be claimed on here. Offer a person with offer_reason order_question.'
+                : 'Everything on this order has already been claimed. Offer a person with offer_reason order_question if they think something is still wrong.'], 'products' => [], 'error' => null];
+        }
+
+        return ['content' => ['found' => true, 'claimable' => true, 'note' => 'The claim form for this order is shown under your reply.'], 'products' => [], 'error' => null, 'claim_order_id' => $order->id];
+    }
+
     private function orderStatus(Customer $customer, array $arguments, string $locale, ?ShoppingAssistantConversation $conversation = null): array
     {
         $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';

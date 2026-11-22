@@ -830,6 +830,40 @@ class GetShopNavigation
             ];
         }
 
+        if (in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true) && $user->hasAnyPermission(["crm.$shop->id.view", "orders.$shop->id.view"])) {
+            $navigation["claims"] = [
+                "root"    => "grp.org.shops.show.claims.",
+                "label"   => __("Claims"),
+                "icon"    => ["fal", "fa-box-fragile"],
+                "route"   => [
+                    "name"       => "grp.org.shops.show.claims.dashboard",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "topMenu" => [
+                    "subSections" => [
+                        [
+                            "label"   => __("Dashboard"),
+                            "icon"    => ["fal", "fa-tachometer-alt"],
+                            "root"    => "grp.org.shops.show.claims.dashboard",
+                            "route"   => ["name" => "grp.org.shops.show.claims.dashboard", "parameters" => [$shop->organisation->slug, $shop->slug]],
+                        ],
+                        [
+                            "label"   => __("Pending"),
+                            "icon"    => ["fal", "fa-hourglass-half"],
+                            "root"    => "grp.org.shops.show.claims.pending",
+                            "route"   => ["name" => "grp.org.shops.show.claims.pending", "parameters" => [$shop->organisation->slug, $shop->slug]],
+                        ],
+                        [
+                            "label"   => __("Done"),
+                            "icon"    => ["fal", "fa-archive"],
+                            "root"    => "grp.org.shops.show.claims.done",
+                            "route"   => ["name" => "grp.org.shops.show.claims.done", "parameters" => [$shop->organisation->slug, $shop->slug]],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
         $navigation["tasks"] = [
             "label"   => __("Tasks"),
             "icon"    => ["fal", "fa-tasks"],

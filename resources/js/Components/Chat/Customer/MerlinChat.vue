@@ -11,6 +11,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { isLittleBirdName, shoppingAssistantConversationKey } from "@/Iris/Composables/useShoppingAssistant"
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import MerlinImagePicker from "@/Components/Chat/Customer/MerlinImagePicker.vue"
+import CustomerClaimForm, { type ClaimSummary } from "@/Components/Chat/Customer/CustomerClaimForm.vue"
 import { askPayload } from "@/Iris/Composables/useShoppingAssistant"
 
 type Card = { id: number, name: string, url?: string | null, web_images?: any }
@@ -24,6 +25,7 @@ type Message = {
     hand_over_offer?: string | null
     handed_over?: boolean
     groups?: { must_haves?: Card[], add_ons?: Card[] }
+    claim?: { order_id: number, reference: string, made: ClaimSummary | null } | null
 }
 
 const emit = defineEmits<{ (e: "leave-message"): void }>()
@@ -263,6 +265,8 @@ onBeforeUnmount(stopPolling)
                             </Button>
                             <p v-if="handOverErrors[message.id]" class="mt-1 text-xs text-red-500">{{ handOverErrors[message.id] }}</p>
                         </div>
+
+                        <CustomerClaimForm v-if="message.claim" :order-id="message.claim.order_id" source="merlin" :conversation="conversation" :made="message.claim.made" />
 
                         <div v-if="message.id === latestAssistantId && message.follow_ups?.length && !isPending" class="mt-2 flex flex-wrap gap-1.5">
                             <button v-for="followUp in message.follow_ups" :key="followUp" type="button"

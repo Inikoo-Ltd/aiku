@@ -26,6 +26,9 @@ use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Actions\Iris\CustomerClaim\ShowIrisCustomerClaim;
+use App\Models\CRM\CustomerClaim\CustomerClaim;
+use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -53,7 +56,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             ->when($after, fn ($query) => $query->where('id', '>', $after))
             ->orderBy('id')
             ->with('media')
-            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'feedback', 'created_at']);
+            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'feedback', 'claim_order_id', 'created_at']);
 
         $handedOverOfferIds = $conversation->handOvers()
             ->whereIn('offer_message_id', $messages->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->pluck('id'))
@@ -98,7 +101,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             'pending'      => $conversation->isPending(),
             'awaiting_team' => ($teamQuestion = StoreShoppingAssistantTeamQuestion::openFor($conversation)) !== null && StoreShoppingAssistantTeamQuestion::isAwaited($teamQuestion),
             'hand_over_available' => $conversation->website && $conversation->customer && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $conversation->customer),
-            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards, $familyLinks, $handedOverOfferIds) {
+            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($conversation, $events, $cards, $familyLinks, $handedOverOfferIds) {
                 $data = [
                     'id'         => $message->id,
                     'role'       => $message->role->value,
@@ -117,6 +120,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                     $data['hand_over_offer'] = $message->hand_over_offer?->value;
                     $data['handed_over']     = $handedOverOfferIds->has($message->id);
                     $data['feedback']        = $message->feedback;
+                    $data['claim']           = $message->claim_order_id ? $this->claimFor($conversation, $message->claim_order_id) : null;
                     $data['groups']     = array_fill_keys(AskShoppingAssistant::GROUPS, []);
 
                     foreach ($events->where('shopping_assistant_message_id', $message->id) as $event) {
@@ -143,6 +147,30 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
      *
      * @return array<string, mixed>
      */
+    /**
+     * The claim form under a Merlin reply (HELP-4869), or the claim already made from it. Only the
+     * conversation's own customer's order is read.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function claimFor(ShoppingAssistantConversation $conversation, int $orderId): ?array
+    {
+        $customer = $conversation->customer;
+        $order    = $customer ? Order::where('customer_id', $customer->id)->find($orderId) : null;
+
+        if (!$order) {
+            return null;
+        }
+
+        $made = CustomerClaim::where('customer_id', $customer->id)->where('order_id', $order->id)->where('shopping_assistant_conversation_id', $conversation->id)->latest('id')->first();
+
+        return [
+            'order_id'  => $order->id,
+            'reference' => $order->reference,
+            'made'      => $made ? ShowIrisCustomerClaim::make()->summary($made) : null,
+        ];
+    }
+
     public function jsonResponse(array $conversation): array
     {
         return $conversation;

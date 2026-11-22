@@ -8,6 +8,8 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use Illuminate\Validation\ValidationException;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
@@ -57,6 +59,10 @@ class CreateRefund extends OrgAction
      */
     public function asController(Invoice $invoice, ActionRequest $request): Invoice
     {
+        if (GetCustomerClaimSettings::usesFramework($invoice->shop)) {
+            throw ValidationException::withMessages(['message' => __('This shop works through claims: use + Claim on the order to refund.')]);
+        }
+
         $this->initialisationFromShop($invoice->shop, $request);
 
         if (Arr::has($this->validatedData, 'referral_route')) {

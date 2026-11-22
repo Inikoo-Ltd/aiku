@@ -132,7 +132,7 @@ class RunChatAiDraftAction
         $plan = PlanChatClaim::run($session, $order, $action['resolution'], $action['items'], $action['reason'] ?? null, $action['percentage'] ?? null);
         abort_if((bool) $plan['error'], 422, $plan['error'] ?? '');
 
-        $result = PlanChatClaim::make()->settle($order, $action['resolution'], $plan['claimed'], $plan['reason'], $plan['percentage']);
+        $result = PlanChatClaim::make()->settleAsStaff($order, $action['resolution'], $plan['claimed'], $plan['reason'], $plan['percentage'], null, $user);
 
         return match ($action['resolution']) {
             'refund_to_balance' => ['label' => __('Refunded :amount (:reference)', ['amount' => self::money($result['credited'], $plan['currency']), 'reference' => $result['refund']]), 'reference' => $result['refund']],

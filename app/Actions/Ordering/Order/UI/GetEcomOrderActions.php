@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
@@ -259,7 +260,23 @@ class GetEcomOrderActions
                                 ]
                             ]
                         ] : [],
-                    [
+                    GetCustomerClaimSettings::usesFramework($order->shop) ? [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'icon'    => 'fal fa-plus',
+                        'tooltip' => __('Create a claim: replacement, credit, next order or refund'),
+                        'label'   => __('Claim'),
+                        'key'     => 'claim',
+                        'route'   => [
+                            'method'     => 'get',
+                            'name'       => 'grp.org.shops.show.claims.create',
+                            'parameters' => [
+                                'organisation' => $order->organisation->slug,
+                                'shop'         => $order->shop->slug,
+                                'order'        => $order->slug
+                            ]
+                        ]
+                    ] : [
                         'type'    => 'button',
                         'style'   => 'save',
                         'icon'    => 'fal fa-plus',

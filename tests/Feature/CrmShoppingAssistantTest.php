@@ -465,7 +465,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
         ->and($response->json('awaiting_team'))->toBeFalse()
         ->and($messages)->toHaveCount(2)
         ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'images', 'created_at'])
-        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'hand_over_offer', 'handed_over', 'feedback', 'groups'])
+        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'hand_over_offer', 'handed_over', 'feedback', 'claim', 'groups'])
         ->and($messages[1]['role'])->toBe('assistant')
         ->and($messages[1]['body'])->toBe('Worth bringing back.')
         ->and($messages[1]['follow_ups'])->toBe(['Anything new?'])

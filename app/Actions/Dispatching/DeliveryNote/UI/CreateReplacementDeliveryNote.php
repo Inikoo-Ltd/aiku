@@ -8,6 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UI;
 
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Redirect;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -56,6 +59,10 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Order
     {
+        if (GetCustomerClaimSettings::usesFramework($shop)) {
+            throw new HttpResponseException(Redirect::route('grp.org.shops.show.claims.create', [$organisation->slug, $shop->slug, $order->slug]));
+        }
+
         $this->parent = $order;
         $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
 

@@ -69,6 +69,9 @@ use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Iris\ShoppingAssistant\AskIrisShoppingAssistant;
 use App\Actions\Iris\ShoppingAssistant\ForgetIrisShoppingAssistantShopProfile;
 use App\Actions\Iris\ShoppingAssistant\GetIrisShoppingAssistantPanel;
+use App\Actions\Iris\CustomerClaim\ShowIrisCustomerClaim;
+use App\Actions\Iris\CustomerClaim\ShowIrisCustomerClaimForm;
+use App\Actions\Iris\CustomerClaim\StoreIrisCustomerClaim;
 use App\Actions\Iris\ShoppingAssistant\HandOverIrisShoppingAssistant;
 use App\Actions\Iris\ShoppingAssistant\StoreIrisShoppingAssistantPanelEvent;
 use App\Actions\Iris\ShoppingAssistant\IndexIrisShoppingAssistantConversations;
@@ -100,6 +103,10 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('shopping-assistant/{conversation:ulid}', ShowIrisShoppingAssistantConversation::class)->name('shopping_assistant.show')->middleware('throttle:120,1')->withoutScopedBindings();
     Route::post('shopping-assistant/{conversation:ulid}/events', StoreIrisShoppingAssistantEvent::class)->name('shopping_assistant.events.store')->middleware('throttle:120,1')->withoutScopedBindings();
     Route::post('shopping-assistant/{conversation:ulid}/feedback', StoreIrisShoppingAssistantFeedback::class)->name('shopping_assistant.feedback.store')->middleware('throttle:60,1')->withoutScopedBindings();
+
+    Route::get('claims/orders/{orderId}/form', ShowIrisCustomerClaimForm::class)->name('customer_claims.form')->middleware('throttle:60,1')->whereNumber('orderId');
+    Route::post('claims', StoreIrisCustomerClaim::class)->name('customer_claims.store')->middleware('throttle:10,1');
+    Route::get('claims/{ulid}', ShowIrisCustomerClaim::class)->name('customer_claims.show')->middleware('throttle:60,1');
 });
 
 
