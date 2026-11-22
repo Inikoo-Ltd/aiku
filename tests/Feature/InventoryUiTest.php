@@ -13,6 +13,7 @@ namespace Tests\Feature;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Inventory\Location\HydrateLocation;
 use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\UI\IndexWarehouseStaffTasks;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\UpdateLocationOrgStock;
@@ -759,4 +760,45 @@ test('a SKO minimum stock can be cleared but never negative', function () {
     patch($updateUrl, ['minimum_stock' => 5])->assertSessionHasNoErrors();
     patch($updateUrl, ['minimum_stock' => null])->assertSessionHasNoErrors();
     expect($orgStock->refresh()->minimum_stock)->toBeNull();
+});
+
+test('tasks asked of the warehouse stay on its inventory page with how long they have waited', function () {
+    $warehouse      = createWarehouse();
+    $otherWarehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::run($this->organisation, \App\Models\Inventory\Warehouse::factory()->definition());
+    $location       = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $otherLocation  = StoreLocation::make()->action($otherWarehouse, Location::factory()->definition());
+    $baseline       = IndexWarehouseStaffTasks::openSummary($warehouse)['open'];
+
+    $task = fn (Location $location, string $subject) => \App\Actions\Tasks\StoreStaffTask::make()->action($this->user, [
+        'subject'    => $subject,
+        'department' => 'warehouse',
+        'model_type' => 'Location',
+        'model_id'   => $location->id,
+    ]);
+
+    $waiting = $task($location, 'Count this location');
+    $waiting->update(['created_at' => now()->subDays(40), 'due_at' => now()->subDays(30)]);
+    $task($location, 'Already counted')->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+    $task($otherLocation, 'Another warehouse');
+
+    $summary = IndexWarehouseStaffTasks::openSummary($warehouse);
+    expect($summary['open'])->toBe($baseline + 1)
+        ->and($summary['overdue'])->toBeGreaterThanOrEqual(1)
+        ->and($summary['oldest_days'])->toBeGreaterThanOrEqual(40);
+
+    $rows = collect(get(route('grp.org.warehouses.show.inventory.staff_tasks.index', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()
+        ->inertiaProps()['tasks']['data']);
+
+    expect($rows->pluck('subject')->all())->toContain('Count this location')
+        ->not->toContain('Already counted')
+        ->not->toContain('Another warehouse')
+        ->and($rows->firstWhere('reference', $waiting->reference))->toMatchArray(['days_waiting' => 40, 'is_overdue' => true, 'linked' => $location->code]);
+
+    $gauge = collect(get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))
+        ->assertOk()
+        ->inertiaProps()['actionGauges'])->firstWhere('key', 'warehouse_tasks');
+    expect($gauge['value'])->toBe($baseline + 1)
+        ->and($gauge['secondary']['value'])->toBeGreaterThanOrEqual(1)
+        ->and($gauge['route']['name'])->toBe('grp.org.warehouses.show.inventory.staff_tasks.index');
 });

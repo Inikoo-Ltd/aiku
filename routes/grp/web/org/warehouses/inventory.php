@@ -36,6 +36,7 @@ use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHist
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
 use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
+use App\Actions\Inventory\UI\IndexWarehouseStaffTasks;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithWrongWeight;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksBelowMinimumStock;
@@ -65,6 +66,7 @@ use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
+Route::get('tasks', IndexWarehouseStaffTasks::class)->name('staff_tasks.index');
 
 Route::prefix('production-materials')->as('production_materials.')->group(function () {
     Route::get('/', IndexProductionMaterialRequestItems::class)->name('index');

@@ -3,12 +3,12 @@ import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faQuestionCircle } from "@fal"
-import { faShoppingBasket, faCheckCircle, faBolt } from "@fas"
+import { faShoppingBasket, faCheckCircle, faBolt, faClock } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { ActionGaugeTS } from "@/types/Components/ActionGauge"
 
-library.add(faQuestionCircle, faShoppingBasket, faCheckCircle, faBolt)
+library.add(faQuestionCircle, faShoppingBasket, faCheckCircle, faBolt, faClock)
 
 defineProps<{
     gauges: ActionGaugeTS[]

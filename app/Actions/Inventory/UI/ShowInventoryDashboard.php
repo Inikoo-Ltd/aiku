@@ -252,6 +252,7 @@ class ShowInventoryDashboard extends OrgAction
                 ],
             ],
             $this->getProductionMaterialsGauge($routeParameters),
+            $this->getWarehouseTasksGauge($routeParameters),
         ]));
     }
 
@@ -299,6 +300,40 @@ class ShowInventoryDashboard extends OrgAction
                     'name'       => 'grp.org.warehouses.show.inventory.production_materials.index',
                     'parameters' => $routeParameters
                 ],
+            ] : null,
+        ];
+    }
+
+    /**
+     * Tasks asked of the warehouse about its locations and SKOs, kept in sight with the age of
+     * the oldest so nobody can say they were never asked (HELP-4868). The ring is the share
+     * still waiting out of those waiting plus those done in the last 30 days.
+     *
+     * @return array<string, mixed>
+     */
+    public function getWarehouseTasksGauge(array $routeParameters): array
+    {
+        $summary = IndexWarehouseStaffTasks::openSummary($this->warehouse);
+        $total   = $summary['open'] + $summary['done_last_30_days'];
+        $route   = ['name' => 'grp.org.warehouses.show.inventory.staff_tasks.index', 'parameters' => $routeParameters];
+
+        return [
+            'key'          => 'warehouse_tasks',
+            'label'        => __('Important tasks'),
+            'hint'         => __('Things the warehouse was asked to do, like counting a location. They stay here until someone does them.'),
+            'value'        => $summary['open'],
+            'percentage'   => $total ? round($summary['open'] / $total * 100, 1) : 0,
+            'total'        => $total,
+            'ring_tooltip' => $summary['open']
+                ? __(':open waiting, the oldest for :days days. :done done in the last 30 days', ['open' => $summary['open'], 'days' => $summary['oldest_days'], 'done' => $summary['done_last_30_days']])
+                : __('Nothing waiting. :done done in the last 30 days', ['done' => $summary['done_last_30_days']]),
+            'color'        => '#ea580c',
+            'route'        => $route,
+            'secondary'    => $summary['overdue'] ? [
+                'tooltip' => __('Past their due date'),
+                'icon'    => 'fas fa-clock',
+                'value'   => $summary['overdue'],
+                'route'   => $route,
             ] : null,
         ];
     }
