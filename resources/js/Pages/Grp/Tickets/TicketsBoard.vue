@@ -17,7 +17,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Icon from "@/Components/Icon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faUserTimes } from "@fal"
+import { faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faLifeRing, faToolbox, faUserHeadset, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faUserTimes, faProjectDiagram, faEye, faEyeSlash } from "@fal"
 import { faCaretDown } from "@fas"
 import { useLiveTickets } from "@/Composables/useLiveTickets"
 import { useBoardDropZones } from "@/Composables/useBoardDropZones"
@@ -30,7 +30,7 @@ import TicketStatusNoteDialog from "@/Components/Tickets/TicketStatusNoteDialog.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Dialog } from "primevue"
 
-library.add(faUserTimes, faLifeRing,faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faCaretDown)
+library.add(faProjectDiagram, faEye, faEyeSlash, faUserTimes, faLifeRing,faToolbox, faUserHeadset, faVial, faShieldCheck, faForward, faShield, faRocket, faSpinner, faBug, faLightbulb, faTasks, faLevelUp, faBooks, faDatabase, faSearch, faCube, faCommentDots, faCircle, faUserCheck, faClock, faCheckCircle, faBan, faCaretDown)
 
 const kindIcons = ticketKindIcons
 
@@ -228,6 +228,53 @@ const moreFiltersOpen = ref(false)
 const clearFilters = () =>
 	(Object.keys(boardFilters) as FilterKey[]).forEach((key) => (boardFilters[key] = []))
 
+const noProject = ctrans("No project")
+
+const projectOf = (ticket: any): string => ticket.project_name ?? noProject
+
+const projectOptions = computed(() => {
+	const counts: Record<string, number> = {}
+	props.columns.flatMap((column) => column.tickets).forEach((ticket) => {
+		counts[projectOf(ticket)] = (counts[projectOf(ticket)] ?? 0) + 1
+	})
+	return Object.entries(counts)
+		.sort((a, b) => Number(a[0] === noProject) - Number(b[0] === noProject) || a[0].localeCompare(b[0]))
+		.map(([value, count]) => ({ value, count }))
+})
+
+const readHiddenProjects = (): string[] => {
+	try {
+		return JSON.parse(localStorage.getItem("tickets-board-hidden-projects") ?? "[]")
+	} catch {
+		return []
+	}
+}
+
+const hiddenProjects = ref<string[]>(readHiddenProjects())
+
+watch(hiddenProjects, (value) => {
+	try {
+		localStorage.setItem("tickets-board-hidden-projects", JSON.stringify(value))
+	} catch {}
+})
+
+const hiddenProjectsShown = computed(() => projectOptions.value.filter((option) => hiddenProjects.value.includes(option.value)).length)
+
+const toggleProjectHidden = (project: string) =>
+	(hiddenProjects.value = hiddenProjects.value.includes(project)
+		? hiddenProjects.value.filter((hidden) => hidden !== project)
+		: [...hiddenProjects.value, project])
+
+const showOnlyProject = (project: string) =>
+	(hiddenProjects.value = projectOptions.value.map((option) => option.value).filter((value) => value !== project))
+
+const onlyProject = computed(() => {
+	const visible = projectOptions.value.filter((option) => !hiddenProjects.value.includes(option.value))
+	return visible.length === 1 && projectOptions.value.length > 1 ? visible[0].value : null
+})
+
+const projectMenuOpen = ref(false)
+
 const subFilter = reactive<Record<string, string | null>>({})
 
 const toggleSubFilter = (columnKey: string, status: string) =>
@@ -276,6 +323,7 @@ watch(
 )
 
 const matchesBoardFilters = (ticket: any, columnKey: string) =>
+	!hiddenProjects.value.includes(projectOf(ticket)) &&
 	(Object.keys(boardFilters) as FilterKey[]).every(
 		(key) =>
 			!boardFilters[key].length ||
@@ -584,6 +632,66 @@ const cancelAssign = () => {
 						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
 						@click="boardFilters.assignee_username = []">
 						{{ ctrans("Everybody") }}
+					</button>
+				</div>
+			</div>
+			<div v-if="projectOptions.length > 1" class="relative flex items-center gap-1.5">
+				<span class="mr-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Project") }}</span>
+				<button
+					type="button"
+					class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
+					:class="
+						hiddenProjectsShown
+							? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm'
+							: 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'
+					"
+					@click="projectMenuOpen = !projectMenuOpen">
+					<FontAwesomeIcon icon="fal fa-project-diagram" class="text-xs" fixed-width aria-hidden="true" />
+					<span class="max-w-48 truncate">{{
+						onlyProject ?? (hiddenProjectsShown ? ctrans(":count hidden", { count: hiddenProjectsShown }) : ctrans("All"))
+					}}</span>
+					<span
+						class="rounded-full px-1.5 text-xs tabular-nums"
+						:class="hiddenProjectsShown ? 'bg-white/20' : 'bg-white text-gray-500'"
+						>{{ projectOptions.length - hiddenProjectsShown }}</span
+					>
+				</button>
+				<div v-if="projectMenuOpen" class="fixed inset-0 z-30" @click="projectMenuOpen = false" />
+				<div
+					v-if="projectMenuOpen"
+					class="absolute left-0 top-8 z-40 max-h-80 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl">
+					<div
+						v-for="option in projectOptions"
+						:key="option.value"
+						class="group flex items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-50">
+						<button
+							type="button"
+							class="text-gray-400 hover:text-gray-700"
+							:title="hiddenProjects.includes(option.value) ? ctrans('Show') : ctrans('Hide')"
+							@click="toggleProjectHidden(option.value)">
+							<FontAwesomeIcon :icon="hiddenProjects.includes(option.value) ? 'fal fa-eye-slash' : 'fal fa-eye'" fixed-width aria-hidden="true" />
+						</button>
+						<span
+							class="truncate text-sm"
+							:class="hiddenProjects.includes(option.value) ? 'text-gray-400 line-through' : 'text-gray-700'"
+							>{{ option.value }}</span
+						>
+						<span class="ml-auto flex items-center gap-2">
+							<button
+								type="button"
+								class="hidden text-xs text-gray-500 underline hover:text-gray-800 group-hover:inline"
+								@click="showOnlyProject(option.value)">
+								{{ ctrans("Only") }}
+							</button>
+							<span class="text-xs text-gray-400 tabular-nums">{{ option.count }}</span>
+						</span>
+					</div>
+					<button
+						v-if="hiddenProjects.length"
+						type="button"
+						class="mt-1 w-full rounded px-2 py-1 text-left text-xs text-gray-400 hover:bg-gray-50"
+						@click="hiddenProjects = []">
+						{{ ctrans("Show all projects") }}
 					</button>
 				</div>
 			</div>

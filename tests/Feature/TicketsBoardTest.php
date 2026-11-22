@@ -1234,3 +1234,16 @@ test('a dashboard live reload loads its ticket lists in one pass and sends rows 
         ->and($row['assignee_avatar'] === null || array_keys($row['assignee_avatar']) === ['original'])->toBeTrue()
         ->and($collaboratorLoads)->toBe(1);
 });
+
+test('board tickets carry their project name for the project filter', function () {
+    $project = \App\Actions\Helpers\TicketProject\StoreTicketProject::make()->action($this->group, ['name' => 'Noise', 'start_date' => now()->toDateString()]);
+    $inProject = StoreTicket::make()->action($this->group, ['subject' => 'In a project']);
+    $inProject->update(['ticket_project_id' => $project->id]);
+    $loose = StoreTicket::make()->action($this->group, ['subject' => 'No project']);
+
+    get(route('grp.tickets.board'))->assertInertia(function (AssertableInertia $page) use ($inProject, $loose) {
+        $tickets = collect($page->toArray()['props']['columns'])->flatMap(fn ($column) => $column['tickets'])->keyBy('reference');
+        expect($tickets[$inProject->reference]['project_name'])->toBe('Noise')
+            ->and($tickets[$loose->reference]['project_name'])->toBeNull();
+    });
+});

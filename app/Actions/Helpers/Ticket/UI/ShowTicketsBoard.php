@@ -81,7 +81,7 @@ class ShowTicketsBoard extends OrgAction
                     });
                 }
             })
-            ->with(TicketResource::eagerLoads())
+            ->with([...TicketResource::eagerLoads(), 'project:id,name'])
             ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END")
             ->orderByDesc('updated_at')
             ->get()
@@ -111,6 +111,7 @@ class ShowTicketsBoard extends OrgAction
                 'tickets'  => $columnTickets->map(fn (Ticket $ticket) => [
                     ...Arr::except(TicketResource::make($ticket)->toArray(request()), 'commits'),
                     'board_status' => $this->boardStatus($ticket),
+                    'project_name' => $ticket->project?->name,
                 ])->values()->all(),
             ];
         })->values()->all();
