@@ -27007,5 +27007,12 @@
     "Too fast": "Príliš rýchlo",
     "More than ten times the target: check the quantity and the times": "Viac ako desaťnásobok cieľa: skontrolujte množstvo a časy",
     ":units units": ":units ks",
-    "Needed by :date": "Potrebné do :date"
+    "Needed by :date": "Potrebné do :date",
+    "Size (length × width × height): :size": "Rozmery (dĺžka × šírka × výška): :size",
+    "Size: :size": "Rozmery: :size",
+    "Free gift with your order": "Darček zadarmo k objednávke",
+    "Sale on selected products": "Zľava na vybrané produkty",
+    ":promotion: running now": ":promotion: práve prebieha",
+    ":promotion: running until :date": ":promotion: prebieha do :date",
+    ":promotion: ended on :date": ":promotion: skončila :date"
 }

@@ -9201,5 +9201,12 @@
     "The customer": "Kupac",
     "Your account with us was opened on :date.": "Vaš račun kod nas otvoren je :date.",
     "Credit on your account: :amount.": "Kredit na vašem računu: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Pri plaćanju se najprije koristi vaš kredit, a ostatak se plaća načinom plaćanja koji odaberete."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Pri plaćanju se najprije koristi vaš kredit, a ostatak se plaća načinom plaćanja koji odaberete.",
+    "Size (length × width × height): :size": "Dimenzije (duljina × širina × visina): :size",
+    "Size: :size": "Dimenzije: :size",
+    "Free gift with your order": "Besplatan poklon uz narudžbu",
+    "Sale on selected products": "Popust na odabrane proizvode",
+    ":promotion: running now": ":promotion: traje sada",
+    ":promotion: running until :date": ":promotion: traje do :date",
+    ":promotion: ended on :date": ":promotion: završila :date"
 }

@@ -9204,5 +9204,12 @@
     "The customer": "Az ügyfél",
     "Your account with us was opened on :date.": "Fiókja nálunk :date napon nyílt.",
     "Credit on your account: :amount.": "Jóváírás a fiókjában: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "A pénztárnál először a jóváírását használjuk fel, a többit az Ön által választott fizetési móddal fizeti."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "A pénztárnál először a jóváírását használjuk fel, a többit az Ön által választott fizetési móddal fizeti.",
+    "Size (length × width × height): :size": "Méret (hosszúság × szélesség × magasság): :size",
+    "Size: :size": "Méret: :size",
+    "Free gift with your order": "Ajándék a rendelés mellé",
+    "Sale on selected products": "Akció kiválasztott termékekre",
+    ":promotion: running now": ":promotion: jelenleg is tart",
+    ":promotion: running until :date": ":promotion: eddig tart: :date",
+    ":promotion: ended on :date": ":promotion: véget ért: :date"
 }

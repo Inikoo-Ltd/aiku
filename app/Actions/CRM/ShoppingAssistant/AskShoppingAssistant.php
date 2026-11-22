@@ -77,7 +77,7 @@ use Throwable;
  *   dispatch?"): the model's words go and so do the products, which nothing explains once the words
  *   are gone, while the sentences our code wrote stay. Two turns are answered without a cited text:
  *   one that passed the question to our purchasing team (the model says so, as the tool told it to),
- *   and a declared shop_answer that called no shop_information but got a sentence our code wrote (dispatch times, shipping cost),
+ *   and a declared shop_answer that called no shop_information (or one where shop_promotions wrote its line, which answers "where did the gift go" better than any text) but got a sentence our code wrote (dispatch times, shipping cost, promotion dates),
  *   which shows that sentence alone, without the model's words. The order line is the exception: it
  *   holds only the number, date and tracking, so the model's words saying where the order is stay
  *   above it ("AR26831 · November 11, 2026" alone answered "when will it arrive?"). Neither is offered a
@@ -227,6 +227,8 @@ class AskShoppingAssistant
 
     public const int PLAIN_SEARCH_MAX_WORDS = 3;
 
+    private const array COUNTRY_WORDS = ['uk', 'usa', 'made', 'origin', 'british', 'english', 'scottish', 'welsh', 'american', 'spanish', 'french', 'german', 'italian', 'portuguese', 'polish', 'czech', 'slovak', 'hungarian'];
+
     public const int PLAIN_SEARCH_MIN_PRODUCTS = 3;
 
     private const string SIZE_PATTERN = '/(?<![\d.,£€$\p{L}])(\d+(?:[.,]\d+)?)[\s\x{00A0}\x{202F}\-]?(\p{L}+|%|")/u';
@@ -350,7 +352,8 @@ class AskShoppingAssistant
 
         $askedShopInfo       = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'shop_information');
         $passedToPurchasing  = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'ask_purchasing_team' && $toolCall['error'] === null);
-        $answeredByOurFacts  = !$askedShopInfo && $turn['facts'] !== [];
+        $promotionAnswered   = !empty($turn['promotion_fact']) && $declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER;
+        $answeredByOurFacts  = (!$askedShopInfo || $promotionAnswered) && $turn['facts'] !== [];
         $unsourced           = !$cited && !$passedToPurchasing && !$answeredByOurFacts && ($declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER || $askedShopInfo);
 
         if ($answered && !$cited && $answeredByOurFacts && !$orderLooked && $declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER) {
@@ -851,6 +854,9 @@ class AskShoppingAssistant
         }
         if (isset($result['fact'])) {
             $turn['facts'][] = $result['fact'];
+            if ($name === 'shop_promotions') {
+                $turn['promotion_fact'] = true;
+            }
         }
         $turn['evidence'][] = $name.': '.mb_substr(json_encode($result['content'], JSON_UNESCAPED_UNICODE), 0, self::EVIDENCE_CHARS).(isset($result['fact']) ? "\n".$result['fact'] : '');
         $turn['families'] = array_values(array_unique(array_merge($turn['families'], $result['families'] ?? [])));
@@ -1170,6 +1176,33 @@ class AskShoppingAssistant
      *
      * @return ?array<string, mixed>
      */
+    /**
+     * "UK products", "Spanish candles", "made in USA": a short message naming a country or a
+     * nationality goes to the model, which searches with made_in, never to the plain search, which
+     * has no country filter.
+     *
+     * ponytail: English country names (countries table) and a fixed list of nationality words.
+     * Nationalities that are also product styles in our catalogue (Tibetan bowls, Indian incense,
+     * Moroccan lamps) are left out so those searches keep the free shortcut; "china" or "turkey"
+     * as a product word costs one model call. Add other languages' words when customers write them.
+     */
+    public static function namesACountry(string $text): bool
+    {
+        $text = ' '.preg_replace('/[^\p{L}]+/u', ' ', mb_strtolower($text)).' ';
+        $names = \Illuminate\Support\Facades\Cache::remember('shopping_assistant:country_words', 86400, fn () => \App\Models\Helpers\Country::pluck('name')
+            ->map(fn (string $name) => mb_strtolower($name))
+            ->merge(self::COUNTRY_WORDS)
+            ->all());
+
+        foreach ($names as $name) {
+            if (str_contains($text, ' '.$name.' ')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function plainSearchTurn(ShoppingAssistantConversation $conversation, ?Customer $customer, string $message): ?array
     {
         $query = trim($message);
@@ -1181,7 +1214,7 @@ class AskShoppingAssistant
 
         $previous       = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first(['body', 'flags', 'tool_calls']);
         $lookedAtOrders = collect(Arr::wrap($previous?->tool_calls))->contains(fn ($toolCall) => is_array($toolCall) && ($toolCall['name'] ?? null) === 'order_status');
-        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true) || $lookedAtOrders || GetShoppingAssistantTools::ownOrderNamedIn($customer, $query)) {
+        if (preg_match('/[?？؟]/u', (string) $previous?->body) || in_array('plain_search', Arr::wrap($previous?->flags), true) || $lookedAtOrders || GetShoppingAssistantTools::ownOrderNamedIn($customer, $query) || self::namesACountry($query)) {
             return null;
         }
 
@@ -1658,7 +1691,7 @@ Reply in $language{$addressForm}. When the customer writes to you in another lan
 
 Rules:
 - Only recommend products returned by the tools, by their ids, through present_products.
-- Never state prices, discounts, stock quantities, delivery times or how many shops buy something, except a figure stated in a text shop_information or an email recent_emails_to_customer returned and that you cite in sources, repeated exactly. When the customer asks for codes, barcodes, prices, RRP or stock of products, call product_details instead of refusing: the system lists them under your reply.
+- Never state prices, discounts, stock quantities, delivery times or how many shops buy something, except a figure stated in a text shop_information or an email recent_emails_to_customer returned and that you cite in sources, repeated exactly. When the customer asks for codes, barcodes, prices, RRP, stock or the size (how big, tall, wide or deep) of products, call product_details instead of refusing: the system lists them under your reply.
 - When the customer mentions an email, newsletter, offer, code or news we sent them, call recent_emails_to_customer and answer from those emails with answer_kind shop_answer and their ids in sources. Say when the email was sent, and never say an offer in it is still running unless the email's own dates show it.
 $deliveryRule
 - Never mention other customers.
@@ -1669,8 +1702,8 @@ $deliveryRule
 - When nothing we sell matches what the customer asked for, say so honestly: we do not have it. Show the closest products we do have, if any fit, and say you have noted the request for our buyers, who look at what customers ask for; never promise that anyone will get back to them about it. When the product they asked for is out of stock, say so, and for when it is back follow the restock_information rule below.
 - When the customer only thanks you or says goodbye, close warmly in one short sentence: no products, no question, no offer.
 - When in doubt, ask our team instead of answering: call ask_our_team with the customer's question in one English sentence whenever the texts shop_information returns, the family descriptions and the product documents do not clearly answer it, also when they only half answer it. That covers questions about buying from us (samples, a discount code, a special request, a document that is not online) and about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Say honestly that you do not know and have asked one of our experts; never guess and never promise an answer. Not for the customer's own orders, invoices or deliveries, or when they ask for a person. Ask once per question.
-- When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information.
-- When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products$notBetterPrice.
+- When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information. When they want products made in a country ("made in the UK", "origin country United Kingdom"), call search_products with made_in set to its two-letter code; never say you cannot filter by country.
+- When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products$notBetterPrice. When they ask whether a promotion or free gift is still on, or why a gift, gift choice or sale they saw before has gone, call shop_promotions and answer from it.
 - When the customer asks for low-priced, cheap or budget products, that is a search, not a request for a better price: call search_products with sort cheapest$neverBetterPrice, and say nothing about discounts, member prices or calls from our team.
 $priceRule
 - Each product comes with a why line. When you say why you suggest something, say no more than its why line says: write "shops like yours" only when the why line says so, and "shops in your area" when that is what it says.

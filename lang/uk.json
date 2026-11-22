@@ -7270,5 +7270,12 @@
     "The customer": "Клієнт",
     "Your account with us was opened on :date.": "Ваш обліковий запис у нас відкрито :date.",
     "Credit on your account: :amount.": "Кредит на вашому рахунку: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Під час оформлення замовлення спочатку використовується ваш кредит, а решту ви сплачуєте обраним способом оплати."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Під час оформлення замовлення спочатку використовується ваш кредит, а решту ви сплачуєте обраним способом оплати.",
+    "Size (length × width × height): :size": "Розмір (довжина × ширина × висота): :size",
+    "Size: :size": "Розмір: :size",
+    "Free gift with your order": "Безкоштовний подарунок до замовлення",
+    "Sale on selected products": "Знижка на вибрані товари",
+    ":promotion: running now": ":promotion: діє зараз",
+    ":promotion: running until :date": ":promotion: діє до :date",
+    ":promotion: ended on :date": ":promotion: завершилася :date"
 }

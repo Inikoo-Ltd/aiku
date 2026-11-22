@@ -27067,5 +27067,12 @@
     "Too fast": "Trop rapide",
     "More than ten times the target: check the quantity and the times": "Plus de dix fois l’objectif : vérifiez la quantité et les horaires",
     ":units units": ":units unités",
-    "Needed by :date": "Pour le :date"
+    "Needed by :date": "Pour le :date",
+    "Size (length × width × height): :size": "Dimensions (longueur × largeur × hauteur) : :size",
+    "Size: :size": "Dimensions : :size",
+    "Free gift with your order": "Cadeau offert avec votre commande",
+    "Sale on selected products": "Promotion sur une sélection de produits",
+    ":promotion: running now": ":promotion : en cours",
+    ":promotion: running until :date": ":promotion : en cours jusqu'au :date",
+    ":promotion: ended on :date": ":promotion : terminée le :date"
 }

@@ -64,6 +64,9 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
+use App\Models\Discounts\Offer;
+use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Helpers\DimensionsFormatter;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +110,10 @@ use Throwable;
  * products_on_offer lists the products whose card discount is a sale running now (a category-offers
  * campaign such as Black Friday, never member prices), optionally of one kind; the model never gets a
  * sale name or a percentage.
+ *
+ * search_products with made_in lists the products made in one country (country of origin on the
+ * product record), product_details adds each product's size, and shop_promotions says whether the
+ * shop's free gift and sales run now or the day they ended: dates and sizes are lines written here.
  *
  * product_documents gives one product's public documents (SDS, IFRA, allergen declaration...) as
  * download links under the reply, and its CPNP number and ingredients as a sentence written here,
@@ -205,6 +212,20 @@ class GetShoppingAssistantTools
 
     public const int SHOP_PROFILE_MAX_LENGTH = 500;
 
+    public const int RECENT_PROMOTION_DAYS = 45;
+
+    /**
+     * Offers end at the last second of a day, often written in UTC (2026-12-31 23:59:59Z), which is
+     * the next morning in a shop east of UTC: the day shown is the one a few hours before the end.
+     */
+    private const int PROMOTION_END_MARGIN_HOURS = 3;
+
+    private const array PROMOTION_KINDS = ['gift' => 'Free gift with your order', 'category-offers' => 'Sale on selected products'];
+
+    private const array PROMOTION_KIND_NAMES = ['gift' => 'free_gift', 'category-offers' => 'sale'];
+
+    private const array SIZE_SIDES = ['rectangular' => ['l', 'w', 'h'], 'sheet' => ['l', 'w'], 'cylinder' => ['h', 'w'], 'cilinder' => ['h', 'w'], 'sphere' => ['h'], 'string' => ['l']];
+
     public const int RECENT_EMAIL_DAYS = 30;
 
     private const int RECENT_EMAIL_LIMIT = 5;
@@ -267,8 +288,9 @@ class GetShoppingAssistantTools
                 'search_products',
                 'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed; matched_families names that family even when none of its products can be shown. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue. A customer who wants products for their own label, private label or white label, or without our brand, is looking for our ranges named Unlabelled or White Label: search for those words with the kind of product ("unlabelled fragrance oil", "white label essential oil").',
                 [
-                    'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words. May be empty only together with sort.'],
+                    'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words, never the country they want it made in. May be empty only together with sort or made_in.'],
                     'sort'  => ['type' => 'string', 'enum' => self::PRICE_SORTS, 'description' => 'Only when the customer asks for the cheapest or the most expensive: order the matches by price instead of by relevance.'],
+                    'made_in' => ['type' => 'string', 'description' => 'Only when the customer wants products made in one country: its ISO 3166 two-letter code (GB for the United Kingdom). The query may then be empty, for every product made there.'],
                     'limit' => $limit,
                 ],
                 ['query']
@@ -399,6 +421,11 @@ class GetShoppingAssistantTools
                 ['kind' => ['type' => 'string', 'description' => 'Only when the customer wants one kind of product on sale ("candles"), in their words; never the name of the sale.'], 'limit' => $limit]
             ),
             $this->tool(
+                'shop_promotions',
+                'The shop\'s free gift with orders and its sales: which run now and which ended recently. Use it when the customer asks whether a promotion or free gift is still on, or why a gift, a gift choice or a sale they saw before has gone. The system adds a line for each under your reply, with the day it ended or runs until; you get no dates. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'better_price_options',
                 'What can lower the price for this customer. Use it whenever the customer asks for a better price, a discount code, a deal or a special price, or says something is too expensive; not when they only want to see what is on sale, which is products_on_offer. Sentences about their Gold Reward membership, any member-price offer running now, and the order size from which our team calls to discuss better terms are added under your reply by the system; you get no figures or dates. Returns no products.',
                 []
@@ -426,7 +453,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'product_details',
-                'The code, barcode, price, RRP and stock of products, as lines the system writes under your reply. Use it whenever the customer asks for codes, barcodes, prices, RRP or how many are in stock, or wants products as a list or table. Pass the ids of products shown in this conversation or returned by a tool in this turn. You get no figures. Returns no products.',
+                'The code, barcode, price, RRP, stock and size (length, width, height) of products, as lines the system writes under your reply. Use it whenever the customer asks for codes, barcodes, prices, RRP, how many are in stock or how big, tall, wide or deep a product is, or wants products as a list or table. Pass the ids of products shown in this conversation or returned by a tool in this turn. You get no figures. Returns no products.',
                 [
                     'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_DETAILS, 'description' => 'Ids of the products to list.'],
                 ],
@@ -540,6 +567,7 @@ class GetShoppingAssistantTools
                 'clear_conversation'             => $this->clearConversation($conversation),
                 'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
                 'products_on_offer'              => $this->productsOnOffer($customer, $arguments, $conversation->language_code),
+                'shop_promotions'                => $this->shopPromotions($customer, $conversation->language_code),
                 'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
                 'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
@@ -600,13 +628,19 @@ class GetShoppingAssistantTools
     {
         $query = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
         $sort  = in_array($arguments['sort'] ?? null, self::PRICE_SORTS, true) ? $arguments['sort'] : null;
+        $madeIn = is_string($arguments['made_in'] ?? null) ? Str::upper(trim($arguments['made_in'])) : '';
+        $madeIn = $madeIn === 'UK' ? 'GB' : $madeIn;
 
-        if ($query === '' && !$sort) {
+        if ($query === '' && !$sort && $madeIn === '') {
             return $this->error('query must be a non-empty string.');
         }
 
         if ($query !== '' && ($ownOrder = self::ownOrderNamedIn($customer, $query))) {
             return ['content' => ['products' => [], 'own_order' => $ownOrder->reference, 'note' => 'That number is the customer\'s own '.($ownOrder->state === OrderStateEnum::CREATING ? 'basket' : 'order').', not a product: call order_status with it as reference and answer from that.'], 'products' => [], 'error' => null];
+        }
+
+        if ($madeIn !== '') {
+            return $this->productsMadeIn($customer, $query, $madeIn, $this->limit($arguments), $locale);
         }
 
         $limit        = $this->limit($arguments);
@@ -672,6 +706,47 @@ class GetShoppingAssistantTools
         if ($named->isNotEmpty()) {
             $result['names'] = $named->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
         }
+
+        return $result;
+    }
+
+    /**
+     * The products made in one country, by the country of origin on the product record
+     * (products.country_of_origin, ISO3 codes, several for a bundle: the one product_documents
+     * shows), optionally only of one kind. Where a product is made is not where it is sent from.
+     *
+     * ponytail: the first `limit` by family; rank by sales when a country has more than one answer shows.
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function productsMadeIn(Customer $customer, string $query, string $countryCode, int $limit, string $locale): array
+    {
+        $country = Country::where('code', $countryCode)->first(['id', 'iso3', 'name']);
+        if (!$country) {
+            return $this->error('made_in must be a two-letter ISO country code, such as GB.');
+        }
+
+        $madeThere = $this->recommendableProducts($customer->shop, $customer)
+            ->whereRaw("(',' || replace(products.country_of_origin, ' ', '') || ',') like ?", ['%,'.$country->iso3.',%'])
+            ->select('products.*');
+
+        if ($query !== '') {
+            $ofKind = $this->productIdsOfKind($customer, $query);
+            if ($ofKind === null) {
+                return $this->error('The search is not available right now, try again.');
+            }
+            $madeThere->whereIn('products.id', $ofKind);
+        }
+
+        $products = $madeThere->reorder()->orderBy('products.family_id')->orderBy('products.id')->limit($limit + 1)->get();
+        $result   = $this->productsResult($customer, $products->take($limit), fn () => 'matches_request', $locale);
+
+        $result['content']['made_in'] = $country->name;
+        $result['content']['note']    = match (true) {
+            $products->isEmpty()        => 'None of the products we can show'.($query !== '' ? ' of that kind' : '').' is made in '.$country->name.'. Say so plainly; never say we do not sell that kind of product.',
+            $products->count() > $limit => 'These are made in '.$country->name.' (the country of origin on our product records), a selection of more: say so.',
+            default                     => 'These are all the products we can show'.($query !== '' ? ' of that kind' : '').' made in '.$country->name.' (the country of origin on our product records).',
+        }.' Made in is where a product was made, not where it is sent from: for where orders are dispatched from, use shop_information.';
 
         return $result;
     }
@@ -2131,6 +2206,7 @@ class GetShoppingAssistantTools
         $money    = fn ($amount) => Number::currency((float) $amount, $currency, $locale);
         $products = Product::where('shop_id', $customer->shop_id)->visibleToCustomer($customer->id)->whereIn('id', $ids)->get()->sortBy(fn (Product $product) => $ids->search($product->id))->values();
 
+        $sizes = $products->mapWithKeys(fn (Product $product) => [$product->id => $this->sizeOf($product, $locale)]);
         $lines = $products->map(fn (Product $product) => implode(' · ', array_filter([
             $product->code,
             $product->name,
@@ -2138,13 +2214,109 @@ class GetShoppingAssistantTools
             (float) $product->rrp > 0 ? __('RRP :amount', ['amount' => $money($product->rrp)], $locale) : null,
             filled($product->barcode) ? __('Barcode :barcode', ['barcode' => $product->barcode], $locale) : null,
             $product->available_quantity > 0 ? __(':quantity in stock', ['quantity' => (int) $product->available_quantity], $locale) : __('Out of stock', [], $locale),
+            $sizes[$product->id],
         ])));
 
         return [
-            'content' => ['listed' => $products->pluck('name')->all(), 'note' => 'A line for each product (code, name, price before tax, RRP, barcode, stock) is added under your reply. Introduce it in one sentence and write no figure yourself.'],
+            'content' => ['listed' => $products->pluck('name')->all(), 'no_size_on_record' => $products->filter(fn (Product $product) => !$sizes[$product->id])->pluck('name')->values()->all(), 'note' => 'A line for each product (code, name, price before tax, RRP, barcode, stock and, where we have it, its size) is added under your reply. Introduce it in one sentence and write no figure yourself. When they asked for the size of a product in no_size_on_record, say we do not have its size on record.'],
             'products' => [],
             'error'    => null,
             'fact'     => $lines->implode("\n"),
+        ];
+    }
+
+    /**
+     * The size the product page shows (GetProductDetail), labelled so "how deep" can be read from it.
+     * marketing_dimensions is stored in metres and units is only the unit it is shown in
+     * (DimensionsFormatter). A product of several trade units has no size of its own, and a record
+     * with no unit or a side that is not a positive number is not shown: 111 cylinders on prod (Nov
+     * 2026) have no unit and a height of 63.
+     */
+    private function sizeOf(Product $product, string $locale): ?string
+    {
+        $dimensions = $product->marketing_dimensions;
+        $sides      = self::SIZE_SIDES[$dimensions['type'] ?? ''] ?? null;
+
+        if (!$sides || !in_array($dimensions['units'] ?? null, ['mm', 'cm', 'm', 'inch'], true)
+            || collect($sides)->contains(fn (string $side) => !is_numeric($dimensions[$side] ?? null) || $dimensions[$side] <= 0)
+            || !($product->is_single_trade_unit || $product->tradeUnits()->count() <= 1)) {
+            return null;
+        }
+
+        $size = DimensionsFormatter::make()->dimensions(json_encode($dimensions));
+
+        return $dimensions['type'] === 'rectangular'
+            ? __('Size (length × width × height): :size', ['size' => $size], $locale)
+            : __('Size: :size', ['size' => $size], $locale);
+    }
+
+    /**
+     * The shop's free gift and sales, running now or ended in the last RECENT_PROMOTION_DAYS, so
+     * "where did the free gift go" is answered with the day it ended (HELP review 22 Nov 2026,
+     * conversation 1432). Only offers for every customer: offers with a customer_id, an
+     * offer_has_customers row or a voucher code, discretionary offers and customer offers are never
+     * read (hard rule: no other customer's data), and a gift counts only when it is for every order
+     * (trigger_type Shop), not one range. The model gets the kind and whether it runs; the lines with the dates are written here, in the shop's
+     * timezone. Offer names are internal labels with codes and percentages and are never shown.
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function shopPromotions(Customer $customer, string $locale): array
+    {
+        $now     = now();
+        $running = fn ($query) => $query->where('offers.state', OfferStateEnum::ACTIVE->value)->where('offers.status', true)
+            ->where(fn ($query) => $query->whereNull('offers.start_at')->orWhere('offers.start_at', '<=', $now))
+            ->where(fn ($query) => $query->whereNull('offers.end_at')->orWhere('offers.end_at', '>', $now));
+
+        $offers = Offer::query()
+            ->join('offer_campaigns', 'offer_campaigns.id', '=', 'offers.offer_campaign_id')
+            ->where('offers.shop_id', $customer->shop_id)
+            ->whereNull('offers.customer_id')
+            ->where('offers.is_discretionary', false)
+            ->whereNotExists(fn ($query) => $query->from('offer_has_customers')->whereColumn('offer_has_customers.offer_id', 'offers.id'))
+            ->where(fn ($query) => $query->whereNull('offers.voucher')->orWhere('offers.voucher', ''))
+            ->where(fn ($query) => $query->where('offer_campaigns.type', '!=', 'gift')->orWhere('offers.trigger_type', 'Shop'))
+            ->whereIn('offer_campaigns.type', array_keys(self::PROMOTION_KINDS))
+            ->where(fn ($query) => $query->where(fn ($query) => $running($query))
+                ->orWhere(fn ($query) => $query->whereIn('offers.state', [OfferStateEnum::ACTIVE->value, OfferStateEnum::FINISHED->value])
+                    ->whereBetween('offers.end_at', [$now->copy()->subDays(self::RECENT_PROMOTION_DAYS), $now])))
+            ->get(['offer_campaigns.type as kind', 'offers.state', 'offers.status', 'offers.start_at', 'offers.end_at']);
+
+        $timezone   = $customer->shop->timezoneName();
+        $day        = fn (Carbon $at) => $at->copy()->timezone($timezone)->subHours(self::PROMOTION_END_MARGIN_HOURS)->locale($locale)->isoFormat('LL');
+        $promotions = [];
+        $lines      = [];
+
+        foreach (self::PROMOTION_KINDS as $kind => $label) {
+            $ofKind = $offers->where('kind', $kind);
+            if ($ofKind->isEmpty()) {
+                continue;
+            }
+            $name = __($label, [], $locale);
+            $live = $ofKind->filter(fn (Offer $offer) => $offer->state === OfferStateEnum::ACTIVE && $offer->status && (!$offer->end_at || $offer->end_at->gt($now)) && (!$offer->start_at || $offer->start_at->lte($now)));
+
+            if ($live->isNotEmpty()) {
+                $endDays = $live->map(fn (Offer $offer) => $offer->end_at ? $day($offer->end_at) : null)->unique();
+                $lines[] = $endDays->count() === 1 && $endDays->first()
+                    ? __(':promotion: running until :date', ['promotion' => $name, 'date' => $endDays->first()], $locale)
+                    : __(':promotion: running now', ['promotion' => $name], $locale);
+                $promotions[] = ['kind' => self::PROMOTION_KIND_NAMES[$kind], 'state' => 'running'];
+            } else {
+                $lines[]      = __(':promotion: ended on :date', ['promotion' => $name, 'date' => $day($ofKind->max('end_at'))], $locale);
+                $promotions[] = ['kind' => self::PROMOTION_KIND_NAMES[$kind], 'state' => 'ended_recently'];
+            }
+        }
+
+        $note = 'Never say whether or when a promotion will come back, never promise a gift or a discount, and write no date yourself. For its conditions (a minimum order, which gifts) use shop_information; for the products on sale now, products_on_offer.';
+        if (!$promotions) {
+            return ['content' => ['promotions' => [], 'note' => 'No free gift and no sale is running in this shop now, and none ended recently. Say you can see no such promotion, then offer a person if they need more. '.$note], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['promotions' => $promotions, 'note' => 'A line for each, running now or the day it ended, is added under your reply by the system. Answer in one short sentence that points to it. The sale line is about the shop\'s sales in general, not the one sale the customer named: never say a sale they named is still on because of it. '.$note],
+            'products' => [],
+            'error'    => null,
+            'fact'     => implode("\n", $lines),
         ];
     }
 

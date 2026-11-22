@@ -26136,5 +26136,12 @@
     "Too fast": "Prea rapid",
     "More than ten times the target: check the quantity and the times": "De peste zece ori obiectivul: verificați cantitatea și orele",
     ":units units": ":units bucăți",
-    "Needed by :date": "Necesar până la :date"
+    "Needed by :date": "Necesar până la :date",
+    "Size (length × width × height): :size": "Dimensiuni (lungime × lățime × înălțime): :size",
+    "Size: :size": "Dimensiuni: :size",
+    "Free gift with your order": "Cadou gratuit la comandă",
+    "Sale on selected products": "Reduceri la produse selectate",
+    ":promotion: running now": ":promotion: în desfășurare acum",
+    ":promotion: running until :date": ":promotion: în desfășurare până la :date",
+    ":promotion: ended on :date": ":promotion: s-a încheiat pe :date"
 }

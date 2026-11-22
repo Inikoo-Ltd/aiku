@@ -4268,6 +4268,166 @@ test('Merlin lists codes, barcodes, prices, RRP and stock of shown products as l
         ->and($exclusive['fact'])->not->toContain($empty->code);
 });
 
+test('Merlin lists a product size, stored in metres, as length × width × height in the conversation language, and never a size with no unit', function () {
+    $gong   = shoppingAssistantProduct($this->product);
+    $gong->update(['marketing_dimensions' => ['h' => 0.85, 'l' => 0.8, 'w' => 0.5, 'type' => 'rectangular', 'units' => 'cm']]);
+    $broken = shoppingAssistantProduct($this->product);
+    $broken->update(['marketing_dimensions' => ['h' => 63, 'w' => 10, 'type' => 'cylinder']]);
+    $conversation = shoppingAssistantShown(shoppingAssistantCustomer($this->shop), [$gong->id, $broken->id])->conversation;
+    $conversation->update(['language_code' => 'cs']);
+
+    $result = GetShoppingAssistantTools::make()->execute($conversation, 'product_details', ['product_ids' => [$gong->id, $broken->id]]);
+    [$gongLine, $brokenLine] = explode("\n", $result['fact']);
+
+    expect($result['error'])->toBeNull()
+        ->and($gongLine)->toEndWith('Rozměry (délka × šířka × výška): 80x50x85 (cm)')
+        ->and($brokenLine)->toStartWith($broken->code)
+        ->and($brokenLine)->not->toContain('Rozměry');
+});
+
+test('Merlin finds the products made in a country by the country of origin on the product record, bundles included, and says made in is not sent from', function () {
+    $british  = shoppingAssistantProduct($this->product);
+    $british->update(['country_of_origin' => 'GBR']);
+    $bundle   = shoppingAssistantProduct($this->product);
+    $bundle->update(['country_of_origin' => 'IDN, GBR']);
+    $balinese = shoppingAssistantProduct($this->product);
+    $balinese->update(['country_of_origin' => 'IDN']);
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+
+    $all = $tools->execute($conversation, 'search_products', ['query' => '', 'made_in' => 'gb', 'limit' => 24]);
+    \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::mock()->shouldReceive('handle')->andReturn(collect([$british->fresh(), $balinese->fresh()]));
+    $ofKind  = $tools->execute($conversation, 'search_products', ['query' => 'gongs', 'made_in' => 'GB']);
+    $unknown = $tools->execute($conversation, 'search_products', ['query' => '', 'made_in' => 'XX']);
+
+    expect($all['error'])->toBeNull()
+        ->and(collect($all['products'])->pluck('id'))->toContain($british->id, $bundle->id)
+        ->and(collect($all['products'])->pluck('id'))->not->toContain($balinese->id)
+        ->and($all['content']['made_in'])->toBe(Country::where('code', 'GB')->value('name'))
+        ->and($all['content']['note'])->toContain('not where it is sent from')
+        ->and(collect($ofKind['products'])->pluck('id')->all())->toBe([$british->id])
+        ->and($unknown['error'])->toContain('two-letter');
+});
+
+test('Merlin says whether the shop free gift runs now or the day it ended, in the shop timezone, never from offers for one customer or by offer name', function () {
+    $ids   = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $offer = function (string $campaignType, string $name, string $state, ?string $endAt, array $extra = []) use ($ids): int {
+        $code     = Str::upper(Str::random(8));
+        $campaign = DB::table('offer_campaigns')->insertGetId([...$ids, 'slug' => 'c-'.Str::lower($code), 'code' => $code, 'name' => $name, 'type' => $campaignType, 'data' => '{}', 'settings' => '{}']);
+
+        return DB::table('offers')->insertGetId([...$ids, 'offer_campaign_id' => $campaign, 'slug' => 'o-'.Str::lower($code), 'code' => $code, 'name' => $name, 'type' => 'Amount AND Order Number', 'trigger_type' => 'Shop', 'state' => $state, 'status' => $state === 'active', 'end_at' => $endAt, 'trigger_data' => '{}', 'data' => '{}', 'settings' => '{}', 'source_data' => '{}', ...$extra]);
+    };
+    DB::table('offers')->where('shop_id', $this->shop->id)->whereIn('offer_campaign_id', DB::table('offer_campaigns')->where('type', 'gift')->select('id'))->update(['deleted_at' => now()]);
+    $timezoneId = $this->shop->timezone_id;
+    $this->shop->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Europe/Bratislava')->value('id')]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $endedAt  = now('UTC')->subDays(3)->setTime(23, 59, 59);
+    $offer('gift', 'AW születésnapi ajándék', 'finished', $endedAt->toDateTimeString());
+    $offer('gift', 'Summer gift', 'finished', now()->subDays(GetShoppingAssistantTools::RECENT_PROMOTION_DAYS + 30)->toDateTimeString());
+    $offer('gift', 'Gift for one shop', 'active', null, ['customer_id' => shoppingAssistantCustomer($this->shop)->id]);
+    $offer('gift', 'Gift code', 'active', null, ['voucher' => 'GIFT10']);
+    $offer('gift', 'Gift with candles', 'active', null, ['trigger_type' => 'ProductCategory', 'trigger_id' => $this->product->family_id]);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'hu']);
+    $tools = GetShoppingAssistantTools::make();
+
+    $ended = $tools->execute($conversation, 'shop_promotions', []);
+    $day   = $endedAt->copy()->locale('hu')->isoFormat('LL');
+
+    expect($ended['error'])->toBeNull()
+        ->and(collect($ended['content']['promotions'])->firstWhere('kind', 'free_gift')['state'])->toBe('ended_recently')
+        ->and($ended['fact'])->toContain('Ajándék a rendelés mellé: véget ért: '.$day)
+        ->and(json_encode($ended))->not->toContain('születésnapi')
+        ->and(json_encode($ended['content']))->not->toContain($day);
+
+    $offer('gift', 'Christmas gift', 'active', '2027-12-31 23:59:59');
+    $running = $tools->execute($conversation, 'shop_promotions', []);
+    $this->shop->update(['timezone_id' => $timezoneId]);
+
+    expect(collect($running['content']['promotions'])->firstWhere('kind', 'free_gift')['state'])->toBe('running')
+        ->and($running['fact'])->toContain('Ajándék a rendelés mellé: eddig tart: 2027. december 31.')
+        ->and($running['fact'])->not->toContain('véget ért: '.$day)
+        ->and($running['content']['note'])->toContain('not the one sale the customer named');
+});
+
+test('asked where the free gift went, Merlin answers with the line saying the day it ended, also after it looked in the shop texts', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $ids  = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $code = Str::upper(Str::random(8));
+    DB::table('offers')->where('shop_id', $this->shop->id)->whereIn('offer_campaign_id', DB::table('offer_campaigns')->where('type', 'gift')->select('id'))->update(['deleted_at' => now()]);
+    $campaign = DB::table('offer_campaigns')->insertGetId([...$ids, 'slug' => 'c-'.Str::lower($code), 'code' => $code, 'name' => 'Gifts', 'type' => 'gift', 'data' => '{}', 'settings' => '{}']);
+    $endedAt  = now()->subDays(3)->startOfHour();
+    DB::table('offers')->insert([...$ids, 'offer_campaign_id' => $campaign, 'slug' => 'o-'.Str::lower($code), 'code' => $code, 'name' => 'Birthday gift', 'type' => 'Amount AND Order Number', 'trigger_type' => 'Shop', 'state' => 'finished', 'status' => false, 'end_at' => $endedAt->toDateTimeString(), 'trigger_data' => '{}', 'data' => '{}', 'settings' => '{}', 'source_data' => '{}']);
+    $website = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Why did the free gift disappear?'], 'call_1')]], 'tool_calls'))
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_promotions', [], 'call_2')]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'The free gift promotion has ended; the day it ended is below.', 'answer_kind' => 'shop_answer', 'sources' => []])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $tasks  = DB::table('staff_tasks')->count();
+    $answer = AskShoppingAssistant::run($conversation, 'The free gift I could choose under my basket has gone, why?');
+    $prompt = collect(Http::recorded())->first(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'][0]['content'];
+
+    expect(explode("\n", $answer['reply']))->toContain('Free gift with your order: ended on '.$endedAt->copy()->timezone($this->shop->timezoneName())->subHours(3)->locale('en')->isoFormat('LL'))
+        ->and($answer['message']->refresh()->hand_over_offer)->toBeNull()
+        ->and($answer['message']->flags ?? [])->not->toContain('shop_answer_without_source')
+        ->and(DB::table('staff_tasks')->count())->toBe($tasks)
+        ->and($prompt)->toContain('call shop_promotions')
+        ->and($prompt)->toContain('call search_products with made_in')
+        ->and($prompt)->toContain('size (how big, tall, wide or deep)');
+});
+
+test('a promotion line never lifts the cited-source rule for words the model wrote itself, nor when shop_promotions wrote no line', function (string $kind, bool $withPromotion) {
+    shoppingAssistantClearKnowledge($this->shop);
+    $ids         = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $promotional = DB::table('offer_campaigns')->where('shop_id', $this->shop->id)->whereIn('type', ['gift', 'category-offers'])->select('id');
+    DB::table('offers')->where('shop_id', $this->shop->id)->whereIn('offer_campaign_id', $promotional)->update(['deleted_at' => now()]);
+    if ($withPromotion) {
+        $code     = Str::upper(Str::random(8));
+        $campaign = DB::table('offer_campaigns')->insertGetId([...$ids, 'slug' => 'c-'.Str::lower($code), 'code' => $code, 'name' => 'Gifts', 'type' => 'gift', 'data' => '{}', 'settings' => '{}']);
+        DB::table('offers')->insert([...$ids, 'offer_campaign_id' => $campaign, 'slug' => 'o-'.Str::lower($code), 'code' => $code, 'name' => 'Gift', 'type' => 'Amount AND Order Number', 'trigger_type' => 'Shop', 'state' => 'finished', 'status' => false, 'end_at' => now()->subDays(3)->toDateTimeString(), 'trigger_data' => '{}', 'data' => '{}', 'settings' => '{}', 'source_data' => '{}']);
+    }
+    Illuminate\Support\Facades\Cache::put('shopping_assistant:dispatch_days:'.$this->shop->id, 3, 60);
+    $website = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [
+                shoppingAssistantToolCall('shop_information', ['question' => 'Do you ship to Norway?'], 'call_1'),
+                shoppingAssistantToolCall('shop_promotions', [], 'call_2'),
+                shoppingAssistantToolCall('dispatch_times', [], 'call_3'),
+            ]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'Yes, we ship to Norway.', 'answer_kind' => $kind, 'sources' => []])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $answer       = AskShoppingAssistant::run($conversation, 'Do you ship to Norway?');
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+
+    expect($answer['reply'])->not->toContain('Norway')
+        ->and($answer['message']->refresh()->flags)->toContain('shop_answer_without_source')
+        ->and($answer['message']->hand_over_offer?->value)->toBe('not_sure');
+})->with([
+    'own words declared as products, with a promotion line' => ['products', true],
+    'a shop answer where shop_promotions found nothing'     => ['shop_answer', false],
+]);
+
+test('a short message naming a country or a nationality skips the plain search so Merlin can search by made_in, while product styles keep it', function () {
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:country_words');
+
+    expect(collect(['UK products', 'Spanish products', 'made n usa', 'products from Spain', 'United Kingdom', 'origin country GB'])->reject(fn (string $text) => AskShoppingAssistant::namesACountry($text))->all())->toBe([])
+        ->and(collect(['lavender candles', 'Tibetan singing bowls', 'handmade soap', 'Indian incense', 'bath bombs'])->filter(fn (string $text) => AskShoppingAssistant::namesACountry($text))->all())->toBe([]);
+});
+
 test('a product a customer bought before is marked in the search and goes back in the basket at the quantity of their last order when they reorder', function () {
     $customer = shoppingAssistantCustomer($this->shop);
     $usual    = shoppingAssistantLiveProduct($this->product);

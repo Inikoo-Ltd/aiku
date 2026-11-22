@@ -9595,5 +9595,12 @@
     "The customer": "Клиентът",
     "Your account with us was opened on :date.": "Вашият акаунт при нас е открит на :date.",
     "Credit on your account: :amount.": "Кредит във вашия акаунт: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "При плащане първо се използва вашият кредит, а остатъкът се плаща с избрания от вас начин на плащане."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "При плащане първо се използва вашият кредит, а остатъкът се плаща с избрания от вас начин на плащане.",
+    "Size (length × width × height): :size": "Размер (дължина × ширина × височина): :size",
+    "Size: :size": "Размер: :size",
+    "Free gift with your order": "Безплатен подарък към поръчката",
+    "Sale on selected products": "Намаление на избрани продукти",
+    ":promotion: running now": ":promotion: активна в момента",
+    ":promotion: running until :date": ":promotion: активна до :date",
+    ":promotion: ended on :date": ":promotion: приключи на :date"
 }

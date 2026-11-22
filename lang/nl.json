@@ -10003,5 +10003,12 @@
     "The customer": "De klant",
     "Your account with us was opened on :date.": "Uw account bij ons is geopend op :date.",
     "Credit on your account: :amount.": "Tegoed op uw account: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Bij het afrekenen wordt eerst uw tegoed gebruikt en betaalt u de rest met de betaalmethode die u kiest."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Bij het afrekenen wordt eerst uw tegoed gebruikt en betaalt u de rest met de betaalmethode die u kiest.",
+    "Size (length × width × height): :size": "Afmetingen (lengte × breedte × hoogte): :size",
+    "Size: :size": "Afmetingen: :size",
+    "Free gift with your order": "Gratis cadeau bij je bestelling",
+    "Sale on selected products": "Korting op geselecteerde producten",
+    ":promotion: running now": ":promotion: loopt nu",
+    ":promotion: running until :date": ":promotion: loopt tot :date",
+    ":promotion: ended on :date": ":promotion: afgelopen op :date"
 }

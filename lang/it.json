@@ -13147,5 +13147,12 @@
     "The customer": "Il cliente",
     "Your account with us was opened on :date.": "Il suo account presso di noi è stato aperto il :date.",
     "Credit on your account: :amount.": "Credito sul suo account: :amount.",
-    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Al pagamento viene usato prima il suo credito e il resto si paga con il metodo di pagamento che sceglie."
+    "At checkout your credit is used first, and the rest is paid with the payment method you choose.": "Al pagamento viene usato prima il suo credito e il resto si paga con il metodo di pagamento che sceglie.",
+    "Size (length × width × height): :size": "Dimensioni (lunghezza × larghezza × altezza): :size",
+    "Size: :size": "Dimensioni: :size",
+    "Free gift with your order": "Omaggio con il tuo ordine",
+    "Sale on selected products": "Saldi su prodotti selezionati",
+    ":promotion: running now": ":promotion: in corso",
+    ":promotion: running until :date": ":promotion: in corso fino al :date",
+    ":promotion: ended on :date": ":promotion: terminata il :date"
 }
