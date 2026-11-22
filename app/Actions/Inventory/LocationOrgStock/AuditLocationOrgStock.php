@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\SetOrgStockPickingLocation;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
+use App\Actions\Inventory\OrgStockMovement\NotifyImplausibleStockCount;
 use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Dispatching\BatchCode\StoreBatchCode;
 use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
@@ -55,8 +56,9 @@ class AuditLocationOrgStock extends OrgAction
         // Only the other tabs need locking: this one is doing the counting and has the modal open
         broadcast(new BroadcastLowStockAuditedStart($locationOrgStock))->toOthers();
 
+        $implausibleCountMovement = null;
         try {
-            $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData) {
+            $locationOrgStock = DB::transaction(function () use ($locationOrgStock, $modelData, &$implausibleCountMovement) {
                 $locationOrgStock = LocationOrgStock::lockForUpdate()->findOrFail($locationOrgStock->id);
                 $currentStock     = $locationOrgStock->quantity;
                 $newQuantity  = Arr::pull($modelData, 'quantity');
@@ -106,6 +108,10 @@ class AuditLocationOrgStock extends OrgAction
                     $storedData
                 );
 
+                if ($countWarning) {
+                    $implausibleCountMovement = $orgStockMovement;
+                }
+
                 if ($countedBatches !== null) {
                     AllocateOrgStockMovementBatches::make()->count($orgStockMovement, array_map(fn (array $batch) => [
                         'batch_code_id' => $batch['batch_code_id'] ?? StoreBatchCode::make()->inOrganisation($locationOrgStock->organisation, [
@@ -129,6 +135,10 @@ class AuditLocationOrgStock extends OrgAction
             BroadcastLowStockAudited::dispatch($locationOrgStock->refresh());
 
             throw $exception;
+        }
+
+        if ($implausibleCountMovement) {
+            NotifyImplausibleStockCount::dispatch($implausibleCountMovement)->afterCommit();
         }
 
         SetOrgStockPickingLocation::dispatch($locationOrgStock->org_stock_id)->delay(2);

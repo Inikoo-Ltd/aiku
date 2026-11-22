@@ -1836,6 +1836,8 @@ test('an implausible stock count is refused until the user confirms it, and the 
     $slot->refresh();
     $other->refresh();
     $movementsBefore = $orgStock->orgStockMovements()->where('type', OrgStockMovementTypeEnum::AUDIT)->count();
+    $this->user->update(['settings' => array_merge($this->user->settings ?? [], ['notifications' => ['implausible_stock_count' => ['email']]])]);
+    \Illuminate\Support\Facades\Notification::fake();
 
     $audit = fn (array $data) => $this->patch(route('grp.models.location_org_stock.audit', $slot->id), $data);
 
@@ -1862,6 +1864,8 @@ test('an implausible stock count is refused until the user confirms it, and the 
         ->and($movement->data['count_warning']['rules'])->toBe(['value_change', 'count'])
         ->and((float) $movement->data['count_warning']['current_stock'])->toBe(2.0)
         ->and((float) $movement->data['count_warning']['largest_purchase'])->toBe(10.0);
+    \Illuminate\Support\Facades\Notification::assertSentTo($this->user, \App\Notifications\ImplausibleStockCountNotification::class, fn ($notification, $channels) => $notification->orgStockMovement->is($movement) && $channels === ['database', 'mail'] && str_contains($notification->body(), 'confirmed'));
+    \Illuminate\Support\Facades\Notification::assertCount(1);
 
     UpdateLocationOrgStock::make()->action($slot, ['quantity' => 1.7]);
     $this->patch(route('grp.models.org_stock.bulk_audit', $orgStock->id), ['confirm_count_warning' => true, 'audited_locations' => [
