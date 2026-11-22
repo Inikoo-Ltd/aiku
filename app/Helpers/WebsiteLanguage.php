@@ -9,6 +9,7 @@
 namespace App\Helpers;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Web\Webpage;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +50,21 @@ final class WebsiteLanguage
         $translated = is_array($translations) ? ($translations[$locale] ?? null) : null;
 
         return is_string($translated) && trim(strip_tags($translated)) !== '' ? $translated : $original;
+    }
+
+    /**
+     * A webpage text (title, breadcrumb label) that is just the name of the page's product, category or
+     * collection follows that name's translation; any other webpage text stays as written until it has its own.
+     */
+    public static function webpageText(Webpage $webpage, string $field): ?string
+    {
+        $text = $webpage->getAttribute($field);
+
+        if (!$text || !self::translateTo() || !($model = $webpage->model) || $text !== $model->getAttribute('name')) {
+            return $text;
+        }
+
+        return self::text($model, 'name');
     }
 
     /**

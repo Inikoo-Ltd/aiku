@@ -1640,7 +1640,18 @@ test('a website visitor in another language gets the translated product and cate
         ->and($productName())->toBe('Lavendelöl')
         ->and(\App\Actions\Iris\Json\GetIrisSidebarData::cacheKey($this->website->id, $otherCode))->toBe('irisData:website:'.$this->website->id.':sideBar:'.$otherCode);
 
+    Cache::put('iris:last_ordered_products:'.$family->id.':none', collect(['english names']));
+    expect(\App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts::make()->handle($family, [])->all())->not->toBe(['english names']);
+    Cache::forget('iris:last_ordered_products:'.$family->id.':none');
+    Cache::forget('iris:last_ordered_products:'.$family->id.':none:'.$otherCode);
+
+    $webpage = new Webpage(['title' => 'Lavender oil', 'breadcrumb_label' => 'Our lavender']);
+    $webpage->setRelation('model', $product);
+    expect(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'title'))->toBe('Lavendelöl')
+        ->and(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'breadcrumb_label'))->toBe('Our lavender');
+
     request()->attributes->remove('website_translation_locale');
+    expect(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'title'))->toBe('Lavender oil');
 });
 
 test('preview languages work in the website address and for staff customers, never in the language switch or for other customers', function () {

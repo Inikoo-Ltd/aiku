@@ -62,7 +62,7 @@ class GetIrisLastOrderedProducts extends IrisAction
             'iris:last_ordered_products:%s:%s',
             $productCategory->id,
             $ignoredProductId ?? 'none'
-        );
+        ).(($translateTo = WebsiteLanguage::translateTo()) ? ':'.$translateTo : '');
 
         $cachedProducts = Cache::get($cacheKey);
         if ($cachedProducts !== null) {

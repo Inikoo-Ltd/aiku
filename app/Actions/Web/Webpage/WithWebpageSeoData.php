@@ -6,6 +6,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
@@ -47,7 +48,7 @@ trait WithWebpageSeoData
      */
     public function getWebpageSeoTitle(Webpage $webpage): ?string
     {
-        $title = $webpage->title;
+        $title = WebsiteLanguage::webpageText($webpage, 'title');
 
         if (Arr::get($webpage->seo_data, 'use_title_prefix_suffix', true)) {
             $prefix = data_get($webpage->settings, 'webpage.title_prefix') ?: data_get($webpage->website->settings, 'webpage.title_prefix');

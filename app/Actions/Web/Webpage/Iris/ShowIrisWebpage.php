@@ -138,8 +138,8 @@ class ShowIrisWebpage
                 'model_slug'   => $webpage->model?->slug,
                 'product_page'  => $webpage->model instanceof Product
                     ? ['department' => [
-                        'name'          => $webpage->model->department?->name,
-                        'webpage_title' => $webpage->model->department?->webpage?->title,
+                        'name'          => $webpage->model->department ? WebsiteLanguage::text($webpage->model->department, 'name') : null,
+                        'webpage_title' => $webpage->model->department?->webpage ? WebsiteLanguage::webpageText($webpage->model->department->webpage, 'title') : null,
                     ]]
                     : null,
             ],
@@ -671,10 +671,10 @@ class ShowIrisWebpage
             }
         }
 
-        $label = $webpage->breadcrumb_label;
+        $label = WebsiteLanguage::webpageText($webpage, 'breadcrumb_label');
 
         if (!$label) {
-            $label = $webpage->title ?? $webpage->code;
+            $label = WebsiteLanguage::webpageText($webpage, 'title') ?? $webpage->code;
         }
 
         return $label ?? '';
