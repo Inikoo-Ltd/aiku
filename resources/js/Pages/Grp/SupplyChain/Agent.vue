@@ -17,15 +17,22 @@ import {
     faTerminal,
     faPeopleArrows,
     faClipboard, faTruck, faCameraRetro,
-    faPersonDolly, faAddressBook, faPaperclip
+    faPersonDolly, faAddressBook, faPaperclip,
+    faClipboardList, faFlask, faHandshake, faClipboardCheck, faBuilding
 } from '@fal'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
-import ModelDetails from "@/Components/ModelDetails.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TableSuppliers from "@/Components/Tables/Grp/SupplyChain/TableSuppliers.vue"
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue"
 import AgentShowcase from "@/Components/Showcases/Grp/AgentShowcase.vue"
+import ContactInfoStrip from "@/Components/Showcases/Grp/ContactInfoStrip.vue"
+import DepositRequestsPanel from "@/Components/Procurement/DepositRequestsPanel.vue"
+import { type AgentCard, type CoverBucket } from "@/Components/Procurement/AgentWorkCard.vue"
+import AgentOrdersOverview from "@/Components/Procurement/AgentOrdersOverview.vue"
+import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
+import OverviewSection from "@/Components/Utils/OverviewSection.vue"
+import { agreementSummary, handoverSummary } from "@/Composables/useAgentOverviewSummaries"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import { useForm } from "@inertiajs/vue3"
@@ -49,7 +56,16 @@ const props = defineProps<{
         current: string
         navigation: object
     },
-    showcase?: object
+    showcase?: {
+        contactCard: InstanceType<typeof ContactInfoStrip>["$props"]["contactCard"]
+        depositWorkspace?: InstanceType<typeof DepositRequestsPanel>["$props"]["data"] | null
+        cleanHandover?: CleanHandoverData
+        agentCards?: AgentCard[]
+    }
+    cover?: Record<number, CoverBucket[]>
+    cardSections: Record<string, boolean>
+    overviewSections: Record<string, boolean>
+    details?: object
     suppliers?: object
     supplier_products?: object,
     purchase_orders?: object,
@@ -77,21 +93,27 @@ library.add(
     faClipboard,
     faPeopleArrows,
     faAddressBook,
-    faPaperclip
+    faPaperclip,
+    faClipboardList,
+    faFlask,
+    faHandshake,
+    faClipboardCheck,
+    faBuilding
 )
 
 let currentTab = ref(props.tabs.current)
 const isModalUploadAttachmentOpen = ref(false)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, tabSlug === "showcase" ? ["cover"] : [])
+const sections = ref<Record<string, boolean>>({ ...props.overviewSections })
+const cardSections = ref<Record<string, boolean>>({ ...props.cardSections })
 
 const component = computed(() => {
 
     const components = {
-        showcase: AgentShowcase,
         suppliers: TableSuppliers,
         supplier_products: TableSupplierProducts,
         purchase_orders: TablePurchaseOrders,
-        details: ModelDetails,
+        details: AgentShowcase,
         attachments: TableAttachments,
         system_users: AgentSystemUsers,
         agreed_terms: TableSupplierAgreedTerms,
@@ -137,14 +159,24 @@ const getErrors = () => {
     <!--suppress TypeScriptUnresolvedReference -->
     <div v-if="props.errors.purchase_order">{{ getErrors() }}</div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div v-if="currentTab === 'showcase'" class="grid items-start gap-4 px-4 pt-4" :class="productDevelopments ? 'xl:grid-cols-[minmax(0,56rem)_minmax(0,1fr)]' : 'max-w-4xl'">
-        <AgreementSummary :agreement="agreement" />
-        <section v-if="productDevelopments" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <h3 class="border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800">{{ ctrans("Open product developments") }}</h3>
-            <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
-        </section>
+    <div v-if="currentTab === 'showcase'" class="space-y-4 px-4 py-4">
+        <ContactInfoStrip v-if="showcase?.contactCard" :contactCard="showcase.contactCard" />
+        <DepositRequestsPanel v-if="showcase?.depositWorkspace" :data="showcase.depositWorkspace" />
+        <AgentOrdersOverview v-if="showcase?.agentCards?.length" :cards="showcase.agentCards" :cover="cover" :sections="sections" :cardSections="cardSections" heading="organisation" />
+        <p v-else class="text-sm text-gray-500">{{ ctrans("No organisation you can open orders from this agent") }}</p>
+        <OverviewSection v-if="productDevelopments" sectionKey="agent_developments" :title="ctrans('Open product developments')" :summary="ctrans(':count open', { count: productDevelopments.rows.length })" icon="fal fa-flask" :sections="sections">
+            <div class="max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
+            </div>
+        </OverviewSection>
+        <OverviewSection sectionKey="agent_agreement" :title="ctrans('What was agreed')" :summary="agreementSummary(agreement)" icon="fal fa-handshake" :sections="sections">
+            <div class="max-w-4xl"><AgreementSummary :agreement="agreement" /></div>
+        </OverviewSection>
+        <OverviewSection v-if="showcase?.cleanHandover" sectionKey="agent_handover" :title="ctrans('Clean handover score')" :summary="handoverSummary(showcase.cleanHandover)" icon="fal fa-clipboard-check" :sections="sections">
+            <CleanHandoverPanel :data="showcase.cleanHandover" :showHygiene="true" />
+        </OverviewSection>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : currentTab === 'system_users' ? { management: systemUsersManagement } : {}"></component>
+    <component v-if="component" :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : currentTab === 'system_users' ? { management: systemUsersManagement } : {}"></component>
 
     <UploadAttachment
         v-model="isModalUploadAttachmentOpen"

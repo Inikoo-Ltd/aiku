@@ -1591,7 +1591,7 @@ test('UI show free supplier has direct procurement navigation', function () {
                     ->where('subNavigation.3.route.name', 'grp.supply-chain.suppliers.stock_deliveries.index')
                     ->etc()
             )
-            ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+            ->missing('showcase.stats')
             ->has('tabs');
     });
 });
@@ -1614,7 +1614,7 @@ test('UI show agent supplier lists its purchase orders', function () {
     $navigationRoutes = fn (Supplier $supplier) => collect(
         $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('showcase.stats.1.route.name', 'grp.supply-chain.suppliers.purchase_orders.index')
+                ->missing('showcase.stats')
                 ->etc())
             ->inertiaProps('pageHead.subNavigation')
     )->pluck('route.name')->all();
@@ -1896,11 +1896,14 @@ test('UI show agent', function () {
             ->where('pageHead.actions.0.style', 'edit')
             ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.edit')
             ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
-            ->has('tabs');
+            ->has('tabs')
+            ->where('showcase.depositWorkspace', fn ($workspace) => $agent->deposits()->where('state', 'pending')->exists() || $workspace === null);
     });
 
     $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'history']))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('history.data'));
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'details']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('details.contactCard')->where('tabs.navigation.details.title', __('Details')));
 });
 
 test('UI agent system users lists only the agent staff', function (Agent $agent) {
@@ -2061,6 +2064,9 @@ test('agents and suppliers keep documents in an attachments tab', function () {
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'attachments']))
         ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/Supplier')
             ->has('attachments.data', 1));
+
+    $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'details']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('details.contactCard')->where('tabs.navigation.showcase.title', __('Overview')));
 
     $this->get(route('grp.supply-chain.suppliers.share', $supplier->slug))
         ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplierPortalAccess')

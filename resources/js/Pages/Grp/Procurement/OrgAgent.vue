@@ -15,15 +15,20 @@ import {
     faTerminal,
     faPeopleArrows,
     faClipboard, faTruck, faCameraRetro,
-    faPersonDolly,faAddressBook, faInbox, faPaperclip, faWallet
+    faPersonDolly,faAddressBook, faInbox, faPaperclip, faWallet,
+    faClipboardList, faHandshake, faSitemap
 } from '@fal';
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {computed, defineAsyncComponent, ref} from "vue";
-import ModelDetails from "@/Components/ModelDetails.vue";
 import {useTabChange} from "@/Composables/tab-change";
 import TableOrgSuppliers from "@/Components/Tables/Grp/Org/Procurement/TableOrgSuppliers.vue";
 import TableOrgSupplierProducts from "@/Components/Tables/Grp/Org/Procurement/TableOrgSupplierProducts.vue";
 import AgentShowcase from "@/Components/Showcases/Grp/AgentShowcase.vue";
+import ContactInfoStrip from "@/Components/Showcases/Grp/ContactInfoStrip.vue"
+import { type AgentCard, type CoverBucket } from "@/Components/Procurement/AgentWorkCard.vue"
+import AgentOrdersOverview from "@/Components/Procurement/AgentOrdersOverview.vue"
+import OverviewSection from "@/Components/Utils/OverviewSection.vue"
+import { agreementSummary } from "@/Composables/useAgentOverviewSummaries"
 import { capitalize } from "@/Composables/capitalize"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue";
 import {useForm} from "@inertiajs/vue3";
@@ -49,7 +54,14 @@ const props = defineProps<{
         current: string;
         navigation: object;
     },
-    showcase?: object
+    showcase?: {
+        contactCard: InstanceType<typeof ContactInfoStrip>["$props"]["contactCard"]
+        agentCards?: AgentCard[]
+    }
+    details?: object
+    cover?: Record<number, CoverBucket[]>
+    cardSections: Record<string, boolean>
+    overviewSections: Record<string, boolean>
     org_suppliers?: object
     org_supplier_products?: object,
     purchase_orders?: object,
@@ -79,21 +91,25 @@ library.add(
     faAddressBook,
     faInbox,
     faWallet,
-    faPaperclip
+    faPaperclip,
+    faClipboardList,
+    faHandshake,
+    faSitemap
 );
 
 let currentTab = ref(props.tabs.current);
 const isModalUploadAttachmentOpen = ref(false)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, tabSlug === "showcase" ? ["cover"] : []);
+const sections = ref<Record<string, boolean>>({ ...props.overviewSections })
+const cardSections = ref<Record<string, boolean>>({ ...props.cardSections })
 
 const component = computed(() => {
 
     const components = {
-        showcase: AgentShowcase,
         org_suppliers: TableOrgSuppliers,
         org_supplier_products: TableOrgSupplierProducts,
         purchase_orders: TablePurchaseOrders,
-        details: ModelDetails,
+        details: AgentShowcase,
         inbox: TableSupplierMessages,
         money: OrgAgentMoney,
         attachments: TableAttachments,
@@ -136,10 +152,14 @@ const getErrors = () => {
     </div>
     <div v-if="props.errors.purchase_order">{{ getErrors() }}</div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <div v-if="currentTab === 'showcase'" class="px-4 pt-4 max-w-4xl">
-        <AgreementSummary :agreement="agreement" />
+    <div v-if="currentTab === 'showcase'" class="space-y-4 px-4 py-4">
+        <ContactInfoStrip v-if="showcase?.contactCard" :contactCard="showcase.contactCard" />
+        <AgentOrdersOverview v-if="showcase?.agentCards?.length" :cards="showcase.agentCards" :cover="cover" :sections="sections" :cardSections="cardSections" />
+        <OverviewSection sectionKey="agent_agreement" :title="ctrans('What was agreed')" :summary="agreementSummary(agreement)" icon="fal fa-handshake" :sections="sections">
+            <div class="max-w-4xl"><AgreementSummary :agreement="agreement" /></div>
+        </OverviewSection>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}"></component>
+    <component v-if="component" :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}"></component>
 
     <UploadAttachment
         v-model="isModalUploadAttachmentOpen"

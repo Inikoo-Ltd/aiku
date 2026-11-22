@@ -8,10 +8,10 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { Link } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faFileSignature, faFilePdf } from '@fal'
+import { faFileSignature, faFilePdf, faChevronRight } from '@fal'
 import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
 
-library.add(faFileSignature, faFilePdf)
+library.add(faFileSignature, faFilePdf, faChevronRight)
 
 type Status = { status: string, label: string, colour: string, icon: string, accepted_version: number | null, current_version: number | null, newer_version_to_read: boolean }
 
@@ -31,19 +31,21 @@ defineProps<{
     }) | {
         suppliers: (Status & { code: string, name: string, slug: string | null, accepted_at: string | null, authorised_person?: string | null, position?: string | null })[]
         not_accepted: number
+        suppliers_route: { name: string, parameters: (string | number)[] } | null
     }
 }>()
 </script>
 
 <template>
     <div class="border-t border-gray-100 text-sm text-gray-700">
-        <div class="flex items-center gap-2 px-3 pt-2">
+        <div class="flex items-center gap-2 px-3 py-2">
             <FontAwesomeIcon icon="fal fa-file-signature" class="text-gray-400" fixed-width aria-hidden="true" />
             <span class="text-xs font-medium uppercase text-gray-500">{{ ctrans('Supplier Agreement') }}</span>
             <SupplierAgreementStatusBadge v-if="'status' in supplierAgreement" :status="supplierAgreement" class="ml-auto" />
-            <span v-else-if="supplierAgreement.not_accepted" class="ml-auto text-xs text-red-700">
-                {{ supplierAgreement.not_accepted === 1 ? ctrans('1 supplier still to accept') : ctrans(':count suppliers still to accept', { count: supplierAgreement.not_accepted }) }}
-            </span>
+            <component :is="supplierAgreement.suppliers_route ? Link : 'span'" v-else-if="supplierAgreement.suppliers.length" :href="supplierAgreement.suppliers_route ? route(supplierAgreement.suppliers_route.name, supplierAgreement.suppliers_route.parameters) : undefined" class="ml-auto inline-flex items-center gap-1 text-xs" :class="[supplierAgreement.not_accepted ? 'text-red-700' : 'text-green-700', supplierAgreement.suppliers_route && 'hover:underline']">
+                {{ ctrans(':accepted/:total accepted (:percent% complete)', { accepted: supplierAgreement.suppliers.length - supplierAgreement.not_accepted, total: supplierAgreement.suppliers.length, percent: Math.floor(100 * (supplierAgreement.suppliers.length - supplierAgreement.not_accepted) / supplierAgreement.suppliers.length) }) }}
+                <FontAwesomeIcon v-if="supplierAgreement.suppliers_route" icon="fal fa-chevron-right" fixed-width aria-hidden="true" />
+            </component>
         </div>
 
         <template v-if="'status' in supplierAgreement">
@@ -84,22 +86,5 @@ defineProps<{
             </div>
         </template>
 
-        <table v-else class="w-full">
-            <tbody class="divide-y divide-gray-100">
-                <tr v-for="supplier in supplierAgreement.suppliers" :key="supplier.code">
-                    <td class="whitespace-nowrap px-3 py-1.5 font-medium text-gray-900">
-                        <Link v-if="supplier.slug" :href="route('grp.supply-chain.suppliers.show', [supplier.slug])" class="hover:underline">{{ supplier.code }}</Link>
-                        <template v-else>{{ supplier.code }}</template>
-                    </td>
-                    <td class="px-3 py-1.5">
-                        {{ supplier.name }}
-                        <div v-if="supplier.accepted_at" class="text-xs text-gray-500">
-                            {{ ctrans("v:version on :date", { version: supplier.accepted_version ?? "", date: useFormatTime(supplier.accepted_at) }) }}<template v-if="supplier.authorised_person"> · {{ supplier.authorised_person }}<template v-if="supplier.position">, {{ supplier.position }}</template></template>
-                        </div>
-                    </td>
-                    <td class="px-3 py-1.5 text-right"><SupplierAgreementStatusBadge :status="supplier" /></td>
-                </tr>
-            </tbody>
-        </table>
     </div>
 </template>

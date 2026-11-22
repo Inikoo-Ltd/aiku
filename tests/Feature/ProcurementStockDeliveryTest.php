@@ -361,10 +361,8 @@ test('UI show org supplier', function () {
             ->where('pageHead.actions.0.label', __('Purchase Order'))
             ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
             ->where('pageHead.actions.1.route.name', 'grp.org.procurement.org_suppliers.edit')
-            ->where('showcase.stats.0.count', 86)
-            ->where('showcase.stats.0.route.name', 'grp.org.procurement.org_suppliers.show.supplier_products.index')
-            ->where('showcase.stats.1.route.name', 'grp.org.procurement.org_suppliers.show.purchase_orders.index')
-            ->where('showcase.stats.2.route.name', 'grp.org.procurement.org_suppliers.show.stock_deliveries.index')
+            ->where('pageHead.subNavigation.1.route.name', 'grp.org.procurement.org_suppliers.show.supplier_products.index')
+            ->missing('showcase.stats')
             ->has('tabs');
     });
 });
@@ -420,7 +418,25 @@ test('agent card sections stay open or closed per user', function () {
         ->and($user->fresh()->settings['agent_card_sections'])->toBe([$closed => false, $this->orgAgent->id.'stock_delivery' => true]);
 
     $this->get(route('grp.org.procurement.org_agents.index', [$this->organisation->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('card_sections.'.$closed, false));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('card_sections.'.$closed, false)->where('agents.0.organisation_slug', $this->organisation->slug));
+
+    $this->patch(route('grp.models.profile.update'), [
+        'overview_sections' => ['agent_agreement' => false, 'Bad Key!' => true],
+    ])->assertSessionHasNoErrors();
+    expect($user->fresh()->settings['overview_sections'])->toBe(['agent_agreement' => false]);
+
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $this->orgAgent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('overviewSections.agent_agreement', false)
+            ->where('cardSections.'.$closed, false)
+            ->where('showcase.agentCards.0.id', $this->orgAgent->id)
+            ->has('showcase.contactCard'));
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $this->orgAgent->slug, 'tab' => 'details']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('details.contactCard'));
+    $this->get(route('grp.supply-chain.agents.show', [$this->orgAgent->agent->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('overviewSections.agent_agreement', false)
+            ->where('showcase.agentCards', fn ($cards) => collect($cards)->contains('id', $this->orgAgent->id)));
 });
 
 test('UI show org agents', function () {
@@ -433,8 +449,7 @@ test('UI show org agents', function () {
             ->where('pageHead.subNavigation.0.route.name', 'grp.org.procurement.org_agents.show')
             ->where('pageHead.subNavigation.1.route.name', 'grp.org.procurement.org_agents.show.shopping.dashboard')
             ->has('pageHead.subNavigation', 8)
-            ->where('pageHead.meta.0.route.name', 'grp.org.procurement.org_agents.show.suppliers.index')
-            ->where('pageHead.meta.1.route.name', 'grp.org.procurement.org_agents.show.supplier_products.index')
+            ->where('pageHead.meta', fn ($meta) => collect($meta)->pluck('route.name')->intersect(['grp.org.procurement.org_agents.show.suppliers.index', 'grp.org.procurement.org_agents.show.supplier_products.index'])->count() === 2)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page

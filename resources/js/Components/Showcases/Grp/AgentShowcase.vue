@@ -5,8 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import { computed } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -33,9 +32,6 @@ import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import Image from '@common/Components/Image.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import DepositRequestsPanel from '@/Components/Procurement/DepositRequestsPanel.vue'
-import CleanHandoverPanel, { type CleanHandoverData } from '@/Components/Procurement/CleanHandoverPanel.vue'
 
 library.add(
     faBoxUsd,
@@ -91,21 +87,9 @@ const props = defineProps<{
                 next_stock_delivery_reference?: string
             }
         }
-        stats: {
-            label: string
-            icon?: string
-            count: number
-            route?: {
-                name: string
-                parameters?: Record<string, any>
-            }
-        }[]
-        depositWorkspace?: object
-        cleanHandover?: CleanHandoverData
     }
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
 
 const contactCard = computed(() => props.data?.contactCard)
 
@@ -271,29 +255,6 @@ const supplierInfo = computed(() => {
 
 <template>
     <div class="space-y-6 px-4 py-6 md:px-6 lg:px-8">
-        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <component
-                :is="stat.route?.name ? Link : 'div'"
-                v-for="stat in data?.stats"
-                :key="stat.label"
-                :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : undefined"
-                class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5"
-                :class="stat.route?.name ? 'hover:bg-gray-50' : ''">
-                <div
-                    class="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
-                    <FontAwesomeIcon :icon="stat.icon || 'fal fa-hashtag'" fixed-width aria-hidden="true" />
-                </div>
-                <div class="min-w-0">
-                    <dt class="truncate text-xs font-medium uppercase tracking-wide text-gray-400">
-                        {{ stat.label }}
-                    </dt>
-                    <dd class="text-2xl font-bold leading-8 tracking-tight text-gray-900">
-                        {{ locale.number(stat.count ?? 0) }}
-                    </dd>
-                </div>
-            </component>
-        </dl>
-
         <div class="grid gap-6 lg:grid-cols-2">
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center gap-4 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
@@ -398,8 +359,5 @@ const supplierInfo = computed(() => {
             </div>
         </div>
 
-        <CleanHandoverPanel v-if="data.cleanHandover" :data="data.cleanHandover" :showHygiene="true" />
-
-        <DepositRequestsPanel v-if="data.depositWorkspace" :data="(data.depositWorkspace as any)" />
     </div>
 </template>

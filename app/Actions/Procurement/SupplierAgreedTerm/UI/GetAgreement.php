@@ -80,7 +80,7 @@ class GetAgreement
             )->resolve(),
             'open_incidents' => (clone $notes)->where('category', ProcurementNoteCategoryEnum::INCIDENT)->where('incident_outcome', ProcurementNoteIncidentOutcomeEnum::OPEN)->count(),
             'suppliers'      => $subject instanceof Agent ? $this->suppliersWithWarnings($subject, $organisation, $forAgent) : null,
-            'supplier_agreement' => $this->supplierAgreement($subject, $forAgent),
+            'supplier_agreement' => $this->supplierAgreement($subject, $forAgent, !$forAgent && $user->authTo(['supply-chain.view', 'compliance.view'])),
             'can_write'      => $canWrite,
             'is_supervisor'  => $canWrite && $this->isProcurementSupervisor($user, $subject->group),
             'user_id'        => $user->id,
@@ -165,7 +165,7 @@ class GetAgreement
      *
      * @return array<string, mixed>|null
      */
-    private function supplierAgreement(Supplier|SupplierProduct|Agent $subject, bool $forAgent = false): ?array
+    private function supplierAgreement(Supplier|SupplierProduct|Agent $subject, bool $forAgent = false, bool $canSeeGroupSuppliers = false): ?array
     {
         $statuses = GetSupplierAgreementStatus::make();
 
@@ -197,6 +197,7 @@ class GetAgreement
             return [
                 'suppliers'     => $rows->all(),
                 'not_accepted'  => $rows->where('status', '!=', SupplierAgreementStatusEnum::ACCEPTED->value)->count(),
+                'suppliers_route' => $canSeeGroupSuppliers ? ['name' => 'grp.supply-chain.agents.show.suppliers.index', 'parameters' => [$subject->slug]] : null,
             ];
         }
 

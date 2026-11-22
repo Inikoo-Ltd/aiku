@@ -11,9 +11,7 @@ namespace App\Actions\Procurement\OrgSupplier\UI;
 use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Actions\SupplyChain\Supplier\UI\WithSupplierInfo;
 use App\Http\Resources\Helpers\AddressResource;
-use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
-use App\Models\SysAdmin\Organisation;
 use App\Support\AgentOrganisationSelection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,11 +21,9 @@ class GetOrgSupplierShowcase
     use WithSupplierInfo;
     use WithProcurementSerialReferences;
 
-    public function handle(OrgSupplier $orgSupplier, ?Organisation $organisation = null, ?OrgAgent $orgAgent = null): array
+    public function handle(OrgSupplier $orgSupplier): array
     {
-        $supplier         = $orgSupplier->supplier;
-        $organisationSlug = ($organisation ?? $orgSupplier->organisation)->slug;
-        $agentNumbers     = ShowOrgSupplier::agentSupplierNumbers($organisation ?? $orgSupplier->organisation, $orgSupplier);
+        $supplier = $orgSupplier->supplier;
 
         return [
             'contactCard' => [
@@ -46,32 +42,6 @@ class GetOrgSupplierShowcase
                     ...$this->supplierInfo($supplier),
                     'next_purchase_order_reference' => $this->withOrganisationLabel($this->nextPurchaseOrderReference($orgSupplier)),
                     'next_stock_delivery_reference' => $this->withOrganisationLabel($this->nextStockDeliveryReference($orgSupplier)),
-                ],
-            ],
-            'stats'       => [
-                [
-                    'label' => __('Products'),
-                    'icon'  => 'fal fa-box-usd',
-                    'count' => $agentNumbers['products'] ?? $orgSupplier->stats->number_current_org_supplier_products,
-                    'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.supplier_products.index', $orgAgent),
-                ],
-                [
-                    'label' => __('Purchase Orders'),
-                    'icon'  => 'fal fa-clipboard-list',
-                    'count' => $agentNumbers['purchase_orders'] ?? $orgSupplier->stats->number_purchase_orders,
-                    'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.purchase_orders.index', $orgAgent),
-                ],
-                ...($agentNumbers ? [[
-                    'label' => __('Open purchase orders'),
-                    'icon'  => 'fal fa-clipboard',
-                    'count' => $agentNumbers['open_purchase_orders'],
-                    'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.purchase_orders.index', $orgAgent),
-                ]] : []),
-                [
-                    'label' => __('Deliveries'),
-                    'icon'  => 'fal fa-truck-container',
-                    'count' => $agentNumbers['stock_deliveries'] ?? $orgSupplier->stats->number_stock_deliveries,
-                    'route' => ShowOrgSupplier::orgSupplierRoute($organisationSlug, $orgSupplier, 'show.stock_deliveries.index', $orgAgent),
                 ],
             ],
         ];

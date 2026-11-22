@@ -117,8 +117,8 @@ class ShowOrgSupplier extends OrgAction
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
-                    fn () => GetOrgSupplierShowcase::run($orgSupplier, $this->organisation, $this->procurementOrgAgent())
-                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier, $this->organisation, $this->procurementOrgAgent())),
+                    fn () => GetOrgSupplierShowcase::run($orgSupplier)
+                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
 
                 'agreement' => GetAgreement::run($supplier, $agreementOrganisation, $request->user(), $forAgent)
                     + ['print_route' => $forAgent ? null : ['name' => 'grp.org.procurement.org_suppliers.show.agreement.pdf', 'parameters' => [$this->organisation->slug, $orgSupplier->slug]]]

@@ -743,8 +743,10 @@ test('agent manager only sees their own agent organisation', function () {
         ->whereHas('supplier', fn ($query) => $query->where('agent_id', $this->agent->id))
         ->firstOrFail();
     $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$organisation->slug, $orgSupplierOfAnotherOrganisation->supplier->slug]))->assertOk();
-    expect(collect(\App\Actions\Procurement\OrgSupplier\UI\GetOrgSupplierShowcase::run($orgSupplierOfAnotherOrganisation, $organisation)['stats'])->map(fn ($stat) => $stat['route']['parameters']['organisation'] ?? $stat['route']['parameters'][0])->unique()->values()->all())
-        ->toBe([$organisation->slug]);
+    $subNavigation = collect($this->get(route('grp.org.agent.org_suppliers.show', [$organisation->slug, $orgSupplierOfAnotherOrganisation->supplier->slug]))->inertiaProps('pageHead.subNavigation'));
+    expect($subNavigation->filter(fn ($item) => str_starts_with($item['route']['name'], 'grp.org.'))->map(fn ($item) => $item['route']['parameters']['organisation'] ?? $item['route']['parameters'][0])->unique()->values()->all())
+        ->toBe([$organisation->slug])
+        ->and($subNavigation->firstWhere('label', __('Open purchase orders')))->toHaveKey('number');
 
     $ownOrgAgent      = OrgAgent::where('agent_id', $this->agent->id)->where('organisation_id', '!=', $organisation->id)->firstOrFail();
     [$ownOrgSupplier] = createAgentOrgSupplierWithProduct($this, $ownOrgAgent);
@@ -1853,10 +1855,8 @@ test('UI agent supplier links stay inside the agent', function () {
             ->where('pageHead.subNavigation.1.route.parameters', $parameters)
             ->where('pageHead.subNavigation.2.route.name', 'grp.org.procurement.org_agents.show.suppliers.show.purchase_orders.index')
             ->where('pageHead.subNavigation.3.route.name', 'grp.org.procurement.org_agents.show.suppliers.show.stock_deliveries.index')
-            ->where('showcase.stats.0.route.name', 'grp.org.procurement.org_agents.show.suppliers.show.supplier_products.index')
-            ->where('showcase.stats.1.route.name', 'grp.org.procurement.org_agents.show.suppliers.show.purchase_orders.index')
-            ->where('showcase.stats.2.route.name', 'grp.org.procurement.org_agents.show.suppliers.show.stock_deliveries.index')
-            ->where('showcase.stats.2.route.parameters', $parameters)
+            ->where('pageHead.subNavigation.3.route.parameters', $parameters)
+            ->missing('showcase.stats')
             ->etc());
 
     foreach (['supplier_products', 'purchase_orders', 'stock_deliveries'] as $page) {

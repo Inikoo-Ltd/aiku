@@ -131,6 +131,14 @@ class UpdateProfile extends OrgAction
                 ->all();
         }
 
+        if (Arr::exists($modelData, 'overview_sections')) {
+            $modelData['settings']['overview_sections'] = collect(Arr::pull($modelData, 'overview_sections'))
+                ->filter(fn ($isOpen, $key) => preg_match('/^[a-z_]{1,40}$/', (string) $key))
+                ->map(fn ($isOpen) => (bool) $isOpen)
+                ->take(100)
+                ->all();
+        }
+
         foreach (['ticket_comments_newest_first', 'ticket_history_newest_first'] as $ticketOrderSetting) {
             if (Arr::exists($modelData, $ticketOrderSetting)) {
                 $modelData['settings'][$ticketOrderSetting] = (bool) Arr::pull($modelData, $ticketOrderSetting);
@@ -332,6 +340,7 @@ class UpdateProfile extends OrgAction
             'settings'          => ['sometimes'],
             'ticket_comments_newest_first'        => ['sometimes', 'boolean'],
             'agent_card_sections'                 => ['sometimes', 'array', 'max:500'],
+            'overview_sections'                   => ['sometimes', 'array', 'max:100'],
             'agent_card_sections.*'               => ['boolean'],
             'ticket_history_newest_first'         => ['sometimes', 'boolean'],
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],

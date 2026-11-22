@@ -150,8 +150,14 @@ class ShowOrgAgent extends OrgAction
                 ],
 
                 OrgAgentTabsEnum::SHOWCASE->value => $this->tab == OrgAgentTabsEnum::SHOWCASE->value ?
+                    fn () => [...GetOrgAgentShowcase::run($orgAgent, $this->organisation), 'agentCards' => $forAgent ? [] : [IndexOrgAgents::make()->agentCard($orgAgent)]]
+                    : Inertia::optional(fn () => [...GetOrgAgentShowcase::run($orgAgent, $this->organisation), 'agentCards' => $forAgent ? [] : [IndexOrgAgents::make()->agentCard($orgAgent)]]),
+                OrgAgentTabsEnum::DETAILS->value => $this->tab == OrgAgentTabsEnum::DETAILS->value ?
                     fn () => GetOrgAgentShowcase::run($orgAgent, $this->organisation)
                     : Inertia::optional(fn () => GetOrgAgentShowcase::run($orgAgent, $this->organisation)),
+                'cover'            => Inertia::defer(fn () => $forAgent ? [] : IndexOrgAgents::make()->coverByAgent(collect([$orgAgent]))),
+                'cardSections'     => IndexOrgAgents::cardSections($request->user()),
+                'overviewSections' => (object) ($request->user()->settings['overview_sections'] ?? []),
 
                 OrgAgentTabsEnum::MONEY->value => $this->tab == OrgAgentTabsEnum::MONEY->value ?
                     fn () => $this->money($orgAgent, $request)

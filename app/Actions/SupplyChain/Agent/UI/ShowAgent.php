@@ -30,7 +30,10 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\AgentsResource;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\Http\Resources\SupplyChain\SuppliersResource;
+use App\Actions\Procurement\OrgAgent\UI\IndexOrgAgents;
 use App\Models\Procurement\OrgAgent;
+use App\Models\SysAdmin\User;
+use Illuminate\Support\Collection;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
@@ -58,6 +61,27 @@ class ShowAgent extends OrgAction
         return $this->handle($agent);
     }
 
+
+    /**
+     * The organisations' agents the viewer can open, each organisation's own orders and containers with this agent.
+     *
+     * @return Collection<int, OrgAgent>
+     */
+    private function visibleOrgAgents(Agent $agent, User $user): Collection
+    {
+        return $agent->orgAgents()->where('status', true)->with(['organisation', 'agent.organisation.currency', 'stats'])->get()
+            ->filter(fn (OrgAgent $orgAgent) => $user->authTo("procurement.{$orgAgent->organisation_id}.view"))
+            ->sortBy(fn (OrgAgent $orgAgent) => $orgAgent->organisation->code)
+            ->values();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function agentCards(Agent $agent, User $user): array
+    {
+        return $this->visibleOrgAgents($agent, $user)->map(fn (OrgAgent $orgAgent) => IndexOrgAgents::make()->agentCard($orgAgent))->all();
+    }
 
     public function htmlResponse(Agent $agent, ActionRequest $request): Response
     {
@@ -109,6 +133,12 @@ class ShowAgent extends OrgAction
                     'navigation' => AgentTabsEnum::navigation()
                 ],
                 AgentTabsEnum::SHOWCASE->value => $this->tab == AgentTabsEnum::SHOWCASE->value ?
+                    fn () => [...GetAgentShowcase::run($agent), 'agentCards' => $this->agentCards($agent, $request->user())]
+                    : Inertia::optional(fn () => [...GetAgentShowcase::run($agent), 'agentCards' => $this->agentCards($agent, $request->user())]),
+                'cover'            => Inertia::defer(fn () => IndexOrgAgents::make()->coverByAgent($this->visibleOrgAgents($agent, $request->user()))),
+                'cardSections'     => IndexOrgAgents::cardSections($request->user()),
+                'overviewSections' => (object) ($request->user()->settings['overview_sections'] ?? []),
+                AgentTabsEnum::DETAILS->value => $this->tab == AgentTabsEnum::DETAILS->value ?
                     fn () => GetAgentShowcase::run($agent)
                     : Inertia::optional(fn () => GetAgentShowcase::run($agent)),
 

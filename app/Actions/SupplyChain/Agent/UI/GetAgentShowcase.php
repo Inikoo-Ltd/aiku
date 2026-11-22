@@ -35,41 +35,12 @@ class GetAgentShowcase
                 'photo'        => $agent->imageSources(320, 320),
                 'supplierInfo' => $this->supplierInfo($agent),
             ],
-            'stats'       => [
-                [
-                    'label' => __('Suppliers'),
-                    'icon'  => 'fal fa-person-dolly',
-                    'count' => $agent->stats->number_active_suppliers,
-                    'route' => [
-                        'name'       => 'grp.supply-chain.agents.show.suppliers.index',
-                        'parameters' => [$agent->slug],
-                    ],
-                ],
-                [
-                    'label' => __('Products'),
-                    'icon'  => 'fal fa-box-usd',
-                    'count' => $agent->stats->number_current_supplier_products,
-                    'route' => [
-                        'name'       => 'grp.supply-chain.agents.show.supplier_products.index',
-                        'parameters' => [$agent->slug],
-                    ],
-                ],
-                [
-                    'label' => __('Deliveries'),
-                    'icon'  => 'fal fa-truck-container',
-                    'count' => $agent->stats->number_stock_deliveries,
-                    'route' => [
-                        'name'       => 'grp.supply-chain.agents.show.stock_deliveries.index',
-                        'parameters' => [$agent->slug],
-                    ],
-                ],
-            ],
             'depositWorkspace' => $this->getDepositWorkspace($agent),
             'cleanHandover'    => GetAgentCleanHandoverScore::run($agent),
         ];
     }
 
-    private function getDepositWorkspace(Agent $agent): array
+    private function getDepositWorkspace(Agent $agent): ?array
     {
         $pendingDeposits = $agent->deposits()
             ->where('state', 'pending')
@@ -109,6 +80,11 @@ class GetAgentShowcase
                     ],
                 ])->all(),
             ]);
+
+        $hasUnpaidRequest = $requests->contains(fn (array $request) => collect($request['items'])->contains(fn (array $item) => $item['paid_at'] === null));
+        if ($pendingDeposits->isEmpty() && !$hasUnpaidRequest) {
+            return null;
+        }
 
         return [
             'pendingDeposits' => $pendingDeposits->all(),

@@ -17,6 +17,7 @@ enum SupplierTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
+    case DETAILS = 'details';
     case AGREED_TERMS = 'agreed_terms';
     case NOTES       = 'notes';
     case INBOX       = 'inbox';
@@ -33,8 +34,12 @@ enum SupplierTabsEnum: string
     {
         return match ($this) {
             SupplierTabsEnum::SHOWCASE => [
-                'title' => __('Supplier'),
-                'icon'  => 'fas fa-info-circle',
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-tachometer-alt',
+            ],
+            SupplierTabsEnum::DETAILS => [
+                'title' => __('Details'),
+                'icon'  => 'fal fa-address-book',
             ],
             SupplierTabsEnum::AGREED_TERMS => [
                 'title' => __('Agreed terms'),

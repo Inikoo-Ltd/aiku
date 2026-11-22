@@ -195,6 +195,17 @@ trait WithOrgSupplierSubNavigation
                 ],
                 'number'   => $agentNumbers['purchase_orders'] ?? $parent->stats->number_purchase_orders,
             ],
+            ...($agentNumbers ? [
+                [
+                    'label'    => __('Open purchase orders'),
+                    'route'    => self::orgSupplierRoute($this->organisation->slug, $parent, 'show.purchase_orders.index', $orgAgent),
+                    'leftIcon' => [
+                        'icon'    => ['fal', 'fa-clipboard-list'],
+                        'tooltip' => __('Open purchase orders'),
+                    ],
+                    'number'   => $agentNumbers['open_purchase_orders'],
+                ],
+            ] : []),
             [
                 'label'    => __('Stock Deliveries'),
                 'route'    => self::orgSupplierRoute($this->organisation->slug, $parent, 'show.stock_deliveries.index', $orgAgent),

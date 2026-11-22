@@ -17,6 +17,7 @@ enum AgentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE            = 'showcase';
+    case DETAILS             = 'details';
     case AGREED_TERMS = 'agreed_terms';
     case NOTES = 'notes';
     case SYSTEM_USERS        = 'system_users';
@@ -55,9 +56,13 @@ enum AgentTabsEnum: string
                 'title' => __('Notes'),
                 'icon'  => 'fal fa-sticky-note',
             ],
+            AgentTabsEnum::DETAILS => [
+                'title' => __('Details'),
+                'icon'  => 'fal fa-address-book',
+            ],
             AgentTabsEnum::SHOWCASE => [
-                'title' => __('Agent'),
-                'icon'  => 'fas fa-info-circle',
+                'title' => __('Overview'),
+                'icon'  => 'fal fa-tachometer-alt',
             ],
 
         };

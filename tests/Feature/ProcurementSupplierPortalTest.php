@@ -660,7 +660,7 @@ test('INI-238 once a version is published every staff page shows the status, age
     $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug]))->assertOk()
         ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.status', 'accepted')->has('agreement.supplier_agreement.history', 1));
     $this->get(route('grp.supply-chain.agents.show', [$agent->slug]))->assertOk()
-        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.not_accepted', 1)->where('agreement.supplier_agreement.suppliers.0.code', $agentOrgSupplier->supplier->code));
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.not_accepted', 1)->where('agreement.supplier_agreement.suppliers.0.code', $agentOrgSupplier->supplier->code)->where('agreement.supplier_agreement.suppliers_route.name', 'grp.supply-chain.agents.show.suppliers.index'));
     $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $orgAgent->slug]))->assertOk()
         ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.suppliers.0.status', 'not_accepted'));
     $agentSuppliers = collect($this->getJson(route('grp.supply-chain.agent_suppliers.index', ['elements[agreement]' => 'not_accepted', 'filter[global]' => $agentOrgSupplier->supplier->code]))->json('data'));

@@ -19,6 +19,7 @@ use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -73,6 +74,9 @@ class IndexOrgAgents extends OrgAction
         return [
             'id'                   => $orgAgent->id,
             'slug'                 => $orgAgent->slug,
+            'organisation_slug'    => $orgAgent->organisation->slug,
+            'organisation_code'    => $orgAgent->organisation->code,
+            'organisation_currency_code' => $orgAgent->organisation->currency->code,
             'code'                 => $agent->code,
             'name'                 => $agent->name,
             'country_code'         => $location[0] ?? null,
@@ -191,6 +195,14 @@ class IndexOrgAgents extends OrgAction
     }
 
     /**
+     * Which parts of an agent card each person keeps open, shared by every page that shows the card.
+     */
+    public static function cardSections(User $user): object
+    {
+        return (object) ($user->settings['agent_card_sections'] ?? []);
+    }
+
+    /**
      * The urgent end of each agent's stock cover. Slow on agents with thousands of
      * products, so it is sent deferred.
      *
@@ -236,7 +248,7 @@ class IndexOrgAgents extends OrgAction
                     ],
                 ],
                 'currency_code'     => $this->organisation->currency->code,
-                'card_sections'     => (object) ($request->user()->settings['agent_card_sections'] ?? []),
+                'card_sections'     => self::cardSections($request->user()),
                 'suspended_count'   => OrgAgent::where('organisation_id', $this->organisation->id)->where('status', false)->count(),
                 'agents'            => $orgAgents->map(fn (OrgAgent $orgAgent) => $this->agentCard($orgAgent))->all(),
                 'cover'             => Inertia::defer(fn () => $this->coverByAgent($orgAgents)),

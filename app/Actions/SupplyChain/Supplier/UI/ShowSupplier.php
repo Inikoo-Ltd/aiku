@@ -108,6 +108,9 @@ class ShowSupplier extends OrgAction
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
                     fn () => GetSupplierShowcase::run($supplier)
                     : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
+                SupplierTabsEnum::DETAILS->value => $this->tab == SupplierTabsEnum::DETAILS->value ?
+                    fn () => GetSupplierShowcase::run($supplier)
+                    : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
 
                 'productDevelopments' => (new ProductDevelopmentAccess())->canSeeAny($request->user())
 

@@ -55,6 +55,18 @@ trait WithAgentSubNavigation
                 ],
             ],
             [
+                "number"   => $parent->stats->number_stock_deliveries,
+                "label"    => __("Deliveries"),
+                "route"     => [
+                    "name"       => "grp.supply-chain.agents.show.stock_deliveries.index",
+                    "parameters" => [$parent->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-truck-container"],
+                    "tooltip" => __("Deliveries"),
+                ],
+            ],
+            [
                 "label"    => __("Sales"),
                 "route"     => [
                     "name"       => "grp.supply-chain.agents.show.sales",
