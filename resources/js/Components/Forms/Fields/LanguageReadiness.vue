@@ -8,7 +8,7 @@ defineProps<{
     form?: any
     fieldName: string
     fieldData: {
-        value: { code: string, language: string, names: number, descriptions: number, products: number }[]
+        value: { code: string, language: string, names: number, descriptions: number, products: number, category_names: number, category_descriptions: number, categories: number }[]
     }
 }>()
 
@@ -29,8 +29,18 @@ const percent = (count: number, total: number) => total ? `${(100 * count / tota
                 {{ locale.number(data.descriptions) }} <span class="inline-block w-14 text-gray-400">{{ percent(data.descriptions, data.products) }}</span>
             </template>
         </Column>
+        <Column :header="ctrans('Categories with name')" headerClass="[&>div]:justify-end" bodyClass="text-right whitespace-nowrap">
+            <template #body="{ data }">
+                {{ locale.number(data.category_names) }} <span class="inline-block w-14 text-gray-400">{{ percent(data.category_names, data.categories) }}</span>
+            </template>
+        </Column>
+        <Column :header="ctrans('Categories with description')" headerClass="[&>div]:justify-end" bodyClass="text-right whitespace-nowrap">
+            <template #body="{ data }">
+                {{ locale.number(data.category_descriptions) }} <span class="inline-block w-14 text-gray-400">{{ percent(data.category_descriptions, data.categories) }}</span>
+            </template>
+        </Column>
         <template v-if="fieldData.value.length" #footer>
-            <span class="text-xs font-normal text-gray-500">{{ ctrans(":count active products", { count: locale.number(fieldData.value[0].products) }) }}</span>
+            <span class="text-xs font-normal text-gray-500">{{ ctrans(":count active products", { count: locale.number(fieldData.value[0].products) }) }} · {{ ctrans(":count live departments, sub-departments, families and collections", { count: locale.number(fieldData.value[0].categories) }) }}</span>
         </template>
         <template #empty>{{ ctrans("No active products") }}</template>
     </DataTable>

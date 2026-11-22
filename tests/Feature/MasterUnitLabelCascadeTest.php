@@ -1384,3 +1384,102 @@ test('fill translations leaves a blanked german field alone in every mode, and r
         ->and($product->data['translation_sources']['de']['blanked']['description']['why'])->toBe('wholesale pitch')
         ->and(fillShopTextMode($this, 'redo')['stats']['machine'])->toBe(0);
 });
+
+/**
+ * @return array{0: \App\Models\Catalogue\ProductCategory, 1: \App\Models\Catalogue\Collection, 2: \App\Models\Catalogue\ProductCategory}
+ */
+function fillCategoryTranslationsFixture(object $test): array
+{
+    fillTranslationsFixture($test);
+    $family = $test->product->family;
+    DB::table('product_categories')->where('id', $family->id)->update(['state' => 'active', 'name' => 'Lavender soaps', 'description' => '<p>Soaps your customers love</p>', 'name_i8n' => json_encode(['en' => 'Lavender soaps']), 'description_i8n' => '{}', 'description_title_i8n' => '{}', 'description_extra_i8n' => '{}', 'data' => '{}']);
+    $family->refresh();
+    $germanFamily = $family->replicate();
+    $germanFamily->fill(['shop_id' => $test->germanShop->id, 'slug' => 'de-'.Str::random(10), 'master_product_category_id' => null, 'name' => 'Lavendelseifen', 'description' => '<p>Großhandel Seifen</p>', 'data' => []]);
+    $germanFamily->saveQuietly();
+    $collection = \App\Actions\Catalogue\Collection\StoreCollection::make()->action($test->shop, ['code' => 'gifts-'.uniqid(), 'name' => 'Christmas gifts']);
+    $collection->updateQuietly(['state' => 'active', 'description' => '<p>Gifts for 12 people</p>']);
+
+    return [$family, $collection->refresh(), $germanFamily];
+}
+
+function fillCategoryTranslations(object $test, bool $apply = true, bool $force = false, bool $retryFailed = false): array
+{
+    return \App\Actions\Catalogue\ProductCategory\FillShopCategoryTranslations::run($test->shop, Language::where('code', 'de')->first(), $test->germanShop, $apply, $force, null, 50, null, null, $retryFailed);
+}
+
+test('fill category translations machine translates families and collections from the shop own text, on the shop record only, and never copies the wholesale text of the sibling shop', function () {
+    [$family, $collection] = fillCategoryTranslationsFixture($this);
+
+    $dryRun  = fillCategoryTranslations($this, apply: false);
+    $limited = \App\Actions\Catalogue\ProductCategory\FillShopCategoryTranslations::run($this->shop, Language::where('code', 'de')->first(), $this->germanShop, false, false, 1);
+    expect($family->refresh()->data)->not->toHaveKey('translation_sources')
+        ->and($dryRun['stats']['machine'])->toBeGreaterThan(0)
+        ->and(array_sum($limited['stats']))->toBe(1);
+
+    fillCategoryTranslations($this);
+
+    $family->refresh();
+    $collection->refresh();
+    Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Großhandel'));
+    Http::assertSent(fn (Request $request) => str_contains($request['messages'][0]['content'], 'calls the same family "Lavendelseifen"'));
+    expect($family->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soaps')
+        ->and($family->getTranslation('description_i8n', 'de', false))->toBe('DE <p>Soaps your customers love</p>')
+        ->and($family->getTranslation('name_i8n', 'en', false))->toBe('Lavender soaps')
+        ->and($family->name)->toBe('Lavender soaps')
+        ->and($family->data['translation_sources']['de']['fields']['name'])->toBe(FillShopProductTranslations::MACHINE)
+        ->and($collection->name_i8n['de'])->toBe('DE Christmas gifts')
+        ->and($collection->description_i8n['de'])->toBe('DE <p>Gifts for 12 people</p>')
+        ->and(data_get($this->masterFamily->refresh()->name_i8n, 'de'))->toBeEmpty();
+});
+
+test('fill category translations resumes past done ones, redoes only its own text with force and never overwrites german a person wrote', function () {
+    [$family, $collection] = fillCategoryTranslationsFixture($this);
+    fillCategoryTranslations($this);
+    $requests = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]['messages'][1]['content'] ?? '', 'Lavender soaps'))->count();
+    $before   = $requests();
+
+    fillCategoryTranslations($this);
+    expect($requests())->toBe($before);
+
+    $collection->updateQuietly(['name_i8n' => ['de' => 'Weihnachtsgeschenke']]);
+    $this->aiPrefix = 'NEU ';
+    fillCategoryTranslations($this, force: true);
+
+    expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('NEU Lavender soaps')
+        ->and($collection->refresh()->name_i8n['de'])->toBe('Weihnachtsgeschenke')
+        ->and($collection->description_i8n['de'])->toBe('NEU <p>Gifts for 12 people</p>');
+});
+
+test('fill category translations marks a rejected translation and tries it again only with retry failed', function () {
+    [$family] = fillCategoryTranslationsFixture($this);
+    $this->aiPrefix = '<b>';
+
+    fillCategoryTranslations($this);
+    expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('')
+        ->and($family->data['translation_sources']['de']['failed'])->toContain('HTML tags changed');
+
+    $this->aiPrefix = 'DE ';
+    fillCategoryTranslations($this);
+    expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('');
+
+    fillCategoryTranslations($this, retryFailed: true);
+    expect($family->refresh()->getTranslation('name_i8n', 'de', false))->toBe('DE Lavender soaps')
+        ->and($family->data['translation_sources']['de'])->not->toHaveKey('failed');
+});
+
+test('language readiness counts the live categories and collections with a name and a description per language', function () {
+    [$family, $collection] = fillCategoryTranslationsFixture($this);
+    $this->product->updateQuietly(['name_i8n' => ['en' => 'Lavender soap 100g', 'de' => 'Lavendelseife']]);
+    $row = fn () => collect(\App\Actions\Catalogue\Shop\UI\GetShopLanguageReadiness::run($this->shop->fresh()))->firstWhere('code', 'de');
+
+    $before = $row();
+    $family->updateQuietly(['name_i8n' => ['de' => 'Lavendelseifen'], 'description_i8n' => ['de' => ' ']]);
+    $collection->updateQuietly(['state' => 'inactive', 'name_i8n' => ['de' => 'Geschenke']]);
+    $after = $row();
+
+    expect($after['category_names'])->toBe($before['category_names'] + 1)
+        ->and($after['category_descriptions'])->toBe($before['category_descriptions'])
+        ->and($after['categories'])->toBe($before['categories'] - 1)
+        ->and($after['names'])->toBe($before['names']);
+});

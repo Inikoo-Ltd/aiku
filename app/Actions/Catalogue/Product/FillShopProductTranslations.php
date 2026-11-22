@@ -21,6 +21,7 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -703,12 +704,12 @@ class FillShopProductTranslations
     /**
      * @return array<string, string>|null
      */
-    private function askWithRetry(array $fields, Product $product, Language $language, string $model): ?array
+    public function askWithRetry(array $fields, Model $product, Language $language, string $model, ?string $systemPrompt = null): ?array
     {
         foreach ([0, 1] as $attempt) {
             try {
                 $this->lastFailureWasRejection = false;
-                $texts                         = $this->ask($product, $fields, $language, $model);
+                $texts                         = $this->ask($product, $fields, $language, $model, $systemPrompt);
                 $this->lastFailure             = $this->invalidReason($fields, $texts);
                 $this->lastFailureWasRejection = true;
                 if ($this->lastFailure === null) {
@@ -727,14 +728,27 @@ class FillShopProductTranslations
         return null;
     }
 
-    private function ask(Product $product, array $fields, Language $language, string $model): array
+    /**
+     * @return array{0: ?string, 1: bool} why the last answer failed, and whether the answer was rejected rather than the call failing
+     */
+    public function lastFailure(): array
+    {
+        return [$this->lastFailure, $this->lastFailureWasRejection];
+    }
+
+    public function cost(): float
+    {
+        return $this->cost;
+    }
+
+    private function ask(Model $product, array $fields, Language $language, string $model, ?string $systemPrompt = null): array
     {
         $response = $this->aiRequest()->timeout(120)->post('chat/completions', array_merge([
             'model'           => $model,
             'temperature'     => 0.2,
             'response_format' => ['type' => 'json_object'],
             'messages'        => [
-                ['role' => 'system', 'content' => Arr::has(Arr::first($fields), 'clean') ? $this->cleanPrompt($language, $this->cleaningShopText) : $this->prompt($product, $language)],
+                ['role' => 'system', 'content' => $systemPrompt ?? (Arr::has(Arr::first($fields), 'clean') ? $this->cleanPrompt($language, $this->cleaningShopText) : $this->prompt($product, $language))],
                 ['role' => 'user', 'content' => json_encode($fields, JSON_UNESCAPED_UNICODE)],
             ],
         ], config('services.openrouter.model_options')[$model] ?? []))->throw()->json();
