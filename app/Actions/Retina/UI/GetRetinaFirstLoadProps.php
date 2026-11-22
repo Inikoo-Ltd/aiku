@@ -34,7 +34,7 @@ class GetRetinaFirstLoadProps
                 'localeData' =>
                 [
                     'language'        => LanguageResource::make($language)->getArray(),
-                    'languageOptions' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->restrictsLanguages() ? $shop->enabledLanguageIds() : $shop->extra_languages),
+                    'languageOptions' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->restrictsLanguages() ? $shop->languageIdsFor($webUser?->customer) : $shop->extra_languages),
                 ],
 
                 'layout'   => GetRetinaLayout::run($request, $webUser),

@@ -107,7 +107,7 @@ class UpdateShop extends OrgAction
     public function handle(Shop $shop, array $modelData): Shop
     {
         $originalReviewSettings   = Arr::get($shop->settings ?? [], 'reviews');
-        $originalEnabledLanguageIds = $shop->enabledLanguageIds();
+        $originalWebsiteLanguageCodes = $shop->websiteLanguageCodes();
         $reviewRatingLabelsTouched = Arr::exists($modelData, 'review_rating_labels');
 
         $originalViewContactOptionsPanel = Arr::get($shop->settings ?? [], 'chat.view_contact_options_panel');
@@ -223,6 +223,10 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'enabled_languages')) {
             data_set($modelData, 'settings.enabled_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'enabled_languages') ?? []))));
+        }
+
+        if (Arr::has($modelData, 'preview_languages')) {
+            data_set($modelData, 'settings.preview_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'preview_languages') ?? []))));
         }
 
         if (Arr::has($modelData, 'display_currencies')) {
@@ -854,7 +858,7 @@ class UpdateShop extends OrgAction
             BreakWebsiteCache::run($shop->website, CrawlTriggerEnum::WEBSITE_UPDATE);
         }
 
-        if ($shop->website && $shop->enabledLanguageIds() != $originalEnabledLanguageIds) {
+        if ($shop->website && $shop->websiteLanguageCodes() != $originalWebsiteLanguageCodes) {
             BreakWebsiteCache::run($shop->website, null);
         }
 
@@ -1232,6 +1236,8 @@ class UpdateShop extends OrgAction
             'enabled_languages'                                       => ['sometimes', 'array', 'nullable'],
             'channel_languages'                                       => ['sometimes', 'boolean'],
             'enabled_languages.*'                                     => ['integer', Rule::exists('languages', 'id')->where('status', true)],
+            'preview_languages'                                       => ['sometimes', 'array', 'nullable'],
+            'preview_languages.*'                                     => ['integer', Rule::exists('languages', 'id')->where('status', true)],
             'image'                                                   => [
                 'sometimes',
                 'nullable',

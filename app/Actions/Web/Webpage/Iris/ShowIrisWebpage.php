@@ -59,7 +59,7 @@ class ShowIrisWebpage
 
     public static function forgetWebpageCache(Webpage $webpage): void
     {
-        foreach ($webpage->shop->enabledLanguageCodes() as $locale) {
+        foreach ($webpage->shop->websiteLanguageCodes() as $locale) {
             foreach ([true, false] as $loggedIn) {
                 Cache::forget(self::webpageCacheKey($webpage->website, $webpage->id, $loggedIn, $locale));
             }

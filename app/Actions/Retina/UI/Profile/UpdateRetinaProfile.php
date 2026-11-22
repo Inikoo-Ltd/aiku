@@ -82,7 +82,7 @@ class UpdateRetinaProfile extends RetinaAction
             'password' => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? Password::min(4) : Password::min(8)],
 
 
-            'language_id' => ['sometimes', 'required', 'integer', $this->webUser->shop->restrictsLanguages() ? Rule::in($this->webUser->shop->enabledLanguageIds()) : 'exists:languages,id'],
+            'language_id' => ['sometimes', 'required', 'integer', $this->webUser->shop->restrictsLanguages() ? Rule::in($this->webUser->shop->languageIdsFor($this->webUser->customer)) : 'exists:languages,id'],
 
             'display_currency' => ['sometimes', $this->webUser->shop->type === ShopTypeEnum::DROPSHIPPING ? 'nullable' : 'prohibited', 'string', Rule::in($this->webUser->shop->displayCurrencyCodes())],
 

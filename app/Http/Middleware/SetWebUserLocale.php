@@ -29,7 +29,7 @@ class SetWebUserLocale
             $locale = $request->cookie('aiku_guest_locale');
         }
 
-        if (!is_string($locale) || ($shop->restrictsLanguages() && !$shop->enablesLanguage($locale))) {
+        if (!is_string($locale) || ($shop->restrictsLanguages() && !$shop->offersLanguageTo($webUser?->customer, $locale))) {
             $locale = $shop->language->code;
         }
 

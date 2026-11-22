@@ -24,7 +24,7 @@ class SetWebsiteLocale
 
         if (!array_key_exists('locale', $query)) {
             $locale = $shop->language->code;
-        } elseif ($shop->enablesLanguage($query['locale'])) {
+        } elseif ($shop->showsWebsiteIn($query['locale'])) {
             $locale = $query['locale'];
         } elseif ($request->isMethod('GET')) {
             return redirect()->to($this->urlWithoutLocale($request))->header('X-Aiku-Cacheable-Redirect', '1');

@@ -1600,6 +1600,57 @@ test('language switch saves the web user language, only enabled ones once the li
     enableShopLanguages($this->shop, null);
 });
 
+test('preview languages work in the website address and for staff customers, never in the language switch or for other customers', function () {
+    Http::fake();
+    [$previewCode, $otherCode] = otherLanguageCodes($this->shop);
+    $previewLanguageId = Language::where('code', $previewCode)->value('id');
+    enableShopLanguages($this->shop, [$this->shop->language->code]);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['preview_languages' => [$previewLanguageId]]);
+
+    expect($shop->settings['preview_languages'])->toBe([$previewLanguageId])
+        ->and($shop->previewLanguageCodes())->toBe([$previewCode])
+        ->and($shop->enablesLanguage($previewCode))->toBeFalse()
+        ->and($shop->showsWebsiteIn($previewCode))->toBeTrue()
+        ->and($shop->showsWebsiteIn($otherCode))->toBeFalse();
+
+    expect(runWebsiteLocale($this->website, '/about?locale='.$previewCode)->getContent())->toBe('ok')
+        ->and(app()->getLocale())->toBe($previewCode)
+        ->and(runWebsiteLocale($this->website, '/about?locale='.$otherCode)->isRedirect())->toBeTrue();
+
+    $irisData = (new HandleIrisInertiaRequests())->getIrisData($this->website->fresh(), $previewCode);
+    expect(collect($irisData['website_i18n']['enabled_languages'])->pluck('code')->all())->not->toContain($previewCode);
+
+    $customer = createCustomer($shop);
+    $webUser  = createWebUser($customer);
+    $choosePreview = fn () => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['language_id' => $previewLanguageId]);
+
+    $customer->updateQuietly(['is_staff' => false]);
+    expect($choosePreview)->toThrow(ValidationException::class)
+        ->and($shop->languageIdsFor($customer->fresh()))->not->toContain($previewLanguageId);
+
+    $customer->updateQuietly(['is_staff' => true]);
+    $choosePreview();
+    expect($webUser->fresh()->language_id)->toBe($previewLanguageId)
+        ->and($shop->languageIdsFor($customer->fresh()))->toContain($previewLanguageId);
+
+    actingAs($webUser->fresh(), 'retina');
+    runWebUserLocale($this->website);
+    expect(app()->getLocale())->toBe($previewCode);
+
+    $customer->updateQuietly(['is_staff' => false]);
+    actingAs($webUser->fresh()->load('customer'), 'retina');
+    runWebUserLocale($this->website);
+    expect(app()->getLocale())->toBe($shop->language->code);
+
+    auth('retina')->logout();
+    $settings = $shop->fresh()->settings;
+    unset($settings['preview_languages']);
+    $shop->settings = $settings;
+    $shop->saveQuietly();
+    enableShopLanguages($this->shop, null);
+});
+
 test('enabled languages shop setting is saved, always keeps the main language, is audited and reaches the iris data', function () {
     Http::fake();
     [$otherCode] = otherLanguageCodes($this->shop);

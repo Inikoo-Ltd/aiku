@@ -763,6 +763,15 @@ class EditShop extends OrgAction
                             'valueProp'   => 'id',
                             'value'       => $shop->enabledLanguageIds(),
                         ],
+                        'preview_languages' => [
+                            'type'        => 'multiselect-tags',
+                            'label'       => __('Languages staff can preview on the website'),
+                            'information' => __('Not offered to customers. Staff open any page with ?locale= and the language code (e.g. ?locale=de), and staff customer accounts can choose them in their profile. Move a language to the list above when it is ready.'),
+                            'options'     => array_values(array_map(fn ($language) => ['id' => $language['id'], 'name' => $language['name']], GetLanguagesOptions::make()->translated())),
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                            'value'       => $shop->previewLanguageIds(),
+                        ],
                         'language_readiness' => [
                             'type'         => 'language_readiness',
                             'label'        => __('Products with texts per language'),

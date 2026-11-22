@@ -1107,6 +1107,55 @@ class Shop extends Model implements HasMedia, Auditable
     }
 
     /**
+     * Languages staff try on the website before customers get them: they work in the address (?locale=de)
+     * and in staff customers' profiles, but are never offered in the language switch or to other customers.
+     *
+     * @return array<int, string>
+     */
+    public function previewLanguageCodes(): array
+    {
+        $languageIds = $this->previewLanguageIds();
+
+        return $languageIds ? Language::whereIn('id', $languageIds)->pluck('code')->all() : [];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function previewLanguageIds(): array
+    {
+        return array_values(array_diff(array_map('intval', Arr::get($this->settings, 'preview_languages') ?? []), $this->enabledLanguageIds()));
+    }
+
+    /**
+     * Staff customers also get the preview languages, so they can try them signed in.
+     *
+     * @return array<int, int>
+     */
+    public function languageIdsFor(?Customer $customer): array
+    {
+        return $customer?->is_staff ? array_merge($this->enabledLanguageIds(), $this->previewLanguageIds()) : $this->enabledLanguageIds();
+    }
+
+    public function offersLanguageTo(?Customer $customer, mixed $code): bool
+    {
+        return $customer?->is_staff ? $this->showsWebsiteIn($code) : $this->enablesLanguage($code);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function websiteLanguageCodes(): array
+    {
+        return array_values(array_unique(array_merge($this->enabledLanguageCodes(), $this->previewLanguageCodes())));
+    }
+
+    public function showsWebsiteIn(mixed $code): bool
+    {
+        return is_string($code) && in_array($code, $this->websiteLanguageCodes(), true);
+    }
+
+    /**
      * Faire collects from the retailer and pays us each order later, less its commission.
      */
     public function isFaire(): bool
