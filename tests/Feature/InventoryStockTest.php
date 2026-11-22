@@ -479,7 +479,7 @@ describe('packing change guard', function () {
             ->and($valuation['fifo'])->toEqualWithDelta(9.0533, 0.0001)
             ->and($valuation['wac'])->toEqualWithDelta(9.0533, 0.0001)
             ->and($valuation['fifo'] * 36)->toEqualWithDelta(325.92, 0.001)
-            ->and((float) $orgStock->sku_value)->toBe(9.05);
+            ->and((float) $orgStock->sku_value)->toBe(9.053333);
     });
 
     test('a packing change rescales the sko value by the change of the count', function (array $movements, float $expectedPerSku) {
@@ -535,6 +535,64 @@ describe('packing change guard', function () {
             ['shelf', OrgStockMovementTypeEnum::AUDIT, 500, ['audited_quantity' => 600]],
         ], 1.0],
     ]);
+
+    test('a revaluation sets the cost of the stock on hand and the stored stock value follows it', function () {
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+
+        $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $location = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        StoreLocationOrgStock::make()->action($orgStock, $location, []);
+
+        \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ])->update(['cost_per_sku' => 6, 'org_amount' => 60, 'date' => now()->subDays(3)]);
+
+        $revaluation = \App\Actions\Inventory\OrgStock\RevalueOrgStock::run($orgStock->refresh(), 1.5, now()->subDays(2), 'Priced at the old pack cost');
+
+        expect($revaluation->reason)->toBe(OrgStockMovementReasonEnum::REVALUATION)
+            ->and((float) $revaluation->quantity)->toBe(0.0)
+            ->and((float) $revaluation->org_amount)->toBe(-45.0)
+            ->and((float) $orgStock->refresh()->sku_value)->toBe(1.5)
+            ->and((float) $orgStock->value_in_locations)->toBe(15.0);
+
+        \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $location, [
+            'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+            'quantity' => 10,
+        ])->update(['cost_per_sku' => 2, 'org_amount' => 20, 'date' => now()->subDay()]);
+
+        $valuation = \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::make()->getValuationPerSku($orgStock->refresh(), now());
+        expect($valuation['fifo'])->toEqualWithDelta(1.75, 0.0001);
+
+        $orgStock->updateQuietly(['value_in_locations' => 999]);
+        \App\Actions\Inventory\OrgStock\Stock\CalculateOrgStockCurrentStockHistories::run($orgStock->id);
+
+        expect((float) $orgStock->refresh()->sku_value)->toBe(1.75)
+            ->and((float) $orgStock->value_in_locations)->toBe(35.0);
+    });
+
+    test('a packing change from the system converts the counts, a person can still keep them', function () {
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 6]]);
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        UpdateLocationOrgStock::make()->action($locationOrgStock, ['quantity' => 5]);
+
+        \App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits::run($orgStock->refresh(), [$tradeUnit->id => ['quantity' => 1]]);
+
+        expect((float) $locationOrgStock->refresh()->quantity)->toBe(30.0)
+            ->and(OrgStockMovement::where('org_stock_id', $orgStock->id)->where('reason', 'uom')->count())->toBe(1);
+
+        \App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits::run($orgStock->refresh(), [$tradeUnit->id => ['quantity' => 2]], 'keep');
+
+        expect((float) $locationOrgStock->refresh()->quantity)->toBe(30.0);
+    });
 
     test('group composition change asks the same question for every stocked warehouse and converts its counts', function () {
         $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));

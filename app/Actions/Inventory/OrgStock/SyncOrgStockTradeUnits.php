@@ -116,10 +116,12 @@ class SyncOrgStockTradeUnits
     }
 
     /**
-     * A pivot change re-means every stored location count. With $stockStrategy 'convert' and a
-     * packing that converts arithmetically, the counts are rescaled as zero-valued UOM audit
+     * A pivot change re-means every stored location count. Unless a person chose 'keep', a
+     * packing that converts arithmetically has its counts rescaled as zero-valued UOM audit
      * movements (the shelf and its value do not move, only the counting unit), keeping them as
-     * trustworthy as they were. Otherwise the numbers stay and stocked locations lose their
+     * trustworthy as they were. System callers (supplier product upload, repairs) pass no
+     * strategy: keeping their counts left the stock valued at the old pack price once someone
+     * recounted it in the new unit (HELP-4868). Otherwise the numbers stay and stocked locations lose their
      * audited status until someone counts the shelf again.
      */
     public function handle(OrgStock $orgStock, array $tradeUnitsData, ?string $stockStrategy = null, ?int $userId = null): OrgStock
@@ -129,7 +131,7 @@ class SyncOrgStockTradeUnits
         $packingChanges          = self::pivotChanges($orgStock, $tradeUnitsData);
         $reMeansStockedLocations = $stockedLocations->isNotEmpty() && $packingChanges;
 
-        $conversionRatio = $reMeansStockedLocations && $stockStrategy === 'convert'
+        $conversionRatio = $reMeansStockedLocations && $stockStrategy !== 'keep'
             ? self::conversionRatio($orgStock, $tradeUnitsData)
             : null;
 

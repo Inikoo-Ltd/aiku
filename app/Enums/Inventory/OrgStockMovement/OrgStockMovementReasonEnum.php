@@ -51,6 +51,7 @@ enum OrgStockMovementReasonEnum: string
     case MANUAL          = 'manual';
 
     case EMPTY_LOCATION  = 'empty_location';
+    case REVALUATION     = 'revaluation';
 
     public function label(): string
     {
@@ -88,6 +89,7 @@ enum OrgStockMovementReasonEnum: string
             self::DATA_FIX        => 'System Data Correction',
             self::MANUAL          => 'Manual Management Adjustment',
             self::EMPTY_LOCATION  => 'Removed automatically: empty location',
+            self::REVALUATION     => 'Stock revaluation',
         };
     }
 
@@ -118,6 +120,7 @@ enum OrgStockMovementReasonEnum: string
             self::BIN_ERROR,
             self::TRANSFER,
             self::EMPTY_LOCATION,
+            self::REVALUATION,
         ]);
     }
 
@@ -130,6 +133,7 @@ enum OrgStockMovementReasonEnum: string
             self::BIN_ERROR,
             self::TRANSFER,
             self::EMPTY_LOCATION,
+            self::REVALUATION,
         ]);
     }
 
@@ -167,6 +171,7 @@ enum OrgStockMovementReasonEnum: string
             self::DATA_FIX,
             self::MANUAL,
             self::EMPTY_LOCATION,
+            self::REVALUATION,
         ]);
     }
 

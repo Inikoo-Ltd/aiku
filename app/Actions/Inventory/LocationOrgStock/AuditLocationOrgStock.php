@@ -211,7 +211,7 @@ class AuditLocationOrgStock extends OrgAction
         return [
             'confirm_count_warning' => ['sometimes', 'boolean'],
             'quantity'              => ['required', 'numeric', 'gte:0'],
-            'reason'                => ['required', new Enum(OrgStockMovementReasonEnum::class)],
+            'reason'                => ['required', (new Enum(OrgStockMovementReasonEnum::class))->except([OrgStockMovementReasonEnum::REVALUATION])],
             'note'                  => ['sometimes', 'nullable', 'string'],
             'stock_movement_type'   => ['sometimes', new Enum(OrgStockMovementTypeEnum::class)],
             'batches'                 => ['sometimes', 'array'],

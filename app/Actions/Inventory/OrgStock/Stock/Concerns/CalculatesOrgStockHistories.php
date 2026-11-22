@@ -210,6 +210,11 @@ trait CalculatesOrgStockHistories
                 $state['layers'] = [];
             }
         }
+        if ($movement->reason == OrgStockMovementReasonEnum::REVALUATION) {
+            $this->applyRevaluation($state, (float)$movement->cost_per_sku);
+
+            return;
+        }
         if ($movement->type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
             $cost = $movement->cost_per_sku;
             if (!$cost && $movement->org_amount > 0) {
@@ -270,6 +275,20 @@ trait CalculatesOrgStockHistories
         if ($state['wac'] !== null) {
             $state['wac'] /= $countRatio;
         }
+    }
+
+    /**
+     * A revaluation corrects what the stock on hand is worth without moving any of it: every
+     * unit then costs the given price (RevalueOrgStock, HELP-4868).
+     */
+    protected function applyRevaluation(array &$state, float $costPerSku): void
+    {
+        if ($costPerSku <= 0) {
+            return;
+        }
+
+        $state['layers'] = $state['onHand'] > 0 ? [[$state['onHand'], $costPerSku]] : [];
+        $state['wac']    = $costPerSku;
     }
 
     protected function consumeFifoLayers(array &$layers, float $quantity): void

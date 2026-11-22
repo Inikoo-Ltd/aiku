@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\Stock;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrganisationStockHistory\Hydrators\OrganisationStockHistoryHydrateFromOrgStockHistories;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateStockValue;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
@@ -239,6 +240,7 @@ class CalculateOrgStockCurrentStockHistories implements ShouldBeUnique
             $orgStock->update($costFields);
         }
 
+        OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateStockValue::run($orgStock);
     }
 

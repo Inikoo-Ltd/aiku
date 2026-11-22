@@ -28,8 +28,8 @@ class SyncStockTradeUnits
 
     /**
      * $stockStrategy says what the counts stored in each warehouse mean under the new packing:
-     * 'convert' rescales them where the packing converts arithmetically, anything else keeps them
-     * and flags the locations for a recount.
+     * 'keep' leaves them and flags the locations for a recount; anything else (including no strategy,
+     * from system callers) rescales them where the packing converts arithmetically.
      */
     public function handle(Stock $stock, array $tradeUnitsData, ?string $stockStrategy = null, ?int $userId = null): Stock
     {
