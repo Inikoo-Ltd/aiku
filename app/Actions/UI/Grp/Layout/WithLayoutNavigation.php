@@ -12,6 +12,8 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Accounting\ReceivedEInvoice;
+use Illuminate\Support\Arr;
 
 trait WithLayoutNavigation
 {
@@ -169,6 +171,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ],
+                        ...(Arr::get($organisation->settings, 'e_invoicing.countries') || ReceivedEInvoice::where('organisation_id', $organisation->id)->exists() ? [[
+                            'label' => __('E-invoices received'),
+                            'icon'  => ['fal', 'fa-inbox-in'],
+                            'root'  => 'grp.org.accounting.received_e_invoices.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.received_e_invoices.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ]] : []),
                         [
                             'label' => __('Profit and loss'),
                             'icon'  => ['fal', 'fa-balance-scale'],

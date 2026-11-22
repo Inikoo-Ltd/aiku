@@ -86,6 +86,11 @@ Route::prefix('receivables')->as('receivables.')->group(function () {
     }
 });
 Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
+Route::prefix('e-invoices-received')->as('received_e_invoices.')->group(function () {
+    Route::get('/', App\Actions\Accounting\EInvoice\UI\IndexReceivedEInvoices::class)->name('index');
+    Route::get('/{receivedEInvoice:id}/xml', [App\Actions\Accounting\EInvoice\UI\DownloadReceivedEInvoiceFile::class, 'xml'])->name('xml')->withoutScopedBindings();
+    Route::get('/{receivedEInvoice:id}/pdf', [App\Actions\Accounting\EInvoice\UI\DownloadReceivedEInvoiceFile::class, 'pdf'])->name('pdf')->withoutScopedBindings();
+});
 
 
 
