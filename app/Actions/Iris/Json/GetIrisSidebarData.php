@@ -3,6 +3,7 @@
 namespace App\Actions\Iris\Json;
 
 use App\Helpers\WebsiteLanguage;
+use App\Helpers\WebsiteTexts;
 use Throwable;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -39,7 +40,7 @@ class GetIrisSidebarData
 
             return [
                 'sidebar' => array_merge(
-                    $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
+                    $isSidebarActive == 'active' ? WebsiteTexts::forVisitor($website->id, Arr::get($website->published_layout, 'sidebar', [])) : [],
                     ['product_categories' => $irisProductCategoryNavigation]
                 )
             ];

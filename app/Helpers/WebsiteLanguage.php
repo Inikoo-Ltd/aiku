@@ -60,11 +60,16 @@ final class WebsiteLanguage
     {
         $text = $webpage->getAttribute($field);
 
-        if (!$text || !self::translateTo() || !($model = $webpage->model) || $text !== $model->getAttribute('name')) {
+        if (!$text || !self::translateTo()) {
             return $text;
         }
 
-        return self::text($model, 'name');
+        $model = $webpage->model;
+        if ($model && $text === $model->getAttribute('name')) {
+            return self::text($model, 'name');
+        }
+
+        return WebsiteTexts::textForVisitor($webpage->website_id, $text);
     }
 
     /**

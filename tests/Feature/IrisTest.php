@@ -1895,3 +1895,116 @@ test('language readiness counts active products with a name and a description pe
         ->and($rows[0]['code'])->toBe($this->shop->language->code)
         ->and($rows[0]['names'])->toBeGreaterThanOrEqual(1);
 });
+
+afterEach(function () {
+    request()->attributes->remove('website_translation_locale');
+});
+
+test('website texts typed into layouts are collected without links, styles, scripts or catalogue data, and shown translated string by string (INI-510)', function () {
+    $layout = ['web_blocks' => [
+        ['type' => 'text', 'web_block' => ['layout' => ['data' => ['fieldValue' => [
+            'value'     => '<h2>Shop by Departments</h2>',
+            'container' => ['properties' => ['background' => ['color' => 'rgb(1, 2, 3)'], 'text' => 'Ignored']],
+        ]]]]],
+        ['type' => 'images', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['value' => ['images' => [
+            ['caption' => 'Aromatherapy', 'source' => ['original' => 'https://media.aiku.io/x'], 'link_data' => ['data' => ['title' => 'Link title']], 'properties' => ['alt' => 'Ignored']],
+        ]]]]]]],
+        ['type' => 'text', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['value' => ['desktop' => '<p>Wide text</p>', 'mobile' => null]]]]]],
+        ['type' => 'script', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['value' => '<script>var words = "no way";</script>']]]]],
+        ['type' => 'product-1', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['product' => ['name' => 'Lavender oil'], 'settings' => ['title' => 'Other family']]]]]],
+    ]];
+    $header = ['header' => ['name' => 'Header template', 'data' => ['fieldValue' => ['logo' => ['alt' => 'AW Dropship'], 'image' => 'photo.jpg']]], 'topBar' => ['data' => ['fieldValue' => [
+        'cart' => ['text' => '{{ cart_count }} items', 'visible' => 'login'],
+        'link' => 'https://example.com',
+    ]]]];
+
+    expect(array_values(\App\Helpers\WebsiteTexts::collect($layout)))->toBe(['<h2>Shop by Departments</h2>', 'Aromatherapy', '<p>Wide text</p>'])
+        ->and(array_values(\App\Helpers\WebsiteTexts::collect($header)))->toBe(['AW Dropship', '{{ cart_count }} items']);
+
+    [$otherCode] = otherLanguageCodes($this->shop);
+    \App\Models\Web\WebsiteTextTranslation::create([
+        'website_id' => $this->website->id, 'locale' => $otherCode, 'source_hash' => sha1('Aromatherapy'),
+        'source_text' => 'Aromatherapy', 'text' => 'Aromatherapie', 'origin' => 'human',
+    ]);
+
+    expect(\App\Helpers\WebsiteTexts::forVisitor($this->website->id, $layout))->toBe($layout);
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $otherCode);
+    $translated = \App\Helpers\WebsiteTexts::forVisitor($this->website->id, $layout);
+
+    expect(data_get($translated, 'web_blocks.1.web_block.layout.data.fieldValue.value.images.0.caption'))->toBe('Aromatherapie')
+        ->and(data_get($translated, 'web_blocks.0.web_block.layout.data.fieldValue.value'))->toBe('<h2>Shop by Departments</h2>')
+        ->and(\App\Actions\Iris\Json\GetIrisFooterData::cacheKey($this->website->id, $otherCode))->toBe('irisData:website:'.$this->website->id.':footer:'.$otherCode)
+        ->and(\App\Actions\Iris\Json\GetIrisFooterData::cacheKey($this->website->id, null))->toBe('irisData:website:'.$this->website->id.':footer');
+
+    $webpage = new Webpage(['title' => 'Aromatherapy', 'description' => 'Not translated yet']);
+    $webpage->website_id = $this->website->id;
+    expect(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'title'))->toBe('Aromatherapie')
+        ->and(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'description'))->toBe('Not translated yet');
+
+    $page = $this->website->webpages()->whereNull('model_id')->firstOrFail();
+    $page->update(['title' => 'Aromatherapy', 'published_layout' => ['web_blocks' => [
+        ['type' => 'text', 'show' => true, 'visibility' => ['in' => true, 'out' => true], 'web_block' => ['layout' => ['data' => ['fieldValue' => ['value' => 'Aromatherapy']]]]],
+    ]]]);
+    $rendered = \App\Actions\Web\Webpage\Iris\ShowIrisWebpage::make()->getWebpageData($page->id, [], false);
+
+    expect(data_get($rendered, 'web_blocks.0.web_block.layout.data.fieldValue.value'))->toBe('Aromatherapie')
+        ->and($rendered['webpage_data']['title'])->toContain('Aromatherapie');
+
+    request()->attributes->remove('website_translation_locale');
+});
+
+test('website texts are machine translated only when new, never over an existing translation, and a broken translation is left out (INI-510)', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    $website = $this->website;
+    \App\Actions\Web\Website\TranslateWebsiteTexts::make()->handle($website);
+    expect(\App\Models\Web\WebsiteTextTranslation::where('website_id', $website->id)->count())->toBe(0);
+
+    enableShopLanguages($this->shop, [$this->shop->language->code, $otherCode]);
+    $website = $website->fresh();
+    $published = $website->published_layout ?? [];
+    $published['footer'] = ['status' => 'active', 'data' => ['fieldValue' => ['columns' => [
+        ['name' => 'Customer Service'], ['name' => '<a href="https://x.test/delivery">Delivery</a>'], ['name' => 'Human column'],
+        ['name' => '<!-- hero --><p class="x">Hello <img src="a.jpg?a=1&amp;b=2" alt="Oils"></p><style>.x{}</style>'],
+    ]]]];
+    $website->update(['published_layout' => $published]);
+
+    \App\Models\Web\WebsiteTextTranslation::create([
+        'website_id' => $website->id, 'locale' => $otherCode, 'source_hash' => sha1('Human column'),
+        'source_text' => 'Human column', 'text' => 'Written by a person', 'origin' => 'human',
+    ]);
+
+    \App\Actions\Helpers\Translations\Translate::mock()->shouldReceive('many')->once()
+        ->andReturnUsing(fn (array $texts) => array_map(fn (string $text) => match (true) {
+            str_contains($text, '<a') => 'Lieferung',
+            str_contains($text, 'Hello') => str_replace(['Hello', 'Oils'], ['Hallo', 'Öle'], $text),
+            default => 'DE '.$text,
+        }, $texts));
+
+    $stats = \App\Actions\Web\Website\TranslateWebsiteTexts::make()->handle($website, marginal: 'footer');
+    $rows  = \App\Models\Web\WebsiteTextTranslation::where('website_id', $website->id)->where('locale', $otherCode)->pluck('text', 'source_text')->all();
+
+    expect($stats[$otherCode])->toBe(['texts' => 4, 'missing' => 3, 'written' => 2])
+        ->and($rows['Human column'])->toBe('Written by a person')
+        ->and($rows['Customer Service'])->toBe('DE Customer Service')
+        ->and($rows['<!-- hero --><p class="x">Hello <img src="a.jpg?a=1&amp;b=2" alt="Oils"></p><style>.x{}</style>'])->toBe('<!-- hero --><p class="x">Hallo <img src="a.jpg?a=1&amp;b=2" alt="Öle"></p><style>.x{}</style>')
+        ->and(\App\Helpers\WebsiteTexts::mask('<p class="x">Hi</p><script>a()</script>')[0])->toBe('<p data-k="1">Hi</p><!--aiku-keep-0-->')
+        ->and(\App\Helpers\WebsiteTexts::mask('<span title="a > b" class="x">Hi</span>')[0])->toBe('<span data-k="0" title="a > b">Hi</span>')
+        ->and(\App\Helpers\WebsiteTexts::unmask('<div data-k="0" title="Jetzt">x</div>', ['<div data-title="Sale" title="Sale now">']))->toBe('<div data-title="Sale" title="Jetzt">x</div>')
+        ->and(\App\Helpers\WebsiteTexts::nestsLike('<b><i>x</i></b><img data-k="1">', '<b><i>x</b></i>'))->toBeFalse()
+        ->and(\App\Helpers\WebsiteTexts::nestsLike('<b><i>x</i></b><br>', '<i>y</i><b>x</b><br>'))->toBeTrue()
+        ->and(\App\Helpers\WebsiteTexts::pieces(str_repeat('<p>Some words</p>', 10), 40))->toHaveCount(5)
+        ->and(implode('', \App\Helpers\WebsiteTexts::pieces(str_repeat('<p>Some words</p>', 10), 40)))->toBe(str_repeat('<p>Some words</p>', 10))
+        ->and(\App\Helpers\WebsiteTexts::isWords('iris.catalogue.feeds.download_img'))->toBeFalse()
+        ->and(\App\Helpers\WebsiteTexts::isWords('{{ favourites_count }}'))->toBeFalse();
+
+    \App\Actions\Helpers\Translations\Translate::mock()->shouldNotReceive('many');
+    $stats = \App\Actions\Web\Website\TranslateWebsiteTexts::make()->handle($website, marginal: 'footer', dryRun: true);
+    expect($stats[$otherCode]['missing'])->toBe(1);
+
+    Queue::fake();
+    \App\Actions\Web\Website\TranslateWebsiteTexts::dispatchIfTranslated($website);
+    Queue::assertPushedOn('low-priority', \App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Web\Website\TranslateWebsiteTexts);
+
+    enableShopLanguages($this->shop, null);
+});

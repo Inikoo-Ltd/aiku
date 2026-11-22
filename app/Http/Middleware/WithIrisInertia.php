@@ -11,6 +11,7 @@ namespace App\Http\Middleware;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Http\Resources\Helpers\LanguageResource;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
@@ -79,9 +80,9 @@ trait WithIrisInertia
 
             return [
                 'header'               => $isHeaderActive == 'active'
-                    ? $this->resizeHeaderLogo(Arr::get($website->published_layout, 'header', []))
+                    ? $this->resizeHeaderLogo(WebsiteTexts::forVisitor($website->id, Arr::get($website->published_layout, 'header', [])))
                     : [],
-                'menu'                 => $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
+                'menu'                 => $isMenuActive == 'active' ? WebsiteTexts::forVisitor($website->id, Arr::get($website->published_layout, 'menu')) : [],
                 'shop'                 => [
                     'type'                  => $shop->type->value,
                     'id'                    => $shop->id,

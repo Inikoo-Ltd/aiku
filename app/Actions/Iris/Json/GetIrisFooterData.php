@@ -11,6 +11,8 @@ namespace App\Actions\Iris\Json;
 use Throwable;
 use App\Actions\Web\MakeLayoutLinksRootRelative;
 use App\Actions\Web\RefreshGrpAssetUrls;
+use App\Helpers\WebsiteLanguage;
+use App\Helpers\WebsiteTexts;
 use App\Models\DevOps\AppDeployment;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -34,7 +36,7 @@ class GetIrisFooterData
             ]);
         }
 
-        $cacheKey = "irisData:website:$website->id:footer";
+        $cacheKey = self::cacheKey($website->id, WebsiteLanguage::translateTo());
         $ttl      = config('iris.cache.iris_website_data_ttl');
 
 
@@ -45,7 +47,7 @@ class GetIrisFooterData
             return [
                 'footer' => MakeLayoutLinksRootRelative::run(
                     RefreshGrpAssetUrls::run(
-                        $isFooterActive == 'active' ? Arr::get($website->published_layout, 'footer') : [],
+                        $isFooterActive == 'active' ? WebsiteTexts::forVisitor($website->id, Arr::get($website->published_layout, 'footer')) : [],
                     )
                 ),
             ];
@@ -63,4 +65,11 @@ class GetIrisFooterData
         return response()->json($data);
     }
 
+    /**
+     * The shop's own language keeps the key it always had.
+     */
+    public static function cacheKey(int $websiteId, ?string $translateTo): string
+    {
+        return "irisData:website:$websiteId:footer".($translateTo ? ":$translateTo" : '');
+    }
 }

@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
+use App\Actions\Web\Website\TranslateWebsiteTexts;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\Snapshot;
@@ -117,6 +118,7 @@ class PublishWebpage extends OrgAction
         UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);
         BreakWebpageCache::run($webpage);
         BreakBlogListingsCache::run($webpage);
+        TranslateWebsiteTexts::dispatchIfTranslated($webpage->website, $webpage);
         $this->expireUntilPublishGrant($webpage, Arr::get($modelData, 'publisher_id'));
         AskWebEditorsToReviewWebpage::make()->tickPublished($webpage);
 

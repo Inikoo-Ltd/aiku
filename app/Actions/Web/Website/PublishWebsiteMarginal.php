@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\Helpers\ClearCacheByWildcard;
+use App\Actions\Iris\Json\GetIrisFooterData;
 use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
@@ -151,7 +152,7 @@ class PublishWebsiteMarginal extends OrgAction
 
         if ($marginal == 'footer') {
             Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
-            Cache::forget("irisData:website:$website->id:footer");
+            ClearCacheByWildcard::run(GetIrisFooterData::cacheKey($website->id, null).'*');
         } elseif ($marginal == 'sidebar') {
             Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
             ClearCacheByWildcard::run(GetIrisSidebarData::cacheKey($website->id, null).'*');
@@ -159,6 +160,7 @@ class PublishWebsiteMarginal extends OrgAction
             BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
             PurgeCloudflareWebsitePages::purgeNow($website);
         }
+        TranslateWebsiteTexts::dispatchIfTranslated($website, marginal: $marginal);
 
 
         if ($customAudit && $oldLayout) {

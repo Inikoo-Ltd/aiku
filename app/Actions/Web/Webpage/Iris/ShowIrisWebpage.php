@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Helpers\WebsiteLanguage;
+use App\Helpers\WebsiteTexts;
 use App\Actions\Web\WebsiteNotFoundPath\RecordWebsiteNotFoundHit;
 use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\RefreshGrpAssetUrls;
@@ -103,7 +104,7 @@ class ShowIrisWebpage
 
         $webBlocks = HideRetailPricesFromIrisVisitors::resolved($this->getIrisWebBlocks(
             webpage: $webpage,
-            webBlocks: Arr::get($webpage->published_layout, 'web_blocks', []),
+            webBlocks: WebsiteTexts::forVisitor($webpage->website_id, Arr::get($webpage->published_layout, 'web_blocks', [])),
             isLoggedIn: $loggedIn
         ));
 
@@ -129,7 +130,7 @@ class ShowIrisWebpage
                 'seo_data'      => $webpage->seo_data,
                 'seo_image_alt' => $this->getWebpageShareImageAlt($webpage),
                 'title'         => $title,
-                'description'   => $webpage->description,
+                'description'   => WebsiteLanguage::webpageText($webpage, 'description'),
                 'canonical_url' => $webpage->canonical_url,
                 'hreflang'      => GetWebpageHreflangAlternates::run($webpage),
                 'type'          => $webpage->type,
