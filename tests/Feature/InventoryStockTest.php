@@ -482,6 +482,60 @@ describe('packing change guard', function () {
             ->and((float) $orgStock->sku_value)->toBe(9.05);
     });
 
+    test('a packing change rescales the sko value by the change of the count', function (array $movements, float $expectedPerSku) {
+        $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+
+        $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->refresh()->unsetRelation('organisation');
+
+        $warehouse = createWarehouse();
+        $locations = [
+            'production' => StoreLocation::make()->action($warehouse, Location::factory()->definition()),
+            'shelf'      => StoreLocation::make()->action($warehouse, Location::factory()->definition()),
+        ];
+
+        foreach ($movements as $order => [$location, $type, $quantity, $fix]) {
+            $data = ['type' => $type->value, 'quantity' => $quantity];
+            if ($type === OrgStockMovementTypeEnum::AUDIT) {
+                $data += ['reason' => OrgStockMovementReasonEnum::UOM, 'audited_quantity' => $fix['audited_quantity'], 'org_amount' => 0];
+                $fix  = [];
+            }
+            \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $locations[$location], $data)
+                ->update(array_merge($fix, ['date' => now()->subDays(20 - $order)]));
+        }
+
+        $valuation = \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::make()->getValuationPerSku($orgStock->refresh(), now());
+
+        expect($valuation['fifo'])->toEqualWithDelta($expectedPerSku, 0.0001)
+            ->and($valuation['wac'])->toEqualWithDelta($expectedPerSku, 0.0001);
+    })->with([
+        'a negative location converted first' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60]],
+            ['production', OrgStockMovementTypeEnum::CONSUMPTION, -3, ['org_amount' => -18]],
+            ['production', OrgStockMovementTypeEnum::AUDIT, -15, ['audited_quantity' => -18]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, 50, ['audited_quantity' => 60]],
+        ], 1.0],
+        'a running count that differs from the shelves' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60]],
+            ['production', OrgStockMovementTypeEnum::CONSUMPTION, -3, ['org_amount' => -18]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, 50, ['audited_quantity' => 60]],
+        ], 1.0],
+        'a change that leaves nothing on hand, then a found and a purchase' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, -10, ['audited_quantity' => 0]],
+            ['shelf', OrgStockMovementTypeEnum::FOUND, 5, ['org_amount' => 30]],
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 100, ['cost_per_sku' => 2, 'org_amount' => 200]],
+        ], 230 / 105],
+        'an uncosted purchase and a negative location converted first' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 40, ['cost_per_sku' => 6, 'org_amount' => 240]],
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 60, ['cost_per_sku' => null, 'org_amount' => 0]],
+            ['production', OrgStockMovementTypeEnum::CONSUMPTION, -30, ['org_amount' => -180]],
+            ['production', OrgStockMovementTypeEnum::AUDIT, -150, ['audited_quantity' => -180]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, 500, ['audited_quantity' => 600]],
+        ], 1.0],
+    ]);
+
     test('group composition change asks the same question for every stocked warehouse and converts its counts', function () {
         $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
         $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
