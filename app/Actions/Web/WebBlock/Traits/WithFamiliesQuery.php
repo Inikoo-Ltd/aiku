@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Traits;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Catalogue\ProductCategory\WithFamiliesFromParentCollections;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -31,7 +32,7 @@ trait WithFamiliesQuery
                 'product_categories.code',
                 'product_categories.web_images',
                 'product_categories.offers_data',
-                'name',
+                WebsiteLanguage::column('product_categories.name'),
                 'image_id',
                 'webpages.url',
                 'webpages.canonical_url',
@@ -79,7 +80,7 @@ trait WithFamiliesQuery
                     !$useCuratedOrder,
                     fn ($query) => $query->leftJoinSub($yearlySalesSubquery, 'yearly_sales', 'yearly_sales.product_category_id', '=', 'product_categories.id')
                 )
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
+                ->select(['product_categories.code', WebsiteLanguage::column('product_categories.name'), 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id);
         }

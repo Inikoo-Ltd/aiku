@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Web\WebsiteNotFoundPath\RecordWebsiteNotFoundHit;
 use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Web\RefreshGrpAssetUrls;
@@ -631,7 +632,7 @@ class ShowIrisWebpage
             }
 
             return [
-                'label' => $sibling->name,
+                'label' => WebsiteLanguage::text($sibling, 'name'),
                 'url'   => $this->getEnvironmentUrl($siblingWebpage->canonical_url),
             ];
         }

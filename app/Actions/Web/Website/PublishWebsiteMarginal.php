@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Iris\Json\GetIrisSidebarData;
 use App\Actions\Helpers\Deployment\StoreDeployment;
 use App\Actions\Helpers\Snapshot\StoreWebsiteSnapshot;
 use App\Actions\Helpers\Snapshot\UpdateSnapshot;
@@ -152,7 +153,9 @@ class PublishWebsiteMarginal extends OrgAction
             Cache::forget("irisData:website:$website->id:footer");
         } elseif ($marginal == 'sidebar') {
             Cache::forget(config('iris.cache.website.prefix').'_domain:'.$website->domain);
-            Cache::forget("irisData:website:$website->id:sideBar");
+            foreach ($website->shop->websiteLanguageCodes() as $locale) {
+                Cache::forget(GetIrisSidebarData::cacheKey($website->id, $locale === $website->shop->language->code ? null : $locale));
+            }
         } else {
             BreakWebsiteCache::run($website, CrawlTriggerEnum::WEBSITE_UPDATE);
             PurgeCloudflareWebsitePages::purgeNow($website);

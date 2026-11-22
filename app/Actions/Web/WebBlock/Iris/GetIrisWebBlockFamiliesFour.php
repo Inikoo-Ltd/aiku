@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Web\WebBlock\Concerns\HasSubDepartmentsThree;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -39,7 +40,7 @@ class GetIrisWebBlockFamiliesFour
             'name' => $productCategory->name,
             'type' => $productCategory->type,
         ]);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $productCategory->name);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', WebsiteLanguage::text($productCategory, 'name'));
 
         return [
             'type' => $webBlock['type'],

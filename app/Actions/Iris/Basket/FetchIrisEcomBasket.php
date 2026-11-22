@@ -8,6 +8,7 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Catalogue\Product\Json\WithVariantColumns;
 use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Traits\HasBasketDetails;
@@ -164,7 +165,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'gross_amount',
                 'products.url',
                 'products.id as product_id',
-                'products.name',
+                WebsiteLanguage::column('products.name'),
                 'products.units',
                 'products.unit',
                 'products.code',

@@ -17,6 +17,7 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasCardWebImages;
 use Illuminate\Support\Arr;
+use App\Helpers\WebsiteLanguage;
 
 class WebBlockFamilyResource extends JsonResource
 {
@@ -34,10 +35,10 @@ class WebBlockFamilyResource extends JsonResource
         return [
             'slug'                      => $family->slug,
             'code'                      => $family->code,
-            'name'                      => $family->name,
-            'description'               => $family->description,
-            'description_title'         => $family->description_title,
-            'description_extra'         => $family->description_extra,
+            'name'                      => WebsiteLanguage::text($family, 'name'),
+            'description'               => WebsiteLanguage::text($family, 'description'),
+            'description_title'         => WebsiteLanguage::text($family, 'description_title'),
+            'description_extra'         => WebsiteLanguage::text($family, 'description_extra'),
             'id'                        => $family->id,
             'description_image'         => collect(Arr::get($family->web_images, 'description', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'description_video'         => $family->desc_video_url,

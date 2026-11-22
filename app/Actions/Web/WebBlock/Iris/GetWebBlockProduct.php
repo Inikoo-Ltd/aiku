@@ -19,6 +19,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Models\Catalogue\Variant;
+use App\Helpers\WebsiteLanguage;
 use Illuminate\Support\Arr;
 
 class GetWebBlockProduct
@@ -49,7 +50,7 @@ class GetWebBlockProduct
         $webPublishedLayout = $webpage->website->published_layout;
 
         $tabs = [
-            'description'       => $product->description,
+            'description'       => WebsiteLanguage::text($product, 'description'),
             'marketing_material_route'  => [
                 'name'          => 'iris.catalogue.feeds.product.download_img',
                 'parameters'    => [

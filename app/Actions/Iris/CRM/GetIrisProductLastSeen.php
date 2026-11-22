@@ -2,6 +2,7 @@
 
 namespace App\Actions\Iris\CRM;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\IrisAction;
 use App\Http\Resources\Catalogue\IrisProductLastSeenResource;
 use App\Models\Catalogue\Product;
@@ -40,7 +41,7 @@ class GetIrisProductLastSeen extends IrisAction
         $queryBuilder->select([
             'product_last_seens.id',
             'products.code',
-            'products.name',
+            WebsiteLanguage::column('products.name'),
             'products.available_quantity',
             'products.price',
             'products.rrp',

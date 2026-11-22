@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\IrisAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
@@ -95,7 +96,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     private function getShopCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('transactions')
-            ->selectRaw('DISTINCT ON (products.id, transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, transactions.date as submitted_at')
+            ->selectRaw('DISTINCT ON (products.id, transactions.date::date) products.id as product_id, products.code, '.WebsiteLanguage::sql('products.name').', products.web_images, webpages.canonical_url, transactions.date as submitted_at')
             ->join('products', 'transactions.model_id', '=', 'products.id')
             ->join('webpages', 'products.webpage_id', '=', 'webpages.id')
             ->where('transactions.model_type', 'Product')
@@ -110,7 +111,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     private function getMasterShopCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('invoice_transactions')
-            ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
+            ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, '.WebsiteLanguage::sql('products.name').', products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
             ->join('products', function ($join) use ($productCategory) {
                 $join->on('products.master_product_id', '=', 'invoice_transactions.master_asset_id')
                     ->where('products.shop_id', $productCategory->shop_id);
@@ -132,7 +133,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     private function getGroupCandidates(ProductCategory $productCategory, ?int $ignoredProductId): Collection
     {
         $query = DB::table('invoice_transactions')
-            ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, products.name, products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
+            ->selectRaw('DISTINCT ON (products.id, invoice_transactions.date::date) products.id as product_id, products.code, '.WebsiteLanguage::sql('products.name').', products.web_images, webpages.canonical_url, invoice_transactions.date as submitted_at')
             ->join('model_has_trade_units as seller_trade_units', function ($join) {
                 $join->on('seller_trade_units.model_id', '=', 'invoice_transactions.master_asset_id')
                     ->where('seller_trade_units.model_type', 'MasterAsset');

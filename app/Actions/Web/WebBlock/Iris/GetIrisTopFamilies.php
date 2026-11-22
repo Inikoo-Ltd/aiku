@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
@@ -36,7 +37,7 @@ class GetIrisTopFamilies
             ->get();
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->resolve());
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $productCategory->name);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', WebsiteLanguage::text($productCategory, 'name'));
 
         return [
             'type' => $webBlock['type'],

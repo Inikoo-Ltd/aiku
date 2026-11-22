@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -265,7 +266,7 @@ class GetIrisProductTrends extends IrisAction
         )->select([
             'products.id',
             'products.code',
-            'products.name',
+            WebsiteLanguage::column('products.name'),
             'products.available_quantity',
             'products.price',
             'products.rrp',

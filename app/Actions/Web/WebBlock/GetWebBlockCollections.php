@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Helpers\WebsiteLanguage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Models\Web\Webpage;
@@ -46,7 +47,7 @@ class GetWebBlockCollections
             ->where('webpages.state', WebpageStateEnum::LIVE->value)
             ->where('model_has_collections.model_id', $webpage->model_id)
             ->where('model_has_collections.model_type', $webpage->model_type)
-            ->select(['collections.slug', 'collections.code', 'collections.name', 'collections.description', 'collections.image_id', 'collections.web_images','webpages.title as title', 'webpages.canonical_url as canonical_url', 'webpages.url as url'])
+            ->select(['collections.slug', 'collections.code', WebsiteLanguage::column('collections.name'), WebsiteLanguage::column('collections.description'), 'collections.image_id', 'collections.web_images','webpages.title as title', 'webpages.canonical_url as canonical_url', 'webpages.url as url'])
             ->whereNull('collections.deleted_at')
             ->get();
     }

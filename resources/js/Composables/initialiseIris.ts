@@ -7,12 +7,15 @@
 
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { router, usePage } from "@inertiajs/vue3"
+import axios from "axios"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
 import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
 
+
+let isJsonLocaleInterceptorAdded = false
 
 export const initialiseIrisApp = () => {
     const layout = useIrisLayoutStore()
@@ -36,6 +39,28 @@ export const initialiseIrisApp = () => {
             visitUrl.searchParams.set('locale', chosenLocale)
         }
     })
+
+    if (!isJsonLocaleInterceptorAdded) {
+        isJsonLocaleInterceptorAdded = true
+        axios.interceptors.request.use((config) => {
+            const chosenLocale = layout.iris?.locale
+            if (typeof window === 'undefined' || !chosenLocale || chosenLocale === layout.iris?.website_i18n?.shop_language?.code) {
+                return config
+            }
+
+            const requestUrl = new URL(config.url ?? '', window.location.origin)
+            if (
+                requestUrl.origin === window.location.origin
+                && requestUrl.pathname.startsWith('/json')
+                && !requestUrl.searchParams.has('locale')
+                && !config.params?.locale
+            ) {
+                config.params = { ...(config.params ?? {}), locale: chosenLocale }
+            }
+
+            return config
+        })
+    }
 
     router.on('navigate', (event) => {
         setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)

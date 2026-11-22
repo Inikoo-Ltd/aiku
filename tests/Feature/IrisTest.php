@@ -1600,6 +1600,49 @@ test('language switch saves the web user language, only enabled ones once the li
     enableShopLanguages($this->shop, null);
 });
 
+test('a website visitor in another language gets the translated product and category texts, field by field, and nobody else does', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    DB::table('products')->where('id', $product->id)->update([
+        'name'           => 'Lavender oil',
+        'description'    => 'Shop description',
+        'name_i8n'       => json_encode([$otherCode => 'Lavendelöl']),
+        'description_i8n' => json_encode([$otherCode => '<p> </p>']),
+    ]);
+    DB::table('product_categories')->where('id', $family->id)->update([
+        'name'     => 'Essential oils',
+        'name_i8n' => json_encode([$otherCode => 'Ätherische Öle']),
+    ]);
+    $product = $product->fresh();
+    $family  = $family->fresh();
+
+    $productName = fn () => DB::table('products')->where('id', $product->id)->select(\App\Helpers\WebsiteLanguage::column('products.name'))->value('name');
+
+    expect(\App\Helpers\WebsiteLanguage::translateTo())->toBeNull()
+        ->and(\App\Helpers\WebsiteLanguage::text($product, 'name'))->toBe('Lavender oil')
+        ->and($productName())->toBe('Lavender oil')
+        ->and(\App\Actions\Iris\Json\GetIrisSidebarData::cacheKey($this->website->id, null))->toBe('irisData:website:'.$this->website->id.':sideBar');
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $this->shop->language->code);
+    expect(\App\Helpers\WebsiteLanguage::translateTo())->toBeNull();
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $otherCode);
+    $resource = \App\Http\Resources\Web\WebBlockProductResource::make($product)->toArray(request());
+
+    expect(\App\Helpers\WebsiteLanguage::translateTo())->toBe($otherCode)
+        ->and(\App\Helpers\WebsiteLanguage::text($product, 'name'))->toBe('Lavendelöl')
+        ->and(\App\Helpers\WebsiteLanguage::text($product, 'description'))->toBe('Shop description')
+        ->and(\App\Helpers\WebsiteLanguage::text($family, 'name'))->toBe('Ätherische Öle')
+        ->and($resource['name'])->toBe('Lavendelöl')
+        ->and($resource['description'])->toBe('Shop description')
+        ->and($productName())->toBe('Lavendelöl')
+        ->and(\App\Actions\Iris\Json\GetIrisSidebarData::cacheKey($this->website->id, $otherCode))->toBe('irisData:website:'.$this->website->id.':sideBar:'.$otherCode);
+
+    request()->attributes->remove('website_translation_locale');
+});
+
 test('preview languages work in the website address and for staff customers, never in the language switch or for other customers', function () {
     Http::fake();
     [$previewCode, $otherCode] = otherLanguageCodes($this->shop);

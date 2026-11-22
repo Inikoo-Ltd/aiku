@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Traits;
 
+use App\Helpers\WebsiteLanguage;
 use App\Enums\Catalogue\Product\ProductBadgeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -42,7 +43,7 @@ trait WithNewInFamiliesQuery
                 $join->on('product_categories.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'ProductCategory');
             })
-            ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
+            ->select(['product_categories.code', WebsiteLanguage::column('product_categories.name'), 'product_categories.image_id', 'product_categories.web_images', 'product_categories.offers_data', 'webpages.url', 'webpages.canonical_url', 'title'])
             ->selectRaw('\''.request()->path().'\' as parent_url')
             ->where('product_categories.shop_id', $webpage->shop_id)
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)

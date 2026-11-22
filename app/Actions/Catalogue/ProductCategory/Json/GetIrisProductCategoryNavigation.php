@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Models\Web\Website;
@@ -30,7 +31,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ])
             ->whereNotNull('webpage_id')
             ->whereNull('deleted_at')
-            ->select('id', 'name', 'url')
+            ->select('id', WebsiteLanguage::column('name'), 'url')
             ->get();
 
         foreach ($departments as $department) {
@@ -41,7 +42,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ->where('model_has_collections.type', 'department')
                 ->join('collections', 'collections.id', '=', 'model_has_collections.collection_id')
                 ->join('webpages', 'webpages.id', '=', 'collections.webpage_id')
-                ->select('collections.id', 'collections.name', 'webpages.url')
+                ->select('collections.id', WebsiteLanguage::column('collections.name'), 'webpages.url')
                 ->limit(10)
                 ->get();
 
@@ -74,7 +75,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ])
                 ->whereNotNull('webpage_id')
                 ->whereNull('deleted_at')
-                ->select('id', 'name', 'url')
+                ->select('id', WebsiteLanguage::column('name'), 'url')
                 ->limit(10)
                 ->get();
 
@@ -86,7 +87,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                     ->where('model_has_collections.type', 'sub_department')
                     ->join('collections', 'collections.id', '=', 'model_has_collections.collection_id')
                     ->join('webpages', 'webpages.id', '=', 'collections.webpage_id')
-                    ->select('collections.id', 'collections.name', 'webpages.url')
+                    ->select('collections.id', WebsiteLanguage::column('collections.name'), 'webpages.url')
                     ->limit(10)
                     ->get();
 
@@ -111,7 +112,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                         ProductCategoryStateEnum::DISCONTINUING->value
                     ])
                     ->whereNotNull('webpage_id')
-                    ->select('id', 'name', 'url')
+                    ->select('id', WebsiteLanguage::column('name'), 'url')
                     ->limit(10)
                     ->get()
                     ->map(function ($family) use ($subDepartmentUrl) {
@@ -150,7 +151,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ->whereNotNull('webpages.url')
             ->select([
                 'product_categories.id',
-                'product_categories.name',
+                WebsiteLanguage::column('product_categories.name'),
                 'webpages.url',
             ])
             ->limit(10)

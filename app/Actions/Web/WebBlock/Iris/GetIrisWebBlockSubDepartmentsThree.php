@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Web\WebBlock\Concerns\HasSubDepartmentsThree;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -33,7 +34,7 @@ class GetIrisWebBlockSubDepartmentsThree
         $webBlock = $this->getSubDepartmentsThree($webpage, $webBlock);
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.department', ['slug' => $department->slug, 'name' => $department->name]);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $department->name);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', WebsiteLanguage::text($department, 'name'));
 
 
         return [

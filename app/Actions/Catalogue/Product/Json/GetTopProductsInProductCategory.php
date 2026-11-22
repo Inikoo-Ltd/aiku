@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
@@ -59,7 +60,7 @@ class GetTopProductsInProductCategory extends OrgAction
                 'products.id',
                 'products.image_id',
                 'products.code',
-                'products.name',
+                WebsiteLanguage::column('products.name'),
                 'products.slug',
                 'products.url',
                 'products.available_quantity',

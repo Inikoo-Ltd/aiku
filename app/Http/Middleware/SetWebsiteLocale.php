@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\WebsiteLanguage;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -33,6 +34,7 @@ class SetWebsiteLocale
         }
 
         app()->setLocale($locale);
+        WebsiteLanguage::set($shop, $locale);
 
         return $next($request);
     }

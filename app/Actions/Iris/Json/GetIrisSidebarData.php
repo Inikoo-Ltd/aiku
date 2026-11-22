@@ -2,6 +2,7 @@
 
 namespace App\Actions\Iris\Json;
 
+use App\Helpers\WebsiteLanguage;
 use Throwable;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -26,7 +27,7 @@ class GetIrisSidebarData
             ]);
         }
 
-        $cacheKey = "irisData:website:$website->id:sideBar";
+        $cacheKey = self::cacheKey($website->id, WebsiteLanguage::translateTo());
         $ttl      = config('iris.cache.iris_website_data_ttl');
 
         $compute = function () use ($website) {
@@ -51,5 +52,13 @@ class GetIrisSidebarData
         }
 
         return response()->json($data);
+    }
+
+    /**
+     * The shop's own language keeps the key it always had.
+     */
+    public static function cacheKey(int $websiteId, ?string $translateTo): string
+    {
+        return "irisData:website:$websiteId:sideBar".($translateTo ? ":$translateTo" : '');
     }
 }

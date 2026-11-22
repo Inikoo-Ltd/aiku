@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Concerns;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
@@ -38,7 +39,7 @@ trait HasSubDepartmentsThree
                 ->select(
                     [
                         'product_categories.code',
-                        'product_categories.name',
+                        WebsiteLanguage::column('product_categories.name'),
                         'webpages.canonical_url as url',
                     ]
                 )
@@ -63,7 +64,7 @@ trait HasSubDepartmentsThree
             })
             ->select([
                 'collections.code',
-                'collections.name',
+                WebsiteLanguage::column('collections.name'),
                 'webpages.canonical_url as url',
             ])
             ->whereExists(function ($query) {

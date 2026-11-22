@@ -10,6 +10,7 @@ namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Helpers\WebsiteLanguage;
 
 /**
  * @property string $slug
@@ -28,10 +29,10 @@ class WebBlockProductCategoryDescriptionResource extends JsonResource
             'id'                => $this->id,
             'slug'              => $this->slug,
             'code'              => $this->code,
-            'name'              => $this->name,
-            'description'       => $this->description,
-            'description_title' => $this->description_title,
-            'description_extra' => $this->description_extra,
+            'name'              => WebsiteLanguage::text($this->resource, 'name'),
+            'description'       => WebsiteLanguage::text($this->resource, 'description'),
+            'description_title' => WebsiteLanguage::text($this->resource, 'description_title'),
+            'description_extra' => WebsiteLanguage::text($this->resource, 'description_extra'),
             'offers_data'       => $this->offers_data,
         ];
     }

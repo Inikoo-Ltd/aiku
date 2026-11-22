@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Helpers\WebsiteLanguage;
 
 class WebBlockDepartmentResource extends JsonResource
 {
@@ -28,10 +29,10 @@ class WebBlockDepartmentResource extends JsonResource
             'id'                        => $department->id,
             'slug'                      => $department->slug,
             'code'                      => $department->code,
-            'name'                      => $department->name,
-            'description'               => $department->description,
-            'description_title'         => $department->description_title,
-            'description_extra'         => $department->description_extra,
+            'name'                      => WebsiteLanguage::text($department, 'name'),
+            'description'               => WebsiteLanguage::text($department, 'description'),
+            'description_title'         => WebsiteLanguage::text($department, 'description_title'),
+            'description_extra'         => WebsiteLanguage::text($department, 'description_extra'),
             'showcase_image'            => $department->imageSources(720, 480, 'showcaseImage'),
             'showcase_video'            => $department->desc_video_url,
             'showcase_video_thumbnail'  => GetVideoThumbnail::run($department->desc_video_url),

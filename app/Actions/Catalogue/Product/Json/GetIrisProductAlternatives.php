@@ -2,6 +2,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Http\Resources\Catalogue\IrisProductAlternativeResource;
@@ -175,7 +176,7 @@ class GetIrisProductAlternatives extends IrisAction
         return $queryBuilder->select([
             'products.id',
             'products.code',
-            'products.name',
+            WebsiteLanguage::column('products.name'),
             'products.available_quantity',
             'products.price',
             'products.rrp',

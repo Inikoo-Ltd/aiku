@@ -10,6 +10,7 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Helpers\WebsiteLanguage;
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -36,7 +37,7 @@ class IndexBasketProducts extends OrgAction
                 'products.group_id',
                 'products.organisation_id',
                 'products.shop_id',
-                'products.name',
+                WebsiteLanguage::column('products.name'),
                 'products.available_quantity',
                 'products.price',
                 'products.rrp',

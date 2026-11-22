@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
@@ -159,7 +160,7 @@ trait WithIrisProductsInWebpage
             'products.group_id',
             'products.organisation_id',
             'products.shop_id',
-            'products.name',
+            WebsiteLanguage::column('products.name'),
             'products.available_quantity',
             'products.price',
             'products.rrp',

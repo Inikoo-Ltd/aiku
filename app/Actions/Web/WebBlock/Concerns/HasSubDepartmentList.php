@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Concerns;
 
+use App\Helpers\WebsiteLanguage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -31,7 +32,7 @@ trait HasSubDepartmentList
                     'product_categories.id',
                     'product_categories.slug',
                     'product_categories.code',
-                    'product_categories.name',
+                    WebsiteLanguage::column('product_categories.name'),
                     'webpages.url',
                     'webpages.canonical_url',
                 ]

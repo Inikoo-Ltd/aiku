@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\CRM\WebUser;
+use App\Helpers\WebsiteLanguage;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -35,6 +36,7 @@ class SetWebUserLocale
 
         Cookie::queue('aiku_guest_locale', $locale, 60 * 24 * 120);
         app()->setLocale($locale);
+        WebsiteLanguage::set($shop, $locale);
 
         return $next($request);
     }

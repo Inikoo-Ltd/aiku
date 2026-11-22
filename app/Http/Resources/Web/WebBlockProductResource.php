@@ -21,6 +21,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use App\Helpers\WebsiteLanguage;
 
 /**
  * @property mixed $units
@@ -97,10 +98,10 @@ class WebBlockProductResource extends JsonResource
             'code'              => $product->code,
             'family_id'         => $product->family_id,
             'family_code'       => $product->family?->code,
-            'name'              => $product->name,
-            'description'       => $product->description,
-            'description_title' => $product->description_title,
-            'description_extra' => $product->description_extra,
+            'name'              => WebsiteLanguage::text($product, 'name'),
+            'description'       => WebsiteLanguage::text($product, 'description'),
+            'description_title' => WebsiteLanguage::text($product, 'description_title'),
+            'description_extra' => WebsiteLanguage::text($product, 'description_extra'),
             'stock'             => $product->available_quantity,
             'specifications'    => $specifications,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),

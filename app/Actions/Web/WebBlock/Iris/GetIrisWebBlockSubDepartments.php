@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\WebBlock\Iris;
 
+use App\Helpers\WebsiteLanguage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -39,8 +40,8 @@ class GetIrisWebBlockSubDepartments
                     'product_categories.id',
                     'product_categories.slug',
                     'product_categories.code',
-                    'product_categories.name',
-                    'product_categories.description',
+                    WebsiteLanguage::column('product_categories.name'),
+                    WebsiteLanguage::column('product_categories.description'),
                     'product_categories.web_images',
                     'product_categories.image_id',
                     'webpages.canonical_url'
@@ -68,7 +69,7 @@ class GetIrisWebBlockSubDepartments
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', $webpage->model->name);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product_category_title', WebsiteLanguage::text($webpage->model, 'name'));
 
         return [
            'type' => $webBlock['type'],
