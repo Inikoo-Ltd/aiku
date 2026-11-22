@@ -453,7 +453,7 @@ class UpdateCustomer extends OrgAction
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
-            'peppol_id'                                             => ['sometimes', 'nullable', 'string', 'regex:'.BuildUblInvoice::PEPPOL_ID_PATTERN],
+            'peppol_id'                                             => BuildUblInvoice::peppolIdRules(),
             'is_vip'                                                => ['sometimes', 'boolean'],
             'as_employee_id'                                        => [
                 'sometimes',

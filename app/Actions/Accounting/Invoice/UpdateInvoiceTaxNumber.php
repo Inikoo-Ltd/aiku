@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
@@ -53,6 +54,8 @@ class UpdateInvoiceTaxNumber extends OrgAction
      */
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice, ['formatted_tax_number' => Arr::get($modelData, 'formatted_tax_number')]);
+
         $formattedTaxNumber = trim((string)Arr::get($modelData, 'formatted_tax_number')) ?: null;
 
         return DB::transaction(function () use ($invoice, $modelData, $formattedTaxNumber) {

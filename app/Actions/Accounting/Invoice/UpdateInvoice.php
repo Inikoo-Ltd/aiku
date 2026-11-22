@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
@@ -58,6 +59,8 @@ class UpdateInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice, $modelData);
+
         if (Arr::has($modelData, 'date')) {
             UpdateInvoiceDate::run($invoice, [
                 'date' => Arr::pull($modelData, 'date')

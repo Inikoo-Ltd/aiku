@@ -195,7 +195,7 @@ class UpdateSupplier extends OrgAction
             ],
             'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'peppol_id'       => ['sometimes', 'nullable', 'string', 'regex:'.BuildUblInvoice::PEPPOL_ID_PATTERN],
+            'peppol_id'       => BuildUblInvoice::peppolIdRules(),
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'name'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => ['sometimes', 'nullable', 'email'],

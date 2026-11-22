@@ -180,6 +180,15 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ]] : []),
+                        ...(Arr::get($organisation->settings, 'e_invoicing.countries') ? [[
+                            'label' => __('Peppol IDs missing'),
+                            'icon'  => ['fal', 'fa-address-card'],
+                            'root'  => 'grp.org.accounting.customers_missing_peppol_id.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.customers_missing_peppol_id.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ]] : []),
                         [
                             'label' => __('Profit and loss'),
                             'icon'  => ['fal', 'fa-balance-scale'],

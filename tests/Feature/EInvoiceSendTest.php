@@ -282,3 +282,55 @@ test('a retry after a lost answer adopts the transaction found under the tag ins
         ->and($transmission->status)->toBe('SENT')
         ->and($sends)->toBe(0);
 });
+
+test('an invoice SOFTIP accepted can no longer be changed or deleted, but one it refused as invalid can', function () {
+    $this->invoice->update(['address_id' => $this->customer->address_id]);
+    softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9101', 'status' => 'NEW', 'checksum' => 'abc'])]);
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+    $invoice      = $this->invoice->fresh();
+
+    \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice, ['footer' => 'Thank you']);
+    expect($invoice->fresh()->footer)->toBe('Thank you');
+
+    \App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice::run($invoice, ['net_amount' => $invoice->net_amount, 'reference' => $invoice->reference]);
+
+    expect(fn () => \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice->fresh(), ['reference' => $invoice->reference.'-X']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\Accounting\Invoice\UpdateInvoiceDate::run($invoice->fresh(), ['date' => now()->subDay()]))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\Accounting\Invoice\DeleteInvoice::run($invoice->fresh(), ['deleted_note' => 'test']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($invoice->fresh()->reference)->toBe($invoice->reference)
+        ->and($invoice->fresh()->deleted_at)->toBeNull();
+
+    $transmission->update(['status' => 'QUEUED', 'transaction_id' => null, 'first_attempted_at' => now()]);
+    expect(\App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice::isSent($invoice))->toBeTrue()
+        ->and(fn () => \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($invoice->fresh(), ['is_re' => !$invoice->is_re]))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    $transmission->update(['status' => 'INVALID', 'transaction_id' => '9101']);
+    expect(\App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice::isSent($invoice))->toBeFalse();
+});
+
+test('Slovak business customers without a Peppol ID or a validated VAT number are listed, and can give their DIČ in Retina', function () {
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => ['SK']]])]);
+    $this->invoice->update(['address_id' => $this->customer->address_id]);
+    $this->invoice->refresh()->address->update(['country_code' => 'SK']);
+    $this->invoice->update(['tax_number' => null, 'tax_number_valid' => null, 'identity_document_number' => '54018579']);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->update(['company_name' => 'Obchod s.r.o.']);
+    $customer = $this->customer->fresh();
+
+    $listed = fn () => \App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId::make()->handle($this->organisation->fresh())->getCollection()->pluck('id');
+    expect($listed())->toContain($customer->id)
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer))->toBeTrue();
+
+    \App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::make()->handle($customer, ['peppol_dic' => '2121551498']);
+
+    expect($customer->fresh()->peppol_id)->toBe('0245:2121551498')
+        ->and($listed())->not->toContain($customer->id);
+
+    expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_id' => '0245:2121551499']))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+});

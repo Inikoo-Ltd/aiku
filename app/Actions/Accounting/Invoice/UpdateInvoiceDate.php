@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceTransaction\ProcessInvoiceTransactionTimeSeries;
@@ -30,6 +31,8 @@ class UpdateInvoiceDate extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice, $modelData);
+
         $oldDate = $invoice->date;
 
         $invoice = $this->update($invoice, $modelData);

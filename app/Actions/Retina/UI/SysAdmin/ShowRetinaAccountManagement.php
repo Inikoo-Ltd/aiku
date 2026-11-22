@@ -11,6 +11,8 @@ namespace App\Actions\Retina\UI\SysAdmin;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
+use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
+use Illuminate\Support\Str;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -154,6 +156,13 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'type'          => 'input',
                                         'label'         => data_get($customer->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
                                         'value'         => $customer->identity_document_number_alt
+                                    ],
+                                    'peppol_dic' => [
+                                        'type'        => 'input',
+                                        'hidden'      => !UpdateRetinaCustomer::needsPeppolDic($customer),
+                                        'label'       => __('DIČ for e-invoices'),
+                                        'information' => __('Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company.'),
+                                        'value'       => $customer->peppol_id ? Str::after($customer->peppol_id, ':') : null,
                                     ],
                                 ]
                             ],

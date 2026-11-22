@@ -239,3 +239,21 @@ test('only business invoices addressed in an e-invoice country of the organisati
     $invoice->in_process = true;
     expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeFalse();
 });
+
+test('a Slovak DIČ has 10 digits and is divisible by 11', function () {
+    expect(BuildUblInvoice::isSlovakDic('2120525440'))->toBeTrue()
+        ->and(BuildUblInvoice::isSlovakDic('1027033667'))->toBeTrue()
+        ->and(BuildUblInvoice::isSlovakDic('2120525441'))->toBeFalse()
+        ->and(BuildUblInvoice::isSlovakDic('0120525440'))->toBeFalse()
+        ->and(BuildUblInvoice::isSlovakDic('212052544'))->toBeFalse();
+});
+
+test('the due date follows the customer payment terms', function () {
+    $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
+    $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
+
+    expect(ublValue(ublParse(BuildUblInvoice::run($invoice)), '/*/cbc:DueDate'))->toBe('2027-01-04');
+
+    $invoice->customer->payment_terms_days = 14;
+    expect(ublValue(ublParse(BuildUblInvoice::run($invoice)), '/*/cbc:DueDate'))->toBe('2027-01-18');
+});

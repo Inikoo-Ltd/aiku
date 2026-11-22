@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\Invoice\ForceDeleteInvoice;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\Helpers\Address\DeleteAddress;
@@ -32,6 +33,10 @@ class ForceDeleteCustomer extends OrgAction
 
     public function handle(Customer $customer): void
     {
+        foreach ($customer->invoices as $invoice) {
+            EnsureInvoiceNotSentAsEInvoice::run($invoice);
+        }
+
         foreach ($customer->webUsers as $webUser) {
             DeleteWebUser::run($webUser, true);
         }

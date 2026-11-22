@@ -86,6 +86,7 @@ Route::prefix('receivables')->as('receivables.')->group(function () {
     }
 });
 Route::redirect('/bank-review', '/org/{organisation}/accounting/bank-incoming');
+Route::get('/e-invoice-customers-missing-peppol-id', App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId::class)->name('customers_missing_peppol_id.index');
 Route::prefix('e-invoices-received')->as('received_e_invoices.')->group(function () {
     Route::get('/', App\Actions\Accounting\EInvoice\UI\IndexReceivedEInvoices::class)->name('index');
     Route::get('/{receivedEInvoice:id}/xml', [App\Actions\Accounting\EInvoice\UI\DownloadReceivedEInvoiceFile::class, 'xml'])->name('xml')->withoutScopedBindings();

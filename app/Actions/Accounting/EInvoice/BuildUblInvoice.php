@@ -14,6 +14,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\TaxCategory;
+use Closure;
 use Lorisleiva\Actions\Concerns\AsObject;
 use RuntimeException;
 use XMLWriter;
@@ -74,8 +75,7 @@ class BuildUblInvoice
         $this->xml->writeElement('cbc:ID', $invoice->reference);
         $this->xml->writeElement('cbc:IssueDate', $invoice->date->toDateString());
         if (!$this->isCreditNote) {
-            // ponytail: due on the invoice date until accounts tell us the credit terms per customer
-            $this->xml->writeElement('cbc:DueDate', $invoice->date->toDateString());
+            $this->xml->writeElement('cbc:DueDate', $invoice->date->copy()->addDays(max((int)$invoice->customer?->payment_terms_days, 0))->toDateString());
         }
         if ($this->isCreditNote) {
             $this->taxPointDate($invoice);
@@ -168,6 +168,31 @@ class BuildUblInvoice
         }
 
         return ['scheme' => self::PEPPOL_SCHEME, 'id' => $matches[1]];
+    }
+
+    /**
+     * Slovak DIČ: 10 digits, no leading zero, divisible by 11 (every validated Slovak VAT number passes; catches most typos).
+     */
+    public static function isSlovakDic(string $dic): bool
+    {
+        return preg_match('/^[1-9]\d{9}$/', $dic) && (int)$dic % 11 === 0;
+    }
+
+    /**
+     * Validation rule for a stored Peppol ID: scheme:number, and a well-formed DIČ when the scheme is the Slovak one.
+     *
+     * @return array<int, mixed>
+     */
+    public static function peppolIdRules(): array
+    {
+        return [
+            'sometimes', 'nullable', 'string', 'regex:'.self::PEPPOL_ID_PATTERN,
+            function (string $attribute, mixed $value, Closure $fail) {
+                if (is_string($value) && str_starts_with($value, self::PEPPOL_SCHEME.':') && !self::isSlovakDic(substr($value, 5))) {
+                    $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                }
+            },
+        ];
     }
 
     /**

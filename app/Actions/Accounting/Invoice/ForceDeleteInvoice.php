@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
@@ -33,6 +34,8 @@ class ForceDeleteInvoice
 
     public function handle(Invoice $invoice, ?Command $command = null): int
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice);
+
         try {
             DB::transaction(function () use ($invoice, $command) {
                 // Delete associated transactions first

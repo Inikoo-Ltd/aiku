@@ -9,6 +9,9 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\Accounting\EInvoice\BuildUblInvoice;
+use Closure;
+use Illuminate\Support\Arr;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -32,7 +35,33 @@ class UpdateRetinaCustomer extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
+        if (Arr::has($modelData, 'peppol_dic')) {
+            $dic = Arr::pull($modelData, 'peppol_dic');
+            if (self::needsPeppolDic($customer)) {
+                $modelData['peppol_id'] = $dic ? BuildUblInvoice::PEPPOL_SCHEME.':'.$dic : null;
+            }
+        }
+
         return UpdateCustomer::run($customer, $modelData);
+    }
+
+    /**
+     * Only Slovak business customers (company name or company number) of an e-invoicing organisation without a validated
+     * VAT number (their DIČ is taken from it) are asked for their DIČ, or those who already gave one. A Peppol ID staff
+     * entered in another scheme is never shown or overwritten here.
+     */
+    public static function needsPeppolDic(Customer $customer): bool
+    {
+        if ($customer->peppol_id) {
+            return str_starts_with($customer->peppol_id, BuildUblInvoice::PEPPOL_SCHEME.':');
+        }
+
+        $countryCode = $customer->address?->country_code;
+
+        return $countryCode === 'SK'
+            && in_array($countryCode, Arr::get($customer->organisation->settings, 'e_invoicing.countries') ?? [], true)
+            && !($customer->taxNumber?->valid && $customer->taxNumber->country_code === 'SK')
+            && (trim((string)$customer->company_name) !== '' || strlen(preg_replace('/\D/', '', (string)$customer->identity_document_number)) >= 8);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -56,6 +85,9 @@ class UpdateRetinaCustomer extends RetinaAction
         ]);
         $this->sanitizeInputs();
         $this->prepareTaxNumberInput($request);
+        if ($request->has('peppol_dic')) {
+            $request->merge(['peppol_dic' => preg_replace('/\D/', '', (string)$request->input('peppol_dic')) ?: null]);
+        }
     }
 
     public function rules(): array
@@ -95,6 +127,16 @@ class UpdateRetinaCustomer extends RetinaAction
             'is_gift_opted_out'            => ['sometimes', 'boolean'],
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
+            'peppol_dic'                   => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (is_string($value) && !BuildUblInvoice::isSlovakDic($value)) {
+                        $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                    }
+                },
+            ],
         ];
     }
 

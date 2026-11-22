@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\Invoice\Traits\WithDeleteInvoiceUI;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
@@ -56,6 +57,8 @@ class DeleteInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice);
+
         try {
             $invoice = DB::transaction(function () use ($invoice, $modelData) {
                 $invoice = $this->update($invoice, $modelData);

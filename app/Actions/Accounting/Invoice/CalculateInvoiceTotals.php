@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Helpers\Dashboard\InvalidateDashboardCaches;
@@ -77,6 +78,8 @@ class CalculateInvoiceTotals extends OrgAction
         data_set($modelData, 'services_amount', $serviceNet);
         data_set($modelData, 'goods_amount', $goodsNet);
         data_set($modelData, 'gross_amount', $grossAmount);
+
+        EnsureInvoiceNotSentAsEInvoice::run($invoice, $modelData);
 
         $invoice->update($modelData);
 
