@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Accounting\Invoice\RunInvoiceHydrators;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
@@ -61,6 +62,7 @@ class FinaliseRefund extends OrgAction
         if ($order) {
             UpdateOrderPaymentsStatus::run($order);
         }
+        SendEInvoice::dispatchIfEnabled($refund);
 
         return $refund;
     }

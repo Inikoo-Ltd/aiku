@@ -34,6 +34,7 @@ use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceEInvoiceTransmission;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
@@ -486,6 +487,7 @@ class ShowInvoice extends OrgAction
                 'download_pdf_column'           => $this->getDownloadPdfColumns($invoice),
                 'download_pdf_export_details'   => $this->getDownloadPdfExportDetails($invoice),
                 'is_external'                   => $invoice->shop?->type->value == 'external',
+                'e_invoice'                     => InvoiceEInvoiceTransmission::summaryFor($invoice),
                 'attachmentRoutes'              => [
                     'attachRoute' => [
                         'name'       => 'grp.models.invoice.attachment.attach',

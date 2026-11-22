@@ -368,6 +368,11 @@ class Invoice extends Model implements Auditable, HasMedia
         return $this->hasMany(Invoice::class, 'original_invoice_id');
     }
 
+    public function eInvoiceTransmissions(): HasMany
+    {
+        return $this->hasMany(InvoiceEInvoiceTransmission::class);
+    }
+
     public function invoiceCategory(): BelongsTo
     {
         return $this->belongsTo(InvoiceCategory::class);

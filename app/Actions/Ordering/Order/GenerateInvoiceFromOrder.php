@@ -9,6 +9,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\StoreInvoice;
@@ -275,6 +276,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
 
             $invoice->refresh();
+            SendEInvoice::dispatchIfEnabled($invoice);
 
             return $invoice;
         });

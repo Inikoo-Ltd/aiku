@@ -55,6 +55,7 @@ import { InvoiceResource } from "@/types/invoice";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
+import EInvoiceStatus, { type EInvoiceSummary } from "@/Components/Accounting/EInvoiceStatus.vue";
 
 
 library.add(
@@ -144,6 +145,7 @@ const props = defineProps<{
     group: {}
   }
   is_tax_only?: boolean
+  e_invoice?: EInvoiceSummary | null
   can_edit: boolean
 }>()
 
@@ -334,6 +336,8 @@ const getInvoiceRoute = () => {
             v-tooltip="taxNumberStatusText" fixed-width />
         </dd>
       </dl>
+
+      <EInvoiceStatus v-if="e_invoice" :e-invoice="e_invoice" />
 
       <dl class="pl-1 flex items-start w-full gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">

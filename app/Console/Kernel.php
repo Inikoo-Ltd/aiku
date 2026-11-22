@@ -130,6 +130,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('accounting:refresh-payment-methods-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('accounting:refresh-invoice-countries-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('procurement:send-minimum-poke-digests')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
+        $schedule->command('e-invoices:poll')->everyTenMinutes()->onOneServer()->withoutOverlapping(30)->runInBackground();
         $schedule->command('bank-connections:sync')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('bank-transactions:cod-payouts --commit --days=30')->hourlyAt(20)->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('bank-transactions:checkout-payouts --commit')->hourlyAt(25)->onOneServer()->withoutOverlapping(60)->runInBackground();

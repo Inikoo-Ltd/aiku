@@ -33,6 +33,7 @@ use App\Http\Resources\Sales\OrderResource;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceEInvoiceTransmission;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
@@ -357,6 +358,7 @@ class ShowRefund extends OrgAction
             ] : null,
             'invoice_refund'   => RefundResource::make($refund),
             'is_tax_only'      => $refund->is_tax_only,
+            'e_invoice'        => InvoiceEInvoiceTransmission::summaryFor($refund),
             'credit_transaction' => $this->getCreditTransactionData($refund),
         ];
 

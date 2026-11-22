@@ -70,6 +70,7 @@ import PureAddress from "@/Components/Pure/PureAddress.vue";
 import { Address, AddressOptions } from "@/types/PureComponent/Address";
 import { cloneDeep, pick } from "lodash-es"
 import InputText from "primevue/inputtext"
+import EInvoiceStatus, { type EInvoiceSummary } from "@/Components/Accounting/EInvoiceStatus.vue"
 
 library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
 
@@ -179,6 +180,7 @@ const props = defineProps<{
         net_weight: number | null
     }
     is_external?: boolean
+    e_invoice?: EInvoiceSummary | null
 }>();
 
 const currentTab = ref<string>(props.tabs.current);
@@ -592,6 +594,8 @@ const submitEditAddress = async () => {
                     />
                 </dd>
             </dl>
+
+            <EInvoiceStatus v-if="e_invoice" :e-invoice="e_invoice" />
 
             <!-- Field: IDN (Identity Document Number) -->
             <dl v-if="invoice.identity_document_number" class="pl-1 flex items-center w-full flex-none gap-x-2">

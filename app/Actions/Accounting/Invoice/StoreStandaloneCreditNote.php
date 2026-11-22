@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
@@ -63,7 +64,10 @@ class StoreStandaloneCreditNote extends OrgAction
                 'gross_amount'    => -$netAmount,
             ]);
 
-            return CalculateInvoiceTotals::make()->action($creditNote, $this->hydratorsDelay);
+            $creditNote = CalculateInvoiceTotals::make()->action($creditNote, $this->hydratorsDelay);
+            SendEInvoice::dispatchIfEnabled($creditNote);
+
+            return $creditNote;
         });
     }
 

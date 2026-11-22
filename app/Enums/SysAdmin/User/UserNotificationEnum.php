@@ -46,6 +46,7 @@ enum UserNotificationEnum: string
     case ASSISTANT_QUESTION = 'assistant_question';
     case DELIVERY_FEEDBACK = 'delivery_feedback';
     case SLACK_MENTION = 'slack_mention';
+    case E_INVOICE_PROBLEM = 'e_invoice_problem';
     case IMPLAUSIBLE_STOCK_COUNT = 'implausible_stock_count';
 
     public const array PRODUCT_DEVELOPMENT_EVENTS = [
@@ -113,6 +114,7 @@ enum UserNotificationEnum: string
             self::ASSISTANT_QUESTION            => __('A customer of my organisation asks the AI assistant something only our team can answer, and I am the person or the backup who answers'),
             self::DELIVERY_FEEDBACK             => __('Someone gives feedback on a delivery I bought'),
             self::SLACK_MENTION                 => __('Someone @mentions me in a Slack channel (off until you pick a channel; the notification inside Aiku comes with it)'),
+            self::E_INVOICE_PROBLEM             => __('An invoice of my organisation could not be sent as an e-invoice, or the customer\'s system refused it'),
             self::IMPLAUSIBLE_STOCK_COUNT       => __('A stock count changes the stock of an SKO by an implausible amount in an organisation whose stock I can see (off until you pick a channel; the notification inside Aiku comes with it)'),
         };
     }
@@ -144,7 +146,7 @@ enum UserNotificationEnum: string
             return [];
         }
 
-        if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || $this === self::MANUFACTURE_OVERTIME_REMINDER || in_array($this, self::PROCUREMENT_EVENTS, true)) {
+        if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || $this === self::MANUFACTURE_OVERTIME_REMINDER || $this === self::E_INVOICE_PROBLEM || in_array($this, self::PROCUREMENT_EVENTS, true)) {
             return ['email'];
         }
 
@@ -204,6 +206,7 @@ enum UserNotificationEnum: string
             self::ASSISTANT_QUESTION            => 'fal fa-head-side-brain',
             self::DELIVERY_FEEDBACK             => 'fal fa-star',
             self::SLACK_MENTION                 => 'fal fa-at',
+            self::E_INVOICE_PROBLEM             => 'fal fa-file-invoice',
             self::IMPLAUSIBLE_STOCK_COUNT       => 'fal fa-exclamation-triangle',
         };
     }

@@ -166,6 +166,11 @@ return [
         'extraction_model' => env('COMPETITOR_INTEL_EXTRACTION_MODEL', 'anthropic/claude-sonnet-5.5'),
         'briefing_model' => env('COMPETITOR_INTEL_BRIEFING_MODEL', 'anthropic/claude-opus-5.5'),
     ],
+    'softip' => [
+        'url'             => env('SOFTIP_URL'),
+        'api_key'         => env('SOFTIP_API_KEY'),
+        'organization_id' => env('SOFTIP_ORGANIZATION_ID'),
+    ],
     'shopping_assistant' => [
         'model'           => env('SHOPPING_ASSISTANT_MODEL', 'anthropic/claude-opus-5.5'),
         'follow_up_model' => env('SHOPPING_ASSISTANT_FOLLOW_UP_MODEL'),
