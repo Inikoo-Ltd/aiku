@@ -68,8 +68,13 @@ END IF;
 -- API auth artifacts: prod bearer tokens must not be valid against staging
 IF to_regclass('public.oauth_access_tokens')  IS NOT NULL THEN EXECUTE 'TRUNCATE oauth_access_tokens';  END IF;
 IF to_regclass('public.oauth_refresh_tokens') IS NOT NULL THEN EXECUTE 'TRUNCATE oauth_refresh_tokens'; END IF;
-IF to_regclass('public.personal_access_tokens') IS NOT NULL THEN EXECUTE 'TRUNCATE personal_access_tokens'; END IF;
-IF to_regclass('public.fcm_tokens') IS NOT NULL THEN EXECUTE 'TRUNCATE fcm_tokens'; END IF;
+IF to_regclass('public.personal_access_tokens') IS NOT NULL AND to_regclass('public.fcm_tokens') IS NOT NULL THEN
+  EXECUTE 'TRUNCATE personal_access_tokens, fcm_tokens';
+ELSIF to_regclass('public.personal_access_tokens') IS NOT NULL THEN
+  EXECUTE 'TRUNCATE personal_access_tokens';
+ELSIF to_regclass('public.fcm_tokens') IS NOT NULL THEN
+  EXECUTE 'TRUNCATE fcm_tokens';
+END IF;
 IF to_regclass('public.oauth_clients') IS NOT NULL THEN
   EXECUTE 'UPDATE oauth_clients SET secret = NULL WHERE secret IS NOT NULL';
 END IF;
