@@ -46,7 +46,7 @@ class ShowRetinaRegisterChooseMethod extends IrisAction
             if (config('iris.cache.webpage.ttl') == 0) {
                 $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($registerDashboardPage->id, [], false);
             } else {
-                $key             = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$registerDashboardPage->id;
+                $key             = ShowIrisWebpage::webpageCacheKey($website, $registerDashboardPage->id, false);
                 $tempWebpageData = ShowIrisWebpage::make()->rememberCompressed($key, fn () => ShowIrisWebpage::make()->getWebpageData($registerDashboardPage->id, [], false));
             }
 

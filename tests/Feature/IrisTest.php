@@ -1511,6 +1511,40 @@ test('website locale accepts a language enabled for the shop', function () {
     enableShopLanguages($this->shop, null);
 });
 
+test('each website language keeps its own cached page and breaking a webpage clears every language', function () {
+    [$enabledCode] = otherLanguageCodes($this->shop);
+    enableShopLanguages($this->shop, [$enabledCode]);
+    $shopCode = $this->shop->language->code;
+    $webpage  = $this->website->webpages()->firstOrFail();
+    $website  = $this->website->fresh();
+
+    $shopKey  = \App\Actions\Web\Webpage\Iris\ShowIrisWebpage::webpageCacheKey($website, $webpage->id, false, $shopCode);
+    $otherKey = \App\Actions\Web\Webpage\Iris\ShowIrisWebpage::webpageCacheKey($website, $webpage->id, false, $enabledCode);
+
+    expect($shopKey)->toBe(config('iris.cache.webpage.prefix').'_'.$website->id.'_out_'.$webpage->id)
+        ->and($otherKey)->toBe($shopKey.'_'.$enabledCode);
+
+    app()->setLocale($enabledCode);
+    expect(\App\Actions\Web\Webpage\Iris\ShowIrisWebpage::webpageCacheKey($website, $webpage->id, false))->toBe($otherKey);
+    app()->setLocale($shopCode);
+
+    foreach ([true, false] as $loggedIn) {
+        foreach ([$shopCode, $enabledCode] as $code) {
+            Cache::put(\App\Actions\Web\Webpage\Iris\ShowIrisWebpage::webpageCacheKey($website, $webpage->id, $loggedIn, $code), 'cached');
+        }
+    }
+
+    \App\Actions\Web\Webpage\Iris\ShowIrisWebpage::forgetWebpageCache($webpage->fresh());
+
+    foreach ([true, false] as $loggedIn) {
+        foreach ([$shopCode, $enabledCode] as $code) {
+            expect(Cache::has(\App\Actions\Web\Webpage\Iris\ShowIrisWebpage::webpageCacheKey($website, $webpage->id, $loggedIn, $code)))->toBeFalse();
+        }
+    }
+
+    enableShopLanguages($this->shop, null);
+});
+
 test('web user locale keeps the old behaviour until the list is saved, then ignores languages not enabled', function () {
     [$otherCode] = otherLanguageCodes($this->shop);
     $shopCode = $this->shop->language->code;

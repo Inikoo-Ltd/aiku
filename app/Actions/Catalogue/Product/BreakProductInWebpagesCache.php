@@ -12,9 +12,9 @@ use App\Enums\Catalogue\Product\ProductBadgeEnum;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
-use Cache;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class BreakProductInWebpagesCache
@@ -61,10 +61,7 @@ class BreakProductInWebpagesCache
 
     public function forgetCacheKeys(Webpage $webpage): void
     {
-        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
-        Cache::forget($key);
-        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
-        Cache::forget($key);
+        ShowIrisWebpage::forgetWebpageCache($webpage);
     }
 
     protected function commandSignature(): string

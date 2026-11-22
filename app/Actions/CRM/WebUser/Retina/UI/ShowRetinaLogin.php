@@ -52,7 +52,7 @@ class ShowRetinaLogin
             if (config('iris.cache.webpage.ttl') == 0) {
                 $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$loginPage->id;
+                $key         = ShowIrisWebpage::webpageCacheKey($website, $loginPage->id, false);
                 $tempWebpageData = ShowIrisWebpage::make()->rememberCompressed($key, fn () => ShowIrisWebpage::make()->getWebpageData($loginPage->id, [], false));
             }
 

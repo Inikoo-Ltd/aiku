@@ -16,8 +16,8 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -51,10 +51,7 @@ class BreakWebpageCache extends OrgAction implements ShouldBeUnique
             return;
         }
 
-        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_in_'.$webpage->id;
-        Cache::forget($key);
-        $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
-        Cache::forget($key);
+        ShowIrisWebpage::forgetWebpageCache($webpage);
 
         BanVarnishWebpage::run($webpage, null, $purgeEdge);
         PurgeVarnishWebpageUrl::run($webpage, null, $purgeEdge);

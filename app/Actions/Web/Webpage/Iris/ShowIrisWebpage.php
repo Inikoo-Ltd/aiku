@@ -25,6 +25,7 @@ use App\Models\Web\Website;
 use App\Http\Middleware\HideRetailPricesFromIrisVisitors;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -43,6 +44,26 @@ class ShowIrisWebpage
         $webpageData = DB::table('webpages')->select('canonical_url')->where('id', $webpageID)->first();
 
         return $webpageData?->canonical_url;
+    }
+
+    /**
+     * The shop's own language keeps the key it always had; any other language the visitor chose gets its own copy.
+     */
+    public static function webpageCacheKey(Website $website, int $webpageId, bool $loggedIn, ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+
+        return config('iris.cache.webpage.prefix').'_'.$website->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageId
+            .($locale === $website->shop->language->code ? '' : '_'.$locale);
+    }
+
+    public static function forgetWebpageCache(Webpage $webpage): void
+    {
+        foreach ($webpage->shop->enabledLanguageCodes() as $locale) {
+            foreach ([true, false] as $loggedIn) {
+                Cache::forget(self::webpageCacheKey($webpage->website, $webpage->id, $loggedIn, $locale));
+            }
+        }
     }
 
     /**
@@ -223,7 +244,7 @@ class ShowIrisWebpage
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->withShortImageUrls($this->getWebpageData($webpageID, $parentPaths, $loggedIn), $request->input('website'));
         } else {
-            $key         = config('iris.cache.webpage.prefix').'_'.$request->input('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
+            $key         = self::webpageCacheKey($request->input('website'), $webpageID, $loggedIn);
             $webpageData = $this->rememberCompressed($key, fn () => $this->withShortImageUrls($this->getWebpageData($webpageID, $parentPaths, $loggedIn), $request->input('website')));
         }
 

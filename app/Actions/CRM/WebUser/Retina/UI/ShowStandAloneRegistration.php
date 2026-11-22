@@ -66,7 +66,7 @@ class ShowStandAloneRegistration extends IrisAction
             if (config('iris.cache.webpage.ttl') == 0) {
                 $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$registerPage->id;
+                $key         = ShowIrisWebpage::webpageCacheKey($website, $registerPage->id, false);
                 $tempWebpageData = ShowIrisWebpage::make()->rememberCompressed($key, fn () => ShowIrisWebpage::make()->getWebpageData($registerPage->id, [], false));
             }
 

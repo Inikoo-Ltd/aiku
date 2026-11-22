@@ -43,7 +43,7 @@ class ShowForgotPasswordForm
             if (config('iris.cache.webpage.ttl') == 0) {
                 $tempWebpageData = ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false);
             } else {
-                $key         = config('iris.cache.webpage.prefix').'_'.$website->id.'_'.('out').'_'.$forgotPasswordPage->id;
+                $key         = ShowIrisWebpage::webpageCacheKey($website, $forgotPasswordPage->id, false);
                 $tempWebpageData = ShowIrisWebpage::make()->rememberCompressed($key, fn () => ShowIrisWebpage::make()->getWebpageData($forgotPasswordPage->id, [], false));
             }
 
