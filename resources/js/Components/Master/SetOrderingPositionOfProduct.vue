@@ -81,6 +81,7 @@ const undo = () => {
     const prev = history.value.pop()
     future.value.push(clone(items.value))
     items.value = prev
+    emits("update:data", items.value)
 }
 
 const redo = () => {
@@ -88,6 +89,7 @@ const redo = () => {
     const next = future.value.pop()
     history.value.push(clone(items.value))
     items.value = next
+    emits("update:data", items.value)
 }
 
 const updateOrder = () => {
@@ -220,6 +222,10 @@ watch(
 
         if (isEqual(newData, items.value)) return
 
+        if (items.value.length) {
+            saveHistory()
+        }
+
         items.value = newData.map((item: any, index: number) => ({
             ...item,
             order: index + 1,
@@ -245,6 +251,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                         <span class="text-[10px]">{{ getArrow(option.key) }}</span>
                     </button>
                 </div>
+                <slot name="after-sort-options"></slot>
             </div>
 
             <div class="flex items-center gap-2">
@@ -266,14 +273,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                 <div class="inline-flex rounded-lg border bg-gray-100 p-1">
                     <button @click="viewMode = 'list'"
                         class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'list'
-                            ? 'bg-white shadow text-gray-900 buttonPrimary'
+                            ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
                         ≡ List
                     </button>
 
                     <button @click="viewMode = 'card'"
                         class="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition" :class="viewMode === 'card'
-                            ? 'bg-white shadow text-gray-900 buttonPrimary'
+                            ? 'bg-white shadow text-gray-900'
                             : 'text-gray-500 hover:text-gray-700'">
                         ▦ Card
                     </button>
@@ -326,6 +333,8 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
                             </div>
                         </div>
                     </slot>
+
+                    <slot name="list-extra" :item="element"></slot>
 
                     <Button v-if="useDelete && !disabled" type="negative" size="xs" @click="removeItem(element)" :icon="faTrash">
                     </Button>
@@ -412,21 +421,4 @@ onBeforeUnmount(() => window.removeEventListener("keydown", handleKey))
     min-height: 60px;
 }
 
-.buttonPrimary {
-    background-color: var(--theme-color-4) !important;
-    color: var(--theme-color-5) !important;
-    border: 1px solid color-mix(in srgb, var(--theme-color-4) 80%, black);
-
-    &:hover {
-        background-color: color-mix(in srgb, var(--theme-color-4) 85%, black) !important;
-    }
-
-    &:focus {
-        box-shadow: 0 0 0 2px var(--theme-color-4) !important;
-    }
-
-    &:disabledd {
-        background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
-    }
-}
 </style>

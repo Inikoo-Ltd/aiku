@@ -18,7 +18,6 @@ enum MasterProductsTabsEnum: string
     case INDEX              = 'index';
     case PRICING            = 'pricing';
     case BULK_EDIT          = 'bulk_edit';
-    case INDEX_ORDERING     = 'index_ordering';
     case SALES              = 'sales';
 
     public function blueprint(): array
@@ -27,12 +26,6 @@ enum MasterProductsTabsEnum: string
             MasterProductsTabsEnum::INDEX => [
                 'title' => __('Index'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
-            ],
-            MasterProductsTabsEnum::INDEX_ORDERING => [
-                'title' => __('Index Ordering'),
-                'icon'  => 'fal fa-sort-shapes-up-alt',
-                'type'  => 'icon',
-                'align' => 'right'
             ],
             MasterProductsTabsEnum::SALES => [
                 'title' => __('Sales'),

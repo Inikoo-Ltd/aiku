@@ -42,6 +42,7 @@ import ProductCategoryTimeSeriesTable from "@/Components/Product/ProductCategory
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import ProductCategoryRecomendation from "@/Components/Master/ProductCategoryRecomendation.vue"
 import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.vue"
+import MasterFamilyIndexOrdering from "@/Components/Master/MasterFamilyIndexOrdering.vue"
 import MasterFamilyWebpageLockButton from "@/Components/CMS/Webpage/MasterFamilyWebpageLockButton.vue"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
 
@@ -92,6 +93,7 @@ const props = defineProps<{
     webpage_locks?: any
     related_products? : object
     related_product_category? : object
+    index_ordering?: object
     vol_gr_reward?: {
         show_gr_vol: boolean
         gr_vol_discount_quantity?: number
@@ -131,6 +133,7 @@ const component = computed(() => {
         variants: TableMasterVariants,
         related_products: ProductCategoryRecomendation,
         related_product_category: RelatedProductCategory,
+        index_ordering: MasterFamilyIndexOrdering,
     }
     return components[currentTab.value] ?? ModelDetails
 })

@@ -25,7 +25,7 @@ class UpdateProductIndex extends OrgAction
 
         foreach ($products as $product) {
             $product->updateQuietly([
-                "index_under_{$parent->type->value}"    => data_get($indexOrders, "{$product->code}.index_under_{$parent->type->value}", null)
+                "index_under_{$parent->type->value}"    => $indexOrders[$product->code]["index_under_{$parent->type->value}"] ?? null
             ]);
         }
 

@@ -71,6 +71,7 @@ use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Support\Facades\Http;
 use App\Models\Masters\MasterAssetStats;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterCollectionOrderingStats;
@@ -634,6 +635,19 @@ test('UI Show Master Family history tab, all scope', function (MasterProductCate
     });
 })->depends('create master family');
 
+
+test('UI Show Master Family index ordering tab', function (MasterProductCategory $masterFamily) {
+    get(route('grp.masters.master_departments.show.master_families.show', [
+        'masterDepartment' => $masterFamily->masterDepartment->slug,
+        'masterFamily'     => $masterFamily->slug,
+        'tab'              => MasterFamilyTabsEnum::INDEX_ORDERING->value,
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('Masters/MasterFamily')
+        ->has('tabs.navigation.'.MasterFamilyTabsEnum::INDEX_ORDERING->value)
+        ->has('index_ordering.products')
+        ->has('index_ordering.open_shops_count')
+        ->where('index_ordering.editable', true));
+})->depends('create master family');
 
 test('UI Show Master Family attachments tab lists trade unit documents read only', function (MasterProductCategory $masterFamily) {
     get(route('grp.masters.master_departments.show.master_families.show', [
@@ -6520,4 +6534,50 @@ test('competitor matching sends our size in its display unit, not the stored met
     $masterAsset->marketing_dimensions = ['type' => 'rectangular', 'units' => 'mm', 'l' => 0.12, 'w' => 0.08, 'h' => 0.05];
 
     expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::state($masterAsset, collect())['our_product']['size'])->toBe('120x80x50 (mm)');
+});
+
+test('AI index order sorts the family products by Jev score', function () {
+    $masterFamilyId = MasterAsset::query()
+        ->whereNotNull('master_family_id')
+        ->groupBy('master_family_id')
+        ->havingRaw('count(*) >= 2')
+        ->value('master_family_id');
+    expect($masterFamilyId)->not->toBeNull();
+
+    $codes = MasterAsset::where('master_family_id', $masterFamilyId)->pluck('code')->all();
+    $last  = $codes[0];
+
+    config(['services.openrouter.api_key' => 'test-key']);
+    Http::fake([
+        'openrouter.ai/api/alpha/decisions' => Http::response(['answers' => collect($codes)->mapWithKeys(fn ($code) => [$code => ['score' => $code === $last ? 0 : 4]])->all()]),
+    ]);
+
+    $suggestion = getJson(route('grp.json.master_product_category.suggest_index_order', ['masterProductCategory' => $masterFamilyId]))
+        ->assertOk()
+        ->json();
+
+    expect($suggestion['codes'])->toHaveCount(count($codes))
+        ->and(end($suggestion['codes']))->toBe($last);
+});
+
+test('publishing the index order keeps products whose code has a dot', function () {
+    $masterFamilyId = MasterAsset::query()
+        ->whereNotNull('master_family_id')
+        ->groupBy('master_family_id')
+        ->havingRaw('count(*) >= 2')
+        ->value('master_family_id');
+
+    $masterAssets = MasterAsset::where('master_family_id', $masterFamilyId)->orderBy('id')->get();
+    $dotted       = $masterAssets->first();
+    $dotted->updateQuietly(['code' => $dotted->code.'.5']);
+
+    Pest\Laravel\patch(route('grp.models.master_product_category.reorder_index', $masterFamilyId), [
+        'products' => $masterAssets->reverse()->values()->map(fn (MasterAsset $masterAsset, int $index) => [
+            'id'                        => $masterAsset->id,
+            'code'                      => $masterAsset->code,
+            'index_under_master_family' => $index,
+        ])->all(),
+    ])->assertOk();
+
+    expect($dotted->fresh()->index_under_master_family)->toBe($masterAssets->count() - 1);
 });

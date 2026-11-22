@@ -25,7 +25,7 @@ class HydrateIndexFromMasterShopToShops
                 continue;
             }
 
-            if ($productCategory = $productCategories[$shop->id]) {
+            if ($productCategory = $productCategories[$shop->id] ?? null) {
 
                 $indexOrderProduct = Product::whereIn('code', array_keys($indexOrders))
                     ->where('shop_id', $shop->id)
@@ -35,7 +35,7 @@ class HydrateIndexFromMasterShopToShops
                             $item->code => [
                                 'id'                                                    => $item->id,
                                 'code'                                                  => $item->code,
-                                "index_under_{$masterProductCategory->type->value}"     => data_get($indexOrders, "$item->code.index_under_master_{$masterProductCategory->type->value}", null),
+                                "index_under_{$masterProductCategory->type->value}"     => $indexOrders[$item->code]["index_under_master_{$masterProductCategory->type->value}"] ?? null,
                             ]
                         ];
                     })

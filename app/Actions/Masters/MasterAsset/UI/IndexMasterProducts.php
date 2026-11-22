@@ -546,7 +546,7 @@ class IndexMasterProducts extends OrgAction
         $shopsData       = null;
         $modelNavigation = [];
 
-        $exception       = [MasterProductsTabsEnum::INDEX_ORDERING, MasterProductsTabsEnum::PRICING];
+        $exception       = [MasterProductsTabsEnum::PRICING];
 
         if ($this->parent instanceof Group) {
             $model      = '';
@@ -562,7 +562,7 @@ class IndexMasterProducts extends OrgAction
             ];
         } elseif ($this->parent instanceof MasterShop) {
             $masterShop    = $this->parent;
-            $exception     = [MasterProductsTabsEnum::INDEX_ORDERING];
+            $exception     = [];
             $subNavigation = $this->getMasterShopNavigation($this->parent);
             $title         = $this->parent->name;
             $model         = '';
@@ -582,7 +582,7 @@ class IndexMasterProducts extends OrgAction
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation   = $this->getMasterDepartmentSubNavigation($this->parent);
                 $modelNavigation = GetMasterDepartmentNavigation::run($this->parent, $request);
-                $exception       = [MasterProductsTabsEnum::INDEX_ORDERING];
+                $exception       = [];
 
                 $title           = $this->parent->name;
                 $icon            = [
@@ -640,13 +640,6 @@ class IndexMasterProducts extends OrgAction
                 'key'     => 'add-family',
                 'tooltip' => __('Add a master product to this family'),
                 'label'   => __('Master product'),
-            ];
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'primary',
-                'key'     => 'save-order',
-                'tooltip' => __('Save product order'),
-                'label'   => __('Save Order'),
             ];
         }
 
@@ -718,10 +711,6 @@ class IndexMasterProducts extends OrgAction
                     fn () => MasterProductsResource::collection($masterAssets)
                     : Inertia::optional(fn () => MasterProductsResource::collection($masterAssets)),
 
-                MasterProductsTabsEnum::INDEX_ORDERING->value => $this->tab == MasterProductsTabsEnum::INDEX_ORDERING->value ?
-                    fn () => MasterProductsResource::collection($this->handle($this->parent, MasterProductsTabsEnum::INDEX_ORDERING->value, null, true))
-                    : Inertia::optional(fn () => MasterProductsResource::collection($this->handle($this->parent, null, null, true))),
-
                 MasterProductsTabsEnum::SALES->value => $this->tab == MasterProductsTabsEnum::SALES->value ?
                     fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))
                     : Inertia::optional(fn () => MasterProductsResource::collection(IndexMasterProducts::run($this->parent, prefix: MasterProductsTabsEnum::SALES->value))),
@@ -739,7 +728,6 @@ class IndexMasterProducts extends OrgAction
             ]
         )
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX->value))
-        ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::INDEX_ORDERING->value, sortByIndex: true))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::SALES->value, sales: true))
         ->table($this->tableStructure($this->parent, prefix: MasterProductsTabsEnum::BULK_EDIT->value));
 

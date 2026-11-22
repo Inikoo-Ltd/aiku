@@ -27,6 +27,7 @@ enum MasterFamilyTabsEnum: string
     case HISTORY   = 'history';
     case ATTACHMENTS = 'attachments';
     case VARIANTS   = 'variants';
+    case INDEX_ORDERING = 'index_ordering';
 
     public function blueprint(): array
     {
@@ -69,6 +70,10 @@ enum MasterFamilyTabsEnum: string
                  'title' => __('Master variants'),
                  'icon'  => 'fal fa-shapes',
              ],
+            MasterFamilyTabsEnum::INDEX_ORDERING => [
+                'title' => __('Index ordering'),
+                'icon'  => 'fal fa-sort-shapes-up-alt',
+            ],
             MasterFamilyTabsEnum::RELATED_PRODUCTS => [
                 'title' => __('Related products'),
                 'icon'  => 'fal fa-repeat',

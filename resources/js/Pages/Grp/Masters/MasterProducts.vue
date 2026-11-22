@@ -28,7 +28,6 @@ import { router } from "@inertiajs/vue3"
 import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
-import SetOrderingPositionOfProduct from "@/Components/Master/SetOrderingPositionOfProduct.vue";
 import SummaryCards, { type SummaryCard } from "@/Components/DataDisplay/SummaryCards.vue"
 
 
@@ -42,7 +41,6 @@ const props = defineProps<{
         navigation: {}
     }
     index?: {}
-    index_ordering?: {}
     sales?: {}
     pricing?: {}
     bulk_edit?: {}
@@ -102,7 +100,6 @@ const bulkEditState = ref<{ dirty: number, saving: boolean }>({ dirty: 0, saving
 const component = computed(() => {
     const components: any = {
         index: TableMasterProducts,
-        index_ordering: SetOrderingPositionOfProduct,
         sales: TableMasterProducts,
         pricing: TableMasterProductsPricing,
         bulk_edit: TableMasterProductsBulkEditV2,
@@ -120,7 +117,6 @@ const selectedProductsForAttachId = ref<number[]>([])
 
 const isLoading = ref<string | boolean>(false)
 const errorMessage = ref<string>('')
-const localData = ref<any>(props.data)
 
 const isModalOpen = {
     products: ref(false),
@@ -181,64 +177,9 @@ const resetSelectionByScope = {
     products: () => (selectedProductsForAttachId.value = []),
 }
 
-const loadingOrder = ref(false)
-const SaveOrder = () => {
-    const products = localData.value?.data || localData.value || []
-
-    router.patch(
-        route('grp.models.master_product_category.reorder_index', {
-            masterProductCategory: props.familyId
-        }),
-        {
-            products: products.map((product: any, index: number) => ({
-                id: product.id,
-                code: product.code,
-                index_under_master_family:
-                    product.index_under_family ?? index,
-            }))
-        },
-        {
-            preserveScroll: true,
-
-            onStart: () => {
-                loadingOrder.value = true
-            },
-
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success!"),
-                    text: ctrans("Successfully reordered the products"),
-                    type: "success"
-                })
-            },
-
-            onError: (errors: any) => {
-
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text:
-                        errors?.message ||
-                        ctrans("Failed to reorder products"),
-                    type: "error"
-                })
-            },
-
-            onFinish: () => {
-                loadingOrder.value = false
-            }
-        }
-    )
-}
-
-watch(() => currentTab.value, (tab) => {
+watch(() => currentTab.value, () => {
     selectedProductsId.value = {}
     bulkEditState.value = { dirty: 0, saving: false }
-
-    if (tab === 'index' || tab === 'index_ordering' || tab === 'sales') {
-        localData.value = (props as any)[tab] || props.data
-    } else {
-        localData.value = props.data
-    }
 }, { immediate: true })
 
 </script>
@@ -259,17 +200,6 @@ watch(() => currentTab.value, (tab) => {
             <span v-else />
         </template>
 
-        <template #button-save-order="{ action }">
-            <Button
-                v-if="currentTab === 'index_ordering'"
-                :icon="action.icon"
-                :label="action.label"
-                :style="action.style"
-                :onClick="SaveOrder"
-                :loading="loadingOrder"
-            />
-            <span v-else />
-        </template>
 
         <template #other>
             <template v-if="currentTab === 'pricing'">
@@ -349,8 +279,7 @@ watch(() => currentTab.value, (tab) => {
         :is="component"
         :key="currentTab"
         :tab="currentTab"
-        :data="currentTab == 'index_ordering' ?  localData : props[currentTab]"
-        :pasteLookupRoute="currentTab === 'index_ordering' ? { name: 'grp.json.master_product_category.products_by_codes', parameters: { masterProductCategory: familyId } } : null"
+        :data="props[currentTab]"
         :taxPresetOptions="taxPresetOptions"
         :taxBulkSignal="taxBulkSignal"
         :bulkEditSaveSignal="bulkEditSaveSignal"
@@ -365,7 +294,6 @@ watch(() => currentTab.value, (tab) => {
         :isCheckBox="currentTab === 'pricing' && !hide_bulk_edit"
         :routes="routes"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
-        @update:data="(updatedData) => localData = updatedData"
     ></component>
 
     <!-- Dialog Create Product -->

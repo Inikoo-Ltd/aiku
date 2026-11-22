@@ -153,7 +153,7 @@ class IndexMasterProductsInMasterCollection extends OrgAction
                 'hide_bulk_edit'          => true,
                 'tabs' => [
                     'current'    => $this->tab,
-                    'navigation' => MasterProductsTabsEnum::navigationExcept([MasterProductsTabsEnum::INDEX_ORDERING]),
+                    'navigation' => MasterProductsTabsEnum::navigation(),
                 ],
                 'routes'    => [
                     'dataList'     => [

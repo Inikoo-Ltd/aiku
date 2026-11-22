@@ -23,6 +23,7 @@ use App\Actions\Web\Crawl\UI\GetCrawlLinkGraph;
 use App\Actions\Web\Crawl\UI\GetCrawlUrlDetails;
 use App\Actions\Web\Seo\Json\GetSeoKeywordHistory;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsByCodes;
+use App\Actions\Masters\MasterAsset\Json\SuggestMasterFamilyIndexOrder;
 use App\Actions\Masters\MasterProductCategory\Json\GetMasterProductCategoriesByCodes;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoriesByCodes;
 use App\Actions\Catalogue\Product\Json\GetProductsByCodes;
@@ -286,6 +287,7 @@ Route::get('shop/{shop:id}/products-by-codes', [GetProductsByCodes::class, 'inSh
 Route::get('shop/{shop:id}/product-categories-by-codes', GetProductCategoriesByCodes::class)->name('shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/families', GetFamiliesInMasterProductCategory::class)->name('master_product_category.families.index');
 Route::get('master-product-category/{masterProductCategory:id}/products-by-codes', GetMasterProductsByCodes::class)->name('master_product_category.products_by_codes')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory:id}/suggest-index-order', SuggestMasterFamilyIndexOrder::class)->name('master_product_category.suggest_index_order')->middleware('throttle:10,1')->withoutScopedBindings();
 Route::get('master-shop/{masterShop:id}/products-by-codes', [GetMasterProductsByCodes::class, 'inMasterShopController'])->name('master_shop.products_by_codes')->withoutScopedBindings();
 Route::get('master-shop/{masterShop:id}/product-categories-by-codes', GetMasterProductCategoriesByCodes::class)->name('master_shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();

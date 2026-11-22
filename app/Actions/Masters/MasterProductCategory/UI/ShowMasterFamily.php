@@ -177,6 +177,10 @@ class ShowMasterFamily extends OrgAction
             MasterFamilyTabsEnum::VARIANTS->value => $this->tab === MasterFamilyTabsEnum::VARIANTS->value ?
                 fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))
                 : Inertia::optional(fn () => MasterVariantsResource::collection(IndexMasterVariant::run($masterFamily, MasterFamilyTabsEnum::VARIANTS->value))),
+
+            MasterFamilyTabsEnum::INDEX_ORDERING->value => $this->tab === MasterFamilyTabsEnum::INDEX_ORDERING->value ?
+                fn () => $this->indexOrdering($masterFamily)
+                : Inertia::optional(fn () => $this->indexOrdering($masterFamily)),
         ];
 
         $navigation = MasterFamilyTabsEnum::navigation();
@@ -353,6 +357,14 @@ class ShowMasterFamily extends OrgAction
             ->table(IndexHistory::make()->tableStructure(prefix: MasterFamilyTabsEnum::HISTORY->value, withRecordColumn: true));
     }
 
+
+    private function indexOrdering(MasterProductCategory $masterFamily): array
+    {
+        return [
+            ...GetMasterFamilyIndexOrdering::run($masterFamily),
+            'editable' => $this->canEdit,
+        ];
+    }
 
     public function jsonResponse(MasterProductCategory $masterFamily): DepartmentsResource
     {
