@@ -45,7 +45,7 @@ class WebBlockFamilyResource extends JsonResource
             'extra_description_image'   => collect(Arr::get($family->web_images, 'extraDescription', []))->map(fn ($slot) => $this->getResizedSlot($slot))->filter()->all(),
             'url'                       => $family->webpage?->url,
             'offers_data'               => $family->offers_data,
-            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => $tag->name, 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
+            'tags'                      => $family->tradeUnitFamily?->tags()->limit(3)->get()->map(fn ($tag) => ['name' => WebsiteLanguage::tagName($tag), 'web_image' => $this->getPictureFormats($tag->web_image)])->all(),
             ...$this->getTabsData($family)
         ];
     }
@@ -86,7 +86,7 @@ class WebBlockFamilyResource extends JsonResource
                     'type'              => 'products_images'
                 ]
             ],
-            'faq'                       => $family->faq,
+            'faq'                       => WebsiteLanguage::faq($family->webpage?->website_id ?? $family->shop?->website?->id, $family->faq),
         ];
     }
 

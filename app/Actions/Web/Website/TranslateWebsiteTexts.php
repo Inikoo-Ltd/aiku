@@ -14,7 +14,9 @@ use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteLanguage;
 use App\Helpers\WebsiteTexts;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
@@ -156,6 +158,10 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
             if (is_string($text) && $text !== $name && WebsiteTexts::isWords($text)) {
                 $texts[WebsiteTexts::hash($text)] = $text;
             }
+        }
+
+        if ($webpage->model instanceof ProductCategory) {
+            $texts += WebsiteLanguage::faqTexts($webpage->model->faq);
         }
 
         return $texts;

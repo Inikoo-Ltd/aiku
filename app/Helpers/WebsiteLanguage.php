@@ -9,6 +9,7 @@
 namespace App\Helpers;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Tag;
 use App\Models\Web\Webpage;
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\DB;
 final class WebsiteLanguage
 {
     private const string REQUEST_KEY = 'website_translation_locale';
+
+    private const array FAQ_TEXT_KEYS = ['question', 'answer'];
 
     public static function set(Shop $shop, string $locale): void
     {
@@ -70,6 +73,59 @@ final class WebsiteLanguage
         }
 
         return WebsiteTexts::textForVisitor($webpage->website_id, $text);
+    }
+
+    /**
+     * Tags are shared by every shop and already carry their names in each language in `label`.
+     */
+    public static function tagName(Tag $tag): ?string
+    {
+        $locale = self::translateTo();
+        $label  = $locale && array_key_exists('label', $tag->getAttributes()) ? $tag->getTranslation('label', $locale, false) : null;
+
+        return is_string($label) && trim($label) !== '' ? $label : $tag->name;
+    }
+
+    /**
+     * A category FAQ (list of question/answer) in the visitor's language: each text is translated as a website text,
+     * so it falls back to the shop's own string by string.
+     */
+    public static function faq(?int $websiteId, mixed $faq): mixed
+    {
+        if (!self::translateTo() || !$websiteId || !is_array($faq)) {
+            return $faq;
+        }
+
+        return array_map(function ($item) use ($websiteId) {
+            if (!is_array($item)) {
+                return $item;
+            }
+            foreach (self::FAQ_TEXT_KEYS as $key) {
+                if (is_string($item[$key] ?? null)) {
+                    $item[$key] = WebsiteTexts::textForVisitor($websiteId, $item[$key]);
+                }
+            }
+
+            return $item;
+        }, $faq);
+    }
+
+    /**
+     * @return array<string, string> source hash => text
+     */
+    public static function faqTexts(mixed $faq): array
+    {
+        $texts = [];
+        foreach (is_array($faq) ? $faq : [] as $item) {
+            foreach (self::FAQ_TEXT_KEYS as $key) {
+                $text = is_array($item) ? ($item[$key] ?? null) : null;
+                if (is_string($text) && WebsiteTexts::isWords($text)) {
+                    $texts[WebsiteTexts::hash($text)] = $text;
+                }
+            }
+        }
+
+        return $texts;
     }
 
     /**

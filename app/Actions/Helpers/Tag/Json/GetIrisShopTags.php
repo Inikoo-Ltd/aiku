@@ -15,6 +15,7 @@ use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Helpers\Tag;
 use App\Services\QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -39,6 +40,7 @@ class GetIrisShopTags extends IrisAction
             ->select([
                 'tags.id',
                 'tags.name',
+                DB::raw('tags.label::jsonb as label'),
                 'tags.slug',
                 'tags.created_at',
             ])->distinct();

@@ -9,12 +9,13 @@
 
 namespace App\Actions\Web\WebBlock\Concerns;
 
+use App\Helpers\WebsiteLanguage;
 use App\Models\Web\Webpage;
 
 trait HasFaqDepartmentData
 {
     protected function setFaqDepartmentData(Webpage $webpage, array &$webBlock): void
     {
-        data_set($webBlock, 'web_block.layout.data.fieldValue.faqs', $webpage->model->faq);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.faqs', WebsiteLanguage::faq($webpage->website_id, $webpage->model->faq));
     }
 }

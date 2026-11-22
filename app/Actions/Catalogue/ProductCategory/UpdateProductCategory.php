@@ -23,6 +23,7 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Website\TranslateWebsiteTexts;
 use App\Actions\Web\Webpage\CloseDiscontinuedWebpage;
 use App\Actions\Web\Webpage\ReopenDiscontinuedWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
@@ -216,6 +217,9 @@ class UpdateProductCategory extends OrgAction
 
         if (Arr::hasAny($changes, ['faq']) && $productCategory->webpage) {
             BreakWebpageCache::run($productCategory->webpage);
+            if ($productCategory->webpage->website) {
+                TranslateWebsiteTexts::dispatchIfTranslated($productCategory->webpage->website, $productCategory->webpage);
+            }
         }
 
         if (Arr::hasAny($changes, [

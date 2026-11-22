@@ -2082,3 +2082,53 @@ test('banner slide texts and webpage breadcrumb labels and share image alts are 
 
     enableShopLanguages($this->shop, null);
 });
+
+test('product tags and category FAQs are shown in the visitor language, and the FAQ texts are collected for translation (INI-510)', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    [, $product] = createProduct($this->shop);
+    $family      = $product->family;
+
+    $tag = \App\Models\Helpers\Tag::create(['group_id' => $this->shop->group_id, 'name' => 'Handmade', 'slug' => 'handmade-ini510', 'scope' => \App\Enums\Helpers\Tag\TagScopeEnum::PRODUCT_PROPERTY, 'label' => ['en' => 'Handmade', $otherCode => 'Handgemacht']]);
+    $untranslated = \App\Models\Helpers\Tag::create(['group_id' => $this->shop->group_id, 'name' => 'Vegan', 'slug' => 'vegan-ini510', 'scope' => \App\Enums\Helpers\Tag\TagScopeEnum::PRODUCT_PROPERTY, 'label' => ['en' => 'Vegan']]);
+    $faq = [['question' => 'Is it handmade?', 'answer' => '<p>Yes, by artisans.</p>'], ['question' => 'Not translated yet', 'answer' => '']];
+    DB::table('product_categories')->where('id', $family->id)->update(['faq' => json_encode($faq)]);
+    $family = $family->fresh();
+
+    $webpage = new Webpage();
+    $webpage->setRelation('model', $family);
+    expect(array_values(\App\Actions\Web\Website\TranslateWebsiteTexts::make()->webpageTexts($webpage)))->toContain('Is it handmade?', '<p>Yes, by artisans.</p>', 'Not translated yet')
+        ->and(\App\Helpers\WebsiteLanguage::faqTexts($faq))->toHaveCount(3);
+
+    foreach (['Is it handmade?' => 'Ist es handgemacht?', '<p>Yes, by artisans.</p>' => '<p>Ja, von Kunsthandwerkern.</p>'] as $source => $text) {
+        \App\Models\Web\WebsiteTextTranslation::create([
+            'website_id' => $this->website->id, 'locale' => $otherCode, 'source_hash' => sha1($source),
+            'source_text' => $source, 'text' => $text, 'origin' => 'machine',
+        ]);
+    }
+
+    expect(\App\Helpers\WebsiteLanguage::tagName($tag))->toBe('Handmade')
+        ->and(\App\Helpers\WebsiteLanguage::faq($this->website->id, $faq))->toBe($faq);
+
+    DB::table('model_has_tags')->insert(['tag_id' => $tag->id, 'model_type' => 'Product', 'model_id' => $product->id, 'shop_id' => $this->shop->id]);
+    $shopTags = function () {
+        $action = \App\Actions\Helpers\Tag\Json\GetIrisShopTags::make();
+        (fn () => $this->shop = test()->shop)->call($action);
+
+        return collect($action->jsonResponse($action->handle())->toArray(request()))->pluck('name')->all();
+    };
+    expect($shopTags())->toBe(['Handmade']);
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $otherCode);
+
+    expect($shopTags())->toBe(['Handgemacht'])
+        ->and(\App\Helpers\WebsiteLanguage::tagName($tag))->toBe('Handgemacht')
+        ->and(\App\Helpers\WebsiteLanguage::tagName($untranslated))->toBe('Vegan')
+        ->and(\App\Http\Resources\Catalogue\TagResource::make($tag)->toArray(request())['name'])->toBe('Handgemacht')
+        ->and(\App\Http\Resources\Catalogue\TagsResource::make(\App\Models\Helpers\Tag::select(['id', 'name', 'slug'])->find($tag->id))->toArray(request())['name'])->toBe('Handmade')
+        ->and(\App\Helpers\WebsiteLanguage::faq($this->website->id, $faq))->toBe([
+            ['question' => 'Ist es handgemacht?', 'answer' => '<p>Ja, von Kunsthandwerkern.</p>'],
+            ['question' => 'Not translated yet', 'answer' => ''],
+        ]);
+
+    request()->attributes->remove('website_translation_locale');
+});

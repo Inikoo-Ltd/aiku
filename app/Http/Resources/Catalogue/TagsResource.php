@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Helpers\WebsiteLanguage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -24,7 +25,7 @@ class TagsResource extends JsonResource
         return [
             'id'    => $this->id,
             'slug'  => $this->slug,
-            'name'  => $this->name,
+            'name'  => WebsiteLanguage::tagName($this->resource),
             'scope' => $this->scope?->pretty(),
             'image' => $this->web_image,
         ];
