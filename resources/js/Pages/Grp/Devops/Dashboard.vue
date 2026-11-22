@@ -138,10 +138,10 @@ const serverGroups = computed(() => props.servers.reduce<Record<string, ServerSu
     <Tabs :current="currentTab" :navigation="tabs" @update:tab="changeTab" />
 
     <div class="p-4">
-        <div v-if="currentTab === 'servers'" class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <section v-for="(groupServers, group) in serverGroups" :key="group">
+        <div v-if="currentTab === 'servers'" class="mb-6 grid grid-cols-1 gap-6 xl:flex">
+            <section v-for="(groupServers, group) in serverGroups" :key="group" class="min-w-0" :style="{ flexGrow: groupServers.length, flexBasis: 0, '--cols': groupServers.length }">
                 <h4 class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans(group) }}</h4>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(var(--cols),minmax(0,1fr))]">
                     <Link v-for="server in groupServers" :key="server.slug" :href="route('grp.devops.servers.show', [server.slug])" class="block hover:shadow">
                         <ServerUsageCard :server="server" :live="liveReadings[server.slug]" />
                     </Link>
