@@ -9,11 +9,11 @@ It runs on its own small Hetzner Cloud server, not on boro or litio: Cloudflare'
 carry UDP media, so this box is reached directly on DNS-only names, and a long call must never
 compete with orders and the websites.
 
-**As built on 21 Nov 2026:** server `calls`, Hetzner Cloud **CX23** (2 shared vCPU, 4 GB, 40 GB) in
+**As built on 21 Nov 2026:** server `erbio` (erbium, after the fibre amplifiers that carry long-distance calls; named `calls` until 22 Nov 2026), Hetzner Cloud **CX23** (2 shared vCPU, 4 GB, 40 GB) in
 **Falkenstein**, Ubuntu 24.04, IPv4 `46.224.136.237`, EUR 5.49 + EUR 0.50 for the IPv4 = EUR 5.99
 a month excl. VAT. The CX33 recommended below was listed at EUR 8.49 and marked "not available" in
 Nuremberg, Falkenstein and Helsinki that day, so Raul chose the CX23; rescale when a larger type is
-needed. Hetzner firewall `calls` attached, DNS-only A records `calls.aiku.io` and
+needed. Hetzner firewall `erbio` attached, DNS-only A records `calls.aiku.io` and
 `calls-turn.aiku.io` in Cloudflare, certificate registered without an email
 (`--register-unsafely-without-email` in place of `-m $LE_EMAIL` in step 10). One addition to the
 steps: `60-livekit.conf` goes to `/etc/sysctl.d/` (then `sysctl --system`) before the dry start,
@@ -165,7 +165,7 @@ per call; a single-server LiveKit without Redis needs nothing else. Not needed n
 | Signalling hostname `CALLS_DOMAIN` | `calls.aiku.io` | DNS, certificate, `LIVEKIT_URL` |
 | TURN hostname `TURN_DOMAIN` | `calls-turn.aiku.io` | DNS, certificate, `livekit.yaml` |
 | Let's Encrypt email `LE_EMAIL` | an ops mailbox | expiry notices |
-| Server name in Hetzner | `calls` | also the DevOps dashboard slug |
+| Server name in Hetzner | `erbio` | also the DevOps dashboard slug |
 | SSH key | the same key as boro and litio | Hetzner "SSH keys" |
 
 Two hostnames are required: LiveKit always tells browsers to reach TURN over TLS at
@@ -174,7 +174,7 @@ browser asks for (SNI). One certificate covers both names.
 
 ## 3. Hetzner Cloud console (no commands)
 
-1. **Firewalls > Create firewall**, name `calls`. Inbound rules, source "Any IPv4" and "Any IPv6":
+1. **Firewalls > Create firewall**, name `erbio`. Inbound rules, source "Any IPv4" and "Any IPv6":
 
    | Protocol | Port | Why |
    | --- | --- | --- |
@@ -188,8 +188,8 @@ browser asks for (SNI). One certificate covers both names.
 
    Outbound: leave empty (everything allowed). Cloud firewalls are free.
 2. **Servers > Add server**: location Nuremberg, image Ubuntu 24.04, type CX33 (shared
-   vCPU, x86), networking public IPv4 + IPv6, SSH key as above, firewall `calls`, backups off (nothing
-   on the box is stateful; this runbook rebuilds it), name `calls`.
+   vCPU, x86), networking public IPv4 + IPv6, SSH key as above, firewall `erbio`, backups off (nothing
+   on the box is stateful; this runbook rebuilds it), name `erbio`.
 3. Write down the server's public IPv4.
 
 ## 4. Cloudflare DNS (zone of `CALLS_DOMAIN`)
@@ -247,7 +247,7 @@ NEEDRESTART_SUSPEND=1 DEBIAN_FRONTEND=noninteractive apt-get -y install haproxy 
 **2. Hostname and time**
 
 ```bash
-hostnamectl set-hostname calls
+hostnamectl set-hostname erbio
 ```
 
 ```bash
@@ -501,7 +501,7 @@ install -m 644 /root/livekit/aiku-server-metrics.service /etc/systemd/system/aik
 **Replace** with `DEVOPS_TOKEN` from the production `.env`:
 
 ```bash
-(umask 077; printf 'SERVER_METRICS_TOKEN=REPLACE_DEVOPS_TOKEN\nSERVER_METRICS_SLUG=calls\n' > /etc/aiku-server-metrics.env)
+(umask 077; printf 'SERVER_METRICS_TOKEN=REPLACE_DEVOPS_TOKEN\nSERVER_METRICS_SLUG=erbio\n' > /etc/aiku-server-metrics.env)
 ```
 
 ```bash
@@ -512,7 +512,7 @@ install -m 644 /root/livekit/aiku-server-metrics.service /etc/systemd/system/aik
 systemctl daemon-reload && systemctl enable --now aiku-server-metrics
 ```
 
-The box appears on the DevOps dashboard as `calls` on its first reading.
+The box appears on the DevOps dashboard as `erbio` on its first reading.
 
 How it runs, and why systemd and not Docker Compose: LiveKit is one static Go binary, so a unit
 file pins it, starts it on boot (`WantedBy=multi-user.target`) and restarts it on failure
@@ -689,7 +689,7 @@ Rollback: the same with the previous version and sha256.
 Nothing on the box needs saving: rooms live in memory, the key pair is in aiku's production
 `.env`, the configuration is this folder.
 
-1. Hetzner: create a new server exactly as in section 3 (the `calls` firewall still exists).
+1. Hetzner: create a new server exactly as in section 3 (the `erbio` firewall still exists).
 2. Cloudflare: point both A records of section 4 at the new IPv4, still DNS only.
 3. Run section 5, taking the *Rebuild* branch of step 8 (the key pair from the `.env`), so boro
    and litio need no change.
@@ -699,7 +699,7 @@ Nothing on the box needs saving: rooms live in memory, the key pair is in aiku's
 
 Nothing new is added; it fits what aiku already has:
 
-- **CPU, memory and bandwidth**: the DevOps dashboard sampler (step 13) as box `calls`. Watch
+- **CPU, memory and bandwidth**: the DevOps dashboard sampler (step 13) as box `erbio`. Watch
   outgoing Mbit/s during calls and CPU. Act when CPU stays above 60% during calls (rescale to
   CX43), when `vmstat` shows CPU steal with jitter in calls (rescale to CCX13), or monthly
   outgoing traffic heads for 20 TB (Hetzner
