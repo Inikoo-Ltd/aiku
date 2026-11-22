@@ -550,7 +550,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('stock_values:check')->dailyAt('01:30')->onOneServer()->withoutOverlapping(60)->timezone('UTC'),
+                $schedule->command('stock_values:check --route')->dailyAt('01:30')->onOneServer()->withoutOverlapping(60)->timezone('UTC'),
                 name: 'CheckStockValues',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
