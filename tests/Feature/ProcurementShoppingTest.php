@@ -444,8 +444,6 @@ describe('partner browse', function () {
                 ->component('Procurement/PartnerCoverBucketItems')
                 ->where('bucket', 'out')
                 ->where('bucketLabel', 'Out of stock')
-                ->where('perPage', 25)
-                ->where('perPageOptions', [25, 100, 500])
                 ->where('items.data', fn ($rows) => collect($rows)->every(fn ($row) => collect(['quarterly_usage', 'stock_cover', 'stock_deliveries', 'units_per_pack', 'quantity_ordered', 'other_open_purchase_orders', 'hub_stock'])
                     ->every(fn ($key) => array_key_exists($key, (array) $row))))
                 ->has('items.data')
@@ -454,11 +452,8 @@ describe('partner browse', function () {
 
         $route = route('grp.org.procurement.org_partners.show.shopping.items.index', [$this->organisation->slug, $this->orgPartner->id]);
 
-        $this->get($route.'?cover=out&per_page=500')
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('perPage', 500)->where('items.per_page', 500));
-
-        $this->get($route.'?cover=out&per_page=9999')
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('perPage', 25)->where('items.per_page', 25));
+        $this->get($route.'?cover=out&perPage=100')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('items.meta.per_page', 100));
     });
 
     test('UI partner cover bucket items lists every stock group and hides what is on order', function () {
@@ -480,7 +475,7 @@ describe('partner browse', function () {
             ->where('bucket', null)
             ->where('bucketLabel', 'All products')
             ->where('hideOrdered', false)
-            ->where('items.total', $total)
+            ->where('items.meta.total', $total)
             ->where('filterOptions.cover', fn ($options) => collect($options)->pluck('value')->all() === array_keys(GetPartnerStockCoverBuckets::BUCKETS)
                 && collect($options)->sum('count') === $total
                 && collect($options)->firstWhere('value', 'w1')['label'] === 'Doomed')
@@ -489,7 +484,11 @@ describe('partner browse', function () {
 
         $this->get($route.'?rank=B')->assertInertia(fn (AssertableInertia $page) => $page
             ->where('rank', 'B')
-            ->where('items.total', $buckets->stockRows($this->orgPartner)->where('health_rank', 'B')->count()));
+            ->where('items.meta.total', $buckets->stockRows($this->orgPartner)->where('health_rank', 'B')->count()));
+
+        $sellerCode = $sellerProduct->orgStocks()->first()->code;
+        $this->get($route.'?filter[global]='.urlencode($sellerCode))->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('items.data', fn ($rows) => collect($rows)->isNotEmpty() && collect($rows)->every(fn ($row) => str_contains(mb_strtolower($row['code'].' '.$row['name']), mb_strtolower($sellerCode)))));
 
         $draft = StorePartnerShoppingListItem::make()->action($this->orgPartner, $buyerOrgStock, ['quantity' => 2]);
         expect($draft->state)->toBe(ShoppingListItemStateEnum::DRAFT)
@@ -501,7 +500,7 @@ describe('partner browse', function () {
 
         $this->get($route.'?hide_ordered=1')->assertInertia(fn (AssertableInertia $page) => $page
             ->where('hideOrdered', true)
-            ->where('items.total', $buckets->stockRows($this->orgPartner, true)->count()));
+            ->where('items.meta.total', $buckets->stockRows($this->orgPartner, true)->count()));
 
         PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
         $buyerOrgStock->update(['health_rank' => null]);

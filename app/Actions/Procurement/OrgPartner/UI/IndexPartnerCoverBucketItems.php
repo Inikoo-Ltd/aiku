@@ -24,17 +24,23 @@ use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\SysAdmin\Organisation;
+use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexPartnerCoverBucketItems extends OrgAction
 {
@@ -46,9 +52,6 @@ class IndexPartnerCoverBucketItems extends OrgAction
     private ?string $rank;
     private bool $hideOnOrder = false;
     private Collection $stockRows;
-    private int $perPage = 25;
-
-    public const array PER_PAGE_OPTIONS = [25, 100, 500];
 
     public function handle(OrgPartner $orgPartner, ?string $bucket, ?string $rank, bool $hideOnOrder = false): LengthAwarePaginator
     {
@@ -60,21 +63,33 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->pluck('stock_id')
             ->all();
 
-        $paginator = OrgStock::query()
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $like = '%'.addcslashes((string) $value, '%_\\').'%';
+            $query->whereRaw('(org_stocks.code collate "C" ilike ? or org_stocks.name ilike ? or exists (select 1 from org_stock_families where org_stock_families.id = org_stocks.org_stock_family_id and (org_stock_families.code collate "C" ilike ? or org_stock_families.name ilike ?)))', [$like, $like, $like, $like]);
+        });
+
+        $sortBy = fn (string $name, string $expression) => AllowedSort::callback(
+            $name,
+            fn ($query, bool $descending) => $query->orderByRaw($expression.($descending ? ' desc' : ' asc'))
+        );
+
+        $queryBuilder = QueryBuilder::for(OrgStock::query())
             ->where('organisation_id', $orgPartner->partner_id)
             ->whereIn('stock_id', $stockIds)
             ->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('org_stocks.id', $orgPartner))
-            ->select(['id', 'slug', 'code', 'name', 'stock_id', 'quantity_available'])
-            ->when(
-                $stockIds,
-                fn ($query) => $query->orderByRaw(
-                    'array_position(array['.implode(',', array_map(intval(...), $stockIds)).']::bigint[], stock_id)'
-                )
-            )
-            ->paginate($this->perPage)
-            ->withQueryString();
+            ->select(['id', 'slug', 'code', 'name', 'stock_id', 'quantity_available']);
 
-        return $this->hydrate($paginator);
+        if ($stockIds && !request()->filled('sort')) {
+            $queryBuilder->orderByRaw('array_position(array['.implode(',', array_map(intval(...), $stockIds)).']::bigint[], stock_id)');
+        }
+
+        return $this->hydrate(
+            $queryBuilder
+                ->allowedSorts([$sortBy('code', 'org_stocks.code collate "C"'), $sortBy('name', 'org_stocks.name')])
+                ->allowedFilters([$globalSearch])
+                ->withPaginator(null, tableName: request()->route()?->getName())
+                ->withQueryString()
+        );
     }
 
     private function hydrate(LengthAwarePaginator $paginator): LengthAwarePaginator
@@ -197,7 +212,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 ])->all();
             }
 
-            return $row;
+            return (array) $row;
         });
 
         return $paginator;
@@ -246,8 +261,6 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $this->hideOnOrder = $request->boolean('hide_ordered');
         $rank             = $request->input('rank');
         $this->rank       = in_array($rank, ['A', 'B', 'C', 'D', 'Z'], true) ? $rank : null;
-        $perPage          = (int) $request->input('per_page', 25);
-        $this->perPage    = in_array($perPage, self::PER_PAGE_OPTIONS, true) ? $perPage : 25;
 
         $this->initialisation($organisation, $request);
 
@@ -284,11 +297,23 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'rank'        => $this->rank,
                 'hideOrdered' => $this->hideOnOrder,
                 'filterOptions' => $this->filterOptions(),
-                'perPage'     => $this->perPage,
-                'perPageOptions' => self::PER_PAGE_OPTIONS,
-                'items'       => $items,
+                'items'       => JsonResource::collection($items),
             ]
-        );
+        )->table($this->tableStructure());
+    }
+
+    public function tableStructure(): Closure
+    {
+        return function (InertiaTable $table) {
+            $table
+                ->withGlobalSearch(__('Search by code, name or family'))
+                ->withLabelRecord([__('Product'), __('Products')])
+                ->withEmptyState(['title' => __('No products match these filters')])
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true)
+                ->column(key: 'name', label: __('Info'), canBeHidden: false, sortable: true)
+                ->column(key: 'quantity', label: __('Quantity (SKO)'), canBeHidden: false, align: 'right')
+                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, align: 'right');
+        };
     }
 
     public function getBreadcrumbs(OrgPartner $orgPartner, array $routeParameters): array
