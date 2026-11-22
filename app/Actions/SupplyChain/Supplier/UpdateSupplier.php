@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier;
 
+use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateCurrentSupplierSkuCost;
@@ -194,6 +195,7 @@ class UpdateSupplier extends OrgAction
             ],
             'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'peppol_id'       => ['sometimes', 'nullable', 'string', 'regex:'.BuildUblInvoice::PEPPOL_ID_PATTERN],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'name'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => ['sometimes', 'nullable', 'email'],

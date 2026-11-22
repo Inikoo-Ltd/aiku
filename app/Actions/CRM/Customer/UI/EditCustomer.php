@@ -189,6 +189,15 @@ class EditCustomer extends OrgAction
             ]
         ];
 
+        if (Arr::get($customer->organisation->settings, 'e_invoicing.countries')) {
+            $identification['fields']['peppol_id'] = [
+                'type'        => 'input',
+                'label'       => __('Peppol ID'),
+                'information' => __('Where Peppol e-invoices are sent, as scheme:number, e.g. 0245:2120643690 for a Slovak DIČ. Leave empty to use the DIČ in the tax number.'),
+                'value'       => $customer->peppol_id,
+            ];
+        }
+
         $accounting = [
             'title'  => __('Accounting'),
             'icon'   => 'fal fa-file-invoice',

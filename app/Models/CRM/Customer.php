@@ -162,6 +162,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $searchable_text Normalized search cache for ILIKE queries
  * @property string|null $identity_document_number_alt
  * @property string|null $fiscal_name
+ * @property string|null $peppol_id Peppol participant id scheme:value; null = derived from the tax number
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, Product> $allExclusiveProducts
@@ -359,6 +360,7 @@ class Customer extends Model implements HasMedia, Auditable
         'contact_name',
         'company_name',
         'fiscal_name',
+        'peppol_id',
         'email',
         'phone',
         'contact_website',

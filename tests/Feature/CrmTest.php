@@ -296,6 +296,17 @@ test('customer email change follows web user with matching email', function (Cus
         ->and($rootWebUser->email)->toBe('example@mail.com');
 })->depends('create web user');
 
+test('a customer keeps a Peppol ID only in scheme:number form', function (Customer $customer) {
+    UpdateCustomer::make()->action($customer, ['peppol_id' => '0245:2121551498']);
+    expect($customer->refresh()->peppol_id)->toBe('0245:2121551498');
+
+    expect(fn () => UpdateCustomer::make()->action($customer, ['peppol_id' => 'SK 2121551498']))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    UpdateCustomer::make()->action($customer, ['peppol_id' => null]);
+    expect($customer->refresh()->peppol_id)->toBeNull();
+})->depends('create web user');
+
 test('customer email change leaves a web user whose email would collide with another web user of the website', function (Customer $customer) {
     $customer->refresh();
     $follower = $customer->webUsers()->where('email', $customer->email)->first()

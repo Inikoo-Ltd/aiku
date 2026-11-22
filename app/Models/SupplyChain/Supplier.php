@@ -64,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $identity_document_type
  * @property string|null $identity_document_number
  * @property string|null $contact_website
+ * @property string|null $peppol_id Peppol participant id scheme:value; null = derived from the tax number
  * @property int|null $address_id
  * @property array<array-key, mixed> $location
  * @property int $currency_id
@@ -252,6 +253,7 @@ class Supplier extends Model implements HasMedia, Auditable
         'company_name',
         'identity_document_type',
         'identity_document_number',
+        'peppol_id',
         'contact_website',
         'wechat',
         'whatsapp',

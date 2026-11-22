@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
+use App\Models\Helpers\Country;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\Helpers\TimeZone\UI\GetTimeZonesOptions;
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
@@ -222,6 +223,15 @@ class EditOrganisationSettings extends OrgAction
                                     'type' => 'toggle',
                                     'label' => __('Show Omega'),
                                     'value' => Arr::get($organisation->settings, 'invoice_export.show_omega', false),
+                                ],
+                                'e_invoice_countries' => [
+                                    'type' => 'multiselect-tags',
+                                    'label' => __('Peppol e-invoice countries'),
+                                    'information' => __('Invoices and refunds to business customers with an invoice address in these countries are sent as Peppol e-invoices. Empty: none are sent.'),
+                                    'options' => Country::orderBy('name')->get(['code', 'name'])->map(fn (Country $country) => ['code' => $country->code, 'name' => $country->name]),
+                                    'labelProp' => 'name',
+                                    'valueProp' => 'code',
+                                    'value' => Arr::get($organisation->settings, 'e_invoicing.countries', []),
                                 ],
                             ],
                         ],

@@ -6,6 +6,7 @@
  */
 
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
+use App\Actions\Accounting\EInvoice\IsInvoiceInEInvoiceScope;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -159,11 +160,14 @@ test('an invoice whose stored totals differ from its lines is refused', function
     BuildUblInvoice::run(ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.40));
 })->throws(RuntimeException::class, 'totals do not match');
 
-test('a buyer who is not VAT registered is routed by DIČ without a VAT number', function () {
+test('a buyer whose tax number is not a validated VAT number needs a Peppol ID', function () {
     $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
     $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
     $invoice->tax_number_valid = false;
 
+    expect(fn () => BuildUblInvoice::run($invoice))->toThrow(RuntimeException::class, 'no Peppol ID');
+
+    $invoice->customer->peppol_id = '0245:2120643690';
     $document = ublParse(BuildUblInvoice::run($invoice));
 
     expect(ublValue($document, '//cac:AccountingCustomerParty//cbc:EndpointID'))->toBe('2120643690')
@@ -183,7 +187,7 @@ test('a customer without a Slovak VAT number cannot be addressed on Peppol', fun
     $invoice->tax_number = null;
 
     BuildUblInvoice::run($invoice);
-})->throws(RuntimeException::class, 'no Slovak VAT number');
+})->throws(RuntimeException::class, 'no Peppol ID');
 
 test('tax category types map to EN 16931 VAT categories', function () {
     expect(BuildUblInvoice::ublTaxCategory(ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0))['code'])->toBe('Z')
@@ -191,4 +195,47 @@ test('tax category types map to EN 16931 VAT categories', function () {
         ->and(fn () => BuildUblInvoice::ublTaxCategory(ublTaxCategory(TaxCategoryTypeEnum::EU_VTC, 0)))->toThrow(RuntimeException::class)
         ->and(BuildUblInvoice::participantId('sk 2120643690'))->toBe(['scheme' => '0245', 'id' => '2120643690'])
         ->and(BuildUblInvoice::participantId('CZ12345678'))->toBeNull();
+});
+
+test('a Peppol ID stored on the customer wins over the tax number', function () {
+    $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
+    $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
+    $invoice->tax_number = null;
+    $invoice->customer->peppol_id = '0245:2121551498';
+
+    $document = ublParse(BuildUblInvoice::run($invoice));
+
+    expect(ublValue($document, '//cac:AccountingCustomerParty//cbc:EndpointID'))->toBe('2121551498')
+        ->and(ublValue($document, '//cac:AccountingCustomerParty//cbc:EndpointID/@schemeID'))->toBe('0245')
+        ->and($document->xpath('//cac:AccountingCustomerParty//cac:PartyTaxScheme'))->toBeEmpty()
+        ->and(BuildUblInvoice::parsePeppolId('0245 2121551498'))->toBeNull();
+});
+
+test('only business invoices addressed in an e-invoice country of the organisation are in scope', function () {
+    $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
+    $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
+
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeFalse();
+
+    $invoice->organisation->settings = ['e_invoicing' => ['countries' => ['SK']]];
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeTrue();
+
+    $invoice->tax_number               = null;
+    $invoice->identity_document_number = '54018579';
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeTrue();
+
+    $invoice->identity_document_number = 'Slovensko';
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeFalse();
+
+    $invoice->customer->company_name = 'Obchod s.r.o.';
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeTrue();
+    $invoice->customer->company_name = null;
+
+    $invoice->tax_number = 'SK 2120643690';
+    $invoice->address->country_code = 'CZ';
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeFalse();
+
+    $invoice->address->country_code = 'SK';
+    $invoice->in_process = true;
+    expect(IsInvoiceInEInvoiceScope::run($invoice))->toBeFalse();
 });

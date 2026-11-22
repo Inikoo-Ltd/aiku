@@ -25,8 +25,8 @@ class BuildUblInvoice
     public const string CUSTOMIZATION_ID = 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0';
     public const string PROFILE_ID = 'urn:fdc:peppol.eu:2017:poacc:billing:01:1.0';
 
-    // ponytail: Slovak routing is 0245 + DIČ (Peppol EAS list); a per-party override comes with the Peppol ID fields
     public const string PEPPOL_SCHEME = '0245';
+    public const string PEPPOL_ID_PATTERN = '/^\d{4}:[A-Za-z0-9]{1,50}$/';
 
     private XMLWriter $xml;
     private string $currency;
@@ -102,6 +102,7 @@ class BuildUblInvoice
 
         $this->party(
             'cac:AccountingSupplierParty',
+            participant: self::participantId($invoice->shop->taxNumber ? $invoice->shop->taxNumber->country_code.$invoice->shop->taxNumber->number : null),
             vatNumber: $invoice->shop->taxNumber ? $invoice->shop->taxNumber->country_code.$invoice->shop->taxNumber->number : null,
             name: $invoice->organisation->name,
             address: $invoice->shop->address ?? $invoice->organisation->address,
@@ -111,6 +112,7 @@ class BuildUblInvoice
 
         $this->party(
             'cac:AccountingCustomerParty',
+            participant: self::buyerParticipantId($invoice),
             vatNumber: $invoice->tax_number,
             name: $invoice->fiscal_name ?: ($invoice->customer_name ?: $invoice->customer->name),
             address: $invoice->address,
@@ -169,6 +171,28 @@ class BuildUblInvoice
     }
 
     /**
+     * @return array{scheme: string, id: string}|null
+     */
+    public static function parsePeppolId(?string $peppolId): ?array
+    {
+        if (!$peppolId || !preg_match(self::PEPPOL_ID_PATTERN, $peppolId)) {
+            return null;
+        }
+        [$scheme, $id] = explode(':', $peppolId, 2);
+
+        return ['scheme' => $scheme, 'id' => $id];
+    }
+
+    /**
+     * @return array{scheme: string, id: string}|null
+     */
+    public static function buyerParticipantId(Invoice $invoice): ?array
+    {
+        return self::parsePeppolId($invoice->customer?->peppol_id)
+            ?? ($invoice->tax_number_valid === true ? self::participantId($invoice->tax_number) : null);
+    }
+
+    /**
      * @return array{code: string, percent: float|null, exemption_code: string|null, exemption_reason: string|null}
      */
     public static function ublTaxCategory(TaxCategory $taxCategory): array
@@ -221,12 +245,13 @@ class BuildUblInvoice
         }
     }
 
-    private function party(string $element, ?string $vatNumber, string $name, ?Address $address, bool $isVatRegistered, ?string $companyNumber): void
+    /**
+     * @param array{scheme: string, id: string}|null $participant
+     */
+    private function party(string $element, ?array $participant, ?string $vatNumber, string $name, ?Address $address, bool $isVatRegistered, ?string $companyNumber): void
     {
-        // ponytail: routes on the DIČ inside the tax number; buyers with only an IČO need the Peppol ID field
-        $participant = self::participantId($vatNumber);
         if (!$participant) {
-            throw new RuntimeException("$name has no Slovak VAT number to address it on Peppol");
+            throw new RuntimeException("$name has no Peppol ID or Slovak tax number to address it on Peppol");
         }
         if (!$address) {
             throw new RuntimeException("$name has no address");
@@ -252,7 +277,7 @@ class BuildUblInvoice
         $this->xml->endElement();
         $this->xml->endElement();
 
-        if ($isVatRegistered) {
+        if ($isVatRegistered && preg_match('/^[A-Z]{2}[A-Z0-9]+$/', $vatNumber)) {
             $this->xml->startElement('cac:PartyTaxScheme');
             $this->xml->writeElement('cbc:CompanyID', $vatNumber);
             $this->xml->startElement('cac:TaxScheme');

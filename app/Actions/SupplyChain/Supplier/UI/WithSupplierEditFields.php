@@ -59,6 +59,12 @@ trait WithSupplierEditFields
                         'label' => __('Contact website'),
                         'value' => $supplier->contact_website
                     ],
+                    'peppol_id' => [
+                        'type'        => 'input',
+                        'label'       => __('Peppol ID'),
+                        'information' => __('The ID this supplier sends Peppol e-invoices from, as scheme:number, e.g. 0245:2120643690 for a Slovak DIČ'),
+                        'value'       => $supplier->peppol_id
+                    ],
                     'email'        => [
                         'type'    => 'input',
                         'label'   => __('Email'),

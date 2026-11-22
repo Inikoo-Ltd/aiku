@@ -96,6 +96,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoice_export.attach_isdoc_to_pdf", Arr::pull($modelData, 'attach_isdoc_to_pdf'));
         }
 
+        if (Arr::has($modelData, 'e_invoice_countries')) {
+            data_set($modelData, 'settings.e_invoicing.countries', array_values(array_unique(Arr::pull($modelData, 'e_invoice_countries') ?? [])));
+        }
+
         if (Arr::has($modelData, 'show_tax_liability_date')) {
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
@@ -377,6 +381,8 @@ class UpdateOrganisation extends OrgAction
             'show_omega'                            => ['sometimes', 'boolean'],
             'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
             'show_tax_liability_date'               => ['sometimes', 'boolean'],
+            'e_invoice_countries'                   => ['sometimes', 'nullable', 'array'],
+            'e_invoice_countries.*'                 => ['string', Rule::exists('countries', 'code')],
             'google_drive_folder_key'               => ['sometimes', 'string'],
             'access_id'                             => ['sometimes', 'string', 'nullable'],
             'access_key'                            => ['sometimes', 'string', 'nullable'],

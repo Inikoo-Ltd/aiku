@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
@@ -452,6 +453,7 @@ class UpdateCustomer extends OrgAction
             'is_gift_opted_out'                                     => ['sometimes', 'boolean'],
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
+            'peppol_id'                                             => ['sometimes', 'nullable', 'string', 'regex:'.BuildUblInvoice::PEPPOL_ID_PATTERN],
             'is_vip'                                                => ['sometimes', 'boolean'],
             'as_employee_id'                                        => [
                 'sometimes',
@@ -554,7 +556,7 @@ class UpdateCustomer extends OrgAction
         $this->initialisationFromShop($customer->shop, $request);
 
         $modelData = $customer->shop->type === ShopTypeEnum::EXTERNAL
-            ? Arr::only($this->validatedData, ['tax_number', 'update_current_orders'])
+            ? Arr::only($this->validatedData, ['tax_number', 'update_current_orders', 'peppol_id'])
             : $this->validatedData;
 
         return $this->handle($customer, $modelData);

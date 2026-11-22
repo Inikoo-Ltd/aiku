@@ -4844,3 +4844,20 @@ test('services to partner invoice category takes partner invoices whose lines ar
 
     $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
 });
+
+test('an organisation lists the countries it sends Peppol e-invoices to', function () {
+    $originalSettings = $this->organisation->settings;
+
+    try {
+        \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['e_invoice_countries' => ['SK', 'SK']]);
+        expect(data_get($this->organisation->fresh()->settings, 'e_invoicing.countries'))->toBe(['SK']);
+
+        expect(fn () => \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['e_invoice_countries' => ['XX']]))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+
+        \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->fresh(), ['e_invoice_countries' => []]);
+        expect(data_get($this->organisation->fresh()->settings, 'e_invoicing.countries'))->toBeEmpty();
+    } finally {
+        $this->organisation->update(['settings' => $originalSettings]);
+    }
+});
