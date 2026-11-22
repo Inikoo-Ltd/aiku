@@ -19,7 +19,7 @@ import { faDotCircle as fasDotCircle, faCheckCircle } from "@fas"
 import { InputNumber } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { notify } from "@kyvg/vue3-notification"
+import CountWarningDialog from "@/Components/Warehouse/Inventory/CountWarningDialog.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { acceptAnyDecimalSeparator } from "@/Composables/useAnyDecimalSeparator"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -76,39 +76,40 @@ function familyRoute(slug: string) {
 
 const loadingLocations = ref<number[]>([])
 const newQuantities = ref<Record<number, number | null>>({})
+const auditErrors = ref<Record<number, string | null>>({})
+const countWarning = ref<{ message: string; confirm: () => void } | null>(null)
 
 // Auditing with no quantity keeps the stock as it is, auditing with one recounts it. Both
 // stamp audited_at and is_low_stock_checked, so the row leaves the list either way.
-function auditLocation(location: LowStockAuditLocation, quantity: number | null = null) {
+function auditLocation(location: LowStockAuditLocation, quantity: number | null = null, isCountWarningConfirmed = false) {
     if (loadingLocations.value.includes(location.id)) {
         return
     }
 
     router[props.auditRoute?.method || "patch"](
         route(props.auditRoute?.name, { locationOrgStock: location.id }),
-        quantity === null ? {} : { quantity },
+        quantity === null ? {} : { quantity, confirm_count_warning: isCountWarningConfirmed },
         {
             preserveScroll: true,
             onStart: () => {
                 loadingLocations.value.push(location.id)
+                auditErrors.value[location.id] = null
             },
             onSuccess: () => {
+                countWarning.value = null
                 newQuantities.value[location.id] = null
                 releaseTypingLock(location)
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully audited stock location (:xlocation)", {
-                        xlocation: location.code,
-                    }),
-                    type: "success",
-                })
             },
-            onError: () => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to audit the stock location"),
-                    type: "error",
-                })
+            onError: (errors) => {
+                if (errors.count_warning) {
+                    countWarning.value = {
+                        message: errors.count_warning,
+                        confirm: () => auditLocation(location, quantity, true),
+                    }
+                    return
+                }
+                countWarning.value = null
+                auditErrors.value[location.id] = Object.values(errors)[0] ?? ctrans("Failed to audit the stock location")
             },
             onFinish: () => {
                 loadingLocations.value = loadingLocations.value.filter((id) => id !== location.id)
@@ -191,14 +192,7 @@ const setTypingLock = async (location: LowStockAuditLocation, isLocking: boolean
 
     if (isLocking && !granted) {
         newQuantities.value[location.id] = null
-
-        notify({
-            title: ctrans("Being audited somewhere else"),
-            text: ctrans("Location :location is already being counted", {
-                location: location.code,
-            }),
-            type: "warning",
-        })
+        auditErrors.value[location.id] = ctrans("Location :location is already being counted", { location: location.code })
 
         return
     }
@@ -233,6 +227,7 @@ function submitNewQuantity(location: LowStockAuditLocation) {
 </script>
 
 <template>
+  <div>
     <Table :resource="data" :name="tab ?? 'low_stock_audits'">
         <template #cell(code)="{ item: lowStockAudit }">
             <Link :href="orgStockRoute(lowStockAudit) as string" class="primaryLink">
@@ -348,9 +343,18 @@ function submitNewQuantity(location: LowStockAuditLocation) {
                         @click="() => submitNewQuantity(location)"
                         size="xs"
                     />
+                    <span v-if="auditErrors[location.id]" class="text-xs text-red-500">{{ auditErrors[location.id] }}</span>
                 </div>
             </div>
             <span v-else class="text-gray-400">-</span>
         </template>
     </Table>
+
+    <CountWarningDialog
+        :message="countWarning?.message ?? null"
+        :is-saving="loadingLocations.length > 0"
+        @confirm="countWarning?.confirm()"
+        @cancel="countWarning = null"
+    />
+  </div>
 </template>

@@ -1819,3 +1819,57 @@ test('an ephemeral note shows on the sko page with its author, hides itself afte
     $this->patch($noteRoute, ['note' => 'Nope'])->assertForbidden();
     $this->get($showRoute)->assertInertia(fn (AssertableInertia $page) => $page->where('ephemeral_note_route', null));
 });
+
+test('an implausible stock count is refused until the user confirms it, and the confirmation is kept on the audit movement', function () {
+    $warehouse = createWarehouse();
+    $shelf     = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $overflow  = StoreLocation::make()->action($warehouse, Location::factory()->definition());
+    $orgStock  = createOrgStocks($this->organisation, array_slice(createStocks($this->group), 0, 1))[0];
+    $slot      = StoreLocationOrgStock::make()->action($orgStock, $shelf, ['type' => LocationStockTypeEnum::STORING]);
+    $other     = StoreLocationOrgStock::make()->action($orgStock, $overflow, ['type' => LocationStockTypeEnum::STORING]);
+    StoreOrgStockMovement::make()->action($orgStock, $shelf, [
+        'type'     => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity' => 10,
+    ])->update(['cost_per_sku' => 285, 'org_amount' => 2850, 'date' => now()->subMinute()]);
+    UpdateLocationOrgStock::make()->action($slot, ['quantity' => 1.7]);
+    UpdateLocationOrgStock::make()->action($other, ['quantity' => 1]);
+    $slot->refresh();
+    $other->refresh();
+    $movementsBefore = $orgStock->orgStockMovements()->where('type', OrgStockMovementTypeEnum::AUDIT)->count();
+
+    $audit = fn (array $data) => $this->patch(route('grp.models.location_org_stock.audit', $slot->id), $data);
+
+    $audit(['quantity' => 500])->assertSessionHasErrors('count_warning');
+    $shownWarning = json_decode(session('errors')->first('count_warning'), true)[0];
+    expect($shownWarning['location_code'])->toBe($shelf->code)
+        ->and((float) $shownWarning['new_count'])->toBe(500.0)
+        ->and((float) $shownWarning['value_change'])->toBe(round(498.3 * 285, 2));
+    $this->patch(route('grp.models.org_stock.bulk_audit', $orgStock->id), ['audited_locations' => [
+        ['id' => $other->id, 'quantity' => 2, 'reason' => OrgStockMovementReasonEnum::RECOUNT->value],
+        ['id' => $slot->id, 'quantity' => 500, 'reason' => OrgStockMovementReasonEnum::RECOUNT->value],
+    ]])->assertSessionHasErrors('count_warning');
+    expect((float) $slot->refresh()->quantity)->toBe(1.7)
+        ->and((float) $other->refresh()->quantity)->toBe(1.0)
+        ->and($orgStock->orgStockMovements()->where('type', OrgStockMovementTypeEnum::AUDIT)->count())->toBe($movementsBefore);
+
+    $audit(['quantity' => 2])->assertSessionHasNoErrors();
+    expect($orgStock->orgStockMovements()->latest('id')->first()->data)->not->toHaveKey('count_warning');
+
+    $audit(['quantity' => 500, 'confirm_count_warning' => true])->assertSessionHasNoErrors();
+    $movement = $orgStock->orgStockMovements()->latest('id')->first();
+    expect((float) $slot->refresh()->quantity)->toBe(500.0)
+        ->and($movement->data['count_warning']['confirmed_by_user_id'])->toBe($this->user->id)
+        ->and($movement->data['count_warning']['rules'])->toBe(['value_change', 'count'])
+        ->and((float) $movement->data['count_warning']['current_stock'])->toBe(2.0)
+        ->and((float) $movement->data['count_warning']['largest_purchase'])->toBe(10.0);
+
+    UpdateLocationOrgStock::make()->action($slot, ['quantity' => 1.7]);
+    $this->patch(route('grp.models.org_stock.bulk_audit', $orgStock->id), ['confirm_count_warning' => true, 'audited_locations' => [
+        ['id' => $other->id, 'quantity' => 3, 'reason' => OrgStockMovementReasonEnum::RECOUNT->value],
+        ['id' => $slot->id, 'quantity' => 400, 'reason' => OrgStockMovementReasonEnum::RECOUNT->value],
+    ]])->assertSessionHasNoErrors();
+    $bulkMovement = $orgStock->orgStockMovements()->where('location_id', $shelf->id)->latest('id')->first();
+    expect((float) $slot->refresh()->quantity)->toBe(400.0)
+        ->and((float) $other->refresh()->quantity)->toBe(3.0)
+        ->and($bulkMovement->data['count_warning']['confirmed_by_user_id'])->toBe($this->user->id);
+});

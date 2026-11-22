@@ -166,6 +166,7 @@ class IndexOrgStockMovements extends OrgAction
                 'org_stock_movements.is_migration_point',
                 'org_stock_movements.reason',
                 'org_stock_movements.note',
+                'org_stock_movements.data',
                 'org_stock_movements.parent_type',
                 DB::raw('COALESCE(dn.reference, rdn.reference, sd.reference) as parent_reference'),
             ])

@@ -8,7 +8,7 @@
 import { computed, ref, watch } from "vue"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
+import CountWarningDialog from "@/Components/Warehouse/Inventory/CountWarningDialog.vue"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import InputText from "primevue/inputtext"
@@ -45,6 +45,7 @@ const locale = useLocaleStore()
 const isOpen = ref(false)
 const isSaving = ref(false)
 const errorMessage = ref<string | null>(null)
+const countWarningMessage = ref<string | null>(null)
 const locationOrgStockId = ref<number | null>(null)
 const counted = ref<{ batch_code_id: number | null; code: string; expiry: Date | null; quantity: number | null }[]>([])
 const withoutBatch = ref<number | null>(0)
@@ -81,7 +82,7 @@ function addBatch() {
 	counted.value.push({ batch_code_id: null, code: "", expiry: null, quantity: null })
 }
 
-async function save() {
+async function save(isCountWarningConfirmed = false) {
 	if (!location.value) {
 		return
 	}
@@ -90,17 +91,23 @@ async function save() {
 	try {
 		await axios.patch(route("grp.models.location_org_stock.audit", { locationOrgStock: location.value.location_org_stock_id }), {
 			quantity: total.value,
+			confirm_count_warning: isCountWarningConfirmed,
 			batches: counted.value
 				.filter((row) => row.batch_code_id || row.code.trim() !== "")
 				.map((row) => (row.batch_code_id
 					? { batch_code_id: row.batch_code_id, quantity: Number(row.quantity) || 0 }
 					: { code: row.code.trim(), expiry_date: row.expiry ? toLocalIsoDate(row.expiry) : null, quantity: Number(row.quantity) || 0 })),
 		})
+		countWarningMessage.value = null
 		isOpen.value = false
-		notify({ title: ctrans("Success"), text: ctrans("Batches counted"), type: "success" })
 		router.reload()
 	} catch (error: any) {
 		const errors = error?.response?.data?.errors
+		if (errors?.count_warning) {
+			countWarningMessage.value = errors.count_warning[0]
+			return
+		}
+		countWarningMessage.value = null
 		errorMessage.value = errors ? (Object.values(errors).flat()[0] as string) : error?.response?.data?.message || ctrans("Failed to save the count")
 	} finally {
 		isSaving.value = false
@@ -167,8 +174,9 @@ async function save() {
 
 			<template #footer>
 				<Button :label="ctrans('Cancel')" type="tertiary" @click="isOpen = false" />
-				<Button :label="ctrans('Save')" type="save" :loading="isSaving" :disabled="!location" @click="save" />
+				<Button :label="ctrans('Save')" type="save" :loading="isSaving" :disabled="!location" @click="() => save()" />
 			</template>
 		</Dialog>
+		<CountWarningDialog :message="countWarningMessage" :is-saving="isSaving" @confirm="save(true)" @cancel="countWarningMessage = null" />
 	</div>
 </template>

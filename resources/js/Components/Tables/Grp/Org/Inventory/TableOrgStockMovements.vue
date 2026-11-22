@@ -21,9 +21,23 @@ import { Dialog } from "primevue";
 import { useBasicColor } from "@/Composables/useColors";
 import { faTimes } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { useLocaleStore } from "@/Stores/locale";
+import { faExclamationTriangle } from "@fas";
 
 
 const locale = inject("locale", aikuLocaleStructure)
+const localeStore = useLocaleStore()
+
+const countWarningTooltip = (countWarning: { current_stock: number, new_count: number, value_change: number, currency: string, largest_purchase: number, monthly_usage: number, confirmed_by_user_id: number | null }) => [
+  countWarning.confirmed_by_user_id
+    ? ctrans("Implausible count: the user saw the warning and confirmed")
+    : ctrans("Implausible count saved without a warning"),
+  ctrans("Current stock: :quantity", { quantity: countWarning.current_stock }),
+  ctrans("New count: :quantity", { quantity: countWarning.new_count }),
+  ctrans("Change in value: :amount", { amount: localeStore.currencyFormat(countWarning.currency, countWarning.value_change) }),
+  ctrans("Largest purchase ever: :quantity", { quantity: countWarning.largest_purchase }),
+  ctrans("Typical monthly usage: :quantity", { quantity: countWarning.monthly_usage }),
+].join(" · ")
 const screenType = inject('screenType', ref('desktop'))
 
 library.add(faArrowDown, faArrowUp, 
@@ -173,7 +187,16 @@ function noteColor(movement) {
 
     <template #cell(reason)="{ item: orgStockMovement }">
       <div class="flex justify-between">
-        {{ orgStockMovement.reason_label }}
+        <span class="flex items-center gap-1">
+          {{ orgStockMovement.reason_label }}
+          <FontAwesomeIcon
+            v-if="orgStockMovement.count_warning"
+            v-tooltip="countWarningTooltip(orgStockMovement.count_warning)"
+            :icon="faExclamationTriangle"
+            class="text-amber-500"
+            fixed-width
+          />
+        </span>
         <FontAwesomeIcon
           v-if="orgStockMovement.note"
           v-tooltip="ctrans('View Note')"

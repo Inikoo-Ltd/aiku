@@ -24,7 +24,9 @@ use App\Events\BroadcastLowStockAuditedStart;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\LocationOrgStock;
+use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\User;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +41,11 @@ class AuditLocationOrgStock extends OrgAction
 
     private LocationOrgStock $locationOrgStock;
     private User|null $user = null;
+    private bool $refusesUnconfirmedCountWarning = false;
+
+    public const float COUNT_WARNING_VALUE_CHANGE = 10000;
+    public const float COUNT_WARNING_COUNT_VALUE_FLOOR = 1000;
+    public const int COUNT_WARNING_COUNT_RATIO = 10;
 
     /**
      * @throws \Throwable
@@ -56,11 +63,17 @@ class AuditLocationOrgStock extends OrgAction
                 $countedBatches = Arr::pull($modelData, 'batches');
                 $reason       = Arr::pull($modelData, 'reason');
                 $note         = Arr::pull($modelData, 'note');
+                $isCountWarningConfirmed = (bool)Arr::pull($modelData, 'confirm_count_warning', false);
                 $stockDiff    = $newQuantity - $currentStock;
 
                 $costPerSku = $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now());
 
                 $exchangeRate = GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency);
+
+                $countWarning = $this->countWarning($locationOrgStock, (float)$newQuantity, $costPerSku, $exchangeRate);
+                if ($countWarning && !$isCountWarningConfirmed && $this->refusesUnconfirmedCountWarning) {
+                    throw ValidationException::withMessages(['count_warning' => json_encode([$countWarning + ['location_code' => $locationOrgStock->location->code]])]);
+                }
 
                 $storedData    = [
                     'quantity'         => $stockDiff,
@@ -79,6 +92,12 @@ class AuditLocationOrgStock extends OrgAction
 
                 if ($note) {
                     data_set($storedData, 'note', $note);
+                }
+
+                if ($countWarning) {
+                    data_set($storedData, 'data.count_warning', array_merge($countWarning, [
+                        'confirmed_by_user_id' => $isCountWarningConfirmed ? $this->user?->id : null,
+                    ]));
                 }
 
                 $orgStockMovement = StoreOrgStockMovement::make()->action(
@@ -120,9 +139,67 @@ class AuditLocationOrgStock extends OrgAction
         return $locationOrgStock;
     }
 
+    /**
+     * A count is implausible when it moves more than COUNT_WARNING_VALUE_CHANGE of stock value (group
+     * currency, either way), or when it is over COUNT_WARNING_COUNT_RATIO times the stock in the location
+     * and over the largest purchase ever received, and moves at least COUNT_WARNING_COUNT_VALUE_FLOOR.
+     * HELP-4868: EOKG-19 bought 1-10 kg at a time was recounted from 1.7 to 500, +£142k of phantom stock.
+     *
+     * @return array{rules: list<string>, current_stock: float, new_count: float, value_change: float, currency: string, largest_purchase: float, monthly_usage: float}|null
+     */
+    public function countWarning(LocationOrgStock $locationOrgStock, float $newQuantity, float $costPerSku, float $exchangeRate): ?array
+    {
+        $currentStock = (float)$locationOrgStock->quantity;
+        $valueChange  = ($newQuantity - $currentStock) * $costPerSku * $exchangeRate;
+
+        $isValueChangeLarge = abs($valueChange) >= self::COUNT_WARNING_VALUE_CHANGE;
+        $isCountRatioHigh   = $newQuantity > self::COUNT_WARNING_COUNT_RATIO * max($currentStock, 0) && $valueChange >= self::COUNT_WARNING_COUNT_VALUE_FLOOR;
+        if (!$isValueChangeLarge && !$isCountRatioHigh) {
+            return null;
+        }
+
+        $largestPurchase = (float)OrgStockMovement::where('org_stock_id', $locationOrgStock->org_stock_id)
+            ->where('type', OrgStockMovementTypeEnum::PURCHASE)
+            ->max('quantity');
+
+        $rules = array_keys(array_filter([
+            'value_change' => $isValueChangeLarge,
+            'count'        => $isCountRatioHigh && $largestPurchase > 0 && $newQuantity > $largestPurchase,
+        ]));
+        if (!$rules) {
+            return null;
+        }
+
+        $usedInLastYear = (float)OrgStockMovement::where('org_stock_id', $locationOrgStock->org_stock_id)
+            ->whereIn('type', [OrgStockMovementTypeEnum::PICKED, OrgStockMovementTypeEnum::CONSUMPTION, OrgStockMovementTypeEnum::PRODUCTION])
+            ->where('date', '>=', now()->subYear())
+            ->sum('quantity');
+
+        return [
+            'rules'            => $rules,
+            'current_stock'    => $currentStock,
+            'new_count'        => $newQuantity,
+            'value_change'     => round($valueChange, 2),
+            'currency'         => $locationOrgStock->group->currency->code,
+            'largest_purchase' => $largestPurchase,
+            'monthly_usage'    => round(abs($usedInLastYear) / 12, 3),
+        ];
+    }
+
+    public function countWarningFor(LocationOrgStock $locationOrgStock, float $newQuantity): ?array
+    {
+        return $this->countWarning(
+            $locationOrgStock,
+            $newQuantity,
+            $this->getLppPerSku($locationOrgStock->orgStock, Carbon::now()),
+            GetCurrencyExchange::run($locationOrgStock->organisation->currency, $locationOrgStock->group->currency)
+        );
+    }
+
     public function rules(): array
     {
         return [
+            'confirm_count_warning' => ['sometimes', 'boolean'],
             'quantity'              => ['required', 'numeric', 'gte:0'],
             'reason'                => ['required', new Enum(OrgStockMovementReasonEnum::class)],
             'note'                  => ['sometimes', 'nullable', 'string'],
@@ -178,6 +255,7 @@ class AuditLocationOrgStock extends OrgAction
     public function asController(LocationOrgStock $locationOrgStock, ActionRequest $request): LocationOrgStock
     {
         $this->user = request()->user();
+        $this->refusesUnconfirmedCountWarning = true;
         $this->locationOrgStock = $locationOrgStock;
         $this->initialisation($locationOrgStock->organisation, $request);
 

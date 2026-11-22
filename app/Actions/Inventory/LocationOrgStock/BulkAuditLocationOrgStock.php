@@ -16,6 +16,7 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class BulkAuditLocationOrgStock extends OrgAction
@@ -30,16 +31,30 @@ class BulkAuditLocationOrgStock extends OrgAction
             ->get()
             ->keyBy('id');
 
+        $isCountWarningConfirmed = (bool)data_get($modelData, 'confirm_count_warning', false);
+        if (!$isCountWarningConfirmed) {
+            $countWarnings = [];
+            foreach ($auditedLocationOrgStocks as $auditedLocationOrgStock) {
+                $locationOrgStock = $locationOrgStocks->get($auditedLocationOrgStock['id']);
+                if ($locationOrgStock && $countWarning = AuditLocationOrgStock::make()->countWarningFor($locationOrgStock, (float)$auditedLocationOrgStock['quantity'])) {
+                    $countWarnings[] = $countWarning + ['location_code' => $locationOrgStock->location->code];
+                }
+            }
+            if ($countWarnings) {
+                throw ValidationException::withMessages(['count_warning' => json_encode($countWarnings)]);
+            }
+        }
+
         foreach ($auditedLocationOrgStocks as $auditedLocationOrgStock) {
             $locationOrgStock = $locationOrgStocks->get($auditedLocationOrgStock['id']);
             if ($locationOrgStock) {
                 AuditLocationOrgStock::make()->action(
                     $locationOrgStock,
-                    Arr::only($auditedLocationOrgStock, [
+                    array_merge(Arr::only($auditedLocationOrgStock, [
                         'quantity',
                         'reason',
                         'note'
-                    ]),
+                    ]), ['confirm_count_warning' => $isCountWarningConfirmed]),
                     $this->user
                 );
             }
@@ -53,6 +68,7 @@ class BulkAuditLocationOrgStock extends OrgAction
     public function rules(): array
     {
         return [
+            'confirm_count_warning'         => ['sometimes', 'boolean'],
             'audited_locations'             => ['required', 'array'],
             'audited_locations.*.id'        => ['required', Rule::exists('location_org_stocks', 'id')],
             'audited_locations.*.quantity'  => ['required', 'numeric', 'gte:0'],

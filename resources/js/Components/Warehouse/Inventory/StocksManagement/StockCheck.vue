@@ -14,7 +14,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { routeType } from '@/types/route'
-import { notify } from '@kyvg/vue3-notification'
+import CountWarningDialog from '@/Components/Warehouse/Inventory/CountWarningDialog.vue'
 import { formatDistanceStrict } from 'date-fns'
 import { cloneDeep } from 'lodash'
 import { InputNumber, Textarea } from 'primevue'
@@ -46,6 +46,8 @@ const cloneLocations = ref(
 )
 
 const isLoading = ref<boolean>(false)
+const errorMessage = ref<string | null>(null)
+const countWarningMessage = ref<string | null>(null)
 const inputRefs = ref<Record<number, any>>({})
 const focusInterval = ref<number | null>(null)
 const listLoadingLocations = ref<number[]>([])
@@ -64,20 +66,10 @@ const markAsChecked = (locationOrgStock: StockLocation) => {
             preserveState: true,
             onStart: () => { 
                 listLoadingLocations.value.push(locationOrgStock?.id)
-            },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully audited stock location (:xlocation)", { xlocation: locationOrgStock?.code }),
-                    type: "success"
-                })
+                errorMessage.value = null
             },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: Object.values(errors)[0] ?? ctrans("Failed to audit the stock location"),
-                    type: "error"
-                })
+                errorMessage.value = Object.values(errors)[0] ?? ctrans("Failed to audit the stock location")
             },
             onFinish: () => {
                 listLoadingLocations.value = listLoadingLocations.value.filter(id => id !== locationOrgStock?.id)
@@ -86,34 +78,33 @@ const markAsChecked = (locationOrgStock: StockLocation) => {
     )
 }
 
-const bulkSubmitAudit = () => {
+const bulkSubmitAudit = (isCountWarningConfirmed = false) => {
     router[props.bulkAuditRoute?.method || 'patch'](
         route(props.bulkAuditRoute?.name, {
             orgStock: props.org_stock_id
         }),
         {
-            audited_locations: Object.values(modifiedLocationsQuantity.value)
+            audited_locations: Object.values(modifiedLocationsQuantity.value),
+            confirm_count_warning: isCountWarningConfirmed
         },
         {
             preserveScroll: true,
             preserveState: true,
             onStart: () => {
                 isLoading.value = true
+                errorMessage.value = null
             },
             onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully audited the stock locations"),
-                    type: "success"
-                })
+                countWarningMessage.value = null
                 emits('close')
             },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: Object.values(errors)[0] ?? ctrans("Failed to audit the stock locations"),
-                    type: "error"
-                })
+                if (errors.count_warning) {
+                    countWarningMessage.value = errors.count_warning
+                    return
+                }
+                countWarningMessage.value = null
+                errorMessage.value = Object.values(errors)[0] ?? ctrans("Failed to audit the stock locations")
             },
             onFinish: () => {
                 isLoading.value = false
@@ -490,6 +481,13 @@ const currentPage = ref(1);
             </div>
         </div>
         </div>
+        <p v-if="errorMessage" class="shrink-0 pt-2 text-xs text-red-500">{{ errorMessage }}</p>
+        <CountWarningDialog
+            :message="countWarningMessage"
+            :is-saving="isLoading"
+            @confirm="bulkSubmitAudit(true)"
+            @cancel="countWarningMessage = null"
+        />
         <!-- Section: buttons -->
          <div class="shrink-0 flex xjustify-end gap-2 pt-3 mt-2 border-t bg-white">
             <Button 
