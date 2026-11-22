@@ -190,6 +190,8 @@ class GetShoppingAssistantTools
 
     public const int DEFAULT_LIMIT = 12;
 
+    public const string REPLY_LANGUAGE = 'reply_language';
+
     public const int USUAL_PER_GROUP = 8;
 
     public const int MAX_PER_GROUP = 12;
@@ -256,7 +258,31 @@ class GetShoppingAssistantTools
             $excluded[] = 'report_order_problem';
         }
 
-        return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
+        return array_values(array_map(
+            fn (array $tool) => $tool['function']['name'] === self::PRESENT_PRODUCTS ? $tool : self::withReplyLanguage($tool),
+            array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true))
+        ));
+    }
+
+    /**
+     * Lines written by code under the reply (dispatch times, shipping costs, order lines) are written
+     * when a tool runs, before the model has said which language it answers in: a customer writing
+     * Spanish on an English website got them in English. Every tool but present_products takes the
+     * language of the reply, and the conversation follows it before the tool runs.
+     *
+     * @param  array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}  $tool
+     *
+     * @return array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}
+     */
+    private static function withReplyLanguage(array $tool): array
+    {
+        $tool['function']['parameters']['properties'] = (array) $tool['function']['parameters']['properties'];
+        $tool['function']['parameters']['properties'][self::REPLY_LANGUAGE] = [
+            'type'        => 'string',
+            'description' => 'The language code (ISO 639-1, e.g. es) of the language you will write your reply in.',
+        ];
+
+        return $tool;
     }
 
     /**
@@ -291,6 +317,8 @@ class GetShoppingAssistantTools
                     'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words, never the country they want it made in. May be empty only together with sort or made_in.'],
                     'sort'  => ['type' => 'string', 'enum' => self::PRICE_SORTS, 'description' => 'Only when the customer asks for the cheapest or the most expensive: order the matches by price instead of by relevance.'],
                     'made_in' => ['type' => 'string', 'description' => 'Only when the customer wants products made in one country: its ISO 3166 two-letter code (GB for the United Kingdom). The query may then be empty, for every product made there.'],
+                    'min_price' => ['type' => 'number', 'description' => 'Only when the customer gives a lowest price: products costing at least this, in the shop currency, as the price on the product card. The query may then be empty.'],
+                    'max_price' => ['type' => 'number', 'description' => 'Only when the customer gives a highest price or a budget per product: products costing at most this, in the shop currency, as the price on the product card. The query may then be empty.'],
                     'limit' => $limit,
                 ],
                 ['query']
@@ -630,8 +658,12 @@ class GetShoppingAssistantTools
         $sort  = in_array($arguments['sort'] ?? null, self::PRICE_SORTS, true) ? $arguments['sort'] : null;
         $madeIn = is_string($arguments['made_in'] ?? null) ? Str::upper(trim($arguments['made_in'])) : '';
         $madeIn = $madeIn === 'UK' ? 'GB' : $madeIn;
+        $minPrice = is_numeric($arguments['min_price'] ?? null) && $arguments['min_price'] > 0 ? (float) $arguments['min_price'] : null;
+        $maxPrice = is_numeric($arguments['max_price'] ?? null) && $arguments['max_price'] > 0 ? (float) $arguments['max_price'] : null;
+        $priced   = $minPrice !== null || $maxPrice !== null;
+        $inRange  = fn (Product $product) => ($minPrice === null || (float) $product->price >= $minPrice) && ($maxPrice === null || (float) $product->price <= $maxPrice);
 
-        if ($query === '' && !$sort && $madeIn === '') {
+        if ($query === '' && !$sort && $madeIn === '' && !$priced) {
             return $this->error('query must be a non-empty string.');
         }
 
@@ -651,16 +683,20 @@ class GetShoppingAssistantTools
         $codeIds   = $byCode->pluck('id')->flip();
         $familyIds = $byFamily['exact'] ? $byFamily['products']->pluck('id')->flip() : collect();
 
-        if ($sort) {
+        if ($sort || $priced) {
+            $sort ??= 'cheapest';
             $matches = $query === ''
-                ? $this->recommendableProducts($customer->shop, $customer)->select('products.*')->orderBy('products.price', $sort === 'cheapest' ? 'asc' : 'desc')->orderBy('products.id')->limit($limit)->get()->toBase()
+                ? $this->recommendableProducts($customer->shop, $customer)->select('products.*')
+                    ->when($minPrice !== null, fn ($products) => $products->where('products.price', '>=', $minPrice))
+                    ->when($maxPrice !== null, fn ($products) => $products->where('products.price', '<=', $maxPrice))
+                    ->orderBy('products.price', $sort === 'cheapest' ? 'asc' : 'desc')->orderBy('products.id')->limit($limit)->get()->toBase()
                 : $this->closeMatches(SearchCatalogueByMeaning::run($customer->shop, $query, $customer, self::PRICE_SORT_POOL))
-                    ->concat($byFamily['products'])->unique('id')
+                    ->concat($byFamily['products'])->unique('id')->filter($inRange)
                     ->sortBy(fn (Product $product) => (float) $product->price, SORT_REGULAR, $sort !== 'cheapest')->values()->take($limit);
 
             $result = $this->productsResult($customer, $matches, fn () => 'matches_request', $locale);
 
-            $result['content']['note'] = 'Ordered by price, '.($sort === 'cheapest' ? 'lowest' : 'highest').' first. Say so, and never state a price: the cards show them.';
+            $result['content']['note'] = ($priced ? ($matches->isEmpty() ? 'Nothing matches in that price range. Say so and offer to widen it; ' : 'Only products in the price range the customer gave, ') : '').'Ordered by price, '.($sort === 'cheapest' ? 'lowest' : 'highest').' first. Say so, and never state a price other than the ones the customer gave: the cards show them.';
 
             return $result;
         }

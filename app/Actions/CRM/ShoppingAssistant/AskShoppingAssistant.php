@@ -839,6 +839,11 @@ class AskShoppingAssistant
         $arguments = $this->decodeArguments(data_get($toolCall, 'function.arguments'));
         $toolStart = hrtime(true);
 
+        if ($arguments !== null && array_key_exists(GetShoppingAssistantTools::REPLY_LANGUAGE, $arguments)) {
+            $this->followReplyLanguage($conversation, $arguments[GetShoppingAssistantTools::REPLY_LANGUAGE]);
+            unset($arguments[GetShoppingAssistantTools::REPLY_LANGUAGE]);
+        }
+
         $result = $arguments === null
             ? ['content' => ['error' => 'The arguments were not a JSON object.'], 'products' => [], 'error' => 'invalid_arguments']
             : $tools->execute($conversation, $name, $arguments, array_keys($turn['found']));
@@ -911,6 +916,10 @@ class AskShoppingAssistant
      */
     private function callModel(string $model, array $messages, array $tools, bool $mustPresent = false): ?array
     {
+        if ($mustPresent) {
+            $tools = array_values(array_filter($tools, fn (array $tool) => data_get($tool, 'function.name') === GetShoppingAssistantTools::PRESENT_PRODUCTS));
+        }
+
         try {
             $response = $this->aiRequest()
                 ->connectTimeout(10)
@@ -919,7 +928,7 @@ class AskShoppingAssistant
                     'model'       => $this->aiModel($model),
                     'messages'    => $messages,
                     'tools'       => $tools,
-                    'tool_choice' => $mustPresent ? ['type' => 'function', 'function' => ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS]] : 'auto',
+                    'tool_choice' => 'auto',
                     'max_tokens'  => $model === config('services.shopping_assistant.premium_model') ? 8000 : 4000,
                     'cache_control' => ['type' => 'ephemeral'],
                 ]);
@@ -1704,7 +1713,7 @@ $deliveryRule
 - When in doubt, ask our team instead of answering: call ask_our_team with the customer's question in one English sentence whenever the texts shop_information returns, the family descriptions and the product documents do not clearly answer it, also when they only half answer it. That covers questions about buying from us (samples, a discount code, a special request, a document that is not online) and about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Say honestly that you do not know and have asked one of our experts; never guess and never promise an answer. Not for the customer's own orders, invoices or deliveries, or when they ask for a person. Ask once per question.
 - When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information. When they want products made in a country ("made in the UK", "origin country United Kingdom"), call search_products with made_in set to its two-letter code; never say you cannot filter by country.
 - When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products$notBetterPrice. When they ask whether a promotion or free gift is still on, or why a gift, gift choice or sale they saw before has gone, call shop_promotions and answer from it.
-- When the customer asks for low-priced, cheap or budget products, that is a search, not a request for a better price: call search_products with sort cheapest$neverBetterPrice, and say nothing about discounts, member prices or calls from our team.
+- When the customer asks for low-priced, cheap or budget products, that is a search, not a request for a better price: call search_products with sort cheapest$neverBetterPrice, and say nothing about discounts, member prices or calls from our team. When they give a price range or a highest or lowest price per product ("between 0.50 and 1", "under 5"), call search_products with min_price and max_price in the shop currency.
 $priceRule
 - Each product comes with a why line. When you say why you suggest something, say no more than its why line says: write "shops like yours" only when the why line says so, and "shops in your area" when that is what it says.
 - What the customer orders is only what is listed above. Say they order a family, or that it is one of their regular lines, only for the families of the last 12 months; for the older ones say they used to order it. Do not say what else they stock or sell, beyond what they told us before.

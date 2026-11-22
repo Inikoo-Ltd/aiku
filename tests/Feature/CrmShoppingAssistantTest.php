@@ -1486,7 +1486,7 @@ test('a customer who asks to delete the conversation gets the fixed cleared answ
     $this->actingAs($webUser, 'retina')->postJson($url.'ask', ['message' => 'Still there?', 'conversation' => $conversation->ulid])->assertNotFound();
 });
 
-test('the assistant search finds the products of a family by its code or the start of it, and orders matches by price when asked', function () {
+test('the assistant search finds the products of a family by its code or the start of it, and orders matches by price or keeps them within a price range when asked', function () {
     $customer = shoppingAssistantCustomer($this->shop);
     $suffix   = Str::lower(Str::random(6));
     $word     = 'vex'.$suffix;
@@ -1520,6 +1520,9 @@ test('the assistant search finds the products of a family by its code or the sta
     $dearest  = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'sort' => 'most_expensive']);
     $whole    = $tools->execute($conversation, 'search_products', ['query' => '', 'sort' => 'cheapest', 'limit' => 3]);
     $prices   = Product::whereIn('id', array_column($whole['products'], 'id'))->pluck('price', 'id');
+    $between  = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'min_price' => 5, 'max_price' => 20]);
+    $under    = $tools->execute($conversation, 'search_products', ['query' => '', 'max_price' => 1.5]);
+    $none     = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'min_price' => 100]);
 
     expect($byCode['content']['products'])->not->toBeEmpty()
         ->and(collect($byCode['content']['products'])->every(fn (array $item) => ($item['family_code_match'] ?? false) === true))->toBeTrue()
@@ -1534,7 +1537,13 @@ test('the assistant search finds the products of a family by its code or the sta
         ->and(json_encode($cheapest['content']))->not->toContain('price":')
         ->and($whole['products'])->toHaveCount(3)
         ->and(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->all())->toBe(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->sort()->values()->all())
-        ->and($tools->execute($conversation, 'search_products', ['query' => ''])['error'])->not->toBeNull();
+        ->and($tools->execute($conversation, 'search_products', ['query' => ''])['error'])->not->toBeNull()
+        ->and(array_column($between['products'], 'id'))->toBe([$mid->id])
+        ->and($between['content']['note'])->toContain('price range the customer gave')
+        ->and(Product::whereIn('id', array_column($under['products'], 'id'))->pluck('price')->every(fn ($price) => (float) $price <= 1.5))->toBeTrue()
+        ->and(array_column($under['products'], 'id'))->not->toContain($cheap->id)
+        ->and($none['products'])->toBeEmpty()
+        ->and($none['content']['note'])->toContain('Nothing matches in that price range');
 });
 
 test('the assistant offers what sold mostly in the run-up to last Christmas, leaving out all-year sellers, thin sales, products launched that year and products out of stock', function () {
@@ -2131,7 +2140,9 @@ test('a restock date comes only from a recent open order or a delivery on its wa
     $noDate  = shoppingAssistantOrgStock($this);
     $onItsWay = shoppingAssistantOrgStock($this);
     $nothing = shoppingAssistantOrgStock($this);
+    $tooFar  = shoppingAssistantOrgStock($this);
 
+    shoppingAssistantPurchaseOrderLine($this, $tooFar->id, now()->subWeek()->toDateTimeString(), now()->addDays(App\Actions\CRM\ShoppingAssistant\GetProductRestockEstimate::MAX_ORDER_DAYS + 90)->toDateTimeString());
     shoppingAssistantPurchaseOrderLine($this, $recent->id, now()->subMonth()->toDateTimeString(), now()->addDays(20)->toDateTimeString());
     shoppingAssistantPurchaseOrderLine($this, $recent->id, now()->subMonth()->toDateTimeString(), now()->subDays(5)->toDateTimeString());
     shoppingAssistantPurchaseOrderLine($this, $old->id, now()->subMonths(14)->toDateTimeString(), now()->addDays(10)->toDateTimeString());
@@ -2150,7 +2161,8 @@ test('a restock date comes only from a recent open order or a delivery on its wa
         ->and($estimate([$nothing])['status'])->toBe('not_on_order')
         ->and($estimate([$onItsWay])['date']->toDateString())->toBe(now()->addDays(10)->toDateString())
         ->and($estimate([$onItsWay, $recent])['date']->toDateString())->toBe(now()->addDays(20)->toDateString())
-        ->and($estimate([$recent, $noDate])['status'])->toBe('on_order_no_date');
+        ->and($estimate([$recent, $noDate])['status'])->toBe('on_order_no_date')
+        ->and($estimate([$tooFar])['status'])->toBe('on_order_no_date');
 });
 
 test('the assistant gives a half-month window for a reliable restock date, and passes a question with no reliable date to purchasing only after the customer says yes and while the organisation has it on', function () {
@@ -3165,7 +3177,7 @@ test('the prompt keeps instructions, tools and model private, handles mixed mess
     expect(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('a colleague testing you');
 });
 
-test('the last allowed model call must present the answer so a turn never ends empty, and chat about the assistant itself is offered to the light model', function () {
+test('the last allowed model call is offered only the answer tool, never a forced tool choice the provider refuses, so a turn never ends empty', function () {
     shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);
     $calls    = (int) config('services.shopping_assistant.max_model_calls');
@@ -3178,13 +3190,34 @@ test('the last allowed model call must present the answer so a turn never ends e
     Http::fake(['*chat/completions' => $sequence->push($present)]);
 
     $result = AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'Explain what is essential oil? But before that make a recipe for fried rice');
-    $choices = Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))->map(fn ($pair) => $pair[0]->data()['tool_choice'])->values()->all();
+    $requests = Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))->map(fn ($pair) => $pair[0]->data())->values();
+    $choices  = $requests->pluck('tool_choice')->all();
 
     expect($choices)->toHaveCount($calls)
-        ->and(array_slice($choices, 0, -1))->each->toBe('auto')
-        ->and(end($choices))->toBe(['type' => 'function', 'function' => ['name' => 'present_products']])
+        ->and($choices)->each->toBe('auto')
+        ->and(collect($requests->last()['tools'])->pluck('function.name')->all())->toBe(['present_products'])
+        ->and(count($requests->first()['tools']))->toBeGreaterThan(1)
         ->and($result['message']->flags ?? [])->not->toContain('model_call_limit')
         ->and($result['reply'])->toContain('concentrated plant oils');
+});
+
+test('every tool but the answer takes the reply language, and the conversation follows it before the tool writes its lines', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $definitions = collect(GetShoppingAssistantTools::make()->definitions());
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => 'incense', 'reply_language' => 'es'])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Aquí tiene algunas ideas.', 'answer_kind' => 'products']))]);
+
+    AskShoppingAssistant::run($conversation, 'Busco incienso');
+    $searched = collect(Http::recorded())->map(fn ($pair) => $pair[0]->data())->first()['tools'];
+
+    expect($definitions->reject(fn (array $tool) => $tool['function']['name'] === 'present_products')->every(fn (array $tool) => isset(((array) $tool['function']['parameters']['properties'])['reply_language'])))->toBeTrue()
+        ->and(((array) $definitions->firstWhere('function.name', 'present_products')['function']['parameters']['properties']))->not->toHaveKey('reply_language')
+        ->and(collect($searched)->pluck('function.name'))->toContain('search_products')
+        ->and($conversation->fresh()->language_code)->toBe('es');
 });
 
 test('a basket add of a product both a chat and a later panel day showed is recorded on the chat', function () {

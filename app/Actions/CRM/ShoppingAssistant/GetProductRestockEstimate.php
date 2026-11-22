@@ -23,6 +23,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * anything else is "on order, no reliable date" or "not on order", and the customer is offered an
  * answer from the purchasing team instead.
  *
+ * A purchase order's expected arrival is the submit date plus the slowest line's lead time, and a
+ * measured lead time can be far off (60 days expected, 270 to 416 measured on some lines in Nov
+ * 2026), which put a Nag Champa restock in July 2027. An order date more than MAX_ORDER_DAYS ahead
+ * is not reliable either: the product is "on order, no reliable date".
+ *
  * A product made of several stocks is expected when the last of them arrives; if one of them has
  * no reliable date, the product has none.
  *
@@ -33,6 +38,8 @@ class GetProductRestockEstimate
     use AsAction;
 
     public const int RECENT_MONTHS = 9;
+
+    public const int MAX_ORDER_DAYS = 180;
 
 
     private const array ON_ITS_WAY_DELIVERY_STATES = ['confirmed', 'ready_to_ship', 'dispatched'];
@@ -66,7 +73,7 @@ class GetProductRestockEstimate
                 ->where('purchase_orders.submitted_at', '>=', now()->subMonths(self::RECENT_MONTHS))
                 ->whereNull('purchase_orders.deleted_at')
                 ->where(fn ($query) => $query->whereNull('purchase_order_transactions.delivery_state')->orWhereNotIn('purchase_order_transactions.delivery_state', self::FINISHED_LINE_DELIVERY_STATES))
-                ->selectRaw('min(purchase_orders.estimated_received_at::date) filter (where purchase_orders.estimated_received_at >= ?) as expected, count(*) as lines', [$today])
+                ->selectRaw('min(purchase_orders.estimated_received_at::date) filter (where purchase_orders.estimated_received_at >= ? and purchase_orders.estimated_received_at < ?) as expected, count(*) as lines', [$today, $today->copy()->addDays(self::MAX_ORDER_DAYS)])
                 ->first();
 
             $onOrder = $onOrder || (int) $delivery->lines > 0 || (int) $order->lines > 0;
