@@ -3844,6 +3844,8 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
 
     $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => '2026-11-12 15:00:00']);
     $sent = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $newOrder($customer)->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::CANCELLED, 'submitted_at' => null]);
+    $latestWithoutNumber = $tools->execute($conversation, 'order_status', []);
 
     $shipment = new \App\Models\Dispatching\Shipment(['tracking' => 'ZZ1', 'trackings' => ['ZZ1', 'ZZ2'], 'tracking_urls' => ['https://track.example/ZZ1']]);
     $shipment->setRelation('shipper', new \App\Models\Dispatching\Shipper(['name' => 'Royal Parcel', 'trade_as' => 'RP']));
@@ -3860,6 +3862,7 @@ test('Merlin says where the customer\'s own order is, with the order number, dat
         ->and($notTheirs['content']['found'])->toBeFalse()
         ->and($sent['content']['state'])->toBe('dispatched')
         ->and($sent['content']['has_tracking'])->toBeFalse()
+        ->and($latestWithoutNumber['fact'])->toBe($sent['fact'])
         ->and($sent['fact'])->toContain(\Carbon\Carbon::parse('2026-11-12')->locale($locale)->isoFormat('LL'))
         ->and($tools->trackingOf(collect([$shipment]))->all())->toBe(['RP ZZ1 https://track.example/ZZ1', 'RP ZZ2']);
 

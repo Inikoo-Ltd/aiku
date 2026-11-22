@@ -1518,7 +1518,8 @@ class AskShoppingAssistant
             ->whereIn('model_id', $earlier->pluck('id'))
             ->where('collection_name', ShoppingAssistantMessage::IMAGES)
             ->groupBy('model_id')
-            ->pluck(DB::raw('count(*)'), 'model_id');
+            ->selectRaw('model_id, count(*) as images')
+            ->pluck('images', 'model_id');
 
         return $earlier->map(function (ShoppingAssistantMessage $earlierMessage) use ($shown, $imageCounts) {
             if ($earlierMessage->role === ShoppingAssistantMessageRoleEnum::CUSTOMER) {

@@ -93,6 +93,13 @@ test('a customer sends Merlin a screenshot: it is kept on their message, read by
         ->and($shown[0]['images'][0]['name'])->toBe('checkout.png')
         ->and($shown[0]['images'][0]['url'])->not->toBeEmpty();
 
+    $sent     = null;
+    $followUp = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'Why does it say that?');
+    AnswerShoppingAssistantMessage::run($followUp);
+
+    expect($conversation->messages()->where('id', '>', $followUp->id)->sole()->flags ?? [])->not->toContain('model_unavailable')
+        ->and(collect($sent['messages'])->firstWhere('role', 'user')['content'])->toContain('[The customer showed 1 image(s) here; you saw them then.]');
+
     WipeShoppingAssistantConversations::run([$conversation->id]);
 
     expect($question->fresh()->load('media')->images())->toBeEmpty();
