@@ -16,12 +16,14 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgAgent\SendAgentDraftsToAgent;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
+use App\Actions\Traits\Hydrators\WithLeadTimeMeasurement;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
@@ -36,6 +38,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
     use WithActionUpdate;
     use AsAction;
     use HasPurchaseOrderHydrators;
+    use WithLeadTimeMeasurement;
 
     private PurchaseOrder $purchaseOrder;
 
@@ -129,11 +132,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         }
 
         if ($purchaseOrder->estimated_delivery_days === null) {
-            $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
-                ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED)
-                ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
-                ->selectRaw("max(coalesce(supplier_products.measured_lead_time_days, supplier_products.estimated_lead_time_days, case when supplier_products.data->>'delivery_time' ~ '^[0-9]+$' then (supplier_products.data->>'delivery_time')::int end)) as delivery_days")
-                ->value('delivery_days');
+            $deliveryDays = $this->estimateDeliveryDays($purchaseOrder);
 
             if ($deliveryDays !== null) {
                 $updateData['estimated_delivery_days'] = $deliveryDays;
@@ -156,6 +155,37 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         }
 
         return $purchaseOrder;
+    }
+
+    /**
+     * How long this organisation's last orders from the same supplier took to be received (12 months, or
+     * the last 3). Lead times differ by organisation (Royal Metal: about 4 weeks to the UK, 5 months to
+     * Spain), so the supplier products' measurement, taken over every organisation, is the fallback, and
+     * then the median line, not the slowest: the lines travel together, and the slowest of 60 product
+     * figures is the noisiest of them, not when the order arrives.
+     */
+    public function estimateDeliveryDays(PurchaseOrder $purchaseOrder): ?int
+    {
+        if ($purchaseOrder->supplier_id) {
+            $measured = $this->measureLeadTimeOfOrders(
+                fn (QueryBuilder $query) => $query
+                    ->where('purchase_orders.organisation_id', $purchaseOrder->organisation_id)
+                    ->where('purchase_orders.supplier_id', $purchaseOrder->supplier_id)
+                    ->where('purchase_orders.id', '!=', $purchaseOrder->id)
+            )['measured_lead_time_days'];
+
+            if ($measured !== null) {
+                return $measured;
+            }
+        }
+
+        $medianDays = $purchaseOrder->purchaseOrderTransactions()
+            ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
+            ->selectRaw("percentile_cont(0.5) within group (order by coalesce(supplier_products.measured_lead_time_days, supplier_products.estimated_lead_time_days, case when supplier_products.data->>'delivery_time' ~ '^[0-9]+$' then (supplier_products.data->>'delivery_time')::int end)) as delivery_days")
+            ->value('delivery_days');
+
+        return $medianDays === null ? null : max(1, (int) round((float) $medianDays));
     }
 
     public function rules(): array

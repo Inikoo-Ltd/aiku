@@ -22,6 +22,7 @@ use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplierDrift;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
@@ -1214,6 +1215,88 @@ test('lead time of a supplier ordered from once a year is measured from its last
 
     expect($supplierProduct->refresh()->measured_lead_time_days)->toBe(30)
         ->and($supplierProduct->lead_time_samples)->toBe(3);
+
+    $order(50, 900);
+    $order(40, 0);
+
+    SupplierProductHydrateLeadTime::run($supplierProduct);
+
+    expect($supplierProduct->refresh()->measured_lead_time_days)->toBe(30)
+        ->and($supplierProduct->lead_time_samples)->toBe(4);
+});
+
+test('a submitted order expects its goods when this organisation last received from the supplier, else from its median line, never its slowest', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $supplierProduct->update(['measured_lead_time_days' => 400, 'estimated_lead_time_days' => 60]);
+
+    $submit = function (int ...$supplierProductIds) use ($orgSupplier): PurchaseOrder {
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+        foreach ($supplierProductIds as $supplierProductId) {
+            StorePurchaseOrderTransaction::make()->action($purchaseOrder, App\Models\SupplyChain\SupplierProduct::find($supplierProductId)->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 10]);
+        }
+
+        return UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    };
+
+    $received = function (int $submittedDaysAgo, int $receivedAfterDays, ?int $bookedInAfterDays = null) use ($orgSupplier, $supplierProduct): void {
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+        StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 10]);
+        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays($submittedDaysAgo)]);
+
+        $stockDelivery = StoreStockDelivery::make()->action($orgSupplier, ['reference' => 'ETA-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+        DB::table('stock_deliveries')->where('id', $stockDelivery->id)->update([
+            'received_at'  => now()->subDays($submittedDaysAgo - $receivedAfterDays),
+            'booked_in_at' => now()->subDays($submittedDaysAgo - ($bookedInAfterDays ?? $receivedAfterDays)),
+            'placed_at'    => null,
+        ]);
+        DB::table('purchase_order_stock_delivery')->insert(['purchase_order_id' => $purchaseOrder->id, 'stock_delivery_id' => $stockDelivery->id, 'created_at' => now(), 'updated_at' => now()]);
+    };
+
+    $productAt = fn (int $estimatedDays): int => tap(StoreSupplierProduct::make()->action($supplierProduct->supplier, [
+        'code'             => 'ETA-'.Str::upper(Str::random(8)),
+        'name'             => 'ETA product',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]), fn ($product) => $product->update(['estimated_lead_time_days' => $estimatedDays]))->id;
+
+    $withoutHistory = $submit($supplierProduct->id, $productAt(30), $productAt(40));
+
+    expect($withoutHistory->supplier_id)->toBe($supplierProduct->supplier_id)
+        ->and($withoutHistory->estimated_delivery_days)->toBe(40);
+
+    $received(300, 40, 220);
+    $received(200, 50);
+    $received(150, 60);
+    $received(100, 0);
+
+    $withHistory = $submit($supplierProduct->id);
+
+    expect($withHistory->estimated_delivery_days)->toBe(50)
+        ->and($withHistory->estimated_received_at->toDateString())->toBe($withHistory->submitted_at->clone()->addDays(50)->toDateString());
+
+    $oldEstimate = fn (PurchaseOrder $purchaseOrder, array $data = []) => tap($purchaseOrder)->update([
+        'estimated_delivery_days' => 400,
+        'estimated_received_at'   => $purchaseOrder->submitted_at->clone()->addDays(400),
+        'data'                    => [...($purchaseOrder->data ?? []), ...$data],
+    ]);
+    $oldEstimate($withHistory);
+    $promised = $oldEstimate($submit($supplierProduct->id), ['estimated_receiving_date' => now()->addDays(400)->toDateString()]);
+
+    $dryRun = App\Actions\Maintenance\Procurement\RepairPurchaseOrderEstimatedArrival::run();
+
+    expect($dryRun->pluck('purchase_order.id')->all())->toContain($withHistory->id)
+        ->not->toContain($promised->id)
+        ->and($withHistory->refresh()->estimated_delivery_days)->toBe(400);
+
+    App\Actions\Maintenance\Procurement\RepairPurchaseOrderEstimatedArrival::run(true);
+
+    expect($withHistory->refresh()->estimated_delivery_days)->toBe(50)
+        ->and($withHistory->estimated_received_at->toDateString())->toBe($withHistory->submitted_at->clone()->addDays(50)->toDateString())
+        ->and($withHistory->data['eta_recomputed']['estimated_delivery_days'])->toBe(400)
+        ->and($promised->refresh()->estimated_delivery_days)->toBe(400);
 });
 
 test('agent lead times roll up per sub-supplier', function () {
