@@ -2077,7 +2077,10 @@ test('tapping twice gives one hand-over and one chat, and a second question join
         ->and($conversation->handOvers()->count())->toBe(2)
         ->and($conversation->handOvers()->pluck('route')->map->value->unique()->all())->toBe(['live_chat'])
         ->and($session->messages()->orderBy('id')->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?', 'Can I pay by cheque?'])
-        ->and(ChatSession::where('shopping_assistant_conversation_id', $conversation->id)->count())->toBe(1);
+        ->and(ChatSession::where('shopping_assistant_conversation_id', $conversation->id)->count())->toBe(1)
+        ->and($conversation->messages()->where('model', 'hand-over')->orderByDesc('id')->first())
+        ->body->toBe('I have added this to your question for our team.')
+        ->flags->toContain('added_to_hand_over');
 
     outOfHoursTestCleanUp($schedule, [$session]);
 });

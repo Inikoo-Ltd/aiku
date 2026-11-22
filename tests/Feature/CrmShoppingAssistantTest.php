@@ -4686,6 +4686,42 @@ test('a not sure answer that also says it passed the question on is shown withou
         ->and($turn['message']->body)->not->toContain($handOver);
 });
 
+test('an order question offered to our team keeps Merlin\'s grounded words above the order line, without its hand-over claim, and a repeat does not show the order line and offer again', function () {
+    $passing = 'I am passing this to our team now.';
+    $jev     = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('noul')->andReturnUsing(fn (mixed $state, string $instructions) => str_contains($instructions, 'partial answer') ? 0.95 : 0.1);
+    $jev->shouldReceive('handle')->andReturnUsing(fn (mixed $state, array $questions) => collect($questions)->map(fn (array $question) => ['noul' => str_contains($question['instructions'], $passing) ? 0.95 : 0.05])->all());
+    $jev->shouldReceive('choice')->andReturn(null);
+
+    $website = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING, 'submitted_at' => now()->subDay()]);
+
+    $found    = 'Your order is in our warehouse being picked, the details are below.';
+    $followUp = 'It is still being picked, and our team can tell you more.';
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => $found.' '.$passing, 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => $followUp, 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en']))]);
+
+    $first  = AskShoppingAssistant::run($conversation, 'Where is my order?');
+    $second = AskShoppingAssistant::run($conversation->fresh(), 'When will it leave?');
+    $offer  = __('Our team will need to help you with that. Would you like to ask them?', [], 'en');
+
+    expect($first['reply'])->toStartWith($found."\n\n".$order->reference)
+        ->and($first['reply'])->toEndWith($offer)
+        ->and($first['reply'])->not->toContain($passing)
+        ->and($first['message']->flags)->toContain('partial_answer')
+        ->and($first['message']->refresh()->hand_over_offer->value)->toBe('order_question')
+        ->and($second['reply'])->toBe($followUp)
+        ->and($second['message']->refresh()->hand_over_offer->value)->toBe('order_question');
+});
+
 test('a not sure answer Jev doubts stays the fixed sentence alone', function () {
     $turn = shoppingAssistantNotSureTurn($this, 'Orders placed by mid December always arrive before Christmas. Dispatch takes a few working days.', 0.4);
 

@@ -84,8 +84,12 @@ use Throwable;
  *   person nor opens a team question: "yes, ask purchasing" became "I don't know this one" and a
  *   second, empty question for the team.
  * - Offers: answer_kind offer_person (declared by the model, or forced by the rule above or by the
- *   number rule below) always gets a fixed sentence in the conversation's language, never the
- *   model's own words, which may hold a guess; a declared offer whose reply came back empty is still
+ *   number rule below) always gets a fixed sentence in the conversation's language. The model's own
+ *   words, which may hold a guess, go above it only as knownPart lets them: without any hand-over
+ *   claim and only when AskJev finds every statement in what the tools returned. An order line goes
+ *   under those words, as they say "details below". When the last answer already offered a person
+ *   for the same reason, the order line already shown and the fixed sentence are not repeated: the
+ *   checked words alone answer the new message, and the offer stays on it. A declared offer whose reply came back empty is still
  *   an offer. A declared offer drops the products, a forced one keeps them; follow-ups and tool facts
  *   are kept. The reason (not_sure, order_question, asked_for_person) is the declared offer_reason
  *   when valid, else not_sure, and is stored as hand_over_offer whether or not the website can
@@ -379,10 +383,12 @@ class AskShoppingAssistant
             return $this->answer($conversation, $customerMessage, ['turn' => $turn, 'model' => $model, 'started_at' => $startedAt]);
         }
 
-        $known = $offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$turn['cleared']
+        $known = $offerReason && $customer && !$turn['cleared']
             ? $this->knownPart($message, $reply, $turn, $flags)
             : null;
         $withKnown = fn (string $sentence) => $known ? $known."\n\n".$sentence : $sentence;
+        $previous  = $offerReason ? $conversation->messages()->where('id', '<', $customerMessage->id)->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->orderByDesc('id')->first() : null;
+        $repeated  = $previous && $previous->hand_over_offer === $offerReason;
 
         if ($offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$turn['cleared']) {
             $askedTeam = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'ask_our_team' && $toolCall['error'] === null);
@@ -419,15 +425,22 @@ class AskShoppingAssistant
             $flags[]     = 'added_to_hand_over';
             $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
         } elseif ($offerReason) {
-            $reply   = $withKnown($this->offerSentence($conversation, $customer, $offerReason));
+            $reply   = $repeated && $known ? $known : $withKnown($this->offerSentence($conversation, $customer, $offerReason));
             $isFixed = true;
             $groups  = ['must_haves' => collect(), 'add_ons' => collect()];
         } elseif ($reply === '' && $turn['basket']) {
             $reply = __('I have added the products to your basket.', [], $conversation->language_code);
         }
 
+        $factLines = implode("\n", array_unique($turn['facts']));
         if ($turn['facts'] && !$turn['cleared'] && $isFixed && $orderLooked) {
-            $reply = trim(implode("\n", array_unique($turn['facts']))."\n\n".$reply);
+            if ($repeated && str_contains((string) $previous->body, $factLines)) {
+                $reply = trim($reply);
+            } elseif ($known && str_starts_with($reply, $known)) {
+                $reply = trim($known."\n\n".$factLines."\n\n".ltrim(mb_substr($reply, mb_strlen($known))));
+            } else {
+                $reply = trim($factLines."\n\n".$reply);
+            }
         } elseif ($turn['facts'] && !$turn['cleared'] && !($isFixed && $declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON)) {
             $reply = trim($reply."\n\n".implode("\n", array_unique($turn['facts'])));
         }

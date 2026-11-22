@@ -190,11 +190,16 @@ class HandOverShoppingAssistantConversation
             $this->sendQuestion($session, $text, $images);
         }
 
+        return $this->addedSentence($conversation, $handOver->route, GetShoppingAssistantHandOverRoute::run($website, $customer)['in_hours']);
+    }
+
+    private function addedSentence(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOverRouteEnum $route, bool $inHours): string
+    {
         $added = __('I have added this to your question for our team.', [], $conversation->language_code);
 
-        return $handOver->route === ShoppingAssistantHandOverRouteEnum::LIVE_CHAT
+        return $route === ShoppingAssistantHandOverRouteEnum::LIVE_CHAT
             ? $added
-            : $added.' '.$this->whenTheyReply($conversation, $handOver->route, GetShoppingAssistantHandOverRoute::run($website, $customer)['in_hours']);
+            : $added.' '.$this->whenTheyReply($conversation, $route, $inHours);
     }
 
     /**
@@ -261,7 +266,8 @@ class HandOverShoppingAssistantConversation
             ->whereIn('status', [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value])
             ->first() : null;
 
-        $route = $session ? $earlier->route : $status['route'];
+        $joined  = $session !== null;
+        $route   = $session ? $earlier->route : $status['route'];
         $session ??= $this->createSession($conversation, $customer, $route, $question);
 
         $handOver = $conversation->handOvers()->create([
@@ -275,7 +281,7 @@ class HandOverShoppingAssistantConversation
             'chat_session_id'     => $session->id,
         ]);
 
-        $message = $this->tellCustomer($conversation, $route, $status['in_hours']);
+        $message = $this->tellCustomer($conversation, $route, $status['in_hours'], $joined);
 
         $conversation->update([
             'handed_over_at'  => now(),
@@ -319,13 +325,13 @@ class HandOverShoppingAssistantConversation
         return $session;
     }
 
-    private function tellCustomer(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOverRouteEnum $route, bool $inHours): ShoppingAssistantMessage
+    private function tellCustomer(ShoppingAssistantConversation $conversation, ShoppingAssistantHandOverRouteEnum $route, bool $inHours, bool $joined): ShoppingAssistantMessage
     {
         $message = $conversation->messages()->create([
             'role'  => ShoppingAssistantMessageRoleEnum::ASSISTANT,
-            'body'  => $this->whenTheyReply($conversation, $route, $inHours),
+            'body'  => $joined ? $this->addedSentence($conversation, $route, $inHours) : $this->whenTheyReply($conversation, $route, $inHours),
             'model' => 'hand-over',
-            'flags' => ['handed_over'],
+            'flags' => $joined ? ['handed_over', 'added_to_hand_over'] : ['handed_over'],
         ]);
         $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
 
