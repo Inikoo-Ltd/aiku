@@ -37,6 +37,7 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
 use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
 use App\Actions\Inventory\UI\IndexWarehouseStaffTasks;
+use App\Actions\Inventory\OrgStock\UI\IndexStockValueFindings;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithWrongWeight;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksBelowMinimumStock;
@@ -105,6 +106,10 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
     Route::prefix('below-minimum-stock')->as('below_minimum_stock.')->group(function () {
         Route::get('/', IndexOrgStocksBelowMinimumStock::class)->name('index');
         Route::get('/levels', [IndexOrgStocksBelowMinimumStock::class, 'levels'])->name('levels');
+    });
+
+    Route::prefix('suspicious-values')->as('suspicious_values.')->group(function () {
+        Route::get('/', IndexStockValueFindings::class)->name('index');
     });
 
     Route::prefix('negative-stocks')->as('negative_stocks.')->group(function () {

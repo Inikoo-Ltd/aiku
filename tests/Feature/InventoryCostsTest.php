@@ -764,3 +764,70 @@ test('the post costfix rollup window reaches back to the oldest provisional purc
     expect($earlyDay)->toBeTrue()
         ->and($rolledUp)->toBeGreaterThanOrEqual(2);
 });
+
+describe('nightly stock value check', function () {
+    beforeEach(function () {
+        \Illuminate\Support\Facades\Http::fake();
+    });
+
+    test('a count far above what was ever bought goes to the warehouse once and resolves when recounted', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'SVC'.random_int(1000, 9999));
+
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10])
+            ->update(['cost_per_sku' => 6, 'org_amount' => 60, 'date' => now()->subDays(30)]);
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::AUDIT->value, 'reason' => 'recount', 'quantity' => 490, 'audited_quantity' => 500, 'user_id' => $this->user->id])
+            ->update(['org_amount' => 2940, 'date' => now()->subDays(10)]);
+        $orgStock->updateQuietly(['quantity_in_locations' => 500, 'sku_value' => 6]);
+
+        $check = \App\Actions\Inventory\OrgStock\CheckStockValues::make();
+        $check->handle($this->organisation, route: true);
+
+        $finding = \App\Models\Inventory\StockValueFinding::where('org_stock_id', $orgStock->id)->sole();
+        expect($finding->rule)->toBe(\App\Models\Inventory\StockValueFinding::RULE_COUNT)
+            ->and($finding->owner)->toBe(\App\Models\Inventory\StockValueFinding::OWNER_WAREHOUSE)
+            ->and((float) $finding->excess_amount)->toBe(2940.0)
+            ->and($finding->explanation)->toContain('500 on the shelves, but the largest delivery was 10')
+            ->and($finding->staffTask->department)->toBe('warehouse')
+            ->and($finding->staffTask->model_type)->toBe('Location')
+            ->and($finding->staffTask->model_id)->toBe($location->id);
+
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation, route: true);
+        expect(\App\Models\Tasks\StaffTask::where('model_type', 'Location')->where('model_id', $location->id)->count())->toBe(1);
+
+        $orgStock->updateQuietly(['quantity_in_locations' => 10]);
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation);
+
+        expect($finding->refresh()->state)->toBe(\App\Models\Inventory\StockValueFinding::STATE_RESOLVED);
+    });
+
+    test('a price the system made wrong raises one PRE that closes once the price is right', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'SVP'.random_int(1000, 9999));
+
+        foreach ([40, 35, 30] as $daysAgo) {
+            StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 10])
+                ->update(['cost_per_sku' => 1, 'org_amount' => 10, 'date' => now()->subDays($daysAgo)]);
+        }
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::ADJUSTMENT->value, 'quantity' => 70])
+            ->update(['org_amount' => 700, 'date' => now()->subDays(5), 'user_id' => null]);
+        $orgStock->updateQuietly(['quantity_in_locations' => 100, 'sku_value' => 10]);
+
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation, route: true);
+
+        $finding = \App\Models\Inventory\StockValueFinding::where('org_stock_id', $orgStock->id)->sole();
+        expect($finding->rule)->toBe(\App\Models\Inventory\StockValueFinding::RULE_PRICE)
+            ->and($finding->owner)->toBe(\App\Models\Inventory\StockValueFinding::OWNER_ENGINEERING)
+            ->and((float) $finding->excess_amount)->toBe(900.0)
+            ->and($finding->ticket->type)->toBe(\App\Enums\Helpers\Ticket\TicketTypeEnum::PREMONITION)
+            ->and($finding->ticket->description)->toContain($orgStock->code);
+
+        $ticketId = $finding->ticket_id;
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation, route: true);
+        expect($finding->refresh()->ticket_id)->toBe($ticketId);
+
+        $orgStock->updateQuietly(['sku_value' => 1]);
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation, route: true);
+
+        expect($finding->refresh()->state)->toBe(\App\Models\Inventory\StockValueFinding::STATE_RESOLVED)
+            ->and($finding->ticket->refresh()->status)->toBe(\App\Enums\Helpers\Ticket\TicketStatusEnum::RESOLVED);
+    });
+});

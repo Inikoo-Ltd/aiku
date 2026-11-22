@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\UI;
 
 use App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems;
+use App\Actions\Inventory\OrgStock\UI\IndexStockValueFindings;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
 use App\Actions\Traits\Dashboards\WithLatestStockHistory;
@@ -168,6 +169,15 @@ class ShowInventoryDashboard extends OrgAction
                     ],
                 ],
                 'additionalStatBox' => [
+                    [
+                        'label' => __('Suspicious stock values'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.suspicious_values.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-search-dollar',
+                        'value' => IndexStockValueFindings::numberOpen($this->organisation),
+                    ],
                     [
                         'label' => __('Negative Stocks'),
                         'route' => [
