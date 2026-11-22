@@ -8,7 +8,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -40,10 +39,7 @@ class SetLocale
     {
         /** @var User $user */
         if ($user = auth()->user()) {
-            /** @var Language $language */
-            $language = Language::find($user->language_id);
-
-            return $language?->code ?: 'en';
+            return $user->language?->code ?: 'en';
         }
 
         try {

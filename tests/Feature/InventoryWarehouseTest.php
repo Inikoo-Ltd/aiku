@@ -1145,7 +1145,7 @@ test('UI Show inventory dashboard', function () {
         ->assertStatus(200)
         ->inertiaProps()['actionGauges'])->keyBy('key');
 
-    expect($gauges->keys()->all())->toBe(['urgent_audit', 'to_replenish'])
+    expect($gauges->keys()->all())->toBe(['urgent_audit', 'to_replenish', 'warehouse_tasks'])
         ->and($gauges['urgent_audit']['value'])->toBe(4)
         ->and($gauges['urgent_audit']['total'])->toBe($this->organisation->inventoryStats->number_current_org_stocks)
         ->and($gauges['to_replenish']['value'])->toBe(3)

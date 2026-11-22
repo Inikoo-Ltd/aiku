@@ -129,7 +129,7 @@ return [
         'warehouse' => [
             'addresses', 'model_has_addresses', 'model_has_fixed_addresses',
             'locations', 'location_*', 'org_stock_movements*', 'org_stock_movement_batches', 'org_stock_histories*', 'org_stock_audit*',
-            'organisation_stock_histor*', 'group_stock_histories', 'lost_and_found_stocks', 'stock_transfers', 'debug_stock_updates',
+            'organisation_stock_histor*', 'group_stock_histories', 'lost_and_found_stocks', 'stock_transfers', 'debug_stock_updates', 'stock_value_findings',
             'pickings', 'picking_*', 'packings', 'packing_benches', 'picked_bay*', 'trolleys', 'sowings', 'shipments', 'model_has_shipments',
             'shippers', 'shipping_*', 'fulfilments', 'fulfilment_*', 'pallet*', 'stored_item*', 'spaces',
             'recurring_bill*', 'model_has_recurring_bills', 'rental_agreement*', 'batch_codes', 'serial_references', 'scanner_ips',
@@ -158,6 +158,7 @@ return [
         'finance' => [
             'payments', 'model_has_payments', 'payment_*', 'org_payment_service_provider*', 'credit_transactions', 'top_ups', 'top_up_*',
             'order_payment_api_points', 'adjustments', 'intrastat_*', '*_accounting_stats', 'invoice_transaction_date_repairs',
+            'invoice_e_invoice_transmissions', 'received_e_invoices',
         ],
 
         'hr' => [
@@ -174,7 +175,7 @@ return [
             'audits', 'failed_jobs', 'job_exceptions', 'job_statistics', 'queue_statistics', 'queries', 'query_has_models', 'scheduled_task_logs',
             'deployments', 'app_deployments', 'ci_runs', 'ci_metric_snapshots', 'committers', 'servers', 'server_metric*', 'disaster_recovery_rehearsals', 'debug_webhooks', 'payment_gateway_logs',
             'fetch*', 'chunks', 'uploads', 'upload_records', 'mcp_*', 'ai_usages', 'notifications', 'retina_api_requests', 'aiku_*',
-            'staff_conversations', 'staff_conversation_participants', 'mobile_offline_*',
+            'staff_conversations', 'staff_conversation_participants', 'staff_calls', 'staff_call_participants', 'e_invoice_api_calls', 'mobile_offline_*',
             'model_has_attachments', 'external_subscriber_*', 'web_vital_samples', 'rail_usage', 'restricted_country_region_logs', 'subscription_events',
         ],
     ],

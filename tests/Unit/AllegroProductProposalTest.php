@@ -40,6 +40,18 @@ function allegroTestProduct(array $attributes): Product
     return $product;
 }
 
+function allegroTestPortfolio(Product $product, array $attributes): Portfolio
+{
+    $customerSalesChannel = Mockery::mock(CustomerSalesChannel::class)->makePartial();
+    $customerSalesChannel->shouldReceive('productTextsLocale')->andReturnNull();
+
+    $portfolio = new Portfolio($attributes);
+    $portfolio->setRelation('item', $product);
+    $portfolio->setRelation('customerSalesChannel', $customerSalesChannel);
+
+    return $portfolio;
+}
+
 test('a product proposal sends the shipping weight and real dimensions in the units of each Allegro parameter', function () {
     $product = allegroTestProduct([
         'code'                 => 'jcg-05',
@@ -49,8 +61,7 @@ test('a product proposal sends the shipping weight and real dimensions in the un
     ]);
     $product->setRelation('family', null);
 
-    $portfolio = new Portfolio(['customer_product_name' => 'Jasmine Candle', 'customer_description' => 'Candle']);
-    $portfolio->setRelation('item', $product);
+    $portfolio = allegroTestPortfolio($product, ['customer_product_name' => 'Jasmine Candle', 'customer_description' => 'Candle']);
 
     $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
     $allegroUser->shouldReceive('proposeProduct')->once()->andReturnUsing(fn (array $productData) => $productData);
@@ -75,8 +86,7 @@ test('a product proposal sends the shipping weight and real dimensions in the un
 
 function proposeAllegroProductWithParameters(Product $product, array $parameters): array
 {
-    $portfolio = new Portfolio(['customer_product_name' => 'Wall Lamp', 'customer_description' => 'Lamp']);
-    $portfolio->setRelation('item', $product);
+    $portfolio = allegroTestPortfolio($product, ['customer_product_name' => 'Wall Lamp', 'customer_description' => 'Lamp']);
 
     $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
     $allegroUser->shouldReceive('proposeProduct')->once()->andReturnUsing(fn (array $productData) => $productData);

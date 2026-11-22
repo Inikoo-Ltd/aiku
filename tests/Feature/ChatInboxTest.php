@@ -1013,9 +1013,9 @@ test('overseeing chat has its own page, scoped to the address, showing everybody
         'topMenu.subSections'
     ))->map(fn (array $tab) => $tab['route']['name'].':'.$tab['label'])->all();
 
-    expect($tabs(false, true))->toBe(['grp.org.chat.supervision:Supervision', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings'])
+    expect($tabs(false, true))->toBe(['grp.org.chat.supervision:Supervision', 'grp.org.chat.supervision.dashboard:Backlog', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings'])
         ->and($tabs(true, false))->toBe(['grp.org.chat.inbox:Customer Inbox', 'grp.org.chat.supervision:All chats', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings'])
-        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox:Customer Inbox', 'grp.org.chat.supervision:Supervision', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings']);
+        ->and($tabs(true, true))->toBe(['grp.org.chat.inbox:Customer Inbox', 'grp.org.chat.supervision:Supervision', 'grp.org.chat.supervision.dashboard:Backlog', 'grp.org.chat.reports:Reports', 'grp.org.chat.settings:Settings']);
 
     $assignment->forceDelete();
     foreach ([$held, $loose] as $session) {
