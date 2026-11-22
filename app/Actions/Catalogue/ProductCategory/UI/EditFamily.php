@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
@@ -28,6 +29,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 class EditFamily extends OrgAction
 {
     use WithCatalogueEditAuthorisation;
+    use WithWebsiteTranslationFields;
     use WithFamilyNavigation;
 
     public function handle(ProductCategory $family): ProductCategory
@@ -357,6 +359,7 @@ class EditFamily extends OrgAction
                                     ...$this->seoFields($family),
                                 ]
                             ],
+                            $this->websiteTranslationSection($family, $family->shop),
                             data_get($family->shop->settings, 'catalog.follow_master_pricing', true) ? [
                                 'label'  => __('Pricing'),
                                 'icon'   => 'fa-light fa-money-bill',

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\UI;
 
+use Illuminate\Http\Resources\Json\JsonResource;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
@@ -66,6 +67,7 @@ class ShowWebsite extends OrgAction
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
         $shop               = $website->shop;
+        $hasOtherLanguages  = $shop && array_diff($shop->websiteLanguageCodes(), [$shop->language->code]) !== [];
         $stats              = [
             [
                 'label'     => __('Departments'),
@@ -343,7 +345,7 @@ class ShowWebsite extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => WebsiteTabsEnum::navigation()
+                    'navigation' => $hasOtherLanguages ? WebsiteTabsEnum::navigation() : WebsiteTabsEnum::navigationExcept([WebsiteTabsEnum::TRANSLATIONS])
                 ],
 
                 'route_storefront'   => $route_storefront,
@@ -405,11 +407,16 @@ class ShowWebsite extends OrgAction
                 WebsiteTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebsiteTabsEnum::EXTERNAL_LINKS->value ? fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))
                     : Inertia::optional(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($website))),
 
+                WebsiteTabsEnum::TRANSLATIONS->value => $this->tab == WebsiteTabsEnum::TRANSLATIONS->value ? fn () => JsonResource::collection(IndexWebsiteTextTranslations::run($website, WebsiteTabsEnum::TRANSLATIONS->value))
+                    : Inertia::optional(fn () => JsonResource::collection(IndexWebsiteTextTranslations::run($website, WebsiteTabsEnum::TRANSLATIONS->value))),
+                'text_translation_route' => ['name' => 'grp.models.website.text_translation.update', 'parameters' => ['website' => $website->id]],
+
             ]
         )
             ->table(IndexHistory::make()->tableStructure(prefix: WebsiteTabsEnum::CHANGELOG->value))
             ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value))
-            ->table(IndexCrawls::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::CRAWLS->value));
+            ->table(IndexCrawls::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::CRAWLS->value))
+            ->table(IndexWebsiteTextTranslations::make()->tableStructure(WebsiteTabsEnum::TRANSLATIONS->value));
     }
 
 

@@ -205,7 +205,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
                 </div>
 
                 <div class="mt-6 mb-4 relative">
-                    <ButtonWithLink @click="isOpenModalCreditCard = false" :url="route('retina.dropshipping.mit_saved_cards.dashboard')" label="Add Credit Card" full />
+                    <ButtonWithLink @click="isOpenModalCreditCard = false" :url="route('retina.dropshipping.mit_saved_cards.dashboard')" :label="ctrans('Add Credit Card')" full />
                 </div>
             </div>
         </Modal>

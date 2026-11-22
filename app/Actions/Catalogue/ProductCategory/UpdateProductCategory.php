@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydratePricesFromMaster;
 use App\Actions\Catalogue\ProductCategory\LabelingGuide\StoreLabelingGuide;
 use App\Actions\Discounts\Offer\FinishOffer;
@@ -56,12 +57,14 @@ class UpdateProductCategory extends OrgAction
     use WithImageCatalogue;
     use WithProductCategoryHydrators;
     use SanitizeInputs;
+    use WithWebsiteTranslationFields;
 
     private ProductCategory $productCategory;
     private ?User $user = null;
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $modelData = $this->forgetBlankWebsiteTranslations($productCategory, $modelData);
         if (Arr::hasAny($modelData, ['storage_conditions', 'storage_temperature', 'storage_guidelines'])) {
             $storageOption = $productCategory->storage_option;
 

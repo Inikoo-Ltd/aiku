@@ -2132,3 +2132,52 @@ test('product tags and category FAQs are shown in the visitor language, and the 
 
     request()->attributes->remove('website_translation_locale');
 });
+
+test('staff correct the website languages of a product, a category and a website text, and nothing replaces them', function () {
+    Bus::fake();
+    [$otherCode] = otherLanguageCodes($this->shop);
+    enableShopLanguages($this->shop, [$this->shop->language->code, $otherCode]);
+    $shop = $this->shop->fresh();
+    [, $product] = createProduct($shop);
+    $family      = $product->family;
+
+    DB::table('products')->where('id', $product->id)->update([
+        'name_i8n'        => json_encode([$otherCode => 'Machine name', 'xx' => 'Kept']),
+        'description_i8n' => json_encode([$otherCode => '<p>Machine description</p>']),
+    ]);
+    DB::table('product_categories')->where('id', $family->id)->update(['name_i8n' => json_encode([$otherCode => 'Machine family', 'xx' => 'Kept'])]);
+
+    $section = \App\Actions\Catalogue\Product\UI\EditProduct::make()->websiteTranslationSection($product->fresh(), $shop);
+    expect($section['fields']['name_i8n']['value'])->toBe([$otherCode => 'Machine name'])
+        ->and($section['fields']['description_i8n']['html'])->toBeTrue();
+
+    $product = \App\Actions\Catalogue\Product\UpdateProduct::make()->action($product->fresh(), [
+        'name_i8n'        => [$otherCode => 'Staff name'],
+        'description_i8n' => [$otherCode => '<p> </p>'],
+    ]);
+    $family = \App\Actions\Catalogue\ProductCategory\UpdateProductCategory::make()->action($family->fresh(), ['name_i8n' => [$otherCode => 'Staff family']]);
+
+    expect($product->fresh()->getTranslations('name_i8n'))->toBe([$otherCode => 'Staff name', 'xx' => 'Kept'])
+        ->and($product->fresh()->getTranslations('description_i8n'))->toBe([])
+        ->and($family->fresh()->getTranslations('name_i8n'))->toBe([$otherCode => 'Staff family', 'xx' => 'Kept']);
+
+    $row = \App\Models\Web\WebsiteTextTranslation::create([
+        'website_id' => $this->website->id, 'locale' => $otherCode, 'source_hash' => sha1('<p class="x">Last seen</p>'),
+        'source_text' => '<p class="x">Last seen</p>', 'text' => '<p class="x">Machine</p>', 'origin' => 'machine',
+    ]);
+
+    expect(fn () => \App\Actions\Web\Website\UpdateWebsiteTextTranslation::make()->handle($row, ['text' => 'No tags']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\Web\Website\UpdateWebsiteTextTranslation::make()->handle($row, ['text' => '<p class="x">Zuletzt angesehen</p>']);
+    \App\Models\Web\WebsiteTextTranslation::insertOrIgnore([[
+        'website_id' => $this->website->id, 'locale' => $otherCode, 'source_hash' => $row->source_hash,
+        'source_text' => $row->source_text, 'text' => 'AI again', 'origin' => 'machine', 'created_at' => now(), 'updated_at' => now(),
+    ]]);
+
+    expect($row->fresh()->text)->toBe('<p class="x">Zuletzt angesehen</p>')
+        ->and($row->fresh()->origin)->toBe('human');
+
+    enableShopLanguages($shop, [$shop->language->code]);
+    expect(\App\Actions\Catalogue\Product\UI\EditProduct::make()->websiteTranslationSection($product, $shop->fresh()))->toBeNull();
+});

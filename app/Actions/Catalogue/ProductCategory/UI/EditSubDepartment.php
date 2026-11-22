@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
@@ -22,6 +23,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 class EditSubDepartment extends OrgAction
 {
     use WithCatalogueEditAuthorisation;
+    use WithWebsiteTranslationFields;
     use WithSubDepartmentNavigation;
 
     public function handle(ProductCategory $subDepartment): ProductCategory
@@ -274,6 +276,7 @@ class EditSubDepartment extends OrgAction
                                     ...$this->seoFields($subDepartment),
                                 ]
                             ],
+                            $this->websiteTranslationSection($subDepartment, $subDepartment->shop),
                             [
                                 'label'  => __('Properties'),
                                 'icon'   => 'fa-light fa-fingerprint',

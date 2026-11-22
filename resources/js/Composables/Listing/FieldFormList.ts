@@ -116,6 +116,7 @@ import Ratio from '@/Components/Forms/Fields/Ratio.vue'
 import EmergencyContact from '@/Components/Forms/Fields/EmergencyContact.vue'
 import WebsiteReview from '@/Components/Forms/Fields/WebsiteReview.vue'
 import InputTranslationWithOptionLanguages from '@/Components/Forms/Fields/InputTranslationWithOptionLanguages.vue'
+import WebsiteTranslations from '@/Components/Forms/Fields/WebsiteTranslations.vue'
 import ClockingMachineQrExpiry from '@/Components/Forms/Fields/ClockingMachineQrExpiry.vue'
 import ReviewRatingLabels from '@/Components/Forms/Fields/ReviewRatingLabels.vue'
 import VariantOptionTranslations from '@/Components/Forms/Fields/VariantOptionTranslations.vue'
@@ -264,6 +265,7 @@ export const componentsList: { [key: string]: Component } = {
     'review_visibility': ReviewVisibility,
     'review_validation_scope': ReviewValidationScope,
     'input_translation_use_option' : InputTranslationWithOptionLanguages,
+    'website_translations': WebsiteTranslations,
     'clocking_machine_qr_expiry': ClockingMachineQrExpiry,
     'select_create': SelectCreate,
     'dynamic_list': DynamicList,

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
@@ -21,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class EditDepartment extends OrgAction
 {
     use WithCatalogueEditAuthorisation;
+    use WithWebsiteTranslationFields;
     use WithDepartmentNavigation;
 
     public function handle(ProductCategory $department): ProductCategory
@@ -378,6 +380,7 @@ class EditDepartment extends OrgAction
                                         ...$this->seoFields($department),
                                     ]
                                 ],
+                                $this->websiteTranslationSection($department, $department->shop),
                                 [
                                     'label'  => __('Properties'),
                                     'icon'   => 'fa-light fa-fingerprint',

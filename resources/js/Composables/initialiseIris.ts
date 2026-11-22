@@ -17,6 +17,31 @@ import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
 
 let isJsonLocaleInterceptorAdded = false
 
+export const addJsonLocaleInterceptor = (iris: () => { locale?: string, website_i18n?: { shop_language?: { code?: string } } } | undefined) => {
+    if (isJsonLocaleInterceptorAdded) {
+        return
+    }
+    isJsonLocaleInterceptorAdded = true
+    axios.interceptors.request.use((config) => {
+        const chosenLocale = iris()?.locale
+        if (typeof window === 'undefined' || !chosenLocale || chosenLocale === iris()?.website_i18n?.shop_language?.code) {
+            return config
+        }
+
+        const requestUrl = new URL(config.url ?? '', window.location.origin)
+        if (
+            requestUrl.origin === window.location.origin
+            && requestUrl.pathname.startsWith('/json')
+            && !requestUrl.searchParams.has('locale')
+            && !config.params?.locale
+        ) {
+            config.params = { ...(config.params ?? {}), locale: chosenLocale }
+        }
+
+        return config
+    })
+}
+
 export const initialiseIrisApp = () => {
     const layout = useIrisLayoutStore()
     const locale = useLocaleStore()
@@ -40,27 +65,7 @@ export const initialiseIrisApp = () => {
         }
     })
 
-    if (!isJsonLocaleInterceptorAdded) {
-        isJsonLocaleInterceptorAdded = true
-        axios.interceptors.request.use((config) => {
-            const chosenLocale = layout.iris?.locale
-            if (typeof window === 'undefined' || !chosenLocale || chosenLocale === layout.iris?.website_i18n?.shop_language?.code) {
-                return config
-            }
-
-            const requestUrl = new URL(config.url ?? '', window.location.origin)
-            if (
-                requestUrl.origin === window.location.origin
-                && requestUrl.pathname.startsWith('/json')
-                && !requestUrl.searchParams.has('locale')
-                && !config.params?.locale
-            ) {
-                config.params = { ...(config.params ?? {}), locale: chosenLocale }
-            }
-
-            return config
-        })
-    }
+    addJsonLocaleInterceptor(() => layout.iris)
 
     router.on('navigate', (event) => {
         setComponentDebugInfo()  // To see PHP action and Vue filename in console (window.component)

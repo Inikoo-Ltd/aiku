@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoDescription;
@@ -67,6 +68,7 @@ class UpdateProduct extends OrgAction
     use HasDangerousGoodsFields;
     use HasProductInformation;
     use WithMasterAssetTradeUnits;
+    use WithWebsiteTranslationFields;
 
     private Product $product;
 
@@ -79,6 +81,8 @@ class UpdateProduct extends OrgAction
         // Note laravel wasChanged do not work! for this action, no idea why need to use $oldData
         $oldState = $product->state;
         $tradeUnitsChanged = false;
+        $translationsChanged = Arr::hasAny($modelData, self::WEBSITE_TRANSLATION_FIELDS);
+        $modelData = $this->forgetBlankWebsiteTranslations($product, $modelData);
         $oldUnits = (float) $product->units;
 
         $webpageData = [];
@@ -361,13 +365,14 @@ class UpdateProduct extends OrgAction
                 $changed,
                 $fieldsUsedInWebpages
             )
+                || $translationsChanged
                 || $isInStock != $oldIsInStock)
         ) {
             $stockStatuses        = [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON];
             $isStockStatusChange  = in_array($oldStatus, $stockStatuses, true) && in_array($product->status, $stockStatuses, true);
             $fieldsShownLoggedOut = array_diff($fieldsUsedInWebpages, $isStockStatusChange ? ['price', 'rrp', 'status'] : ['price', 'rrp']);
 
-            BreakProductInWebpagesCache::dispatch($product, Arr::hasAny($changed, $fieldsShownLoggedOut))->delay(15);
+            BreakProductInWebpagesCache::dispatch($product, $translationsChanged || Arr::hasAny($changed, $fieldsShownLoggedOut))->delay(15);
         }
 
         if (($oldUnits != (float) $product->units || $tradeUnitsChanged) && $product->shop->type !== ShopTypeEnum::EXTERNAL) {

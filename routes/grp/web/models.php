@@ -1729,6 +1729,7 @@ Route::post('family/{family:id}/webpage-check', CheckFamilyWebpage::class)->name
 Route::patch('crawl/{crawl:id}/stop', StopCrawlFromCrawler::class)->name('crawl.stop')->withoutScopedBindings();
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
+    Route::patch('text-translation/{websiteTextTranslation:id}', App\Actions\Web\Website\UpdateWebsiteTextTranslation::class)->name('text_translation.update')->withoutScopedBindings();
     Route::post('crawl', StoreCrawl::class)->name('crawl.store');
     Route::post('crawl-schedule', SaveCrawlSchedule::class)->name('crawl_schedule.save');
     Route::delete('crawl-schedule', DeleteCrawlSchedule::class)->name('crawl_schedule.delete');

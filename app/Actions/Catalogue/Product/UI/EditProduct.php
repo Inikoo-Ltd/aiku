@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Catalogue\WithWebsiteTranslationFields;
 use App\Actions\Catalogue\Product\Traits\WithPreOrderEditFields;
 use App\Actions\Catalogue\Product\Traits\WithCustomsTradeUnitField;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -38,6 +39,7 @@ class EditProduct extends OrgAction
     use WithDuplicatedBarcodeProducts;
     use WithPreOrderEditFields;
     use WithCustomsTradeUnitField;
+    use WithWebsiteTranslationFields;
 
     private Organisation|Shop|Fulfilment|ProductCategory $parent;
 
@@ -682,6 +684,7 @@ class EditProduct extends OrgAction
                     'icon'   => 'fa-light fa-tag',
                     'fields' => array_filter($nameFields)
                 ],
+                $this->websiteTranslationSection($product, $product->shop),
                 [
                     'label'  => __('GPSR'),
                     'icon'   => 'fa-light fa-biohazard',

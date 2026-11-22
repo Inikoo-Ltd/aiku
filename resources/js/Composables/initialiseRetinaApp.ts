@@ -15,6 +15,7 @@ import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
 import { initialiseIrisVarnishCustomerData, recordWebsiteHit } from '@/Composables/initialiseIrisVarnish'
 import { resetStuckOverlays } from '@/Composables/resetStuckOverlays'
 import { setComponentDebugInfo } from '@/Composables/useComponentDebugInfo'
+import { addJsonLocaleInterceptor } from '@/Composables/initialiseIris'
 
 
 export const initialiseRetinaApp = () => {
@@ -22,6 +23,7 @@ export const initialiseRetinaApp = () => {
     const locale = useLocaleStore()
 
     setComponentDebugInfo()
+    addJsonLocaleInterceptor(() => usePage().props?.iris)
 
     const echoPersonal = useEchoRetinaPersonal()
     const echoWebsite = useEchoRetinaWebsite()

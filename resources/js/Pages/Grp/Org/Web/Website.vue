@@ -25,6 +25,7 @@ import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import TableExternalLinks from "@/Components/Tables/Grp/Org/Web/TableExternalLinks.vue"
+import TableWebsiteTextTranslations from "@/Components/Tables/Grp/Org/Web/TableWebsiteTextTranslations.vue"
 import TableCrawls from "@/Components/Tables/Grp/Org/Web/TableCrawls.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -40,6 +41,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { faLanguage } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(
@@ -57,7 +59,8 @@ library.add(
     faRocket,
     faExternalLink,
     faFolderDownload,
-    faSpider
+    faSpider,
+    faLanguage
 )
 
 
@@ -74,6 +77,7 @@ const props = defineProps<{
     web_users?: object
     redirects?: {}
     external_links?: {},
+    translations?: {},
     crawls?: {},
     analytics?: object
     route_welcome :routeType
@@ -103,6 +107,7 @@ const component = computed(() => {
         web_users: TableWebUsers,
         redirects: TableRedirects,
         external_links: TableExternalLinks,
+        translations: TableWebsiteTextTranslations,
         crawls: TableCrawls
     }
     return components[currentTab.value]
