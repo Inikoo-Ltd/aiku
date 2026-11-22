@@ -113,6 +113,11 @@ class ShowOrgAgent extends OrgAction
                         ),
                     ],
                     'meta'          => $this->organisation->type === OrganisationTypeEnum::AGENT ? [] : [
+                        ...($request->user()->authTo(['supply-chain.view', 'compliance.view']) ? [[
+                            'label'    => __('Group view'),
+                            'route'    => ['name' => 'grp.supply-chain.agents.show', 'parameters' => [$orgAgent->agent->slug]],
+                            'leftIcon' => ['icon' => 'fal fa-sitemap', 'tooltip' => __('This agent across the group: users, settings and every organisation')],
+                        ]] : []),
                         [
                             'name'     => trans_choice('supplier|suppliers', $orgAgent->stats->number_org_suppliers),
                             'number'   => $orgAgent->stats->number_org_suppliers,

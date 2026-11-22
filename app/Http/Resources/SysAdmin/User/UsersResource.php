@@ -44,6 +44,8 @@ use JsonSerializable;
  * @property bool $can_use_mcp_customer_service
  * @property mixed $has_mcp_queries
  * @property mixed $last_active
+ * @property mixed $last_login_at
+ * @property mixed $number_logins
  */
 class UsersResource extends JsonResource
 {
@@ -90,6 +92,9 @@ class UsersResource extends JsonResource
             'can_use_mcp_customer_service' => (bool) $this->can_use_mcp_customer_service,
             'has_mcp_queries'           => (bool) $this->has_mcp_queries,
             'last_active'               => $this->last_active,
+            'last_login_at'             => $this->last_login_at,
+            'number_logins'             => $this->number_logins,
+            'positions'                 => is_string($user->getAttribute('positions')) ? json_decode($user->getAttribute('positions'), true) : null,
         ];
     }
 }

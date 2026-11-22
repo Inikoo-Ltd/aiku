@@ -13,6 +13,7 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Chat\StaffMessage;
 use App\Models\Helpers\SearchLog;
 use App\Models\SysAdmin\McpRequest;
+use App\Models\SysAdmin\UserLogin;
 use App\Models\SysAdmin\User;
 use App\Models\Analytics\UserRequest;
 use App\Services\QueryBuilder;
@@ -24,6 +25,35 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexEmployeeUserActivity
 {
     use AsObject;
+
+    public function logins(User $user, string $prefix): LengthAwarePaginator
+    {
+        InertiaTable::updateQueryBuilderParameters($prefix);
+
+        return QueryBuilder::for(UserLogin::class)
+            ->where('user_id', $user->id)
+            ->defaultSort('-date')
+            ->allowedSorts(['date', 'ip_address'])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function loginsTableStructure(string $prefix): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            $table
+                ->name($prefix)
+                ->pageName($prefix.'Page')
+                ->withEmptyState(['title' => __('No logins recorded yet'), 'count' => 0])
+                ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, type: 'date_hms')
+                ->column(key: 'ip_address', label: __('IP'), canBeHidden: false, sortable: true)
+                ->column(key: 'browser', label: __('Browser'))
+                ->column(key: 'os', label: __('OS'))
+                ->column(key: 'device', label: __('Device'))
+                ->column(key: 'location', label: __('Login location'))
+                ->defaultSort('-date');
+        };
+    }
 
     public function requests(User $user, string $prefix): LengthAwarePaginator
     {

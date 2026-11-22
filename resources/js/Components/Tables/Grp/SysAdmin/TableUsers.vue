@@ -13,20 +13,26 @@ import Image from "@common/Components/Image.vue"
 import Icon from '@/Components/Icon.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
-import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faRobot, faCheckCircle, faTimesCircle } from "@fal"
+import { faCheck, faTimes, faUserCircle, faYinYang, faKey, faRobot, faCheckCircle, faTimesCircle, faCrown, faUserTie, faUser, faIdBadge } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faShieldAlt, faUserShield } from "@far"
 
 library.add(faUserCircle, faTimes, faCheck, faYinYang, faKey, faRobot, faUserShield, faShieldAlt)
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
+    userLink?: (user: User) => string
 }>()
 
 
+const positionIcons: Record<string, object> = { "org-admin": faCrown, "agt-m": faUserTie, "agt-c": faUser }
+
 function userRoute(user: User) {
+    if (props.userLink) {
+        return props.userLink(user)
+    }
     if (route().current() === "grp.sysadmin.users.index") {
         return route("grp.sysadmin.users.show", [user.slug])
     }
@@ -86,6 +92,33 @@ function userRoute(user: User) {
 
         <template #cell(last_active)="{ item: user }">
             <span class="text-gray-500 whitespace-nowrap">{{ user.last_active ? useFormatTime(user.last_active, { formatTime: 'aiku' }) : '-' }}</span>
+        </template>
+
+        <template #cell(last_login_at)="{ item: user }">
+            <span class="text-gray-500 whitespace-nowrap">{{ user.last_login_at ? useFormatTime(user.last_login_at, { formatTime: 'aiku' }) : '-' }}</span>
+        </template>
+
+        <template #tableExtraAction>
+            <slot name="tableExtraAction" />
+        </template>
+
+        <template #cell(contact_name)="{ item: user }">
+            <span class="whitespace-nowrap">
+                {{ user.contact_name }}
+                <FontAwesomeIcon
+                    v-for="position in user.positions ?? []"
+                    :key="position.code"
+                    :icon="positionIcons[position.code] ?? faIdBadge"
+                    v-tooltip="position.name"
+                    class="ml-1 text-gray-400"
+                    fixed-width
+                    aria-hidden="true"
+                />
+            </span>
+        </template>
+
+        <template #cell(actions)="{ item: user }">
+            <slot name="actions" :user="user" />
         </template>
 
         <!-- Column: Image -->

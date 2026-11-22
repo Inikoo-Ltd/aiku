@@ -25,10 +25,12 @@ use App\Actions\SupplyChain\SupplierProduct\UI\IndexSupplierProducts;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\SupplyChain\AgentTabsEnum;
+use App\Http\Resources\SysAdmin\User\UsersResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\SupplyChain\AgentsResource;
 use App\Http\Resources\SupplyChain\SupplierProductsResource;
 use App\Http\Resources\SupplyChain\SuppliersResource;
+use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
@@ -81,6 +83,15 @@ class ShowAgent extends OrgAction
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'         => $agent->organisation->name,
+                    'meta'          => $agent->orgAgents()->with('organisation')->get()
+                        ->filter(fn (OrgAgent $orgAgent) => $request->user()->authTo("procurement.{$orgAgent->organisation_id}.view"))
+                        ->map(fn (OrgAgent $orgAgent) => [
+                            'label'    => $orgAgent->organisation->code,
+                            'route'    => ['name' => 'grp.org.procurement.org_agents.show', 'parameters' => [$orgAgent->organisation->slug, $orgAgent->slug]],
+                            'leftIcon' => ['icon' => 'fal fa-building', 'tooltip' => __('This agent in :organisation', ['organisation' => $orgAgent->organisation->name])],
+                        ])
+                        ->values()
+                        ->all(),
                     'actions'       => [
                         $this->agentEditAction(
                             'grp.supply-chain.agents.edit',
@@ -153,6 +164,12 @@ class ShowAgent extends OrgAction
                     fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($agent, AgentTabsEnum::NOTES->value, null, false))
                     : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($agent, AgentTabsEnum::NOTES->value, null, false))),
 
+                'systemUsersManagement' => IndexAgentSystemUsers::make()->management($agent, $request->user()),
+
+                AgentTabsEnum::SYSTEM_USERS->value => $this->tab == AgentTabsEnum::SYSTEM_USERS->value ?
+                    fn () => UsersResource::collection(IndexAgentSystemUsers::run($agent, AgentTabsEnum::SYSTEM_USERS->value))
+                    : Inertia::optional(fn () => UsersResource::collection(IndexAgentSystemUsers::run($agent, AgentTabsEnum::SYSTEM_USERS->value))),
+
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value, auditScope: GetAgentHistoryAuditScope::run($agent, ['type' => 'Agent', 'id' => $agent->id, 'label' => $agent->code])))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value, auditScope: GetAgentHistoryAuditScope::run($agent, ['type' => 'Agent', 'id' => $agent->id, 'label' => $agent->code]))))
@@ -166,7 +183,8 @@ class ShowAgent extends OrgAction
                     prefix: AgentTabsEnum::HISTORY->value,
                     withRecordColumn: true
                 )
-            )->table(IndexAttachments::make()->tableStructure(prefix: AgentTabsEnum::ATTACHMENTS->value));
+            )->table(IndexAttachments::make()->tableStructure(prefix: AgentTabsEnum::ATTACHMENTS->value))
+            ->table(IndexAgentSystemUsers::make()->tableStructure(prefix: AgentTabsEnum::SYSTEM_USERS->value, canManage: $request->user()->authTo('supply-chain')));
     }
 
 

@@ -12,6 +12,7 @@ use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;
 use App\Models\SupplyChain\DepositRequest;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetAgentHistoryAuditScope
@@ -37,6 +38,14 @@ class GetAgentHistoryAuditScope
                     ->mapWithKeys(fn (AgentPayment $payment) => [
                         $payment->id => trim(($typeLabels[$payment->type->value] ?? $payment->type->value).' '.($payment->reference ?? $payment->date?->format('j M Y'))),
                     ])
+                    ->all(),
+                'shops'  => null,
+            ],
+            [
+                'type'   => 'User',
+                'labels' => IndexAgentSystemUsers::agentStaff($agent, User::query())
+                    ->pluck('username', 'id')
+                    ->map(fn (string $username) => __('User').' '.$username)
                     ->all(),
                 'shops'  => null,
             ],

@@ -1903,6 +1903,88 @@ test('UI show agent', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page->has('history.data'));
 });
 
+test('UI agent system users lists only the agent staff', function (Agent $agent) {
+    $this->withoutExceptionHandling();
+    $agentStaff = User::where('username', 'coco')->firstOrFail();
+    $groupStaff = $this->adminGuest->getUser();
+    $orgAgent   = $agent->orgAgents()->first();
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'system_users']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('system_users.data', fn ($users) => collect($users)->pluck('username')->contains($agentStaff->username)
+                && !collect($users)->pluck('username')->contains($groupStaff->username))
+            ->has('system_users.data.0.last_login_at')
+            ->where('system_users.data', fn ($users) => collect(collect($users)->firstWhere('username', $agentStaff->username)['positions'])->pluck('code')->all() === ['org-admin']));
+
+    if ($orgAgent) {
+        $this->get(route('grp.org.procurement.org_agents.show', [$orgAgent->organisation->slug, $orgAgent->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.system_users')->missing('system_users')
+                ->where('pageHead.meta.0.route.name', 'grp.supply-chain.agents.show'));
+
+        $this->get(route('grp.supply-chain.agents.show', [$agent->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.meta', fn ($meta) => collect($meta)->contains(fn ($item) => $item['route']['name'] === 'grp.org.procurement.org_agents.show' && $item['route']['parameters'][1] === $orgAgent->slug)));
+    }
+})->depends('create agent');
+
+test('supply chain manager creates and edits an agent system user', function (Agent $agent) {
+    $this->post(route('grp.models.agent.system_user.store', [$agent->id]), [
+        'username'     => 'agentpal',
+        'contact_name' => 'Agent Pal',
+        'email'        => 'agentpal@example.com',
+        'password'     => 'first-secret',
+        'position'     => 'agt-c',
+    ])->assertSessionHasNoErrors()->assertRedirect();
+
+    $user = User::where('username', 'agentpal')->firstOrFail();
+    expect($user->authorisedOrganisations()->pluck('organisations.id')->all())->toBe([$agent->organisation_id])
+        ->and($user->roles()->pluck('name')->all())->toBe(["agent-clerk-{$agent->organisation_id}"]);
+
+    actingAs($user);
+    $this->post(route('grp.models.agent.system_user.store', [$agent->id]), [
+        'username' => 'agentpal2', 'contact_name' => 'X', 'password' => 'secret', 'position' => 'agt-c',
+    ])->assertForbidden();
+    actingAs($this->adminGuest->getUser());
+
+    $this->patch(route('grp.models.agent.system_user.update', [$agent->id, $user->id]), [
+        'contact_name' => 'Agent Pal Renamed',
+        'password'     => 'second-secret',
+        'status'       => false,
+    ])->assertSessionHasNoErrors()->assertRedirect();
+
+    $user->refresh();
+    expect($user->contact_name)->toBe('Agent Pal Renamed')
+        ->and($user->status)->toBeFalse()
+        ->and(Hash::check('second-secret', $user->password))->toBeTrue();
+
+    $this->patch(route('grp.models.agent.system_user.update', [$agent->id, $this->adminGuest->getUser()->id]), ['password' => 'hijack'])
+        ->assertForbidden();
+
+})->depends('create agent');
+
+test('UI agent system user page and its edits in the agent history', function (Agent $agent) {
+    $this->withoutExceptionHandling();
+    $user = User::where('username', 'agentpal')->firstOrFail();
+
+    $this->patch(route('grp.models.agent.system_user.update', [$agent->id, $user->id]), ['username' => 'agentbuddy'])
+        ->assertSessionHasNoErrors()->assertRedirect();
+    $user->refresh();
+    expect($user->username)->toBe('agentbuddy');
+
+    foreach (['showcase', 'logins', 'requests', 'searches', 'chats', 'ai_queries', 'changes', 'history'] as $tab) {
+        $this->get(route('grp.supply-chain.agents.show.system_users.show', [$agent->slug, $user->slug, 'tab' => $tab]))
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/AgentSystemUser')->has($tab));
+    }
+
+    $this->get(route('grp.supply-chain.agents.show.system_users.show', [$agent->slug, $user->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('showcase.username', 'agentbuddy')->where('showcase.positions', ['Agent clerk']));
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'history']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('history.data', fn ($audits) => collect($audits)->contains(fn ($audit) => ($audit['new_values']['username'] ?? null) === 'agentbuddy')));
+
+    $this->withExceptionHandling();
+    $this->get(route('grp.supply-chain.agents.show.system_users.show', [$agent->slug, $this->adminGuest->getUser()->slug]))->assertNotFound();
+})->depends('create agent');
+
 test('UI edit agent', function () {
     $agent = Agent::first() ?? StoreAgent::make()->action($this->group, Agent::factory()->definition());
     $this->withoutExceptionHandling();

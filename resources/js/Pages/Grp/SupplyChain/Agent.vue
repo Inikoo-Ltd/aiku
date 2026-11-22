@@ -34,6 +34,7 @@ import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/Ta
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import AgentSystemUsers from "@/Components/Procurement/AgentSystemUsers.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -58,6 +59,8 @@ const props = defineProps<{
     notes?: object
     agreement: object
     attachments?: object
+    system_users?: object
+    systemUsersManagement?: object | null
     attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
     attachmentScopes: { name: string; code: string }[]
 }>()
@@ -90,6 +93,7 @@ const component = computed(() => {
         purchase_orders: TablePurchaseOrders,
         details: ModelDetails,
         attachments: TableAttachments,
+        system_users: AgentSystemUsers,
         agreed_terms: TableSupplierAgreedTerms,
         notes: TableProcurementNotes,
         history: TableHistories
@@ -140,7 +144,7 @@ const getErrors = () => {
             <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
         </section>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : currentTab === 'system_users' ? { management: systemUsersManagement } : {}"></component>
 
     <UploadAttachment
         v-model="isModalUploadAttachmentOpen"

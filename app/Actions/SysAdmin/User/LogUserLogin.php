@@ -30,7 +30,7 @@ class LogUserLogin
                 'os'         => $browserData['os'],
                 'device'     => $browserData['device'],
                 'browser'    => $browserData['browser'],
-                'location'   => json_encode($geoLocation),
+                'location'   => $geoLocation,
             ]
         );
 

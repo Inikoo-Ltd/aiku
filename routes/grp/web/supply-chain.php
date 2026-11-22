@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurch
 use App\Actions\SupplyChain\Agent\UI\EditAgent;
 use App\Actions\SupplyChain\Agent\UI\IndexAgents;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
+use App\Actions\SupplyChain\Agent\UI\ShowAgentSystemUser;
 use App\Actions\SupplyChain\Agent\UI\ShowAgentsPurchaseOrderStates;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
@@ -78,6 +79,7 @@ Route::prefix("agents")->name("agents.")->group(
 
         Route::prefix('{agent}')->as('show')->group(function () {
             Route::get('', ShowAgent::class);
+            Route::get('system-users/{user:slug}', ShowAgentSystemUser::class)->name('.system_users.show')->withoutScopedBindings();
 
             Route::prefix('suppliers')->as('.suppliers')->group(function () {
                 Route::get('', [IndexSuppliers::class, 'inAgent'])->name('.index');

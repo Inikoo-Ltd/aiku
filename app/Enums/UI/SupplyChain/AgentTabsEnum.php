@@ -19,8 +19,9 @@ enum AgentTabsEnum: string
     case SHOWCASE            = 'showcase';
     case AGREED_TERMS = 'agreed_terms';
     case NOTES = 'notes';
-    case ATTACHMENTS         = 'attachments';
+    case SYSTEM_USERS        = 'system_users';
     case HISTORY             = 'history';
+    case ATTACHMENTS         = 'attachments';
 
 
 
@@ -45,6 +46,10 @@ enum AgentTabsEnum: string
             AgentTabsEnum::AGREED_TERMS => [
                 'title' => __('Agreed terms'),
                 'icon'  => 'fal fa-handshake',
+            ],
+            AgentTabsEnum::SYSTEM_USERS => [
+                'title' => __('System users'),
+                'icon'  => 'fal fa-terminal',
             ],
             AgentTabsEnum::NOTES => [
                 'title' => __('Notes'),

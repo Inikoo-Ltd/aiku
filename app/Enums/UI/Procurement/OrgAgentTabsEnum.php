@@ -21,28 +21,13 @@ enum OrgAgentTabsEnum: string
     case AGREED_TERMS = 'agreed_terms';
     case NOTES = 'notes';
     case INBOX                 = 'inbox';
-    case SYSTEM_USERS          = 'system_users';
-    case ATTACHMENTS           = 'attachments';
     case HISTORY               = 'history';
-    case DATA                  = 'data';
-    case IMAGES                = 'images';
+    case ATTACHMENTS           = 'attachments';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-            OrgAgentTabsEnum::DATA => [
-                'title' => __('Data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
-                'align' => 'right',
-            ],
-            OrgAgentTabsEnum::IMAGES => [
-                'title' => __('Images'),
-                'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
-            ],
             OrgAgentTabsEnum::MONEY => [
                 'title' => __('Money'),
                 'icon'  => 'fal fa-wallet',
@@ -50,10 +35,6 @@ enum OrgAgentTabsEnum: string
             OrgAgentTabsEnum::INBOX => [
                 'title' => __('Inbox'),
                 'icon'  => 'fal fa-inbox',
-            ],
-            OrgAgentTabsEnum::SYSTEM_USERS => [
-                'title' => __('System User'),
-                'icon'  => 'fal fa-terminal',
             ],
             OrgAgentTabsEnum::ATTACHMENTS => [
                 'title' => __('Attachments'),

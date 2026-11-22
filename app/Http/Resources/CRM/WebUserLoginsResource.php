@@ -36,9 +36,13 @@ class WebUserLoginsResource extends JsonResource
         ];
     }
 
-    private function formatLocation(?array $location): ?string
+    private function formatLocation(array|string|null $location): ?string
     {
-        if (!$location) {
+        if (is_string($location)) {
+            $location = json_decode($location, true);
+        }
+
+        if (!is_array($location) || !$location) {
             return null;
         }
 

@@ -12,6 +12,8 @@ use App\Actions\Helpers\Media\DetachAttachmentFromModel;
 use App\Actions\SupplyChain\Agent\DeleteAgent;
 use App\Actions\SupplyChain\Agent\StoreAgent;
 use App\Actions\SupplyChain\Agent\UpdateAgent;
+use App\Actions\SupplyChain\Agent\SystemUser\StoreAgentSystemUser;
+use App\Actions\SupplyChain\Agent\SystemUser\UpdateAgentSystemUser;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use Illuminate\Support\Facades\Route;
 
@@ -21,3 +23,5 @@ Route::delete('/agent/{agent:id}', DeleteAgent::class)->name('agent.delete');
 Route::post('/agent/{agent:id}/supplier', [StoreSupplier::class, 'inAgent'])->name('agent.supplier.store');
 Route::post('/agent/{agent:id}/attachment/attach', [AttachAttachmentToModel::class, 'inAgent'])->name('agent.attachment.attach');
 Route::delete('/agent/{agent:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inAgent'])->name('agent.attachment.detach')->withoutScopedBindings();
+Route::post('/agent/{agent:id}/system-user', StoreAgentSystemUser::class)->name('agent.system_user.store');
+Route::patch('/agent/{agent:id}/system-user/{user:id}', UpdateAgentSystemUser::class)->name('agent.system_user.update')->withoutScopedBindings();
