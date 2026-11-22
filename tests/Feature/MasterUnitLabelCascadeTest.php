@@ -308,6 +308,27 @@ test('a master translation reaches the shop map in every language but the shop o
         ->and($product->is_name_reviewed)->toBeFalse();
 });
 
+test('a master translation never overwrites a language the shop website shows, which staff may have corrected', function () {
+    $this->shop->updateQuietly([
+        'language_id' => Language::where('code', 'sk')->first()->id,
+        'settings'    => array_merge($this->shop->settings ?? [], ['preview_languages' => [Language::where('code', 'de')->first()->id]]),
+    ]);
+
+    $this->product->setTranslation('name_i8n', 'de', 'Lavendelseife von Hand')->save();
+
+    $this->masterAsset->setTranslation('name_i8n', 'en', 'lavender soap')
+        ->setTranslation('name_i8n', 'de', 'Lavendel Seife')
+        ->setTranslation('name_i8n', 'es', 'jabón de lavanda')
+        ->save();
+
+    UpdateMasterAsset::make()->action($this->masterAsset, ['name' => 'lavender soap']);
+
+    $product = $this->product->refresh();
+
+    expect($product->getTranslation('name_i8n', 'de'))->toBe('Lavendelseife von Hand')
+        ->and($product->getTranslation('name_i8n', 'es'))->toBe('jabón de lavanda');
+});
+
 test('part of a trade unit is only accepted when the trade unit is divisible', function () {
     $partOfABottle = ['trade_units' => [['id' => $this->bottle, 'quantity' => 0.01]]];
 

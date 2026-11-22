@@ -102,8 +102,8 @@ class PropagateMasterContentToProducts
      * The shop's visible text is left alone, but the translation map is still kept in step with
      * the master for every OTHER language: those entries are the master's to fill, nobody edits
      * them from the shop, and leaving them stale was how the previous propagation earned its
-     * keep. The shop's own locale is the one entry that is skipped, because that is the copy the
-     * shopkeeper wrote.
+     * keep. The shop's own locale is skipped, because that is the copy the shopkeeper wrote, and so is
+     * every language its website shows: those are filled per shop and corrected by staff (INI-510).
      *
      * Written straight to the row rather than through UpdateProduct: a review flag is not
      * business data, and the full update pipeline would fire an audit event and re-run the asset
@@ -119,8 +119,10 @@ class PropagateMasterContentToProducts
         foreach ($changedFields as $field) {
             $attributes[self::REVIEW_FLAGS[$field]] = false;
 
-            $masterTranslations = $masterAsset->getTranslations($field.'_i8n');
-            unset($masterTranslations[$shopLocale]);
+            $masterTranslations = array_diff_key(
+                $masterAsset->getTranslations($field.'_i8n'),
+                array_flip([$shopLocale, ...$product->shop->websiteLanguageCodes()])
+            );
 
             if ($masterTranslations) {
                 $productTranslations = array_merge(
