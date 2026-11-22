@@ -1266,3 +1266,47 @@ test('every search click is stored with its type, kind and target up to 20 a sea
 
     expect(DB::table('website_search_log_clicks')->where('website_search_log_id', $log->id)->count())->toBe(20);
 });
+
+test('a visitor reading the website in another language finds products by their translated names, English searches are unchanged (INI-510)', function () {
+    $otherCode = \App\Models\Helpers\Language::whereIn('code', ['de', 'fr'])->where('id', '!=', $this->shop->language_id)->orderBy('code')->value('code');
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], [
+        'enabled_languages' => \App\Models\Helpers\Language::whereIn('code', [$this->shop->language->code, $otherCode])->pluck('id')->all(),
+    ])]);
+
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    ($product->webpage ?: StoreProductWebpage::make()->action($product))->update(['state' => WebpageStateEnum::LIVE]);
+    DB::table('products')->where('id', $product->id)->update([
+        'name'     => 'Incense sticks',
+        'name_i8n' => json_encode([$otherCode => 'Räucherstäbchen', 'xx' => ' ']),
+    ]);
+    $product = $product->fresh();
+    expect((bool) $product->is_in_website)->toBeTrue()
+        ->and($product->toSearchableArray()['name_translations'])->toBe(['Räucherstäbchen']);
+
+    config()->set('scout.driver', 'typesense');
+    Http::fake([
+        '*/collections/*' => Http::response(['fields' => [['name' => 'name'], ['name' => 'name_translations'], ['name' => 'description_translations']]]),
+        '*/multi_search'  => Http::response(['results' => [
+            ['hits' => [['document' => ['id' => (string) $product->id, 'code' => $product->code, 'name' => 'Incense sticks']]]],
+            ['hits' => []],
+            ['hits' => []],
+        ]]),
+    ]);
+
+    $translated = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=räucherstäbchen&locale='.$otherCode);
+    $translated->assertOk();
+    expect($translated->json('results.products.0.name'))->toBe('Räucherstäbchen');
+
+    $english = $this->getJson('http://'.$this->website->domain.'/json/search/catalogue?q=incense+sticks');
+    $english->assertOk();
+    expect($english->json('results.products.0.name'))->toBe('Incense sticks');
+
+    $queryBys = Http::recorded(fn ($request) => str_ends_with($request->url(), '/multi_search'))
+        ->map(fn ($pair) => array_column($pair[0]['searches'], 'query_by'))->values();
+    expect($queryBys[0][0])->toEndWith(',name_translations,description_translations')
+        ->and($queryBys[0][1])->toEndWith(',name_translations,description_translations')
+        ->and($queryBys[0][2])->not->toContain('translations')
+        ->and($queryBys[1][0])->toBe(config('scout.typesense.model-settings.'.\App\Models\Catalogue\Product::class.'.search-parameters.query_by'))
+        ->and($queryBys[1][1])->not->toContain('translations');
+});

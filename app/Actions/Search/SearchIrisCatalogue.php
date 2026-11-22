@@ -9,6 +9,7 @@ namespace App\Actions\Search;
 
 use App\Actions\IrisAction;
 use App\Actions\Web\Website\UpdateWebsiteSearchBoosts;
+use App\Helpers\WebsiteLanguage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -29,6 +30,7 @@ class SearchIrisCatalogue extends IrisAction
             'is_in_website'      => true,
             'boosts'             => $boosts,
             'language'           => $this->shop->language->code,
+            'translate_to'       => WebsiteLanguage::translateTo(),
             'orders_customer_id' => $customerId,
         ]);
 

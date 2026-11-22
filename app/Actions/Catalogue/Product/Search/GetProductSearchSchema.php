@@ -48,6 +48,16 @@ class GetProductSearchSchema
                         'type' => 'string',
                     ],
                     [
+                        'name'     => 'name_translations',
+                        'type'     => 'string[]',
+                        'optional' => true,
+                    ],
+                    [
+                        'name'     => 'description_translations',
+                        'type'     => 'string[]',
+                        'optional' => true,
+                    ],
+                    [
                         'name' => 'is_for_sale',
                         'type' => 'bool',
                     ],

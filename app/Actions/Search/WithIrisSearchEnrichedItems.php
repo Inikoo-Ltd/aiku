@@ -10,6 +10,7 @@ namespace App\Actions\Search;
 use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Support\Arr;
@@ -123,6 +124,7 @@ trait WithIrisSearchEnrichedItems
             : Arr::get($model->web_images ?? [], 'main.thumbnail');
 
         $item['url']   = $url;
+        $item['name']  = WebsiteLanguage::text($model, 'name');
         $item['image'] = $image ?: $item['image'] ?? null;
         $item['stock'] = $model->available_quantity;
         $item['units'] = $model->units;

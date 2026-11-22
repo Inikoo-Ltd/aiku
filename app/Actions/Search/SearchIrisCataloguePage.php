@@ -11,6 +11,7 @@ use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -145,7 +146,7 @@ class SearchIrisCataloguePage extends IrisAction
     private function queryMatches(string $query): array
     {
         return cache()->remember(
-            'iris-search-page:'.$this->website->id.':'.md5($query),
+            rtrim('iris-search-page:'.$this->website->id.':'.md5($query).':'.WebsiteLanguage::translateTo(), ':'),
             60,
             function () use ($query) {
                 ['ids' => $matchedIds, 'arm_counts' => $armCounts] = $this->matchedProductIds($query);
@@ -193,14 +194,17 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedProductIds(string $query): array
     {
-        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true);
+        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)
+            ->options(['query_by' => SearchCatalogue::queryBy(Product::class, WebsiteLanguage::translateTo())]);
 
         $hits = $this->rawHits($searchQuery);
         $ids  = array_column(Arr::pluck($hits, 'document'), 'id');
         $ids  = array_values(array_unique(array_map('intval', array_filter($ids))));
 
         $categoryHit = Arr::first($this->rawHits(
-            ProductCategory::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)->take(1)
+            ProductCategory::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)
+                ->options(['query_by' => SearchCatalogue::queryBy(ProductCategory::class, WebsiteLanguage::translateTo())])
+                ->take(1)
         ));
 
         return [
@@ -326,7 +330,7 @@ class SearchIrisCataloguePage extends IrisAction
 
                 return [
                     'id'    => $category->id,
-                    'name'  => $category->name,
+                    'name'  => WebsiteLanguage::text($category, 'name'),
                     'count' => $count,
                     'url'   => $this->canonicalUrl($category->webpage) ?: null,
                     'image' => $category->imageSources(200, 200) ?: Arr::get($category->web_images ?? [], 'main.thumbnail'),

@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Actions\Search\SearchCatalogue;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -233,6 +234,8 @@ class ProductCategory extends Model implements Auditable, HasMedia
             'name'              => (string)$this->name,
             'description'       => (string)$this->description,
             'description_extra' => (string)$this->description_extra,
+            'name_translations'        => SearchCatalogue::searchableTranslations($this->getTranslations('name_i8n')),
+            'description_translations' => SearchCatalogue::searchableTranslations($this->getTranslations('description_i8n')),
             'state'             => $this->state->value,
             'is_in_website'     => (bool) $this->is_in_website,
             'image'             => json_encode(Arr::get($this->web_images, 'main.thumbnail')),

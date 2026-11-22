@@ -113,7 +113,7 @@ class SearchCatalogue
                 [
                     'collection'             => (new $modelClass())->searchableAs(),
                     'q'                      => $query,
-                    'query_by'               => config("scout.typesense.model-settings.$modelClass.search-parameters.query_by") ?? '',
+                    'query_by'               => self::queryBy($modelClass, Arr::get($options, 'translate_to')),
                     'filter_by'              => implode(' && ', $filters),
                     'per_page'               => $limit,
                     'page'                   => 1,
@@ -158,9 +158,9 @@ class SearchCatalogue
                 $searchQuery->where('is_in_website', true);
             }
 
-            $searchQuery->options($this->extraSearchOptions(
-                Arr::get($options, "boosts.$boostType"),
-                Arr::get($options, 'language')
+            $searchQuery->options(array_merge(
+                $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language')),
+                ['query_by' => self::queryBy($modelClass, Arr::get($options, 'translate_to'))]
             ));
             $searchQuery->take($limit);
 
@@ -168,6 +168,69 @@ class SearchCatalogue
         }
 
         return $hits;
+    }
+
+    /**
+     * A visitor reading the website in another language (INI-510) also searches the translated
+     * names and descriptions; every other search keeps the shop's own fields only.
+     */
+    public static function queryBy(string $modelClass, ?string $translateTo): string
+    {
+        $queryBy = config("scout.typesense.model-settings.$modelClass.search-parameters.query_by") ?? '';
+
+        if ($translateTo && in_array($modelClass, [Product::class, ProductCategory::class], true) && static::make()->translationsAreIndexed($modelClass)) {
+            $queryBy .= ',name_translations,description_translations';
+        }
+
+        return $queryBy;
+    }
+
+    public static function translationsIndexedCacheKey(string $modelClass): string
+    {
+        return 'search:translations_indexed:'.(new $modelClass())->searchableAs();
+    }
+
+    /**
+     * Typesense fails a search whose query_by names a field the collection lacks, so the translated
+     * fields are only searched once reindex_search:catalogue_translations has added them.
+     */
+    public function translationsAreIndexed(string $modelClass): bool
+    {
+        if (config('scout.driver') !== 'typesense') {
+            return true;
+        }
+
+        return (bool)cache()->remember(
+            self::translationsIndexedCacheKey($modelClass),
+            300,
+            function () use ($modelClass) {
+                try {
+                    $fields = $this->typesenseClient()
+                        ->get($this->typesenseUrl().'/collections/'.(new $modelClass())->searchableAs())
+                        ->json('fields', []);
+
+                    return in_array('description_translations', array_column($fields, 'name'), true);
+                } catch (Throwable) {
+                    return false;
+                }
+            }
+        );
+    }
+
+    /**
+     * Every language of an *_i8n column in one searchable list: the query string already says which
+     * language the visitor typed in, so the index does not need a field per language.
+     *
+     * @param array<string, mixed> $translations
+     *
+     * @return array<int, string>
+     */
+    public static function searchableTranslations(array $translations): array
+    {
+        return array_values(array_unique(array_filter(
+            $translations,
+            static fn ($text) => is_string($text) && trim($text) !== ''
+        )));
     }
 
     /**
