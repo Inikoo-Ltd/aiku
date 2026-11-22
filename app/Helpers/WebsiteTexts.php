@@ -30,7 +30,7 @@ final class WebsiteTexts
         'attributes', 'workshop', 'workshop_url', 'background', 'style', 'styles', 'script',
         'product', 'products', 'family', 'families', 'department', 'departments', 'sub_department', 'sub_departments',
         'collection', 'collections', 'model', 'webpage', 'settings', 'setting', 'products_data', 'paymentData',
-        'marketing_material_route', 'product_categories',
+        'marketing_material_route', 'product_categories', 'temporaryData',
     ];
 
     private const array SKIP_BLOCK_TYPES = ['iframe'];
@@ -91,6 +91,35 @@ final class WebsiteTexts
     }
 
     /**
+     * The texts of a banner's slides: central stage, corner titles and buttons, cards and image alts. The navigation
+     * is left out, its "value" keys hold settings.
+     *
+     * @return array<string, string>
+     */
+    public static function collectBanner(?array $compiledLayout): array
+    {
+        return self::collect(self::bannerTexts($compiledLayout));
+    }
+
+    public static function bannerForVisitor(int $websiteId, ?array $compiledLayout): ?array
+    {
+        $locale = WebsiteLanguage::translateTo();
+        if (!$locale || !$compiledLayout) {
+            return $compiledLayout;
+        }
+
+        return array_merge($compiledLayout, self::apply(self::bannerTexts($compiledLayout), self::translations($websiteId, $locale))['fieldValue']);
+    }
+
+    /**
+     * @return array{fieldValue: array<string, mixed>}
+     */
+    private static function bannerTexts(?array $compiledLayout): array
+    {
+        return ['fieldValue' => array_intersect_key($compiledLayout ?? [], array_flip(['common', 'components']))];
+    }
+
+    /**
      * One plain text (a webpage title or description) in the visitor's language, or as it is.
      */
     public static function textForVisitor(?int $websiteId, ?string $text): ?string
@@ -131,7 +160,7 @@ final class WebsiteTexts
 
         return $trimmed !== ''
             && !preg_match('/^(https?:|mailto:|tel:|\/|#|rgba?\(|hsla?\(|var\(|(linear|radial|conic)-gradient\()/i', $trimmed)
-            && !preg_match('/^\S+\.(jpe?g|png|gif|webp|avif|svg|pdf|mp4|webm)$/i', $trimmed)
+            && !preg_match('/^[^<>\n]+\.(jpe?g|png|gif|webp|avif|svg|pdf|mp4|webm)$/i', $trimmed)
             && !preg_match('/^[\w-]+(\.[\w-]+)+$/', $trimmed)
             && self::hasWords($trimmed);
     }

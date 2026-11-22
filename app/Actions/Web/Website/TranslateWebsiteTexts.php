@@ -16,6 +16,7 @@ use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Helpers\WebsiteTexts;
 use App\Models\Helpers\Language;
+use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Models\Web\WebsiteTextTranslation;
@@ -24,10 +25,11 @@ use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 
 /**
  * Machine translates the website texts (web blocks, header, top bar, menu, footer, sidebar, the marginal templates,
- * webpage titles and descriptions) that have no translation yet into every other language the website shows
+ * banner slides, webpage titles, descriptions, breadcrumb labels and share image alts) that have no translation yet into every other language the website shows
  * (INI-510). Only new texts cost anything: a text keeps its row for as long as its English is unchanged, and an
- * existing row, machine or human, is never replaced. Runs after a webpage or a website marginal is published, and
- * breaks only the caches that show what it wrote.
+ * existing row, machine or human, is never replaced. Runs after a webpage, a website marginal or a banner is published,
+ * and breaks only the caches that show what it wrote. A banner breaks none: its English reaches cached pages when they
+ * expire, and its German rows are written well before that.
  */
 class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
 {
@@ -44,26 +46,26 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
      */
     private const array JSON_MARGINALS = ['footer', 'sidebar'];
 
-    public function getJobUniqueId(Website $website, ?Webpage $webpage = null, ?string $marginal = null): string
+    public function getJobUniqueId(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?Banner $banner = null): string
     {
-        return $website->id.'-'.($webpage?->id ?? $marginal ?? 'all');
+        return $website->id.'-'.($webpage?->id ?? $marginal ?? ($banner ? 'banner-'.$banner->id : 'all'));
     }
 
     /**
      * $marginal: the published website layout part; its texts are all in the website's own layout (template
      * marginals are copied from it into the pages), so the webpages need not be read.
      */
-    public static function dispatchIfTranslated(Website $website, ?Webpage $webpage = null, ?string $marginal = null): void
+    public static function dispatchIfTranslated(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?Banner $banner = null): void
     {
         if (count($website->shop->websiteLanguageCodes()) > 1) {
-            self::dispatch($website, $webpage, $marginal);
+            self::dispatch($website, $webpage, $marginal, $banner);
         }
     }
 
     /**
      * @return array<string, array{texts: int, missing: int, written: int}>
      */
-    public function handle(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?string $onlyLocale = null, bool $dryRun = false): array
+    public function handle(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?Banner $banner = null, ?string $onlyLocale = null, bool $dryRun = false): array
     {
         $shop    = $website->shop;
         $locales = array_values(array_diff($shop->websiteLanguageCodes(), [$shop->language->code]));
@@ -77,6 +79,7 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
         $texts = match (true) {
             $webpage !== null  => $this->webpageTexts($webpage),
             $marginal !== null => WebsiteTexts::collect($website->published_layout),
+            $banner !== null   => WebsiteTexts::collectBanner($banner->compiled_layout),
             default            => $this->websiteTexts($website),
         };
 
@@ -91,7 +94,7 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
             $stats[$language->code] = ['texts' => count($texts), 'missing' => count($missing), 'written' => $done];
         }
 
-        if ($written) {
+        if ($written && !$banner) {
             $this->breakCaches($website, $webpage, $marginal);
         }
 
@@ -120,8 +123,12 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
     {
         $texts = WebsiteTexts::collect($website->published_layout);
 
+        foreach (Banner::where('website_id', $website->id)->select(['id', 'compiled_layout'])->get() as $banner) {
+            $texts += WebsiteTexts::collectBanner($banner->compiled_layout);
+        }
+
         $website->webpages()->where('state', WebpageStateEnum::LIVE)->with('model')
-            ->select(['id', 'website_id', 'title', 'description', 'published_layout', 'model_type', 'model_id'])
+            ->select(['id', 'website_id', 'title', 'description', 'breadcrumb_label', 'seo_data', 'published_layout', 'model_type', 'model_id'])
             ->chunkById(200, function ($webpages) use (&$texts) {
                 foreach ($webpages as $webpage) {
                     $texts += $this->webpageTexts($webpage);
@@ -132,8 +139,9 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
     }
 
     /**
-     * A title or description that is the name of the page's product or category follows that name's translation,
-     * so only the others are collected here.
+     * A title, description, breadcrumb label or share image alt that is the name of the page's product or category
+     * follows that name's translation, so only the others are collected here. A product page's breadcrumb shows its
+     * code, so its label is not collected.
      *
      * @return array<string, string>
      */
@@ -142,7 +150,9 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
         $texts = WebsiteTexts::collect($webpage->published_layout);
         $name  = $webpage->model?->getAttribute('name');
 
-        foreach ([$webpage->title, $webpage->description] as $text) {
+        $breadcrumbLabel = $webpage->model_type === 'Product' ? null : $webpage->breadcrumb_label;
+
+        foreach ([$webpage->title, $webpage->description, $breadcrumbLabel, data_get($webpage->seo_data, 'image_alt')] as $text) {
             if (is_string($text) && $text !== $name && WebsiteTexts::isWords($text)) {
                 $texts[WebsiteTexts::hash($text)] = $text;
             }
@@ -265,7 +275,7 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
     public function asCommand(Command $command): int
     {
         $website = Website::where('slug', $command->argument('website'))->firstOrFail();
-        $stats   = $this->handle($website, null, null, $command->option('locale') ?: null, (bool) $command->option('dry-run'));
+        $stats   = $this->handle($website, null, null, null, $command->option('locale') ?: null, (bool) $command->option('dry-run'));
 
         if (!$stats) {
             $command->warn('The website shows no language other than its shop\'s.');

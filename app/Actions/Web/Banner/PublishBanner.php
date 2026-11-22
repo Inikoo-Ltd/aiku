@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\UI\ParseBannerLayout;
+use App\Actions\Web\Website\TranslateWebsiteTexts;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Http\Resources\Web\BannerResource;
@@ -98,6 +99,10 @@ class PublishBanner extends OrgAction
 
 
         Cache::put('banner_compiled_layout_'.$banner->slug, $banner->compiled_layout, 86400);
+
+        if ($banner->website) {
+            TranslateWebsiteTexts::dispatchIfTranslated($banner->website, banner: $banner);
+        }
 
 
         return $banner;

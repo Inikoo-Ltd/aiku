@@ -53,14 +53,14 @@ final class WebsiteLanguage
     }
 
     /**
-     * A webpage text (title, breadcrumb label) that is just the name of the page's product, category or
+     * A webpage text (title, description, breadcrumb label, seo_data.image_alt) that is just the name of the page's product, category or
      * collection follows that name's translation; any other webpage text stays as written until it has its own.
      */
     public static function webpageText(Webpage $webpage, string $field): ?string
     {
-        $text = $webpage->getAttribute($field);
+        $text = data_get($webpage, $field);
 
-        if (!$text || !self::translateTo()) {
+        if (!is_string($text) || !$text || !self::translateTo()) {
             return $text;
         }
 

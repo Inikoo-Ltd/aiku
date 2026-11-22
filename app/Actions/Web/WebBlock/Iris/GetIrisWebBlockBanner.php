@@ -10,6 +10,7 @@ namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
+use App\Helpers\WebsiteTexts;
 use App\Models\Helpers\Media;
 use App\Models\Web\Banner;
 use App\Models\Web\Webpage;
@@ -47,7 +48,7 @@ class GetIrisWebBlockBanner
                     'type'            => $banner->type?->value,
                     'state'           => $banner->state,
                     'ratio'           => $banner->ratio,
-                    'compiled_layout' => $this->onlyVisibleComponents($banner->compiled_layout),
+                    'compiled_layout' => $this->onlyVisibleComponents(WebsiteTexts::bannerForVisitor($banner->website_id, $banner->compiled_layout)),
                 ],
             ])->all();
 

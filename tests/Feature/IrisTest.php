@@ -2008,3 +2008,77 @@ test('website texts are machine translated only when new, never over an existing
 
     enableShopLanguages($this->shop, null);
 });
+
+test('banner slide texts and webpage breadcrumb labels and share image alts are translated for a visitor in another language (INI-510)', function () {
+    [$otherCode] = otherLanguageCodes($this->shop);
+    enableShopLanguages($this->shop, [$this->shop->language->code, $otherCode]);
+
+    $layout = [
+        'type'       => 'landscape',
+        'common'     => ['centralStage' => ['title' => null]],
+        'components' => [[
+            'id'         => 1,
+            'visibility' => true,
+            'image'      => ['desktop' => ['name' => 'STARL desktop-banner.jpg', 'source' => ['original' => 'https://media.aiku.io/x']]],
+            'layout'     => [
+                'imageAlt'     => 'Paper star lamps',
+                'centralStage' => ['title' => 'NEW IN', 'style' => ['color' => 'red']],
+                'corners'      => [
+                    'topRight'    => ['type' => 'cornerText', 'data' => ['title' => 'NEW IN', 'subtitle' => 'Paper Star Lamp Shade'], 'temporaryData' => ['cornerText' => ['title' => 'Old title']]],
+                    'bottomRight' => ['type' => 'linkButton', 'data' => ['text' => 'LIST TODAY', 'target' => 'https://www.aw-dropship.eu/scanp']],
+                ],
+                'background'   => ['desktop' => 'linear-gradient(to left, rgb(1, 2, 3), rgb(4, 5, 6))'],
+            ],
+        ]],
+        'navigation' => ['bottomNav' => ['type' => ['value' => 'bullets']]],
+    ];
+
+    $banner = \App\Actions\Web\Banner\StoreBanner::make()->action($this->website, ['name' => 'ini510', 'type' => \App\Enums\Web\Banner\BannerTypeEnum::LANDSCAPE, 'ratio' => '16/9']);
+    $banner->update(['compiled_layout' => $layout]);
+
+    expect(array_values(\App\Helpers\WebsiteTexts::collectBanner($layout)))->toEqualCanonicalizing(['Paper star lamps', 'NEW IN', 'Paper Star Lamp Shade', 'LIST TODAY']);
+
+    \App\Actions\Helpers\Translations\Translate::mock()->shouldReceive('many')->once()
+        ->andReturnUsing(fn (array $texts) => array_map(fn (string $text) => 'DE '.$text, $texts));
+    $stats = \App\Actions\Web\Website\TranslateWebsiteTexts::make()->handle($this->website->fresh(), banner: $banner);
+    expect($stats[$otherCode])->toBe(['texts' => 4, 'missing' => 4, 'written' => 4]);
+
+    $webBlock = ['type' => 'banner', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['banner_id' => $banner->id]]]]];
+    $page     = $this->website->webpages()->whereNull('model_id')->firstOrFail();
+
+    expect(\App\Helpers\WebsiteTexts::bannerForVisitor($this->website->id, $layout))->toBe($layout);
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $otherCode);
+    $shown = data_get(\App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBanner::run($page, $webBlock), "web_block.layout.data.fieldValue.banners_data.$banner->id.compiled_layout");
+    $json  = \App\Actions\Iris\Json\GetBanner::make()->handle($this->website, $banner->id)['compiled_layout'];
+
+    expect(data_get($shown, 'components.0.layout.corners.topRight.data.title'))->toBe('DE NEW IN')
+        ->and(data_get($shown, 'components.0.layout.corners.bottomRight.data.text'))->toBe('DE LIST TODAY')
+        ->and(data_get($shown, 'components.0.layout.corners.bottomRight.data.target'))->toBe('https://www.aw-dropship.eu/scanp')
+        ->and(data_get($shown, 'components.0.layout.imageAlt'))->toBe('DE Paper star lamps')
+        ->and(data_get($shown, 'navigation.bottomNav.type.value'))->toBe('bullets')
+        ->and(data_get($json, 'components.0.layout.centralStage.title'))->toBe('DE NEW IN');
+
+    \App\Models\Web\WebsiteTextTranslation::create([
+        'website_id' => $this->website->id, 'locale' => $otherCode, 'source_hash' => sha1('Gemstone Pictures'),
+        'source_text' => 'Gemstone Pictures', 'text' => 'Edelsteinbilder', 'origin' => 'human',
+    ]);
+    expect(\App\Actions\Web\Website\TranslateWebsiteTexts::make()->websiteTexts($this->website->fresh()))->toContain('LIST TODAY', 'Paper Star Lamp Shade');
+
+    request()->attributes->remove('website_texts:'.$this->website->id.':'.$otherCode);
+    $webpage = new Webpage(['breadcrumb_label' => 'Gemstone Pictures', 'seo_data' => ['image_alt' => 'Gemstone Pictures']]);
+    $webpage->website_id = $this->website->id;
+
+    expect(\App\Helpers\WebsiteLanguage::webpageText($webpage, 'breadcrumb_label'))->toBe('Edelsteinbilder')
+        ->and(\App\Actions\Web\Webpage\Iris\ShowIrisWebpage::make()->getWebpageShareImageAlt($webpage))->toBe('Edelsteinbilder')
+        ->and(array_values(\App\Actions\Web\Website\TranslateWebsiteTexts::make()->webpageTexts($webpage)))->toBe(['Gemstone Pictures']);
+
+    request()->attributes->remove('website_translation_locale');
+    expect(\App\Actions\Web\Webpage\Iris\ShowIrisWebpage::make()->getWebpageShareImageAlt($webpage))->toBe('Gemstone Pictures');
+
+    Queue::fake();
+    \App\Actions\Web\Banner\PublishBanner::make()->handle($banner->fresh(), ['layout' => ['type' => 'landscape', 'components' => []]]);
+    Queue::assertPushedOn('low-priority', \App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Web\Website\TranslateWebsiteTexts);
+
+    enableShopLanguages($this->shop, null);
+});

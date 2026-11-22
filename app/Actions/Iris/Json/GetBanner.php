@@ -3,6 +3,7 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\IrisAction;
+use App\Helpers\WebsiteTexts;
 use App\Models\Web\Banner;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,7 +29,7 @@ class GetBanner extends IrisAction
             'type' => $banner->type?->value,
             'state' => $banner->state,
             'ratio' => $banner->ratio,
-            'compiled_layout' => $banner->compiled_layout,
+            'compiled_layout' => WebsiteTexts::bannerForVisitor($banner->website_id, $banner->compiled_layout),
         ];
     }
 

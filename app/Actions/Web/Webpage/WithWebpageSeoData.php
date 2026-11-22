@@ -99,7 +99,7 @@ trait WithWebpageSeoData
 
     public function getWebpageShareImageAlt(Webpage $webpage): ?string
     {
-        return Arr::get($webpage->seo_data, 'image_alt') ?: $this->getWebpageSeoTitle($webpage);
+        return WebsiteLanguage::webpageText($webpage, 'seo_data.image_alt') ?: $this->getWebpageSeoTitle($webpage);
     }
 
     private function getBlogThirdPartyImagePreview(Webpage $webpage): ?string
