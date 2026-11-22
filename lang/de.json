@@ -26919,5 +26919,17 @@
     "Sale on selected products": "Rabatt auf ausgewählte Produkte",
     ":promotion: running now": ":promotion: läuft gerade",
     ":promotion: running until :date": ":promotion: läuft bis :date",
-    ":promotion: ended on :date": ":promotion: endete am :date"
+    ":promotion: ended on :date": ":promotion: endete am :date",
+    "Cookie settings": "Cookie-Einstellungen",
+    "Reject all": "Alle ablehnen",
+    "Accept all": "Alle akzeptieren",
+    "It's time for cookies!": "Zeit für Cookies!",
+    "We use cookies to make your interactions with our website more meaningful. They help us better understand how our websites are used, so we can tailor content for you.": "Wir verwenden Cookies, damit Ihr Besuch auf unserer Website für Sie sinnvoller wird. Sie helfen uns zu verstehen, wie unsere Websites genutzt werden, damit wir Inhalte für Sie anpassen können.",
+    "Strictly necessary": "Unbedingt erforderlich",
+    "Functionality": "Funktionalität",
+    "Strictly necessary cookies keep the website working, for example your basket and login. The website cannot work without them.": "Unbedingt erforderliche Cookies sorgen dafür, dass die Website funktioniert, zum Beispiel Warenkorb und Anmeldung. Ohne sie kann die Website nicht arbeiten.",
+    "Performance cookies show us how visitors use the website, so we can improve it. They do not identify you.": "Leistungs-Cookies zeigen uns, wie Besucher die Website nutzen, damit wir sie verbessern können. Sie identifizieren Sie nicht.",
+    "Targeting cookies measure our advertising and show you offers that are relevant to you.": "Targeting-Cookies messen unsere Werbung und zeigen Ihnen passende Angebote.",
+    "Functionality cookies remember your choices, such as your language.": "Funktions-Cookies merken sich Ihre Auswahl, zum Beispiel Ihre Sprache.",
+    "Hide details": "Details ausblenden"
 }

@@ -29,6 +29,7 @@ import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 import IrisWebsiteDialog from './Iris/IrisWebsiteDialog.vue'
+import CookieConsent from './Iris/CookieConsent.vue'
 import { announcementsAtPosition, useAnnouncementClock, type AnnouncementAudience } from '@/Iris/Composables/useAnnouncementVisibility'
 import axios from 'axios'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
@@ -406,6 +407,7 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
         </div>
 
         <IrisWebsiteDialog />
+        <CookieConsent />
 
     </div>
 

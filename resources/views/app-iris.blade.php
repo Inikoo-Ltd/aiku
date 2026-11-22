@@ -132,6 +132,21 @@
     <!-- Third parties (GTM) deferred to first interaction or shortly after load -->
     <script>
         (function () {
+            window.gtmDataLayer = window.gtmDataLayer || [];
+            window.gtag = function () { window.gtmDataLayer.push(arguments); };
+            var consentCookie = document.cookie.match(/(?:^|; )iris_cookie_consent=([^;]*)/);
+            var granted = consentCookie ? consentCookie[1].split(".") : [];
+            var consentState = function (category) { return granted.indexOf(category) > -1 ? "granted" : "denied"; };
+            window.gtag("consent", "default", {
+                analytics_storage: consentState("analytics"),
+                ad_storage: consentState("marketing"),
+                ad_user_data: consentState("marketing"),
+                ad_personalization: consentState("marketing"),
+                personalization_storage: consentState("preferences"),
+                functionality_storage: "granted",
+                security_storage: "granted",
+                wait_for_update: 500
+            });
             var fired = false;
             var events = ["pointerdown", "keydown", "touchstart", "scroll"];
             var gtmId = '{{ Arr::get(request()->input("website")?->settings, "google_tag_id", "") }}';
