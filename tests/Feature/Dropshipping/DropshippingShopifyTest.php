@@ -3364,6 +3364,39 @@ test('a channel in another language gets the translated texts of a new product, 
     UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });
 
+test('a preview language is offered for channels of staff customers only, and the language choice shows only when there is more than one', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [], 'preview_languages' => [$language->id], 'channel_languages' => true]);
+    translateTestProduct($this, $language);
+
+    $channel  = shopifyProductChannel($this, 'preview-language')->customerSalesChannel;
+    $customer = $channel->customer;
+    $fields   = fn () => collect(EditRetinaCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($channel->refresh()))->pluck('fields')->collapse();
+
+    $customer->updateQuietly(['is_staff' => false]);
+    $channel->update(['language_id' => $language->id]);
+    expect($channel->refresh()->offeredLanguageIds())->toBe([$this->shop->language_id])
+        ->and($channel->productTextsLocale())->toBeNull()
+        ->and($fields()->has('language_id'))->toBeFalse();
+
+    retinaLanguageWebUser($this, $customer);
+    $this->patchJson(route('retina.models.customer_sales_channel.update', $channel->id), ['language_id' => $language->id])->assertUnprocessable();
+
+    $customer->updateQuietly(['is_staff' => true]);
+    $channel->setRelation('customer', $customer->fresh());
+    $this->patchJson(route('retina.models.customer_sales_channel.update', $channel->id), ['language_id' => $language->id])->assertSuccessful();
+
+    $channel = $channel->refresh();
+    $portfolio = StorePortfolio::make()->action($channel, $this->product, []);
+    expect($channel->productTextsLocale())->toBe($language->code)
+        ->and($portfolio->customer_product_name)->toBe('Übersetzter Name '.$this->product->code)
+        ->and(collect($fields()->get('language_id')['options'])->pluck('value')->sort()->values()->all())->toBe(collect([$this->shop->language_id, $language->id])->sort()->values()->all());
+
+    $customer->updateQuietly(['is_staff' => false]);
+    UpdateShop::make()->action($this->shop, ['preview_languages' => [], 'channel_languages' => false]);
+});
+
 test('re-translate replaces the texts of a live shopify product only when its owner presses it, and keeps its handle', function () {
     Queue::fake();
     $language = channelTextsLanguage($this);

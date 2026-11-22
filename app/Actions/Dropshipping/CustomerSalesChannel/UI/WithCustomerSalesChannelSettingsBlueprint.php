@@ -268,7 +268,8 @@ trait WithCustomerSalesChannelSettingsBlueprint
     {
         $shop = $customerSalesChannel->shop;
 
-        if (!$shop->customersChooseChannelLanguage()) {
+        $languageIds = $customerSalesChannel->offeredLanguageIds();
+        if (count($languageIds) < 2) {
             return [];
         }
 
@@ -277,7 +278,7 @@ trait WithCustomerSalesChannelSettingsBlueprint
                 'type'        => 'select',
                 'label'       => __('Language of product texts'),
                 'information' => __('Products you add to this channel from now on get their name and description in this language, where we have a translation. Products already in this channel keep their texts: select them in My Products and use Re-translate to change them.'),
-                'options'     => Language::whereIn('id', $shop->enabledLanguageIds())->orderBy('name')->get()->map(fn (Language $language) => [
+                'options'     => Language::whereIn('id', $languageIds)->orderBy('name')->get()->map(fn (Language $language) => [
                     'value' => $language->id,
                     'label' => $language->name,
                 ])->all(),

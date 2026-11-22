@@ -226,13 +226,24 @@ class CustomerSalesChannel extends Model implements Authenticatable, Auditable
     }
 
     /**
+     * Languages the customer can pick for this channel's product texts: none while the shop's switch is off,
+     * and the preview languages too for staff customers, so staff can try a language before customers get it.
+     *
+     * @return array<int, int>
+     */
+    public function offeredLanguageIds(): array
+    {
+        return $this->shop->customersChooseChannelLanguage() ? $this->shop->languageIdsFor($this->customer) : [];
+    }
+
+    /**
      * The language products are written in for this channel, or null for the shop's own texts as before.
      */
     public function productTextsLocale(): ?string
     {
         $shop = $this->shop;
 
-        if (!$this->language_id || $this->language_id == $shop->language_id || !$shop->customersChooseChannelLanguage() || !in_array($this->language_id, $shop->enabledLanguageIds())) {
+        if (!$this->language_id || $this->language_id == $shop->language_id || !in_array($this->language_id, $this->offeredLanguageIds())) {
             return null;
         }
 

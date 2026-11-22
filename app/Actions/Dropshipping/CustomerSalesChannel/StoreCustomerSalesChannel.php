@@ -60,7 +60,7 @@ class StoreCustomerSalesChannel extends OrgAction
     {
         $languageId = $customer->webUsers()->orderByDesc('is_root')->orderBy('id')->value('language_id');
 
-        return in_array($languageId, $customer->shop->enabledLanguageIds()) ? $languageId : null;
+        return in_array($languageId, $customer->shop->languageIdsFor($customer)) ? $languageId : null;
     }
 
     public function rules(): array

@@ -119,7 +119,7 @@ class UpdateCustomerSalesChannel extends OrgAction
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],
-            'language_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->customerSalesChannel->shop->customersChooseChannelLanguage() ? $this->customerSalesChannel->shop->enabledLanguageIds() : [])],
+            'language_id' => ['sometimes', 'nullable', 'integer', Rule::in($this->customerSalesChannel->offeredLanguageIds())],
             'shipping_service'              => ['sometimes', 'string', 'max:255'],
             'shipping_price'              => ['sometimes', 'string', 'max:255'],
             'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
