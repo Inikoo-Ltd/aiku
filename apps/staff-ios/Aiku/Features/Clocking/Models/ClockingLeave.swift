@@ -49,9 +49,10 @@ enum LeaveCalculator {
         (type?.value ?? 1) < 1
     }
 
+    @MainActor
     static func daysLabel(_ days: Double) -> String {
-        let text = days.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(days)) : String(format: "%.1f", days)
-        return days == 1 ? "1 day" : "\(text) days"
+        if days.truncatingRemainder(dividingBy: 1) == 0 { return L10n.format("%lld days", Int(days)) }
+        return L10n.format("%@ days", String(format: "%.1f", days))
     }
 
     static func rangeLabel(start: String?, end: String?) -> String {

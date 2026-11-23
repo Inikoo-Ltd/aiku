@@ -14,9 +14,9 @@ struct DispatchScanCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     AppIcon.scan.image.font(.system(size: 18, weight: .medium))
-                    Text(title).font(.aiku(14, .bold))
+                    Text(L10n.text(title)).font(.aiku(14, .bold))
                 }
-                Text(detail).font(.aiku(13))
+                Text(L10n.text(detail)).font(.aiku(13))
                 Text(highlight)
                     .font(.aiku(22, .bold))
                     .monospacedDigit()
@@ -44,7 +44,7 @@ struct DispatchScanPanel: View {
     var subtitle: String?
     let detail: String
     let allTitle: String
-    let verb: String
+    let amountTitle: @MainActor (Int) -> String
     let maximum: Int
     var isWorking = false
     let onAll: () -> Void
@@ -77,7 +77,7 @@ struct DispatchScanPanel: View {
                 .accessibilityIdentifier("dispatch.scanPanel.all")
             HStack(spacing: 8) {
                 QuantityStepper(value: $amount, range: 1...max(1, maximum))
-                AikuButton("\(verb) \(amount)", kind: .tertiary, fullWidth: false) {
+                AikuButton(amountTitle(amount), kind: .tertiary, fullWidth: false) {
                     onAmount(amount)
                     amount = 1
                 }
@@ -317,8 +317,8 @@ struct DispatchCameraScan<Panel: View>: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Close scanner")
             VStack(spacing: 0) {
-                Text(kicker).font(.aiku(12))
-                Text(title).font(.aiku(16, .bold))
+                Text(L10n.text(kicker)).font(.aiku(12))
+                Text(L10n.text(title)).font(.aiku(16, .bold))
             }
             .foregroundStyle(.white)
             .lineLimit(1)

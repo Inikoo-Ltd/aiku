@@ -93,7 +93,7 @@ struct ClockingStatusCard: View {
 
     private func stat(_ label: String, _ value: String, monospaced: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
             Text(value)
@@ -129,7 +129,7 @@ struct ClockingStatusCard: View {
 
     private func timeColumn(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
             Text(value)

@@ -6,12 +6,13 @@ enum GoodsOutBacklogSegment: String, CaseIterable, Hashable {
     case pickers
     case packers
 
+    @MainActor
     var title: String {
         switch self {
-        case .deliveryNotes: "Delivery notes"
-        case .sessions: "Sessions"
-        case .pickers: "Pickers"
-        case .packers: "Packers"
+        case .deliveryNotes: L10n.text("Delivery notes")
+        case .sessions: L10n.text("Sessions")
+        case .pickers: L10n.text("Pickers")
+        case .packers: L10n.text("Packers")
         }
     }
 }
@@ -23,7 +24,7 @@ struct GoodsOutBacklogView: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        AppScreen(title: "Dispatching backlog", kicker: "Goods out · \(session.warehouseLabel)") {
+        AppScreen(title: "Dispatching backlog", kicker: L10n.format("Goods out · %@", session.warehouseLabel)) {
             ModuleTabs(.goodsOut, current: .goodsOutBacklog)
         } content: {
             SegmentedControl(options: GoodsOutBacklogSegment.allCases, selection: $segment, title: \.title)
@@ -75,7 +76,7 @@ struct GoodsOutBacklogView: View {
     private var packerActivities: [GoodsOutPersonActivity] {
         if store.isRemote { return store.packersNow }
         return GoodsOutBacklog.packers(for: store.notes).enumerated().map { index, packer in
-            GoodsOutPersonActivity(id: index, name: packer.name, subtitle: "\(packer.count) \(packer.count == 1 ? "order" : "orders") to pack", orders: packer.count)
+            GoodsOutPersonActivity(id: index, name: packer.name, subtitle: L10n.format("%lld orders to pack", packer.count), orders: packer.count)
         }
     }
 
@@ -203,7 +204,7 @@ private struct GoodsOutBacklogChannelCard: View {
                 ForEach(GoodsOutDeliveryNoteState.backlogColumns, id: \.self) { state in
                     tile(value: row.count(state), label: state.title, tone: tone(for: state, count: row.count(state)))
                 }
-                tile(value: row.total, label: "Total", tone: .neutral)
+                tile(value: row.total, label: L10n.text("Total"), tone: .neutral)
             }
         }
         .padding(.horizontal, 14)

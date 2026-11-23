@@ -18,13 +18,14 @@ struct LocationsMovement: Identifiable, Hashable, Sendable {
         return quantity > 0 ? "+\(amount)" : "−\(amount)"
     }
 
+    @MainActor
     var detail: String {
         [
             typeLabel,
             reasonLabel,
             date.map(LocationsFormat.dateTime),
-            userName ?? "System",
-            runningQuantity.map { "\(LocationsFormat.number($0)) left" },
+            userName ?? L10n.text("System"),
+            runningQuantity.map { L10n.format("%@ left", LocationsFormat.number($0)) },
             note,
         ]
         .compactMap { $0 }

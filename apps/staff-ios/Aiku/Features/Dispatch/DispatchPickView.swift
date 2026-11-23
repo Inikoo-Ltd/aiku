@@ -48,7 +48,7 @@ struct DispatchPickView: View {
         let target = canScan ? store.scanTarget : nil
         return AppScreen(
             title: "Pick by location",
-            kicker: [item.reference, item.stateTitle, "\(PickingSessionFormat.percent(item.pickingPercentage))% picked"].joined(separator: PickingSessionFormat.separator)) {
+            kicker: [item.reference, item.stateTitle, PickingSessionFormat.pickedProgress(item.pickingPercentage)].joined(separator: PickingSessionFormat.separator)) {
             if let problem = store.loadError {
                 DispatchLoadProblem(title: "Couldn’t refresh this picking session", message: problem) { await store.load() }
             }
@@ -75,7 +75,7 @@ struct DispatchPickView: View {
                 SectionHeading("Put into")
                 CardList(current.lines) { line in
                     ListRow(
-                        "Delivery note \(line.deliveryNoteReference ?? "#\(line.deliveryNoteId)")",
+                        L10n.format("Delivery note %@", line.deliveryNoteReference ?? "#\(line.deliveryNoteId)"),
                         subtitle: line.subtitle,
                         action: { router.open(GoodsOutRoute.deliveryNoteID(id: line.deliveryNoteId)) }
                     ) {
@@ -126,17 +126,17 @@ struct DispatchPickView: View {
 
     private func footnote(_ entry: MobilePickListEntry) -> String {
         var parts = [entry.stockLine, entry.toPickText].filter { !$0.isEmpty }
-        if store.queuedScans > 0 { parts.append("\(store.queuedScans) queued") }
+        if store.queuedScans > 0 { parts.append(L10n.format("%lld queued", store.queuedScans)) }
         return parts.joined(separator: PickingSessionFormat.separator)
     }
 
     private func panel(_ target: PickingSessionScanTarget) -> some View {
         DispatchScanPanel(
-            title: "\(target.code) · Picked \(PickingSessionFormat.quantity(target.done))",
+            title: L10n.format("%@ · Picked %@", target.code, PickingSessionFormat.quantity(target.done)),
             subtitle: [target.name, target.place].filter { !$0.isEmpty }.joined(separator: PickingSessionFormat.separator),
-            detail: "\(target.remainingText) left on this item",
-            allTitle: "Pick all \(target.remainingText)",
-            verb: "Pick",
+            detail: L10n.format("%@ left on this item", target.remainingText),
+            allTitle: L10n.format("Pick all %@", target.remainingText),
+            amountTitle: { L10n.format("Pick %lld", $0) },
             maximum: target.maximumAmount,
             isWorking: store.queuedScans > 0,
             onAll: store.pickAllScanned,

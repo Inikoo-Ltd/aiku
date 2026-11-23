@@ -41,20 +41,21 @@ struct InventoryService: Sendable {
 }
 
 enum InventoryLive {
+    @MainActor
     static func message(for error: Error) -> String {
         if let failure = error as? InventoryStockError {
             return failure.message
         }
         if let apiError = error as? APIError {
             switch apiError {
-            case .offline: return "You need an internet connection to do this. Check the connection and try again."
-            case .unauthorized: return "Your session has ended. Sign in again."
-            case .http(403): return "You need stock edit rights to change the stock."
+            case .offline: return L10n.text("You need an internet connection to do this. Check the connection and try again.")
+            case .unauthorized: return L10n.text("Your session has ended. Sign in again.")
+            case .http(403): return L10n.text("You need stock edit rights to change the stock.")
             default: return apiError.localizedDescription
             }
         }
         if error is DecodingError {
-            return "Aiku sent something the app could not read."
+            return L10n.text("Aiku sent something the app could not read.")
         }
         return error.localizedDescription
     }
@@ -108,18 +109,18 @@ enum InventoryLive {
         )
     }
 
+    @MainActor
     static func listItem(_ row: MobileOrgStockRow, scope: InventorySkoScope) -> InventorySkoListItem {
         let isAbnormalities = scope == .abnormalities
         let name = row.name?.trimmingCharacters(in: .whitespacesAndNewlines)
         let location = isAbnormalities ? nil : listLocation(row)
         let detail: String?
         if isAbnormalities {
-            detail = dayText(row.lastSeenAt).map { "Last seen \($0)" }
+            detail = dayText(row.lastSeenAt).map { L10n.format("Last seen %@", $0) }
         } else if location != nil {
             detail = nil
         } else {
-            let count = row.numberLocations ?? 0
-            detail = count == 1 ? "1 location" : "\(count.grouped) locations"
+            detail = L10n.format("%lld locations", row.numberLocations ?? 0)
         }
         let stateLabel = row.stateLabel?.isEmpty == false ? row.stateLabel : nil
         return InventorySkoListItem(
@@ -151,6 +152,7 @@ enum InventoryLive {
         value.formatted(.number.grouping(.never).precision(.fractionLength(0...2)).locale(Locale(identifier: "en_GB")))
     }
 
+    @MainActor
     static func levels(_ link: MobileOrgStockDetail.Link) -> String? {
         let minimum = link.minStock?.value.map { quantityText($0, label: nil) }
         let maximum = link.maxStock?.value.map { quantityText($0, label: nil) }
@@ -158,6 +160,7 @@ enum InventoryLive {
         return InventorySkoLocation.levels(minimum: minimum, maximum: maximum, replenish: replenish)
     }
 
+    @MainActor
     static func location(_ link: MobileOrgStockDetail.Link) -> InventorySkoLocation {
         let type = InventoryLocationType(rawValue: link.type ?? "") ?? .storing
         let channel: InventoryChannel? = link.isDefaultWholesale ? .wholesale : link.isDefaultDropshipping ? .dropshipping : nil
@@ -182,6 +185,7 @@ enum InventoryLive {
         )
     }
 
+    @MainActor
     static func sko(_ remote: MobileOrgStockDetail, canEditStocks fallback: Bool) -> InventorySko {
         let state = InventorySkoState(rawValue: remote.state) ?? .active
         let familyTitle = remote.family.map { family in
@@ -207,11 +211,11 @@ enum InventoryLive {
             lowAt: 0,
             excessAt: 0,
             abnormalityNote: nil,
-            locations: remote.locations.map(location),
+            locations: remote.locations.map { location($0) },
             packerNote: nonEmpty(remote.noteToPackers),
             live: InventorySkoLiveFacts(
                 id: remote.id,
-                stateLabel: nonEmpty(remote.stateLabel) ?? state.title,
+                stateLabel: nonEmpty(remote.stateLabel) ?? L10n.text(state.title),
                 familyTitle: familyTitle?.isEmpty == false ? familyTitle : nil,
                 stockLabel: quantityText(stock, label: remote.quantityInLocationsLabel),
                 stockIsNegative: stock < 0,
@@ -224,6 +228,7 @@ enum InventoryLive {
         )
     }
 
+    @MainActor
     static func movement(_ remote: MobileOrgStockMovement, skoCode: String) -> InventoryMovementDisplay {
         let quantity = remote.quantity?.value ?? 0
         let tone: Tone = switch remote.flow {
@@ -232,7 +237,7 @@ enum InventoryLive {
         default: .neutral
         }
         let type = nonEmpty(remote.typeLabel) ?? remote.type
-        let running = remote.runningQuantityOrgStock?.value.map { "running \(quantityText($0, label: remote.runningQuantityOrgStockLabel))" }
+        let running = remote.runningQuantityOrgStock?.value.map { L10n.format("running %@", quantityText($0, label: remote.runningQuantityOrgStockLabel)) }
         let parts: [String?] = [
             nonEmpty(remote.reasonLabel),
             nonEmpty(remote.parentReference),
@@ -270,14 +275,15 @@ enum InventoryLive {
         return options.map { InventoryReasonChoice(id: $0.value, title: $0.label) }
     }
 
+    @MainActor
     static func locationOption(_ location: MobileLocation) -> InventoryLocationOption {
         let area = location.area.flatMap { area in
             [area.name, area.code].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.first { !$0.isEmpty }
         }
         let slots = location.numberOrgStockSlots
         let status: String? = location.status == "operational" ? nil : location.status.replacingOccurrences(of: "_", with: " ").capitalized
-        let contents: String = slots == 0 ? "empty" : slots == 1 ? "1 SKO" : "\(slots.grouped) SKOs"
-        let parts: [String?] = [area.map { "Area \($0)" }, contents, status]
+        let contents = slots == 0 ? L10n.text("empty") : L10n.format("%lld SKOs", slots)
+        let parts: [String?] = [area.map { L10n.format("Area %@", $0) }, contents, status]
         return InventoryLocationOption(code: location.code, detail: parts.compactMap { $0 }.joined(separator: " · "), locationID: location.id)
     }
 
@@ -591,7 +597,7 @@ final class InventorySkoFeed {
         let (sko, id) = try current()
         guard !codes.isEmpty else { throw InventoryStockError.nothingSelected }
         let linkIDs = try codes.sorted().map { try link($0, in: sko).linkID }
-        let removed = codes.count == 1 ? "1 location removed" : "\(codes.count) locations removed"
+        let removed = L10n.format("%lld locations removed", codes.count)
         try await waitForOfflineWork()
         return try finish(await service.removeLocations(warehouseID, id, linkIDs), fallback: removed)
     }
@@ -632,7 +638,7 @@ final class InventorySkoFeed {
         let taken = Set(sko?.locations.compactMap { $0.link?.locationID } ?? [])
         return try await service.findLocations(warehouseID, query)
             .filter { $0.allowStocks && !taken.contains($0.id) }
-            .map(InventoryLive.locationOption)
+            .map { InventoryLive.locationOption($0) }
     }
 
     private func resolvedID() async throws -> Int? {

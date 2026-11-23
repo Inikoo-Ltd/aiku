@@ -1,7 +1,8 @@
 import Foundation
 
+@MainActor
 enum OfflineTexts {
-    static func quantity(_ value: Double?) -> String {
+    nonisolated static func quantity(_ value: Double?) -> String {
         guard let value else { return "" }
         return value.rounded() == value ? String(Int(value)) : String(format: "%g", value)
     }
@@ -41,14 +42,14 @@ enum OfflineTexts {
         switch entry.instruction {
         case OfflineInstruction.putBack:
             if let location, entry.status == OfflineOutcomeStatus.partlyApplied, let missing {
-                return "Put the other \(quantity(missing)) back at \(location)"
+                return L10n.format("Put the other %@ back at %@", quantity(missing), location)
             }
             if let location, let amount = missing ?? requested {
-                return "Put \(quantity(amount)) back at \(location)"
+                return L10n.format("Put %@ back at %@", quantity(amount), location)
             }
             return "Put the goods back where they came from"
         case OfflineInstruction.unpack:
-            return "Take \(quantity(missing ?? requested ?? 0)) out of the box again"
+            return L10n.format("Take %@ out of the box again", quantity(missing ?? requested ?? 0))
         case OfflineInstruction.keepInTote:
             return "Keep the goods in the tote: a stock check has been asked for"
         case OfflineInstruction.pickAgain:
@@ -86,7 +87,7 @@ enum OfflineTexts {
         }
     }
 
-    static func count(_ count: Int, _ one: String, _ many: String) -> String {
+    nonisolated static func count(_ count: Int, _ one: String, _ many: String) -> String {
         count == 1 ? "1 \(one)" : "\(count) \(many)"
     }
 }

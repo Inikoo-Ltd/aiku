@@ -120,9 +120,9 @@ extension View {
         isDestructive: Bool = false,
         onConfirm: @escaping () -> Void
     ) -> some View {
-        alert(title, isPresented: isPresented) {
-            Button(cancelTitle, role: .cancel) {}
-            Button(confirmTitle, role: isDestructive ? .destructive : nil, action: onConfirm)
+        alert(L10n.text(title), isPresented: isPresented) {
+            Button(L10n.text(cancelTitle), role: .cancel) {}
+            Button(L10n.text(confirmTitle), role: isDestructive ? .destructive : nil, action: onConfirm)
         } message: {
             Text(L10n.text(message))
         }

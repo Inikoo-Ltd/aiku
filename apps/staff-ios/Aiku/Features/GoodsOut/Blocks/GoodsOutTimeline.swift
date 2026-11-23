@@ -19,7 +19,7 @@ struct GoodsOutTimeline: View {
             HStack(spacing: 0) {
                 ForEach(entries, id: \.title) { entry in
                     VStack(spacing: 4) {
-                        Text(entry.title)
+                        Text(L10n.text(entry.title))
                             .font(.aiku(11, .semibold))
                             .foregroundStyle(entry.date == nil ? AikuColor.faint : AikuColor.text)
                             .lineLimit(1)

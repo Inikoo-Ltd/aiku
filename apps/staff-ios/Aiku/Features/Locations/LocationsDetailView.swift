@@ -38,7 +38,7 @@ struct LocationsDetailView: View {
             }
         } else {
             AppScreen(title: code, kicker: "Location") {
-                EmptyState(icon: .locations, title: "Location \(code) not found", message: "It isn’t in this warehouse, or it was deleted.")
+                EmptyState(icon: .locations, title: L10n.format("Location %@ not found", code), message: "It isn’t in this warehouse, or it was deleted.")
             }
         }
     }
@@ -94,7 +94,7 @@ struct LocationsDetailView: View {
                     ForEach(location.pallets) { pallet in
                         ListRow(
                             pallet.reference,
-                            subtitle: [pallet.customer, "Pallet", pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
+                            subtitle: [pallet.customer, L10n.text("Pallet"), pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
                             icon: .pallet,
                             iconTone: .neutral
                         )
@@ -124,7 +124,7 @@ struct LocationsDetailView: View {
                 .foregroundStyle(AikuColor.text)
             LocationsOverviewLine(icon: .sko, text: location.scopeSummary)
             LocationsOverviewLine(icon: .weight, text: location.capacitySummary)
-            LocationsOverviewLine(icon: .scan, text: "Barcode \(location.barcode) (Code 128)")
+            LocationsOverviewLine(icon: .scan, text: L10n.format("Barcode %@ (Code 128)", location.barcode))
             LocationsOverviewLine(icon: .history, text: location.auditSummary)
             if let flags = location.flagSummary {
                 LocationsOverviewLine(icon: .pin, text: flags)
@@ -208,7 +208,7 @@ struct LocationsDetailView: View {
                     toasts.show(OfflineRecordText.queued, tone: .info)
                 }
             } catch {
-                toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Audit not saved: %@", error.localizedDescription), tone: .danger)
             }
         }
     }
@@ -225,7 +225,7 @@ struct LocationsDetailView: View {
                 let outcome = try await store.moveRemotely(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything, apiClient: apiClient)
                 LocationsToastText.showMove(outcome, target: target, toasts: toasts)
             } catch {
-                toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Move not saved: %@", error.localizedDescription), tone: .danger)
             }
         }
     }
@@ -234,7 +234,7 @@ struct LocationsDetailView: View {
         sheet = nil
         guard store.isRemote else {
             let result = store.remove(skos: references, from: code)
-            toasts.show("\(LocationsFormat.skos(result.removed)) removed from \(code)", actionTitle: "Undo") {
+            toasts.show(L10n.format("%lld SKOs removed from %@", result.removed, code), actionTitle: "Undo") {
                 store.restore(result.snapshot)
             }
             return
@@ -242,9 +242,9 @@ struct LocationsDetailView: View {
         Task {
             do {
                 let removed = try await store.removeRemotely(skos: references, from: code, apiClient: apiClient)
-                toasts.show("\(LocationsFormat.skos(removed)) removed from \(code)")
+                toasts.show(L10n.format("%lld SKOs removed from %@", removed, code))
             } catch {
-                toasts.show("SKOs not removed: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("SKOs not removed: %@", error.localizedDescription), tone: .danger)
             }
         }
     }
@@ -260,20 +260,19 @@ enum LocationsRightsText {
     }
 }
 
+@MainActor
 enum LocationsToastText {
     static func audit(location: String, differences: Int) -> String {
-        switch differences {
-        case 0: "Audit saved · \(location) · no differences"
-        case 1: "Audit saved · \(location) · 1 difference"
-        default: "Audit saved · \(location) · \(differences) differences"
-        }
+        differences == 0
+            ? L10n.format("Audit saved · %@ · no differences", location)
+            : L10n.format("Audit saved · %@ · %lld differences", location, differences)
     }
 
     @MainActor
     static func showMove(_ outcome: LocationsWriteOutcome, target: String, toasts: ToastCenter) {
         switch outcome {
         case .saved(let moved):
-            toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+            toasts.show(moved > 0 ? L10n.format("%lld units moved to %@", moved, target) : L10n.text("Nothing to move"), tone: moved > 0 ? .success : .warn)
         case .queued:
             toasts.show(OfflineRecordText.queued, tone: .info)
         }
@@ -285,7 +284,7 @@ enum LocationsToastText {
             toasts.show("Nothing to move", tone: .warn)
             return
         }
-        toasts.show("\(LocationsFormat.units(result.moved)) moved to \(target)", actionTitle: "Undo") {
+        toasts.show(L10n.format("%lld units moved to %@", result.moved, target), actionTitle: "Undo") {
             store.restore(result.snapshot)
         }
     }

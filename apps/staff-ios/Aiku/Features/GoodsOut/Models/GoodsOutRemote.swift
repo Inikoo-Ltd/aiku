@@ -214,12 +214,14 @@ enum GoodsOutMapper {
         return names.isEmpty ? nil : names.joined(separator: ", ")
     }
 
+    @MainActor
     static func pickerName(_ picker: GoodsOutIDName?, currentUserID: Int?, currentUser: String) -> String? {
         guard let picker else { return nil }
         if picker.id == currentUserID { return currentUser }
-        return picker.name ?? "Picker \(picker.id)"
+        return picker.name ?? L10n.format("Picker %@", String(picker.id))
     }
 
+    @MainActor
     static func note(from row: GoodsOutDeliveryNoteRowDTO, currentUserID: Int?, currentUser: String, now: Date) -> GoodsOutDeliveryNote {
         let created = date(row.date) ?? now
         let channel = GoodsOutChannel(apiKey: row.channel) ?? GoodsOutChannel(apiKey: row.shop?.type) ?? .wholesale
@@ -266,6 +268,7 @@ enum GoodsOutMapper {
         return note
     }
 
+    @MainActor
     static func note(from dto: GoodsOutDeliveryNoteDTO, currentUserID: Int?, currentUser: String, now: Date) -> GoodsOutDeliveryNote {
         let timeline = dto.timeline ?? []
         let created = timeline.first { $0.state == "unassigned" }.flatMap { date($0.at) } ?? now
@@ -352,15 +355,16 @@ enum GoodsOutMapper {
         return text
     }
 
+    @MainActor
     static func estimate(_ summary: GoodsOutSummaryDTO?) -> String {
         var parts: [String] = []
         if let picking = summary?.estimatedPickingMinutes, picking > 0 {
-            parts.append("~\(max(1, Int(picking.rounded()))) min picking")
+            parts.append(L10n.format("~%lld min picking", max(1, Int(picking.rounded()))))
         }
         if let packing = summary?.estimatedPackingMinutes, packing > 0 {
-            parts.append("~\(max(1, Int(packing.rounded()))) min packing")
+            parts.append(L10n.format("~%lld min packing", max(1, Int(packing.rounded()))))
         }
-        return parts.isEmpty ? "No estimate" : parts.joined(separator: ", ")
+        return parts.isEmpty ? L10n.text("No estimate") : parts.joined(separator: ", ")
     }
 
     static func quantity(_ value: Double?) -> Int {
@@ -385,6 +389,7 @@ enum GoodsOutMapper {
         }
     }
 
+    @MainActor
     static func line(from dto: GoodsOutLineDTO) -> GoodsOutLine {
         let locations = (dto.locations ?? []).map { location in
             GoodsOutStockLocation(
@@ -409,7 +414,7 @@ enum GoodsOutMapper {
         let primary = locations.first?.code ?? dto.warehouseArea?.text ?? ""
         let pickedFrom = pickings.first { !$0.isNotPicked && $0.locationCode != nil && $0.locationCode != primary }?.locationCode
         var line = GoodsOutLine(
-            sko: dto.orgStock?.code ?? "Line \(dto.id)",
+            sko: dto.orgStock?.code ?? L10n.format("Line %@", String(dto.id)),
             name: dto.orgStock?.name ?? "",
             location: primary,
             required: quantity(dto.quantityRequired),
@@ -438,10 +443,11 @@ enum GoodsOutMapper {
         return line
     }
 
+    @MainActor
     static func incompleteSet(_ parts: [GoodsOutIncompleteSetPartDTO]) -> GoodsOutIncompleteSet? {
         guard !parts.isEmpty else { return nil }
         return GoodsOutIncompleteSet(
-            name: "Incomplete set",
+            name: L10n.text("Incomplete set"),
             parts: parts.map { part in
                 GoodsOutSetPart(
                     sko: part.code ?? "",
@@ -474,9 +480,10 @@ enum GoodsOutMapper {
         return counts
     }
 
+    @MainActor
     static func trolleys(_ dtos: [GoodsOutTrolleyDTO]) -> [GoodsOutTrolley] {
         dtos.map { dto in
-            let heldBy = dto.currentPickingSession.map { "Picking session \($0.reference ?? "\($0.id)")" }
+            let heldBy = dto.currentPickingSession.map { L10n.format("Picking session %@", $0.reference ?? String($0.id)) }
             return GoodsOutTrolley(code: dto.name, heldBy: heldBy, apiID: dto.id, heldByNoteReference: dto.currentDeliveryNote?.reference)
         }
     }
@@ -492,13 +499,15 @@ enum GoodsOutMapper {
         }
     }
 
+    @MainActor
     static func pickers(_ dtos: [GoodsOutPickerDTO], currentUserID: Int?, currentUser: String) -> [GoodsOutPickerProfile] {
         dtos.map { dto in
-            let name = dto.userId == currentUserID ? currentUser : (nonEmpty(dto.name) ?? nonEmpty(dto.alias) ?? "Picker \(dto.userId)")
+            let name = dto.userId == currentUserID ? currentUser : (nonEmpty(dto.name) ?? nonEmpty(dto.alias) ?? L10n.format("Picker %@", String(dto.userId)))
             return GoodsOutPickerProfile(name: name, userID: dto.userId)
         }
     }
 
+    @MainActor
     static func activities(_ people: [GoodsOutDispatchPersonDTO], role: GoodsOutDispatchRole) -> [GoodsOutPersonActivity] {
         people.map { person in
             let orders = person.deliveryNotes?.count ?? 0
@@ -507,16 +516,15 @@ enum GoodsOutMapper {
             let sessionID = person.pickingSessions?.first?.id
             var parts: [String] = []
             if let session {
-                parts.append("Picking session \(session)")
+                parts.append(L10n.format("Picking session %@", session))
             }
-            let verb = role == .pickers ? "\(orders) \(orders == 1 ? "order" : "orders")" : "\(orders) \(orders == 1 ? "order" : "orders") to pack"
-            parts.append(verb)
+            parts.append(role == .pickers ? L10n.format("%lld orders", orders) : L10n.format("%lld orders to pack", orders))
             if role == .pickers {
-                parts.append("\(trolleys) \(trolleys == 1 ? "trolley" : "trolleys")")
+                parts.append(L10n.format("%lld trolleys", trolleys))
             }
             return GoodsOutPersonActivity(
                 id: person.user.id,
-                name: person.user.name ?? "Staff \(person.user.id)",
+                name: person.user.name ?? L10n.format("Staff %@", String(person.user.id)),
                 subtitle: parts.joined(separator: " · "),
                 sessionReference: session,
                 sessionID: sessionID,
@@ -577,6 +585,7 @@ extension GoodsOutDeliveryNote {
 extension GoodsOutMapper {
     static let insertStates: Set<String> = ["handling", "picked", "packing"]
 
+    @MainActor
     static func applyPacking(_ dto: GoodsOutDeliveryNoteDTO, to note: inout GoodsOutDeliveryNote, currentUserID: Int?, currentUser: String) {
         note.parcels = parcels(dto.parcels ?? [])
         note.shipments = shipments(dto.shipments ?? [], parcelCount: max(1, note.parcels.count))
@@ -633,6 +642,7 @@ extension GoodsOutMapper {
         return max(1, Int(value.rounded()))
     }
 
+    @MainActor
     static func shipments(_ dtos: [GoodsOutShipmentDTO], parcelCount: Int) -> [GoodsOutShipment] {
         dtos.map { dto in
             let label: GoodsOutShipmentLabel
@@ -644,7 +654,7 @@ extension GoodsOutMapper {
             let numbers = dto.trackingNumbers
             var shipment = GoodsOutShipment(
                 id: dto.id,
-                shipper: nonEmpty(dto.shipper) ?? "Shipment",
+                shipper: nonEmpty(dto.shipper) ?? L10n.text("Shipment"),
                 tracking: numbers.first ?? "",
                 parcelCount: parcelCount,
                 cost: nil,
@@ -697,12 +707,13 @@ extension GoodsOutMapper {
         return boxes
     }
 
+    @MainActor
     static func shipperList(_ dto: GoodsOutShippersDTO) -> GoodsOutShipperList {
         GoodsOutShipperList(
             shippers: dto.data.map { shipper in
                 GoodsOutShipperChoice(
                     id: shipper.id,
-                    name: nonEmpty(shipper.name) ?? nonEmpty(shipper.code) ?? "Shipper \(shipper.id)",
+                    name: nonEmpty(shipper.name) ?? nonEmpty(shipper.code) ?? L10n.format("Shipper %@", String(shipper.id)),
                     isAPI: shipper.type == "api",
                     needsTracking: shipper.needsTracking ?? false,
                     isLockedOut: shipper.isLockedOut ?? false,

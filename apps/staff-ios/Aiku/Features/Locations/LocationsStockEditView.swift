@@ -29,15 +29,15 @@ struct LocationsStockEditView: View {
             LocationsStockEditForm(location: context.location, slot: context.slot, store: store)
                 .id("\(context.location.code)|\(context.slot.skoReference)")
         } else if lookedUpCode != locationCode {
-            AppScreen(title: "\(sko) in \(locationCode)", kicker: "SKO in location") {
+            AppScreen(title: L10n.format("%@ in %@", sko, locationCode), kicker: "SKO in location") {
                 SkeletonRow()
                 SkeletonRow()
             }
         } else {
-            AppScreen(title: "\(sko) in \(locationCode)", kicker: "SKO in location") {
+            AppScreen(title: L10n.format("%@ in %@", sko, locationCode), kicker: "SKO in location") {
                 EmptyState(
                     icon: .sko,
-                    title: "\(sko) is no longer in \(locationCode)",
+                    title: L10n.format("%@ is no longer in %@", sko, locationCode),
                     message: "It was moved or removed from this location.",
                     actionTitle: "Back to location"
                 ) {
@@ -82,7 +82,7 @@ private struct LocationsStockEditForm: View {
     }
 
     var body: some View {
-        AppScreen(title: "\(slot.skoReference) in \(location.code)", kicker: "SKO in location") {
+        AppScreen(title: L10n.format("%@ in %@", slot.skoReference, location.code), kicker: "SKO in location") {
             Button {
                 router.open(InventoryRoute.sko(reference: slot.skoReference))
             } label: {
@@ -200,7 +200,7 @@ private struct LocationsStockEditForm: View {
             return role.activeDetail
         }
         if let other = store.warehouse.otherLocation(holding: role, sko: slot.skoReference, excluding: location.code) {
-            return "Currently \(other)"
+            return L10n.format("Currently %@", other)
         }
         return "Not set"
     }
@@ -208,7 +208,7 @@ private struct LocationsStockEditForm: View {
     private func save() {
         guard store.isRemote else {
             store.update(sko: slot.skoReference, in: location.code, settings: settings)
-            toasts.show("\(slot.skoReference) in \(location.code) saved")
+            toasts.show(L10n.format("%@ in %@ saved", slot.skoReference, location.code))
             router.back()
             return
         }
@@ -217,10 +217,10 @@ private struct LocationsStockEditForm: View {
             defer { isSaving = false }
             do {
                 try await store.updateRemotely(sko: slot.skoReference, in: location.code, settings: settings, apiClient: apiClient)
-                toasts.show("\(slot.skoReference) in \(location.code) saved")
+                toasts.show(L10n.format("%@ in %@ saved", slot.skoReference, location.code))
                 router.back()
             } catch {
-                toasts.show("Not saved: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Not saved: %@", error.localizedDescription), tone: .danger)
             }
         }
     }
@@ -240,7 +240,7 @@ private struct LocationsStockEditForm: View {
                     toasts.show(OfflineRecordText.queued, tone: .info)
                 }
             } catch {
-                toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Audit not saved: %@", error.localizedDescription), tone: .danger)
             }
         }
     }
@@ -256,7 +256,7 @@ private struct LocationsStockEditForm: View {
                 let outcome = try await store.moveRemotely(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: false, apiClient: apiClient)
                 LocationsToastText.showMove(outcome, target: target, toasts: toasts)
             } catch {
-                toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Move not saved: %@", error.localizedDescription), tone: .danger)
             }
         }
     }

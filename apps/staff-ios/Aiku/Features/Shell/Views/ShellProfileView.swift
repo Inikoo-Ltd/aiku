@@ -1,16 +1,20 @@
 import SwiftUI
+import UserNotifications
 
 struct ShellProfileView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @Environment(AuthStore.self) private var authStore
     @Environment(\.signOut) private var signOut
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
     @AppStorage(ScanSettingsKey.inputMode) private var inputMode = ScanInputMode.automatic
     @AppStorage(ScanSettingsKey.sound) private var playsSound = true
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
     private let languages = LanguageStore.shared
     @State private var isChoosingWarehouse = false
     @State private var isConfirmingSignOut = false
+    @State private var notificationAccess = UNAuthorizationStatus.notDetermined
     private let offline = OfflineWork.shared
     private let clocking = ClockingStore.shared
 
@@ -40,11 +44,11 @@ struct ShellProfileView: View {
             }
             section("Work") {
                 Card {
-                    ShellValueRow(title: "Clocking", value: session.hasWarehouseAccess ? "Clocked in" : "Clocked out", valueTone: session.hasWarehouseAccess ? .success : nil) {
+                    ShellValueRow(title: "Clocking", value: ShellProfileContent.clockingValue(isClockedIn: isClockedIn), valueTone: isClockedIn == true ? .success : nil) {
                         router.open(ClockingRoute.clocking)
                     }
                     RowDivider()
-                    ShellValueRow(title: "Timesheets", value: ShellHomeContent.weekTotal(clocking).map { "This week \($0)" } ?? "—") {
+                    ShellValueRow(title: "Timesheets", value: ShellProfileContent.weekValue(ShellHomeContent.weekTotal(clocking))) {
                         router.open(ClockingRoute.timesheets)
                     }
                 }
@@ -67,9 +71,10 @@ struct ShellProfileView: View {
                         router.open(SystemRoute.syncQueue)
                     }
                     RowDivider()
-                    ShellValueRow(title: "Notifications", value: ShellProfileContent.notifications) {
-                        router.select(.inbox)
+                    ShellValueRow(title: "Notifications", value: ShellProfileContent.notificationsValue(isAllowed: ShellProfileContent.notificationsAllowed(notificationAccess))) {
+                        openNotificationSettings()
                     }
+                    .accessibilityIdentifier("shell.profile.notifications")
                     RowDivider()
                     ShellValueRow(title: "Version", value: appVersion)
                 }
@@ -106,7 +111,34 @@ struct ShellProfileView: View {
         }
         .task { await authStore.refreshProfile() }
         .task { await clocking.load() }
-        .screenRefreshable { await authStore.refreshProfile() }
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await readNotificationAccess()
+        }
+        .screenRefreshable {
+            await authStore.refreshProfile()
+            await clocking.load()
+        }
+    }
+
+    private var isClockedIn: Bool? {
+        clocking.hasStatus ? clocking.today.isClockedIn : nil
+    }
+
+    private var organisation: String? {
+        authStore.mobileProfile?.organisation?.name.trimmingCharacters(in: .whitespaces).nilIfEmpty
+    }
+
+    private func readNotificationAccess() async {
+        notificationAccess = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    private func openNotificationSettings() {
+        let page = ShellProfileContent.hasNotificationSettings(notificationAccess)
+            ? UIApplication.openNotificationSettingsURLString
+            : UIApplication.openSettingsURLString
+        guard let url = URL(string: page) else { return }
+        openURL(url)
     }
 
     private var userCard: some View {
@@ -124,6 +156,12 @@ struct ShellProfileView: View {
                     Text("\(session.profile.username) · \(session.profile.role)")
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
+                    if let organisation {
+                        Text(organisation)
+                            .font(.aiku(13))
+                            .foregroundStyle(AikuColor.text3)
+                            .lineLimit(1)
+                    }
                 } else {
                     SkeletonBlock(width: 170, height: 16)
                         .padding(.vertical, 2)
@@ -183,7 +221,10 @@ struct ShellProfileView: View {
     }
 
     private var appVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ShellProfileContent.fallbackVersion
+        ShellProfileContent.versionValue(
+            name: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+            build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        )
     }
 }
 

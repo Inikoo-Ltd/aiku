@@ -217,6 +217,7 @@ enum InboxOpening: Equatable, Sendable {
     case record(MobileInboxTarget, switchTo: MobileWarehouse?)
 }
 
+@MainActor
 enum InboxFormat {
     static func opening(for notification: MobileInboxNotification, currentWarehouseID: Int?, warehouses: [MobileWarehouse]) -> InboxOpening {
         guard let target = notification.target else { return .textOnly }
@@ -229,7 +230,7 @@ enum InboxFormat {
     }
 
     static func switchedText(_ warehouse: MobileWarehouse) -> String {
-        "Switched to \(warehouse.organisation.name) · \(warehouse.name) to open this"
+        L10n.format("Switched to %@ · %@ to open this", warehouse.organisation.name, warehouse.name)
     }
 
     static func unreadText(_ count: Int) -> String {
@@ -237,7 +238,7 @@ enum InboxFormat {
     }
 
     static func kicker(unread: Int) -> String {
-        unread > 0 ? "\(unreadText(unread)) unread" : "All read"
+        unread > 0 ? L10n.format("%@ unread", unreadText(unread)) : L10n.text("All read")
     }
 
     static func headline(_ notification: MobileInboxNotification) -> String {

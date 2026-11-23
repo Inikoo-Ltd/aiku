@@ -26,7 +26,15 @@ enum GoodsOutUndoStep: String, Hashable, Sendable, Identifiable {
         }
     }
 
-    var question: String { "\(title)?" }
+    @MainActor
+    var question: String {
+        switch self {
+        case .setAsPicked: L10n.text("Undo set as picked?")
+        case .packing: L10n.text("Undo packing?")
+        case .unpack: L10n.text("Unpack?")
+        case .dispatch: L10n.text("Undispatch?")
+        }
+    }
 
     var confirmTitle: String {
         switch self {
@@ -138,8 +146,10 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
         weightKg.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "en_GB"))) + " kg"
     }
 
-    var itemsSummary: String { "\(lines.count) items (\(skoCount) SKOs, \(units) units)" }
-    var pickedProgress: String { "\(pickedUnits) of \(units) picked" }
+    @MainActor
+    var itemsSummary: String { L10n.format("%lld items (%lld SKOs, %lld units)", lines.count, skoCount, units) }
+    @MainActor
+    var pickedProgress: String { L10n.format("%lld of %lld picked", pickedUnits, units) }
 
     var finishPickingTitle: String { channel.skipsPacking ? "Set as packed" : "Set as picked" }
 
@@ -174,6 +184,7 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
         isRemote ? listDate : ListDates.text(createdAt)
     }
 
+    @MainActor
     func listDetails(currentUser: String) -> [String] {
         var parts = [channel.title]
         if let platform {
@@ -190,9 +201,9 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
         } else if let listDetail {
             parts.append(listDetail)
         } else if state == .picking, let picker, picker != currentUser {
-            parts.append("picked by \(picker)")
+            parts.append(L10n.format("picked by %@", picker))
         } else {
-            parts.append("\(units) \(units == 1 ? "item" : "items")")
+            parts.append(L10n.format("%lld items", units))
             parts.append(weightText)
         }
         return parts
@@ -201,7 +212,7 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     func matches(search: String) -> Bool {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
-        let haystack = [reference, customer, customerNumber, contactName, channel.title, platform ?? ""] + lines.map(\.sko)
+        let haystack = [reference, customer, customerNumber, contactName, channel.rawValue, platform ?? ""] + lines.map(\.sko)
         return haystack.contains { $0.localizedCaseInsensitiveContains(query) }
     }
 

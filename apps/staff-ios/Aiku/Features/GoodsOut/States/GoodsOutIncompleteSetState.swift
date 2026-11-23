@@ -21,7 +21,7 @@ struct GoodsOutIncompleteSetStateView: View {
             .background(AikuColor.warnSoft, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(AikuColor.warnBd))
             .accessibilityElement(children: .combine)
-            GoodsOutSectionTitle(title: "Set · \(set.name)")
+            GoodsOutSectionTitle(title: L10n.format("Set · %@", set.name))
             Card {
                 ForEach(Array(set.parts.enumerated()), id: \.element.id) { index, part in
                     if index > 0 {
@@ -41,7 +41,7 @@ private struct GoodsOutSetPartRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ProductThumb(size: 48, label: "Product photo of \(part.sko)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", part.sko))
             VStack(alignment: .leading, spacing: 3) {
                 FlowLayout(spacing: 8, lineSpacing: 4) {
                     Text(part.sko)

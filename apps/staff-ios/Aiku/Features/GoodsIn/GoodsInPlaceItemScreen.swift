@@ -26,9 +26,9 @@ struct GoodsInPlaceItemScreen: View {
                 Color.clear.onAppear { router.back() }
             } else {
                 GoodsInLoadingScreen(
-                    title: "Place \(skoCode)",
+                    title: L10n.format("Place %@", skoCode),
                     kicker: "Stock delivery",
-                    failedTitle: "Place \(skoCode) could not be loaded",
+                    failedTitle: L10n.format("Place %@ could not be loaded", skoCode),
                     problem: feed.loadError,
                     retry: { Task { await feed.load() } }
                 )
@@ -101,8 +101,8 @@ private struct GoodsInPlaceItemContent: View {
 
     @ViewBuilder
     private var screen: some View {
-        let title = "Place \(item.code)"
-        let kicker = "\(delivery.reference) · Booking in"
+        let title = L10n.format("Place %@", item.code)
+        let kicker = L10n.format("%@ · Booking in", delivery.reference)
         AppScreen(title: title, kicker: kicker) {
             content
         } footer: {
@@ -137,8 +137,8 @@ private struct GoodsInPlaceItemContent: View {
     }
 
     private var placeTitle: String {
-        if let target { return "Place \(GoodsInText.number(shownQuantity)) in \(target.code)" }
-        return "Place \(GoodsInText.number(shownQuantity))"
+        if let target { return L10n.format("Place %@ in %@", GoodsInText.number(shownQuantity), target.code) }
+        return L10n.format("Place %@", GoodsInText.number(shownQuantity))
     }
 
     private var isWorkingPlace: Bool {
@@ -205,7 +205,7 @@ private struct GoodsInPlaceItemContent: View {
                 .accessibilityIdentifier("goodsIn.place.locationMissing")
         }
         if remaining > 0 {
-            GoodsOutSectionTitle(title: "Quantity", detail: "up to \(GoodsInText.quantity(remaining, label: item.skoToPlaceLabel))")
+            GoodsOutSectionTitle(title: "Quantity", detail: L10n.format("up to %@", GoodsInText.quantity(remaining, label: item.skoToPlaceLabel)))
             GoodsInQuantityStepper(value: shownQuantity, minimum: min(1, remaining), maximum: remaining) { quantity = $0 }
         }
         if let fieldError {
@@ -279,8 +279,8 @@ private struct GoodsInPlaceItemContent: View {
     @ViewBuilder
     private var pickingDefaults: some View {
         let lines = [
-            item.locations.first(where: \.isDefaultWholesale).map { "\($0.location.code) for wholesale" },
-            item.locations.first(where: \.isDefaultDropshipping).map { "\($0.location.code) for dropshipping" },
+            item.locations.first(where: \.isDefaultWholesale).map { L10n.format("%@ for wholesale", $0.location.code) },
+            item.locations.first(where: \.isDefaultDropshipping).map { L10n.format("%@ for dropshipping", $0.location.code) },
         ].compactMap { $0 }
         if !lines.isEmpty {
             Card {
@@ -291,10 +291,10 @@ private struct GoodsInPlaceItemContent: View {
 
     private func detail(_ location: MobileGoodsInItemLocation) -> String {
         [
-            location.type == "picking" ? "Picking location" : location.type == "storing" ? "Storing" : nil,
-            location.isDefaultWholesale ? "Wholesale" : nil,
-            location.isDefaultDropshipping ? "Dropshipping" : nil,
-            "\(GoodsInText.quantity(location.quantity, label: location.quantityLabel)) in location",
+            location.type == "picking" ? L10n.text("Picking location") : location.type == "storing" ? L10n.text("Storing") : nil,
+            location.isDefaultWholesale ? L10n.text("Wholesale") : nil,
+            location.isDefaultDropshipping ? L10n.text("Dropshipping") : nil,
+            L10n.format("%@ in location", GoodsInText.quantity(location.quantity, label: location.quantityLabel)),
         ].compactMap { $0 }.joined(separator: GoodsInText.separator)
     }
 
@@ -327,9 +327,9 @@ private struct GoodsInPlaceItemContent: View {
         let current = feed.delivery ?? delivery
         switch feed.lastWrite {
         case let .place(itemID, quantity, target, _, _):
-            return "\(GoodsInText.number(quantity)) of \(current.item(itemID)?.code ?? item.code) placed in \(target.code)"
+            return L10n.format("%@ of %@ placed in %@", GoodsInText.number(quantity), current.item(itemID)?.code ?? item.code, target.code)
         case let .placeAll(itemID, target, _, _):
-            return "All of \(current.item(itemID)?.code ?? item.code) placed in \(target.code)"
+            return L10n.format("All of %@ placed in %@", current.item(itemID)?.code ?? item.code, target.code)
         default:
             return nil
         }
@@ -366,10 +366,10 @@ struct GoodsInLocationPicker: View {
                 camera
             }
             if let code = finder.lookingUp {
-                InlineAlert(tone: .info, title: "Looking up \(code)…")
+                InlineAlert(tone: .info, title: L10n.format("Looking up %@…", code))
             }
             if let code = finder.notALocation {
-                InlineAlert(tone: .warn, title: "\(code) is not a location in this warehouse")
+                InlineAlert(tone: .warn, title: L10n.format("%@ is not a location in this warehouse", code))
                     .accessibilityIdentifier("goodsIn.place.notALocation")
             }
             if let problem = finder.problem {
@@ -393,7 +393,7 @@ struct GoodsInLocationPicker: View {
                     }
                 }
             } else if !query.trimmingCharacters(in: .whitespaces).isEmpty, finder.lookingUp == nil, finder.notALocation == nil, finder.problem == nil {
-                GoodsInHelper("No location matches “\(query)”.")
+                GoodsInHelper(L10n.format("No location matches “%@”.", query))
             }
         }
         .hardwareScanner { code in onScanned(code) }

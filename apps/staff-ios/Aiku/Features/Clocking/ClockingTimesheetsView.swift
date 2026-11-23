@@ -63,7 +63,7 @@ struct ClockingTimesheetsView: View {
             .disabled(weekIndex >= count - 1)
             .accessibilityLabel("Previous week")
             VStack(spacing: 0) {
-                Text(week.label)
+                Text(week.title)
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
                 Text(week.range)
@@ -112,8 +112,9 @@ struct ClockingTimesheetsView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Hours per day")
             HStack(spacing: 16) {
-                (Text("Breaks ") + Text(week.breaks > 0 ? ClockingFormat.duration(week.breaks) : "—").bold().foregroundColor(AikuColor.text))
-                (Text("Days ") + Text(week.daysLabel).bold().foregroundColor(AikuColor.text))
+                let breaks = week.breaks > 0 ? ClockingFormat.duration(week.breaks) : "—"
+                Text.emphasising(breaks, in: L10n.format("Breaks %@", breaks))
+                Text.emphasising(week.daysLabel, in: L10n.format("Days %@", week.daysLabel))
             }
             .font(.aiku(12))
             .foregroundStyle(AikuColor.text3)

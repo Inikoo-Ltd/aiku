@@ -142,20 +142,23 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
 
     var quantityText: String { link?.quantityLabel ?? quantity.grouped }
 
+    @MainActor
     var chip: Chip {
         if let link {
             let defaults = [
                 link.isDefaultWholesale ? InventoryChannel.wholesale.title : nil,
                 link.isDefaultDropshipping ? InventoryChannel.dropshipping.title : nil,
             ]
-            return Chip(([type.title] + defaults.compactMap { $0 }).joined(separator: " · "), type == .picking ? .info : .neutral)
+            let labels = ([type.title] + defaults.compactMap { $0 }).map { L10n.text($0) }
+            return Chip(labels.joined(separator: " · "), type == .picking ? .info : .neutral)
         }
         switch type {
-        case .picking: return Chip(["Picking", channel?.title].compactMap { $0 }.joined(separator: " · "), .info)
-        case .storing: return Chip("Storing", .neutral)
+        case .picking: return Chip(["Picking", channel?.title].compactMap { $0 }.map { L10n.text($0) }.joined(separator: " · "), .info)
+        case .storing: return Chip(L10n.text("Storing"), .neutral)
         }
     }
 
+    @MainActor
     var typeLabel: String { chip.text }
 
     var typeTone: Tone { type == .picking ? .info : .neutral }
@@ -286,10 +289,12 @@ struct InventorySko: Identifiable, Hashable, Sendable {
         return .ideal
     }
 
+    @MainActor
     var locationCountLabel: String {
-        locations.count == 1 ? "1 location" : "\(locations.count) locations"
+        L10n.format("%lld locations", locations.count)
     }
 
+    @MainActor
     var listSubtitle: String {
         if isAbnormal {
             return [name, abnormalityNote].compactMap { $0 }.joined(separator: " · ")
@@ -319,9 +324,10 @@ struct InventorySko: Identifiable, Hashable, Sendable {
         return InventorySkoUnits.text(units, translate: translate)
     }
 
+    @MainActor
     var coverLabel: String {
         guard let coverDays else { return "–" }
-        return coverDays == 1 ? "1 day" : "\(coverDays.grouped) days"
+        return L10n.format("%lld days", coverDays)
     }
 
     func location(_ code: String) -> InventorySkoLocation? {
@@ -357,6 +363,15 @@ enum InventoryFamilyState: String, CaseIterable, Hashable, Sendable {
         case .discontinued: "Discontinued"
         }
     }
+
+    var emptyTitle: String {
+        switch self {
+        case .active: "No active families"
+        case .inProcess: "No in process families"
+        case .discontinuing: "No discontinuing families"
+        case .discontinued: "No discontinued families"
+        }
+    }
 }
 
 struct InventoryFamily: Identifiable, Hashable, Sendable {
@@ -373,13 +388,17 @@ struct InventoryFamily: Identifiable, Hashable, Sendable {
 
     var title: String { name.isEmpty || name == code ? code : "\(code) · \(name)" }
 
+    @MainActor
     var coverLabel: String {
-        guard remoteID != nil else { return "\(coverWeeks) weeks" }
+        guard remoteID != nil else { return L10n.format("%lld weeks", coverWeeks) }
         guard let coverMonths else { return "–" }
-        return "\(coverMonths.formatted(.number.precision(.fractionLength(0...1)))) mo"
+        return L10n.format("%@ mo", coverMonths.formatted(.number.precision(.fractionLength(0...1))))
     }
 
-    var subtitle: String { "\(skoCount) SKOs · stock value \(stockValueLabel) · cover \(coverLabel)" }
+    @MainActor
+    var subtitle: String {
+        [L10n.format("%lld SKOs", skoCount), L10n.format("stock value %@", stockValueLabel), L10n.format("cover %@", coverLabel)].joined(separator: " · ")
+    }
 
     func matches(search: String) -> Bool {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -440,15 +459,17 @@ struct InventoryDashboardSummary: Hashable, Sendable {
     var usedLocations: Int
     var totalLocations: Int
 
-    var replenishmentsLabel: String { "Replenishments · dropshipping \(replenishmentsDropshipping.grouped)" }
+    @MainActor
+    var replenishmentsLabel: String { L10n.format("Replenishments · dropshipping %@", replenishmentsDropshipping.grouped) }
 
+    @MainActor
     var belowMinimumLabel: String {
-        "Below minimum stock · of \(withMinimum.grouped) \(withMinimum == 1 ? "SKO" : "SKOs") with a minimum"
+        L10n.format("Below minimum stock · of %lld SKOs with a minimum", withMinimum)
     }
 
+    @MainActor
     var utilisationLine: String? {
         guard let utilisationPercent else { return nil }
-        let noun = totalLocations == 1 ? "location" : "locations"
-        return "Location utilisation \(utilisationPercent)% · \(usedLocations.grouped) of \(totalLocations.grouped) \(noun) used"
+        return L10n.format("Location utilisation %@ · %@ of %lld locations used", "\(utilisationPercent)%", usedLocations.grouped, totalLocations)
     }
 }

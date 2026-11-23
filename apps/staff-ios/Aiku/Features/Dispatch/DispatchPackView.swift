@@ -49,7 +49,7 @@ struct DispatchPackView: View {
         let nextNote = item.nextNoteToPack
         return AppScreen(
             title: "Pack by scan",
-            kicker: [item.reference, item.stateTitle, "packing \(PickingSessionFormat.percent(item.packingPercentage))%"].joined(separator: PickingSessionFormat.separator)) {
+            kicker: [item.reference, item.stateTitle, PickingSessionFormat.packingProgress(item.packingPercentage)].joined(separator: PickingSessionFormat.separator)) {
             if let problem = store.loadError {
                 DispatchLoadProblem(title: "Couldn’t refresh this picking session", message: problem) { await store.load() }
             }
@@ -57,7 +57,7 @@ struct DispatchPackView: View {
                 DispatchScanCard(
                     title: "Scan to pack",
                     detail: "Scan each item into its delivery note",
-                    highlight: nextNote.map { "Delivery note \($0.reference)" } ?? "Every delivery note is packed",
+                    highlight: nextNote.map { L10n.format("Delivery note %@", $0.reference) } ?? L10n.text("Every delivery note is packed"),
                     footnote: footnote(nextNote),
                     identifier: "dispatch.pack.scan"
                 ) {
@@ -79,7 +79,7 @@ struct DispatchPackView: View {
                 CardList(item.deliveryNotes) { note in
                     ListRow(
                         note.reference,
-                        subtitle: [PickingSessionFormat.count(note.numberItems, "item"), note.isForCollection ? "Collection" : nil]
+                        subtitle: [L10n.format("%lld items", note.numberItems), note.isForCollection ? L10n.text("Collection") : nil]
                             .compactMap { $0 }
                             .joined(separator: PickingSessionFormat.separator),
                         chips: [Chip(note.stateTitle, note.stateTone)],
@@ -117,20 +117,20 @@ struct DispatchPackView: View {
     private func footnote(_ note: MobileSessionDeliveryNote?) -> String? {
         var parts: [String] = []
         if let note {
-            parts.append(PickingSessionFormat.count(note.numberItems, "item"))
-            parts.append("packing \(PickingSessionFormat.percent(note.packingPercentage))%")
+            parts.append(L10n.format("%lld items", note.numberItems))
+            parts.append(PickingSessionFormat.packingProgress(note.packingPercentage))
         }
-        if store.queuedScans > 0 { parts.append("\(store.queuedScans) queued") }
+        if store.queuedScans > 0 { parts.append(L10n.format("%lld queued", store.queuedScans)) }
         return parts.isEmpty ? nil : parts.joined(separator: PickingSessionFormat.separator)
     }
 
     private func panel(_ target: PickingSessionScanTarget) -> some View {
         DispatchScanPanel(
-            title: "\(target.code) · Packed \(PickingSessionFormat.quantity(target.done))",
+            title: L10n.format("%@ · Packed %@", target.code, PickingSessionFormat.quantity(target.done)),
             subtitle: [target.name, target.place].filter { !$0.isEmpty }.joined(separator: PickingSessionFormat.separator),
-            detail: "\(target.remainingText) left to pack on this item",
-            allTitle: "Pack all \(target.remainingText)",
-            verb: "Pack",
+            detail: L10n.format("%@ left to pack on this item", target.remainingText),
+            allTitle: L10n.format("Pack all %@", target.remainingText),
+            amountTitle: { L10n.format("Pack %lld", $0) },
             maximum: target.maximumAmount,
             isWorking: store.queuedScans > 0,
             onAll: store.packAllScanned,

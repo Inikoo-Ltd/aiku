@@ -12,6 +12,24 @@ enum LocationsScope: String, CaseIterable, Hashable, Sendable {
         case .dropshipping: "Dropshipping"
         }
     }
+
+    @MainActor
+    var allowedText: String {
+        switch self {
+        case .stocks: L10n.text("stocks")
+        case .fulfilment: L10n.text("fulfilment")
+        case .dropshipping: L10n.text("dropshipping")
+        }
+    }
+
+    @MainActor
+    var deniedText: String {
+        switch self {
+        case .stocks: L10n.text("not stocks")
+        case .fulfilment: L10n.text("not fulfilment")
+        case .dropshipping: L10n.text("not dropshipping")
+        }
+    }
 }
 
 enum LocationsStatus: String, CaseIterable, Hashable, Sendable {
@@ -139,7 +157,8 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
 
     var id: String { code }
     var barcode: String { code.lowercased() }
-    var areaTitle: String { "Area \(areaCode)" }
+    @MainActor
+    var areaTitle: String { L10n.format("Area %@", areaCode) }
 
     private var usesRemoteSummary: Bool { slots.isEmpty && remote != nil }
     var slotCount: Int { usesRemoteSummary ? remote?.slotCount ?? 0 : slots.count }
@@ -202,21 +221,23 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
         return Chip("Dropshipping", .neutral)
     }
 
+    @MainActor
     var slotSummary: String {
         if slotCount == 0 {
             if palletCount == 0 {
-                return "empty"
+                return L10n.text("empty")
             }
-            return palletCount == 1 ? "1 pallet" : "\(palletCount) pallets"
+            return L10n.format("%lld pallets", palletCount)
         }
-        let noun = slotCount == 1 ? "slot" : "slots"
-        return "\(slotCount) \(noun), \(emptySlotCount) empty"
+        return L10n.format("%lld slots, %lld empty", slotCount, emptySlotCount)
     }
 
+    @MainActor
     var shortSubtitle: String {
         "\(areaTitle) · \(slotSummary)"
     }
 
+    @MainActor
     var listSubtitle: String {
         var parts = [areaTitle, slotSummary]
         if !slots.isEmpty {
@@ -230,13 +251,15 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
         return parts.joined(separator: " · ")
     }
 
+    @MainActor
     var scopeSummary: String {
-        let allowed = LocationsScope.allCases.filter { scopes.contains($0) }.map { $0.title.lowercased() }
-        let denied = LocationsScope.allCases.filter { !scopes.contains($0) }.map { "not \($0.title.lowercased())" }
-        let allowedText = allowed.isEmpty ? "Allows nothing" : "Allow " + allowed.joined(separator: " · ")
+        let allowed = LocationsScope.allCases.filter { scopes.contains($0) }.map { $0.allowedText }
+        let denied = LocationsScope.allCases.filter { !scopes.contains($0) }.map { $0.deniedText }
+        let allowedText = allowed.isEmpty ? L10n.text("Allows nothing") : L10n.format("Allow %@", allowed.joined(separator: " · "))
         return ([allowedText] + denied).joined(separator: " · ")
     }
 
+    @MainActor
     var capacitySummary: String {
         var limits: [String] = []
         if let maxWeightKg {
@@ -245,27 +268,30 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
         if let maxVolumeM3 {
             limits.append("\(LocationsFormat.number(maxVolumeM3)) m³")
         }
-        let limitText = limits.isEmpty ? "No size limit" : "Max " + limits.joined(separator: " · ")
+        let limitText = limits.isEmpty ? L10n.text("No size limit") : L10n.format("Max %@", limits.joined(separator: " · "))
         return "\(limitText) · \(slotSummary)"
     }
 
+    @MainActor
     var flagSummary: String? {
         var flags: [String] = []
         if isGoodsOutGathering {
-            flags.append("Goods out gathering")
+            flags.append(L10n.text("Goods out gathering"))
         }
         if neverRemoveEmptySkos {
-            flags.append(flags.isEmpty ? "Never remove empty SKOs" : "never remove empty SKOs")
+            flags.append(flags.isEmpty ? L10n.text("Never remove empty SKOs") : L10n.text("never remove empty SKOs"))
         }
         return flags.isEmpty ? nil : flags.joined(separator: " · ")
     }
 
+    @MainActor
     var auditSummary: String {
-        auditedOn.map { "Audited \(LocationsFormat.shortDate($0))" } ?? "Not audited yet"
+        auditedOn.map { L10n.format("Audited %@", LocationsFormat.shortDate($0)) } ?? L10n.text("Not audited yet")
     }
 
+    @MainActor
     var kicker: String {
-        "Location · \(areaTitle) · \(status.title)"
+        [L10n.text("Location"), areaTitle, L10n.text(status.title)].joined(separator: " · ")
     }
 }
 
@@ -290,13 +316,15 @@ struct LocationsArea: Identifiable, Hashable, Sendable {
     var codeRepeatsName: Bool {
         code.replacingOccurrences(of: "-", with: " ").caseInsensitiveCompare(name) == .orderedSame
     }
-    var title: String { codeRepeatsName ? name : "Area \(code) · \(name)" }
+    @MainActor
+    var title: String { codeRepeatsName ? name : L10n.format("Area %@ · %@", code, name) }
     var filterTitle: String { codeRepeatsName ? name : "\(code) · \(name)" }
+    @MainActor
     var subtitle: String {
         let parts = [
-            pickingOrder.map { "Picking order \($0)" } ?? "No picking order",
-            "\(locationCount.locationsGrouped) locations",
-            "\(emptyCount.locationsGrouped) empty",
+            pickingOrder.map { L10n.format("Picking order %@", String($0)) } ?? L10n.text("No picking order"),
+            L10n.format("%lld locations", locationCount),
+            L10n.format("%lld empty", emptyCount),
             valueLabel,
         ]
         return parts.filter { !$0.isEmpty }.joined(separator: " · ")
@@ -318,12 +346,13 @@ struct LocationsAutoRemoval: Hashable, Sendable {
     var changedOn: Date?
     var canEdit = true
 
+    @MainActor
     var detail: String {
         switch (changedBy, changedOn) {
-        case let (name?, date?): "Changed by \(name) · \(LocationsFormat.shortDate(date))"
-        case let (name?, nil): "Changed by \(name)"
-        case let (nil, date?): "Changed \(LocationsFormat.shortDate(date))"
-        case (nil, nil): "Not changed yet"
+        case let (name?, date?): L10n.format("Changed by %@ · %@", name, LocationsFormat.shortDate(date))
+        case let (name?, nil): L10n.format("Changed by %@", name)
+        case let (nil, date?): L10n.format("Changed %@", LocationsFormat.shortDate(date))
+        case (nil, nil): L10n.text("Not changed yet")
         }
     }
 }
@@ -345,14 +374,6 @@ enum LocationsFormat {
         formatter.timeZone = TimeZone.current
         formatter.dateFormat = "dd MMM"
         return formatter.string(from: date)
-    }
-
-    static func units(_ count: Int) -> String {
-        count == 1 ? "1 unit" : "\(count.locationsGrouped) units"
-    }
-
-    static func skos(_ count: Int) -> String {
-        count == 1 ? "1 SKO" : "\(count) SKOs"
     }
 }
 

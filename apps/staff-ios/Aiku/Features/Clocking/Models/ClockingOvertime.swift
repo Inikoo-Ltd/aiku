@@ -80,12 +80,15 @@ enum OvertimeCalculator {
         return formatter.string(from: moment)
     }
 
+    @MainActor
     static func timeRange(start: String?, end: String?, duration: Int?, in timeZone: TimeZone) -> String? {
         guard let startMinutes = minutesOfDay(start, in: timeZone) else { return nil }
         let endMinutes = minutesOfDay(end, in: timeZone) ?? duration.map { startMinutes + $0 }
         guard let endMinutes else { return timeLabel(startMinutes) }
         let nextDay = endMinutes >= minutesPerDay || endsNextDay(start: startMinutes, end: endMinutes)
-        return "\(timeLabel(startMinutes)) – \(timeLabel(endMinutes))\(nextDay ? " (next day)" : "")"
+        let from = timeLabel(startMinutes)
+        let to = timeLabel(endMinutes)
+        return nextDay ? L10n.format("%@ – %@ (next day)", from, to) : "\(from) – \(to)"
     }
 }
 

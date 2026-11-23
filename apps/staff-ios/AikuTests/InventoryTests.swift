@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct InventoryTests {
     private var rose: InventorySko {
         InventorySampleData.skos.first { $0.reference == "SKO-00733" }!

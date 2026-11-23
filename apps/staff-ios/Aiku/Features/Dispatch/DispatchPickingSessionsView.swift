@@ -13,7 +13,7 @@ struct DispatchPickingSessionsView: View {
     var body: some View {
         AppScreen(
             title: "Picking sessions",
-            kicker: "Goods out · \(session.warehouseLabel)",
+            kicker: L10n.format("Goods out · %@", session.warehouseLabel),
             actions: warehouseStore.selectedID == nil ? [] : [HeaderAction(.plus, label: "New picking session") { isChoosingNotes = true }]
         ) {
             ModuleTabs(.goodsOut, current: .pickingSessions)

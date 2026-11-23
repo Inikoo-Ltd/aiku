@@ -8,15 +8,16 @@ struct GoodsInListRow: Equatable, Sendable {
     var badges: [Chip] = []
     var details: [String] = []
 
+    @MainActor
     static func delivery(_ row: MobileStockDeliveryRow, in timeZone: TimeZone = .current) -> GoodsInListRow {
         let progress: String
         switch row.state {
         case GoodsInDeliveryStateKey.received, GoodsInDeliveryStateKey.checked:
-            progress = "\(row.numberChecked) of \(row.numberItems) checked"
+            progress = L10n.format("%lld of %lld checked", row.numberChecked, row.numberItems)
         case GoodsInDeliveryStateKey.bookingIn, GoodsInDeliveryStateKey.bookedIn:
-            progress = "\(row.numberPlaced) of \(row.numberItems) placed"
+            progress = L10n.format("%lld of %lld placed", row.numberPlaced, row.numberItems)
         default:
-            progress = "\(row.numberItems) \(GoodsInText.plural(row.numberItems, "item", "items"))"
+            progress = L10n.format("%lld items", row.numberItems)
         }
         let dispatched = ListDates.recordDate(row.dispatchedAt, in: timeZone)
         let date: String?
@@ -41,10 +42,11 @@ struct GoodsInListRow: Equatable, Sendable {
         )
     }
 
+    @MainActor
     static func goodsReturn(_ row: MobileReturnRow, in timeZone: TimeZone = .current) -> GoodsInListRow {
         let progress = row.numberHandled > 0
-            ? "\(row.numberHandled) of \(row.numberItems) handled"
-            : "\(row.numberItems) \(GoodsInText.plural(row.numberItems, "item", "items"))"
+            ? L10n.format("%lld of %lld handled", row.numberHandled, row.numberItems)
+            : L10n.format("%lld items", row.numberItems)
         let date = ListDates.recordDate(row.createdAt, in: timeZone)
         return GoodsInListRow(
             reference: row.reference,

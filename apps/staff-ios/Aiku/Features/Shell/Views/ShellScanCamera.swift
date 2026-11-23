@@ -27,7 +27,7 @@ struct ShellScanCameraView: View {
                 modeSwitch
                 Spacer(minLength: 0)
                 ScanViewfinder()
-                Text(hint)
+                Text(L10n.text(hint))
                     .font(.aiku(14))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
@@ -66,7 +66,7 @@ struct ShellScanCameraView: View {
         case .notFound(let code):
             ShellScanNotFoundCard(code: code, onTypeCode: onTypeCode)
         case .failed(let code, let message):
-            ScanFeedbackBanner(tone: .danger, title: "Couldn’t look up \(code)", detail: message)
+            ScanFeedbackBanner(tone: .danger, title: L10n.format("Couldn’t look up %@", code), detail: message)
         case .needsWarehouse:
             ScanFeedbackBanner(tone: .warn, title: "Choose a warehouse", detail: "A scan looks the code up in your warehouse.")
         case .sessionExpired:
@@ -94,7 +94,7 @@ struct ShellScanCameraView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Close scanner")
             VStack(spacing: 0) {
-                Text(kicker).font(.aiku(12)).foregroundStyle(Color(hex: 0xD1D5DB))
+                Text(L10n.text(kicker)).font(.aiku(12)).foregroundStyle(Color(hex: 0xD1D5DB))
                 Text("Scan").font(.aiku(16, .bold)).foregroundStyle(.white)
             }
             .lineLimit(1)

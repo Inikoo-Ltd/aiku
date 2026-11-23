@@ -76,7 +76,7 @@ private struct ReturnShipmentScreen: View {
             } else {
                 AppScreen(title: "Add shipment", kicker: reference) {
                     if let message = live.loadError {
-                        InlineAlert(title: "Couldn’t load \(reference)", message: message)
+                        InlineAlert(title: L10n.format("Couldn’t load %@", reference), message: message)
                     } else {
                         SkeletonRow()
                         SkeletonRow()
@@ -108,7 +108,7 @@ private struct ReturnShipmentScreen: View {
         let canAdd = detail.action("add_shipment") != nil
         let list = live.shippers
         let selected = list.available.first { $0.id == chosenID }
-        let kicker = PalletDeliveryText.joined(["Fulfilment return", detail.reference])
+        let kicker = PalletDeliveryText.joined([L10n.text("Fulfilment return"), detail.reference])
         if canAdd, let selected {
             AppScreen(title: "Add shipment", kicker: kicker) {
                 refreshProblem
@@ -205,7 +205,7 @@ private struct ReturnShipmentScreen: View {
 
     @ViewBuilder
     private func parcelsEditor(_ errors: ReturnShipmentErrors) -> some View {
-        SectionHeading("Parcels · \(parcels.count)", detail: "kg · cm")
+        SectionHeading(L10n.format("Parcels · %lld", parcels.count), detail: "kg · cm")
         ForEach(errors.parcelGeneral, id: \.self) { message in
             FieldError(message)
         }
@@ -218,7 +218,7 @@ private struct ReturnShipmentScreen: View {
                         .foregroundStyle(AikuColor.text)
                     Spacer()
                     if parcels.count > 1 {
-                        IconButton(.close, label: "Remove parcel \(index + 1)") {
+                        IconButton(.close, label: L10n.format("Remove parcel %lld", index + 1)) {
                             parcels.removeAll { $0.id == parcel.id }
                         }
                     }

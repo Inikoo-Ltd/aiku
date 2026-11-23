@@ -23,10 +23,11 @@ struct GoodsOutPackedStateView: View {
             HelperText("Collection is set on the order. On a replacement delivery note it can be switched on the delivery note itself. Finalise for collection leaves it ready for the customer.")
         } else if note.shipments.isEmpty {
             if note.shipsViaPlatform, let platform = note.platform {
-                GoodsOutSummaryCard(title: "Shipped by the platform", detail: "The label comes from \(platform), not from our shippers.", icon: .deliveryNote)
+                let otherPlatform = platform == "Faire" ? "TikTok" : "Faire"
+                GoodsOutSummaryCard(title: "Shipped by the platform", detail: L10n.format("The label comes from %@, not from our shippers.", platform), icon: .deliveryNote)
                 GoodsOutParcelsCard(parcels: note.parcels)
                 printSection
-                HelperText("The same applies to \(platform == "Faire" ? "TikTok" : "Faire") orders (“Get shipment from \(platform == "Faire" ? "TikTok" : "Faire")”). After the shipment arrives, print the label and finalise as usual.")
+                HelperText(L10n.format("The same applies to %@ orders (“Get shipment from %@”). After the shipment arrives, print the label and finalise as usual.", otherPlatform, otherPlatform))
             } else {
                 Card {
                     ListRow("No shipment yet", subtitle: "Add a shipment to create the label", icon: .deliveryNote, iconTone: .warn, showsChevron: true) {
@@ -77,10 +78,10 @@ struct GoodsOutPackedFooter: View {
     private var sampleFooter: some View {
         if note.needsShipment, note.shipments.isEmpty {
             if note.shipsViaPlatform, let platform = note.platform {
-                AikuButton("Get shipment from \(platform)", icon: .deliveryNote) {
+                AikuButton(L10n.format("Get shipment from %@", platform), icon: .deliveryNote) {
                     let previous = store.getPlatformShipment(note.reference)
                     let tracking = store.note(note.reference)?.shipments.last?.tracking ?? ""
-                    GoodsOutFeedback.done("Shipment from \(platform) added · \(tracking)", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("Shipment from %@ added · %@", platform, tracking), previous: previous, toasts: toasts)
                 }
                 .accessibilityIdentifier("goodsOut.getPlatformShipment")
             } else {
@@ -99,19 +100,19 @@ struct GoodsOutPackedFooter: View {
         } else if note.isCollection {
             AikuButton("Finalise for collection") {
                 let previous = store.finalise(note.reference)
-                GoodsOutFeedback.done("\(note.reference) finalised for collection", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ finalised for collection", note.reference), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.finaliseForCollection")
         } else {
             HStack(spacing: 8) {
                 AikuButton("Finalise", kind: .tertiary) {
                     let previous = store.finalise(note.reference)
-                    GoodsOutFeedback.done("\(note.reference) finalised", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ finalised", note.reference), previous: previous, toasts: toasts)
                 }
                 .accessibilityIdentifier("goodsOut.finalise")
                 AikuButton("Finalise and Dispatch") {
                     let previous = store.finaliseAndDispatch(note.reference)
-                    GoodsOutFeedback.done("\(note.reference) finalised and dispatched", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ finalised and dispatched", note.reference), previous: previous, toasts: toasts)
                 }
                 .accessibilityIdentifier("goodsOut.finaliseAndDispatch")
             }
@@ -136,8 +137,7 @@ struct GoodsOutRemoteShippingStateView: View {
             GoodsOutSummaryCard(title: "Collection", detail: "The customer collects it from the warehouse. No shipping, no shipment.", icon: .locations)
         } else if note.shipments.isEmpty {
             if note.isShippingByExternal {
-                let engine = note.externalEngine ?? "the platform"
-                GoodsOutSummaryCard(title: "Shipped by \(engine)", detail: "The shipment and its label come from \(engine). If it isn’t there yet, try again in a moment. Then print the label and finalise as usual.", icon: .deliveryNote)
+                GoodsOutSummaryCard(title: externalShippingTitle, detail: externalShippingDetail, icon: .deliveryNote)
             } else if note.allows(.addShipment) {
                 Card {
                     ListRow("No shipment yet", subtitle: "Add a shipment to create the label", icon: .deliveryNote, iconTone: .warn)
@@ -149,7 +149,7 @@ struct GoodsOutRemoteShippingStateView: View {
         if note.state == .packed, note.packingDetails?.parcelsEditable == true {
             GoodsOutRemoteParcelsEditor(note: note)
         } else if !note.parcels.isEmpty {
-            GoodsOutSectionTitle(title: "Parcels (\(note.parcels.count))")
+            GoodsOutSectionTitle(title: L10n.format("Parcels (%lld)", note.parcels.count))
             GoodsOutParcelsCard(parcels: note.parcels)
         }
         if !note.packableLines.isEmpty {
@@ -162,5 +162,17 @@ struct GoodsOutRemoteShippingStateView: View {
         Color.clear
             .frame(height: 0)
             .goodsOutDocumentPreview(opener)
+    }
+
+    private var externalShippingTitle: String {
+        guard let engine = note.externalEngine else { return "Shipped by the platform" }
+        return L10n.format("Shipped by %@", engine)
+    }
+
+    private var externalShippingDetail: String {
+        guard let engine = note.externalEngine else {
+            return "The shipment and its label come from the platform. If it isn’t there yet, try again in a moment. Then print the label and finalise as usual."
+        }
+        return L10n.format("The shipment and its label come from %@. If it isn’t there yet, try again in a moment. Then print the label and finalise as usual.", engine)
     }
 }

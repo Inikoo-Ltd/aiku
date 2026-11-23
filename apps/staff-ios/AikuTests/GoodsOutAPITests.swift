@@ -136,6 +136,7 @@ private func remoteStore(calls: GoodsOutCalls, actionResult: Result<String, APIE
     return store
 }
 
+@MainActor
 struct GoodsOutAPITests {
     @MainActor
     @Test func fastPickShowsThePickAtOnceAndSendsItInTheBackground() async throws {

@@ -12,7 +12,7 @@ struct LocationsEmptySlotsView: View {
     }
 
     var body: some View {
-        AppScreen(title: feed.total.map { "\(feed.kind.title) · \($0.locationsGrouped)" } ?? feed.kind.title, kicker: "Locations · \(session.warehouseLabel)") {
+        AppScreen(title: feed.total.map { feed.kind.screenTitle(total: $0.locationsGrouped) } ?? feed.kind.title, kicker: L10n.format("Locations · %@", session.warehouseLabel)) {
             ModuleTabs(.locations, current: .warehouse)
         } content: {
             LocationsLoadErrorBanner(store: store)
@@ -27,7 +27,7 @@ struct LocationsEmptySlotsView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, minHeight: 88)
                 } else {
-                    EmptyState(icon: .locations, title: query.isEmpty ? feed.kind.emptyTitle : "Nothing matches “\(query)”")
+                    EmptyState(icon: .locations, title: query.isEmpty ? feed.kind.emptyTitle : L10n.format("Nothing matches “%@”", query))
                 }
             } else {
                 CardList(feed.slots) { slot in
@@ -66,8 +66,8 @@ struct LocationsEmptySlotsView: View {
     private func subtitle(for slot: LocationsEmptySlot) -> String {
         [
             slot.name,
-            "Location \(slot.locationCode)",
-            slot.removedOn.map { "Removed \(LocationsFormat.shortDate($0))" },
+            L10n.format("Location %@", slot.locationCode),
+            slot.removedOn.map { L10n.format("Removed %@", LocationsFormat.shortDate($0)) },
         ]
         .compactMap { $0 }
         .filter { !$0.isEmpty }

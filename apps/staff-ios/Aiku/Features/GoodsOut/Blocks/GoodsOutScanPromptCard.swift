@@ -22,15 +22,15 @@ struct GoodsOutScanPromptCard: View {
                 AppIcon.scan.image
                     .font(.system(size: 18))
                     .accessibilityHidden(true)
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(14, .bold))
             }
-            Text(caption)
+            Text(L10n.text(caption))
                 .font(.aiku(13))
             Text(location)
                 .font(.aiku(22, .bold))
                 .monospacedDigit()
-            Text(detail)
+            Text(L10n.text(detail))
                 .font(.aiku(13))
                 .fixedSize(horizontal: false, vertical: true)
         }

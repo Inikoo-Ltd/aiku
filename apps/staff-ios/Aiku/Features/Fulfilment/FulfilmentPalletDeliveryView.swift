@@ -54,7 +54,7 @@ private struct PalletDeliveryScreen: View {
             } else {
                 AppScreen(title: reference, kicker: "Fulfilment delivery") {
                     if let message = live.loadError {
-                        InlineAlert(title: "Couldn’t load delivery \(reference)", message: message)
+                        InlineAlert(title: L10n.format("Couldn’t load delivery %@", reference), message: message)
                         AikuButton("Try again", kind: .secondary) {
                             Task { await live.load() }
                         }
@@ -80,7 +80,7 @@ private struct PalletDeliveryScreen: View {
         Group {
             switch delivery.state {
             case "booking_in":
-                screen(delivery, kicker: PalletDeliveryText.joined(["Fulfilment delivery", delivery.customer?.name ?? delivery.stateLabel])) {
+                screen(delivery, kicker: PalletDeliveryText.joined([L10n.text("Fulfilment delivery"), delivery.customer?.name ?? delivery.stateLabel])) {
                     bookInContent(delivery)
                 }
             case "booked_in":
@@ -121,7 +121,7 @@ private struct PalletDeliveryScreen: View {
     }
 
     private func kicker(_ delivery: MobilePalletDeliveryDetail) -> String {
-        PalletDeliveryText.joined(["Fulfilment delivery", delivery.customer?.name ?? delivery.stateLabel])
+        PalletDeliveryText.joined([L10n.text("Fulfilment delivery"), delivery.customer?.name ?? delivery.stateLabel])
     }
 
     @ViewBuilder
@@ -172,8 +172,8 @@ private struct PalletDeliveryScreen: View {
         SectionHeading(
             "Pallets",
             detail: delivery.state == "received"
-                ? "\((delivery.counts.received ?? 0).grouped) received"
-                : PalletDeliveryText.plural(delivery.palletList.count, "pallet", "pallets")
+                ? L10n.format("%lld received", delivery.counts.received ?? 0)
+                : L10n.format("%lld pallets", delivery.palletList.count)
         )
         palletList(delivery.palletList) { pallet in sheetPallet = SheetPallet(id: pallet.id) }
         charges("Services", delivery.services ?? [])
@@ -185,10 +185,10 @@ private struct PalletDeliveryScreen: View {
     private func detailsCard(_ delivery: MobilePalletDeliveryDetail) -> some View {
         let lines: [(AppIcon, String)] = [
             delivery.customer?.name.map { (.person, $0) },
-            PalletDeliveryText.quoted(delivery.customerReference).map { (.document, "Customer ref \($0)") },
-            PalletDeliveryText.day(delivery.estimatedDeliveryDate).map { (.history, "Expected \($0)") },
-            PalletDeliveryText.day(delivery.at("received")).map { (.check, "Received \($0)") },
-            PalletDeliveryText.day(delivery.at("booked_in")).map { (.pallet, "Booked in \($0)") }
+            PalletDeliveryText.quoted(delivery.customerReference).map { (.document, L10n.format("Customer ref %@", $0)) },
+            PalletDeliveryText.day(delivery.estimatedDeliveryDate).map { (.history, L10n.format("Expected %@", $0)) },
+            PalletDeliveryText.day(delivery.at("received")).map { (.check, L10n.format("Received %@", $0)) },
+            PalletDeliveryText.day(delivery.at("booked_in")).map { (.pallet, L10n.format("Booked in %@", $0)) }
         ].compactMap { $0 }
         if !lines.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -290,7 +290,7 @@ private struct PalletDeliveryScreen: View {
         } else if let next = delivery.nextToBookIn {
             FulfilmentScanCard(
                 title: "Scan pallet, then location",
-                detail: "Next to book in: \(PalletDeliveryText.joined([next.reference, PalletDeliveryText.typeText(next), PalletDeliveryText.quoted(next.customerReference)]))",
+                detail: L10n.format("Next to book in: %@", PalletDeliveryText.joined([next.reference, PalletDeliveryText.typeText(next), PalletDeliveryText.quoted(next.customerReference)])),
                 highlight: next.reference,
                 identifier: "fulfilment.bookIn.next"
             ) {
@@ -345,7 +345,7 @@ private struct PalletDeliveryScreen: View {
                 FieldError(fieldError)
             }
             if canBookIn, let target = live.pickedLocation {
-                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in"), isLoading: live.isWorking(on: "book_in")) {
+                AikuButton(L10n.format("Book in at %@", target.code), look: FulfilmentInboundActionLooks.look(for: "book_in"), isLoading: live.isWorking(on: "book_in")) {
                     Task { await live.bookIn(pallet.id, location: target) }
                 }
                 .disabled(live.isWorking)
@@ -374,7 +374,7 @@ private struct PalletDeliveryScreen: View {
     }
 
     private func locationChoice(_ location: MobileFulfilmentLocation, isSelected: Bool) -> some View {
-        RadioCard(location.code, subtitle: PalletDeliveryText.plural(location.numberPallets, "pallet", "pallets"), isSelected: isSelected) {
+        RadioCard(location.code, subtitle: L10n.format("%lld pallets", location.numberPallets), isSelected: isSelected) {
             live.pickedLocation = location
         }
         .accessibilityIdentifier("fulfilment.bookIn.location.\(location.code)")
@@ -386,13 +386,13 @@ private struct PalletDeliveryScreen: View {
         let notReceived = delivery.palletList.filter { $0.state == "not_received" }
         status(delivery)
         FulfilmentDoneHero(
-            title: "\(delivery.reference) booked in",
-            message: storing.count == 1 ? "1 pallet is now Storing." : "\(storing.count.grouped) pallets are now Storing."
+            title: L10n.format("%@ booked in", delivery.reference),
+            message: L10n.format("%lld pallets are now Storing.", storing.count)
         )
         SectionHeading("Pallets", detail: storing.count.grouped)
         palletList(storing) { pallet in router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference)) }
         if !notReceived.isEmpty {
-            SectionHeading("Not received", detail: PalletDeliveryText.plural(notReceived.count, "pallet", "pallets"))
+            SectionHeading("Not received", detail: L10n.format("%lld pallets", notReceived.count))
             palletList(notReceived) { pallet in router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference)) }
         }
         AikuButton("View stored pallets", kind: .tertiary) {
@@ -496,10 +496,10 @@ private struct PalletDeliveryScreen: View {
             .accessibilityIdentifier("fulfilment.delivery.setBookedIn")
         case .status(let title, let body):
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(14, .semibold))
                     .foregroundStyle(AikuColor.text)
-                Text(body)
+                Text(L10n.text(body))
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
             }
@@ -509,10 +509,10 @@ private struct PalletDeliveryScreen: View {
 
     private var confirmTitle: String {
         switch confirm {
-        case .receive: "Mark \(live.delivery?.reference ?? reference) as received?"
-        case .finish: "Set \(live.delivery?.reference ?? reference) as booked in?"
-        case .notReceived(_, let palletReference): "Set \(palletReference) as not received?"
-        case .undoNotReceived(_, let palletReference): "Undo not received for \(palletReference)?"
+        case .receive: L10n.format("Mark %@ as received?", live.delivery?.reference ?? reference)
+        case .finish: L10n.format("Set %@ as booked in?", live.delivery?.reference ?? reference)
+        case .notReceived(_, let palletReference): L10n.format("Set %@ as not received?", palletReference)
+        case .undoNotReceived(_, let palletReference): L10n.format("Undo not received for %@?", palletReference)
         case nil: ""
         }
     }
@@ -529,11 +529,11 @@ private struct PalletDeliveryScreen: View {
 
     private func confirmButton(_ delivery: MobilePalletDeliveryDetail) -> String {
         switch confirm {
-        case .receive: delivery.action("receive")?.label ?? "Mark as received"
-        case .finish: delivery.action("finish_booking")?.label ?? "Set as booked in"
-        case .notReceived: "Not received"
-        case .undoNotReceived: "Undo not received"
-        case nil: "OK"
+        case .receive: delivery.action("receive")?.label ?? L10n.text("Mark as received")
+        case .finish: delivery.action("finish_booking")?.label ?? L10n.text("Set as booked in")
+        case .notReceived: L10n.text("Not received")
+        case .undoNotReceived: L10n.text("Undo not received")
+        case nil: L10n.text("OK")
         }
     }
 
@@ -549,7 +549,7 @@ private struct PalletDeliveryScreen: View {
     private func scanForBookIn(_ code: String, delivery: MobilePalletDeliveryDetail) async {
         if case .notOnDelivery(let scanned) = await live.scanForBookIn(code) {
             ScanFeedback.shared.rejected()
-            toasts.show("\(scanned) is not a pallet of \(delivery.reference). Scan the pallet label first.", tone: .info)
+            toasts.show(L10n.format("%@ is not a pallet of %@. Scan the pallet label first.", scanned, delivery.reference), tone: .info)
         }
     }
 }
@@ -586,7 +586,7 @@ struct FulfilmentCodeCamera: View {
             }
             VStack(spacing: 16) {
                 HStack {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(17, .bold))
                         .foregroundStyle(.white)
                     Spacer()

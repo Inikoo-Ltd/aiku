@@ -37,7 +37,7 @@ struct GoodsOutDeliveryNoteScreen: View {
                     }
             } else if store.isRemote, let error = store.noteError(reference: reference) {
                 AppScreen(title: reference, kicker: "Delivery note") {
-                    GoodsOutLoadProblem(title: "Couldn’t load \(reference)", message: error) {
+                    GoodsOutLoadProblem(title: L10n.format("Couldn’t load %@", reference), message: error) {
                         Task { await store.loadNote(reference: reference) }
                     }
                 }
@@ -69,9 +69,9 @@ struct GoodsOutDeliveryNoteScreen: View {
 
     private func kicker(_ note: GoodsOutDeliveryNote) -> String {
         if note.state == .todo {
-            return "Delivery note · \(note.state.title)"
+            return L10n.format("Delivery note · %@", note.state.title)
         }
-        var parts = ["Delivery note", note.channel.title]
+        var parts = [L10n.text("Delivery note"), note.channel.title]
         if let platform = note.platform {
             parts.append(platform)
         }
@@ -86,7 +86,7 @@ struct GoodsOutDeliveryNoteScreen: View {
 
     private func actions(_ note: GoodsOutDeliveryNote) -> [HeaderAction] {
         guard note.state != .cancelled || note.isRemote else { return [] }
-        return [HeaderAction(.more, label: "More actions") { GoodsOutMoreActions.present(present) }]
+        return [HeaderAction(.more, label: L10n.text("More actions")) { GoodsOutMoreActions.present(present) }]
     }
 
     private func hasFooter(_ note: GoodsOutDeliveryNote) -> Bool {

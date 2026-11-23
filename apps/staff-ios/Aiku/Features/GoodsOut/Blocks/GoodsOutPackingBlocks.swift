@@ -10,7 +10,7 @@ struct GoodsOutLinkLabel: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(14, .semibold))
             .foregroundStyle(tone == .danger ? AikuColor.danger : AikuColor.link)
             .lineLimit(1)
@@ -23,7 +23,7 @@ struct GoodsOutPackerMustAdd: View {
 
     var body: some View {
         FlowLayout(spacing: 8, lineSpacing: 8) {
-            Text("Packer must add".uppercased())
+            Text(L10n.text("Packer must add").uppercased(with: LanguageStore.shared.locale))
                 .font(.aiku(12, .bold))
                 .tracking(0.6)
                 .foregroundStyle(AikuColor.warnInk)
@@ -56,10 +56,10 @@ struct GoodsOutSummaryCard: View {
                 IconTile(icon, tone: .info)
             }
             VStack(alignment: .leading, spacing: icon == nil ? 12 : 2) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(16, .bold))
                     .foregroundStyle(AikuColor.text)
-                Text(detail)
+                Text(L10n.text(detail))
                     .font(.aiku(icon == nil ? 14 : 13))
                     .foregroundStyle(AikuColor.text3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -94,7 +94,7 @@ struct GoodsOutPackLineRow: View {
 
     private var content: some View {
         HStack(spacing: 12) {
-            ProductThumb(size: 48, label: "Product photo of \(line.sko)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", line.sko))
             VStack(alignment: .leading, spacing: 3) {
                 FlowLayout(spacing: 8, lineSpacing: 4) {
                     Text(line.sko)
@@ -183,10 +183,10 @@ struct GoodsOutParcelEditorRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            field($weight, placeholder: "kg", label: "weight in kilograms", isMissing: false, keyboard: .decimalPad)
-            field($length, placeholder: "L", label: "length in centimetres", isMissing: parcel.length == nil, keyboard: .numberPad)
-            field($width, placeholder: "W", label: "width in centimetres", isMissing: parcel.width == nil, keyboard: .numberPad)
-            field($height, placeholder: "H", label: "height in centimetres", isMissing: parcel.height == nil, keyboard: .numberPad)
+            field($weight, placeholder: "kg", label: L10n.format("%@ weight in kilograms", parcel.title), isMissing: false, keyboard: .decimalPad)
+            field($length, placeholder: "L", label: L10n.format("%@ length in centimetres", parcel.title), isMissing: parcel.length == nil, keyboard: .numberPad)
+            field($width, placeholder: "W", label: L10n.format("%@ width in centimetres", parcel.title), isMissing: parcel.width == nil, keyboard: .numberPad)
+            field($height, placeholder: "H", label: L10n.format("%@ height in centimetres", parcel.title), isMissing: parcel.height == nil, keyboard: .numberPad)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -211,7 +211,7 @@ struct GoodsOutParcelEditorRow: View {
     }
 
     private func field(_ text: Binding<String>, placeholder: String, label: String, isMissing: Bool, keyboard: UIKeyboardType) -> some View {
-        TextField("", text: text, prompt: Text(placeholder).foregroundStyle(AikuColor.faint))
+        TextField("", text: text, prompt: Text(L10n.text(placeholder)).foregroundStyle(AikuColor.faint))
             .font(.aiku(14, .semibold))
             .foregroundStyle(AikuColor.text)
             .multilineTextAlignment(.center)
@@ -220,7 +220,7 @@ struct GoodsOutParcelEditorRow: View {
             .frame(width: 56, height: 44)
             .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(isMissing ? AikuColor.warn : AikuColor.borderStrong))
-            .accessibilityLabel("\(parcel.title) \(label)")
+            .accessibilityLabel(label)
     }
 }
 
@@ -268,7 +268,7 @@ struct GoodsOutLeafletsCard: View {
 
     private func printLeaflet(_ leaflet: GoodsOutLeaflet) {
         let previous = store.printLeaflet(note.reference, leaflet: leaflet.id)
-        GoodsOutFeedback.done("\(leaflet.title) printed", previous: previous, toasts: toasts)
+        GoodsOutFeedback.done(L10n.format("%@ printed", leaflet.title), previous: previous, toasts: toasts)
     }
 }
 
@@ -288,7 +288,7 @@ struct GoodsOutShipmentsCard: View {
                     if canDelete, note.state == .packed {
                         Button {
                             let previous = store.deleteShipment(note.reference, shipment: shipment.id)
-                            GoodsOutFeedback.done("Shipment \(shipment.tracking) deleted", tone: .danger, previous: previous, toasts: toasts)
+                            GoodsOutFeedback.done(L10n.format("Shipment %@ deleted", shipment.tracking), tone: .danger, previous: previous, toasts: toasts)
                         } label: {
                             GoodsOutLinkLabel("Delete", tone: .danger)
                                 .frame(minWidth: 44, minHeight: 44)

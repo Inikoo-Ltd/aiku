@@ -21,9 +21,9 @@ struct GoodsOutPickLocationSheet: View {
 
     var body: some View {
         let locations = Self.locations(for: line, note: note)
-        SheetScaffold(title: "Location list for \(line.sko)", subtitle: "\(line.name) · \(line.remaining) still to pick") {
+        SheetScaffold(title: L10n.format("Location list for %@", line.sko), subtitle: L10n.format("%@ · %lld still to pick", line.name, line.remaining)) {
             HStack(spacing: 12) {
-                ProductThumb(size: 56, label: "Product photo of \(line.sko)")
+                ProductThumb(size: 56, label: L10n.format("Product photo of %@", line.sko))
                 Text("Pick the rest from any location that has stock.")
                     .font(.aiku(13))
                     .foregroundStyle(AikuColor.text3)
@@ -46,17 +46,17 @@ struct GoodsOutPickLocationSheet: View {
             }
             HelperText("A location with no stock can’t be chosen. To change which location is the picking location, use Change picking location (needs stock edit rights).")
         } footer: {
-            AikuButton(selected.map { "Pick from \($0)" } ?? "Pick from another location") {
+            AikuButton(selected.map { L10n.format("Pick from %@", $0) } ?? "Pick from another location") {
                 guard let selected else { return }
                 if let lineID = line.apiID {
                     guard let location = locations.first(where: { $0.code == selected })?.locationOrgStockID else { return }
                     let action = GoodsOutNoteAction.pick(line: lineID, locationOrgStockID: location, quantity: line.remainingQuantity)
-                    GoodsOutRun.action(action, on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining) from \(selected)", toasts: toasts) { close() }
+                    GoodsOutRun.action(action, on: note.reference, fallback: L10n.format("%@ picked ×%lld from %@", line.sko, line.remaining, selected), toasts: toasts) { close() }
                     return
                 }
                 let previous = store.pick(note.reference, line: line.id, quantity: line.remaining, from: selected)
                 close()
-                GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining) from \(selected)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ picked ×%lld from %@", line.sko, line.remaining, selected), previous: previous, toasts: toasts)
             }
             .disabled(selected == nil)
             .accessibilityIdentifier("goodsOut.pickFromLocation")

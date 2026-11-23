@@ -22,7 +22,7 @@ struct ScanFeedbackBanner: View {
                 .font(.aiku(14))
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let note {
-                Text(note)
+                Text(L10n.text(note))
                     .font(.aiku(12))
                     .opacity(0.85)
             }
@@ -164,7 +164,7 @@ struct CameraScanScreen<Feedback: View, Panel: View>: View {
                 .disabled(onSimulateScan == nil)
                 .accessibilityLabel("Camera viewfinder")
                 .accessibilityIdentifier("scan.viewfinder")
-                Text(hint)
+                Text(L10n.text(hint))
                     .font(.aiku(14))
                     .foregroundStyle(.white)
                 feedback
@@ -220,7 +220,7 @@ struct CameraScanScreen<Feedback: View, Panel: View>: View {
                 .background(Color(hex: 0x111827, opacity: 0.6), in: Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 
     private func modeSwitch(_ onUseScanner: @escaping () -> Void) -> some View {

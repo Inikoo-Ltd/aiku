@@ -42,7 +42,7 @@ struct LocationsAuditSheet: View {
 
     var body: some View {
         SheetScaffold(
-            title: onlySko.map { "Audit \($0) in \(location.code)" } ?? "Audit \(location.code)",
+            title: onlySko.map { L10n.format("Audit %@ in %@", $0, location.code) } ?? L10n.format("Audit %@", location.code),
             subtitle: onlySko == nil ? "Count every SKO in this location" : "Count this SKO in the location"
         ) {
             Card {
@@ -107,7 +107,7 @@ struct LocationsAuditSheet: View {
     private func counter(_ slot: LocationsSlot) -> some View {
         let value = counted[slot.skoReference] ?? slot.quantity
         return HStack(spacing: 0) {
-            stepButton("−", label: "Decrease \(slot.skoReference)", isEnabled: value > 0) {
+            stepButton("−", label: L10n.format("Decrease %@", slot.skoReference), isEnabled: value > 0) {
                 counted[slot.skoReference] = max(value - 1, 0)
             }
             Text("\(value)")
@@ -118,7 +118,7 @@ struct LocationsAuditSheet: View {
                 .minimumScaleFactor(0.7)
                 .frame(minWidth: 40)
                 .accessibilityLabel("\(slot.skoReference) counted \(value)")
-            stepButton("+", label: "Increase \(slot.skoReference)", isEnabled: true) {
+            stepButton("+", label: L10n.format("Increase %@", slot.skoReference), isEnabled: true) {
                 counted[slot.skoReference] = value + 1
             }
         }

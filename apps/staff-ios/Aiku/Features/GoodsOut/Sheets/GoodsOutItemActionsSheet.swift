@@ -22,13 +22,13 @@ struct GoodsOutItemActionsSheet: View {
     private var isWorking: Bool { store.isWorking(on: note.reference) }
 
     var body: some View {
-        SheetScaffold(title: "\(line.sko) · \(line.picked) of \(line.required) picked", subtitle: "\(line.pickLocation) · \(line.name)") {
+        SheetScaffold(title: L10n.format("%@ · %lld of %lld picked", line.sko, line.picked, line.required), subtitle: "\(line.pickLocation) · \(line.name)") {
             HStack(spacing: 16) {
-                LinkButton("Open \(line.sko)", size: 13) {
+                LinkButton(L10n.format("Open %@", line.sko), size: 13) {
                     close()
                     router.open(InventoryRoute.sko(reference: line.sko))
                 }
-                LinkButton("Open \(line.pickLocation)", size: 13) {
+                LinkButton(L10n.format("Open %@", line.pickLocation), size: 13) {
                     close()
                     router.open(LocationsRoute.location(code: line.pickLocation))
                 }
@@ -60,13 +60,13 @@ struct GoodsOutItemActionsSheet: View {
 
     @ViewBuilder
     private var pickSection: some View {
-        AikuButton("Pick all \(line.remaining)", icon: .check, isLoading: isWorking) {
+        AikuButton(L10n.format("Pick all %lld", line.remaining), icon: .check, isLoading: isWorking) {
             if let lineID = line.apiID {
-                GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining)", toasts: toasts) { close() }
+                GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: L10n.format("%@ picked ×%lld", line.sko, line.remaining), toasts: toasts) { close() }
             } else {
                 let previous = store.pickAll(note.reference, line: line.id)
                 close()
-                GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ picked ×%lld", line.sko, line.remaining), previous: previous, toasts: toasts)
             }
         }
         .accessibilityIdentifier("goodsOut.pickAll")
@@ -78,7 +78,7 @@ struct GoodsOutItemActionsSheet: View {
         if line.remaining > 1 {
             HStack(spacing: 8) {
                 QuantityStepper(value: $amount, range: 1...max(1, line.remaining - 1))
-                AikuButton("Pick \(amount)", kind: .tertiary, size: .regular, fullWidth: false) {
+                AikuButton(L10n.format("Pick %lld", amount), kind: .tertiary, size: .regular, fullWidth: false) {
                     pick(amount)
                 }
             }
@@ -93,14 +93,14 @@ struct GoodsOutItemActionsSheet: View {
                 reason = option
             }
         }
-        AikuButton("Mark \(line.remaining) as not picked", kind: .danger, isLoading: isWorking) {
+        AikuButton(L10n.format("Mark %lld as not picked", line.remaining), kind: .danger, isLoading: isWorking) {
             if let lineID = line.apiID {
                 let action = GoodsOutNoteAction.notPicked(line: lineID, quantity: nil, reason: GoodsOutMapper.reasonKey(reason), note: nil)
-                GoodsOutRun.action(action, on: note.reference, fallback: "\(line.sko) not picked · \(reason.title.lowercased())", toasts: toasts) { close() }
+                GoodsOutRun.action(action, on: note.reference, fallback: notPickedMessage, toasts: toasts) { close() }
             } else {
                 let previous = store.markNotPicked(note.reference, line: line.id, reason: reason)
                 close()
-                GoodsOutFeedback.done("\(line.sko) not picked · \(reason.title.lowercased())", tone: .warn, previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(notPickedMessage, tone: .warn, previous: previous, toasts: toasts)
             }
         }
         .accessibilityIdentifier("goodsOut.markNotPicked")
@@ -123,24 +123,33 @@ struct GoodsOutItemActionsSheet: View {
         guard let lineID = line.apiID else {
             let previous = store.pick(note.reference, line: line.id, quantity: quantity)
             close()
-            GoodsOutFeedback.done("\(line.sko) picked ×\(quantity)", previous: previous, toasts: toasts)
+            GoodsOutFeedback.done(L10n.format("%@ picked ×%lld", line.sko, quantity), previous: previous, toasts: toasts)
             return
         }
         guard let location = line.defaultStockLocation?.locationOrgStockID else {
-            toasts.show("No location of \(line.sko) holds stock", tone: .warn)
+            toasts.show(L10n.format("No location of %@ holds stock", line.sko), tone: .warn)
             return
         }
-        GoodsOutRun.action(.pick(line: lineID, locationOrgStockID: location, quantity: Double(quantity)), on: note.reference, fallback: "\(line.sko) picked ×\(quantity)", toasts: toasts) { close() }
+        GoodsOutRun.action(.pick(line: lineID, locationOrgStockID: location, quantity: Double(quantity)), on: note.reference, fallback: L10n.format("%@ picked ×%lld", line.sko, quantity), toasts: toasts) { close() }
+    }
+
+    private var notPickedMessage: String {
+        switch reason {
+        case .outOfStock: L10n.format("%@ not picked · out of stock", line.sko)
+        case .cancelledByCustomer: L10n.format("%@ not picked · cancelled by customer", line.sko)
+        case .cancelledByWarehouse: L10n.format("%@ not picked · cancelled by warehouse", line.sko)
+        case .notApplicable: L10n.format("%@ not picked · not applicable", line.sko)
+        }
     }
 
     private func clearLine() {
         guard let lineID = line.apiID else {
             let previous = store.resetLine(note.reference, line: line.id)
             close()
-            GoodsOutFeedback.done("\(line.sko) is back to pick", tone: .info, previous: previous, toasts: toasts)
+            GoodsOutFeedback.done(L10n.format("%@ is back to pick", line.sko), tone: .info, previous: previous, toasts: toasts)
             return
         }
         let actions = line.pickings.reversed().map { GoodsOutNoteAction.undoPicking(line: lineID, pickingID: $0.id) }
-        GoodsOutRun.run(actions, on: note.reference, fallback: "\(line.sko) is back to pick", toasts: toasts) { close() }
+        GoodsOutRun.run(actions, on: note.reference, fallback: L10n.format("%@ is back to pick", line.sko), toasts: toasts) { close() }
     }
 }

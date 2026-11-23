@@ -11,7 +11,7 @@ struct GoodsOutOfflineNotices: View {
             InlineAlert(
                 tone: .warn,
                 icon: .offline,
-                title: "Offline · saved copy from \(copyDate.formatted(date: .omitted, time: .shortened))",
+                title: L10n.format("Offline · saved copy from %@", copyDate.formatted(date: .omitted, time: .shortened)),
                 message: "Your work on this note is kept on this phone and sent when you are back online."
             )
         }
@@ -63,16 +63,17 @@ struct GoodsOutOfflineNotices: View {
     }
 }
 
+@MainActor
 enum GoodsOutOfflineText {
     static func summary(_ entry: QueueEntry, sko: String?) -> String {
         let quantity = OfflineTexts.quantity(entry.quantity)
         let action = switch entry.operation {
-        case .pick: "Picked \(quantity)"
-        case .notPicked: "Not picked \(quantity)"
-        case .setWaitingWarehouse: "Waiting for the warehouse \(quantity)"
-        case .setWaitingCRM: "Passed to customer services \(quantity)"
-        case .pack: "Packed \(quantity)"
-        default: entry.operation?.label ?? "Offline work"
+        case .pick: L10n.format("Picked %@", quantity)
+        case .notPicked: L10n.format("Not picked %@", quantity)
+        case .setWaitingWarehouse: L10n.format("Waiting for the warehouse %@", quantity)
+        case .setWaitingCRM: L10n.format("Passed to customer services %@", quantity)
+        case .pack: L10n.format("Packed %@", quantity)
+        default: entry.operation?.label ?? L10n.text("Offline work")
         }
         return sko.map { "\($0) · \(action)" } ?? action
     }

@@ -9,7 +9,7 @@ struct DispatchPickedBaysView: View {
     @State private var openBay: MobileSessionPickedBay?
 
     var body: some View {
-        AppScreen(title: "Picked bays", kicker: "Goods out · \(session.warehouseLabel)") {
+        AppScreen(title: "Picked bays", kicker: L10n.format("Goods out · %@", session.warehouseLabel)) {
             ModuleTabs(.goodsOut, current: .pickedBays)
         } content: {
             if warehouseStore.selectedID == nil {

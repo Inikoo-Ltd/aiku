@@ -7,13 +7,14 @@ enum PickingSessionState: String, CaseIterable, Hashable, Sendable {
     case pickingFinished = "picking_finished"
     case packingFinished = "packing_finished"
 
+    @MainActor
     var title: String {
         switch self {
-        case .inProcess: "In process"
-        case .handling: "Picking"
-        case .handlingBlocked: "Waiting"
-        case .pickingFinished: "Picking finished"
-        case .packingFinished: "Packing finished"
+        case .inProcess: L10n.text("In process")
+        case .handling: L10n.text("Picking")
+        case .handlingBlocked: L10n.text("Waiting")
+        case .pickingFinished: L10n.text("Picking finished")
+        case .packingFinished: L10n.text("Packing finished")
         }
     }
 
@@ -37,9 +38,10 @@ enum PickingSessionFilter: Hashable, Sendable, CaseIterable {
         [.all] + PickingSessionState.allCases.map { .state($0) }
     }
 
+    @MainActor
     var title: String {
         switch self {
-        case .all: "All"
+        case .all: L10n.text("All")
         case .state(let state): state.title
         }
     }
@@ -131,12 +133,18 @@ enum PickingSessionScanStatus {
 enum PickingSessionFormat {
     static let separator = " · "
 
-    static func count(_ value: Int, _ singular: String, _ plural: String? = nil) -> String {
-        value == 1 ? "1 \(singular)" : "\(value) \(plural ?? singular + "s")"
-    }
-
     static func percent(_ value: Double) -> Int {
         min(100, max(0, Int(value.rounded())))
+    }
+
+    @MainActor
+    static func pickedProgress(_ percentage: Double) -> String {
+        L10n.format("%lld%% picked", percent(percentage))
+    }
+
+    @MainActor
+    static func packingProgress(_ percentage: Double) -> String {
+        L10n.format("packing %lld%%", percent(percentage))
     }
 
     static func quantity(_ value: Double, label: String? = nil) -> String {
@@ -145,32 +153,36 @@ enum PickingSessionFormat {
         return String(format: "%g", value)
     }
 
+    @MainActor
     static func stateLabel(_ state: String, label: String?) -> String {
         if let label, !label.isEmpty { return label }
         return PickingSessionState(rawValue: state)?.title ?? state
     }
 
+    @MainActor
     static func personName(_ person: MobilePickingSessionPerson?, currentUserID: Int?) -> String? {
         guard let person, let name = person.name, !name.isEmpty else { return nil }
-        return person.id == currentUserID ? "\(name) (you)" : name
+        return person.id == currentUserID ? L10n.format("%@ (you)", name) : name
     }
 }
 
 extension MobilePickingSessionRow {
     var sessionState: PickingSessionState? { PickingSessionState(rawValue: state) }
 
+    @MainActor
     var stateTitle: String { PickingSessionFormat.stateLabel(state, label: stateLabel) }
 
     var tone: Tone { sessionState?.tone ?? .neutral }
 
+    @MainActor
     var details: [String] {
         [
-            PickingSessionFormat.count(numberDeliveryNotes, "delivery note"),
-            PickingSessionFormat.count(numberItems, "item"),
-            PickingSessionFormat.count(numberTrolleys, "trolley"),
+            L10n.format("%lld delivery notes", numberDeliveryNotes),
+            L10n.format("%lld items", numberItems),
+            L10n.format("%lld trolleys", numberTrolleys),
             sessionState?.isPacking == true
-                ? "packing \(PickingSessionFormat.percent(packingPercentage))%"
-                : "\(PickingSessionFormat.percent(pickingPercentage))% picked"
+                ? PickingSessionFormat.packingProgress(packingPercentage)
+                : PickingSessionFormat.pickedProgress(pickingPercentage)
         ]
     }
 
@@ -178,6 +190,7 @@ extension MobilePickingSessionRow {
         ListDates.recordDate(startAt, in: timeZone) ?? ListDates.recordDate(createdAt, in: timeZone)
     }
 
+    @MainActor
     func recordDateCaption(in timeZone: TimeZone = .current) -> String? {
         guard recordDate(in: timeZone) != nil else { return nil }
         let caption = ListDates.recordDate(startAt, in: timeZone) == nil ? RecordDateCaption.created : RecordDateCaption.started
@@ -188,6 +201,7 @@ extension MobilePickingSessionRow {
 extension MobilePickingSession {
     var sessionState: PickingSessionState? { PickingSessionState(rawValue: state) }
 
+    @MainActor
     var stateTitle: String { PickingSessionFormat.stateLabel(state, label: stateLabel) }
 
     var tone: Tone { sessionState?.tone ?? .neutral }
@@ -252,14 +266,15 @@ extension MobileSessionDeliveryNote {
         return packingPercentage > 0 ? .info : .neutral
     }
 
+    @MainActor
     func subtitle(isPacking: Bool) -> String {
         [
-            PickingSessionFormat.count(numberItems, "item"),
+            L10n.format("%lld items", numberItems),
             isPacking
-                ? "packing \(PickingSessionFormat.percent(packingPercentage))%"
-                : "\(PickingSessionFormat.percent(pickingPercentage))% picked",
-            isForCollection ? "Collection" : nil,
-            hasWaitingItems ? "waiting" : nil
+                ? PickingSessionFormat.packingProgress(packingPercentage)
+                : PickingSessionFormat.pickedProgress(pickingPercentage),
+            isForCollection ? L10n.text("Collection") : nil,
+            hasWaitingItems ? L10n.text("waiting") : nil
         ]
         .compactMap { $0 }
         .joined(separator: PickingSessionFormat.separator)
@@ -279,13 +294,16 @@ extension MobilePickListEntry {
             .joined(separator: PickingSessionFormat.separator)
     }
 
+    @MainActor
     var toPickText: String {
-        "\(PickingSessionFormat.quantity(quantityToPick, label: quantityToPickLabel)) to pick"
+        L10n.format("%@ to pick", PickingSessionFormat.quantity(quantityToPick, label: quantityToPickLabel))
     }
 
+    @MainActor
     var detail: String {
         let notes = Set(lines.map(\.deliveryNoteId)).count
-        return "\(orgStock?.code ?? "") × \(PickingSessionFormat.quantity(quantityToPick, label: quantityToPickLabel))\(PickingSessionFormat.separator)\(PickingSessionFormat.count(notes, "delivery note"))"
+        let stock = "\(orgStock?.code ?? "") × \(PickingSessionFormat.quantity(quantityToPick, label: quantityToPickLabel))"
+        return [stock, L10n.format("%lld delivery notes", notes)].joined(separator: PickingSessionFormat.separator)
     }
 }
 
@@ -295,8 +313,9 @@ extension MobilePickListLine {
         return quantityPicked > 0 ? .info : .neutral
     }
 
+    @MainActor
     var subtitle: String {
-        quantityToPick > 0 ? "\(PickingSessionFormat.quantity(quantityToPick)) to pick" : "Picked"
+        quantityToPick > 0 ? L10n.format("%@ to pick", PickingSessionFormat.quantity(quantityToPick)) : L10n.text("Picked")
     }
 }
 
@@ -316,8 +335,9 @@ struct PickingSessionScanTarget: Equatable, Sendable {
 
     var maximumAmount: Int { max(1, Int(remaining.rounded(.down))) }
 
+    @MainActor
     var place: String {
-        [locationCode, deliveryNoteReference.map { "Delivery note \($0)" }]
+        [locationCode, deliveryNoteReference.map { L10n.format("Delivery note %@", $0) }]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: PickingSessionFormat.separator)
@@ -352,14 +372,15 @@ enum PickingSessionEvent: Equatable, Sendable {
         }
     }
 
+    @MainActor
     var toast: (text: String, tone: Tone) {
         switch self {
         case .feedback(let text, let tone): (text, tone)
-        case .lineDone(let code): ("\(code) · line done", .success)
-        case .locationDone(let location): ("Everything for \(location) is picked", .success)
-        case .allPicked: ("Everything in this session is picked", .success)
-        case .nowWaiting: ("Picking stopped: the session is waiting for some lines", .warn)
-        case .allPacked: ("Every delivery note is packed", .success)
+        case .lineDone(let code): (L10n.format("%@ · line done", code), .success)
+        case .locationDone(let location): (L10n.format("Everything for %@ is picked", location), .success)
+        case .allPicked: (L10n.text("Everything in this session is picked"), .success)
+        case .nowWaiting: (L10n.text("Picking stopped: the session is waiting for some lines"), .warn)
+        case .allPacked: (L10n.text("Every delivery note is packed"), .success)
         }
     }
 }
@@ -371,9 +392,10 @@ extension MobileSessionTrolley {
 
     var holderTone: Tone { isFree ? .success : .info }
 
+    @MainActor
     var holderSubtitle: String? {
-        if let note = currentDeliveryNote { return "Delivery note \(note.reference ?? "#\(note.id)")" }
-        if let session = currentPickingSession { return "Picking session \(session.reference ?? "#\(session.id)")" }
+        if let note = currentDeliveryNote { return L10n.format("Delivery note %@", note.reference ?? "#\(note.id)") }
+        if let session = currentPickingSession { return L10n.format("Picking session %@", session.reference ?? "#\(session.id)") }
         return nil
     }
 }
@@ -381,10 +403,11 @@ extension MobileSessionTrolley {
 extension MobileSessionPickedBay {
     var isFree: Bool { numberDeliveryNotes <= 0 && deliveryNotes.isEmpty }
 
+    @MainActor
     var subtitle: String? {
         guard !isFree else { return nil }
-        let notes = PickingSessionFormat.count(max(numberDeliveryNotes, deliveryNotes.count), "delivery note")
-        return numberWaiting > 0 ? "\(notes) · \(numberWaiting) waiting" : notes
+        let notes = L10n.format("%lld delivery notes", max(numberDeliveryNotes, deliveryNotes.count))
+        return numberWaiting > 0 ? [notes, L10n.format("%lld waiting", numberWaiting)].joined(separator: PickingSessionFormat.separator) : notes
     }
 
     var chip: Chip { isFree ? Chip("Free", .success) : Chip("In use", .info) }
@@ -397,13 +420,14 @@ extension MobileSessionPickedBay.DeliveryNote {
     }
 }
 
+@MainActor
 enum PickingSessionErrorText {
     static func message(_ error: Error, offline: String = "This needs internet. Check Wi-Fi and try again.") -> String {
         if let apiError = error as? APIError {
             switch apiError {
-            case .offline: return offline
-            case .unauthorized: return "Your session has ended. Sign in again."
-            default: return apiError.errorDescription ?? "Something went wrong."
+            case .offline: return L10n.text(offline)
+            case .unauthorized: return L10n.text("Your session has ended. Sign in again.")
+            default: return apiError.errorDescription ?? L10n.text("Something went wrong.")
             }
         }
         return error.localizedDescription

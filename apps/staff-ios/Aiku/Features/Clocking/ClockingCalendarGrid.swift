@@ -106,9 +106,9 @@ private struct ClockingCalendarDayCell: View {
 
     private var accessibilityText: String {
         var parts = [summary.title]
-        if summary.isToday { parts.append("Today") }
+        if summary.isToday { parts.append(L10n.text("Today")) }
         if let holiday = summary.holiday { parts.append(holiday) }
-        parts += summary.leaves.map { "\($0.typeLabel ?? "Leave"), \($0.statusLabel ?? "")" }
+        parts += summary.leaves.map { [$0.typeLabel ?? L10n.text("Leave"), $0.statusLabel ?? ""].joined(separator: ", ") }
         if let worked = summary.workedLabel { parts.append(worked) }
         return parts.joined(separator: ", ")
     }
@@ -174,7 +174,7 @@ struct ClockingCalendarLegend: View {
     }
 
     private func legendText(_ label: String) -> some View {
-        Text(label)
+        Text(L10n.text(label))
             .font(.aiku(12))
             .foregroundStyle(AikuColor.text3)
             .lineLimit(1)

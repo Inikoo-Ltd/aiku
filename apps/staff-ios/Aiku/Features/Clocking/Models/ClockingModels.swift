@@ -6,12 +6,13 @@ enum ClockingMethod: String, CaseIterable, Hashable, Sendable {
     case barcode
     case cameraQr
 
+    @MainActor
     var title: String {
         switch self {
-        case .qrCode: "QR Code"
-        case .pin: "PIN"
-        case .barcode: "Barcode"
-        case .cameraQr: "Camera QR"
+        case .qrCode: L10n.text("QR Code")
+        case .pin: L10n.text("PIN")
+        case .barcode: L10n.text("Barcode")
+        case .cameraQr: L10n.text("Camera QR")
         }
     }
 }
@@ -20,10 +21,11 @@ enum ClockingEventKind: Hashable, Sendable {
     case clockIn
     case clockOut
 
+    @MainActor
     var label: String {
         switch self {
-        case .clockIn: "In"
-        case .clockOut: "Out"
+        case .clockIn: L10n.text("In")
+        case .clockOut: L10n.text("Out")
         }
     }
 }
@@ -49,8 +51,9 @@ struct ClockingEvent: Identifiable, Hashable, Sendable {
         self.isLate = isLate
     }
 
+    @MainActor
     var detail: String {
-        "\(kind.label) · \(viaMobileApp ? "Mobile app" : "Clocking machine") · \(place)"
+        [kind.label, viaMobileApp ? L10n.text("Mobile app") : L10n.text("Clocking machine"), place].joined(separator: " · ")
     }
 }
 
@@ -132,25 +135,24 @@ struct ClockingDay: Identifiable, Hashable, Sendable {
         return isToday ? .open : .error
     }
 
+    @MainActor
     var rangeLabel: String {
         guard let firstIn else { return "—" }
-        let end: String
+        let start = ClockingFormat.shortTime(firstIn)
         if let lastOut {
-            end = ClockingFormat.shortTime(lastOut)
-        } else {
-            end = isToday ? "now" : "—"
+            return "\(start) → \(ClockingFormat.shortTime(lastOut))"
         }
-        return "\(ClockingFormat.shortTime(firstIn)) → \(end)"
+        return isToday ? L10n.format("%@ → now", start) : "\(start) → —"
     }
 
+    @MainActor
     var summary: String {
-        let clockings = clockingCount == 1 ? "1 clocking" : "\(clockingCount) clockings"
         switch status {
-        case .open: return "Open · \(clockings)"
-        case .error: return "Error · no clock out"
+        case .open: return L10n.format("Open · %lld clockings", clockingCount)
+        case .error: return L10n.text("Error · no clock out")
         case .ok:
-            if let note { return "\(clockings) · \(note)" }
-            return "\(clockings) · break \(breaks > 0 ? ClockingFormat.duration(breaks) : "—")"
+            if let note { return L10n.format("%lld clockings · %@", clockingCount, note) }
+            return L10n.format("%lld clockings · break %@", clockingCount, breaks > 0 ? ClockingFormat.duration(breaks) : "—")
         }
     }
 }
@@ -159,6 +161,7 @@ struct ClockingWeek: Identifiable, Hashable, Sendable {
     let label: String
     let range: String
     var days: [ClockingDay]
+    var weeksAgo: Int?
 
     static let weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     static let workingDays = 5
@@ -172,7 +175,18 @@ struct ClockingWeek: Identifiable, Hashable, Sendable {
 
     var breaks: Int { days.reduce(0) { $0 + $1.breaks } }
 
-    var daysLabel: String { "\(days.count) of \(Self.workingDays)" }
+    @MainActor
+    var title: String {
+        switch weeksAgo {
+        case 0: L10n.text("This week")
+        case 1: L10n.text("Last week")
+        case let weeks?: L10n.format("%lld weeks ago", weeks)
+        case nil: label
+        }
+    }
+
+    @MainActor
+    var daysLabel: String { L10n.format("%lld of %lld", days.count, Self.workingDays) }
 
     func day(on weekday: String) -> ClockingDay? {
         days.first { $0.weekday == weekday }
@@ -236,10 +250,11 @@ enum ClockingAdjustmentStatus: String, Sendable {
 }
 
 extension ClockingAdjustmentResponse {
+    @MainActor
     var summary: String {
         var parts: [String] = []
-        if let start = requestedStartTimeLocal { parts.append("Check-in \(start)") }
-        if let end = requestedEndTimeLocal { parts.append("Check-out \(end)") }
+        if let start = requestedStartTimeLocal { parts.append(L10n.format("Check-in %@", start)) }
+        if let end = requestedEndTimeLocal { parts.append(L10n.format("Check-out %@", end)) }
         if let reason, !reason.isEmpty { parts.append(reason) }
         return parts.joined(separator: " · ")
     }

@@ -34,26 +34,28 @@ enum GoodsInText {
     static let forbidden = "You don’t have the right to see this in this warehouse."
     static let notFound = "It doesn’t exist, or it belongs to another warehouse."
 
+    @MainActor
     static func problem(_ error: Error) -> String {
         if let form = error as? FormValidationError { return form.message }
         if let apiError = error as? APIError {
             switch apiError {
-            case .offline: return offline
-            case .unauthorized: return "Your session has ended. Sign in again."
+            case .offline: return L10n.text(offline)
+            case .unauthorized: return L10n.text("Your session has ended. Sign in again.")
             case .rejected(let message), .validation(let message, _, _), .tooManyAttempts(let message): return message
-            case .http(403): return forbidden
-            case .http(404): return notFound
-            default: return server
+            case .http(403): return L10n.text(forbidden)
+            case .http(404): return L10n.text(notFound)
+            default: return L10n.text(server)
             }
         }
-        return server
+        return L10n.text(server)
     }
 
+    @MainActor
     static func scanProblem(code: String, error: Error) -> String {
         switch error as? APIError {
-        case .offline: "Couldn’t look up \(code) · no connection"
-        case .http(403): "You can’t look up \(code) in this warehouse"
-        default: "Couldn’t look up \(code) · aiku is having trouble"
+        case .offline: L10n.format("Couldn’t look up %@ · no connection", code)
+        case .http(403): L10n.format("You can’t look up %@ in this warehouse", code)
+        default: L10n.format("Couldn’t look up %@ · aiku is having trouble", code)
         }
     }
 
@@ -96,10 +98,6 @@ enum GoodsInText {
     static func moment(_ value: String?, timeZone: TimeZone = .current) -> String? {
         guard let date = InventoryLive.date(value) else { return date(value, timeZone: timeZone) }
         return date.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(Locale(identifier: "en_GB")))
-    }
-
-    static func plural(_ count: Int, _ one: String, _ other: String) -> String {
-        count == 1 ? one : other
     }
 
     static func deliveryTone(_ state: String) -> Tone {
@@ -1162,13 +1160,14 @@ enum GoodsInStage: Int, CaseIterable, Sendable {
     case bookingIn
     case bookedIn
 
+    @MainActor
     var title: String {
         switch self {
-        case .dispatched: "Dispatched"
-        case .received: "Received"
-        case .checked: "Checked"
-        case .bookingIn: "Booking in"
-        case .bookedIn: "Booked in"
+        case .dispatched: L10n.text("Dispatched")
+        case .received: L10n.text("Received")
+        case .checked: L10n.text("Checked")
+        case .bookingIn: L10n.text("Booking in")
+        case .bookedIn: L10n.text("Booked in")
         }
     }
 }
@@ -1200,29 +1199,35 @@ struct GoodsInDifference: Equatable, Sendable {
     let chip: Chip
     let description: String
 
+    @MainActor
     static func of(checked: Double, expected: Double) -> GoodsInDifference {
         let gap = checked - expected
         if checked == 0, expected > 0 {
-            return GoodsInDifference(chip: Chip("Not received −\(GoodsInText.number(expected))", .danger), description: "\(GoodsInText.number(expected)) under the expected quantity")
+            let missing = GoodsInText.number(expected)
+            return GoodsInDifference(chip: Chip(L10n.format("Not received −%@", missing), .danger), description: L10n.format("%@ under the expected quantity", missing))
         }
         if gap < 0 {
-            return GoodsInDifference(chip: Chip("Under −\(GoodsInText.number(-gap))", .warn), description: "\(GoodsInText.number(-gap)) under the expected quantity")
+            let under = GoodsInText.number(-gap)
+            return GoodsInDifference(chip: Chip(L10n.format("Under −%@", under), .warn), description: L10n.format("%@ under the expected quantity", under))
         }
         if gap > 0 {
-            return GoodsInDifference(chip: Chip("Over +\(GoodsInText.number(gap))", .orange), description: "\(GoodsInText.number(gap)) over the expected quantity")
+            let over = GoodsInText.number(gap)
+            return GoodsInDifference(chip: Chip(L10n.format("Over +%@", over), .orange), description: L10n.format("%@ over the expected quantity", over))
         }
-        return GoodsInDifference(chip: Chip("Matches", .success), description: "Matches the expected quantity")
+        return GoodsInDifference(chip: Chip("Matches", .success), description: L10n.text("Matches the expected quantity"))
     }
 }
 
 extension MobileStockDeliveryItem {
+    @MainActor
     var expectedLine: String {
-        "\(name) · expected \(GoodsInText.quantity(skoExpected, label: skoExpectedLabel))"
+        L10n.format("%@ · expected %@", name, GoodsInText.quantity(skoExpected, label: skoExpectedLabel))
     }
 
+    @MainActor
     var checkLook: (chip: Chip?, subtitle: String) {
         guard let checked = skoChecked else { return (nil, expectedLine) }
-        if isNotReceived { return (Chip("Not received", .danger), "\(name) · checked as 0") }
+        if isNotReceived { return (Chip("Not received", .danger), L10n.format("%@ · checked as 0", name)) }
         if checked < skoExpected { return (Chip("Checked · under", .warn), expectedLine) }
         if checked > skoExpected { return (Chip("Checked · over", .orange), expectedLine) }
         return (Chip("Checked", .success), expectedLine)

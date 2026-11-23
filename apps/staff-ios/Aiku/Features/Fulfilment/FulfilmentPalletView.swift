@@ -33,7 +33,7 @@ private struct StoredPalletScreen: View {
             } else {
                 AppScreen(title: reference, kicker: "Pallet") {
                     if let message = live.loadError {
-                        InlineAlert(title: "Couldn’t load pallet \(reference)", message: message)
+                        InlineAlert(title: L10n.format("Couldn’t load pallet %@", reference), message: message)
                         AikuButton("Try again", kind: .secondary) {
                             Task { await live.load() }
                         }
@@ -60,7 +60,7 @@ private struct StoredPalletScreen: View {
     }
 
     private func loaded(_ pallet: MobileStoredPallet) -> some View {
-        AppScreen(title: pallet.reference, kicker: PalletDeliveryText.joined([FulfilmentStorageText.typeText(pallet) ?? "Pallet", pallet.customer?.name])) {
+        AppScreen(title: pallet.reference, kicker: PalletDeliveryText.joined([FulfilmentStorageText.typeText(pallet) ?? L10n.text("Pallet"), pallet.customer?.name])) {
             if let message = live.loadError {
                 GoodsOutLoadProblem(title: "Couldn’t refresh this pallet", message: message) {
                     Task { await live.load() }
@@ -134,11 +134,11 @@ private struct StoredPalletScreen: View {
     private func details(_ pallet: MobileStoredPallet) -> some View {
         let lines: [(AppIcon, String)] = [
             pallet.customer?.name.map { (.person, $0) },
-            pallet.delivery.map { (.stockDelivery, "Delivery \($0.reference)") },
-            pallet.return.map { (.goodsOut, "Return \($0.reference)") },
-            PalletDeliveryText.day(pallet.receivedAt).map { (.check, "Received \($0)") },
-            PalletDeliveryText.day(pallet.bookedInAt).map { (.pallet, "Booked in \($0)") },
-            PalletDeliveryText.day(pallet.storingAt).map { (.locations, "Storing since \($0)") }
+            pallet.delivery.map { (.stockDelivery, L10n.format("Delivery %@", $0.reference)) },
+            pallet.return.map { (.goodsOut, L10n.format("Return %@", $0.reference)) },
+            PalletDeliveryText.day(pallet.receivedAt).map { (.check, L10n.format("Received %@", $0)) },
+            PalletDeliveryText.day(pallet.bookedInAt).map { (.pallet, L10n.format("Booked in %@", $0)) },
+            PalletDeliveryText.day(pallet.storingAt).map { (.locations, L10n.format("Storing since %@", $0)) }
         ].compactMap { $0 }
         if !lines.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -213,7 +213,7 @@ private struct MovePalletSheet: View {
     @State private var isScanning = false
 
     var body: some View {
-        SheetScaffold(title: "Move \(pallet.reference)", subtitle: pallet.location.map { "Now in \($0.code)" } ?? "no location yet") {
+        SheetScaffold(title: L10n.format("Move %@", pallet.reference), subtitle: pallet.location.map { L10n.format("Now in %@", $0.code) } ?? "no location yet") {
             Text("Scan the new location for \(pallet.reference)")
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.text3)
@@ -240,7 +240,7 @@ private struct MovePalletSheet: View {
             }
         } footer: {
             if let target = live.pickedLocation {
-                AikuButton("Move to \(target.code)", icon: .locations, isLoading: live.working == "move") {
+                AikuButton(L10n.format("Move to %@", target.code), icon: .locations, isLoading: live.working == "move") {
                     Task {
                         if await live.move(to: target) { onClose() }
                     }
@@ -269,7 +269,7 @@ private struct MovePalletSheet: View {
     }
 
     private func choice(_ location: MobileFulfilmentLocation) -> some View {
-        RadioCard(location.code, subtitle: PalletDeliveryText.plural(location.numberPallets, "pallet", "pallets"), isSelected: live.pickedLocation?.id == location.id) {
+        RadioCard(location.code, subtitle: L10n.format("%lld pallets", location.numberPallets), isSelected: live.pickedLocation?.id == location.id) {
             live.pickedLocation = location
         }
         .accessibilityIdentifier("fulfilment.move.location.\(location.code)")

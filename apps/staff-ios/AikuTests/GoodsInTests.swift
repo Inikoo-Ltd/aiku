@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct GoodsInTests {
     private func item(_ id: Int, state: String = "received", expected: Double = 10, checked: Double? = nil, placed: Double = 0, toPlace: Double = 0) -> MobileStockDeliveryItem {
         MobileStockDeliveryItem(

@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct ShellTests {
     @Test func menuForFullAccessListsEveryGroupAndFulfilmentRows() {
         let groups = ShellMenuCatalog.groups(for: .everything)
@@ -109,5 +110,67 @@ struct ShellProfileLoadingTests {
         #expect(!session.hasProfile)
         #expect(session.fullContextLabel.isEmpty)
         #expect(!session.hasWarehouseContext)
+    }
+}
+
+@MainActor
+struct ShellProfileRowsTests {
+    private func isolatedDefaults() -> UserDefaults {
+        let name = "aiku.tests.profile.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    @Test func profileRowsShowRealValuesLikeAndroid() {
+        #expect(ShellProfileContent.clockingValue(isClockedIn: true) == "Clocked in")
+        #expect(ShellProfileContent.clockingValue(isClockedIn: false) == "Clocked out")
+        #expect(ShellProfileContent.clockingValue(isClockedIn: nil) == "—")
+        #expect(ShellProfileContent.weekValue("3h 05m") == "This week 3h 05m")
+        #expect(ShellProfileContent.weekValue(nil) == "—")
+        #expect(ShellProfileContent.versionValue(name: "0.1.0", build: "7") == "0.1.0 (7)")
+        #expect(ShellProfileContent.versionValue(name: "0.1.0", build: nil) == "0.1.0")
+        #expect(ShellProfileContent.versionValue(name: nil, build: nil) == "—")
+        #expect(ShellProfileContent.notificationsValue(isAllowed: true) == "On")
+        #expect(ShellProfileContent.notificationsValue(isAllowed: false) == "Off")
+        #expect(ShellProfileContent.notificationsAllowed(.authorized))
+        #expect(ShellProfileContent.notificationsAllowed(.provisional))
+        #expect(!ShellProfileContent.notificationsAllowed(.denied))
+        #expect(!ShellProfileContent.notificationsAllowed(.notDetermined))
+        #expect(!ShellProfileContent.hasNotificationSettings(.notDetermined))
+        #expect(ShellProfileContent.hasNotificationSettings(.denied))
+    }
+
+    @Test func syncAndSignOutTextsCountLikeAndroid() {
+        #expect(ShellProfileContent.syncValue(waiting: 0, needsYou: 0) == "All synced")
+        #expect(ShellProfileContent.syncValue(waiting: 3, needsYou: 0) == "3 waiting")
+        #expect(ShellProfileContent.syncValue(waiting: 3, needsYou: 1) == "1 needs you")
+        #expect(ShellProfileContent.syncValue(waiting: 3, needsYou: 2) == "2 need you")
+        #expect(ShellProfileContent.signOutWaitingMessage(1) == "1 action from you is waiting; it will be sent when you sign in again on this phone.")
+        #expect(ShellProfileContent.signOutWaitingMessage(4) == "4 actions from you are waiting; they will be sent when you sign in again on this phone.")
+    }
+
+    @Test func countedTextsFollowEachLanguagesPlurals() {
+        let store = LanguageStore(defaults: isolatedDefaults(), bundle: .main, preferredLanguages: ["en"])
+        #expect(store.format("%lld need you", [1]) == "1 needs you")
+
+        store.select("bg")
+        #expect(store.format("%lld waiting", [1]) == "1 чака")
+        #expect(store.format("%lld waiting", [3]) == "3 чакат")
+
+        store.select("id")
+        #expect(store.format("This week %@", ["3j 5m"]) == "Minggu ini 3j 5m")
+        #expect(store.format("Not in the catalogue %@", ["x"]) == "Not in the catalogue x")
+        #expect(store.format("Use %@", ["Deutsch"]) == "Gunakan Deutsch")
+        #expect(store.format("Language set to %@", ["Deutsch"]) == "Bahasa diatur ke Deutsch")
+        #expect(store.text("Work") == "Pekerjaan")
+    }
+
+    @Test func eachLanguageIsNamedInTheAppLanguageUnderItsOwnNameLikeAndroid() {
+        let german = AppLanguages.language(id: "de")
+
+        #expect(german.name(in: Locale(identifier: "en")) == "German")
+        #expect(german.name(in: Locale(identifier: "id")) == "Jerman")
+        #expect(AppLanguages.language(id: "zh-Hans").name(in: Locale(identifier: "en")).hasPrefix("Chinese"))
     }
 }

@@ -59,7 +59,7 @@ struct ShellOutlineTag: View {
     let text: String
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(11, .semibold))
             .foregroundStyle(AikuColor.text3)
             .lineLimit(1)

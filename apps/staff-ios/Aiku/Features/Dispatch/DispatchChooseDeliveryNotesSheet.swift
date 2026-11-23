@@ -61,15 +61,14 @@ struct DispatchChooseDeliveryNotesSheet: View {
     }
 
     private var confirmTitle: String {
-        let count = PickingSessionFormat.count(chosen.count, "delivery note")
         switch mode {
-        case .create: return chosen.isEmpty ? "Create picking session" : "Create with \(count)"
-        case .add: return chosen.isEmpty ? "Add delivery notes" : "Add \(count)"
+        case .create: chosen.isEmpty ? "Create picking session" : L10n.format("Create with %lld delivery notes", chosen.count)
+        case .add: chosen.isEmpty ? "Add delivery notes" : L10n.format("Add %lld delivery notes", chosen.count)
         }
     }
 
     private func subtitle(_ note: MobileSessionCandidateNote) -> String {
-        [note.customerName, note.numberItems.map { PickingSessionFormat.count($0, "item") }]
+        [note.customerName, note.numberItems.map { L10n.format("%lld items", $0) }]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: PickingSessionFormat.separator)
@@ -90,7 +89,7 @@ struct DispatchChooseDeliveryNotesSheet: View {
         case .create:
             switch await store.createSession(deliveryNoteIDs: ids) {
             case .success(let session):
-                toasts.show("Picking session \(session.reference) created")
+                toasts.show(L10n.format("Picking session %@ created", session.reference))
                 onDone(session)
             case .failure(let failure):
                 problem = failure.message

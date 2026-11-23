@@ -18,7 +18,7 @@ struct GoodsOutFastPickingView: View {
                 } else {
                     EmptyState(
                         icon: .deliveryNote,
-                        title: "\(note.reference) is \(note.state.title.lowercased())",
+                        title: L10n.format("%@ is %@", note.reference, note.state.title.lowercased()),
                         message: "Fast picking works while a delivery note is being picked.",
                         actionTitle: "Open delivery note"
                     ) {
@@ -74,7 +74,7 @@ struct GoodsOutFastPickingView: View {
             AppIcon.swipe.image
                 .font(.system(size: 18))
                 .accessibilityHidden(true)
-            (Text("Swipe").bold() + Text(" to show the action buttons · ") + Text("swipe all the way").bold() + Text(" to do it at once · right = Picked, left = Partial / Not picked"))
+            Text("**Swipe** to show the action buttons · **swipe all the way** to do it at once · right = Picked, left = Partial / Not picked")
                 .font(.aiku(13))
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -118,7 +118,7 @@ struct GoodsOutFastPickingView: View {
                         finishRemote(note)
                     } else if note.channel.skipsPacking || note.hasWaitingLines {
                         let previous = store.setAsPicked(note.reference, bay: nil)
-                        GoodsOutFeedback.done("\(note.reference) set as \(store.note(note.reference)?.state.title.lowercased() ?? "picked")", previous: previous, toasts: toasts)
+                        GoodsOutFeedback.done(L10n.format("%@ set as %@", note.reference, (store.note(note.reference)?.state ?? .picked).title.lowercased()), previous: previous, toasts: toasts)
                         router.replace(with: GoodsOutRoute.deliveryNote(reference: note.reference))
                     } else {
                         activeSheet = .pickedBay(setsPicked: true)
@@ -127,7 +127,7 @@ struct GoodsOutFastPickingView: View {
                 .accessibilityIdentifier("goodsOut.goToPacking")
             } else {
                 let left = note.linesStillToHandle
-                Text("\(left) \(left == 1 ? "item" : "items") left")
+                Text(L10n.format("%lld items left", left))
                     .font(.aiku(15, .semibold))
                     .foregroundStyle(AikuColor.text4)
                     .frame(maxWidth: .infinity, minHeight: 52)
@@ -167,7 +167,7 @@ struct GoodsOutFastPickingView: View {
     }
 
     private func pickAction(_ note: GoodsOutDeliveryNote, _ line: GoodsOutLine) -> GoodsOutSwipeAction {
-        GoodsOutSwipeAction(id: "pick-\(line.id)", title: "Picked ×\(line.remaining)", icon: .check, background: AikuColor.success) {
+        GoodsOutSwipeAction(id: "pick-\(line.id)", title: L10n.format("Picked ×%lld", line.remaining), icon: .check, background: AikuColor.success) {
             pickAll(note, line)
         }
     }
@@ -190,7 +190,7 @@ struct GoodsOutFastPickingView: View {
             return
         }
         let previous = store.pickAll(note.reference, line: line.id)
-        GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
+        GoodsOutFeedback.done(L10n.format("%@ picked ×%lld", line.sko, line.remaining), previous: previous, toasts: toasts)
     }
 
     private func sendInBackground(_ action: GoodsOutNoteAction, line: GoodsOutLine, change: GoodsOutQuickLineChange, on reference: String) {
@@ -213,7 +213,7 @@ struct GoodsOutFastPickingView: View {
             return
         }
         let previous = store.markNotPicked(note.reference, line: line.id, reason: .outOfStock)
-        GoodsOutFeedback.done("\(line.sko) not picked · out of stock", tone: .danger, previous: previous, toasts: toasts)
+        GoodsOutFeedback.done(L10n.format("%@ not picked · out of stock", line.sko), tone: .danger, previous: previous, toasts: toasts)
     }
 }
 
@@ -252,7 +252,7 @@ struct GoodsOutFastPickRow: View {
                 .fill(barColor)
                 .frame(width: 6)
                 .frame(maxHeight: .infinity)
-            ProductThumb(size: 48, label: "Product photo of \(line.sko)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", line.sko))
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text(line.pickLocation)
@@ -285,7 +285,7 @@ struct GoodsOutFastPickRow: View {
                     .frame(width: 44, height: 44)
                     .accessibilityLabel("Saving \(line.sko)")
             } else {
-                IconButton(.more, label: "More for \(line.sko)", tint: AikuColor.text3, action: onMore)
+                IconButton(.more, label: L10n.format("More for %@", line.sko), tint: AikuColor.text3, action: onMore)
             }
         }
         .padding(.leading, 14)

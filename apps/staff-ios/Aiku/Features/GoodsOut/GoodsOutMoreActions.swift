@@ -32,7 +32,7 @@ enum GoodsOutMoreActions {
             if let present {
                 present(.printDeliveryNote)
             } else {
-                toasts.show("Packing list of \(note.reference) sent to the printer", sticky: false)
+                toasts.show(L10n.format("Packing list of %@ sent to the printer", note.reference), sticky: false)
             }
         case .quick(.task), .quick(.askCRM), .askCRM:
             if note.isRemote {
@@ -74,7 +74,7 @@ struct GoodsOutMoreActionsSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Delivery note \(note.reference)", subtitle: "Only actions allowed for its state and your rights are shown") {
+        SheetScaffold(title: L10n.format("Delivery note %@", note.reference), subtitle: "Only actions allowed for its state and your rights are shown") {
             if canChangePicker {
                 SheetSectionLabel("Picker")
                 Card {
@@ -85,12 +85,12 @@ struct GoodsOutMoreActionsSheet: View {
                         RowDivider()
                         ListRow("Remove picker", subtitle: "Back to To do", icon: .personRemove, iconTone: .neutral) {
                             if note.isRemote {
-                                GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: "Picker removed · \(note.reference) is back to To do", toasts: toasts) { close() }
+                                GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: L10n.format("Picker removed · %@ is back to To do", note.reference), toasts: toasts) { close() }
                                 return
                             }
                             let previous = store.removePicker(note.reference)
                             close()
-                            GoodsOutFeedback.done("Picker removed · \(note.reference) is back to To do", tone: .info, previous: previous, toasts: toasts)
+                            GoodsOutFeedback.done(L10n.format("Picker removed · %@ is back to To do", note.reference), tone: .info, previous: previous, toasts: toasts)
                         }
                     }
                 }
@@ -156,7 +156,7 @@ struct GoodsOutMoreActionsSheet: View {
                     ListRow("Generate invoice", subtitle: "When the order has no invoice yet", icon: .document) {
                         let previous = store.generateInvoice(note.reference)
                         close()
-                        GoodsOutFeedback.done("Invoice generated for \(note.reference)", previous: previous, toasts: toasts)
+                        GoodsOutFeedback.done(L10n.format("Invoice generated for %@", note.reference), previous: previous, toasts: toasts)
                     }
                 }
             }
@@ -200,7 +200,7 @@ struct GoodsOutPackerSheet: View {
     var body: some View {
         SheetScaffold(
             title: "Change packer",
-            subtitle: note.packer.map { "Delivery note \(note.reference) · packer now: \($0)" } ?? "Delivery note \(note.reference) · no packer yet"
+            subtitle: note.packer.map { L10n.format("Delivery note %@ · packer now: %@", note.reference, $0) } ?? L10n.format("Delivery note %@ · no packer yet", note.reference)
         ) {
             SearchField(text: $search, placeholder: "Search packers")
             if store.isLoadingResources, store.pickers.isEmpty {
@@ -264,7 +264,7 @@ struct GoodsOutEditNoteSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: field.title, subtitle: "Delivery note \(note.reference)") {
+        SheetScaffold(title: field.title, subtitle: L10n.format("Delivery note %@", note.reference)) {
             AikuTextArea(field.title, text: $text, placeholder: "Write a note", minHeight: 120)
             HelperText("The change is copied to the order too.")
             if let problem {

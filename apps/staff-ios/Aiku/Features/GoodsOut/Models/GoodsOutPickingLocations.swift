@@ -70,6 +70,7 @@ struct GoodsOutPickingLocations: Hashable, Sendable {
     let current: GoodsOutPickingDefaults
     let canEdit: Bool
 
+    @MainActor
     init(detail: MobileOrgStockDetail, warehouseCanEditStock: Bool) {
         orgStockID = detail.id
         code = detail.code
@@ -78,7 +79,7 @@ struct GoodsOutPickingLocations: Hashable, Sendable {
             GoodsOutPickingLocationOption(
                 linkID: link.locationOrgStockId,
                 code: link.location.code,
-                stockText: link.quantity.value > 0 ? "\(InventoryLive.quantityText(link.quantity.value, label: link.quantityLabel)) in stock" : "Empty",
+                stockText: link.quantity.value > 0 ? L10n.format("%@ in stock", InventoryLive.quantityText(link.quantity.value, label: link.quantityLabel)) : L10n.text("Empty"),
                 isDefaultWholesale: link.isDefaultWholesale,
                 isDefaultDropshipping: link.isDefaultDropshipping
             )

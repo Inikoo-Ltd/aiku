@@ -63,6 +63,7 @@ struct LocationsWarehouse: Hashable, Sendable {
         LocationsFilter.none.sorted(locations.filter { $0.areaCode.caseInsensitiveCompare(code) == .orderedSame })
     }
 
+    @MainActor
     func areas(matching query: String) -> [LocationsArea] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return areas }

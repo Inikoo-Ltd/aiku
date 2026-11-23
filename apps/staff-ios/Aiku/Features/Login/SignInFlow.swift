@@ -29,8 +29,9 @@ enum TwoFactorCopy {
     static let codeMissing = "Enter the 6-digit code."
     static let setupRenewed = "That setup expired, so here is a new key. Add it to your authenticator app, then enter the code it shows."
 
+    @MainActor
     static func codeDescription(username: String) -> String {
-        "Enter the 6-digit code from your authenticator app to finish signing in as \(username)."
+        L10n.format("Enter the 6-digit code from your authenticator app to finish signing in as %@.", username)
     }
 }
 

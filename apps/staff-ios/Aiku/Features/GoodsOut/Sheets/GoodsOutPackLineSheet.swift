@@ -18,7 +18,7 @@ struct GoodsOutPackLineSheet: View {
     }
 
     private var nextParcelNumber: Int { (note.parcels.map(\.number).max() ?? 0) + 1 }
-    private var parcelTitle: String { "Parcel \(parcel ?? nextParcelNumber)" }
+    private var parcelTitle: String { L10n.format("Parcel %lld", parcel ?? nextParcelNumber) }
 
     var body: some View {
         if note.isRemote {
@@ -29,9 +29,9 @@ struct GoodsOutPackLineSheet: View {
     }
 
     private var sampleBody: some View {
-        SheetScaffold(title: "Pack \(line.sko)", subtitle: "\(line.name) · \(line.packed) of \(line.picked) packed") {
+        SheetScaffold(title: L10n.format("Pack %@", line.sko), subtitle: L10n.format("%@ · %lld of %lld packed", line.name, line.packed, line.picked)) {
             if line.isFullyPacked {
-                InlineAlert(tone: .success, icon: .checkCircle, title: "Every unit is packed", message: "In \(line.parcelText).")
+                InlineAlert(tone: .success, icon: .checkCircle, title: "Every unit is packed", message: L10n.format("In %@.", line.parcelText))
             } else {
                 SheetSectionLabel("Parcel")
                 ForEach(note.parcels) { option in
@@ -39,7 +39,7 @@ struct GoodsOutPackLineSheet: View {
                         parcel = option.number
                     }
                 }
-                RadioCard("New parcel", subtitle: "Parcel \(nextParcelNumber)", isSelected: parcel == nil) {
+                RadioCard("New parcel", subtitle: L10n.format("Parcel %lld", nextParcelNumber), isSelected: parcel == nil) {
                     parcel = nil
                 }
                 SheetSectionLabel("Quantity")
@@ -47,7 +47,7 @@ struct GoodsOutPackLineSheet: View {
             }
         } footer: {
             if !line.isFullyPacked {
-                AikuButton("Pack \(quantity) into \(parcelTitle)") {
+                AikuButton(L10n.format("Pack %lld into %@", quantity, parcelTitle)) {
                     let previous: GoodsOutDeliveryNote?
                     if let parcel {
                         previous = store.pack(note.reference, line: line.id, quantity: quantity, into: parcel)
@@ -56,7 +56,7 @@ struct GoodsOutPackLineSheet: View {
                     }
                     let title = parcelTitle
                     close()
-                    GoodsOutFeedback.done("\(line.sko) ×\(quantity) packed into \(title)", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ ×%lld packed into %@", line.sko, quantity, title), previous: previous, toasts: toasts)
                 }
                 .accessibilityIdentifier("goodsOut.confirmPackLine")
             }
@@ -93,19 +93,19 @@ struct GoodsOutRemotePackLineSheet: View {
     private var working: Bool { store.isWorking(on: note.reference) }
 
     var body: some View {
-        SheetScaffold(title: "\(line.sko) · \(packing.packedText) of \(packing.pickedText) packed", subtitle: line.name.isEmpty ? nil : line.name) {
+        SheetScaffold(title: L10n.format("%@ · %@ of %@ packed", line.sko, packing.packedText, packing.pickedText), subtitle: line.name.isEmpty ? nil : line.name) {
             if let toPackers = packing.noteToPackers, !toPackers.isEmpty {
                 InlineAlert(tone: .info, icon: .note, title: "Note to packers", message: toPackers)
             }
             if canPack {
                 SheetSectionLabel("Pack")
-                AikuButton("Pack all \(packing.toPackText)", icon: .packed, isLoading: working) {
+                AikuButton(L10n.format("Pack all %@", packing.toPackText), icon: .packed, isLoading: working) {
                     pack(nil)
                 }
                 .accessibilityIdentifier("goodsOut.packAll")
                 if packing.quantityToPack > 1 {
                     QuantityStepper(value: $quantity, range: 1...maxAmount)
-                    AikuButton("Pack \(min(quantity, maxAmount))", kind: .secondary, isLoading: working) {
+                    AikuButton(L10n.format("Pack %lld", min(quantity, maxAmount)), kind: .secondary, isLoading: working) {
                         pack(Double(min(quantity, maxAmount)))
                     }
                     .accessibilityIdentifier("goodsOut.packAmount")
@@ -119,7 +119,7 @@ struct GoodsOutRemotePackLineSheet: View {
                     HStack(spacing: 8) {
                         AikuTextField("Box", text: $box.box, keyboard: .numberPad)
                         AikuTextField("Quantity", text: $box.quantity, keyboard: .decimalPad)
-                        IconButton(.trash, label: "Remove box \(box.box)", tint: AikuColor.danger) {
+                        IconButton(.trash, label: L10n.format("Remove box %@", box.box), tint: AikuColor.danger) {
                             boxes.removeAll { $0.id == box.id }
                         }
                     }
@@ -148,7 +148,7 @@ struct GoodsOutRemotePackLineSheet: View {
             AikuButton("Close", kind: .tertiary, action: close)
         }
         .aikuConfirm(
-            "Unpack \(line.sko)?",
+            L10n.format("Unpack %@?", line.sko),
             isPresented: $confirmsUnpack,
             message: note.state == .packed
                 ? "Everything packed on this line goes back to be packed, and the delivery note goes back to packing."
@@ -162,7 +162,7 @@ struct GoodsOutRemotePackLineSheet: View {
 
     private func pack(_ amount: Double?) {
         guard let id = line.apiID else { return }
-        run(.pack(line: id, quantity: amount), fallback: "\(line.sko) packed")
+        run(.pack(line: id, quantity: amount), fallback: L10n.format("%@ packed", line.sko))
     }
 
     private func saveBoxes() {

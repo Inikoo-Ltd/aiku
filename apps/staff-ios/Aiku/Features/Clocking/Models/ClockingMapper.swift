@@ -30,6 +30,7 @@ enum ClockingMapper {
         formatter("yyyy-MM-dd", TimeZone(identifier: "UTC")!).date(from: text)
     }
 
+    @MainActor
     static func events(from sessions: [ClockingSessionResponse], in timeZone: TimeZone) -> [ClockingEvent] {
         sessions.flatMap { session -> [ClockingEvent] in
             var result: [ClockingEvent] = []
@@ -43,19 +44,21 @@ enum ClockingMapper {
         }
     }
 
+    @MainActor
     static func event(_ record: ClockingRecordResponse, kind: ClockingEventKind, in timeZone: TimeZone) -> ClockingEvent? {
         guard let time = secondsSinceMidnight(record.clockedAt, in: timeZone) else { return nil }
         return ClockingEvent(
             time: time,
             kind: kind,
             viaMobileApp: record.type == "self-check",
-            place: record.workplace?.name ?? record.clockingMachine?.name ?? "Clocking machine",
+            place: record.workplace?.name ?? record.clockingMachine?.name ?? L10n.text("Clocking machine"),
             note: record.notes,
             clockingID: record.id,
             isLate: record.isLate ?? false
         )
     }
 
+    @MainActor
     static func day(date: String, sessions: [ClockingSessionResponse], in timeZone: TimeZone, isToday: Bool, timesheetID: Int? = nil) -> ClockingDay {
         let utc = TimeZone(identifier: "UTC")!
         let parsed = parseDay(date) ?? .now
@@ -81,7 +84,8 @@ enum ClockingMapper {
             ClockingWeek(
                 label: weekLabel(start: start, thisWeekStart: thisWeekStart),
                 range: weekRange(start: start),
-                days: (grouped[start] ?? []).sorted { $0.date > $1.date }
+                days: (grouped[start] ?? []).sorted { $0.date > $1.date },
+                weeksAgo: weeksAgo(start: start, thisWeekStart: thisWeekStart)
             )
         }
     }
@@ -94,11 +98,19 @@ enum ClockingMapper {
         return formatter("yyyy-MM-dd", calendar.timeZone).string(from: start)
     }
 
+    static func weeksAgo(start: String, thisWeekStart: String) -> Int? {
+        if start == thisWeekStart { return 0 }
+        guard let thisWeek = parseDay(thisWeekStart), let week = parseDay(start) else { return nil }
+        return Int((thisWeek.timeIntervalSince(week) / (7 * 86_400)).rounded())
+    }
+
     static func weekLabel(start: String, thisWeekStart: String) -> String {
-        if start == thisWeekStart { return "This week" }
-        guard let thisWeek = parseDay(thisWeekStart), let week = parseDay(start) else { return start }
-        let weeksAgo = Int((thisWeek.timeIntervalSince(week) / (7 * 86_400)).rounded())
-        return weeksAgo == 1 ? "Last week" : "\(weeksAgo) weeks ago"
+        switch weeksAgo(start: start, thisWeekStart: thisWeekStart) {
+        case 0: "This week"
+        case 1: "Last week"
+        case let weeks?: "\(weeks) weeks ago"
+        case nil: start
+        }
     }
 
     static func weekRange(start: String) -> String {

@@ -75,11 +75,11 @@ private struct TwoFactorHeading: View {
         HStack(alignment: .top, spacing: 12) {
             IconTile(.shield, tone: .info, size: 40)
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(20, .bold))
                     .foregroundStyle(AikuColor.text)
                     .accessibilityAddTraits(.isHeader)
-                Text(description)
+                Text(L10n.text(description))
                     .font(.aiku(14))
                     .foregroundStyle(AikuColor.text3)
                     .fixedSize(horizontal: false, vertical: true)

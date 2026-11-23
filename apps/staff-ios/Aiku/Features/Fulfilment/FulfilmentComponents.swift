@@ -7,7 +7,7 @@ struct FulfilmentProgressSteps: View {
     var body: some View {
         HStack(spacing: 3) {
             ForEach(Array(steps.enumerated()), id: \.offset) { index, title in
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(11, .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -18,7 +18,7 @@ struct FulfilmentProgressSteps: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Progress: \(steps.indices.contains(currentIndex) ? steps[currentIndex] : ""), step \(currentIndex + 1) of \(steps.count)")
+        .accessibilityLabel("Progress: \(steps.indices.contains(currentIndex) ? L10n.text(steps[currentIndex]) : ""), step \(currentIndex + 1) of \(steps.count)")
     }
 
     private func foreground(_ index: Int) -> Color {
@@ -45,10 +45,10 @@ struct FulfilmentScanCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     AppIcon.scan.image.font(.system(size: 18, weight: .medium))
-                    Text(title).font(.aiku(14, .bold))
+                    Text(L10n.text(title)).font(.aiku(14, .bold))
                 }
                 if let detail {
-                    Text(detail).font(.aiku(13))
+                    Text(L10n.text(detail)).font(.aiku(13))
                 }
                 Text(highlight)
                     .font(.aiku(22, .bold))
@@ -56,7 +56,7 @@ struct FulfilmentScanCard: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
                 if let footnote {
-                    Text(footnote).font(.aiku(13))
+                    Text(L10n.text(footnote)).font(.aiku(13))
                 }
             }
             .multilineTextAlignment(.leading)
@@ -105,10 +105,10 @@ struct FulfilmentDoneHero: View {
                 .frame(width: 72, height: 72)
                 .background(AikuColor.successSoft, in: Circle())
                 .accessibilityHidden(true)
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(22, .bold))
                 .foregroundStyle(AikuColor.text)
-            Text(message)
+            Text(L10n.text(message))
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.text3)
         }

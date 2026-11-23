@@ -29,13 +29,14 @@ struct GoodsOutScanLogEntry: Identifiable, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var detail: String {
         let stamp = GoodsOutDateFormat.time(time)
         switch outcome {
-        case .picked: return "\(stamp) · It belongs to this order"
-        case .lineComplete: return "\(stamp) · every unit of this line is picked"
-        case .notOnNote: return "\(stamp) · not on this delivery note"
-        case .notPicking: return "\(stamp) · the delivery note is not being picked"
+        case .picked: return L10n.format("%@ · It belongs to this order", stamp)
+        case .lineComplete: return L10n.format("%@ · every unit of this line is picked", stamp)
+        case .notOnNote: return L10n.format("%@ · not on this delivery note", stamp)
+        case .notPicking: return L10n.format("%@ · the delivery note is not being picked", stamp)
         }
     }
 

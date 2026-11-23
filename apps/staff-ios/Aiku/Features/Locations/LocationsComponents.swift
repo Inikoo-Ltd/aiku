@@ -34,7 +34,7 @@ struct LocationsSlotThumb: View {
     var size: CGFloat = 48
 
     var body: some View {
-        ProductThumb(size: size, label: "Product photo of \(reference)")
+        ProductThumb(size: size, label: L10n.format("Product photo of %@", reference))
     }
 }
 
@@ -101,7 +101,7 @@ struct LocationsScanCover: View {
 
     var body: some View {
         CameraScanScreen(
-            kicker: "Locations · \(session.warehouseLabel)",
+            kicker: L10n.format("Locations · %@", session.warehouseLabel),
             title: title,
             hint: hint,
             onClose: onClose,

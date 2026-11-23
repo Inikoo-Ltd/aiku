@@ -13,7 +13,7 @@ struct InventoryDashboardScreen: View {
     var body: some View {
         AppScreen(
             title: "Inventory dashboard",
-            kicker: "Inventory · \(session.warehouseLabel)",
+            kicker: L10n.format("Inventory · %@", session.warehouseLabel),
             actions: [HeaderAction(.scan, label: "Manage barcodes") { scan() }]
         ) {
             ModuleTabs(.inventory, current: .inventoryDashboard)
@@ -42,7 +42,7 @@ struct InventoryDashboardScreen: View {
         }
         .fullScreenCover(isPresented: $isScanning) {
             InventoryScanCover(
-                kicker: "Inventory · \(session.warehouseLabel)",
+                kicker: L10n.format("Inventory · %@", session.warehouseLabel),
                 onClose: { isScanning = false },
                 onScan: {
                     isScanning = false
@@ -94,7 +94,7 @@ struct InventoryDashboardScreen: View {
             StatTile(summary.withoutProduct.grouped, label: "SKOs without product", tone: summary.withoutProduct > 0 ? .warn : nil)
         }
         InventoryInfoCard(title: session.warehouseLabel, lines: [
-            InventoryInfoLine(icon: .sko, text: "Stock value \(summary.stockValueLabel)"),
+            InventoryInfoLine(icon: .sko, text: L10n.format("Stock value %@", summary.stockValueLabel)),
             summary.utilisationLine.map { InventoryInfoLine(icon: .locations, text: $0) }
         ].compactMap { $0 })
     }

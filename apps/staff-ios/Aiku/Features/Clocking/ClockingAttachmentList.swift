@@ -46,7 +46,7 @@ struct ClockingAttachmentList: View {
             } catch APIError.offline {
                 toasts.show("No connection. Try again with internet.", tone: .danger)
             } catch {
-                toasts.show("Couldn’t open \(attachment.name)", tone: .danger)
+                toasts.show(L10n.format("Couldn’t open %@", attachment.name), tone: .danger)
             }
             openingID = nil
         }

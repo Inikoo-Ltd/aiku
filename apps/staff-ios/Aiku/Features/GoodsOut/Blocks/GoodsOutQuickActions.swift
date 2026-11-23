@@ -36,7 +36,7 @@ struct GoodsOutQuickActions: View {
                     VStack(spacing: 4) {
                         action.icon.image
                             .font(.system(size: 18))
-                        Text(action.title)
+                        Text(L10n.text(action.title))
                             .font(.aiku(12, .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)

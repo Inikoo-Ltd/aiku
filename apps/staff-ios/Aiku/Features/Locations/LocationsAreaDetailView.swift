@@ -22,7 +22,7 @@ struct LocationsAreaDetailView: View {
     private var areaContent: some View {
         if let area = store.warehouse.areaOrFallback(code: code) {
             let locations = store.warehouse.locations(inArea: area.code)
-            AppScreen(title: area.title, kicker: "Warehouse area · code \(area.code)") {
+            AppScreen(title: area.title, kicker: L10n.format("Warehouse area · code %@", area.code)) {
                 StatGrid(columns: 3) {
                     StatTile(area.locationCount.locationsGrouped, label: "Locations")
                     StatTile(area.emptyCount.locationsGrouped, label: "Empty", tone: .warn)

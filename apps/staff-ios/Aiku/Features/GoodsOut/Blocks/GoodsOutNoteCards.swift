@@ -9,7 +9,7 @@ struct GoodsOutNoteCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text(title)
+                Text(L10n.text(title))
                     .font(.aiku(13, .bold))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 icon.image

@@ -83,7 +83,7 @@ struct ClockingOvertimeView: View {
             Text(value).font(.aiku(20, .bold)).foregroundStyle(AikuColor.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text(label).font(.aiku(12)).foregroundStyle(AikuColor.text3)
+            Text(L10n.text(label)).font(.aiku(12)).foregroundStyle(AikuColor.text3)
                 .lineLimit(2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,14 +124,14 @@ struct ClockingOvertimeRow: View {
         guard request.recordedStartAt != request.requestedStartAt || request.recordedDurationMinutes != request.requestedDurationMinutes,
               request.recordedStartAt != nil || request.recordedDurationMinutes != nil else { return nil }
         let range = OvertimeCalculator.timeRange(start: request.recordedStartAt, end: request.recordedEndAt, duration: request.recordedDurationMinutes, in: timeZone)
-        return "Recorded " + [range, OvertimeCalculator.durationLabel(request.recordedDurationMinutes)].compactMap { $0 }.joined(separator: " · ")
+        return L10n.format("Recorded %@", [range, OvertimeCalculator.durationLabel(request.recordedDurationMinutes)].compactMap { $0 }.joined(separator: " · "))
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(request.overtimeTypeName ?? "Overtime")
+                    Text(request.overtimeTypeName ?? L10n.text("Overtime"))
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
                     Spacer(minLength: 8)

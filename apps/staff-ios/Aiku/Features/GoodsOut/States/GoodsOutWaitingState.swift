@@ -13,8 +13,9 @@ struct GoodsOutWaitingStateView: View {
         if !waiting.isEmpty {
             GoodsOutSectionTitle(title: "Waiting lines")
             GoodsOutLinesCard(lines: waiting, detail: { line in
-                let quote = line.waitingNote.map { $0.isEmpty ? "" : " · “\($0)”" } ?? ""
-                return "\(line.picked) of \(line.required)\(quote)"
+                let progress = L10n.format("%lld of %lld", line.picked, line.required)
+                guard let waitingNote = line.waitingNote, !waitingNote.isEmpty else { return progress }
+                return "\(progress) · “\(waitingNote)”"
             })
         }
         let others = note.linesByLocation.filter { !$0.isWaiting }
@@ -32,10 +33,10 @@ struct GoodsOutWaitingStateView: View {
             RowDivider()
             ListRow("Auto finish waiting", subtitle: "Check if all items are picked and finish waiting", icon: .check) {
                 if let previous = store.autoFinishWaiting(note.reference) {
-                    GoodsOutFeedback.done("Nothing is waiting any more · \(note.reference) set as picked", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("Nothing is waiting any more · %@ set as picked", note.reference), previous: previous, toasts: toasts)
                 } else {
                     let count = note.waitingLines.count
-                    toasts.show("\(count) \(count == 1 ? "line is" : "lines are") still waiting", tone: .warn)
+                    toasts.show(L10n.format("%lld lines are still waiting", count), tone: .warn)
                 }
             }
         }
@@ -57,7 +58,7 @@ struct GoodsOutWaitingStateView: View {
             if let autoFinish = note.action(.autoFinishWaiting), autoFinish.disabledReason == nil {
                 RowDivider()
                 ListRow(autoFinish.label, subtitle: "Check if all items are picked and finish waiting", icon: .check) {
-                    GoodsOutRun.action(.autoFinishWaiting, on: note.reference, fallback: "\(note.reference) set as picked", toasts: toasts)
+                    GoodsOutRun.action(.autoFinishWaiting, on: note.reference, fallback: L10n.format("%@ set as picked", note.reference), toasts: toasts)
                 }
             }
             if note.allows(.changePickedBay) {
@@ -71,7 +72,7 @@ struct GoodsOutWaitingStateView: View {
 
     private var askCRMSubtitle: String {
         if let line = note.waitingLines.first(where: { if case .waiting(.customerService) = $0.status { return true } else { return false } }) {
-            return "Messages about \(line.sko)"
+            return L10n.format("Messages about %@", line.sko)
         }
         return "Chat with customer services about this note"
     }
@@ -93,7 +94,7 @@ struct GoodsOutWaitingFooter: View {
             } else {
                 let count = note.waitingLines.count
                 GoodsOutFooterStatus(
-                    title: "\(count) \(count == 1 ? "line" : "lines") waiting",
+                    title: L10n.format("%lld lines waiting", count),
                     detail: "A dispatching supervisor can send it back to picking."
                 )
             }
@@ -106,7 +107,7 @@ struct GoodsOutWaitingFooter: View {
         } else {
             let count = note.waitingLines.count
             GoodsOutFooterStatus(
-                title: "\(count) \(count == 1 ? "line" : "lines") waiting",
+                title: L10n.format("%lld lines waiting", count),
                 detail: "A dispatching supervisor can send it back to picking."
             )
         }

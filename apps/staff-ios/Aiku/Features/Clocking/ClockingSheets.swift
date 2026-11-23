@@ -32,7 +32,7 @@ struct ClockingWorkplaceSheet: View {
     var body: some View {
         SheetScaffold(title: "Select Working Hours", subtitle: "Choose your work schedule for this clocking") {
             VStack(spacing: 10) {
-                RadioCard("Default Schedule", subtitle: "Your regular working hours · \(standardHours)", isSelected: !usesShift) {
+                RadioCard("Default Schedule", subtitle: L10n.format("Your regular working hours · %@", standardHours), isSelected: !usesShift) {
                     usesShift = false
                 }
                 RadioCard("Shift Schedule", subtitle: "Select a specific shift", isSelected: usesShift) {
@@ -134,7 +134,7 @@ struct ClockingAdjustmentSheet: View {
             AikuTextArea("Reason", text: $reason, placeholder: "Please explain what happened")
             AttachmentPicker(files: $files)
             ForEach(store.adjustments(for: dateText)) { request in
-                InlineAlert(tone: request.tone, icon: .bell, title: "Already requested · \(request.statusLabel ?? request.status ?? "")", message: request.summary)
+                InlineAlert(tone: request.tone, icon: .bell, title: L10n.format("Already requested · %@", request.statusLabel ?? request.status ?? ""), message: request.summary)
             }
             if let error {
                 InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
@@ -167,8 +167,9 @@ struct ClockingAdjustmentSheet: View {
         return earliest...today
     }
 
-    private func timeRow(_ title: String, isOn: Binding<Bool>, time: Binding<Date>) -> some View {
-        HStack(spacing: 12) {
+    private func timeRow(_ key: String, isOn: Binding<Bool>, time: Binding<Date>) -> some View {
+        let title = L10n.text(key)
+        return HStack(spacing: 12) {
             Toggle(isOn: isOn) {
                 Text(title)
                     .font(.aiku(15, .semibold))
