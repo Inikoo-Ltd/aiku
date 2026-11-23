@@ -186,9 +186,17 @@ struct InventoryLiveTests {
         #expect(picking.quantity == 40)
         #expect(picking.quantityText == "40.5")
         #expect(picking.chip == Chip("Picking · Wholesale · Dropshipping", .info))
-        #expect(picking.settingsLine == "min 12 · max 48 · audited 28 May")
-        #expect(sko.location("C-01")?.settingsLine == "replenish 24 · never audited")
-        #expect(sko.location("C-01")?.chip == Chip("Storing", .neutral))
+        #expect(picking.lastAudited == "28 May 2024")
+        #expect(picking.auditedText() == "Last audited 28 May 2024")
+        #expect(picking.footerLines() == ["Default for Wholesale · Dropshipping", "min 12 · max 48"])
+        #expect(picking.unitsInTotalText(packedIn: sko.packedIn) == nil)
+        let storing = try #require(sko.location("C-01"))
+        #expect(storing.auditedText() == "Never audited")
+        #expect(storing.footerLines() == ["replenish 24"])
+        #expect(storing.chip == Chip("Storing", .neutral))
+        #expect(sko.live?.stockQuantity == 100.5)
+        #expect(sko.packedIn == 1)
+        #expect(sko.unitsInTotalText() == nil)
     }
 
     @Test func skoFeedOpensAReferenceThroughTheList() async throws {

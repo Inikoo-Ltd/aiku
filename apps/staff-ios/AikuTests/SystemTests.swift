@@ -93,6 +93,21 @@ struct SystemTests {
         #expect(store.openOperations.count == 1)
     }
 
+    @Test("A record is titled with the reference the operation's item sends")
+    func titleFromTheItem() async throws {
+        let open = try Self.entry(#"""
+        {"operation_id": 42, "status": "refused", "operation": "pick", "labels": {"title": ""}, "record": {"type": "delivery_note", "id": 502},
+         "item": {"sko_code": "BBUG-06", "record_type": "delivery_note", "record_reference": "AR24812", "line": 3}}
+        """#)
+        let store = Self.store(open: [open])
+        await store.load()
+
+        let title = store.title(of: .deliveryNote(502), downloaded: { _ in nil })
+
+        #expect(title == "Delivery note AR24812")
+        #expect(store.operation(42)?.item?.line == 3)
+    }
+
     @Test("Queued work is grouped per record and titled from the downloaded copy")
     func queueGroups() {
         let store = SystemSyncStore(service: SystemSyncService(operations: { _ in [] }, resolve: { _, _ in throw APIError.offline }, rollback: { _, _ in throw APIError.offline }))

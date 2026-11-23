@@ -184,12 +184,7 @@ private struct InventorySkoDetailView: View {
             if !infoLines.isEmpty {
                 InventoryInfoCard(title: "SKO", lines: infoLines)
             }
-            StatGrid(columns: 4) {
-                StatTile(sko.live?.stockLabel ?? sko.stock.grouped, label: "In locations", tone: (sko.live?.stockIsNegative ?? (sko.stock < 0)) ? .danger : nil)
-                StatTile(sko.live?.reservedLabel ?? sko.reserved.grouped, label: "Reserved")
-                StatTile(sko.live?.toBePickedLabel ?? sko.toBePicked.grouped, label: "To be picked")
-                StatTile(sko.coverLabel, label: "Cover")
-            }
+            InventorySkoStockCard(sko: sko)
             SectionHeading("Locations", detail: "\(sko.locations.count)")
             if sko.locations.isEmpty {
                 if canEditStocks {
@@ -200,22 +195,14 @@ private struct InventorySkoDetailView: View {
                     EmptyState(icon: .locations, title: "No locations yet", message: emptyLocationsMessage)
                 }
             } else {
-                CardList(sko.locations) { location in
-                    ListRow(
-                        location.code,
-                        subtitle: location.settingsLine,
-                        icon: .locations,
-                        iconTone: .info,
-                        chips: [location.chip],
-                        action: openLocation.map { open in { open(location) } }
-                    ) {
-                        Text(location.quantityText)
-                            .font(.aiku(15, .bold))
-                            .foregroundStyle(location.quantity < 0 ? AikuColor.danger : AikuColor.text)
-                            .monospacedDigit()
-                            .fixedSize()
+                VStack(spacing: 8) {
+                    ForEach(sko.locations) { location in
+                        InventorySkoLocationCard(
+                            location: location,
+                            packedIn: sko.packedIn,
+                            action: openLocation.map { open in { open(location) } }
+                        )
                     }
-                    .accessibilityIdentifier("inventory.location.\(location.code)")
                 }
             }
             if canEditStocks {
@@ -342,5 +329,118 @@ private struct InventorySkoDetailView: View {
         } else {
             toasts.show(message, tone: .success)
         }
+    }
+}
+
+private struct InventorySkoStockCard: View {
+    let sko: InventorySko
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.text("In locations").uppercased(with: LanguageStore.shared.locale))
+                    .font(.aiku(12, .bold))
+                    .tracking(0.7)
+                    .foregroundStyle(AikuColor.text3)
+                Text(sko.live?.stockLabel ?? sko.stock.grouped)
+                    .font(.aiku(32, .bold))
+                    .foregroundStyle(isNegative ? AikuColor.danger : AikuColor.text)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                if let unitsInTotal = sko.unitsInTotalText(translate: { L10n.text($0) }) {
+                    Text(unitsInTotal)
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            RowDivider()
+            KeyValueRow("Reserved", sko.live?.reservedLabel ?? sko.reserved.grouped)
+            RowDivider()
+            KeyValueRow("To be picked", sko.live?.toBePickedLabel ?? sko.toBePicked.grouped)
+            RowDivider()
+            KeyValueRow("Cover", sko.coverLabel)
+        }
+        .accessibilityIdentifier("inventory.stockCard")
+    }
+
+    private var isNegative: Bool {
+        sko.live?.stockIsNegative ?? (sko.stock < 0)
+    }
+}
+
+private struct InventorySkoLocationCard: View {
+    let location: InventorySkoLocation
+    let packedIn: Double?
+    let action: (() -> Void)?
+
+    var body: some View {
+        Group {
+            if let action {
+                Button(action: action) { card }
+                    .buttonStyle(.plain)
+            } else {
+                card
+            }
+        }
+        .accessibilityIdentifier("inventory.location.\(location.code)")
+    }
+
+    private var card: some View {
+        let footerLines = location.footerLines(translate: { L10n.text($0) })
+        return Card {
+            HStack(alignment: .center, spacing: 12) {
+                IconTile(.locations, tone: .info)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(location.code)
+                        .font(.aiku(17, .bold))
+                        .foregroundStyle(AikuColor.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(location.auditedText(translate: { L10n.text($0) }))
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                StatusChip(location.type.title, tone: location.typeTone)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            RowDivider()
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(location.quantityText)
+                    .font(.aiku(20, .bold))
+                    .foregroundStyle(location.isNegative ? AikuColor.danger : AikuColor.text)
+                    .monospacedDigit()
+                Spacer(minLength: 8)
+                if let unitsInTotal = location.unitsInTotalText(packedIn: packedIn, translate: { L10n.text($0) }) {
+                    Text(unitsInTotal)
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(minHeight: 44)
+            if !footerLines.isEmpty {
+                RowDivider()
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(footerLines, id: \.self) { line in
+                        Text(line)
+                            .font(.aiku(13))
+                            .foregroundStyle(AikuColor.text2)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AikuColor.surface2)
+            }
+        }
+        .contentShape(Rectangle())
     }
 }

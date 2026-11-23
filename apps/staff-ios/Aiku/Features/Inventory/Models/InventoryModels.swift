@@ -158,18 +158,75 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
 
     var typeLabel: String { chip.text }
 
-    var settingsLine: String {
-        var parts: [String] = []
+    var typeTone: Tone { type == .picking ? .info : .neutral }
+
+    var exactQuantity: Double { link?.exactQuantity ?? Double(quantity) }
+
+    var isNegative: Bool { exactQuantity < 0 }
+
+    var defaultChannels: [InventoryChannel] {
         if let link {
-            if let levels = link.levels { parts.append(levels) }
-        } else if type == .picking {
-            if let minimum { parts.append("min \(minimum)") }
-            if let maximum { parts.append("max \(maximum)") }
-        } else if let replenish {
-            parts.append("replenish \(replenish)")
+            var channels: [InventoryChannel] = []
+            if link.isDefaultWholesale { channels.append(.wholesale) }
+            if link.isDefaultDropshipping { channels.append(.dropshipping) }
+            return channels
         }
-        parts.append(lastAudited.map { "audited \($0)" } ?? "never audited")
-        return parts.joined(separator: " · ")
+        guard type == .picking, let channel else { return [] }
+        return [channel]
+    }
+
+    var levelsText: String? {
+        if let link { return link.levels }
+        return Self.levels(minimum: minimum?.grouped, maximum: maximum?.grouped, replenish: replenish?.grouped)
+    }
+
+    func auditedText(translate: (String) -> String = { $0 }) -> String {
+        guard let lastAudited else { return translate("Never audited") }
+        return String(format: translate("Last audited %@"), lastAudited)
+    }
+
+    func defaultsText(translate: (String) -> String = { $0 }) -> String? {
+        let channels = defaultChannels
+        guard !channels.isEmpty else { return nil }
+        let titles = channels.map { translate($0.title) }.joined(separator: " · ")
+        return String(format: translate("Default for %@"), titles)
+    }
+
+    func footerLines(translate: (String) -> String = { $0 }) -> [String] {
+        [defaultsText(translate: translate), levelsText].compactMap { $0 }
+    }
+
+    func unitsInTotalText(packedIn: Double?, translate: (String) -> String = { $0 }) -> String? {
+        guard let units = InventorySkoUnits.total(exactQuantity, packedIn: packedIn) else { return nil }
+        return InventorySkoUnits.text(units, translate: translate)
+    }
+
+    static func levels(minimum: String?, maximum: String?, replenish: String?) -> String? {
+        switch (minimum, maximum) {
+        case let (min?, max?): return "min \(min) · max \(max)"
+        case let (min?, nil): return "min \(min)"
+        case let (nil, max?): return "max \(max)"
+        default: return replenish.map { "replenish \($0)" }
+        }
+    }
+}
+
+enum InventorySkoUnits {
+    static func total(_ quantity: Double, packedIn: Double?) -> Double? {
+        guard let packedIn, packedIn > 1, quantity >= 0 else { return nil }
+        let units = quantity * packedIn
+        let nearest = units.rounded()
+        if abs(units - nearest) < 0.05 { return nearest }
+        var exact = Decimal(string: "\(units)", locale: Locale(identifier: "en_US_POSIX")) ?? Decimal(units)
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &exact, 1, .plain)
+        return NSDecimalNumber(decimal: rounded).doubleValue
+    }
+
+    static func text(_ units: Double, translate: (String) -> String = { $0 }) -> String {
+        if units == 1 { return translate("1 unit in total") }
+        let count = units.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "en_GB")))
+        return String(format: translate("%@ units in total"), count)
     }
 }
 
@@ -182,6 +239,8 @@ struct InventorySkoLiveFacts: Hashable, Sendable {
     var reservedLabel: String
     var toBePickedLabel: String
     var canEditStocks: Bool
+    var stockQuantity: Double = 0
+    var packedIn: Double? = nil
 }
 
 struct InventorySko: Identifiable, Hashable, Sendable {
@@ -247,6 +306,18 @@ struct InventorySko: Identifiable, Hashable, Sendable {
     var canMoveStock: Bool { locations.count >= 2 && locations.contains { $0.quantity > 0 } }
 
     var canConsume: Bool { locations.contains { $0.quantity > 0 } }
+
+    var stockQuantity: Double { live?.stockQuantity ?? Double(stock) }
+
+    var packedIn: Double? {
+        if let live { return live.packedIn }
+        return unitsPerSko > 0 ? Double(unitsPerSko) : nil
+    }
+
+    func unitsInTotalText(translate: (String) -> String = { $0 }) -> String? {
+        guard let units = InventorySkoUnits.total(stockQuantity, packedIn: packedIn) else { return nil }
+        return InventorySkoUnits.text(units, translate: translate)
+    }
 
     var coverLabel: String {
         guard let coverDays else { return "–" }

@@ -117,7 +117,7 @@ struct GoodsInTests {
     }
 
     @Test func quantitiesUseTheServerLabelOrAtMostTwoDecimals() {
-        #expect(GoodsInText.quantity(2.75, label: "2 6/8") == "2 6/8")
+        #expect(GoodsInText.quantity(2.75, label: "2 6/8") == "2\u{202F}⁶⁄₈")
         #expect(GoodsInText.quantity(1234.5) == "1234.5")
         #expect(GoodsInText.number(1.256) == "1.26")
     }

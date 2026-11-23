@@ -67,7 +67,7 @@ enum GoodsInText {
     }
 
     static func quantity(_ value: Double, label: String? = nil) -> String {
-        if let label = label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty { return label }
+        if let label = label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty { return FractionGlyphs.apply(label) }
         return number(value)
     }
 

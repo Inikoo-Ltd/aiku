@@ -140,7 +140,7 @@ enum PickingSessionFormat {
     }
 
     static func quantity(_ value: Double, label: String? = nil) -> String {
-        if let label, !label.isEmpty { return label }
+        if let label, !label.isEmpty { return FractionGlyphs.apply(label) }
         if value == value.rounded() { return String(Int(value)) }
         return String(format: "%g", value)
     }

@@ -96,7 +96,7 @@ struct LocationsSlot: Identifiable, Hashable, Sendable {
 
     var id: String { skoReference }
     var isEmpty: Bool { quantity <= 0 }
-    var quantityText: String { quantityLabel ?? quantity.locationsGrouped }
+    var quantityText: String { quantityLabel.map { FractionGlyphs.apply($0) } ?? quantity.locationsGrouped }
     var weightKg: Double { Double(max(quantity, 0)) * unitWeightKg }
     var volumeM3: Double { Double(max(quantity, 0)) * unitVolumeM3 }
     var stockValue: Double { Double(max(quantity, 0)) * unitValue }

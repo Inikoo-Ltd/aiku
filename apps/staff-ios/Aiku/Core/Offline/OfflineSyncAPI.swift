@@ -105,8 +105,65 @@ struct OfflineOperationEntry: Decodable, Identifiable, Hashable, Sendable {
 
     struct CountedRow: Decodable, Hashable, Sendable {
         let locationCode: String?
+        let skoCode: String?
+        let skoName: String?
         let counted: Double?
         let quantity: Double?
+
+        private enum CodingKeys: String, CodingKey { case locationCode, skoCode, skoName, counted, quantity }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            locationCode = container.offlineString(.locationCode)
+            skoCode = container.offlineString(.skoCode)
+            skoName = container.offlineString(.skoName)
+            counted = container.offlineDouble(.counted)
+            quantity = container.offlineDouble(.quantity)
+        }
+    }
+
+    struct Item: Decodable, Hashable, Sendable {
+        struct Quantities: Decodable, Hashable, Sendable {
+            var required: Double?
+            var picked: Double?
+            var notPicked: Double?
+            var packed: Double?
+            var stockNow: Double?
+
+            private enum CodingKeys: String, CodingKey { case required, picked, notPicked, packed, stockNow }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                required = container.offlineDouble(.required)
+                picked = container.offlineDouble(.picked)
+                notPicked = container.offlineDouble(.notPicked)
+                packed = container.offlineDouble(.packed)
+                stockNow = container.offlineDouble(.stockNow)
+            }
+        }
+
+        var skoCode: String?
+        var skoName: String?
+        var imageUrl: String?
+        var packedIn: Double?
+        var recordType: String?
+        var recordReference: String?
+        var line: Int?
+        var quantities: Quantities?
+
+        private enum CodingKeys: String, CodingKey { case skoCode, skoName, imageUrl, packedIn, recordType, recordReference, line, quantities }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            skoCode = container.offlineString(.skoCode)
+            skoName = container.offlineString(.skoName)
+            imageUrl = container.offlineString(.imageUrl)
+            packedIn = container.offlineDouble(.packedIn)
+            recordType = container.offlineString(.recordType)
+            recordReference = container.offlineString(.recordReference)
+            line = container.offlineInt(.line)
+            quantities = try? container.decodeIfPresent(Quantities.self, forKey: .quantities)
+        }
     }
 
     struct Person: Decodable, Hashable, Sendable {
@@ -137,6 +194,7 @@ struct OfflineOperationEntry: Decodable, Identifiable, Hashable, Sendable {
     var resolutions: [String] = []
     var canRollback = false
     var countedRows: [CountedRow] = []
+    var item: Item?
 
     var id: Int { key ?? sequence ?? 0 }
 
@@ -178,7 +236,7 @@ struct OfflineOperationEntry: Decodable, Identifiable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case sequence, status, operationId, id, operation, reason, instruction, message, requestedQuantity, appliedQuantity
         case countedSince, taskReference, conflictingUser, blockedBySequence, performedAt, syncedAt, state, resolution
-        case labels, record, resolutions, canRollback, countedRows
+        case labels, record, resolutions, canRollback, countedRows, item
     }
 
     init(from decoder: Decoder) throws {
@@ -206,6 +264,7 @@ struct OfflineOperationEntry: Decodable, Identifiable, Hashable, Sendable {
         resolutions = ((try? container.decodeIfPresent([String].self, forKey: .resolutions)) ?? nil) ?? []
         canRollback = (try? container.decodeIfPresent(Bool.self, forKey: .canRollback)) ?? false
         countedRows = ((try? container.decodeIfPresent([CountedRow].self, forKey: .countedRows)) ?? nil) ?? []
+        item = try? container.decodeIfPresent(Item.self, forKey: .item)
     }
 
     static func == (lhs: OfflineOperationEntry, rhs: OfflineOperationEntry) -> Bool {

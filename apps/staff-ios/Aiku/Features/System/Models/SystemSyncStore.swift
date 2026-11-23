@@ -140,7 +140,9 @@ final class SystemSyncStore {
     private func rememberTitles(_ entries: [OfflineOperationEntry]) {
         for entry in entries {
             guard let record = entry.record?.key else { continue }
-            let title = entry.labels.title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces) ?? ""
+            let title = ConflictDetails.recordReference(entry)
+                ?? entry.labels.title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces)
+                ?? ""
             if !title.isEmpty, titles[record] == nil {
                 titles[record] = title
             }

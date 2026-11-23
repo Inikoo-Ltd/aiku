@@ -23,4 +23,15 @@ struct StockFractionTests {
         #expect(StockFraction.total(1.0005) == 1.001)
         #expect(StockFraction.label(100.5, packedIn: nil) == "100 1/2")
     }
+
+    @Test("Labels are drawn like the web's FractionDisplay")
+    func glyphs() {
+        #expect(FractionGlyphs.apply("2 76/83") == "2\u{202F}⁷⁶⁄₈₃")
+        #expect(FractionGlyphs.apply("3/4") == "³⁄₄")
+        #expect(FractionGlyphs.apply("-1 1/2") == "-1\u{202F}¹⁄₂")
+        #expect(FractionGlyphs.apply("12") == "12")
+        #expect(FractionGlyphs.apply("40.5") == "40.5")
+        #expect(FractionGlyphs.apply("2026/27/1") == "2026/27/1")
+        #expect(FractionGlyphs.apply("Picked 2 7/8 of 3") == "Picked 2\u{202F}⁷⁄₈ of 3")
+    }
 }

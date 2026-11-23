@@ -25,36 +25,14 @@ struct SystemConflictsView: View {
             } else {
                 HelperText("These actions done offline could not be recorded exactly as you did them. Do what each one says, then mark it.")
                 CardList(store.openOperations) { entry in
-                    ListRow(
-                        entry.labels.title.isEmpty ? entry.operationLabel : entry.labels.title,
-                        subtitle: OfflineTexts.instruction(entry) ?? OfflineTexts.reason(entry.reason) ?? entry.labels.subtitle,
-                        icon: entry.offlineOperation?.icon ?? .sync,
-                        iconTone: .warn,
-                        chips: [OfflineTexts.state(entry)].compactMap { $0 },
-                        showsChevron: true
-                    ) {
-                        if let key = entry.key {
-                            router.open(SystemRoute.conflict(reference: String(key)))
-                        }
-                    }
+                    operationRow(entry, note: OfflineTexts.instruction(entry) ?? OfflineTexts.reason(entry.reason), iconTone: .warn, showsChevron: true)
                 }
             }
             let settled = store.recentOperations.filter { !$0.isOpen }
             if !settled.isEmpty {
                 SectionHeading("Recent")
                 CardList(settled) { entry in
-                    ListRow(
-                        entry.labels.title.isEmpty ? entry.operationLabel : entry.labels.title,
-                        subtitle: entry.labels.subtitle,
-                        icon: entry.offlineOperation?.icon ?? .sync,
-                        iconTone: .neutral,
-                        chips: [OfflineTexts.state(entry)].compactMap { $0 },
-                        showsChevron: entry.canRollback
-                    ) {
-                        if let key = entry.key {
-                            router.open(SystemRoute.conflict(reference: String(key)))
-                        }
-                    }
+                    operationRow(entry, note: nil, iconTone: .neutral, showsChevron: entry.canRollback)
                 }
             }
         }
@@ -63,6 +41,29 @@ struct SystemConflictsView: View {
         }
         .task(id: offline.needsYouCount) {
             await store.load()
+        }
+    }
+
+    private func operationRow(_ entry: OfflineOperationEntry, note: String?, iconTone: Tone, showsChevron: Bool) -> some View {
+        let summary = ConflictDetails.summary(entry, lineWord: L10n.text("Line"))
+        let itemText = summary.itemText
+        return ListRow(
+            summary.record ?? entry.operationLabel,
+            subtitle: note ?? (itemText == nil ? entry.labels.subtitle : nil),
+            detail: itemText.map { Text(verbatim: $0) },
+            chips: [OfflineTexts.state(entry)].compactMap { $0 },
+            showsChevron: showsChevron,
+            action: { open(entry) }
+        ) {
+            IconTile(entry.offlineOperation?.icon ?? .sync, tone: iconTone)
+        } trailing: {
+            EmptyView()
+        }
+    }
+
+    private func open(_ entry: OfflineOperationEntry) {
+        if let key = entry.key {
+            router.open(SystemRoute.conflict(reference: String(key)))
         }
     }
 }

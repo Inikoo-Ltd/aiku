@@ -61,7 +61,7 @@ enum InventoryLive {
 
     static func quantityText(_ value: Double?, label: String?) -> String {
         if let label = label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
-            return label
+            return FractionGlyphs.apply(label)
         }
         guard let value else { return "0" }
         return value.formatted(.number.precision(.fractionLength(0...3)).locale(Locale(identifier: "en_GB")))
@@ -140,7 +140,7 @@ enum InventoryLive {
             locationOrgStockID: linkID,
             code: place.code,
             quantityText: quantity.map { value in
-                let magnitude = label ?? plainQuantityText(abs(value))
+                let magnitude = label.map { FractionGlyphs.apply($0) } ?? plainQuantityText(abs(value))
                 return value < 0 ? "−\(magnitude)" : magnitude
             },
             isNegative: (quantity ?? 0) < 0
@@ -155,12 +155,7 @@ enum InventoryLive {
         let minimum = link.minStock?.value.map { quantityText($0, label: nil) }
         let maximum = link.maxStock?.value.map { quantityText($0, label: nil) }
         let replenish = link.replenishmentStock?.value.map { quantityText($0, label: nil) }
-        switch (minimum, maximum) {
-        case let (min?, max?): return "min \(min) · max \(max)"
-        case let (min?, nil): return "min \(min)"
-        case let (nil, max?): return "max \(max)"
-        default: return replenish.map { "replenish \($0)" }
-        }
+        return InventorySkoLocation.levels(minimum: minimum, maximum: maximum, replenish: replenish)
     }
 
     static func location(_ link: MobileOrgStockDetail.Link) -> InventorySkoLocation {
@@ -174,7 +169,7 @@ enum InventoryLive {
             minimum: link.minStock?.value.map(wholeQuantity),
             maximum: link.maxStock?.value.map(wholeQuantity),
             replenish: link.replenishmentStock?.value.map(wholeQuantity),
-            lastAudited: dayText(link.auditedAt),
+            lastAudited: ListDates.recordDate(link.auditedAt),
             link: InventoryLocationLink(
                 linkID: link.locationOrgStockId,
                 locationID: link.location.id,
@@ -222,7 +217,9 @@ enum InventoryLive {
                 stockIsNegative: stock < 0,
                 reservedLabel: quantityText(remote.quantityReserved?.value, label: remote.quantityReservedLabel),
                 toBePickedLabel: quantityText(remote.quantityToBePicked?.value, label: remote.quantityToBePickedLabel),
-                canEditStocks: remote.can?.editStocks ?? fallback
+                canEditStocks: remote.can?.editStocks ?? fallback,
+                stockQuantity: stock,
+                packedIn: remote.packedIn?.value
             )
         )
     }

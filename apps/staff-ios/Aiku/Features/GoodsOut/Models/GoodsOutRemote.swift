@@ -392,7 +392,7 @@ enum GoodsOutMapper {
                 kind: location.type.map { $0.capitalized } ?? "",
                 stock: Int((location.stock ?? 0).rounded(.down)),
                 locationOrgStockID: location.locationOrgStockId,
-                stockLabel: location.stockLabel
+                stockLabel: FractionGlyphs.apply(location.stockLabel)
             )
         }
         let pickings = (dto.pickings ?? []).map { picking in
@@ -680,9 +680,9 @@ extension GoodsOutMapper {
             quantityPicked: dto.quantityPicked ?? 0,
             quantityPacked: dto.quantityPacked ?? 0,
             quantityToPack: dto.quantityToPack ?? 0,
-            pickedLabel: nonEmpty(dto.quantityPickedLabel),
-            packedLabel: nonEmpty(dto.quantityPackedLabel),
-            toPackLabel: nonEmpty(dto.quantityToPackLabel),
+            pickedLabel: FractionGlyphs.apply(nonEmpty(dto.quantityPickedLabel)),
+            packedLabel: FractionGlyphs.apply(nonEmpty(dto.quantityPackedLabel)),
+            toPackLabel: FractionGlyphs.apply(nonEmpty(dto.quantityToPackLabel)),
             isDonePacking: (dto.isDonePacking ?? false) || (dto.isPacked ?? false),
             boxes: (dto.boxes ?? []).map { GoodsOutLineBox(box: $0.box, quantity: $0.quantity ?? 0) },
             noteToPackers: dto.noteToPackers?.text
