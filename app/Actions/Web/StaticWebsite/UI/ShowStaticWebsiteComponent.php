@@ -46,7 +46,7 @@ class ShowStaticWebsiteComponent extends OrgAction
                 'title'       => $label.' · '.$staticWebsite->name,
                 'breadcrumbs' => ShowStaticWebsite::make()->getBreadcrumbs(
                     $staticWebsite,
-                    ['route' => ['name' => 'grp.marketing.info_websites.show', 'parameters' => [$staticWebsite->slug, 'tab' => StaticWebsiteTabsEnum::COMPONENTS->value]], 'label' => __('Shared parts')],
+                    ['route' => ['name' => 'grp.marketing.info_websites.show', 'parameters' => ['staticWebsite' => $staticWebsite->slug, 'tab' => StaticWebsiteTabsEnum::COMPONENTS->value]], 'label' => __('Shared parts')],
                     ['route' => ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $component->code]], 'label' => $label],
                 ),
                 'pageHead'    => [

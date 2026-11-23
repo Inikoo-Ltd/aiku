@@ -28,6 +28,7 @@ type SourceReport = {
 const props = defineProps<{
 	report?: Partial<Record<Source, SourceReport>> | null
 	embedded?: boolean
+	dataSources?: Source[]
 }>()
 
 const ratingColor = { good: "#0CCE6B", needs_improvement: "#FFA400", poor: "#FF4E42" }
@@ -52,10 +53,12 @@ const formFactors: Array<{ key: FormFactor; label: string; icon: typeof faDeskto
 	{ key: "all", label: ctrans("All devices"), icon: faGlobe },
 ]
 
-const sources: Array<{ key: Source; label: string }> = [
+const allSources: Array<{ key: Source; label: string }> = [
 	{ key: "crux", label: ctrans("Google") },
 	{ key: "visitors", label: ctrans("Our visitors") },
 ]
+
+const sources = allSources.filter((option) => !props.dataSources || props.dataSources.includes(option.key))
 
 const source = ref<Source>("crux")
 
@@ -241,7 +244,7 @@ const chartOptions = computed(() => ({
 		<div class="flex flex-wrap items-center gap-3 border-b px-6 py-3">
 			<span class="text-sm font-semibold">{{ ctrans("Real user speed") }}</span>
 
-			<SegmentedToggle v-model="source" :options="sourceOptions" :aria-label="ctrans('Data source')" />
+			<SegmentedToggle v-if="sourceOptions.length > 1" v-model="source" :options="sourceOptions" :aria-label="ctrans('Data source')" />
 
 			<SegmentedToggle v-if="availableFormFactors.length > 1" v-model="formFactor" :options="formFactorOptions" :aria-label="ctrans('Device')" />
 
@@ -258,7 +261,9 @@ const chartOptions = computed(() => ({
 		<div v-else-if="!current?.scope" class="px-6 py-6 text-sm text-gray-600">
 			{{
 				source === "crux"
-					? ctrans("Google does not have enough visits from Chrome users here to report it. It needs enough visits over 28 days. See Our visitors.")
+					? sourceOptions.length > 1
+						? ctrans("Google does not have enough visits from Chrome users here to report it. It needs enough visits over 28 days. See Our visitors.")
+						: ctrans("Google does not have enough visits from Chrome users here to report it. It needs enough visits over 28 days.")
 					: ctrans("Not enough measured page loads yet. A week is shown once :count page loads have been measured.", { count: 5 })
 			}}
 		</div>

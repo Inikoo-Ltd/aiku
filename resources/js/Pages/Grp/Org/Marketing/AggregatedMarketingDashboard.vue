@@ -8,14 +8,11 @@
 import { computed, ref } from 'vue'
 import { Deferred, Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import Tabs from '@/Components/Navigation/Tabs.vue'
-import TableStaticWebsites from '@/Components/Tables/Grp/Org/Web/TableStaticWebsites.vue'
-import { useCurrentTab, useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faChevronRight, faChevronUp, faGlobe, faHashtag, faTachometerAltFast } from '@fal'
+import { faChevronDown, faChevronRight, faChevronUp, faHashtag } from '@fal'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -30,11 +27,6 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     intervals: Intervals
     settings: Settings
-    tabs: {
-        current: string
-        navigation: object
-    }
-    info_websites?: object
     overview?: {
         scope: 'group' | 'organisation'
         children_label: string
@@ -123,8 +115,6 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const currentTab = useCurrentTab(props.tabs.current)
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, ['overview'])
 
 const money =(value: number) => locale.currencyFormat(props.overview?.currency_code ?? '', value)
 /* A column with one fractional figure in it carries the decimals on every figure: 2 beside 34.83
@@ -187,7 +177,7 @@ const toggleGroup = (key: string) => {
     }
     closedGroups.value = { ...closedGroups.value, [key]: !closedGroups.value[key] }
 }
-library.add(faChevronDown, faChevronRight, faChevronUp, faGlobe, faHashtag, faTachometerAltFast)
+library.add(faChevronDown, faChevronRight, faChevronUp, faHashtag)
 const chevron = (key: string) => isOpen(key) ? 'fal fa-chevron-down' : 'fal fa-chevron-right'
 
 const groupedChannels = computed(() => {
@@ -377,13 +367,6 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
             </Link>
         </template>
     </PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
-    <div v-if="currentTab === 'info_websites'" class="px-4">
-        <TableStaticWebsites v-if="info_websites" :data="info_websites" tab="info_websites" />
-    </div>
-
-    <template v-else>
     <div class="pt-3">
         <DashboardSettings
             :intervals="intervals"
@@ -928,5 +911,4 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
         </div>
         </Deferred>
     </div>
-    </template>
 </template>

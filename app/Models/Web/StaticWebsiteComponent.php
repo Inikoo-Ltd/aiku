@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Models\Traits\BansStaticWebsitePagesFromVarnish;
 use App\Models\Traits\HasStaticWebsiteSnapshots;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class StaticWebsiteComponent extends Model
 {
+    use BansStaticWebsitePagesFromVarnish;
     use HasStaticWebsiteSnapshots;
 
     public const string CODE_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
@@ -78,6 +80,14 @@ class StaticWebsiteComponent extends Model
     public function staticWebsite(): BelongsTo
     {
         return $this->belongsTo(StaticWebsite::class);
+    }
+
+    /**
+     * Every page may hold the part's marker, so a change to it makes the whole site stale.
+     */
+    public function stalePaths(): ?array
+    {
+        return null;
     }
 
     public function wasEditedAfterImport(): bool

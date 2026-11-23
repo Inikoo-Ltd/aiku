@@ -1543,6 +1543,8 @@ Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
 });
 
 Route::post('static-website-snapshot/{snapshot:id}/restore', App\Actions\Web\StaticWebsite\RestoreStaticWebsiteSnapshot::class)->name('static_website_snapshot.restore');
+Route::post('static-website/{staticWebsite:id}/break-cache', App\Actions\Web\StaticWebsite\BreakStaticWebsiteCache::class)->name('static_website.break_cache')->withoutScopedBindings();
+Route::post('static-webpage/{webpage:id}/break-cache', [App\Actions\Web\StaticWebsite\BreakStaticWebsiteCache::class, 'inWebpage'])->name('static_webpage.break_cache')->withoutScopedBindings();
 
 Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('publish', PublishBanner::class)->name('publish');

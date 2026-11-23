@@ -4907,7 +4907,7 @@ describe('info websites on the aggregated marketing dashboard', function () {
         ]);
     })->throws(Illuminate\Validation\ValidationException::class);
 
-    it('lists the info websites with their page count on the info websites tab', function () {
+    it('lists the info websites with their page count on their own page', function () {
         $staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
             'domain' => $this->infoDomain,
             'name'   => 'Freedom Fund',
@@ -4917,15 +4917,12 @@ describe('info websites on the aggregated marketing dashboard', function () {
             ['path' => '/our-story', 'title' => 'Our story'],
         ]);
 
-        $response = Pest\Laravel\get(route('grp.marketing.dashboard', ['tab' => 'info_websites']));
+        $response = Pest\Laravel\get(route('grp.marketing.info_websites.index'));
 
         $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
-            ->component('Org/Marketing/AggregatedMarketingDashboard')
-            ->where('tabs.current', 'info_websites')
-            ->has('tabs.navigation.overview')
-            ->has('tabs.navigation.info_websites')
-            ->missing('overview')
-            ->where('info_websites.data', fn ($rows) => collect($rows)->contains(
+            ->component('Org/Marketing/StaticWebsites')
+            ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['simple']['route']['name'] === 'grp.marketing.info_websites.index')
+            ->where('data.data', fn ($rows) => collect($rows)->contains(
                 fn ($row) => $row['domain'] === $this->infoDomain
                     && $row['webpages_count'] === 2
                     && $row['url'] === 'https://www.'.$this->infoDomain
@@ -4935,17 +4932,26 @@ describe('info websites on the aggregated marketing dashboard', function () {
             ->etc());
     });
 
-    it('opens the organisation dashboard on the overview, still deferred, without loading the info websites', function () {
-        $response = Pest\Laravel\get(route('grp.org.marketing.dashboard', [$this->organisation->slug]));
+    it('opens the group and organisation dashboards on the deferred overview, without tabs', function () {
+        foreach ([route('grp.marketing.dashboard'), route('grp.org.marketing.dashboard', [$this->organisation->slug])] as $url) {
+            $response = Pest\Laravel\get($url);
 
-        $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
-            ->component('Org/Marketing/AggregatedMarketingDashboard')
-            ->where('tabs.current', 'overview')
-            ->has('tabs.navigation.info_websites')
-            ->missing('info_websites')
-            ->etc());
+            $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Org/Marketing/AggregatedMarketingDashboard')
+                ->missing('tabs')
+                ->missing('info_websites')
+                ->etc());
 
-        expect(collect($response->original->getData()['page']['deferredProps'] ?? [])->flatten()->all())->toContain('overview');
+            expect(collect($response->original->getData()['page']['deferredProps'] ?? [])->flatten()->all())->toContain('overview');
+        }
+    });
+
+    it('puts the group marketing dashboard and the info websites in the top menu of group marketing', function () {
+        $subSections = collect(App\Actions\UI\Grp\Layout\GetGroupNavigation::run($this->user)['marketing']['topMenu']['subSections']);
+
+        expect($subSections->pluck('route.name')->all())->toBe(['grp.marketing.dashboard', 'grp.marketing.info_websites.index'])
+            ->and($subSections->pluck('icon')->all())->toBe([['fal', 'fa-bullhorn'], ['fal', 'fa-globe']])
+            ->and($subSections->first()['roots'])->toContain('grp.marketing.social_media.');
     });
 });
 
@@ -5340,6 +5346,9 @@ describe('browsing and restoring an info website', function () {
             ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
                 ->component('Org/Marketing/StaticWebsitePart')
                 ->has('snapshots.data', 1)
+                ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->contains(
+                    fn ($breadcrumb) => ($breadcrumb['simple']['route']['parameters'] ?? null) == ['staticWebsite' => $this->staticWebsite->slug, 'tab' => 'components']
+                ))
                 ->etc());
     });
 
@@ -5364,6 +5373,225 @@ describe('browsing and restoring an info website', function () {
 
         $response->assertOk()->assertSee('<nav>Menu</nav>', false)->assertDontSee('New menu')->assertSee('First words');
         expect($response->headers->get('Content-Security-Policy'))->toStartWith('sandbox');
+    });
+
+    it('shows the storefront, header and footer shortcuts, the counts on the tabs and the page speed deferred on the overview', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        $response = Pest\Laravel\get(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug]));
+
+        $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Org/Marketing/StaticWebsite')
+            ->where('showcase.url', 'https://www.'.$this->staticWebsite->domain)
+            ->where('showcase.route_storefront.name', 'grp.marketing.info_websites.webpages.show')
+            ->where('showcase.route_storefront.parameters', [$this->staticWebsite->slug, $this->home->id])
+            ->where('showcase.route_header.parameters', [$this->staticWebsite->slug, 'header'])
+            ->where('showcase.route_footer', null)
+            ->where('showcase.can_edit', true)
+            ->where('tabs.navigation.webpages.number', 1)
+            ->where('tabs.navigation.components.number', 1)
+            ->where('tabs.navigation.snapshots.number', 2)
+            ->missing('tabs.navigation.showcase.number')
+            ->missing('real_user_speed_history')
+            ->etc());
+
+        expect(collect($response->original->getData()['page']['deferredProps'] ?? [])->flatten()->all())->toContain('real_user_speed_history');
+    });
+
+    it('bans every page of the info website and its robots and sitemap from each varnish host', function () {
+        Pest\Laravel\actingAs($this->user);
+        $this->staticWebsite->webpages()->create(['path' => '/our story', 'title' => 'Our story']);
+
+        config()->set('iris.cache.varnish', true);
+        config()->set('iris.cache.varnish_hosts', ['http://varnish-a.test', 'http://varnish-b.test']);
+        Illuminate\Support\Facades\Http::fake();
+
+        Pest\Laravel\from(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug]))
+            ->post(route('grp.models.static_website.break_cache', [$this->staticWebsite->id]))
+            ->assertRedirect(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug]));
+
+        $bans = collect(Illuminate\Support\Facades\Http::recorded())->map(fn ($pair) => [
+            'host'  => $pair[0]->url(),
+            'ban'   => $pair[0]->method(),
+            'page'  => $pair[0]->header('x-ban-host')[0].$pair[0]->header('x-ban-url')[0],
+        ]);
+
+        $domain = 'www.'.$this->staticWebsite->domain;
+
+        expect($bans->pluck('ban')->unique()->all())->toBe(['BAN'])
+            ->and($bans->where('host', 'http://varnish-a.test')->pluck('page')->sort()->values()->all())->toBe([
+                "$domain/",
+                "$domain/our%20story",
+                "$domain/robots.txt",
+                "$domain/sitemap.xml",
+            ])
+            ->and($bans->where('host', 'http://varnish-b.test'))->toHaveCount(4);
+    });
+
+    it('bans the pages a change makes stale from varnish once the change is committed', function () {
+        config()->set('iris.cache.varnish', true);
+        config()->set('iris.cache.varnish_hosts', ['http://varnish-a.test']);
+        Illuminate\Support\Facades\Http::fake();
+
+        $domain   = 'www.'.$this->staticWebsite->domain;
+        $recorded = 0;
+        $bans     = function () use (&$recorded) {
+            $requests = Illuminate\Support\Facades\Http::recorded();
+            $banned   = collect($requests)->slice($recorded)->map(fn ($pair) => $pair[0]->header('x-ban-host')[0].$pair[0]->header('x-ban-url')[0])->sort()->values()->all();
+            $recorded = count($requests);
+
+            return $banned;
+        };
+
+        $this->home->update(['html' => str_replace('First words', 'New words', $this->home->html)]);
+        expect($bans())->toBe(["$domain/", "$domain/sitemap.xml"]);
+
+        $this->home->update(['html' => $this->home->html, 'title' => 'Only the title']);
+        expect($bans())->toBe([]);
+
+        $story = $this->staticWebsite->webpages()->create(['path' => '/story', 'title' => 'Story', 'html' => '<p>Story</p>']);
+        expect($bans())->toBe(["$domain/sitemap.xml", "$domain/story"]);
+
+        $story->update(['path' => '/our-story']);
+        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml", "$domain/story"]);
+
+        $story->delete();
+        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml"]);
+
+        $this->header->update(['html' => '<nav>New menu</nav>']);
+        expect($bans())->toBe(["$domain/", "$domain/robots.txt", "$domain/sitemap.xml"]);
+
+        $this->home->getConnection()->transaction(function () use ($bans) {
+            $this->home->update(['html' => '<p>Inside a transaction</p>']);
+
+            expect($bans())->toBe([]);
+        });
+        expect($bans())->toBe(["$domain/", "$domain/sitemap.xml"]);
+    });
+
+    it('shows a webpage on a showcase with its preview, its search and sharing tags and its page speed deferred', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        $this->home->update(['html' => '<!DOCTYPE html><html><head><title>Nomad home</title>'
+            .'<meta name="description" content="Travel clothing">'
+            .'<meta name="robots" content="noindex">'
+            .'<link rel="canonical" href="https://www.example.com/">'
+            .'<link rel="alternate" hreflang="de" href="https://www.example.de/">'
+            .'<meta property="og:title" content="Nomad on the road">'
+            .'<meta property="og:image" content="https://www.example.com/_assets/share.webp">'
+            .'<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization"},{"@type":"WebSite"}]}</script>'
+            .'</head><body><h1>First words</h1></body></html>']);
+
+        $response = Pest\Laravel\get(route('grp.marketing.info_websites.webpages.show', [$this->staticWebsite->slug, $this->home->id]));
+
+        $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Org/Marketing/StaticWebsitePart')
+            ->where('tabs.navigation.showcase.title', 'Showcase')
+            ->where('showcase.preview_url', route('grp.marketing.info_websites.preview', [$this->staticWebsite->slug, '']))
+            ->where('showcase.domain', 'www.'.$this->staticWebsite->domain)
+            ->where('showcase.can_edit', true)
+            ->where('showcase.seo.title', 'Nomad home')
+            ->where('showcase.seo.page_title', 'Nomad on the road')
+            ->where('showcase.seo.description', 'Travel clothing')
+            ->where('showcase.seo.canonical_url', 'https://www.example.com/')
+            ->where('showcase.seo.robots', 'noindex, follow')
+            ->where('showcase.seo.index_page', false)
+            ->where('showcase.seo.share_image.url', 'https://www.example.com/_assets/share.webp')
+            ->where('showcase.seo.structured_data_types', ['Organization', 'WebSite'])
+            ->where('showcase.seo.hreflang', [['hreflang' => 'de', 'href' => 'https://www.example.de/']])
+            ->missing('showcase.seo.breadcrumb_label')
+            ->missing('real_user_speed')
+            ->etc());
+
+        expect(collect($response->original->getData()['page']['deferredProps'] ?? [])->flatten()->all())->toContain('real_user_speed');
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.components.show', [$this->staticWebsite->slug, 'header']))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->where('tabs.navigation.showcase.title', 'Overview')
+                ->missing('showcase.seo')
+                ->etc());
+    });
+
+    it('breaks the cache of one info webpage only', function () {
+        Pest\Laravel\actingAs($this->user);
+        config()->set('iris.cache.varnish', true);
+        config()->set('iris.cache.varnish_hosts', ['http://varnish-a.test']);
+        Illuminate\Support\Facades\Http::fake();
+
+        Pest\Laravel\post(route('grp.models.static_webpage.break_cache', [$this->home->id]))->assertRedirect();
+
+        $domain = 'www.'.$this->staticWebsite->domain;
+
+        expect(collect(Illuminate\Support\Facades\Http::recorded())->map(fn ($pair) => $pair[0]->header('x-ban-host')[0].$pair[0]->header('x-ban-url')[0])->sort()->values()->all())
+            ->toBe(["$domain/", "$domain/sitemap.xml"]);
+    });
+
+    it('reads the real user speed of one info webpage from the chrome ux report, and none when google has no visits for it', function () {
+        config()->set('app.analytics.google.crux_api_key', 'test-key');
+        $this->staticWebsite->update(['domain' => 'crux-page-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(8)).'.com']);
+        $story = $this->staticWebsite->webpages()->create(['path' => '/our-story', 'title' => 'Story', 'html' => '<p>Story</p>']);
+        foreach ([$this->home, $story] as $webpage) {
+            Illuminate\Support\Facades\Cache::forget(App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::cacheKey($this->staticWebsite, $webpage));
+        }
+
+        $storyUrl = 'https://www.'.$this->staticWebsite->domain.'/our-story';
+        $record   = [
+            'metrics'           => ['largest_contentful_paint' => ['percentilesTimeseries' => ['p75s' => [1700]]]],
+            'collectionPeriods' => [['firstDate' => ['year' => 2026, 'month' => 10, 'day' => 25], 'lastDate' => ['year' => 2026, 'month' => 11, 'day' => 21]]],
+        ];
+
+        Illuminate\Support\Facades\Http::fake(fn (Illuminate\Http\Client\Request $request) => ($request->data()['url'] ?? null) === $storyUrl
+            ? Illuminate\Support\Facades\Http::response(['record' => $record])
+            : Illuminate\Support\Facades\Http::response(['error' => ['code' => 404]], 404));
+
+        $storyReport = App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::run($this->staticWebsite, $story);
+        $homeReport  = App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::run($this->staticWebsite, $this->home);
+
+        expect($storyReport['scope'])->toBe('page')
+            ->and($storyReport['url'])->toBe($storyUrl)
+            ->and($storyReport['history']['all'][0]['lcp'])->toBe(1700)
+            ->and($homeReport['scope'])->toBeNull()
+            ->and($homeReport['url'])->toBe('https://www.'.$this->staticWebsite->domain.'/')
+            ->and(collect(Illuminate\Support\Facades\Http::recorded())->every(fn ($pair) => isset($pair[0]->data()['url']) && !isset($pair[0]->data()['origin'])))->toBeTrue();
+    });
+
+    it('reads the real user speed of the whole info website domain from the chrome ux report once a day', function () {
+        config()->set('app.analytics.google.crux_api_key', 'test-key');
+        $this->staticWebsite->update(['domain' => 'crux-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(8)).'.com']);
+        Illuminate\Support\Facades\Cache::forget(App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::cacheKey($this->staticWebsite));
+
+        $origin = 'https://www.'.$this->staticWebsite->domain;
+        $record = [
+            'metrics'           => [
+                'largest_contentful_paint' => ['percentilesTimeseries' => ['p75s' => [2100, 1900]]],
+                'cumulative_layout_shift'  => ['percentilesTimeseries' => ['p75s' => [null, '0.04']]],
+            ],
+            'collectionPeriods' => [
+                ['firstDate' => ['year' => 2026, 'month' => 10, 'day' => 18], 'lastDate' => ['year' => 2026, 'month' => 11, 'day' => 14]],
+                ['firstDate' => ['year' => 2026, 'month' => 10, 'day' => 25], 'lastDate' => ['year' => 2026, 'month' => 11, 'day' => 21]],
+            ],
+        ];
+
+        Illuminate\Support\Facades\Http::fake(fn (Illuminate\Http\Client\Request $request) => ($request->data()['formFactor'] ?? null) === 'PHONE'
+            ? Illuminate\Support\Facades\Http::response(['error' => ['code' => 404]], 404)
+            : Illuminate\Support\Facades\Http::response(['record' => $record]));
+
+        $report = App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::run($this->staticWebsite);
+
+        expect($report['scope'])->toBe('website')
+            ->and($report['url'])->toBe($origin)
+            ->and(array_keys($report['history']))->toBe(['all', 'desktop'])
+            ->and(end($report['history']['desktop']))->toMatchArray(['period_end' => '2026-11-21', 'lcp' => 1900, 'cls' => 0.04, 'inp' => null])
+            ->and(collect(Illuminate\Support\Facades\Http::recorded())->map(fn ($pair) => $pair[0]->data()['origin'])->unique()->all())->toBe([$origin]);
+
+        $callsBefore = count(Illuminate\Support\Facades\Http::recorded());
+
+        expect(App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::run($this->staticWebsite))->toBe($report)
+            ->and(count(Illuminate\Support\Facades\Http::recorded()))->toBe($callsBefore);
+
+        $this->staticWebsite->update(['domain' => 'local-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(8)).'.test']);
+
+        expect(App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport::run($this->staticWebsite))->toBe(['scope' => null, 'url' => null, 'history' => []]);
     });
 });
 

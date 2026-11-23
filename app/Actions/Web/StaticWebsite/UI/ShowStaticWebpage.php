@@ -9,6 +9,8 @@
 namespace App\Actions\Web\StaticWebsite\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\StaticWebsite\GetStaticWebpageSeo;
+use App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport;
 use App\Enums\UI\Web\StaticWebsitePartTabsEnum;
 use App\Http\Resources\Web\StaticWebsiteSnapshotsResource;
 use App\Models\Web\StaticWebpage;
@@ -64,11 +66,22 @@ class ShowStaticWebpage extends OrgAction
                 'can_restore' => $request->user()->authTo('group-webmaster.edit'),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => StaticWebsitePartTabsEnum::navigation(),
+                    'navigation' => $this->tabsNavigation(),
                 ],
+
+                'real_user_speed' => $this->tab === StaticWebsitePartTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => ['crux' => GetStaticWebsiteCruxReport::run($staticWebsite, $webpage)], 'real_user_speed')
+                    : null,
 
                 StaticWebsitePartTabsEnum::SHOWCASE->value => $this->tab === StaticWebsitePartTabsEnum::SHOWCASE->value
                     ? fn () => [
+                        'id'           => $webpage->id,
+                        'path'         => $webpage->path,
+                        'title'        => $webpage->title,
+                        'domain'       => 'www.'.$staticWebsite->domain,
+                        'preview_url'  => route('grp.marketing.info_websites.preview', [$staticWebsite->slug, ltrim($webpage->path, '/')]),
+                        'can_edit'     => $request->user()->authTo('group-webmaster.edit'),
+                        'seo'          => GetStaticWebpageSeo::run($webpage),
                         'details'      => [
                             ['label' => __('Path'), 'value' => $webpage->path, 'code' => true],
                             ['label' => __('Title'), 'value' => $webpage->title],
@@ -85,5 +98,18 @@ class ShowStaticWebpage extends OrgAction
                 StaticWebsitePartTabsEnum::SNAPSHOTS->value => $this->tab === StaticWebsitePartTabsEnum::SNAPSHOTS->value ? $snapshots : Inertia::optional($snapshots),
             ]
         )->table(IndexStaticWebsiteSnapshots::make()->tableStructure(withPart: false, prefix: StaticWebsitePartTabsEnum::SNAPSHOTS->value));
+    }
+
+    /**
+     * A page opens on its showcase, named and marked as on the shop webpages; a shared part keeps its overview.
+     */
+    private function tabsNavigation(): array
+    {
+        $navigation = StaticWebsitePartTabsEnum::navigation();
+
+        $navigation[StaticWebsitePartTabsEnum::SHOWCASE->value]['title'] = __('Showcase');
+        $navigation[StaticWebsitePartTabsEnum::SHOWCASE->value]['icon']  = 'fas fa-info-circle';
+
+        return $navigation;
     }
 }
