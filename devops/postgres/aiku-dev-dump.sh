@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # Smaller copy of the production database for developers' machines (INI-514).
-# The full aiku_latest.dump (44 GB) stays as it is; this one sits next to it as
-# aiku_dev.dump + aiku_dev_rows.sql.gz and is about half its size.
+# The full aiku_latest.dump (48 GB) stays as it is; this one is made after it as
+# aiku_dev.dump + aiku_dev_rows.sql.gz and is about 30 GB.
 #
 # What it leaves out (tables are kept, their rows are not):
 #   - logs and history: audits, request/job/visit logs, crawl and Search Console,
@@ -17,17 +17,19 @@
 #
 # Runs on boro as inikoo, after backup_aiku.sh, from the primary. Everything is
 # read in one snapshot, so the rows dumped separately match the rest of the dump.
+# It writes to boro's own disk, not the /sel storage box: large writes over CIFS
+# fail there with "Cannot allocate memory", and this copy is not a backup.
 #     install -m 755 devops/postgres/aiku-dev-dump.sh /usr/local/bin/aiku-dev-dump
 #     /etc/crontab:  30 3 * * * inikoo cd /home/inikoo; ./backup_aiku.sh; /usr/local/bin/aiku-dev-dump
 #
 # Developers download both files (rsync resumes a dropped connection, scp starts over):
-#     rsync -P --append-verify boro:/sel/aiku/aiku_dev.dump boro:/sel/aiku/aiku_dev_rows.sql.gz .
+#     rsync -P --append-verify boro:/home/inikoo/dev-dump/aiku_dev.dump boro:/home/inikoo/dev-dump/aiku_dev_rows.sql.gz .
 # and restore them with devops/postgres/restore-dev-dump.sh.
 #
 set -euo pipefail
 
 DB="${AIKU_DEV_DUMP_DB:-aiku}"
-OUT_DIR="${AIKU_DEV_DUMP_DIR:-/sel/aiku}"
+OUT_DIR="${AIKU_DEV_DUMP_DIR:-/home/inikoo/dev-dump}"
 DUMP="$OUT_DIR/aiku_dev.dump"
 ROWS="$OUT_DIR/aiku_dev_rows.sql.gz"
 
@@ -47,7 +49,7 @@ log(){ echo "[$(date +%T)] $*"; }
 
 sql_array(){ local out="" x; for x in "$@"; do out+="${out:+,}'$x'"; done; echo "ARRAY[$out]::text[]"; }
 
-mountpoint -q "${AIKU_DEV_DUMP_MOUNT:-/sel}" || { log "${AIKU_DEV_DUMP_MOUNT:-/sel} is not mounted"; exit 1; }
+mkdir -p "$OUT_DIR"
 
 cleanup(){ rm -f "$DUMP.tmp" "$ROWS.tmp"; }
 trap cleanup EXIT
