@@ -16,6 +16,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 
 trait WithProcurementSerialReferences
@@ -118,7 +119,7 @@ trait WithProcurementSerialReferences
     {
         $parentSerialReference = $this->parentSerialReference($parent, $model);
         $serialReference       = $parentSerialReference ?? $this->defaultSerialReference($parent, $model);
-        $suffix                = $this->organisationSuffix($parent, $model, $parentSerialReference);
+        $suffix                = $this->organisationSuffix($parent, $model, $this->isNumberedBySupplier($parent, $model) ? $serialReference : $parentSerialReference);
 
         $serial = $serialReference->serial;
         do {
@@ -129,15 +130,28 @@ trait WithProcurementSerialReferences
     }
 
     /**
-     * The agent sees every client's orders side by side, so an agent format that ends at the number (AWIndia%05d) gets the organisation code (AWIndia00095-ES).
+     * The agent, and a supplier without an agent, see every organisation's orders side by side, so a format that ends at the number
+     * (AWIndia%05d, PP-%04d) gets the organisation code (AWIndia00095-ES, PP-0014-ES).
      */
     private function organisationSuffix(OrgSupplier|OrgAgent|OrgPartner $parent, SerialReferenceModelEnum $model, ?SerialReference $serialReference): string
     {
-        if (!$parent instanceof OrgAgent || $model !== SerialReferenceModelEnum::PURCHASE_ORDER || !$serialReference || !preg_match('/%\d*d$/', $serialReference->format)) {
+        $isNumberedAcrossOrganisations = $parent instanceof OrgAgent || $this->isNumberedBySupplier($parent, $model);
+
+        if (!$isNumberedAcrossOrganisations || $model !== SerialReferenceModelEnum::PURCHASE_ORDER || !$serialReference || !preg_match('/%\d*d$/', $serialReference->format)) {
             return '';
         }
 
-        return '-'.strtoupper($this->referenceSafe($parent->organisation->code));
+        return '-'.$this->organisationReferenceLabel($parent->organisation);
+    }
+
+    /**
+     * Ancient Wisdom (GB) orders read UK, as the agents' own formats (AWIndo-%03d-UK) and the old Aurora references (PP-019_UK) do.
+     */
+    private function organisationReferenceLabel(Organisation $organisation): string
+    {
+        $code = strtoupper($this->referenceSafe($organisation->code));
+
+        return $organisation->country?->code === 'GB' && $code !== 'AROMA' ? 'UK' : $code;
     }
 
     private function procurementReferenceIsUsed(OrgSupplier|OrgAgent|OrgPartner $parent, SerialReferenceModelEnum $model, string $reference): bool
