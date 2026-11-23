@@ -57,7 +57,7 @@ class TrafficSourceCampaign extends Model implements Auditable
     protected array $auditEvents = [];
 
     protected $attributes = [
-        'state' => GoogleAdsCampaignStateEnum::PUBLISHED_PAUSED->value,
+        'state' => GoogleAdsCampaignStateEnum::NOT_SYNCED->value,
     ];
 
     protected function casts(): array

@@ -28,6 +28,7 @@ enum GoogleAdsCampaignStateEnum: string
     case IN_PROCESS = 'in_process';
     case PUBLISHED_PAUSED = 'published_paused';
     case PUBLISHED_SERVING = 'published_serving';
+    case NOT_SYNCED = 'not_synced';
 
     public static function labels(): array
     {
@@ -35,6 +36,7 @@ enum GoogleAdsCampaignStateEnum: string
             self::IN_PROCESS->value        => __('In process'),
             self::PUBLISHED_PAUSED->value  => __('Published, paused'),
             self::PUBLISHED_SERVING->value => __('Published, serving'),
+            self::NOT_SYNCED->value        => __('Not synced from Google'),
         ];
     }
 
@@ -44,6 +46,7 @@ enum GoogleAdsCampaignStateEnum: string
             self::IN_PROCESS->value        => ['icon' => 'fal fa-seedling', 'class' => 'text-indigo-500', 'tooltip' => __('In process, being written in Aiku and not at Google yet')],
             self::PUBLISHED_PAUSED->value  => ['icon' => 'fal fa-pause', 'class' => 'text-indigo-500', 'tooltip' => __('Created at Google and paused, spending nothing')],
             self::PUBLISHED_SERVING->value => ['icon' => 'fal fa-paper-plane', 'class' => 'text-green-600', 'tooltip' => __('Running at Google')],
+            self::NOT_SYNCED->value        => ['icon' => 'fal fa-question-circle', 'class' => 'text-gray-400', 'tooltip' => __('Status not read from Google, the shop is not connected to the Google Ads API, so it may still be spending')],
         ];
     }
 
@@ -54,6 +57,7 @@ enum GoogleAdsCampaignStateEnum: string
             self::IN_PROCESS        => 'in_process_at',
             self::PUBLISHED_PAUSED  => 'published_at',
             self::PUBLISHED_SERVING => 'serving_at',
+            self::NOT_SYNCED        => 'published_at',
         };
     }
 
@@ -68,12 +72,30 @@ enum GoogleAdsCampaignStateEnum: string
         return $this !== self::IN_PROCESS;
     }
 
+    public function isNotSynced(): bool
+    {
+        return $this === self::NOT_SYNCED;
+    }
+
+    /**
+     * @return array<int, self>
+     */
+    public static function timelineCases(): array
+    {
+        return [self::IN_PROCESS, self::PUBLISHED_PAUSED, self::PUBLISHED_SERVING];
+    }
+
     /**
      * Google's own word for a published campaign, mapped to the two states that mean anything here.
-     * Everything that is not actively serving is holding, whatever Google's reason for it.
+     * Everything that is not actively serving is holding, whatever Google's reason for it. No word at
+     * all means Google was never asked, which says nothing about whether it is spending.
      */
     public static function fromGoogleStatus(?string $status): self
     {
+        if (blank($status)) {
+            return self::NOT_SYNCED;
+        }
+
         return in_array($status, ['ELIGIBLE', 'ENABLED', 'LIMITED'], true)
             ? self::PUBLISHED_SERVING
             : self::PUBLISHED_PAUSED;
