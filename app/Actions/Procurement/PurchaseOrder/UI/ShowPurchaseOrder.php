@@ -9,7 +9,6 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions;
-use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderProformaInvoice;
 use App\Actions\SupplyChain\PackingSpec\GetPurchaseOrderPackingSpecGaps;
 use App\Events\BroadcastPurchaseOrderLastEdited;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
@@ -264,19 +263,6 @@ class ShowPurchaseOrder extends OrgAction
                                 ],
                             ],
                         ],
-                        PdfPurchaseOrderProformaInvoice::isAvailable($purchaseOrder) ? [
-                            'type'    => 'button',
-                            'style'   => 'tertiary',
-                            'label'   => __('Proforma Invoice'),
-                            'tooltip' => __('Proforma invoice of this order, to request the deposit or payment'),
-                            'target'  => '_blank',
-                            'icon'    => 'fal fa-file-pdf',
-                            'key'     => 'proforma_invoice',
-                            'route'   => [
-                                'name'       => 'grp.org.procurement.purchase_orders.proforma_invoice',
-                                'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug, 'filename' => PdfPurchaseOrderProformaInvoice::make()->filename($purchaseOrder)],
-                            ],
-                        ] : false,
                         in_array($purchaseOrder->parent_type, ['OrgAgent', 'OrgSupplier']) ? [
                             'type'    => 'button',
                             'style'   => 'tertiary',
@@ -517,6 +503,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                 ],
                 'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
+                'supplier_proformas' => in_array($purchaseOrder->parent_type, ['OrgAgent', 'OrgSupplier']) ? $this->supplierProformas($purchaseOrder) : null,
 
                 PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value => $this->tab == PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value ?
                     fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
@@ -1686,6 +1673,22 @@ class ShowPurchaseOrder extends OrgAction
                 ],
             ],
         };
+    }
+
+    /**
+     * @return list<array{caption: string, media_ulid: string}>
+     */
+    private function supplierProformas(PurchaseOrder $purchaseOrder): array
+    {
+        return $purchaseOrder->attachments()
+            ->wherePivot('scope', PurchaseOrderAttachmentScopeEnum::PROFORMA->value)
+            ->orderBy('model_has_attachments.id')
+            ->get()
+            ->map(fn ($media) => [
+                'caption'    => $media->pivot->caption ?: $media->file_name,
+                'media_ulid' => $media->ulid,
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(PurchaseOrder $purchaseOrder, string $routeName, array $routeParameters, string $suffix = ''): array

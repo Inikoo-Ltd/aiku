@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use App\Notifications\SupplierProductAvailabilityChangedNotification;
 
 use function Pest\Laravel\actingAs;
@@ -766,6 +767,20 @@ test('HELP-4731 a supplier uploads shipping documents to its own order from its 
 
     actingAs($this->adminGuest->getUser());
     $this->post(route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => "purchase-orders/$purchaseOrder->id/documents"]))->assertSessionHasErrors('preview');
+
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('supplier_proformas', []));
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($purchaseOrder, [
+        'attachments' => [UploadedFile::fake()->createWithContent('PI-2291.pdf', '%PDF-1.4 proforma '.Str::random(32))],
+        'scope'       => 'Proforma',
+    ]);
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('supplier_proformas', 1)
+            ->where('supplier_proformas.0.media_ulid', $purchaseOrder->attachments()->wherePivot('scope', 'Proforma')->sole()->ulid)
+            ->where('pageHead.actions', fn ($actions) => !collect($actions)->flatten(1)->contains(fn ($action) => ($action['key'] ?? null) === 'proforma_invoice')));
 });
 
 /**

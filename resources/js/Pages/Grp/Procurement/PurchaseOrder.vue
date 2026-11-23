@@ -80,7 +80,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faExchange, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faExchange, faFilePdf, faUpload, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -278,6 +278,7 @@ const props = defineProps < {
 	attachments?: {}
 	attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
 	attachmentScopes: { name: string; code: string }[]
+	supplier_proformas?: { caption: string; media_ulid: string }[] | null
 	history?: {}
     rename_reference?: RenameReference | null
     upload_excel?: {
@@ -872,6 +873,8 @@ function openSupplierEmail(action: { mailto?: string, pdfUrl: string }) {
 }
 
 const isModalUploadAttachmentOpen = ref(false)
+const isModalUploadProformaOpen = ref(false)
+const proformaScopeOptions = computed(() => props.attachmentScopes.filter((scope) => scope.code === "Proforma"))
 
 const productsView = ref<"cards" | "list">("list")
 const productsViewOptions = [
@@ -952,7 +955,7 @@ const pageHeadWrappedActionKeys = ["edit", "delete_purchase_order"]
 
 const stageActionKeys: Record<string, string[]> = {
 	submitted: ["undo_confirm_purchase_order", "cancel_purchase_order"],
-	deposit_paid: ["proforma_invoice"],
+	deposit_paid: [],
 	in_warehouse: ["packing_instructions"],
 	handed_over: ["new_stock_delivery"],
 	received: ["edit_estimated_delivery_date"],
@@ -960,7 +963,7 @@ const stageActionKeys: Record<string, string[]> = {
 
 const actionKeysInStageAndPageHead = ["cancel_purchase_order"]
 
-const stageDocumentActionKeys = ["packing_instructions", "proforma_invoice"]
+const stageDocumentActionKeys = ["packing_instructions"]
 
 const uncheckedReceiptItems = computed(() => (props.agent_receiving?.lines ?? []).flatMap((line) =>
 	line.items.filter((item) => item.check_route && !item.is_checked)
@@ -1030,7 +1033,7 @@ const stageActions = computed<Record<string, Action[]>>(() => {
 		Object.entries(stageActionKeys)
 			.filter(([stageKey]) => stageKeys.includes(stageKey))
 			.map(([stageKey, keys]) => [stageKey, actions.filter((action) => keys.includes(action.key))])
-			.filter(([stageKey, stageActionList]) => stageActionList.length || (stageKey === "in_warehouse" && (props.agent_receiving?.receive || uncheckedReceiptItems.value.length)))
+			.filter(([stageKey, stageActionList]) => stageActionList.length || (stageKey === "deposit_paid" && props.supplier_proformas) || (stageKey === "in_warehouse" && (props.agent_receiving?.receive || uncheckedReceiptItems.value.length)))
 	)
 })
 
@@ -1434,6 +1437,35 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 						</Button>
 					</span>
 				</template>
+				<template v-if="stageKey === 'deposit_paid' && supplier_proformas">
+					<div v-if="supplier_proformas.length" class="flex flex-col gap-y-1 rounded-md border border-gray-200 bg-white px-2 py-1.5">
+						<div class="text-[10px] font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Supplier proforma") }}</div>
+						<a
+							v-for="proforma in supplier_proformas"
+							:key="proforma.media_ulid"
+							v-tooltip="proforma.caption"
+							:href="route('grp.media.download', { id: proforma.media_ulid })"
+							target="_blank"
+							class="flex min-w-0 items-center gap-x-1 text-xs text-[var(--app-accent)] hover:underline focus-visible:underline focus-visible:outline-none"
+						>
+							<FontAwesomeIcon :icon="faFilePdf" class="shrink-0 text-red-500" fixed-width aria-hidden="true" />
+							<span class="min-w-0 truncate">{{ proforma.caption }}</span>
+							<FontAwesomeIcon :icon="faExternalLink" class="shrink-0 text-[10px] text-gray-400" fixed-width aria-hidden="true" />
+						</a>
+					</div>
+					<Button
+						type="tertiary"
+						size="xs"
+						full
+						:label="ctrans('Upload proforma')"
+						:tooltip="ctrans('The proforma invoice the supplier sent for this order. Suppliers can also upload it from their portal.')"
+						@click="isModalUploadProformaOpen = true"
+					>
+						<template #icon>
+							<FontAwesomeIcon :icon="faUpload" class="text-gray-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</template>
 				<template v-if="stageKey === 'deposit_paid'">
 					<AgentPurchaseOrderMoney v-if="agent_money" :money="agent_money" />
 					<PurchaseOrderDepositPayments v-else-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
@@ -1792,6 +1824,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		:progressDescription="ctrans('Adding purchase order attachments')"
 		:attachmentRoutes="attachmentRoutes"
 		:options="attachmentScopes"
+	/>
+
+	<UploadAttachment
+		v-if="supplier_proformas"
+		v-model="isModalUploadProformaOpen"
+		scope="attachment"
+		:title="{ label: ctrans('Upload supplier proforma'), information: '' }"
+		:progressDescription="ctrans('Adding the supplier proforma')"
+		:attachmentRoutes="attachmentRoutes"
+		:options="proformaScopeOptions"
 	/>
 
 	<ModalProductList
