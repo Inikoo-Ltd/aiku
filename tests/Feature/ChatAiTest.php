@@ -351,6 +351,11 @@ test('a draft the assistant stored is shown to staff, and what they do with it i
     $shown = $this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()->json('data');
     expect($shown['id'])->toBe($draft->id)->and($shown['text'])->toBe($draft->text);
 
+    $lastVisitorMessageAt = $session->refresh()->last_visitor_message_at;
+    $session->update(['last_visitor_message_at' => $draft->created_at->copy()->addMinute()]);
+    expect($this->getJson(route('grp.api.chats.sessions.ai_draft.show', [$session->ulid]))->assertOk()->json('data'))->toBeNull();
+    $session->update(['last_visitor_message_at' => $lastVisitorMessageAt]);
+
     $this->postJson(route('grp.api.chats.ai_drafts.take', [$draft->id]))->assertOk()->assertJsonPath('data.text', $draft->text);
 
     expect(\Illuminate\Support\Facades\Route::has('grp.api.chats.ai_drafts.rate'))->toBeFalse()

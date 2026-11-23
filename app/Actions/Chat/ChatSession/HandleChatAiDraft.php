@@ -89,7 +89,7 @@ class HandleChatAiDraft
 
         $draft = DraftChatReply::pendingDraft($chatSession);
 
-        if (data_get($draft?->facts, 'mode') !== DraftChatReply::ASSISTANT) {
+        if (data_get($draft?->facts, 'mode') !== DraftChatReply::ASSISTANT || self::writtenBeforeCustomersLatestMessage($chatSession, $draft)) {
             $draft = null;
         }
 
@@ -124,6 +124,14 @@ class HandleChatAiDraft
             'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,
             'customer_language' => Language::find(self::replyLanguageId($chatSession, $draft) ?? 0)?->name,
         ] : null]);
+    }
+
+    /**
+     * HELP-4885: a draft the customer has written again since does not answer them, so staff do not see it.
+     */
+    public static function writtenBeforeCustomersLatestMessage(ChatSession|MetaChatSession $chatSession, ?ChatAiDraft $draft): bool
+    {
+        return $draft && $chatSession->last_visitor_message_at && $draft->created_at->lt($chatSession->last_visitor_message_at);
     }
 
     public const USUAL_MOOD_MIN_DRAFTS = 3;
