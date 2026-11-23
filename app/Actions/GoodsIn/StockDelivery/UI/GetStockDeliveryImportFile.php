@@ -363,8 +363,10 @@ class GetStockDeliveryImportFile
             $auto['shipping_quotes'] = $done(null, __('Shipping quote attached'));
         }
 
-        if ($stockDelivery->agentInvoice()->exists() || $stockDelivery->supplierInvoice()->exists() || $files->where('scope', PurchaseOrderAttachmentScopeEnum::INVOICE->value)->isNotEmpty()) {
+        if ($stockDelivery->agentInvoice()->exists() || $stockDelivery->supplierInvoice()->exists()) {
             $auto['commercial_invoice'] = $done(Arr::get($stockDelivery->data, 'invoice_date'), __('Invoice on file'));
+        } elseif ($files->where('scope', PurchaseOrderAttachmentScopeEnum::INVOICE->value)->isNotEmpty()) {
+            $auto['commercial_invoice'] = $done(null, $stockDelivery->parent_type === 'OrgPartner' ? __('Invoice on file') : __('Invoice file attached, amounts not entered'));
         }
 
         if ($files->where('scope', PurchaseOrderAttachmentScopeEnum::PACKING_LIST->value)->isNotEmpty()) {
@@ -376,11 +378,10 @@ class GetStockDeliveryImportFile
         }
 
         $balanceAt = $stockDelivery->supplierPayments()->max('date') ?? $stockDelivery->agentPayments()->max('date');
-        if (!$balanceAt && $purchaseOrders->isNotEmpty() && $purchaseOrders->every(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->balance_paid_at)) {
-            $balanceAt = $purchaseOrders->pluck('balance_paid_at')->max();
-        }
         if ($balanceAt) {
             $auto['balance_payment'] = $done($balanceAt, __('Payment recorded on the delivery'));
+        } elseif ($purchaseOrders->isNotEmpty() && $purchaseOrders->every(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->balance_paid_at)) {
+            $auto['balance_payment'] = $done($purchaseOrders->pluck('balance_paid_at')->max(), __('Balance marked paid on the purchase orders'));
         }
 
         $costs = $stockDelivery->costs()->whereIn('type', [StockDeliveryCostTypeEnum::SHIPPING, StockDeliveryCostTypeEnum::DUTY])->get()->keyBy(fn (StockDeliveryCost $cost) => $cost->type->value);

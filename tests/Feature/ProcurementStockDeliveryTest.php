@@ -4335,6 +4335,20 @@ test('import file details is where costs are booked: invoice, shipping and custo
         ->and($steps['duty_paid'])->toMatchArray(['costing' => null, 'scope' => PurchaseOrderAttachmentScopeEnum::DUTY_PAYMENT->value]);
 });
 
+test('an invoice file alone or a balance marked paid on the orders is not read as an invoice or a payment booked on the delivery (HELP-4877)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4877', [10]);
+    $purchaseOrder = StorePurchaseOrder::make()->action($stockDelivery->parent, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'HELP-4877-PO']), strict: false);
+    $purchaseOrder->updateQuietly(['cost_items' => 1000, 'currency_id' => $stockDelivery->currency_id, 'balance_paid_at' => '2026-11-20']);
+    $stockDelivery->purchaseOrders()->sync([$purchaseOrder->id]);
+    $this->post(route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]), ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')], 'scope' => PurchaseOrderAttachmentScopeEnum::INVOICE->value])->assertSuccessful();
+
+    $steps = collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
+
+    expect($steps['commercial_invoice'])->toMatchArray(['status' => 'done', 'source' => __('Invoice file attached, amounts not entered')])
+        ->and($steps['balance_payment'])->toMatchArray(['status' => 'done', 'date' => '2026-11-20', 'source' => __('Balance marked paid on the purchase orders')])
+        ->and($steps['balance_payment']['money'])->toMatchArray(['total_source' => 'orders', 'payments' => 0.0, 'left' => 1000.0]);
+});
+
 test('a file uploaded to the wrong import file step can be removed from the step (HELP-4760)', function () {
     $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4760', [10]);
     $this->post(route('grp.models.stock-delivery.attachment.attach', ['stockDelivery' => $stockDelivery->id]), ['attachments' => [\Illuminate\Http\UploadedFile::fake()->create('wrong.pdf', 10, 'application/pdf')], 'scope' => PurchaseOrderAttachmentScopeEnum::DEPOSIT_PAYMENT->value])->assertSuccessful();

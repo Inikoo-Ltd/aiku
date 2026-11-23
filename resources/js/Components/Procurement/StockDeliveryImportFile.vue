@@ -121,6 +121,21 @@ const locale = useLocaleStore()
 const money = (currency: string | null, amount: number) => (currency ? locale.currencyFormat(currency, amount) : amount)
 const depositMoney = (step: Step) => (step.key === "deposit" ? (step.money as DepositMoney | null) : null)
 const balanceMoney = (step: Step) => (step.key === "balance_payment" ? (step.money as BalanceMoney | null) : null)
+const balanceWarning = (step: Step) => {
+	const balance = balanceMoney(step)
+	if (!balance || balance.left <= 0 || (step.status !== "done" && step.files.length === 0)) {
+		return null
+	}
+	if (balance.total_source === "orders" && props.costingAvailable?.invoice && !props.invoice?.agent) {
+		return ctrans("Marked as paid, but aiku has no invoice or payment for this delivery yet. Enter the invoice with Adjust costing on the Commercial invoice step, then add the payment here.")
+	}
+	if (balance.total_source === "invoice" && !balance.payments && (props.invoice?.supplier?.can_edit || props.invoice?.agent?.can_edit)) {
+		return props.invoice?.agent
+			? ctrans("Marked as paid, but no payment is recorded in aiku yet: add it in Agent payments.")
+			: ctrans("Marked as paid, but no payment is recorded in aiku yet: add it in Supplier payments.")
+	}
+	return null
+}
 
 const formatDate = (value: string | null) => (value ? useFormatTime(value) : "—")
 const toDate = (value: string | null) => (value ? new Date(`${value.substring(0, 10)}T00:00:00`) : null)
@@ -356,6 +371,9 @@ const statusIconClass: Record<Status, string> = {
 								<dt class="whitespace-nowrap font-semibold text-gray-800">{{ balanceMoney(step)!.left < 0 ? ctrans("Overpaid") : ctrans("Left to pay") }}</dt>
 								<dd class="text-right font-semibold tabular-nums" :class="balanceMoney(step)!.left < 0 ? 'text-red-600' : 'text-gray-900'">{{ money(balanceMoney(step)!.currency, Math.abs(balanceMoney(step)!.left)) }}</dd>
 							</dl>
+							<div v-if="balanceWarning(step)" class="ml-6 mt-1 max-w-md text-xs text-amber-700">
+								{{ balanceWarning(step) }}
+							</div>
 							<div v-if="errors[step.key]" class="ml-6 mt-1 text-xs text-red-600">{{ errors[step.key] }}</div>
 						</td>
 						<td class="px-3 py-2">
