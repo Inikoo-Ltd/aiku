@@ -1171,7 +1171,8 @@ class MatchBankTransactions
      * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5 and Tatra in variableSymbol. It names the orders of this organisation
      * in the line's currency whose number is a prefix and those digits; when several shops have that number, the one order owing exactly the
      * amount received (DPD SK pays SK29284 as VS 29284 while AWS29284 and FR29284 exist too), else the one whose total is that amount
-     * rounded to 5 cents, as cash on delivery is (113.00 for SK24958 of 112.98, already paid).
+     * rounded to 5 cents, as cash on delivery is (113.00 for SK24958 of 112.98, already paid), else the one already paid that amount (DPD
+     * collected 327.71 on SK26391 of 344.49).
      *
      * @return list<string>
      */
@@ -1190,10 +1191,12 @@ class MatchBankTransactions
         $received        = (float)$bankTransaction->amount;
         $owingThisAmount = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - (float)$order->payment_amount - $received) <= 0.01);
         $ofThisTotal     = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - $received) <= 0.05);
+        $paidThisAmount  = $orders->filter(fn (Order $order) => abs((float)$order->payment_amount - $received) <= 0.05);
 
         return (match (true) {
             $owingThisAmount->count() === 1 => $owingThisAmount,
             $ofThisTotal->count() === 1 => $ofThisTotal,
+            $paidThisAmount->count() === 1 => $paidThisAmount,
             default => $orders,
         })->pluck('reference')->values()->all();
     }
