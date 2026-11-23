@@ -30,6 +30,7 @@ import StockDeliverySupplierPayments from "@/Components/Procurement/StockDeliver
 import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDeliveryServiceInvoices.vue"
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
+import StockDeliveryInvoiceDifferences from "@/Components/Procurement/StockDeliveryInvoiceDifferences.vue"
 import StockDeliveryAddItems from "@/Components/Procurement/StockDeliveryAddItems.vue"
 import StockDeliveryAddItemNotOnPurchaseOrder from "@/Components/Procurement/StockDeliveryAddItemNotOnPurchaseOrder.vue"
 import StockDeliveryImportItems from "@/Components/Procurement/StockDeliveryImportItems.vue"
@@ -790,6 +791,11 @@ const saveEstimatedDeliveryDate = () => {
 
 const startCostingLoading = ref(false)
 
+const invoiceReading = computed(() => {
+	const read = (props.invoice_costing ?? []).map((invoice) => invoice.reading).filter((reading) => reading?.state === "read" && reading.items)
+	return read.find((reading) => reading?.applied_at) ?? read[0] ?? null
+})
+
 const confirmStartStockDeliveryCosting = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
@@ -1113,6 +1119,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</div>
 
 	<AgreedTermDifferences v-if="agreed_term_differences" :differences="agreed_term_differences" class="m-4" />
+
+	<StockDeliveryInvoiceDifferences v-if="invoiceReading" :reading="invoiceReading" class="m-4 text-sm" />
 
 	<AgentContainerInvoicePanel v-if="agentInvoice" :data="agentInvoice" :currencyCode="box_stats.third_block.currency ?? ''" class="mb-4" />
 

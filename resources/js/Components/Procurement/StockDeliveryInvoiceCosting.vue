@@ -17,6 +17,7 @@ import { faFileInvoiceDollar, faCheck, faTimes, faExchange, faPaperclip } from "
 import { faSpinnerThird } from "@fad"
 import { faExclamationTriangle, faCheckCircle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import StockDeliveryInvoiceDifferences from "@/Components/Procurement/StockDeliveryInvoiceDifferences.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -77,6 +78,7 @@ interface Reading {
     delivery_confirmation?: { phrase: string; reference: string; printed: string[]; dates_fit: boolean | null; left_at: string | null } | null
     can_apply?: boolean
     unmatched?: InvoiceLine[]
+    not_in_delivery?: { index: number; label: string; amount: number | null }[]
     items?: ReviewItem[]
 }
 
@@ -160,6 +162,14 @@ const matchedByLabel = (matchedBy: string[]) =>
         .filter((by) => by !== "supplier_code")
         .map((by) => ({ sko_code: ctrans("matched by our code"), barcode: ctrans("matched by barcode"), reviewer: ctrans("placed by you") })[by] ?? by)
         .join(", ")
+
+const TOLERANCE = 0.01
+const isMissing = (item: ReviewItem) => item.invoice_amount == null
+const quantityDifference = (item: ReviewItem) => (item.invoice_quantity ?? 0) - item.quantity
+const amountDifference = (item: ReviewItem) => (item.invoice_amount ?? 0) - item.expected_amount
+const signed = (value: number, format: (amount: number) => string) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${format(Math.abs(value))}`
+
+const sortedItems = (reading: Reading) => [...(reading.items ?? [])].sort((first, second) => Number(isMissing(first)) - Number(isMissing(second)))
 
 const typed = (text: string) => text.trim().replace(/\s+/g, " ").replace(/\.$/, "").toLowerCase()
 
@@ -269,6 +279,8 @@ const apply = (invoice: Invoice, currencyChoice: { follow_invoice?: boolean; exc
                     <div><dt class="text-gray-500">{{ ctrans("Total") }}</dt><dd class="font-medium text-gray-800">{{ money(invoice.reading.total, invoice.reading.currency) }}</dd></div>
                 </dl>
 
+                <StockDeliveryInvoiceDifferences :reading="invoice.reading" class="text-xs" />
+
                 <p v-if="invoice.reading.currency_mismatch" class="text-amber-700">
                     <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                     {{ ctrans("The invoice is in :invoice and the delivery in :delivery: when you apply it you choose whether the delivery follows the invoice.", { invoice: invoice.reading.currency ?? "", delivery: invoice.reading.delivery_currency ?? "" }) }}
@@ -282,23 +294,36 @@ const apply = (invoice: Invoice, currencyChoice: { follow_invoice?: boolean; exc
                             <th class="whitespace-nowrap py-1 text-right">{{ ctrans("Invoiced") }}</th>
                             <th class="whitespace-nowrap py-1 text-right">{{ ctrans("Order amount") }}</th>
                             <th class="whitespace-nowrap py-1 text-right">{{ ctrans("Invoice amount") }}</th>
+                            <th class="whitespace-nowrap py-1 text-right">{{ ctrans("Difference") }}</th>
                             <th class="whitespace-nowrap py-1 text-right">{{ ctrans("Goods cost") }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in invoice.reading.items" :key="item.id" class="border-t border-gray-100" :class="item.needs_check || item.invoice_amount == null ? 'bg-amber-50' : ''">
+                        <template v-for="(item, itemIndex) in sortedItems(invoice.reading)" :key="item.id">
+                        <tr v-if="isMissing(item) && (itemIndex === 0 || !isMissing(sortedItems(invoice.reading)[itemIndex - 1]))" class="border-t border-gray-200">
+                            <td colspan="7" class="pb-1 pt-2 font-medium text-amber-700">{{ ctrans("Not on the invoice: not sent or not charged by the supplier") }}</td>
+                        </tr>
+                        <tr class="border-t border-gray-100" :class="item.needs_check || isMissing(item) ? 'bg-amber-50' : ''">
                             <td class="py-1">
                                 <span class="font-medium">{{ item.code }}</span> {{ item.name }}
                                 <span v-if="matchedByLabel(item.matched_by)" class="text-gray-400">· {{ matchedByLabel(item.matched_by) }}</span>
                             </td>
                             <td class="py-1 text-right tabular-nums">{{ locale.number(item.quantity) }}</td>
                             <td class="py-1 text-right tabular-nums" :class="item.quantity_differs ? 'font-medium text-amber-700' : ''">
-                                {{ item.invoice_quantity == null ? ctrans("not on invoice") : locale.number(item.invoice_quantity) }}
+                                {{ locale.number(item.invoice_quantity ?? 0) }}
                             </td>
                             <td class="py-1 text-right tabular-nums">{{ money(item.expected_amount, invoice.reading.delivery_currency) }}</td>
                             <td class="py-1 text-right tabular-nums" :class="item.amount_differs ? 'font-medium text-amber-700' : ''">{{ money(item.invoice_amount, invoice.reading.currency) }}</td>
+                            <td class="whitespace-nowrap py-1 text-right tabular-nums" :class="item.quantity_differs || item.amount_differs || isMissing(item) ? 'font-medium text-amber-700' : 'text-gray-400'">
+                                <template v-if="Math.abs(quantityDifference(item)) > TOLERANCE">{{ signed(quantityDifference(item), (amount) => locale.number(amount)) }}</template>
+                                <template v-if="!invoice.reading.currency_mismatch && Math.abs(amountDifference(item)) > TOLERANCE">
+                                    <template v-if="Math.abs(quantityDifference(item)) > TOLERANCE"> · </template>{{ signed(amountDifference(item), (amount) => String(money(amount, invoice.reading!.currency))) }}
+                                </template>
+                                <template v-if="Math.abs(quantityDifference(item)) <= TOLERANCE && (invoice.reading.currency_mismatch || Math.abs(amountDifference(item)) <= TOLERANCE)">—</template>
+                            </td>
                             <td class="py-1 text-right font-medium tabular-nums">{{ money(item.proposed_cost, invoice.reading.currency) }}</td>
                         </tr>
+                        </template>
                     </tbody>
                 </table>
 

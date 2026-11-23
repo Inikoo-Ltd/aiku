@@ -57,7 +57,7 @@ type DepositRow = {
 
 type DepositMoney = { rows: DepositRow[]; currency: string | null; total: number | null }
 
-type BalanceMoney = { currency: string; total: number; total_source: "invoice" | "orders"; deposits: number; payments: number; left: number; scheduled: { amount: number; date: string } | null }
+type BalanceMoney = { currency: string; total: number; total_source: "invoice" | "orders"; orders_total?: number | null; deposits: number; payments: number; left: number; scheduled: { amount: number; date: string } | null }
 
 const props = defineProps<{
 	data: {
@@ -129,8 +129,8 @@ const balanceWarning = (step: Step) => {
 	if (!balance || balance.left <= 0 || (step.status !== "done" && step.files.length === 0)) {
 		return null
 	}
-	if (balance.total_source === "orders" && props.costingAvailable?.invoice && !props.invoice?.agent) {
-		return ctrans("Marked as paid, but aiku has no invoice or payment for this delivery yet. Enter the invoice with Adjust costing on the Commercial invoice step, then add the payment here.")
+	if (balance.total_source === "orders") {
+		return ctrans("Marked as paid, but no payment is recorded in aiku yet.")
 	}
 	if (balance.total_source === "invoice" && !balance.payments && (props.invoice?.supplier?.can_edit || props.invoice?.agent?.can_edit)) {
 		return props.invoice?.agent
@@ -138,6 +138,27 @@ const balanceWarning = (step: Step) => {
 			: ctrans("Marked as paid, but no payment is recorded in aiku yet: add it in Supplier payments.")
 	}
 	return null
+}
+const balanceNote = (step: Step) => {
+	if (balanceMoney(step)?.total_source !== "orders") {
+		return null
+	}
+	return props.costingAvailable?.invoice && !props.invoice?.agent
+		? ctrans("No invoice entered yet, so this uses the purchase orders total. What you owe is the supplier's invoice: if they shipped more or fewer cartons, or changed prices, it is a different amount. Enter it with Adjust costing on the Commercial invoice step and Left to pay will follow it.")
+		: ctrans("No invoice entered yet, so this uses the purchase orders total. What you owe is the invoice: if more or fewer cartons were shipped, or prices changed, it is a different amount.")
+}
+
+const invoiceVsOrders = (step: Step) => {
+	const balance = balanceMoney(step)
+	if (balance?.total_source !== "invoice" || balance.orders_total == null || Math.abs(balance.total - balance.orders_total) <= 0.01) {
+		return null
+	}
+	const difference = balance.total - balance.orders_total
+	return ctrans("The invoice is :difference :direction than the purchase orders (:orders). What you owe is the invoice: the supplier charges what they sent. Adjust costing on the Commercial invoice step shows the difference product by product.", {
+		difference: String(money(balance.currency, Math.abs(difference))),
+		direction: difference > 0 ? ctrans("more") : ctrans("less"),
+		orders: String(money(balance.currency, balance.orders_total)),
+	})
 }
 
 const formatDate = (value: string | null) => (value ? useFormatTime(value) : "—")
@@ -378,6 +399,12 @@ const statusIconClass: Record<Status, string> = {
 								<dt class="whitespace-nowrap font-semibold text-gray-800">{{ balanceMoney(step)!.left < 0 ? ctrans("Overpaid") : ctrans("Left to pay") }}</dt>
 								<dd class="text-right font-semibold tabular-nums" :class="balanceMoney(step)!.left < 0 ? 'text-red-600' : 'text-gray-900'">{{ money(balanceMoney(step)!.currency, Math.abs(balanceMoney(step)!.left)) }}</dd>
 							</dl>
+							<div v-if="invoiceVsOrders(step)" class="ml-6 mt-1.5 max-w-md rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-600">
+								{{ invoiceVsOrders(step) }}
+							</div>
+							<div v-if="balanceNote(step)" class="ml-6 mt-1.5 max-w-md rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs text-gray-600">
+								{{ balanceNote(step) }}
+							</div>
 							<div v-if="balanceWarning(step)" class="ml-6 mt-1 max-w-md text-xs text-amber-700">
 								{{ balanceWarning(step) }}
 							</div>

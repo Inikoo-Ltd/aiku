@@ -4347,7 +4347,7 @@ test('an invoice file alone or a balance marked paid on the orders is not read a
 
     expect($steps['commercial_invoice'])->toMatchArray(['status' => 'done', 'source' => __('Invoice file attached, amounts not entered')])
         ->and($steps['balance_payment'])->toMatchArray(['status' => 'done', 'date' => '2026-11-20', 'source' => __('Balance marked paid on the purchase orders')])
-        ->and($steps['balance_payment']['money'])->toMatchArray(['total_source' => 'orders', 'payments' => 0.0, 'left' => 1000.0]);
+        ->and($steps['balance_payment']['money'])->toMatchArray(['total_source' => 'orders', 'orders_total' => null, 'payments' => 0.0, 'left' => 1000.0]);
 });
 
 test('a file uploaded to the wrong import file step can be removed from the step (HELP-4760)', function () {
@@ -4452,7 +4452,7 @@ test('on an agent container the deposits sent for its orders come off the agent 
     expect(collect($invoice->advancePayments())->firstWhere('reference', 'AGENT-DEP-PO'))->toMatchArray(['type' => 'deposit', 'amount' => 400.0])
         ->and($invoice->paidAmount())->toBe(500.0)
         ->and($invoice->balanceDue())->toBe(round((float) $invoice->total_amount - 500, 2))
-        ->and($balance)->toMatchArray(['total_source' => 'invoice', 'deposits' => 400.0, 'payments' => 100.0, 'left' => $invoice->balanceDue()]);
+        ->and($balance)->toMatchArray(['total_source' => 'invoice', 'orders_total' => 1000.0, 'deposits' => 400.0, 'payments' => 100.0, 'left' => $invoice->balanceDue()]);
 });
 
 test('the import file documents download as one ZIP or one printable PDF in checklist order (HELP-4795)', function () {

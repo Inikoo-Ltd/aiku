@@ -282,7 +282,8 @@ class GetStockDeliveryImportFile
             ->concat($invoice ? [] : $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $orderCurrencies[$purchaseOrder->currency_id] ?? null))
             ->filter()
             ->unique();
-        $total           = $invoice ? (float) $invoice->total_amount : round($purchaseOrders->sum(fn (PurchaseOrder $purchaseOrder) => SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder)), 2);
+        $ordersTotal     = round($purchaseOrders->sum(fn (PurchaseOrder $purchaseOrder) => SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder)), 2);
+        $total           = $invoice ? (float) $invoice->total_amount : $ordersTotal;
         $sent            = round((float) $paidRows->sum('amount'), 2);
         $paid            = round((float) $payments->sum('amount') + ($stockDelivery->agent_id ? (float) $stockDelivery->depositApplications()->sum('amount') : 0), 2);
 
@@ -296,6 +297,7 @@ class GetStockDeliveryImportFile
                 'currency'     => $currencies->first(),
                 'total'        => $total,
                 'total_source' => $invoice ? 'invoice' : 'orders',
+                'orders_total' => $invoice && $orderCurrencies->unique()->count() === 1 && $orderCurrencies->first() === $invoice->currency->code ? $ordersTotal : null,
                 'deposits'     => $sent,
                 'payments'     => $paid,
                 'left'         => round($total - $sent - $paid, 2),
