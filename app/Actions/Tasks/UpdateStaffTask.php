@@ -145,8 +145,14 @@ class UpdateStaffTask
             }
         }
 
-        $isClaimingByStarting = !$task->assignee_id && !$request->has('assignee_id') && $request->input('status') === StaffTaskStatusEnum::IN_PROGRESS->value;
+        $isTakingItThemselves = !$request->has('assignee_id') || (int) $request->input('assignee_id') === $request->user()->id;
+        $isClaimingByStarting = !$task->assignee_id && $isTakingItThemselves && $request->input('status') === StaffTaskStatusEnum::IN_PROGRESS->value;
         if ($isClaimingByStarting && !StaffTask::canBeAssigned($request->user())) {
+            return false;
+        }
+
+        $isChangingStatus = $request->has('status') && $request->input('status') !== $task->status->value;
+        if ($isChangingStatus && !$isClaimingByStarting && !$task->isWorkedOnBy($request->user()) && !$task->canReassignBy($request->user())) {
             return false;
         }
 

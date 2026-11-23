@@ -1278,7 +1278,7 @@ test('a task the AI assistant raised from a customer conversation opens, with no
     get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('timeline.0.text', 'Description edited')->where('timeline.0.by', null));
 });
 
-test('a department member opening an unassigned department task can take it and then reply in its chat (HELP-4894)', function () {
+test('a department member reads an unassigned department task chat, can take it but cannot close it without taking it (HELP-4894)', function () {
     $packer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
     \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert([
         'user_id'         => $packer->id,
@@ -1291,10 +1291,13 @@ test('a department member opening an unassigned department task can take it and 
 
     actingAs($packer);
     get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
-        ->where('conversation', null)
+        ->where('conversation.ulid', $task->conversation->ulid)
         ->where('can_edit', false)
         ->where('can_claim', true));
-    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_claim', true)->assertJsonPath('messages', null);
+    expect(getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_claim', true)->json('messages'))->toBeArray();
+    getJson(route('grp.tasks.conversation', $task->reference))->assertOk();
+    patchJson(route('grp.tasks.update', $task->reference), ['status' => 'done'])->assertForbidden();
+    patchJson(route('grp.tasks.update', $task->reference), ['status' => 'cancelled', 'note' => 'Not ours'])->assertForbidden();
 
     $engineer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'gp-hd', 'scopes' => []]]]))->getUser();
     actingAs($engineer);
@@ -1302,7 +1305,7 @@ test('a department member opening an unassigned department task can take it and 
     patchJson(route('grp.tasks.update', $task->reference), ['status' => 'in_progress'])->assertForbidden();
 
     actingAs($packer);
-    patchJson(route('grp.tasks.update', $task->reference), ['status' => 'in_progress'])->assertOk();
+    patchJson(route('grp.tasks.update', $task->reference), ['assignee_id' => $packer->id, 'status' => 'in_progress'])->assertOk();
 
     get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page
         ->where('task.assignee.id', $packer->id)

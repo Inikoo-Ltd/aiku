@@ -141,7 +141,8 @@ class StaffConversation extends Model
     public function canBeWrittenToBy(User $user): bool
     {
         return $this->isActiveParticipant($user)
-            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user));
+            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user))
+            || $this->isTaskSentToDepartmentOf($user);
     }
 
     public function messages(): HasMany
@@ -165,7 +166,18 @@ class StaffConversation extends Model
     public function canBeAccessedBy(User $user): bool
     {
         return $this->hasParticipant($user)
-            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user));
+            || ($this->context_type === 'StaffTask' && $this->group_id === $user->group_id && StaffTask::isSupervisor($user))
+            || $this->isTaskSentToDepartmentOf($user);
+    }
+
+    /**
+     * The department a task was sent to reads and writes in its thread before anyone takes it, so they can ask the requester first.
+     */
+    private function isTaskSentToDepartmentOf(User $user): bool
+    {
+        return $this->context_type === 'StaffTask'
+            && $this->group_id === $user->group_id
+            && StaffTask::query()->whereKey($this->context_id)->sentToDepartmentsOf($user)->exists();
     }
 
     public static function dmKey(array $userIds): string
