@@ -2062,3 +2062,34 @@ test('the languages staff read are taken from what they wrote themselves until t
     $this->user->update(['settings' => array_replace($this->user->settings ?? [], ['chat_languages' => ['fr']])]);
     expect(\App\Actions\Chat\ChatSession\GetChatLanguagesRead::make()->handle($this->user->refresh()))->toBe(['fr']);
 });
+
+test('the Re: line signals are counted for a linked customer: complaints this week, emails today, first order', function () {
+    $customer = createOwnCustomer($this->shop, 'signals-case');
+    $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
+    $customer->stats()->update(['number_orders' => 1, 'sales_all' => 0]);
+
+    $makeEmailChat = function () use ($webUser) {
+        $session = ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::EMAIL, 'shop_id' => $this->shop->id, 'web_user_id' => $webUser->id]);
+        ChatMessage::create(['chat_session_id' => $session->id, 'message_type' => ChatMessageTypeEnum::TEXT, 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'Two candles arrived broken']);
+
+        return $session;
+    };
+    $first  = $makeEmailChat();
+    $second = $makeEmailChat();
+
+    foreach ([$first, $second] as $session) {
+        \App\Models\Chat\ChatAiDraft::create([
+            'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+            'chat_session_id' => $session->id, 'topic' => \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED, 'intent' => \App\Enums\CRM\Livechat\ChatIntentEnum::DAMAGED_ITEM,
+            'facts' => [], 'text' => 'Sorry', 'status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED,
+        ]);
+    }
+
+    $signals = collect(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run($first->fresh()))->keyBy('key');
+
+    expect($signals->keys()->take(3)->all())->toBe(['complaints', 'emails_today', 'first_order'])
+        ->and($signals['complaints']['label'])->toBe('2nd complaint this week')
+        ->and($signals['emails_today']['count'])->toBe(2)
+        ->and($signals['first_order']['tone'])->toBe('green')
+        ->and(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run(ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::EMAIL, 'shop_id' => $this->shop->id])))->toBe([]);
+});

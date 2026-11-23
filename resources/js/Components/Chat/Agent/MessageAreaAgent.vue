@@ -1044,6 +1044,27 @@ const customerLink = computed(() => {
         name: (props.session as any)?.contact_name || webUser.email || webUser.slug,
     }
 })
+const signalTone: Record<string, string> = {
+    red: "bg-red-50 text-red-700 ring-red-200",
+    amber: "bg-amber-50 text-amber-700 ring-amber-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    gray: "bg-gray-100 text-gray-600 ring-gray-200",
+}
+const customerSignals = computed<{ key: string, label: string, tone: string }[]>(() => (props.session as any)?.customer_signals ?? [])
+const moodSignal = computed<{ key: string, label: string, tone: string, rank: number } | null>(() => {
+    const mood = (aiDraftBox.value as any)?.draft?.mood
+    if (!mood || (mood.value === "neutral" && !mood.usual)) return null
+    const usual = mood.usual ? (mood.usual.same ? ctrans("always like this") : ctrans("usually :mood", { mood: mood.usual.label.toLowerCase() })) : null
+    const severe = ["angry", "may_leave_us", "our_big_mistake"].includes(mood.value)
+    return { key: "mood", label: usual ? `${mood.label} · ${usual}` : mood.label, tone: mood.tone, rank: severe ? 1 : mood.value === "upset" ? 2 : 4 }
+})
+const rankedSignals = computed(() => {
+    const ranks: Record<string, number> = { complaints: 0, emails_today: 2, first_order: 3, top_customer: 5, long_standing: 5 }
+    return [...customerSignals.value.map((signal) => ({ ...signal, rank: ranks[signal.key] ?? 6 })), ...(moodSignal.value ? [moodSignal.value] : [])]
+        .sort((a, b) => a.rank - b.rank)
+})
+const shownSignals = computed(() => rankedSignals.value.slice(0, 2))
+const hiddenSignals = computed(() => rankedSignals.value.slice(2))
 const customerWaitingHours = computed(() => customerWaitingSince.value ? (Date.now() - customerWaitingSince.value) / 3600000 : 0)
 
 const mailFoldAll = ref<{ open: boolean, at: number } | null>(null)
@@ -1057,6 +1078,15 @@ const unansweredMessageId = computed(() =>
 )
 
 const emailCopyCandidates = computed<{ address: string; name: string | null }[]>(() => {
+const signalTone: Record<string, string> = {
+    red: "bg-red-50 text-red-700 ring-red-200",
+    amber: "bg-amber-50 text-amber-700 ring-amber-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    gray: "bg-gray-100 text-gray-600 ring-gray-200",
+}
+const customerSignals = computed<{ key: string, label: string, tone: string }[]>(() => (props.session as any)?.customer_signals ?? [])
+const shownSignals = computed(() => customerSignals.value.slice(0, 2))
+const hiddenSignals = computed(() => customerSignals.value.slice(2))
     if (!isEmailChat.value) return []
 
     return Object.values((props.session as any)?.metadata?.email_participants ?? {})
@@ -2360,6 +2390,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <div v-if="emailCopyCandidates.length" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
                 <span class="font-medium">{{ ctrans("Cc") }}</span>
+                    <span v-for="signal in shownSignals" :key="signal.key" class="rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset" :class="signalTone[signal.tone]">{{ signal.label }}</span>
+                    <span v-if="hiddenSignals.length" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 ring-1 ring-inset ring-gray-200"
+                        v-tooltip="hiddenSignals.map((signal) => signal.label).join(' · ')">+{{ hiddenSignals.length }}</span>
                 <label v-for="person in emailCopyCandidates" :key="person.address"
                     class="inline-flex cursor-pointer items-center gap-1.5" :title="person.address">
                     <input type="checkbox" class="h-3.5 w-3.5 rounded border-gray-300"
