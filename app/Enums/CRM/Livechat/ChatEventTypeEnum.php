@@ -89,6 +89,7 @@ enum ChatEventTypeEnum: string
             self::FORWARDED_BY_EMAIL->value,
             self::MOVED_TO_SHOP->value,
             self::INTERNAL_NOTE->value,
+            self::TICKET->value,
         ];
     }
 

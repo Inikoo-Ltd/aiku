@@ -30,6 +30,7 @@ const props = defineProps<{
     buttonStyle?: object
     buttonStyleHover?: object
     dark?: boolean
+    hideBasket?: boolean
 }>()
 
 const layout: any = inject("layout", retinaLayoutStructure)
@@ -51,7 +52,7 @@ const isMerlinNewArrival = computed(() => props.product.assistant_reason_code ==
 
 const showReason = computed(() => !!props.product.assistant_reason && !isMerlinBestseller.value && !isMerlinNewArrival.value)
 
-const canAddToBasket = computed(() => !!layout?.iris?.is_logged_in && (isInStock.value || !!props.product.pre_order))
+const canAddToBasket = computed(() => !props.hideBasket && !!layout?.iris?.is_logged_in && (isInStock.value || !!props.product.pre_order))
 
 const bestOffer = computed(() => props.product.product_offers_data?.number_offers > 0 ? getBestOffer(props.product.product_offers_data) : null)
 

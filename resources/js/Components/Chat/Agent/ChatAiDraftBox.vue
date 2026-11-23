@@ -327,6 +327,8 @@ const isQuestion = (action: DraftAction) => action.type === "spam" || action.typ
 const actionIcon = (action: DraftAction) => ({ link: faLink, claim: faBoxFragile }[action.type as string] ?? faClipboardCheck)
 const questionActions = computed(() => draft.value?.actions?.filter(isQuestion) ?? [])
 const staffActions = computed(() => draft.value?.actions?.filter((action) => !isQuestion(action)) ?? [])
+const hasNotes = computed(() => !!draft.value && !!(questionActions.value.length || staffNote.value || staffActions.value.length || draft.value.premonitions?.length
+    || sinceLine.value || draft.value.other_chats?.length || (showTranslation.value && staffTranslation.value?.text) || (editsInMyLanguage.value && staffTranslation.value?.editable) || draft.value.text?.includes("[[")))
 const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.actions?.some((action) => action.type === "task")))
 
 const listen = () => {
@@ -364,7 +366,7 @@ const replaceText = (draftId: number, text: string) => {
     showTranslation.value = false
 }
 
-defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
+defineExpose({ hasNotes, take, draft, busy, offerToEditor, replaceText, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
 </script>
 
 <template>
@@ -402,7 +404,7 @@ defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => dec
                         <FontAwesomeIcon v-if="!draft.premonitions?.length" :icon="faExclamationTriangle" class="mt-px shrink-0 text-pink-600" fixed-width aria-hidden="true" />
                         <div class="min-w-0 flex-1">
                             <span v-if="staffNote" role="button" tabindex="0" class="block cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
-                            <span v-if="draft.premonitions?.length" class="mt-1.5 flex flex-wrap gap-2 text-xs"><TicketStatusChip v-for="premonition in draft.premonitions" :key="premonition.reference" :ticket="premonition" /></span>
+                            <span v-if="draft.premonitions?.length" :class="staffNote ? 'mt-1.5' : ''" class="flex flex-wrap gap-2 text-xs"><TicketStatusChip v-for="premonition in draft.premonitions" :key="premonition.reference" :ticket="premonition" /></span>
                         </div>
                     </div>
                     <template v-for="action in staffActions" :key="action.index">

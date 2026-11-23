@@ -51,6 +51,9 @@ class GetIrisWebBlockBlog
 
         data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $this->publishedDate($webpage, $webBlock));
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
+        $productCarousels = GetIrisBlogProductCarousels::run($webpage, Arr::get($webBlock, 'web_block.layout.data.fieldValue.content'));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.carousel_products', $productCarousels['products']);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.carousel_families', $productCarousels['families']);
 
         return [
              'type' => $webBlock['type'],

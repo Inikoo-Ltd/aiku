@@ -61,6 +61,21 @@ const clearAuthor = () => {
   emits('autoSave')
 }
 
+const productCarouselRoutes = computed(() => {
+  const shopId = props.webpageData?.shop_id ?? props.webpageData?.shop?.id
+  const shopSlug = props.webpageData?.shop_slug ?? props.webpageData?.shop?.slug
+
+  if (!shopId || !shopSlug) {
+    return undefined
+  }
+
+  return {
+    lookupProducts: { name: "grp.json.shop.products_by_codes", parameters: { shop: shopId } },
+    searchProducts: { name: "grp.json.shop.products", parameters: { shop: shopSlug } },
+    searchFamilies: { name: "grp.json.shop.families", parameters: { shop: shopId } },
+  }
+})
+
 const displayDate = computed(() => {
   return props.modelValue.published_date ? props.modelValue.published_date : new Date();
 });
@@ -110,7 +125,7 @@ const displayDate = computed(() => {
     <!-- Content Editor -->
     <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(modelValue?.properties, screenType)}" >
       <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
-        placeholder="Blog content" :toggle="BLOG_EDITOR_TOOLS" :uploadImageRoute="{
+        placeholder="Blog content" :toggle="BLOG_EDITOR_TOOLS" :productCarouselRoutes="productCarouselRoutes" :uploadImageRoute="{
           name: webpageData.images_upload_route.name,
           parameters: {
             ...webpageData.images_upload_route.parameters,

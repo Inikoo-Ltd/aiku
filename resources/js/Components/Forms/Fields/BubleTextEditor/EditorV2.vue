@@ -40,6 +40,9 @@ import TiptapCtaButtonDialog from "@/Components/Forms/Fields/BubleTextEditor/Cta
 import { type CtaButtonAlignment, type CtaButtonAttributes, defaultCtaButtonAttributes } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/ctaButtonLayout"
 import { ScriptBlock, SCRIPT_BLOCK_NODE } from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/ScriptBlockExtension"
 import TiptapScriptBlockDialog from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/TiptapScriptBlockDialog.vue"
+import { ProductCarousel, PRODUCT_CAROUSEL_NODE, type ProductCarouselAttributes, defaultProductCarouselAttributes } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/ProductCarouselExtension"
+import TiptapProductCarouselDialog from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/TiptapProductCarouselDialog.vue"
+import type { ProductCarouselRoutes } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
 import { DEFAULT_EDITOR_TOOLS, fontSizeInPixels } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 
 import {
@@ -65,7 +68,7 @@ import {
     faPaintBrushAlt,
     faTextSize,
 } from "@far"
-import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer, faPaste, faCode } from "@fal"
+import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer, faPaste, faCode, faBoxes } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -97,6 +100,7 @@ const props = withDefaults(defineProps<{
     placeholder?: any | String
     uploadImageRoute?: routeType
     routeGetInternalLink?: routeType
+    productCarouselRoutes?: ProductCarouselRoutes
     mergeTags?: Array<{ name: string, value: string }>
     linkUnderline?: boolean
     readyMadeLinks?: ReadyMadeLink[]
@@ -133,6 +137,8 @@ const showCtaButtonDialog = ref<boolean>(false)
 const ctaButtonInDialog = ref<{ position: number | null, attributes: CtaButtonAttributes } | null>(null)
 const showScriptBlockDialog = ref<boolean>(false)
 const scriptBlockInDialog = ref<{ position: number | null, html: string } | null>(null)
+const showProductCarouselDialog = ref<boolean>(false)
+const productCarouselInDialog = ref<{ position: number | null, attributes: ProductCarouselAttributes } | null>(null)
 const showAddVariableDialog = ref<boolean>(false)
 const showMergeTagDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
@@ -260,6 +266,12 @@ const editorInstance = useEditor({
             onEdit: (position: number) => openScriptBlockDialog(position),
             title: `</> ${ctrans("Script")} · ${ctrans("runs on the website, double click to edit")}`,
             emptyText: ctrans("Empty script"),
+        }),
+        ProductCarousel.configure({
+            onEdit: (position: number) => openProductCarouselDialog(position),
+            title: `${ctrans("Product carousel")} · ${ctrans("double click to edit")}`,
+            emptyText: ctrans("No products yet"),
+            familyText: (family: string, limit: number) => ctrans("Family :family, up to :limit products", { family, limit }),
         }),
         Youtube,
         Highlight.configure({
@@ -696,6 +708,48 @@ function saveScriptBlock(html: string) {
 
 const isScriptBlockSelected = computed(() => !!editorInstance.value?.isActive(SCRIPT_BLOCK_NODE))
 
+function openProductCarouselDialog(position: number | null = null) {
+    const carousel = position === null ? null : editorInstance.value?.state.doc.nodeAt(position)
+    productCarouselInDialog.value = carousel?.type.name === PRODUCT_CAROUSEL_NODE
+        ? { position, attributes: { ...carousel.attrs } as ProductCarouselAttributes }
+        : { position: null, attributes: defaultProductCarouselAttributes() }
+    showProductCarouselDialog.value = true
+    showDialog.value = true
+}
+
+function closeProductCarouselDialog() {
+    showProductCarouselDialog.value = false
+    showDialog.value = false
+    productCarouselInDialog.value = null
+}
+
+function saveProductCarousel(attributes: ProductCarouselAttributes) {
+    const editor = editorInstance.value
+    const position = productCarouselInDialog.value?.position ?? null
+    if (!editor) {
+        return
+    }
+    if (position === null) {
+        editor.chain().focus().insertProductCarousel(attributes).run()
+        return
+    }
+    const carousel = editor.state.doc.nodeAt(position)
+    if (carousel?.type.name !== PRODUCT_CAROUSEL_NODE) {
+        return
+    }
+    editor
+        .chain()
+        .focus()
+        .command(({ tr }) => {
+            tr.setNodeMarkup(position, undefined, { ...carousel.attrs, ...attributes })
+            return true
+        })
+        .setNodeSelection(position)
+        .run()
+}
+
+const isProductCarouselSelected = computed(() => !!editorInstance.value?.isActive(PRODUCT_CAROUSEL_NODE))
+
 const ctaButtonAlignmentOptions: Array<{ value: CtaButtonAlignment, label: string, icon: any }> = [
     { value: 'left', label: 'Align Left', icon: faAlignLeft },
     { value: 'center', label: 'Align Center', icon: faAlignCenter },
@@ -864,7 +918,7 @@ const toggleList = (value: string) => {
 }
 
 const hasMoreMenuItems = computed(() =>
-    ['blockquote', 'divider', 'image', 'video', 'table', 'query', 'ctaButton', 'scriptBlock']
+    ['blockquote', 'divider', 'image', 'video', 'table', 'query', 'ctaButton', 'scriptBlock', 'productCarousel']
         .some(key => props.toggle.includes(key))
 )
 
@@ -1281,7 +1335,7 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="max-h-80 w-52 overflow-y-auto">
                                         <template
-                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider') || toggle.includes('ctaButton') || toggle.includes('scriptBlock')">
+                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider') || toggle.includes('ctaButton') || toggle.includes('scriptBlock') || toggle.includes('productCarousel')">
                                             <div class="my-1 h-px bg-gray-200" aria-hidden="true" />
                                             <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                                                 {{ ctrans('Insert') }}
@@ -1303,6 +1357,12 @@ onMounted(async () => {
                                                 @click="openScriptBlockDialog(); close()">
                                                 <FontAwesomeIcon :icon="faCode" class="h-4 w-4" fixed-width />
                                                 {{ ctrans('Script') }}
+                                            </button>
+                                            <button v-if="toggle.includes('productCarousel')" type="button"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                                                @click="openProductCarouselDialog(); close()">
+                                                <FontAwesomeIcon :icon="faBoxes" class="h-4 w-4" fixed-width />
+                                                {{ ctrans('Product carousel') }}
                                             </button>
                                             <button v-if="toggle.includes('video')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
@@ -1436,6 +1496,21 @@ onMounted(async () => {
                             <FontAwesomeIcon :icon="faSlidersH" class="h-4 w-4" fixed-width />
                         </TiptapToolbarButton>
                         <TiptapToolbarButton :label="ctrans('Remove script')"
+                            @click="editorInstance?.chain().focus().deleteSelection().run()">
+                            <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
+                        </TiptapToolbarButton>
+                    </section>
+
+                    <section v-if="isProductCarouselSelected"
+                        class="mt-1 flex flex-nowrap items-center gap-0.5 overflow-x-auto border-t border-gray-200 pt-1">
+                        <span class="shrink-0 pr-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                            {{ ctrans('Product carousel') }}
+                        </span>
+                        <TiptapToolbarButton :label="ctrans('Edit products')"
+                            @click="openProductCarouselDialog(editorInstance?.state.selection.from ?? null)">
+                            <FontAwesomeIcon :icon="faSlidersH" class="h-4 w-4" fixed-width />
+                        </TiptapToolbarButton>
+                        <TiptapToolbarButton :label="ctrans('Remove product carousel')"
                             @click="editorInstance?.chain().focus().deleteSelection().run()">
                             <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
                         </TiptapToolbarButton>
@@ -1616,6 +1691,15 @@ onMounted(async () => {
             :isNew="scriptBlockInDialog.position === null"
             @close="closeScriptBlockDialog"
             @update="saveScriptBlock"
+        />
+        <TiptapProductCarouselDialog
+            v-if="showProductCarouselDialog && productCarouselInDialog"
+            :show="showProductCarouselDialog"
+            :attributes="productCarouselInDialog.attributes"
+            :isNew="productCarouselInDialog.position === null"
+            :routes="productCarouselRoutes"
+            @close="closeProductCarouselDialog"
+            @update="saveProductCarousel"
         />
         <TiptapCtaButtonDialog
             v-if="showCtaButtonDialog && ctaButtonInDialog"

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore } from "@far"
+import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore, faLifeRing } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCircle, faUserCheck as faUserCheckLight, faSpinner, faClock, faCommentDots, faRocket, faCheckCircle as faCheckCircleLight, faBan as faBanLight } from "@fal"
-
-library.add(faCircle, faUserCheck as faUserCheckLight, faSpinner, faClock, faCommentDots, faRocket, faCheckCircleLight, faBanLight)
+import TicketStatusChip from "@/Components/Tickets/TicketStatusChip.vue"
 
 const props = defineProps<{
     event: {
@@ -38,6 +35,7 @@ const ICONS: Record<string, any> = {
     forwarded_by_email: faEnvelope,
     moved_to_shop: faStore,
     email_bounce: faExclamationTriangle,
+    ticket: faLifeRing,
 }
 
 const icon = computed(() => ICONS[props.event.event_type ?? ""] ?? faInfoCircle)
@@ -126,7 +124,7 @@ const stamp = computed(() => {
             <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-700">
                 <AuraAvatar class="h-4 w-4" />
                 <span>{{ headline }}</span>
-                <span class="ml-auto flex flex-wrap justify-end gap-1 text-xs font-normal"><span v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" class="group relative inline-block align-middle"><a :href="ticket.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded bg-white px-1.5 py-0.5 font-semibold text-gray-700 ring-1 ring-gray-200 hover:text-gray-900"><FontAwesomeIcon :icon="ticket.status_icon.icon" :class="ticket.status_icon.class" fixed-width />{{ ticket.reference }}</a><span class="pointer-events-none absolute right-0 top-full z-30 mt-1 hidden w-64 whitespace-normal rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-lg group-hover:block"><span class="flex items-center gap-1.5 text-xs font-semibold text-gray-800"><FontAwesomeIcon :icon="ticket.status_icon.icon" :class="ticket.status_icon.class" fixed-width />{{ ticket.status_icon.tooltip }}</span><span class="mt-1 block text-xs text-gray-600">{{ ticket.subject }}</span></span></span></span>
+                <span class="ml-auto flex flex-wrap justify-end gap-1 text-xs font-normal"><TicketStatusChip v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" :ticket="ticket" /></span>
             </div>
             <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950"><template v-for="(part, index) in noteParts" :key="index"><a v-if="part.link" :href="part.link.url" target="_blank" rel="noopener" class="font-semibold text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the chat in :shop", { shop: part.link.shop ?? "" }) }}</a><template v-else>{{ part.text }}</template></template></div>
             <div class="mt-1 text-right text-[10px] text-pink-400">{{ stamp }}</div>
@@ -137,6 +135,7 @@ const stamp = computed(() => {
             <span v-if="date" class="shrink-0 text-gray-400">{{ date }} ·</span>
             <FontAwesomeIcon :icon="icon" class="shrink-0 text-[10px]" :class="tone" fixed-width aria-hidden="true" />
             <span class="min-w-0">{{ headline }}</span>
+            <TicketStatusChip v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" :ticket="ticket" class="text-xs" />
             <span class="shrink-0 text-[10px] text-gray-400">· {{ time }}</span>
         </div>
         <div v-if="isPhoneCall && payload.notes"

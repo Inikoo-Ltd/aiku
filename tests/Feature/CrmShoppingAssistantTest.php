@@ -817,6 +817,14 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
     $websiteParameters = [$this->organisation->slug, $this->shop->slug, $website->slug];
     $query             = ['from' => '2021-04-01', 'to' => '2021-04-30', 'tab' => 'conversations'];
 
+    $navigation = App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($this->user);
+    expect(collect($navigation['ai']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.ai.dashboard', 'grp.ai.shopping_assistant.show')
+        ->and(collect($navigation['website']['topMenu']['subSections'])->firstWhere('route.name', 'grp.ai.shopping_assistant.show')['tooltip'])->toBe('Merlin has moved to the AI section');
+    $this->travelTo(\Carbon\Carbon::parse(App\Actions\UI\Grp\Layout\GetGroupNavigation::SHOPPING_ASSISTANT_MOVED_NOTICE_UNTIL)->addDay());
+    expect(collect(App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($this->user)['website']['topMenu']['subSections'])->pluck('route.name')->all())->not->toContain('grp.ai.shopping_assistant.show');
+    $this->travelBack();
+    $this->get(str_replace('/ai/shopping-assistant', '/websites/ai-assistant', route('grp.ai.shopping_assistant.show')))->assertRedirect(route('grp.ai.shopping_assistant.show'));
+
     $this->withoutVite();
     $this->get(route('grp.ai.shopping_assistant.show', $query))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Web/ShoppingAssistantPerformance', false)->where('filters.website_locked', false)->where('title', 'Merlin')->where('pageHead.icon.icon', ['fal', 'fa-hat-wizard']));

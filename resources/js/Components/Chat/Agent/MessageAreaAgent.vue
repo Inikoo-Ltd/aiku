@@ -44,6 +44,7 @@ import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Link } from "@inertiajs/vue3"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
+import TicketStatusChip from "@/Components/Tickets/TicketStatusChip.vue"
 import AskAuraDialog from "@/Components/Chat/Agent/AskAuraDialog.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
@@ -2550,7 +2551,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="!aiDraftBox?.draft ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="!aiDraftBox?.draft || !aiDraftBox?.hasNotes ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
@@ -2558,7 +2559,8 @@ const handleClickOutside = (e: MouseEvent) => {
                         <FontAwesomeIcon :icon="faChevronLeftLight" class="h-[10px] leading-none" fixed-width />
                     </span>
                     <span class="rotate-180 text-[11px] font-semibold text-pink-700 [writing-mode:vertical-rl]">Aura</span>
-                    <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
+                    <TicketStatusChip v-for="premonition in aiDraftBox.draft.premonitions ?? []" :key="premonition.reference" :ticket="premonition" compact class="text-[11px]" @click.stop />
+                    <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
