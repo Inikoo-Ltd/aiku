@@ -2590,8 +2590,8 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
-                <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" info class="!py-0" />
-                <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" info class="!py-0" />
+                <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
+                <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
                 <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
                     :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
