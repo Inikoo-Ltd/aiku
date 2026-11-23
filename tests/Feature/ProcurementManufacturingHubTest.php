@@ -766,8 +766,11 @@ describe('partner shopping list', function () {
         $item->refresh()->transaction->updateQuietly(['created_at' => now()->subDays(60)]);
         $late = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
 
+        $product = (new \App\Models\Catalogue\Product())->setRelation('orgStocks', collect([$this->buyerOrgStock]));
+
         expect($late['is_overdue'])->toBeTrue()
-            ->and($late['eta'])->toBe(now()->addDay()->toDateString());
+            ->and($late['eta'])->toBe(now()->addDay()->toDateString())
+            ->and(collect(GetProductIncomingStock::run($product, true))->firstWhere('quantity', 3.0))->toBe(['quantity' => 3.0, 'eta' => null, 'is_estimate' => true]);
     });
 
     test('a finalised partner order not yet dispatched stays on its way until its stock delivery exists', function () {

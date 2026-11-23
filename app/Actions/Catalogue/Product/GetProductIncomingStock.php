@@ -21,7 +21,6 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +67,11 @@ class GetProductIncomingStock
         $lines = $this->forOrgStocks($product->orgStocks->pluck('id')->all());
 
         return $isObscured
-            ? array_map(fn (array $line) => Arr::only($line, ['quantity', 'eta', 'is_estimate']), $lines)
+            ? array_map(fn (array $line) => [
+                'quantity'    => $line['quantity'],
+                'eta'         => ($line['is_overdue'] ?? false) ? null : $line['eta'],
+                'is_estimate' => $line['is_estimate'],
+            ], $lines)
             : $lines;
     }
 
