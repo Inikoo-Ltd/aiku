@@ -48,7 +48,7 @@ const stats = [
     { title: ctrans("Open jobs"), value: props.data.open_jobs },
     { title: ctrans("In production"), value: inSkos(props.data.units_in_production), note: skosNote(props.data.units_in_production) },
     { title: ctrans("Jobs done"), value: props.data.jobs_done },
-    { title: ctrans("Batch size"), value: props.data.recommended_batch_size ? inSkos(props.data.recommended_batch_size) : "-", note: skosNote(props.data.recommended_batch_size) },
+    { title: ctrans("Batch size"), value: props.data.recommended_batch_size ? inSkos(props.data.recommended_batch_size) : "-", note: props.data.recommended_batch_size ? skosNote(props.data.recommended_batch_size) : null },
 ]
 
 const batchLists = [
@@ -68,7 +68,7 @@ const batchLists = [
             </Link>
         </div>
 
-        <dl class="grid grid-cols-2 gap-px bg-gray-100 sm:grid-cols-4">
+        <dl class="grid grid-cols-2 gap-px bg-gray-100">
             <div v-for="stat in stats" :key="stat.title" class="bg-white px-4 py-3">
                 <dt class="text-xs text-gray-400 whitespace-nowrap">{{ stat.title }}</dt>
                 <dd class="mt-1 text-xl font-semibold tabular-nums text-gray-800">{{ stat.value }}</dd>
@@ -98,22 +98,21 @@ const batchLists = [
 
         <div v-for="list in batchLists" :key="list.key" class="border-t border-gray-200 px-4 py-3">
             <div class="mb-1 text-xs text-gray-400">{{ list.title }}</div>
-            <table v-if="data[list.key].length" class="w-full text-sm">
-                <tbody>
-                    <tr v-for="batch in data[list.key]" :key="batch.id">
-                        <td class="py-0.5">
-                            <Link :href="route(batch.job_order_route.name, batch.job_order_route.parameters)" class="text-gray-700 hover:underline">{{ batch.reference }}</Link>
-                        </td>
-                        <td class="py-0.5 text-gray-500">{{ batch.artisan ?? "-" }}</td>
-                        <td class="py-0.5 text-gray-500 whitespace-nowrap">{{ useFormatTime(batch.date) }}</td>
-                        <td class="py-0.5 pl-2 text-right tabular-nums whitespace-nowrap">
+            <ul v-if="data[list.key].length" class="divide-y divide-gray-100 text-sm">
+                <li v-for="batch in data[list.key]" :key="batch.id" class="py-1">
+                    <div class="flex items-baseline justify-between gap-2">
+                        <Link :href="route(batch.job_order_route.name, batch.job_order_route.parameters)" class="min-w-0 truncate text-gray-700 hover:underline">{{ batch.reference }}</Link>
+                        <span class="shrink-0 text-right tabular-nums">
                             <template v-if="list.key === 'todo_batches'">{{ inSkos(batch.quantity_made) }} / {{ inSkos(batch.quantity) }}</template>
                             <template v-else>{{ inSkos(batch.quantity_received) }}</template>
-                            <span v-if="data.packed_in > 1" class="ml-1 text-xs text-gray-400">({{ inUnits(list.key === 'todo_batches' ? batch.quantity : batch.quantity_received) }})</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between gap-2 text-xs text-gray-400">
+                        <span class="min-w-0">{{ batch.artisan ?? "-" }} · {{ useFormatTime(batch.date) }}</span>
+                        <span v-if="data.packed_in > 1" class="shrink-0 tabular-nums">{{ inUnits(list.key === 'todo_batches' ? batch.quantity : batch.quantity_received) }}</span>
+                    </div>
+                </li>
+            </ul>
             <p v-else class="text-sm text-gray-400">{{ ctrans("None") }}</p>
         </div>
     </section>
