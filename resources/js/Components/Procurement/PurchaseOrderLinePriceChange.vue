@@ -32,6 +32,8 @@ const props = defineProps<{
 		code: string
 		unit_cost: number | string
 		net_currency?: string
+		supplier_unit_cost?: number | string | null
+		supplier_unit_cost_currency?: string | null
 		price_query: PriceQuery | null
 		askPriceRoute: routeType | null
 		answerPriceRoute: routeType | null
@@ -71,10 +73,30 @@ const form = useForm<{ price: number | null; note: string | null }>({
 
 const formError = computed(() => Object.values(form.errors)[0] as string | undefined)
 
+const currentSupplierUnitCost = computed(() => {
+	const supplierUnitCost = props.item.supplier_unit_cost
+	const currency = props.item.supplier_unit_cost_currency
+	const isSameCurrency = !currency || currency === props.item.net_currency
+
+	if (supplierUnitCost === undefined || supplierUnitCost === null || !isSameCurrency || Number(supplierUnitCost) === Number(props.item.unit_cost)) {
+		return null
+	}
+
+	return supplierUnitCost
+})
+
+function askStartCost() {
+	if (isPending.value) {
+		return query.value?.unit_cost
+	}
+
+	return currentSupplierUnitCost.value ?? props.item.unit_cost
+}
+
 function openDialog(kind: "ask" | "adjust") {
 	form.reset()
 	form.clearErrors()
-	const startCost = kind === "ask" && isPending.value ? query.value?.unit_cost : props.item.unit_cost
+	const startCost = kind === "ask" ? askStartCost() : props.item.unit_cost
 	form.price = Math.round(Number(startCost ?? 0) * props.unitsPerLevel * 10000) / 10000
 	form.note = kind === "ask" && isPending.value ? query.value?.note ?? null : null
 	dialog.value = kind
@@ -201,6 +223,9 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 			<div class="space-y-3 text-sm">
 				<p class="text-gray-600">
 					{{ ctrans("Current price: :price", { price: money(item.unit_cost) }) }} <span class="text-gray-500">({{ costLabel }})</span>
+				</p>
+				<p v-if="dialog === 'ask' && !isPending && currentSupplierUnitCost !== null" class="text-xs text-amber-700">
+					{{ ctrans("Filled in with the supplier product's current price: :price", { price: money(currentSupplierUnitCost) }) }}
 				</p>
 				<label class="block space-y-1">
 					<span class="text-xs text-gray-500">{{ dialog === "ask" ? ctrans("Price the supplier asks") : ctrans("Price for this line") }} ({{ costLabel }}<template v-if="item.net_currency">, {{ item.net_currency }}</template>)</span>
