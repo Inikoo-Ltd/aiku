@@ -748,7 +748,7 @@ test('an engineer can raise a MER ticket from a Merlin conversation with the tic
         ->and($ticket->customer_id)->toBe($conversation->customer_id)
         ->and($ticket->shop_id)->toBe($conversation->customer->shop_id)
         ->and($ticket->tags)->toContain('merlin', 'allegro')
-        ->and(App\Http\Resources\Helpers\TicketResource::make($ticket)->resolve()['source']['url'])->toContain('/websites/ai-assistant/conversations/'.$conversation->ulid);
+        ->and(App\Http\Resources\Helpers\TicketResource::make($ticket)->resolve()['source']['url'])->toContain('/ai/shopping-assistant/conversations/'.$conversation->ulid);
 
     $ticket->update(['assignee_id' => $engineer->id]);
     $messages = $conversation->messages()->count();

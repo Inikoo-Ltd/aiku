@@ -2148,6 +2148,15 @@ test('an agent asks Aura about the chat: she looks it up read only as that agent
     $this->postJson(route('grp.api.chats.aura_questions.redraft', [$question->id]), ['text' => '', 'draft_id' => $draft->id + 1000])
         ->assertStatus(422)
         ->assertJsonValidationErrors('redraft');
+
+    $listed = collect(get(route('grp.ai.aura.questions', ['filter' => ['shop' => $this->shop->slug, 'redrafted' => 'yes']]))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Ai/AuraQuestions'))
+        ->viewData('page')['props']['data']['data']);
+    expect($listed->pluck('question')->all())->toBe(['Is NOPE-404 in stock to send a replacement?'])
+        ->and($listed->first()['lookups'])->toBe(['check_products'])
+        ->and($listed->first()['redrafted'])->toBeTrue();
+    $this->getJson(route('grp.ai.aura.questions'))->assertNotFound();
+    actingAs($colleague)->get(route('grp.ai.aura.questions'))->assertForbidden();
 });
 
 test('the Re: line signals are counted for a linked customer: complaints this week, emails today, first order', function () {

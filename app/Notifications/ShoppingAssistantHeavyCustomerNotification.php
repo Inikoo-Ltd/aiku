@@ -42,6 +42,6 @@ class ShoppingAssistantHeavyCustomerNotification extends Notification
                 'website'  => $this->website,
             ]))
             ->line(__('Nobody has been blocked. If the budget runs out, the assistant pauses on this website until next month.'))
-            ->action(__('Open the AI Assistant report'), route('grp.websites.shopping_assistant.show'));
+            ->action(__('Open the AI Assistant report'), route('grp.ai.shopping_assistant.show'));
     }
 }

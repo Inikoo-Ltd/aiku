@@ -4,7 +4,7 @@ summary: Two switches in the website settings help trade customers find what to 
 date: 2026-11-12
 tags: website, search, shop, crm
 category: marketing
-help_routes: grp.org.shops.show.web.websites.edit, grp.org.shops.show.web.analytics.shopping_assistant, grp.websites.shopping_assistant
+help_routes: grp.org.shops.show.web.websites.edit, grp.org.shops.show.web.analytics.shopping_assistant, grp.ai.shopping_assistant
 ---
 
 <aside class="tldr">

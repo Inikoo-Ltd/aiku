@@ -309,7 +309,7 @@ class TicketWriteTool extends Tool
             'priority'    => $schema->string()->description('low, normal, high or urgent'),
             'assignee'    => $schema->string()->description('Username to assign, empty string to unassign'),
             'type'        => $schema->string()->description('New tickets only: help (HELP-n, default), engineer (INI-n, engineering work such as upgrades, refactors and tech debt), premonition (PRE-n, aiku found to be wrong while serving customers: records that contradict what happened, stuck statuses, wrong data) or merlin (MER-n, a customer\'s problem from a Merlin conversation that only engineers can fix; pass conversation)'),
-            'conversation' => $schema->string()->description('For type merlin: the ULID of the Merlin conversation (the last part of its /websites/ai-assistant/conversations/ link)'),
+            'conversation' => $schema->string()->description('For type merlin: the ULID of the Merlin conversation (the last part of its /ai/shopping-assistant/conversations/ link)'),
             'kind'        => $schema->string()->description('escalation, bug, feature, task (engineer to engineer) or qa (engineer to QA)'),
             'module'      => $schema->string()->description('Aiku module slug, e.g. dispatching'),
             'tags'        => $schema->array()->description('Full tag list to set, e.g. ["not a bug"]')->items($schema->string()),

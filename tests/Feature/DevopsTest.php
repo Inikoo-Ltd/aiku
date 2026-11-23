@@ -451,7 +451,7 @@ it('records each ai call under its feature, rolls it into the ai time series and
         ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
             ->where('title', 'Shopping assistant answers')
             ->where('pageHead.actions.0.label', 'Merlin report')
-            ->where('pageHead.actions.0.route.name', 'grp.websites.shopping_assistant.show'));
+            ->where('pageHead.actions.0.route.name', 'grp.ai.shopping_assistant.show'));
 
     $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI', 'sort' => '-cost']))->assertOk();
 

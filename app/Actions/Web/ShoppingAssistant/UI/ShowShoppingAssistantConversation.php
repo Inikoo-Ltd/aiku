@@ -328,7 +328,7 @@ class ShowShoppingAssistantConversation extends OrgAction
                         'name'       => match (true) {
                             $this->inShopMenu     => 'grp.org.shops.show.ai_salesman.conversations.show',
                             (bool) $this->website => 'grp.org.shops.show.web.analytics.shopping_assistant.conversations.show',
-                            default               => 'grp.websites.shopping_assistant.conversations.show',
+                            default               => 'grp.ai.shopping_assistant.conversations.show',
                         },
                         'parameters' => $routeParameters,
                     ],

@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Chat\UI\IndexChatAiAcceptance;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
@@ -108,7 +109,7 @@ class GetGroupNavigation
         }
 
         if ($user->hasGroupAccess()) {
-            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user), $this->canViewGroupShoppingAssistant($user) ? GetShoppingAssistantSettings::nameInGroup($user->group_id) : null);
+            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user));
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -363,7 +364,29 @@ class GetGroupNavigation
                 'name' => 'grp.ai.dashboard',
             ],
             'topMenu' => [
-                'subSections' => [],
+                'subSections' => [
+                    [
+                        'label'   => __('Dashboard'),
+                        'tooltip' => __('AI spend and usage'),
+                        'icon'    => ['fal', 'fa-tachometer-alt'],
+                        'root'    => 'grp.ai.dashboard',
+                        'route'   => ['name' => 'grp.ai.dashboard', 'parameters' => []],
+                    ],
+                    ...($this->canViewGroupShoppingAssistant($user) ? [[
+                        'label'   => GetShoppingAssistantSettings::nameInGroup($user->group_id),
+                        'tooltip' => __('What the AI shopping assistant did for sales on every website'),
+                        'icon'    => ['fal', 'fa-hat-wizard'],
+                        'root'    => 'grp.ai.shopping_assistant.',
+                        'route'   => ['name' => 'grp.ai.shopping_assistant.show', 'parameters' => []],
+                    ]] : []),
+                    ...(IndexChatAiAcceptance::make()->supervisedShopIds($user)->isNotEmpty() ? [[
+                        'label'   => 'Aura',
+                        'tooltip' => __('What customer service asked Aura from the reply box'),
+                        'icon'    => ['fal', 'fa-comment-dots'],
+                        'root'    => 'grp.ai.aura.',
+                        'route'   => ['name' => 'grp.ai.aura.questions', 'parameters' => []],
+                    ]] : []),
+                ],
             ],
         ];
 
@@ -706,7 +729,7 @@ class GetGroupNavigation
         ];
     }
 
-    private function getWebsiteNavs(bool $canViewGroupSeo, ?string $shoppingAssistantName): array
+    private function getWebsiteNavs(bool $canViewGroupSeo): array
     {
         return [
             'label'   => __('WebOps'),
@@ -765,18 +788,6 @@ class GetGroupNavigation
                         'root'    => 'grp.websites.google_tag_manager',
                         'route'   => [
                             'name'       => 'grp.websites.google_tag_manager.index',
-                            'parameters' => []
-                        ]
-                    ],
-                    ]),
-                    ...(!$shoppingAssistantName ? [] : [
-                    [
-                        'label'   => $shoppingAssistantName,
-                        'tooltip' => __('What the AI shopping assistant did for sales on every website'),
-                        'icon'    => ['fal', 'fa-hat-wizard'],
-                        'root'    => 'grp.websites.shopping_assistant.',
-                        'route'   => [
-                            'name'       => 'grp.websites.shopping_assistant.show',
                             'parameters' => []
                         ]
                     ],
