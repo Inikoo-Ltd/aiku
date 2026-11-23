@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +34,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -292,6 +295,7 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
                 lineHeight = 15.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                style = LocalTextStyle.current.copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph),
             )
         }
         if (shortcut.badge != null) {

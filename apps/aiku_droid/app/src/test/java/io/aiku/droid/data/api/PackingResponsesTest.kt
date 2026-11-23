@@ -21,7 +21,7 @@ class PackingResponsesTest {
         "parcels":[{"weight_kg":1.2,"dimensions_cm":[30,20,10],"boxes":2},{"weight_kg":0.5,"dimensions_cm":[null,null,null],"boxes":null}],
         "parcels_editable":false,
         "shipping":{"can_add":true,"can_print_labels":true,"locked_shipper_id":null,"preferred_shipper_id":4,"locked_by":null,"can_override_lock":false,
-        "tracking_channel":"Shopify","unconfirmed_shipping_order":false,"external":{"engine_label":"Faire"}},
+        "tracking_channel":"Shopify","unconfirmed_shipping_order":null,"external":{"engine_label":"Faire"}},
         "shipments":[{"id":77,"shipper":"APC","shipper_code":"apc","tracking":"JD0001","trackings":["JD0001","JD0002"],"tracking_urls":["https://apc.example/JD0001",null],
         "is_printable":true,"label":{"kind":"download","url":"https://app.aiku.test/app/api/mobile/delivery-notes/9/shipments/77/label"},"can_delete":true},
         {"id":78,"shipper":"Faire","tracking":null,"is_printable":true,"label":{"kind":"external","url":"https://faire.example/label/78"}}],
@@ -58,6 +58,7 @@ class PackingResponsesTest {
         assertFalse(note.parcelsEditable)
         assertEquals(4L, note.shipping.preferredShipperId)
         assertTrue(note.shipping.canPrintLabels)
+        assertNull(note.shipping.unconfirmedShippingOrder)
         assertEquals("Shopify", note.shipping.trackingChannel)
         assertEquals("Faire", note.shipping.external?.engineLabel)
         assertEquals("https://app.aiku.test/app/api/mobile/delivery-notes/9/pdf", note.documents.deliveryNotePdfUrl)
@@ -277,5 +278,18 @@ class PackingResponsesTest {
         assertEquals(WriteMethod.Post, request.method)
         assertEquals(path, request.path)
         assertEquals(body, request.body.toString())
+    }
+
+    @Test
+    fun `a note whose order has shipping to be confirmed still opens`() {
+        val json = noteJson.replace("\"unconfirmed_shipping_order\":null", "\"unconfirmed_shipping_order\":\"GB550706\"")
+        val note = (GoodsOutResponses.parseDeliveryNote(200, """{"data":$json}""") as GoodsOutResult.Loaded).value
+
+        assertEquals("GB550706", note.shipping.unconfirmedShippingOrder)
+
+        val saved = noteJson.replace("\"unconfirmed_shipping_order\":null", "\"unconfirmed_shipping_order\":false")
+        val savedNote = (GoodsOutResponses.parseDeliveryNote(200, """{"data":$saved}""") as GoodsOutResult.Loaded).value
+
+        assertNull(savedNote.shipping.unconfirmedShippingOrder)
     }
 }

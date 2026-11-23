@@ -1,9 +1,16 @@
 package io.aiku.droid.data.api
 
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.JsonNull
@@ -261,6 +268,20 @@ data class DeliveryNoteShipment(
 @Serializable
 data class ExternalShipping(@SerialName("engine_label") val engineLabel: String = "")
 
+object OrderReferenceOrNull : KSerializer<String?> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("io.aiku.droid.OrderReferenceOrNull", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): String? {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() as? JsonPrimitive ?: return null
+        return element.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun serialize(encoder: Encoder, value: String?) {
+        if (value == null) encoder.encodeNull() else encoder.encodeString(value)
+    }
+}
+
 @Serializable
 data class NoteShipping(
     @SerialName("can_add") val canAdd: Boolean = false,
@@ -270,7 +291,7 @@ data class NoteShipping(
     @SerialName("locked_by") val lockedBy: String? = null,
     @SerialName("can_override_lock") val canOverrideLock: Boolean = false,
     @SerialName("tracking_channel") val trackingChannel: String? = null,
-    @SerialName("unconfirmed_shipping_order") val unconfirmedShippingOrder: Boolean = false,
+    @Serializable(with = OrderReferenceOrNull::class) @SerialName("unconfirmed_shipping_order") val unconfirmedShippingOrder: String? = null,
     val external: ExternalShipping? = null,
 )
 

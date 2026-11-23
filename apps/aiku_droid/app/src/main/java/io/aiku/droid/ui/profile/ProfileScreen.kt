@@ -225,8 +225,10 @@ fun ProfileScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        ProfileSection(title = stringResource(R.string.states_previews)) {
-            SkeletonPreviews()
+        if (BuildConfig.DEBUG) {
+            ProfileSection(title = stringResource(R.string.states_previews)) {
+                SkeletonPreviews()
+            }
         }
     }
 }
