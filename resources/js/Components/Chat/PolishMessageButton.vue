@@ -76,13 +76,13 @@ const undo = () => {
 <template>
     <div class="flex min-w-0 items-center gap-1">
         <button v-if="original === null" type="button" @mousedown.prevent @click="polish" :disabled="isPolishing || !(modelValue ?? '').trim()"
-            class="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex shrink-0 items-center gap-1 rounded-md border border-pink-300 bg-white px-1.5 py-0.5 text-[11px] font-medium text-pink-800 transition-colors hover:bg-pink-50 disabled:cursor-not-allowed disabled:opacity-50"
             v-tooltip="ctrans('Correct the grammar, spelling and flow of what you wrote, keeping your words, language and meaning')">
-            <FontAwesomeIcon :icon="isPolishing ? faSpinner : faWandMagicSparkles" :spin="isPolishing" class="text-sm" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon :icon="isPolishing ? faSpinner : faWandMagicSparkles" :spin="isPolishing" class="text-pink-500" fixed-width aria-hidden="true" />
             {{ isPolishing ? ctrans("Polishing…") : ctrans("Polish") }}
         </button>
         <template v-else>
-            <span class="flex items-center gap-1.5 px-1 text-xs text-gray-500">
+            <span class="flex items-center gap-1.5 px-1 text-xs text-pink-600">
                 <FontAwesomeIcon :icon="faWandMagicSparkles" class="text-sm" fixed-width aria-hidden="true" />
                 {{ ctrans("Polished: read it before sending") }}
             </span>
