@@ -122,14 +122,14 @@ const stamp = computed(() => {
 <template>
     <div v-if="isInternalNote" class="flex justify-center py-2">
         <div class="w-full max-w-xl rounded-lg border border-pink-300 bg-pink-50 px-3 py-2 text-left shadow-sm">
-            <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-700">
-                <FontAwesomeIcon v-if="info" :icon="faInfoCircle" class="text-sm text-pink-500" fixed-width aria-hidden="true" />
+            <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-800">
+                <FontAwesomeIcon v-if="info" :icon="faInfoCircle" class="text-sm text-pink-700" fixed-width aria-hidden="true" />
                 <AuraAvatar v-else class="h-4 w-4" />
                 <span>{{ info ? ctrans("FYI") : headline }}</span>
                 <span class="ml-auto flex flex-wrap justify-end gap-1 text-xs font-normal"><TicketStatusChip v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" :ticket="ticket" /></span>
             </div>
             <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950"><template v-for="(part, index) in noteParts" :key="index"><a v-if="part.link" :href="part.link.url" target="_blank" rel="noopener" class="font-semibold text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the chat in :shop", { shop: part.link.shop ?? "" }) }}</a><template v-else>{{ part.text }}</template></template></div>
-            <div class="mt-1 text-right text-[10px] text-pink-400">{{ stamp }}</div>
+            <div class="mt-1 text-right text-[10px] text-pink-700">{{ stamp }}</div>
         </div>
     </div>
     <div v-else class="flex flex-col items-center py-0.5 text-center">

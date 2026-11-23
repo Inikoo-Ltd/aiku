@@ -1218,6 +1218,13 @@ test('an Aiku note naming a ticket shows it with its live status', function () {
     expect($shown['description'])->toBe('Daniella raised a ticket')
         ->and($shown['note_tickets'][0])->toMatchArray(['reference' => $ticket->reference, 'progress' => 'fixing'])
         ->and(\App\Enums\CRM\Livechat\ChatEventTypeEnum::timelineTypes())->toContain('ticket');
+
+    $routineNote = $chat->chatEvents()->create([
+        'event_type' => \App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE,
+        'actor_type' => 'ai',
+        'payload'    => ['text' => 'Hourly CS routine: the message above is the photo for her other email'],
+    ]);
+    expect((new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($routineNote))->resolve()['note'])->toBe('The message above is the photo for her other email');
 });
 
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
