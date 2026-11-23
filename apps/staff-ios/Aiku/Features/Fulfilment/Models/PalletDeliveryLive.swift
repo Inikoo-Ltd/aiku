@@ -137,7 +137,7 @@ enum PalletDeliveryText {
             case .offline: return "You need an internet connection to do this. Check the connection and try again."
             case .unauthorized: return "Your session has ended. Sign in again."
             case .http(403): return "You don’t have the right to do this in this warehouse."
-            case .http(404): return "This delivery is not in this warehouse."
+            case .http(404): return GoodsInText.notFound
             default: return apiError.localizedDescription
             }
         }
@@ -145,6 +145,19 @@ enum PalletDeliveryText {
             return "Aiku sent something the app could not read."
         }
         return error.localizedDescription
+    }
+}
+
+extension MobilePalletDeliveryWrite {
+    var actionKey: String {
+        switch self {
+        case .receive: "receive"
+        case .startBooking: "start_booking"
+        case .finishBooking: "finish_booking"
+        case .bookIn: "book_in"
+        case .notReceived: "not_received"
+        case .undoNotReceived: "undo_not_received"
+        }
     }
 }
 
@@ -319,6 +332,10 @@ final class PalletDeliveryLive {
 
     var isWorking: Bool { working != nil }
     var openPallet: MobileDeliveryPallet? { openPalletID.flatMap { delivery?.pallet($0) } }
+
+    func isWorking(on actionKey: String) -> Bool {
+        working?.actionKey == actionKey
+    }
 
     func load() async {
         guard !isWorking else { return }

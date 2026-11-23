@@ -293,6 +293,7 @@ final class PalletReturnLive {
     private(set) var sheetError: String?
     private(set) var fieldErrors: [String: [String]] = [:]
     private(set) var queuedScans = 0
+    private(set) var scanMisses = 0
     private(set) var unsure: MobilePalletReturnWrite?
     private(set) var shippers = GoodsOutShipperList()
     private(set) var isLoadingShippers = false
@@ -416,13 +417,17 @@ final class PalletReturnLive {
             return .done("Pallet \(pallet.reference ?? code): now scan its items", .info)
         }
         guard let item = detail.storedItems.first(where: { $0.storedItem.matches(code) }) else {
+            scanMisses += 1
             return .done("\(code) isn’t on this return", .info)
         }
         let line = item.lines.first { $0.pallet?.id == selectedPalletID && $0.hasActions }
             ?? item.lines.first { $0.can("pick") }
             ?? item.lines.first { $0.hasActions }
             ?? item.lines.first
-        guard let line else { return .done("\(code) isn’t on this return", .info) }
+        guard let line else {
+            scanMisses += 1
+            return .done("\(code) isn’t on this return", .info)
+        }
         return .lineFound(line.lineId)
     }
 
@@ -512,6 +517,9 @@ final class PalletReturnLive {
     private func scanEvent(code: String, result: MobilePalletReturnWriteResult.Result?) -> PalletReturnEvent {
         let status = result?.status ?? ""
         let message = result?.message
+        if status != "picked", status != "done" {
+            scanMisses += 1
+        }
         switch status {
         case "picked", "done": return .done(message ?? "\(code) picked", .success)
         case "already_picked", "nothing_changed": return .done(message ?? "\(code) is already picked", .info)

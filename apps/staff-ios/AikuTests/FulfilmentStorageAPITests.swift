@@ -445,4 +445,75 @@ struct FulfilmentStorageAPITests {
         #expect(target.detail == "Storing · 4W11")
         #expect(target.link == .fulfilment(.pallet(id: 49928, reference: "000035-awf-p0019")))
     }
+
+    @Test func startingAnAuditSpinsItsRowAndShowsAikusMessageLikeAndroid() async {
+        let (transport, client) = client()
+        let live = StoredPalletLive(warehouseID: 1, palletID: 49928, apiClient: client)
+        await live.load()
+        transport.hold("mobile/warehouses/1/pallets/49928/audit")
+
+        let starting = Task { await live.startAudit() }
+        await waitUntil { live.working == "audit" }
+        #expect(live.working == "audit")
+        #expect(live.done == nil)
+        transport.release()
+        await starting.value
+
+        #expect(live.working == nil)
+        #expect(live.done == FulfilmentDone(message: "Audit started.", tone: .success))
+        #expect(live.startedAuditID == 70)
+    }
+
+    @Test func aPalletOrAuditThatIsNotThereIsNotCalledADeliveryLikeAndroid() async {
+        let (_, client) = client()
+        let pallet = StoredPalletLive(warehouseID: 1, palletID: 404, apiClient: client)
+        let audit = StoredItemAuditLive(warehouseID: 1, auditID: 404, apiClient: client)
+
+        await pallet.load()
+        await audit.load()
+
+        #expect(pallet.loadError == "It doesn’t exist, or it belongs to another warehouse.")
+        #expect(audit.loadError == "It doesn’t exist, or it belongs to another warehouse.")
+    }
+
+    @Test func aBarcodeAikuDoesNotKnowVibratesButAMissingAnswerDoesNotLikeAndroid() async {
+        let (transport, client) = client()
+        let ids = RequestIDSequence()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client, makeRequestID: { ids.next() })
+        await live.load()
+
+        await live.scan("502")
+        #expect(live.scanMisses == 0)
+
+        transport.fail(Self.countPath, status: 422, body: #"{"message":"No item of this customer has the code 999.","errors":{"barcode":["No item of this customer has the code 999."]}}"#)
+        await live.scan("999")
+        #expect(live.scanMisses == 1)
+        #expect(live.done == FulfilmentDone(message: "No item of this customer has the code 999.", tone: .danger))
+
+        transport.fail(Self.countPath, status: 503)
+        await live.scan("502")
+        #expect(live.scanMisses == 1)
+        #expect(live.unsure != nil)
+    }
+
+    @Test func saveCountSpinsForACountFromTheSheetButNotForAScanLikeAndroid() async {
+        let (transport, client) = client()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client)
+        await live.load()
+
+        transport.hold(Self.countPath)
+        let counting = Task { await live.count(storedItemID: 6, quantity: 3) }
+        await waitUntil { live.working != nil }
+        #expect(live.isSavingCount)
+        transport.release()
+        _ = await counting.value
+        #expect(!live.isSavingCount)
+
+        transport.hold(Self.countPath)
+        let scanning = Task { await live.scan("502") }
+        await waitUntil { live.working != nil }
+        #expect(!live.isSavingCount)
+        transport.release()
+        await scanning.value
+    }
 }

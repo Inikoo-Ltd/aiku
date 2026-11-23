@@ -478,4 +478,36 @@ struct FulfilmentReturnsAPITests {
         #expect(detail.action("add_shipment") != nil)
         #expect(detail.action("dispatch") == nil)
     }
+
+    @Test func aScanThatPicksNothingVibratesButAMissingAnswerDoesNotLikeAndroid() async {
+        let (live, transport) = await live(6385, makeRequestID: { UUID().uuidString.lowercased() })
+
+        await live.scan("5055")
+        #expect(live.scanMisses == 0)
+
+        transport.fail(Self.scanPath, status: 200, body: Self.write(Self.itemsReturn, status: "not_found", message: "999 isn’t on this return"))
+        await live.scan("999")
+        #expect(live.scanMisses == 1)
+        #expect(live.event == .done("999 isn’t on this return", .warn))
+
+        transport.fail(Self.scanPath, status: 200, body: Self.write(Self.itemsReturn, status: "already_picked", message: "SI-55 is already picked"))
+        await live.scan("5055")
+        #expect(live.scanMisses == 2)
+
+        transport.fail(Self.scanPath, status: 502)
+        await live.scan("5055")
+        #expect(live.scanMisses == 2)
+        #expect(live.unsure != nil)
+    }
+
+    @Test func aCodeNotOnAReturnWithoutScanToPickVibratesLikeAndroid() async {
+        let (live, _) = await live(6381)
+
+        await live.scan("p-11")
+        #expect(live.scanMisses == 0)
+
+        await live.scan("nothing-here")
+        #expect(live.scanMisses == 1)
+        #expect(live.event == .done("nothing-here isn’t on this return", .info))
+    }
 }

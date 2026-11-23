@@ -394,6 +394,9 @@ final class StoredPalletLive {
         do {
             let result = try await apiClient.startPalletAudit(warehouseID: warehouseID, palletID: palletID)
             working = nil
+            if let message = result.result?.message?.trimmingCharacters(in: .whitespacesAndNewlines), !message.isEmpty {
+                done = FulfilmentDone(message: message, tone: .success)
+            }
             startedAuditID = result.data.id
         } catch {
             working = nil
@@ -501,6 +504,7 @@ final class StoredItemAuditLive {
     private(set) var lastScanned: String?
     private(set) var isCompleted = false
     private(set) var queuedScans = 0
+    private(set) var scanMisses = 0
     private(set) var unsure: MobileStoredItemAuditWrite?
 
     private var pending: [QueuedAuditWrite] = []
@@ -521,6 +525,14 @@ final class StoredItemAuditLive {
     }
 
     var isWorking: Bool { working != nil || isDraining }
+
+    var isSavingCount: Bool {
+        switch working {
+        case .count(let body): body.add == nil
+        case .removeCount: true
+        case .complete, nil: false
+        }
+    }
 
     func load() async {
         guard !isWorking else { return }
@@ -651,6 +663,9 @@ final class StoredItemAuditLive {
             if write.scannedCode != nil, GoodsInText.isUnsure(error) {
                 done = FulfilmentDone(message: text, tone: .warn)
                 return .unsure
+            }
+            if write.scannedCode != nil, case .validation = error as? APIError {
+                scanMisses += 1
             }
             done = FulfilmentDone(message: text, tone: .danger)
             return .refused

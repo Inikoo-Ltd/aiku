@@ -235,4 +235,19 @@ struct FulfilmentInboundAPITests {
         #expect(target.kind == .palletDelivery)
         #expect(target.link == .fulfilment(.palletDelivery(id: 392, reference: "000016-awf-034")))
     }
+
+    @Test func eachDeliveryWriteSpinsOnlyItsOwnButtonLikeAndroid() {
+        let body = MobilePalletBookInBody(locationId: 7, locationCode: nil)
+
+        #expect(MobilePalletDeliveryWrite.receive.actionKey == "receive")
+        #expect(MobilePalletDeliveryWrite.startBooking.actionKey == "start_booking")
+        #expect(MobilePalletDeliveryWrite.finishBooking.actionKey == "finish_booking")
+        #expect(MobilePalletDeliveryWrite.bookIn(palletID: 1, body: body).actionKey == "book_in")
+        #expect(MobilePalletDeliveryWrite.notReceived(palletID: 1).actionKey == "not_received")
+        #expect(MobilePalletDeliveryWrite.undoNotReceived(palletID: 1).actionKey == "undo_not_received")
+    }
+
+    @Test func somethingNotInTheWarehouseIsNotCalledADeliveryLikeAndroid() {
+        #expect(PalletDeliveryText.message(for: APIError.http(statusCode: 404)) == "It doesn’t exist, or it belongs to another warehouse.")
+    }
 }

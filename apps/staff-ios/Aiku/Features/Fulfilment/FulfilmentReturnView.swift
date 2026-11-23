@@ -110,6 +110,7 @@ private struct PalletReturnScreen: View {
             .hardwareScanner(isEnabled: listens && sheet == nil && confirm == nil && !isScanning) { code in
                 Task { await live.scan(code) }
             }
+            .scanMissFeedback(live.scanMisses)
             .fullScreenCover(isPresented: $isScanning) {
                 FulfilmentCodeCamera(title: "Scan to pick", onClose: { isScanning = false }) { code in
                     isScanning = false
@@ -292,7 +293,7 @@ private struct PalletReturnScreen: View {
                     iconTone: detail.inserts.unprinted > 0 ? .warn : .success,
                     trailing: {
                         if let print = detail.action("print_inserts") {
-                            LinkButton(print.label.isEmpty ? "Print" : print.label) {
+                            LinkButton(live.working == .printInserts ? "Printing…" : (print.label.isEmpty ? "Print" : print.label)) {
                                 Task { await live.printInserts() }
                             }
                             .disabled(live.isWorking)
@@ -422,7 +423,8 @@ private struct PalletReturnScreen: View {
                             .disabled(live.isWorking)
                         }
                         if canDelete, shipment.canDelete {
-                            Button("Delete") { confirm = .deleteShipment(shipment) }
+                            Button(live.working == .deleteShipment(id: shipment.id) ? "Deleting…" : "Delete") { confirm = .deleteShipment(shipment) }
+                                .disabled(live.isWorking)
                                 .font(.aiku(14, .semibold))
                                 .foregroundStyle(AikuColor.danger)
                                 .frame(minHeight: 44)
@@ -483,12 +485,12 @@ private struct PalletReturnScreen: View {
         switch detail.state {
         case "confirmed", "picking":
             if let start {
-                return AnyView(AikuButton(start.label.isEmpty ? "Start picking" : start.label, look: PalletReturnActionLooks.look(for: start.key)) { confirm = .start }
+                return AnyView(AikuButton(start.label.isEmpty ? "Start picking" : start.label, look: PalletReturnActionLooks.look(for: start.key), isLoading: live.isWorking && sheet == nil) { confirm = .start }
                     .disabled(live.isWorking)
                     .accessibilityIdentifier("fulfilment.return.startPicking"))
             }
             if let finish {
-                return AnyView(AikuButton(finish.label.isEmpty ? "Set as picked" : finish.label, look: PalletReturnActionLooks.look(for: finish.key)) { confirm = .finish }
+                return AnyView(AikuButton(finish.label.isEmpty ? "Set as picked" : finish.label, look: PalletReturnActionLooks.look(for: finish.key), isLoading: live.isWorking && sheet == nil) { confirm = .finish }
                     .disabled(live.isWorking)
                     .accessibilityIdentifier("fulfilment.return.finishPicking"))
             }
@@ -510,7 +512,7 @@ private struct PalletReturnScreen: View {
                         }
                     }
                     if next.can("pick") {
-                        AikuButton("Pick \(next.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick")) {
+                        AikuButton("Pick \(next.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking && sheet == nil) {
                             Task { await live.pickPallet(next.lineId) }
                         }
                         .disabled(live.isWorking)
@@ -528,7 +530,7 @@ private struct PalletReturnScreen: View {
                     .accessibilityIdentifier("fulfilment.return.addShipment")
                 }
                 if let dispatch {
-                    AikuButton(dispatch.label.isEmpty ? "Dispatch" : dispatch.label, look: PalletReturnActionLooks.look(for: dispatch.key)) { confirm = .dispatch }
+                    AikuButton(dispatch.label.isEmpty ? "Dispatch" : dispatch.label, look: PalletReturnActionLooks.look(for: dispatch.key), isLoading: live.working == .dispatch) { confirm = .dispatch }
                         .disabled(live.isWorking)
                         .accessibilityIdentifier("fulfilment.return.dispatch")
                 } else if let blocked = detail.dispatchBlocked {
@@ -721,7 +723,7 @@ private struct PalletLineSheet: View {
             }
         } footer: {
             if line.can("pick") {
-                AikuButton(line.label("pick") ?? "Pick \(line.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick")) {
+                AikuButton(line.label("pick") ?? "Pick \(line.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task { if await live.pickPallet(line.lineId) { onClose() } }
                 }
                 .disabled(live.isWorking)
@@ -732,7 +734,7 @@ private struct PalletLineSheet: View {
                     .accessibilityIdentifier("fulfilment.return.line.notPicked")
             }
             if line.can("undo") {
-                AikuButton(line.label("undo") ?? "Undo", look: PalletReturnActionLooks.look(for: "undo")) {
+                AikuButton(line.label("undo") ?? "Undo", look: PalletReturnActionLooks.look(for: "undo"), isLoading: live.isWorking && !line.can("pick")) {
                     Task { if await live.undo(line.lineId) { onClose() } }
                 }
                 .disabled(live.isWorking)
@@ -780,7 +782,7 @@ private struct ItemLineSheet: View {
             }
         } footer: {
             if canPick {
-                AikuButton("Pick \(amount)", look: PalletReturnActionLooks.look(for: "pick")) {
+                AikuButton("Pick \(amount)", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task { if await live.pickItem(line.lineId, quantity: amount) { onClose() } }
                 }
                 .disabled(live.isWorking)
@@ -802,7 +804,7 @@ private struct ItemLineSheet: View {
                     .accessibilityIdentifier("fulfilment.return.item.notPicked")
             }
             if line.can("undo") {
-                AikuButton(line.label("undo") ?? "Undo", look: PalletReturnActionLooks.look(for: "undo")) {
+                AikuButton(line.label("undo") ?? "Undo", look: PalletReturnActionLooks.look(for: "undo"), isLoading: live.isWorking && !canPick) {
                     Task { if await live.undo(line.lineId) { onClose() } }
                 }
                 .disabled(live.isWorking)
@@ -837,7 +839,7 @@ private struct NotPickedItemSheet: View {
                 FieldError(message)
             }
         } footer: {
-            AikuButton("Set \(amount) as not picked", look: PalletReturnActionLooks.look(for: "not_picked").forConfirm) {
+            AikuButton("Set \(amount) as not picked", look: PalletReturnActionLooks.look(for: "not_picked").forConfirm, isLoading: live.isWorking) {
                 Task { if await live.notPicked(line.lineId, quantity: amount) { onClose() } }
             }
             .disabled(live.isWorking)
@@ -883,7 +885,7 @@ private struct OtherPalletSheet: View {
             }
         } footer: {
             if let chosen {
-                AikuButton("Pick \(amount) from \(chosen.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick")) {
+                AikuButton("Pick \(amount) from \(chosen.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task {
                         if await live.pickFromOtherPallet(chosen.palletStoredItemId, quantity: min(amount, most), fromLineID: shortLine?.lineId) { onClose() }
                     }

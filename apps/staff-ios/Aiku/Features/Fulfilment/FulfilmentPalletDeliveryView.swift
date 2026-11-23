@@ -46,6 +46,7 @@ private struct PalletDeliveryScreen: View {
     @State private var confirm: PalletDeliveryConfirm?
     @State private var sheetPallet: SheetPallet?
     @State private var isScanningLocation = false
+    @State private var scanMisses = 0
 
     var body: some View {
         Group {
@@ -96,6 +97,7 @@ private struct PalletDeliveryScreen: View {
         .hardwareScanner(isEnabled: delivery.canScanForBookIn && confirm == nil && sheetPallet == nil && !isScanningLocation) { code in
             Task { await scanForBookIn(code, delivery: delivery) }
         }
+        .scanMissFeedback(scanMisses)
         .aikuSheet(item: $sheetPallet) { item in
             if let pallet = live.delivery?.pallet(item.id) {
                 palletSheet(pallet)
@@ -345,7 +347,7 @@ private struct PalletDeliveryScreen: View {
                 FieldError(fieldError)
             }
             if canBookIn, let target = live.pickedLocation {
-                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in")) {
+                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in"), isLoading: live.isWorking(on: "book_in")) {
                     Task { await live.bookIn(pallet.id, location: target) }
                 }
                 .disabled(live.isWorking)
@@ -353,7 +355,7 @@ private struct PalletDeliveryScreen: View {
             }
             HStack(spacing: 8) {
                 if let notReceived {
-                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key)) {
+                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key), isLoading: live.isWorking(on: "not_received")) {
                         confirm = .notReceived(id: pallet.id, reference: pallet.reference)
                     }
                     .disabled(live.isWorking)
@@ -477,19 +479,19 @@ private struct PalletDeliveryScreen: View {
     private func footerView(_ kind: FooterKind, delivery: MobilePalletDeliveryDetail) -> some View {
         switch kind {
         case .receive(let action):
-            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "receive")) {
                 confirm = .receive
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.receive")
         case .startBooking(let action):
-            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "start_booking")) {
                 Task { await live.startBooking() }
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.startBookingIn")
         case .finish(let action):
-            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "finish_booking")) {
                 confirm = .finish
             }
             .disabled(live.isWorking)
@@ -548,6 +550,7 @@ private struct PalletDeliveryScreen: View {
 
     private func scanForBookIn(_ code: String, delivery: MobilePalletDeliveryDetail) async {
         if case .notOnDelivery(let scanned) = await live.scanForBookIn(code) {
+            scanMisses += 1
             toasts.show("\(scanned) is not a pallet of \(delivery.reference). Scan the pallet label first.", tone: .info)
         }
     }
