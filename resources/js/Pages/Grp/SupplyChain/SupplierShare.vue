@@ -180,6 +180,7 @@ const openOrder = (reference: string) => {
 	const url = new URL(window.location.href)
 	url.searchParams.set("tab", "purchase_order_list")
 	url.searchParams.set("purchase_orders_filter[global]", reference)
+	url.searchParams.set("purchase_orders_facets[state]", "all")
 	url.searchParams.delete("purchase_ordersPage")
 	tab.value = "purchase_order_list"
 	router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: true, only: ["purchase_orders"] })

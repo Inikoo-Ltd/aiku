@@ -21,8 +21,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use Spatie\QueryBuilder\AllowedFilter;
 
 /**
- * Every purchase order sent to the supplier, for its own page: the open ones first. Drafts were never sent, so they
- * stay out.
+ * Every purchase order sent to the supplier, for its own page: only the open ones until the supplier picks another
+ * status, or All (state=all). Drafts were never sent, so they stay out.
  */
 class IndexSupplierPortalPurchaseOrders
 {
@@ -74,7 +74,7 @@ class IndexSupplierPortalPurchaseOrders
 
     private function selectedState(?string $prefix): ?string
     {
-        $state = request()->input(($prefix ? $prefix.'_' : '').'facets.state');
+        $state = request()->input(($prefix ? $prefix.'_' : '').'facets.state', 'open');
 
         return array_key_exists((string) $state, self::states()) ? $state : null;
     }

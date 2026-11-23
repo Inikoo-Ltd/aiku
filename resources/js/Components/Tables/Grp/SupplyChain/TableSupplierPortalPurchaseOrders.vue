@@ -40,7 +40,7 @@ const isPhone = useMediaQuery("(max-width: 767px)")
 
 const selectState = (value: string | null) => {
 	const query = qs.parse(location.search.substring(1)) as Record<string, any>
-	query[`${props.tab}_facets`] = { ...(query[`${props.tab}_facets`] ?? {}), state: value }
+	query[`${props.tab}_facets`] = { ...(query[`${props.tab}_facets`] ?? {}), state: value ?? "all" }
 	delete query[`${props.tab}Page`]
 
 	router.get(location.pathname + "?" + qs.stringify(query, { skipNulls: true, encodeValuesOnly: true }), {}, { preserveState: true, preserveScroll: true, replace: true })
