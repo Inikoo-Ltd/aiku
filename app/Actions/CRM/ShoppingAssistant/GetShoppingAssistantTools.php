@@ -418,7 +418,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'dispatch_times',
-                'How quickly this shop dispatches orders, from the last 30 days. Use it when the customer asks how fast orders are sent, dispatched or shipped out. The sentence with the figure is added under your reply by the system; you get no figure. Returns no products.',
+                'How quickly this shop dispatches orders right now: when an order placed today should go out, from how our warehouse is running this week, else the last 30 days. Use it when the customer asks how fast or how long orders take to be sent, dispatched or shipped out, or whether dispatch is delayed. The sentence with the figure is added under your reply by the system; you get no figure. Returns no products.',
                 []
             ),
             $this->tool(
@@ -1218,7 +1218,7 @@ class GetShoppingAssistantTools
         return [
             'content'  => [
                 'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. Never repeat anything about one specific customer (a name, contact, address, order, invoice or payment number, an amount refunded or owed, or a deal made only for them): skip that part, it is not for this customer. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. Never repeat anything about one specific customer (a name, contact, address, order, invoice or payment number, an amount refunded or owed, or a deal made only for them): skip that part, it is not for this customer. Dispatch times written in these texts (such as a number of working days) can be out of date in busy weeks: never repeat one; how long dispatch takes now comes only from dispatch_times. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
@@ -1323,6 +1323,23 @@ class GetShoppingAssistantTools
      */
     private function dispatchTimes(Customer $customer, string $locale): array
     {
+        $now = GetOrderDispatchOutlook::make()->forNewOrder($customer->shop);
+        if (isset($now['too_far'])) {
+            return ['content' => ['available' => false, 'note' => 'Our warehouse is much busier than usual and dispatch is taking far longer than normal, too long to estimate a date. Say so plainly and kindly, with no figure or date, never repeat a dispatch time from shop information or the website, and suggest asking customer service if they need a date.'], 'products' => [], 'error' => null];
+        }
+        if ($now) {
+            $day = fn (Carbon $date) => $date->copy()->locale($locale)->isoFormat('dddd D MMMM');
+
+            return [
+                'content'  => ['available' => true, 'note' => 'A sentence with when an order placed today should go out, worked out from how our warehouse is running this week, is added under your reply. Write one short lead-in without any figure or delivery promise, and never repeat a dispatch time from shop information or the website: this sentence is the current one.'],
+                'products' => [],
+                'error'    => null,
+                'fact'     => $now['from']->isSameDay($now['to'])
+                    ? __('Based on how our warehouse is running this week, an order placed today should go out on :day. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['day' => $day($now['from'])], $locale)
+                    : __('Based on how our warehouse is running this week, an order placed today should go out between :from and :to. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['from' => $day($now['from']), 'to' => $day($now['to'])], $locale),
+            ];
+        }
+
         $days = GetShoppingAssistantDispatchDays::run($customer->shop);
 
         if ($days === null) {

@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -94,8 +95,46 @@ class GetOrderDispatchOutlook
             return null;
         }
 
+        $range = $this->range($this->ordersAhead($note->warehouse_id, $stream, $note), $pace, $stream, $now, $note->warehouse->organisation->timezone?->name ?? 'UTC');
+
+        return $range ? ['kind' => 'estimate', ...$range, 'delivery_note_id' => $note->id] : null;
+    }
+
+    /**
+     * HELP-4886. The same estimate for an order placed now in this shop, for "how long is dispatch at
+     * the moment?": it goes behind every order already waiting in the warehouse the shop's last orders
+     * went to most in the last 30 days, so in a busy week it follows the real backlog, not the 30-day
+     * figure or a website text. too_far when the backlog is deeper than MAX_DAYS: no date is given then.
+     *
+     * @return array{from: Carbon, to: Carbon}|array{too_far: true}|null
+     */
+    public function forNewOrder(Shop $shop, ?Carbon $now = null): ?array
+    {
+        $warehouseId = DB::table('delivery_notes')->where('shop_id', $shop->id)->whereNotNull('warehouse_id')->whereNull('deleted_at')->where('date', '>=', now()->subDays(30))
+            ->groupBy('warehouse_id')->orderByRaw('count(*) desc')->value('warehouse_id');
+        $warehouse   = $warehouseId ? Warehouse::find($warehouseId) : null;
+
+        if (!$warehouse) {
+            return null;
+        }
+
+        $stream   = $this->streamOf($shop->id);
+        $capacity = Cache::remember('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, self::CACHE_SECONDS, fn () => GetWarehouseCapacity::run($warehouse, $stream));
+        $pace     = (float) ($capacity['out_per_day'] ?? 0);
+
+        if ($pace <= 0) {
+            return null;
+        }
+
+        return $this->range($this->ordersAhead($warehouse->id, $stream), $pace, $stream, $now ?? now(), $warehouse->organisation->timezone?->name ?? 'UTC') ?? ['too_far' => true];
+    }
+
+    /**
+     * @return array{from: Carbon, to: Carbon}|null
+     */
+    private function range(int $ahead, float $pace, string $stream, Carbon $now, string $timezone): ?array
+    {
         $wholesale = $stream === GetWarehouseCapacity::WHOLESALE;
-        $ahead     = $this->ordersAhead($note, $stream);
         $fast      = (int) floor($ahead / ($pace * ($wholesale ? self::WHOLESALE_FAST : self::FAST)));
         $slow      = (int) ceil(($ahead + 1) / ($pace * ($wholesale ? self::WHOLESALE_SLOW : self::SLOW)));
 
@@ -103,13 +142,9 @@ class GetOrderDispatchOutlook
             return null;
         }
 
-        $timezone = $note->warehouse->organisation->timezone?->name ?? 'UTC';
-
         return [
-            'kind'             => 'estimate',
-            'from'             => $this->workingDaysFrom($now, $fast, $timezone),
-            'to'               => $this->workingDaysFrom($now, max($slow, $fast), $timezone),
-            'delivery_note_id' => $note->id,
+            'from' => $this->workingDaysFrom($now, $fast, $timezone),
+            'to'   => $this->workingDaysFrom($now, max($slow, $fast), $timezone),
         ];
     }
 
@@ -123,25 +158,26 @@ class GetOrderDispatchOutlook
     /**
      * Delivery notes of the same warehouse and stream that will leave before this one: every one
      * already picked or being packed, and those waiting to be picked that are older or have premium
-     * dispatch. Notes on hold are left out: they do not hold this one up.
+     * dispatch. Notes on hold are left out: they do not hold this one up. Without a note (an order
+     * placed now) every note waiting in the warehouse is ahead.
      */
-    private function ordersAhead(DeliveryNote $note, string $stream): int
+    private function ordersAhead(int $warehouseId, string $stream, ?DeliveryNote $note = null): int
     {
         $dropshippingShopIds = DB::table('shops')->whereRaw(Shop::dispatchingChannelSql().' = ?', [ShopTypeEnum::DROPSHIPPING->value])->pluck('id');
         $toPick              = array_map(fn (DeliveryNoteStateEnum $state) => $state->value, array_filter(GetWarehouseCapacity::WAITING_TO_BE_PICKED, fn (DeliveryNoteStateEnum $state) => $state !== DeliveryNoteStateEnum::HANDLING_BLOCKED));
         $afterPick           = array_map(fn (DeliveryNoteStateEnum $state) => $state->value, [...GetWarehouseCapacity::WAITING_TO_BE_PACKED, ...GetWarehouseCapacity::WAITING_TO_BE_SHIPPED]);
 
         return DB::table('delivery_notes')
-            ->where('warehouse_id', $note->warehouse_id)
+            ->where('warehouse_id', $warehouseId)
             ->whereNull('deleted_at')
-            ->where('id', '!=', $note->id)
+            ->when($note, fn ($query) => $query->where('id', '!=', $note->id))
             ->when(
                 $stream === GetWarehouseCapacity::DROPSHIPPING,
                 fn ($query) => $query->whereIn('shop_id', $dropshippingShopIds),
                 fn ($query) => $query->where(fn ($query) => $query->whereNotIn('shop_id', $dropshippingShopIds)->orWhereNull('shop_id'))
             )
             ->where(fn ($query) => $query->whereIn('state', $afterPick)
-                ->orWhere(fn ($query) => $query->whereIn('state', $toPick)->where(fn ($query) => $query->where('date', '<', $note->date)->orWhere('is_premium_dispatch', true))))
+                ->orWhere(fn ($query) => $query->whereIn('state', $toPick)->when($note, fn ($query) => $query->where(fn ($query) => $query->where('date', '<', $note->date)->orWhere('is_premium_dispatch', true)))))
             ->count();
     }
 

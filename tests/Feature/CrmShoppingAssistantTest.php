@@ -4704,7 +4704,7 @@ test('when the last model call fails after the searches found products, the cust
         ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$product->id]);
 });
 
-test('an order waiting in the warehouse gets an estimated dispatch day range without the queue or pace figures, and a stuck one is told plainly with one customer services task', function () {
+test('an order waiting in the warehouse gets an estimated dispatch day range without the queue or pace figures, a general dispatch question gets the range for an order placed today, and a stuck one is told plainly with one customer services task', function () {
     Carbon::setTestNow(CarbonImmutable::parse('2026-11-18 10:00:00'));
     $warehouse = createWarehouse();
     $customer  = shoppingAssistantCustomer($this->shop);
@@ -4735,6 +4735,20 @@ test('an order waiting in the warehouse gets an estimated dispatch day range wit
         ->and($estimate['content']['dispatch'])->toContain('estimated dispatch day range')
         ->and(json_encode($estimate['content']))->not->toContain('987654')
         ->and(DB::table('shopping_assistant_dispatch_outlooks')->where('order_id', $order->id)->where('kind', 'estimate')->value('estimated_from'))->toBe('2026-11-18');
+
+    $general = $tools->execute($conversation, 'dispatch_times', []);
+
+    expect($general['fact'])->toBe(__('Based on how our warehouse is running this week, an order placed today should go out between :from and :to. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['from' => $today, 'to' => $tomorrow], 'en'))
+        ->and(json_encode($general['content']))->not->toMatch('/\d/');
+
+    foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
+        \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 0.01, 'median_hours' => 40], 900);
+    }
+    $backlogged = $tools->execute($conversation, 'dispatch_times', []);
+
+    expect($backlogged)->not->toHaveKey('fact')
+        ->and($backlogged['content']['available'])->toBeFalse()
+        ->and($backlogged['content']['note'])->toContain('too long to estimate');
 
     $note->update(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING_BLOCKED]);
     $held  = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
