@@ -2349,7 +2349,8 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
 
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
-            <div class="relative flex min-w-0 flex-1 basis-[28rem] flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
+            <div class="flex min-w-0 flex-1 basis-[28rem] flex-col">
+            <div class="relative flex min-w-0 flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
                 <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
                     v-tooltip="ctrans('Drag to resize, double-click to reset')"
@@ -2458,9 +2459,10 @@ const handleClickOutside = (e: MouseEvent) => {
                     <Button @click="sendMessage" :icon="faPaperPlane" :inject-style="sendButtonStyle"
                         :tooltip="auraShare ? ctrans('Send message: :percent% of it is Aura\'s draft', { percent: Math.round(auraShare * 100) }) : ctrans('Send message')"></Button>
                 </div>
-                <p v-if="aiDraftInEditor" class="-mt-1 px-4 pb-1.5 text-[11px] text-pink-700">
-                    {{ aiDraftEdited ? ctrans("Your reply, based on her draft") : ctrans("Her draft: read it, change what you need, then send") }}
-                </p>
+            </div>
+            <p v-if="aiDraftInEditor" class="mt-1 px-1 text-[11px] text-pink-700">
+                {{ aiDraftEdited ? ctrans("Your reply, based on her draft") : ctrans("Her draft: read it, change what you need, then send") }}
+            </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
                 :class="!aiDraftBox?.draft ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">

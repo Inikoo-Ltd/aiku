@@ -367,7 +367,7 @@ defineExpose({ take, draft, busy, offerToEditor, discard: () => decide("discard"
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <template v-if="!hidden">
-            <div v-if="shown && draft" class="relative rounded-xl border border-pink-300 bg-pink-50 px-3 py-2">
+            <div v-if="shown && draft" class="relative rounded-xl border border-pink-300 bg-pink-50 py-2 pr-3" :class="inline ? 'pl-5' : 'pl-3'">
                 <button v-if="!inline && (hasStaffText || draft.text)" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
                     :aria-pressed="showTranslation"
