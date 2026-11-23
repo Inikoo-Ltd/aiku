@@ -621,6 +621,13 @@ class IndexPurchaseOrders extends OrgAction
         $subNavigation = null;
         $actions       = [];
         $purchaseOrdersImport = null;
+        $parentCode           = match (true) {
+            $this->parent instanceof OrgAgent => $this->parent->agent->organisation->code,
+            $this->parent instanceof OrgPartner => $this->parent->partner->code,
+            $this->parent instanceof OrgSupplier => $this->parent->supplier->code,
+            $this->parent instanceof Supplier => $this->parent->code,
+            default => null,
+        };
 
         if ($this->onlyPendingThroughAgents) {
             [$title, $afterTitle] = $this->agentsBoardTitle($request);
@@ -710,7 +717,7 @@ class IndexPurchaseOrders extends OrgAction
             'Procurement/PurchaseOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('purchase orders'),
+                'title'       => ($parentCode ? '('.$parentCode.') ' : '').__('Purchase Orders'),
                 'navigation'  => $this->getParentSiblingsNavigation($this->parent, $request),
                 'pageHead'    => [
                     'title'         => $title,
