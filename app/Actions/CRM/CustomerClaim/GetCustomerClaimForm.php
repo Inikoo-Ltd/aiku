@@ -131,6 +131,21 @@ class GetCustomerClaimForm
     }
 
     /**
+     * The "Report a problem" button on the order in the customer's account. The dispatch email links
+     * to the order with ?claim=1, which opens the form straight away.
+     *
+     * @return array{order_id: int, open: bool}|null
+     */
+    public static function accountButton(Order $order, bool $open = false): ?array
+    {
+        if (!in_array($order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED], true) || !self::enabledFor($order->shop)) {
+            return null;
+        }
+
+        return ['order_id' => $order->id, 'open' => $open];
+    }
+
+    /**
      * Refund to balance needs an invoice; the next order exists only for a customer who receives
      * their orders themselves, so never for a dropshipping order sent to their end customer.
      *

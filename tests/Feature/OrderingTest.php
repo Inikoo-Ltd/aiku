@@ -17,6 +17,7 @@ use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendCustomerClaimEmail;
+use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\SysAdmin\Group\Seeders\SeedEmailTemplates;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -8146,7 +8147,14 @@ test('customers are emailed when their claim is received, approved or rejected, 
             'About your claim '.$rejected->reference,
         ])
         ->and($email->generateBodyHtml($approved->refresh()))->toContain('The items will be added free to your next order.', 'Missing from the parcel')
-        ->and($email->generateBodyHtml($rejected->refresh()))->toContain('Photos missing or unclear', 'The photo shows a different item', 'reply to this email');
+        ->and($email->generateBodyHtml($rejected->refresh()))->toContain('Photos missing or unclear', 'The photo shows a different item', 'reply to this email')
+        ->and(GetCustomerClaimForm::accountButton($order->refresh(), true))->toBe(['order_id' => $order->id, 'open' => true])
+        ->and(SendDispatchedOrderEmailToCustomer::make()->reportProblemRow($order, 'https://shop.test/app/orders/'.$order->slug))->toContain('https://shop.test/app/orders/'.$order->slug.'?claim=1', 'Report a problem');
+
+    $this->shop->update(['settings' => array_merge($this->shop->settings, ['claims' => ['self_service' => false]])]);
+    $order->unsetRelation('shop');
+    expect(GetCustomerClaimForm::accountButton($order->refresh()))->toBeNull()
+        ->and(SendDispatchedOrderEmailToCustomer::make()->reportProblemRow($order, 'https://shop.test/app/orders/'.$order->slug))->toBe('');
 
     UpcomingTransaction::where('customer_id', $customer->id)->delete();
     $this->shop->update(['settings' => $settings]);

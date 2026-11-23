@@ -40,12 +40,14 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import ListReviews from "@/Components/ListReviews.vue"
+import ReportOrderProblem from "@/Components/Retina/ReportOrderProblem.vue"
 
 
 library.add(faStars, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
 const props = defineProps<{
+    claim?: { order_id: number, open: boolean } | null
     pre_order?: PreOrderShowcase | null
     split_pre_order?: { reference: string, slug: string } | null
     title: string
@@ -162,6 +164,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote("shipping_notes
 
     <PageHeading :data="pageHead">
         <template #other>
+            <ReportOrderProblem v-if="claim" :claim="claim" />
             <a v-if="['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state || 'vcxzvcx')"
                :href="route('retina.ecom.orders.proforma_invoice.download', {
                     order: props.data?.data?.slug

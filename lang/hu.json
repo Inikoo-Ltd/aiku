@@ -9235,5 +9235,8 @@
     "We have received your claim :reference for order :order.": "Megkaptuk a(z) :order rendeléshez tartozó :reference reklamációját.",
     "Wrong item sent": "Rossz terméket küldtünk",
     "Your claim :reference for order :order is approved.": "A(z) :order rendeléshez tartozó :reference reklamációját elfogadtuk.",
-    "Your claim :reference is approved": "A(z) :reference reklamációját elfogadtuk"
+    "Your claim :reference is approved": "A(z) :reference reklamációját elfogadtuk",
+    "Report a problem": "Probléma bejelentése",
+    "Report a problem with this order": "Probléma bejelentése ezzel a rendeléssel",
+    "Something broken, missing or wrong?": "Valami törött, hiányzik vagy rossz?"
 }

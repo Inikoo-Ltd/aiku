@@ -27038,5 +27038,8 @@
     "We have received your claim :reference": "Prijali sme vašu reklamáciu :reference",
     "We have received your claim :reference for order :order.": "Prijali sme vašu reklamáciu :reference k objednávke :order.",
     "Your claim :reference for order :order is approved.": "Vaša reklamácia :reference k objednávke :order bola schválená.",
-    "Your claim :reference is approved": "Vaša reklamácia :reference bola schválená"
+    "Your claim :reference is approved": "Vaša reklamácia :reference bola schválená",
+    "Report a problem": "Nahlásiť problém",
+    "Report a problem with this order": "Nahlásiť problém s touto objednávkou",
+    "Something broken, missing or wrong?": "Niečo rozbité, chýba alebo je nesprávne?"
 }

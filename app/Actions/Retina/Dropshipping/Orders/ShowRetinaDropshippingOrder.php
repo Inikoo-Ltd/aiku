@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\IndexAllReviewsInOrder;
@@ -114,6 +115,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
         return Inertia::render(
             'Dropshipping/RetinaDropshippingOrder',
             [
+                'claim'       => GetCustomerClaimForm::accountButton($order, $request->boolean('claim')),
                 'title'       => __('order'),
                 'breadcrumbs' => $this->getBreadcrumbs($order),
                 'pageHead'    => [

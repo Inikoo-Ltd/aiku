@@ -7301,5 +7301,8 @@
     "We have received your claim :reference for order :order.": "Ми отримали вашу рекламацію :reference щодо замовлення :order.",
     "Wrong item sent": "Надіслано не той товар",
     "Your claim :reference for order :order is approved.": "Вашу рекламацію :reference щодо замовлення :order схвалено.",
-    "Your claim :reference is approved": "Вашу рекламацію :reference схвалено"
+    "Your claim :reference is approved": "Вашу рекламацію :reference схвалено",
+    "Report a problem": "Повідомити про проблему",
+    "Report a problem with this order": "Повідомити про проблему з цим замовленням",
+    "Something broken, missing or wrong?": "Щось розбите, бракує або не те?"
 }

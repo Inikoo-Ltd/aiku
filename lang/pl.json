@@ -26214,5 +26214,8 @@
     "We have received your claim :reference": "Otrzymaliśmy reklamację :reference",
     "We have received your claim :reference for order :order.": "Otrzymaliśmy reklamację :reference do zamówienia :order.",
     "Your claim :reference for order :order is approved.": "Reklamacja :reference do zamówienia :order została zaakceptowana.",
-    "Your claim :reference is approved": "Reklamacja :reference została zaakceptowana"
+    "Your claim :reference is approved": "Reklamacja :reference została zaakceptowana",
+    "Report a problem": "Zgłoś problem",
+    "Report a problem with this order": "Zgłoś problem z tym zamówieniem",
+    "Something broken, missing or wrong?": "Coś uszkodzone, brakuje lub się nie zgadza?"
 }

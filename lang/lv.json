@@ -2155,5 +2155,8 @@
     "We have received your claim :reference for order :order.": "Esam saņēmuši jūsu pretenziju :reference par pasūtījumu :order.",
     "Wrong item sent": "Nosūtīta nepareiza prece",
     "Your claim :reference for order :order is approved.": "Jūsu pretenzija :reference par pasūtījumu :order ir apstiprināta.",
-    "Your claim :reference is approved": "Jūsu pretenzija :reference ir apstiprināta"
+    "Your claim :reference is approved": "Jūsu pretenzija :reference ir apstiprināta",
+    "Report a problem": "Ziņot par problēmu",
+    "Report a problem with this order": "Ziņot par problēmu ar šo pasūtījumu",
+    "Something broken, missing or wrong?": "Kaut kas saplīsis, trūkst vai nav pareizi?"
 }

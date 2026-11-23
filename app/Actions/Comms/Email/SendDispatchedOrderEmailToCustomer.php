@@ -9,6 +9,7 @@
 
 namespace App\Actions\Comms\Email;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\Comms\Traits\WithOrderingCustomerNotification;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
@@ -134,7 +135,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
                                             ' . ($shipments ? $this->generateTrackingHtml($shipments) : '<span class="fallback-text">'.__('No tracking information available').'</span>') . '
                                         </td>
-                                    </tr>
+                                    </tr>'.$this->reportProblemRow($order, $orderUrl).'
                                 </table>
                             </td>
                         </tr>
@@ -166,6 +167,24 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         return $result;
     }
 
+
+    /**
+     * Where the shop takes claims from customers, a link opening the claim form on the order in
+     * their account (HELP-4869).
+     */
+    public function reportProblemRow(Order $order, string $orderUrl): string
+    {
+        if (!$orderUrl || !GetCustomerClaimForm::accountButton($order)) {
+            return '';
+        }
+
+        return '
+                                    <tr>
+                                        <td colspan="2" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; border-top: 1px solid #eee; padding: 12px 0 0;">
+                                            '.__('Something broken, missing or wrong?').' <a href="'.e($orderUrl.'?claim=1').'" target="_blank" style="color: #3498DB; text-decoration: underline;">'.__('Report a problem').'</a>
+                                        </td>
+                                    </tr>';
+    }
 
     public string $commandSignature = 'test:send-dispatched-email';
 

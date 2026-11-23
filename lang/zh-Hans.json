@@ -25994,5 +25994,8 @@
     "We have received your claim :reference": "我们已收到您的索赔 :reference",
     "We have received your claim :reference for order :order.": "我们已收到您订单 :order 的索赔 :reference。",
     "Your claim :reference for order :order is approved.": "您订单 :order 的索赔 :reference 已获批准。",
-    "Your claim :reference is approved": "您的索赔 :reference 已获批准"
+    "Your claim :reference is approved": "您的索赔 :reference 已获批准",
+    "Report a problem": "报告问题",
+    "Report a problem with this order": "报告此订单的问题",
+    "Something broken, missing or wrong?": "有破损、缺少或发错的商品吗？"
 }

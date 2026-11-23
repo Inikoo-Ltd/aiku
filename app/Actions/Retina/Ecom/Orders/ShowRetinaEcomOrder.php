@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
@@ -107,6 +108,7 @@ class ShowRetinaEcomOrder extends RetinaAction
         return Inertia::render(
             'Ecom/RetinaEcomOrder',
             [
+                'claim'       => GetCustomerClaimForm::accountButton($order, $request->boolean('claim')),
                 'title'       => __('order') . ' #' . $order->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($order),
                 'pageHead'    => [

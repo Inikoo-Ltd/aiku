@@ -9626,5 +9626,8 @@
     "We have received your claim :reference for order :order.": "Получихме вашата рекламация :reference за поръчка :order.",
     "Wrong item sent": "Изпратен е грешен артикул",
     "Your claim :reference for order :order is approved.": "Вашата рекламация :reference за поръчка :order е одобрена.",
-    "Your claim :reference is approved": "Вашата рекламация :reference е одобрена"
+    "Your claim :reference is approved": "Вашата рекламация :reference е одобрена",
+    "Report a problem": "Съобщете за проблем",
+    "Report a problem with this order": "Съобщете за проблем с тази поръчка",
+    "Something broken, missing or wrong?": "Нещо счупено, липсващо или грешно?"
 }

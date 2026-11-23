@@ -22729,5 +22729,8 @@
     "We have received your claim :reference": "हमें आपका दावा :reference मिल गया है",
     "We have received your claim :reference for order :order.": "हमें ऑर्डर :order के लिए आपका दावा :reference मिल गया है।",
     "Your claim :reference for order :order is approved.": "ऑर्डर :order के लिए आपका दावा :reference स्वीकृत हो गया है।",
-    "Your claim :reference is approved": "आपका दावा :reference स्वीकृत हो गया है"
+    "Your claim :reference is approved": "आपका दावा :reference स्वीकृत हो गया है",
+    "Report a problem": "समस्या की रिपोर्ट करें",
+    "Report a problem with this order": "इस ऑर्डर की समस्या की रिपोर्ट करें",
+    "Something broken, missing or wrong?": "कुछ टूटा हुआ, कम या गलत है?"
 }

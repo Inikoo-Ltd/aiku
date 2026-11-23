@@ -10034,5 +10034,8 @@
     "We have received your claim :reference for order :order.": "We hebben uw claim :reference voor bestelling :order ontvangen.",
     "Wrong item sent": "Verkeerd artikel gestuurd",
     "Your claim :reference for order :order is approved.": "Uw claim :reference voor bestelling :order is goedgekeurd.",
-    "Your claim :reference is approved": "Uw claim :reference is goedgekeurd"
+    "Your claim :reference is approved": "Uw claim :reference is goedgekeurd",
+    "Report a problem": "Probleem melden",
+    "Report a problem with this order": "Probleem met deze bestelling melden",
+    "Something broken, missing or wrong?": "Iets kapot, ontbrekend of verkeerd?"
 }

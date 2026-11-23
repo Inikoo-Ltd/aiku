@@ -23468,5 +23468,8 @@
     "We have received your claim :reference": "हामीले तपाईंको दाबी :reference प्राप्त गरेका छौं",
     "We have received your claim :reference for order :order.": "हामीले अर्डर :order को तपाईंको दाबी :reference प्राप्त गरेका छौं।",
     "Your claim :reference for order :order is approved.": "अर्डर :order को तपाईंको दाबी :reference स्वीकृत भएको छ।",
-    "Your claim :reference is approved": "तपाईंको दाबी :reference स्वीकृत भएको छ"
+    "Your claim :reference is approved": "तपाईंको दाबी :reference स्वीकृत भएको छ",
+    "Report a problem": "समस्या रिपोर्ट गर्नुहोस्",
+    "Report a problem with this order": "यो अर्डरको समस्या रिपोर्ट गर्नुहोस्",
+    "Something broken, missing or wrong?": "केही फुटेको, नपुगेको वा गलत छ?"
 }

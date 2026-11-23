@@ -16477,5 +16477,8 @@
     "We have received your claim :reference": ":reference numaralı talebinizi aldık",
     "We have received your claim :reference for order :order.": ":order numaralı sipariş için :reference numaralı talebinizi aldık.",
     "Your claim :reference for order :order is approved.": ":order numaralı sipariş için :reference numaralı talebiniz onaylandı.",
-    "Your claim :reference is approved": ":reference numaralı talebiniz onaylandı"
+    "Your claim :reference is approved": ":reference numaralı talebiniz onaylandı",
+    "Report a problem": "Sorun bildir",
+    "Report a problem with this order": "Bu siparişle ilgili bir sorun bildir",
+    "Something broken, missing or wrong?": "Kırık, eksik veya yanlış bir şey mi var?"
 }

@@ -23678,5 +23678,8 @@
     "We have received your claim :reference": "Kami telah menerima klaim Anda :reference",
     "We have received your claim :reference for order :order.": "Kami telah menerima klaim Anda :reference untuk pesanan :order.",
     "Your claim :reference for order :order is approved.": "Klaim Anda :reference untuk pesanan :order telah disetujui.",
-    "Your claim :reference is approved": "Klaim Anda :reference telah disetujui"
+    "Your claim :reference is approved": "Klaim Anda :reference telah disetujui",
+    "Report a problem": "Laporkan masalah",
+    "Report a problem with this order": "Laporkan masalah dengan pesanan ini",
+    "Something broken, missing or wrong?": "Ada yang rusak, kurang, atau salah?"
 }

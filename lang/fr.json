@@ -27098,5 +27098,8 @@
     "We have received your claim :reference": "Nous avons bien reçu votre réclamation :reference",
     "We have received your claim :reference for order :order.": "Nous avons bien reçu votre réclamation :reference pour la commande :order.",
     "Your claim :reference for order :order is approved.": "Votre réclamation :reference pour la commande :order est acceptée.",
-    "Your claim :reference is approved": "Votre réclamation :reference est acceptée"
+    "Your claim :reference is approved": "Votre réclamation :reference est acceptée",
+    "Report a problem": "Signaler un problème",
+    "Report a problem with this order": "Signaler un problème avec cette commande",
+    "Something broken, missing or wrong?": "Un article cassé, manquant ou erroné ?"
 }

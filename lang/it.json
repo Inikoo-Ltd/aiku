@@ -13178,5 +13178,8 @@
     "We have received your claim :reference for order :order.": "Abbiamo ricevuto il suo reclamo :reference per l’ordine :order.",
     "Wrong item sent": "Inviato l’articolo sbagliato",
     "Your claim :reference for order :order is approved.": "Il suo reclamo :reference per l’ordine :order è stato approvato.",
-    "Your claim :reference is approved": "Il suo reclamo :reference è stato approvato"
+    "Your claim :reference is approved": "Il suo reclamo :reference è stato approvato",
+    "Report a problem": "Segnala un problema",
+    "Report a problem with this order": "Segnala un problema con questo ordine",
+    "Something broken, missing or wrong?": "Qualcosa di rotto, mancante o sbagliato?"
 }

@@ -58,11 +58,13 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import ListReviews from '@/Components/ListReviews.vue'
+import ReportOrderProblem from '@/Components/Retina/ReportOrderProblem.vue'
 
 library.add(fadExclamationTriangle,faStars, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
 
 const props = defineProps<{
+    claim?: { order_id: number, open: boolean } | null
     pre_order?: PreOrderShowcase | null
     title: string
     tabs: TSTabs
@@ -263,6 +265,7 @@ const syncOrderCancellationShopify = async (order) => {
             </div>
         </template>
         <template #other>
+            <ReportOrderProblem v-if="claim" :claim="claim" />
             <span 
                 v-if="order?.data.state == 'cancelled' && box_stats.customer_channel.platform.name == 'Shopify'" 
                 v-tooltip="ctrans('Sync order state')"
