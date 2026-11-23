@@ -2363,8 +2363,9 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div v-if="showAuraRow" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium text-pink-700">
                     <span class="aura-tag inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
                         :class="{ 'aura-tag-angry': aiDraftBox?.draft?.aura_angry && aiDraftInEditor, 'aura-tag-off': !aiDraftInEditor }"
-                        :title="aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
+                        :title="!aiDraftInEditor ? ctrans('Aura is resting: this reply is yours') : aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
                         Aura
+                        <span v-if="!aiDraftInEditor" class="aura-zz relative ml-0.5 h-3 w-2.5" aria-hidden="true"><span>z</span><span>z</span></span>
                     </span>
                     <div v-if="newMessage.trim()" class="flex items-center gap-1">
                         <PolishMessageButton v-model="newMessage"
@@ -2587,9 +2588,44 @@ const handleClickOutside = (e: MouseEvent) => {
     filter: grayscale(1);
 }
 
+.aura-zz span {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    font-size: 8px;
+    line-height: 1;
+    opacity: 0;
+    animation: aura-zz 3s ease-in-out infinite;
+}
+
+.aura-zz span + span {
+    left: 4px;
+    font-size: 9px;
+    animation-delay: 1.5s;
+}
+
+@keyframes aura-zz {
+    0% {
+        transform: translate(0, 2px);
+        opacity: 0;
+    }
+    30% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translate(3px, -7px);
+        opacity: 0;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .aura-tag {
         animation: none;
+    }
+
+    .aura-zz span {
+        animation: none;
+        opacity: 0.8;
     }
 }
 
