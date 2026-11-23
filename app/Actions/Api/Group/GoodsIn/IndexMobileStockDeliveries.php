@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\Api\Group\WithMobileDateRange;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class IndexMobileStockDeliveries
 {
     use AsController;
+    use WithMobileDateRange;
     use WithMobileStockDeliveries;
 
     public const array STATES = ['dispatched', 'received', 'checked', 'booking_in', 'booked_in', 'placed', 'not_received', 'cancelled', 'active'];
@@ -33,11 +35,13 @@ class IndexMobileStockDeliveries
         'date'          => 'stock_deliveries.date',
         'dispatched_at' => 'stock_deliveries.dispatched_at',
         'reference'     => 'stock_deliveries.reference',
-        'number_items'  => 'stock_deliveries.number_stock_delivery_items_except_cancelled',
+        'number_items'             => 'stock_deliveries.number_stock_delivery_items_except_cancelled',
+        'supplier'                 => 'stock_deliveries.parent_name',
+        'estimated_receiving_date' => "stock_deliveries.data->>'estimated_receiving_date'",
     ];
 
     /**
-     * @param array{state?: string|null, source?: string|null, q?: string|null, dispatched?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
+     * @param array{state?: string|null, source?: string|null, q?: string|null, dispatched?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
      */
     public function handle(Warehouse $warehouse, array $filters): LengthAwarePaginator
     {
@@ -58,6 +62,8 @@ class IndexMobileStockDeliveries
         if ($dispatched = $filters['dispatched'] ?? null) {
             $this->whereDispatched($query, $dispatched);
         }
+
+        $this->whereWithinDays($query, 'stock_deliveries.date', $warehouse, $filters['from'] ?? null, $filters['to'] ?? null);
 
         $sort       = $filters['sort'] ?? '-date';
         $descending = str_starts_with($sort, '-');
@@ -146,6 +152,7 @@ class IndexMobileStockDeliveries
             'source'     => ['sometimes', 'nullable', Rule::in(array_keys(self::STOCK_DELIVERY_SOURCES))],
             'q'          => ['sometimes', 'nullable', 'string', 'max:64'],
             'dispatched' => ['sometimes', 'nullable', Rule::in(self::DISPATCHED_BUCKETS)],
+            ...$this->dateRangeRules($request->query()),
             'sort'       => ['sometimes', 'nullable', Rule::in(collect(array_keys(self::SORTS))->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all())],
             'per_page'   => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.self::WEB_MAX_PER_PAGE],
             'page'       => ['sometimes', 'nullable', 'integer', 'min:1'],

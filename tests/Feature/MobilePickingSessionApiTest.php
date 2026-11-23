@@ -128,7 +128,7 @@ test('mobile makes a picking session from selected notes, lists it by state with
 
     expect(array_keys($created->json('data')))->toBe([
         'id', 'reference', 'state', 'state_label', 'picker', 'number_delivery_notes', 'number_items', 'number_trolleys', 'picking_percentage',
-        'packing_percentage', 'is_waiting_ready', 'start_at', 'end_at', 'can_work', 'trolleys', 'can_change_trolleys', 'settings',
+        'packing_percentage', 'is_waiting_ready', 'start_at', 'end_at', 'created_at', 'can_work', 'trolleys', 'can_change_trolleys', 'settings',
         'available_actions', 'delivery_notes', 'pick_list',
     ])
         ->and($created->json('data.delivery_notes.0'))->toBe([
@@ -151,8 +151,9 @@ test('mobile makes a picking session from selected notes, lists it by state with
     $stats = $this->warehouse->refresh()->stats;
     expect(array_keys($listed->json('data.0')))->toBe([
         'id', 'reference', 'state', 'state_label', 'picker', 'number_delivery_notes', 'number_items', 'number_trolleys', 'picking_percentage',
-        'packing_percentage', 'is_waiting_ready', 'start_at', 'end_at',
+        'packing_percentage', 'is_waiting_ready', 'start_at', 'end_at', 'created_at',
     ])
+        ->and($listed->json('data.0.created_at'))->not->toBeNull()
         ->and($listed->json('counts'))->toBe([
             'in_process'       => (int) $stats->number_picking_sessions_state_in_process,
             'handling'         => (int) $stats->number_picking_sessions_state_handling,
@@ -413,4 +414,39 @@ test('mobile picking sessions are read by dispatching viewers and worked only by
     PickingSession::find($sessionId)->update(['type' => PickingSessionTypeEnum::FULFILMENT]);
     getGoodsOut('grp.api.mobile.picking_sessions.show', $sessionId)->assertNotFound();
     getGoodsOut('grp.api.mobile.warehouses.picking_sessions', $this->warehouse->id)->assertOk()->assertJsonPath('pagination.total', 0);
+});
+
+test('mobile picking sessions search by the start of the reference and sort by reference, picker, start and end like the web', function () {
+    actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+    $shelf  = mobileSessionShelf($this);
+    $prefix = 'PSQ'.Str::upper(Str::random(5));
+    $aaron  = createMobileAppUser($this->group, ['contact_name' => 'Aaron '.$prefix]);
+    $maya   = createMobileAppUser($this->group, ['contact_name' => 'Maya '.$prefix]);
+    $zelda  = createMobileAppUser($this->group, ['contact_name' => 'Zelda '.$prefix]);
+
+    $first  = PickingSession::find(mobileSessionOf($this->warehouse, [mobileSessionNote($this, $shelf, 1)]));
+    $second = PickingSession::find(mobileSessionOf($this->warehouse, [mobileSessionNote($this, $shelf, 1)]));
+    $third  = PickingSession::find(mobileSessionOf($this->warehouse, [mobileSessionNote($this, $shelf, 1)]));
+    $first->update(['reference' => $prefix.'C', 'user_id' => $maya->id, 'start_at' => '2026-03-02 08:00:00', 'end_at' => '2026-03-02 10:00:00']);
+    $second->update(['reference' => $prefix.'A', 'user_id' => $zelda->id, 'start_at' => '2026-03-03 08:00:00', 'end_at' => null]);
+    $third->update(['reference' => $prefix.'B', 'user_id' => $aaron->id, 'start_at' => '2026-03-01 08:00:00', 'end_at' => '2026-03-04 10:00:00']);
+
+    $ids = fn (array $query) => collect(getGoodsOut('grp.api.mobile.warehouses.picking_sessions', $this->warehouse->id, $query)->assertOk()->json('data'))->pluck('id')->all();
+
+    expect($ids([]))->toBe([$third->id, $second->id, $first->id])
+        ->and($ids(['q' => $prefix.'B']))->toBe([$third->id])
+        ->and($ids(['q' => Str::lower($prefix)]))->toHaveCount(3)
+        ->and($ids(['q' => Str::substr($prefix, 1)]))->toBe([])
+        ->and($ids(['sort' => 'reference']))->toBe([$second->id, $third->id, $first->id])
+        ->and($ids(['sort' => '-reference']))->toBe([$first->id, $third->id, $second->id])
+        ->and($ids(['sort' => 'user_name']))->toBe([$third->id, $first->id, $second->id])
+        ->and($ids(['sort' => '-user_name']))->toBe([$second->id, $first->id, $third->id])
+        ->and($ids(['sort' => 'start_at']))->toBe([$third->id, $first->id, $second->id])
+        ->and($ids(['sort' => '-start_at']))->toBe([$second->id, $first->id, $third->id])
+        ->and($ids(['sort' => 'end_at']))->toBe([$first->id, $third->id, $second->id])
+        ->and($ids(['sort' => '-end_at']))->toBe([$third->id, $first->id, $second->id]);
+
+    getGoodsOut('grp.api.mobile.warehouses.picking_sessions', $this->warehouse->id, ['sort' => 'number_items', 'q' => str_repeat('x', 65)])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['sort', 'q']);
 });

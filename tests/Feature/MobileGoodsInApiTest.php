@@ -313,6 +313,41 @@ test('mobile stock delivery list filters by state, source, search and dispatched
     mobileGoodsInList($this->warehouse)->assertForbidden();
 });
 
+test('mobile stock delivery list sorts by supplier and expected date and filters by delivery date from and to', function () {
+    mobileGoodsInClerk($this);
+    $prefix     = 'MGR'.Str::upper(Str::random(5));
+    $deliveries = [];
+    foreach (['A' => ['Zulu', '2026-04-01 12:00:00', '2026-05-03'], 'B' => ['Alpha', '2026-04-03 12:00:00', '2026-05-01'], 'C' => ['Mike', '2026-04-05 12:00:00', null]] as $suffix => [$supplier, $date, $expected]) {
+        $stockDelivery = mobileGoodsInDelivery($this->organisation, [[mobileGoodsInSko($this->organisation), 1]], $prefix.'-'.$suffix);
+        DispatchStockDelivery::make()->action($stockDelivery);
+        DB::table('stock_deliveries')->where('id', $stockDelivery->id)->update([
+            'parent_name' => $supplier.' '.$prefix,
+            'date'        => $date,
+            'data'        => json_encode(array_filter([...($stockDelivery->refresh()->data ?? []), 'estimated_receiving_date' => $expected])),
+        ]);
+        $deliveries[$suffix] = $prefix.'-'.$suffix;
+    }
+
+    $references = fn (array $query = []) => collect(mobileGoodsInList($this->warehouse, ['q' => $prefix, ...$query])->assertOk()->json('data'))->pluck('reference')->all();
+
+    expect($references())->toBe([$deliveries['C'], $deliveries['B'], $deliveries['A']])
+        ->and($references(['sort' => 'supplier']))->toBe([$deliveries['B'], $deliveries['C'], $deliveries['A']])
+        ->and($references(['sort' => '-supplier']))->toBe([$deliveries['A'], $deliveries['C'], $deliveries['B']])
+        ->and($references(['sort' => 'estimated_receiving_date']))->toBe([$deliveries['B'], $deliveries['A'], $deliveries['C']])
+        ->and($references(['sort' => '-estimated_receiving_date']))->toBe([$deliveries['A'], $deliveries['B'], $deliveries['C']])
+        ->and($references(['from' => '2026-04-02', 'to' => '2026-04-04']))->toBe([$deliveries['B']])
+        ->and($references(['from' => '2026-04-03']))->toBe([$deliveries['C'], $deliveries['B']])
+        ->and($references(['to' => '2026-04-01']))->toBe([$deliveries['A']]);
+
+    mobileGoodsInList($this->warehouse, ['from' => 'yesterday', 'sort' => 'expected'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['from', 'sort']);
+
+    mobileGoodsInList($this->warehouse, ['from' => '2026-04-03', 'to' => '2026-04-02'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['to']);
+});
+
 test('mobile stock delivery detail sends no money, this warehouse locations, items not done first and actions by state and right', function () {
     $foreignOrganisation = Organisation::where('id', '!=', $this->organisation->id)->where('group_id', $this->group->id)->orderBy('id')->first()
         ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'mgi'.random_int(1000, 9999), 'type' => OrganisationTypeEnum::SHOP]));

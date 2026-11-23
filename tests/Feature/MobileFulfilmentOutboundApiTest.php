@@ -106,6 +106,27 @@ test('mobile pallet returns list the active returns of the warehouse, by type gr
     mfoGet('pallet_returns.index', ['warehouse' => $this->warehouse->id])->assertForbidden();
 });
 
+test('mobile pallet returns sort by customer name like the web and refuse an unknown sort', function () {
+    mfoWorker($this);
+    $suffix = Str::upper(Str::random(8));
+    $zed    = mfoCustomer($this->fulfilment);
+    $zed->customer->update(['name' => 'Zed MFOSORT'.$suffix]);
+    $abe = mfoCustomer($this->fulfilment);
+    $abe->customer->update(['name' => 'Abe MFOSORT'.$suffix]);
+
+    $zedReturn = mfoPalletReturn($zed, $this->warehouse, [mfoPallet($zed, $this->warehouse, mfoLocation($this->warehouse))]);
+    $abeReturn = mfoPalletReturn($abe, $this->warehouse, [mfoPallet($abe, $this->warehouse, mfoLocation($this->warehouse))]);
+
+    $references = fn (array $query) => collect(mfoGet('pallet_returns.index', ['warehouse' => $this->warehouse->id], ['q' => 'MFOSORT'.$suffix, ...$query])->assertOk()->json('data'))->pluck('reference')->all();
+
+    expect($references(['sort' => 'customer']))->toBe([$abeReturn->reference, $zedReturn->reference])
+        ->and($references(['sort' => '-customer']))->toBe([$zedReturn->reference, $abeReturn->reference]);
+
+    mfoGet('pallet_returns.index', ['warehouse' => $this->warehouse->id], ['sort' => 'cust_name'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['sort']);
+});
+
 test('mobile pallet return detail lists pallets in walk order with their items, sends no money and offers each action to the right person', function () {
     $later      = mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse, 'MFB'));
     $sooner     = mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse, 'MFA'));
