@@ -52,6 +52,63 @@ enum PickingSessionFilter: Hashable, Sendable, CaseIterable {
     }
 }
 
+extension PickingSessionSort {
+    static let serverOrderLabel = "Newest first"
+
+    static var options: [ListSortOption<PickingSessionSort>] {
+        let sorts = allCases.map { ListSortOption<PickingSessionSort>(sort: $0, label: $0.label) }
+        return [ListSortOption<PickingSessionSort>(sort: nil, label: serverOrderLabel)] + sorts
+    }
+
+    var label: String {
+        switch self {
+        case .reference: "Reference"
+        case .picker: "Picker"
+        case .started: "Started"
+        case .finished: "Finished"
+        }
+    }
+}
+
+enum PickingSessionOfflineList {
+    static func rows(_ saved: [MobilePickingSessionRow], query: MobilePickingSessionsQuery) -> [MobilePickingSessionRow] {
+        let matching = saved.filter { row in
+            (query.state == nil || row.state == query.state) && SavedListFilter.matches(query.search, row.reference)
+        }
+        return sorted(matching, by: query.sort)
+    }
+
+    static func sorted(_ rows: [MobilePickingSessionRow], by sort: PickingSessionSort?) -> [MobilePickingSessionRow] {
+        switch sort {
+        case nil:
+            return rows.sorted { lhs, rhs in
+                let lhsPacked = lhs.state == PickingSessionState.packingFinished.rawValue
+                let rhsPacked = rhs.state == PickingSessionState.packingFinished.rawValue
+                if lhsPacked != rhsPacked { return rhsPacked }
+                return lhs.id > rhs.id
+            }
+        case .reference?:
+            return SavedListFilter.sorted(rows, descending: false, id: { $0.id }, key: { Self.nameKey($0.reference) })
+        case .picker?:
+            return SavedListFilter.sorted(rows, descending: false, id: { $0.id }, key: { Self.nameKey($0.picker?.name) })
+        case .started?:
+            return SavedListFilter.sorted(rows, descending: true, id: { $0.id }, key: { Self.instant($0.startAt) })
+        case .finished?:
+            return SavedListFilter.sorted(rows, descending: true, id: { $0.id }, key: { Self.instant($0.endAt) })
+        }
+    }
+
+    private static func nameKey(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return trimmed.lowercased()
+    }
+
+    private static func instant(_ value: String?) -> Date? {
+        guard let text = value?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+        return ListDates.instant(text)
+    }
+}
+
 enum PickingSessionActionKey {
     static let startPicking = "start_picking"
     static let backToPicking = "back_to_picking"
@@ -106,19 +163,25 @@ extension MobilePickingSessionRow {
 
     var tone: Tone { sessionState?.tone ?? .neutral }
 
-    func subtitle(currentUserID: Int?) -> String {
-        let progress = sessionState?.isPacking == true
-            ? "packing \(PickingSessionFormat.percent(packingPercentage))%"
-            : "\(PickingSessionFormat.percent(pickingPercentage))% picked"
-        return [
-            PickingSessionFormat.personName(picker, currentUserID: currentUserID),
+    var details: [String] {
+        [
             PickingSessionFormat.count(numberDeliveryNotes, "delivery note"),
             PickingSessionFormat.count(numberItems, "item"),
             PickingSessionFormat.count(numberTrolleys, "trolley"),
-            progress
+            sessionState?.isPacking == true
+                ? "packing \(PickingSessionFormat.percent(packingPercentage))%"
+                : "\(PickingSessionFormat.percent(pickingPercentage))% picked"
         ]
-        .compactMap { $0 }
-        .joined(separator: PickingSessionFormat.separator)
+    }
+
+    func recordDate(in timeZone: TimeZone = .current) -> String? {
+        ListDates.recordDate(startAt, in: timeZone) ?? ListDates.recordDate(createdAt, in: timeZone)
+    }
+
+    func recordDateCaption(in timeZone: TimeZone = .current) -> String? {
+        guard recordDate(in: timeZone) != nil else { return nil }
+        let caption = ListDates.recordDate(startAt, in: timeZone) == nil ? RecordDateCaption.created : RecordDateCaption.started
+        return RecordDateCaption.unlessRepeating(caption, status: stateTitle)
     }
 }
 

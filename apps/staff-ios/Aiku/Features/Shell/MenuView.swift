@@ -37,7 +37,7 @@ struct MenuView: View {
                 .background(AikuColor.soft, in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(AikuColor.softBd))
                 Card {
-                    ShellMenuRow(title: "Warehouse dashboard", subtitle: "Backlogs, deliveries, stock movements", icon: .dashboard) {
+                    ShellMenuRow(title: "Warehouse dashboard", subtitle: "Backlogs, deliveries, stock movements", icon: .faWarehouse) {
                         router.open(ShellRoute.warehouseDashboard)
                     }
                 }

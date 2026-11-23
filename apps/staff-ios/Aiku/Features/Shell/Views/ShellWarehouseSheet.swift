@@ -12,7 +12,7 @@ struct ShellWarehouseSheet: View {
         let chosen = selected ?? current
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                AppIcon.warehouse.image
+                AppIcon.faWarehouseAlt.image
                     .font(.system(size: 20))
                     .foregroundStyle(AikuColor.ink)
                     .accessibilityHidden(true)
@@ -93,7 +93,7 @@ struct ShellWarehouseSheet: View {
             selected = choice
         } label: {
             HStack(spacing: 12) {
-                AppIcon.warehouse.image
+                AppIcon.faWarehouseAlt.image
                     .font(.system(size: 18))
                     .foregroundStyle(AikuColor.text2)
                     .accessibilityHidden(true)

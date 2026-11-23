@@ -9,7 +9,7 @@ struct ClockingLeaveView: View {
     @State private var replacingCertificate: LeaveResponse?
 
     var body: some View {
-        AppScreen(title: "Leave", kicker: "Clocking & HR · \(ClockingStore.shared.organisationName ?? session.profile.organisation)") {
+        AppScreen(title: "Leave", kicker: ShellClockingText.kicker(ClockingStore.shared.organisationName ?? session.profile.organisation)) {
             ClockingSectionTabs(current: .leave) { isAdjusting = true }
         } content: {
             if let error = store.loadError {

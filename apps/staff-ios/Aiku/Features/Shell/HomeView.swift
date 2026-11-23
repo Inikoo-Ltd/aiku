@@ -10,6 +10,7 @@ struct HomeView: View {
     private let clocking = ClockingStore.shared
     private let inbox = ShellInboxStore.shared
     private let appVersions = AppVersionStore.shared
+    private let offline = OfflineWork.shared
 
     var body: some View {
         ScreenScaffold(spacing: 20) {
@@ -23,6 +24,7 @@ struct HomeView: View {
                 }
             }
             clockingCard
+            conflictsRow
             if session.hasWarehouseAccess {
                 shortcuts
             }
@@ -108,7 +110,7 @@ struct HomeView: View {
     private func clockingCardContent(_ status: ShellClockStatus?) -> some View {
         let isClockedIn = status?.isClockedIn == true
         return HStack(spacing: 14) {
-            AppIcon.clock.image
+            AppIcon.faUserClock.image
                 .font(.system(size: 20))
                 .foregroundStyle(isClockedIn ? AikuColor.success : AikuColor.text3)
                 .frame(width: 44, height: 44)
@@ -122,6 +124,16 @@ struct HomeView: View {
                     Text(status.detail)
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
+                    if let weekTotal = ShellHomeContent.weekTotal(clocking) {
+                        Text("This week \(weekTotal)")
+                            .font(.aiku(13))
+                            .foregroundStyle(AikuColor.text3)
+                    }
+                    if let updatedAt = clocking.lastUpdatedAt {
+                        Text(LastUpdatedNote.text(updatedAt))
+                            .font(.aiku(12))
+                            .foregroundStyle(AikuColor.text4)
+                    }
                 } else {
                     SkeletonBlock(width: 150, height: 14)
                     SkeletonBlock(width: 110, height: 11)
@@ -175,46 +187,83 @@ struct HomeView: View {
         }
     }
 
-    private var modules: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeading("Your modules")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 2), spacing: 10) {
-                ForEach(ShellHomeContent.modules(hasWarehouseAccess: session.hasWarehouseAccess, warehouseLabel: session.warehouseLabel, weekTotal: ShellHomeContent.weekTotal(clocking))) { module in
-                    Button {
-                        router.shellFollow(module.link)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 10) {
-                            IconTile(module.icon, tone: .info, size: 40, radius: 10)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(module.title)
-                                    .font(.aiku(15, .bold))
-                                    .foregroundStyle(AikuColor.text)
-                                if module.subtitle.isEmpty {
-                                    SkeletonBlock(width: 110, height: 10, radius: 5)
-                                        .padding(.vertical, 3)
-                                } else {
-                                    Text(module.subtitle)
-                                        .font(.aiku(12))
-                                        .foregroundStyle(AikuColor.text3)
-                                }
-                            }
-                            .multilineTextAlignment(.leading)
-                        }
-                        .padding(14)
-                        .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
-                        .cardSurface()
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("shell.home.module.\(module.id)")
+    private var conflictsRow: some View {
+        let needsYou = offline.needsYouCount
+        let needsAttention = needsYou > 0
+        return Button {
+            router.open(SystemRoute.conflicts)
+        } label: {
+            HStack(spacing: 14) {
+                AppIcon.faExclamationTriangle.image
+                    .font(.system(size: 20))
+                    .foregroundStyle(needsAttention ? AikuColor.warnInk : AikuColor.link)
+                    .frame(width: 44, height: 44)
+                    .background(needsAttention ? AikuColor.surface : AikuColor.soft, in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Resolve conflicts")
+                        .font(.aiku(16, .bold))
+                        .foregroundStyle(needsAttention ? AikuColor.warnInk : AikuColor.text)
+                    Text(ShellHomeContent.conflictsText(needsYou: needsYou))
+                        .font(.aiku(13, needsAttention ? .semibold : .regular))
+                        .foregroundStyle(needsAttention ? AikuColor.warnInk : AikuColor.text3)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                AppIcon.chevronRight.image
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(needsAttention ? AikuColor.warnInk : AikuColor.faint)
+                    .accessibilityHidden(true)
             }
-            if !session.hasWarehouseAccess {
-                Text("Warehouse appears here when your account has access to it.")
-                    .font(.aiku(13))
-                    .foregroundStyle(AikuColor.text3)
-                    .padding(.horizontal, 4)
+            .padding(14)
+            .background(needsAttention ? AikuColor.warnSoft : AikuColor.surface, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(needsAttention ? AikuColor.warnInk.opacity(0.35) : AikuColor.border))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("shell.home.conflicts")
+    }
+
+    @ViewBuilder
+    private var modules: some View {
+        if session.hasWarehouseAccess {
+            ForEach(ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: session.warehouseLabel)) { module in
+                Button {
+                    router.shellFollow(module.link)
+                } label: {
+                    HStack(spacing: 14) {
+                        IconTile(module.icon, tone: .info, size: 44, radius: 10)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(module.title)
+                                .font(.aiku(16, .bold))
+                                .foregroundStyle(AikuColor.text)
+                            if module.subtitle.isEmpty {
+                                SkeletonBlock(width: 110, height: 10, radius: 5)
+                                    .padding(.vertical, 3)
+                            } else {
+                                Text(module.subtitle)
+                                    .font(.aiku(13))
+                                    .foregroundStyle(AikuColor.text3)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        AppIcon.chevronRight.image
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(AikuColor.faint)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(14)
+                    .cardSurface()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("shell.home.module.\(module.id)")
             }
+        } else {
+            Text("Warehouse appears here when your account has access to it.")
+                .font(.aiku(13))
+                .foregroundStyle(AikuColor.text3)
+                .padding(.horizontal, 4)
         }
     }
 

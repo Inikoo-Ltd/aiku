@@ -90,4 +90,39 @@ enum AppIcon: String, Sendable, CaseIterable {
     case next = "arrow.right"
     case unlock = "lock.open"
     case xCircle = "xmark.circle"
+    case faPalletAlt = "fa.pallet-alt"
+    case faChartNetwork = "fa.chart-network"
+    case faBoxesAlt = "fa.boxes-alt"
+    case faBox = "fa.box"
+    case faPallet = "fa.pallet"
+    case faNarwhal = "fa.narwhal"
+    case faInventory = "fa.inventory"
+    case faWarehouseAlt = "fa.warehouse-alt"
+    case faMapSigns = "fa.map-signs"
+    case faArrowToBottom = "fa.arrow-to-bottom"
+    case faTasksAlt = "fa.tasks-alt"
+    case faTruckContainer = "fa.truck-container"
+    case faTruckCouch = "fa.truck-couch"
+    case faExchange = "fa.exchange"
+    case faArrowFromLeft = "fa.arrow-from-left"
+    case faTruck = "fa.truck"
+    case faStackOverflow = "fa.stack-overflow"
+    case faSignOut = "fa.sign-out"
+    case faDollyFlatbedAlt = "fa.dolly-flatbed-alt"
+    case faMonument = "fa.monument"
+    case faWarehouse = "fa.warehouse"
+    case faUserClock = "fa.user-clock"
+    case faStopwatch = "fa.stopwatch"
+    case faCalendarMinus = "fa.calendar-minus"
+    case faClockPencil = "fa.clock-pencil"
+    case faClock = "fa.clock"
+    case faCalendar = "fa.calendar"
+    case faExclamationTriangle = "fa.exclamation-triangle"
+
+    var fontAwesome: FontAwesomeGlyph? {
+        guard rawValue.hasPrefix(Self.fontAwesomePrefix) else { return nil }
+        return FontAwesomeGlyph(rawValue: String(rawValue.dropFirst(Self.fontAwesomePrefix.count)))
+    }
+
+    private static let fontAwesomePrefix = "fa."
 }

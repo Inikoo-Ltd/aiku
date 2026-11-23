@@ -141,7 +141,12 @@ struct GoodsInAPITests {
         #expect(feed.list.total == 12)
         #expect(feed.list.canLoadMore)
         #expect(feed.counts?.count("placed") == 11739)
-        #expect(GoodsInRowText.delivery(feed.list.rows[0]) == "AW Aromatics Ltd · 39 items · Dispatched 11 Nov")
+        let shown = GoodsInListRow.delivery(feed.list.rows[0], in: TimeZone(identifier: "UTC")!)
+        #expect(shown.party == "AW Aromatics Ltd")
+        #expect(shown.details == ["39 items"])
+        #expect(shown.date == "11 Nov 2026")
+        #expect(shown.dateCaption == nil)
+        #expect(shown.badges == [Chip("Dispatched", GoodsInText.deliveryTone("dispatched"))])
     }
 
     @Test func theFilterSheetShowsHowManyDeliveriesItWouldList() async throws {
@@ -350,6 +355,10 @@ struct GoodsInAPITests {
         #expect(query.contains(URLQueryItem(name: "state", value: "to_process")))
         #expect(feed.list.rows.map(\.reference) == ["GB591132-r2"])
         #expect(feed.counts?.count("returning") == 21)
-        #expect(GoodsInRowText.goodsReturn(feed.list.rows[0]) == "Cancellation · Thimble and Wick · 2 items · 23 Oct")
+        let shown = GoodsInListRow.goodsReturn(feed.list.rows[0], in: TimeZone(identifier: "UTC")!)
+        #expect(shown.party == "Thimble and Wick")
+        #expect(shown.details == ["Cancellation", "2 items"])
+        #expect(shown.date == "23 Oct 2026")
+        #expect(shown.dateCaption == nil)
     }
 }

@@ -64,7 +64,7 @@ final class AikuUITests: XCTestCase {
         app.buttons["tab.Menu"].tap()
         XCTAssertTrue(app.buttons["shell.menu.goodsOut.deliveryNotes"].waitForExistence(timeout: 5))
         app.buttons["shell.menu.goodsOut.deliveryNotes"].tap()
-        XCTAssertTrue(app.staticTexts["AR24816"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["goodsOut.note.AR24816"].waitForExistence(timeout: 5))
 
         app.buttons["header.back"].tap()
         XCTAssertTrue(app.buttons["shell.menu.logout"].waitForExistence(timeout: 5))

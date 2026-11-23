@@ -103,7 +103,8 @@ extension LocationsSlot {
             unitVolumeM3: 0,
             unitValue: quantity > 0 ? value / Double(quantity) : 0,
             remoteOrgStockID: remote.id,
-            remoteLinkID: remote.locationOrgStockId
+            remoteLinkID: remote.locationOrgStockId,
+            quantityLabel: remote.quantityLabel
         )
     }
 }

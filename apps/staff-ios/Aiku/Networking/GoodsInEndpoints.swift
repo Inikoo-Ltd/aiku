@@ -978,8 +978,11 @@ enum GoodsInDispatchedBucket: String, CaseIterable, Hashable, Sendable {
 
 enum GoodsInDeliverySort: String, CaseIterable, Hashable, Sendable {
     case newest = "-date"
-    case dispatchedDate = "-dispatched_at"
+    case oldest = "date"
     case reference
+    case supplier
+    case expectedDate = "estimated_receiving_date"
+    case dispatchedDate = "-dispatched_at"
     case items = "-number_items"
 }
 
@@ -988,6 +991,7 @@ struct MobileStockDeliveriesQuery: Hashable, Sendable {
     var source: GoodsInDeliverySource?
     var search = ""
     var dispatched: GoodsInDispatchedBucket?
+    var dates = ListDateRange()
     var sort: GoodsInDeliverySort?
     var page = 1
     var perPage = 50
@@ -998,6 +1002,7 @@ struct MobileStockDeliveriesQuery: Hashable, Sendable {
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { items.append(URLQueryItem(name: "q", value: trimmed)) }
         if let dispatched { items.append(URLQueryItem(name: "dispatched", value: dispatched.rawValue)) }
+        items += dates.queryItems
         if let sort { items.append(URLQueryItem(name: "sort", value: sort.rawValue)) }
         items.append(URLQueryItem(name: "page", value: "\(page)"))
         items.append(URLQueryItem(name: "per_page", value: "\(perPage)"))
@@ -1015,9 +1020,17 @@ enum GoodsInReturnStateFilter: String, CaseIterable, Hashable, Sendable {
     case cancelled
 }
 
+enum GoodsInReturnSort: String, CaseIterable, Hashable, Sendable {
+    case oldestReceived = "created_at"
+    case reference
+    case customer
+}
+
 struct MobileReturnsQuery: Hashable, Sendable {
     var state: GoodsInReturnStateFilter = .all
     var search = ""
+    var dates = ListDateRange()
+    var sort: GoodsInReturnSort?
     var page = 1
     var perPage = 50
 
@@ -1025,6 +1038,8 @@ struct MobileReturnsQuery: Hashable, Sendable {
         var items = [URLQueryItem(name: "state", value: state.rawValue)]
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { items.append(URLQueryItem(name: "q", value: trimmed)) }
+        items += dates.queryItems
+        if let sort { items.append(URLQueryItem(name: "sort", value: sort.rawValue)) }
         items.append(URLQueryItem(name: "page", value: "\(page)"))
         items.append(URLQueryItem(name: "per_page", value: "\(perPage)"))
         return items

@@ -8,7 +8,7 @@ struct ClockingCalendarView: View {
     @State private var isAdjusting = false
 
     var body: some View {
-        AppScreen(title: "Calendar", kicker: "Clocking & HR · \(ClockingStore.shared.organisationName ?? session.profile.organisation)") {
+        AppScreen(title: "Calendar", kicker: ShellClockingText.kicker(ClockingStore.shared.organisationName ?? session.profile.organisation)) {
             ClockingSectionTabs(current: .calendar) { isAdjusting = true }
         } content: {
             if let error = store.loadError {

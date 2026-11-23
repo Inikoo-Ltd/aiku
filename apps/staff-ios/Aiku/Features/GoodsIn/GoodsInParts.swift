@@ -381,6 +381,9 @@ struct GoodsInEvents: ViewModifier {
                     toasts.show(text, tone: tone, sticky: false)
                 }
                 onDone()
+            case .queued:
+                toasts.show(OfflineRecordText.queued, tone: .info, sticky: false)
+                onDone()
             case .refused(let message):
                 let text = message.isEmpty ? GoodsInText.server : message
                 if let onSheetProblem {

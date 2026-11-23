@@ -11,9 +11,17 @@ struct ClockingTimesheetsView: View {
     var body: some View {
         let weeks = store.weeks
         let week = weeks[min(weekIndex, weeks.count - 1)]
-        AppScreen(title: "Timesheets", kicker: "Clocking & HR · \(store.organisationName ?? session.profile.organisation)") {
+        AppScreen(title: "Timesheets", kicker: ShellClockingText.kicker(store.organisationName ?? session.profile.organisation)) {
             ClockingSectionTabs(current: .timesheets) { isAdjusting = true }
         } content: {
+            if let error = store.loadError {
+                InlineAlert(tone: .danger, title: "Couldn’t load timesheets", message: error) {
+                    LinkButton("Try again", size: 13) { Task { await store.load() } }
+                }
+                if let updatedAt = store.lastUpdatedAt {
+                    LastUpdatedNote(date: updatedAt)
+                }
+            }
             weekSwitcher(week, count: weeks.count)
             summary(week)
             if week.days.isEmpty {

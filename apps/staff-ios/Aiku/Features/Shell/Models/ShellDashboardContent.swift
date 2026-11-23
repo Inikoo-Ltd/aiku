@@ -2,11 +2,10 @@ import Foundation
 
 enum ShellDashboardContent {
     static let tiles: [ShellShortcut] = [
-        ShellShortcut(id: "inventory", title: "Inventory", icon: .sko, requirement: .inventory, link: .inventory(.skos)),
-        ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations)),
-        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .order, requirement: .goodsInModule, link: .goodsIn(.stockDeliveries)),
-        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
-        ShellShortcut(id: "clocking", title: "Clocking", icon: .clock, requirement: .allStaff, link: .clocking(.clocking))
+        ShellShortcut(id: "inventory", title: "Inventory", icon: .faPalletAlt, requirement: .inventory, link: .inventory(.dashboard)),
+        ShellShortcut(id: "locations", title: "Locations", icon: .faInventory, requirement: .locations, link: .locations(.warehouse)),
+        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .faArrowToBottom, requirement: .goodsInModule, link: .goodsIn(.backlog)),
+        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .faArrowFromLeft, requirement: .goodsOut, link: .goodsOut(.backlog))
     ]
 
     static func tiles(for modules: ModuleAccess) -> [ShellShortcut] {

@@ -9,7 +9,7 @@ struct ClockingAdjustmentsView: View {
     @State private var busyID: Int?
 
     var body: some View {
-        AppScreen(title: "Clocking adjustment", kicker: "Clocking & HR · \(store.organisationName ?? session.profile.organisation)") {
+        AppScreen(title: "Clocking adjustment", kicker: ShellClockingText.kicker(store.organisationName ?? session.profile.organisation)) {
             ClockingSectionTabs(current: .adjustment) {}
         } content: {
             Text("For a day with no clockings at all, request the missing check-in, check-out or both here. To correct a day that already has clockings, use Request correction on the Timesheets tab. Requests can go back one month and apply once they are approved.")

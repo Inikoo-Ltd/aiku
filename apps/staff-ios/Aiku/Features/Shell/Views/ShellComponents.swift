@@ -158,7 +158,7 @@ struct ShellWarehouseRow: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 if showsIcon {
-                    AppIcon.warehouse.image
+                    AppIcon.faWarehouseAlt.image
                         .font(.system(size: 19))
                         .foregroundStyle(AikuColor.ink)
                         .accessibilityHidden(true)

@@ -58,6 +58,60 @@ enum PalletReturnTypeFilter: String, CaseIterable, Hashable, Sendable {
     }
 }
 
+enum PalletReturnSort: String, CaseIterable, Hashable, Sendable {
+    case oldest = "date"
+    case reference
+    case customer
+    case dispatched = "-dispatched_at"
+
+    static let options: [ListSortOption<PalletReturnSort>] = [
+        ListSortOption(sort: nil, label: "Newest first"),
+        ListSortOption(sort: .oldest, label: "Oldest first"),
+        ListSortOption(sort: .reference, label: "Reference"),
+        ListSortOption(sort: .customer, label: "Customer"),
+        ListSortOption(sort: .dispatched, label: "Dispatched")
+    ]
+
+    static let onlineOnly: Set<PalletReturnSort> = [.dispatched]
+}
+
+enum PalletReturnsOffline {
+    private static let activeStates: Set<String> = ["confirmed", "picking", "picked"]
+
+    static func rows(
+        _ rows: [MobilePalletReturnRow],
+        state: PalletReturnStateFilter,
+        type: PalletReturnTypeFilter,
+        search: String,
+        sort: PalletReturnSort?
+    ) -> [MobilePalletReturnRow] {
+        let kept = rows.filter { row in
+            isIn(row, state)
+                && (type.serverValue == nil || row.typeGroup == type.serverValue)
+                && SavedListFilter.matches(search, row.reference, row.customerReference, row.customer?.name)
+        }
+        switch sort {
+        case nil, .dispatched?:
+            return SavedListFilter.sorted(kept, descending: true, id: \.id, key: { listedAt($0) })
+        case .oldest?:
+            return SavedListFilter.sorted(kept, descending: false, id: \.id, key: { listedAt($0) })
+        case .reference?:
+            return SavedListFilter.sorted(kept, descending: false, id: \.id, key: { PalletDeliveryText.sortKey($0.reference) })
+        case .customer?:
+            return SavedListFilter.sorted(kept, descending: false, id: \.id, key: { PalletDeliveryText.sortKey($0.customer?.name) })
+        }
+    }
+
+    private static func isIn(_ row: MobilePalletReturnRow, _ state: PalletReturnStateFilter) -> Bool {
+        state == .active ? activeStates.contains(row.state) : row.state == state.rawValue
+    }
+
+    private static func listedAt(_ row: MobilePalletReturnRow) -> Date? {
+        guard let date = row.date else { return nil }
+        return ListDates.instant(date) ?? SavedListFilter.day(date)
+    }
+}
+
 enum PalletReturnText {
     static let stages = ["confirmed", "picking", "picked", "dispatched"]
     static let stageTitles = ["Confirmed", "Picking", "Picked", "Dispatched"]
@@ -101,17 +155,21 @@ enum PalletReturnText {
         row.typeLabel ?? (row.typeGroup == "items" ? "Stored items" : "Pallets")
     }
 
-    static func rowSubtitle(_ row: MobilePalletReturnRow) -> String {
+    static func rowDate(_ row: MobilePalletReturnRow, in timeZone: TimeZone = .current) -> String? {
+        ListDates.recordDate(row.date, in: timeZone)
+    }
+
+    static func rowChip(_ row: MobilePalletReturnRow) -> Chip {
+        Chip(row.stateLabel?.nilIfEmpty ?? row.state, stateTone(row.state))
+    }
+
+    static func rowDetails(_ row: MobilePalletReturnRow) -> [String] {
         let size = row.typeGroup == "items"
             ? PalletDeliveryText.plural(row.numberItems, "item line", "item lines")
             : PalletDeliveryText.plural(row.numberPallets, "pallet", "pallets")
-        return PalletDeliveryText.joined([
-            row.customer?.name,
-            typeTitle(row),
-            row.platform?.label.map { "from \($0)" },
-            size,
-            PalletDeliveryText.day(row.date)
-        ])
+        let platform = row.platform?.label.map { "from \($0)" }
+        let parts: [String?] = [typeTitle(row), platform, size]
+        return parts.compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
     }
 
     static func kicker(_ detail: MobilePalletReturnDetail) -> String {
@@ -158,26 +216,51 @@ final class PalletReturnsFeed {
     var state: PalletReturnStateFilter = .active
     var type: PalletReturnTypeFilter = .all
     var search = ""
+    var listFilter = ListFilter<PalletReturnSort>()
     private(set) var rows: [MobilePalletReturnRow] = []
     private(set) var counts: MobilePalletReturnsPage.Counts?
+    private(set) var total: Int?
     private(set) var isLoadingMore = false
     private(set) var loadError: String?
     private(set) var currentPage = 0
     private(set) var lastPage = 0
     private(set) var loadedRequest: Request?
+    private(set) var saved: SavedRows<MobilePalletReturnRow>?
+    private let savedLists: SavedLists
+    private let currentUserID: @MainActor () -> Int?
+
+    init(savedLists: SavedLists = .shared, currentUserID: @escaping @MainActor () -> Int? = { OfflineWork.shared.userID }) {
+        self.savedLists = savedLists
+        self.currentUserID = currentUserID
+    }
 
     struct Request: Hashable, Sendable {
         let warehouseID: Int
         let state: PalletReturnStateFilter
         let type: PalletReturnTypeFilter
         let search: String
+        let sort: PalletReturnSort?
     }
 
     func request(warehouseID: Int) -> Request {
-        Request(warehouseID: warehouseID, state: state, type: type, search: search.trimmingCharacters(in: .whitespacesAndNewlines))
+        Request(
+            warehouseID: warehouseID,
+            state: state,
+            type: type,
+            search: search.trimmingCharacters(in: .whitespacesAndNewlines),
+            sort: listFilter.sort
+        )
     }
 
     var hasMorePages: Bool { currentPage > 0 && currentPage < lastPage }
+    var isShowingSavedRows: Bool { saved != nil }
+    var savedAt: Date? { saved?.savedAt }
+    var onlineOnlySorts: Set<PalletReturnSort> { isShowingSavedRows ? PalletReturnSort.onlineOnly : [] }
+
+    func previewTotal(warehouseID: Int) -> Int? {
+        guard loadedRequest == request(warehouseID: warehouseID), loadError == nil else { return nil }
+        return isShowingSavedRows ? rows.count : total
+    }
 
     func reload(warehouseID: Int, apiClient: APIClient) async {
         let request = request(warehouseID: warehouseID)
@@ -186,16 +269,35 @@ final class PalletReturnsFeed {
             guard request == self.request(warehouseID: warehouseID) else { return }
             rows = page.data
             counts = page.counts
+            total = page.meta.total
             currentPage = page.meta.currentPage
             lastPage = page.meta.lastPage
+            saved = nil
             loadedRequest = request
             loadError = nil
         } catch where error.isCancellation {
             return
+        } catch APIError.offline {
+            guard request == self.request(warehouseID: warehouseID) else { return }
+            guard !showSavedRows(request) else { return }
+            loadError = PalletDeliveryText.message(for: APIError.offline)
+            loadedRequest = request
         } catch {
             loadError = PalletDeliveryText.message(for: error)
             loadedRequest = request
         }
+    }
+
+    private func showSavedRows(_ request: Request) -> Bool {
+        guard let userID = currentUserID(),
+              let found = savedLists.rows(MobilePalletReturnRow.self, userID: userID, warehouseID: request.warehouseID, kind: .palletReturns) else { return false }
+        saved = found
+        rows = PalletReturnsOffline.rows(found.rows, state: request.state, type: request.type, search: request.search, sort: request.sort)
+        currentPage = 1
+        lastPage = 1
+        loadedRequest = request
+        loadError = nil
+        return true
     }
 
     func loadNextPage(apiClient: APIClient) async {
@@ -208,6 +310,7 @@ final class PalletReturnsFeed {
             let known = Set(rows.map(\.id))
             rows.append(contentsOf: page.data.filter { !known.contains($0.id) })
             counts = page.counts
+            total = page.meta.total
             currentPage = page.meta.currentPage
             lastPage = page.meta.lastPage
         } catch where error.isCancellation {
@@ -218,7 +321,13 @@ final class PalletReturnsFeed {
     }
 
     private func query(_ request: Request, page: Int) -> MobilePalletReturnsQuery {
-        MobilePalletReturnsQuery(state: request.state.rawValue, type: request.type.serverValue, search: request.search, page: page)
+        MobilePalletReturnsQuery(
+            state: request.state.rawValue,
+            type: request.type.serverValue,
+            search: request.search,
+            sort: request.sort?.rawValue,
+            page: page
+        )
     }
 }
 

@@ -17,6 +17,9 @@ struct ClockingView: View {
                 InlineAlert(tone: .danger, title: "Couldn’t load clocking", message: error) {
                     LinkButton("Try again", size: 13) { Task { await store.load() } }
                 }
+                if let updatedAt = store.lastUpdatedAt {
+                    LastUpdatedNote(date: updatedAt)
+                }
             }
             if !store.hasLoaded {
                 SkeletonRow().cardSurface()

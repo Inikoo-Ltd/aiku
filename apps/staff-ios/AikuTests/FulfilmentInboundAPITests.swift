@@ -101,7 +101,12 @@ struct FulfilmentInboundAPITests {
         let page = try decoder.decode(MobilePalletDeliveriesPage.self, from: Data(Self.responses["mobile/warehouses/1/pallet-deliveries"]!.utf8))
         let row = try #require(page.data.first)
 
-        #expect(PalletDeliveryText.rowSubtitle(row).hasPrefix("Acme · “PO-9” · 1 of 3 booked in · Received "))
+        let moment = PalletDeliveryText.rowMoment(row, in: TimeZone(identifier: "UTC")!)
+        #expect(row.customer?.name == "Acme")
+        #expect(PalletDeliveryText.rowDetails(row) == ["“PO-9”", "1 of 3 booked in"])
+        #expect(moment.date == "11 Nov 2026")
+        #expect(moment.caption == "Received")
+        #expect(PalletDeliveryText.rowChip(row) == Chip("Booking in", .info))
         #expect(PalletDeliveryText.deliveryTone("booked_in") == .success)
         #expect(PalletDeliveryText.deliveryTone("not_received") == .danger)
     }

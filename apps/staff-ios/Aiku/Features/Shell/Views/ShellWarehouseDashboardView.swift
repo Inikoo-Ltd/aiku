@@ -17,7 +17,7 @@ struct ShellWarehouseDashboardView: View {
             actions: [HeaderAction(.search, label: "Search") { router.open(ShellRoute.search) }]
         ) {
             Card {
-                ListRow(session.contextLabel, subtitle: "\(session.profile.warehouseCode) · tap to change", icon: .warehouse, action: {
+                ListRow(session.contextLabel, subtitle: "\(session.profile.warehouseCode) · tap to change", icon: .faWarehouseAlt, action: {
                     isChoosingWarehouse = true
                 }) {
                     Text("Change")

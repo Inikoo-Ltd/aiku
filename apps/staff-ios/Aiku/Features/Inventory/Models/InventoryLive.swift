@@ -7,8 +7,8 @@ struct InventoryService: Sendable {
     var orgStock: @Sendable (Int, Int) async throws -> MobileOrgStockDetail = { _, _ in throw APIError.unexpectedBody }
     var movements: @Sendable (Int, Int, String?, Int) async throws -> MobileOrgStockMovementsPage = { _, _, _, _ in throw APIError.unexpectedBody }
     var reasons: @Sendable () async throws -> MobileStockMovementReasons = { throw APIError.unexpectedBody }
-    var audit: @Sendable (Int, Int, [MobileOrgStockAuditCount]) async throws -> MobileOrgStockWriteResult = { _, _, _ in throw APIError.unexpectedBody }
-    var move: @Sendable (Int, [MobileOrgStockMoveTarget]) async throws -> MobileOrgStockWriteResult = { _, _ in throw APIError.unexpectedBody }
+    var audit: @Sendable (Int, Int, [MobileOrgStockAuditCount], String) async throws -> MobileOrgStockWriteResult = { _, _, _, _ in throw APIError.unexpectedBody }
+    var move: @Sendable (Int, [MobileOrgStockMoveTarget], String) async throws -> MobileOrgStockWriteResult = { _, _, _ in throw APIError.unexpectedBody }
     var consume: @Sendable (Int, MobileOrgStockConsumeBody) async throws -> MobileOrgStockWriteResult = { _, _ in throw APIError.unexpectedBody }
     var addLocation: @Sendable (Int, Int, MobileOrgStockAddLocationBody) async throws -> MobileOrgStockWriteResult = { _, _, _ in throw APIError.unexpectedBody }
     var removeLocations: @Sendable (Int, Int, [Int]) async throws -> MobileOrgStockWriteResult = { _, _, _ in throw APIError.unexpectedBody }
@@ -26,8 +26,8 @@ struct InventoryService: Sendable {
             orgStock: { try await client.fetchOrgStock(warehouseID: $0, id: $1) },
             movements: { try await client.fetchOrgStockMovements(warehouseID: $0, id: $1, flow: $2, page: $3, perPage: movementsPageSize) },
             reasons: { try await client.fetchStockMovementReasons() },
-            audit: { try await client.auditOrgStock(warehouseID: $0, id: $1, counts: $2) },
-            move: { try await client.moveOrgStock(fromLinkID: $0, targets: $1) },
+            audit: { try await client.auditOrgStock(warehouseID: $0, id: $1, counts: $2, clientRequestID: $3) },
+            move: { try await client.moveOrgStock(fromLinkID: $0, targets: $1, clientRequestID: $2) },
             consume: { try await client.consumeOrgStock(linkID: $0, body: $1) },
             addLocation: { try await client.addOrgStockLocation(warehouseID: $0, id: $1, body: $2) },
             removeLocations: { try await client.removeOrgStockLocations(warehouseID: $0, id: $1, linkIDs: $2) },
@@ -135,10 +135,14 @@ enum InventoryLive {
     static func listLocation(_ row: MobileOrgStockRow) -> InventorySkoListLocation? {
         guard let place = row.location, let linkID = row.locationOrgStockId else { return nil }
         let quantity = row.locationQuantity?.value
+        let label = row.locationQuantityLabel.map { $0.hasPrefix("-") ? String($0.dropFirst()) : $0 }
         return InventorySkoListLocation(
             locationOrgStockID: linkID,
             code: place.code,
-            quantityText: quantity.map { $0 < 0 ? "−\(plainQuantityText(abs($0)))" : plainQuantityText($0) },
+            quantityText: quantity.map { value in
+                let magnitude = label ?? plainQuantityText(abs(value))
+                return value < 0 ? "−\(magnitude)" : magnitude
+            },
             isNegative: (quantity ?? 0) < 0
         )
     }
@@ -231,7 +235,7 @@ enum InventoryLive {
         default: .neutral
         }
         let type = nonEmpty(remote.typeLabel) ?? remote.type
-        let running = remote.runningQuantityOrgStock?.value.map { "running \(quantityText($0, label: nil))" }
+        let running = remote.runningQuantityOrgStock?.value.map { "running \(quantityText($0, label: remote.runningQuantityOrgStockLabel))" }
         let parts: [String?] = [
             nonEmpty(remote.reasonLabel),
             nonEmpty(remote.parentReference),
@@ -455,13 +459,15 @@ final class InventorySkoFeed {
     let target: Target
     let canEditStocksFallback: Bool
     private(set) var orgStockID: Int?
-    private(set) var sko: InventorySko?
+    private(set) var detail: MobileOrgStockDetail?
+    private(set) var copyAt: Date?
     private(set) var isLoading = false
     private(set) var isNotFound = false
     private(set) var loadError: String?
     private(set) var reasons: MobileStockMovementReasons?
     private(set) var reasonsError: String?
     @ObservationIgnored private let service: InventoryService
+    @ObservationIgnored private var isFollowingOfflineWork = false
 
     init(warehouseID: Int, target: Target, canEditStocks: Bool, service: InventoryService = .live(.shared)) {
         self.warehouseID = warehouseID
@@ -471,6 +477,18 @@ final class InventorySkoFeed {
         if case .id(let id) = target {
             orgStockID = id
         }
+    }
+
+    var offlineQueue: OfflineRecordQueue? {
+        orgStockID.map { OfflineRecordQueue(warehouseID: warehouseID, record: .orgStock($0)) }
+    }
+
+    var shownDetail: MobileOrgStockDetail? {
+        detail.map { StockOfflineOverlay.apply(offlineQueue?.unsent ?? [], to: $0) }
+    }
+
+    var sko: InventorySko? {
+        shownDetail.map { InventoryLive.sko($0, canEditStocks: canEditStocksFallback) }
     }
 
     var title: String {
@@ -488,11 +506,20 @@ final class InventorySkoFeed {
                 return
             }
             apply(try await service.orgStock(warehouseID, id))
+            copyAt = nil
             loadError = nil
         } catch where error.isCancellation {
             return
         } catch APIError.http(statusCode: 404) {
             isNotFound = true
+        } catch APIError.offline {
+            guard let copy = offlineQueue?.copy(MobileOrgStockDetail.self) else {
+                loadError = InventoryLive.message(for: APIError.offline)
+                return
+            }
+            apply(copy.value)
+            copyAt = copy.downloadedAt
+            loadError = nil
         } catch {
             loadError = InventoryLive.message(for: error)
         }
@@ -518,7 +545,11 @@ final class InventorySkoFeed {
         let (sko, id) = try current()
         let counts = InventoryLive.auditCounts(for: sko, counted: counted, reasons: chosen)
         guard !counts.isEmpty else { throw InventoryStockError.nothingSelected }
-        return try finish(await service.audit(warehouseID, id, counts), fallback: "Audit saved")
+        let requestID = GoodsInText.newRequestID()
+        let payload = detail.flatMap { StockOfflinePayloads.auditOrgStock(orgStockID: id, counts: counts, versions: $0.versions, clientRequestID: requestID) }
+        return try await write(.auditOrgStock, payload: payload) {
+            try await service.audit(warehouseID, id, counts, requestID)
+        } fallback: { "Audit saved" }
     }
 
     func move(from source: String, to destination: String, quantity: Int) async throws -> String {
@@ -528,7 +559,15 @@ final class InventorySkoFeed {
         let from = try link(source, in: sko)
         let to = try link(destination, in: sko)
         let target = MobileOrgStockMoveTarget(locationOrgStockId: to.linkID, quantity: Double(quantity))
-        return try finish(await service.move(from.linkID, [target]), fallback: "Stock moved")
+        let requestID = GoodsInText.newRequestID()
+        let payload = StockOfflinePayloads.moveToRows(
+            sourceLinkID: from.linkID,
+            moves: [StockOfflineMove(linkID: to.linkID, quantity: Double(quantity))],
+            clientRequestID: requestID
+        )
+        return try await write(.moveStock, payload: payload) {
+            try await service.move(from.linkID, [target], requestID)
+        } fallback: { "Stock moved" }
     }
 
     func consume(location code: String, quantity: Int, note: String) async throws -> String {
@@ -536,6 +575,7 @@ final class InventorySkoFeed {
         guard quantity > 0 else { throw InventoryStockError.quantityMustBePositive }
         let link = try link(code, in: sko)
         let body = MobileOrgStockConsumeBody(quantity: Double(quantity), note: InventoryLive.nonEmpty(note))
+        try await waitForOfflineWork()
         return try finish(await service.consume(link.linkID, body), fallback: "Consumption recorded")
     }
 
@@ -546,6 +586,7 @@ final class InventorySkoFeed {
             throw InventoryStockError.locationAlreadyAssigned(option.code)
         }
         let body = MobileOrgStockAddLocationBody(locationId: locationID, type: type.rawValue)
+        try await waitForOfflineWork()
         return try finish(await service.addLocation(warehouseID, id, body), fallback: "Location added")
     }
 
@@ -554,7 +595,38 @@ final class InventorySkoFeed {
         guard !codes.isEmpty else { throw InventoryStockError.nothingSelected }
         let linkIDs = try codes.sorted().map { try link($0, in: sko).linkID }
         let removed = codes.count == 1 ? "1 location removed" : "\(codes.count) locations removed"
+        try await waitForOfflineWork()
         return try finish(await service.removeLocations(warehouseID, id, linkIDs), fallback: removed)
+    }
+
+    private func write(
+        _ operation: OfflineOperation,
+        payload: OfflinePayload?,
+        online: () async throws -> MobileOrgStockWriteResult,
+        fallback: () -> String
+    ) async throws -> String {
+        guard let queue = offlineQueue else { throw InventoryStockError.nothingSelected }
+        if let payload {
+            if queue.shouldQueue, queue.enqueue(operation, payload: payload) != nil {
+                return OfflineRecordText.queued
+            }
+        } else {
+            try await waitForOfflineWork()
+        }
+        do {
+            return try finish(await online(), fallback: fallback())
+        } catch APIError.offline {
+            if let payload, queue.enqueue(operation, payload: payload) != nil {
+                return OfflineRecordText.queued
+            }
+            throw APIError.offline
+        }
+    }
+
+    private func waitForOfflineWork() async throws {
+        if let reason = await offlineQueue?.blockingReason() {
+            throw InventoryStockError.waitingForOfflineWork(reason)
+        }
     }
 
     func locationOptions(search: String) async throws -> [InventoryLocationOption] {
@@ -584,14 +656,21 @@ final class InventorySkoFeed {
         return link
     }
 
-    private func apply(_ detail: MobileOrgStockDetail) {
-        orgStockID = detail.id
-        sko = InventoryLive.sko(detail, canEditStocks: canEditStocksFallback)
+    private func apply(_ remote: MobileOrgStockDetail) {
+        if orgStockID != remote.id || !isFollowingOfflineWork {
+            isFollowingOfflineWork = true
+            OfflineRecordFollowers.shared.follow(.orgStock(remote.id), by: self) { feed in
+                Task { await feed.load() }
+            }
+        }
+        orgStockID = remote.id
+        detail = remote
         isNotFound = false
     }
 
     private func finish(_ result: MobileOrgStockWriteResult, fallback: String) -> String {
         apply(result.data)
+        copyAt = nil
         return InventoryLive.nonEmpty(result.result?.message) ?? fallback
     }
 }

@@ -12,13 +12,13 @@ struct GoodsOutDeliveryNotesView: View {
     var body: some View {
         Group {
             if store.selectedForSession.isEmpty {
-                AppScreen(title: "Delivery notes", kicker: kicker, actions: actions) {
+                AppScreen(title: "Delivery notes", kicker: kicker) {
                     ModuleTabs(.goodsOut, current: .deliveryNotes)
                 } content: {
                     listContent
                 }
             } else {
-                AppScreen(title: "Delivery notes", kicker: kicker, actions: actions) {
+                AppScreen(title: "Delivery notes", kicker: kicker) {
                     ModuleTabs(.goodsOut, current: .deliveryNotes)
                 } content: {
                     listContent
@@ -45,8 +45,8 @@ struct GoodsOutDeliveryNotesView: View {
             await store.loadList()
             await counts
         }
-        .aikuSheet(isPresented: $isFiltering) {
-            GoodsOutFilterSheet(store: store, initial: store.listQuery.filter) { filter in
+        .sidePanel(isPresented: $isFiltering) {
+            GoodsOutFilterPanel(store: store, query: store.listQuery) { filter in
                 store.listQuery.apply(filter)
                 isFiltering = false
             } onClose: {
@@ -64,25 +64,22 @@ struct GoodsOutDeliveryNotesView: View {
         store.listQuery = GoodsOutListQuery(tab: initialTab)
     }
 
-    private var actions: [HeaderAction] {
-        let active = store.listQuery.filter.activeCount
-        return [HeaderAction(.search, label: "Search and filter", badge: active > 0 ? active : nil) { isFiltering = true }]
+    private var searchPlaceholder: String {
+        store.isRemote ? "Reference or tracking number" : "Reference, customer or SKO"
     }
 
     @ViewBuilder
     private var listContent: some View {
-        SearchField(text: $store.listQuery.search, placeholder: "Reference, customer or SKO")
         stateChips
-        if store.listQuery.filter.activeCount > 0 {
-            HStack(spacing: 8) {
-                Text(store.listQuery.filter.summary)
-                    .font(.aiku(13))
-                    .foregroundStyle(AikuColor.text3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                LinkButton("Clear filters", size: 13) {
-                    store.listQuery.apply(GoodsOutDeliveryNoteFilter())
-                }
-            }
+        SearchWithFilter(filterCount: store.listQuery.filter.activeCount, onFilter: { isFiltering = true }) {
+            SearchField(text: $store.listQuery.search, placeholder: searchPlaceholder)
+                .accessibilityIdentifier("goodsOut.search")
+        }
+        ActiveFiltersLine(parts: store.listQuery.filter.summary()) {
+            store.listQuery.clearFilters()
+        }
+        if let savedAt = store.listSavedAt {
+            SavedCopyNote(savedAt: savedAt)
         }
         let results = store.listResults
         if let error = store.listError, results.isEmpty {
@@ -151,37 +148,28 @@ struct GoodsOutDeliveryNotesView: View {
 
     @ViewBuilder
     private func row(_ note: GoodsOutDeliveryNote) -> some View {
-        let subtitle = note.listSubtitle(currentUser: store.currentUser)
-        let chips = rowChips(note)
+        let details = note.listDetails(currentUser: store.currentUser).map { L10n.text($0) }
+        let open = { router.open(GoodsOutRoute.deliveryNote(reference: note.reference)) }
         if note.state == .todo, note.remote?.canAddToPickingSession ?? true {
             let isSelected = store.selectedForSession.contains(note.reference)
-            ListRow(note.reference, subtitle: subtitle, chips: chips) {
-                router.open(GoodsOutRoute.deliveryNote(reference: note.reference))
-            } trailing: {
+            let selectionLabel = isSelected ? "Deselect \(note.reference)" : "Select \(note.reference) for a picking session"
+            RecordRow(note.reference, date: note.recordDate, party: note.customer, badges: rowChips(note), details: details, action: open) {
                 Button {
                     store.toggleSessionSelection(note.reference)
                 } label: {
-                    ZStack {
-                        Circle()
-                            .strokeBorder(isSelected ? AikuColor.primary : AikuColor.borderStrong, lineWidth: 2)
-                            .background(Circle().fill(isSelected ? AikuColor.primary : AikuColor.surface))
-                        if isSelected {
-                            AppIcon.check.image
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(AikuColor.onPrimary)
-                        }
-                    }
-                    .frame(width: 24, height: 24)
-                    .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    SessionSelectionMark(isSelected: isSelected)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(isSelected ? "Deselect \(note.reference)" : "Select \(note.reference) for a picking session")
+                .accessibilityHidden(true)
             }
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityAction(named: Text(selectionLabel)) {
+                store.toggleSessionSelection(note.reference)
+            }
+            .accessibilityIdentifier("goodsOut.note.\(note.reference)")
         } else {
-            ListRow(note.reference, subtitle: subtitle, chips: chips) {
-                router.open(GoodsOutRoute.deliveryNote(reference: note.reference))
-            }
+            RecordRow(note.reference, date: note.recordDate, party: note.customer, badges: rowChips(note), details: details, action: open)
+                .accessibilityIdentifier("goodsOut.note.\(note.reference)")
         }
     }
 
@@ -209,6 +197,26 @@ struct GoodsOutDeliveryNotesView: View {
             router.open(DispatchRoute.pickingSessions)
         }
         .accessibilityIdentifier("goodsOut.createPickingSession")
+    }
+}
+
+private struct SessionSelectionMark: View {
+    let isSelected: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .strokeBorder(isSelected ? AikuColor.primary : AikuColor.borderStrong, lineWidth: 2)
+                .background(Circle().fill(isSelected ? AikuColor.primary : AikuColor.surface))
+            if isSelected {
+                AppIcon.check.image
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(AikuColor.onPrimary)
+            }
+        }
+        .frame(width: 24, height: 24)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
     }
 }
 

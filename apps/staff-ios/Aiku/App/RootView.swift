@@ -84,6 +84,9 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
+            if phase == .background {
+                OfflineBackgroundSync.scheduleIfWaiting()
+            }
             guard phase == .active else { return }
             OfflineWork.shared.syncNow(.foreground)
             Task { await appVersions.check() }

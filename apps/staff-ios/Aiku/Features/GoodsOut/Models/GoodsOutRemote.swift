@@ -143,19 +143,21 @@ struct GoodsOutService: Sendable {
 enum GoodsOutMapper {
     static func listRequest(for query: GoodsOutListQuery, page: Int, perPage: Int = 50, today: Date, timeZone: TimeZone = GoodsOutDateFormat.timeZone) -> GoodsOutListRequest {
         var request = GoodsOutListRequest(page: page, perPage: perPage)
-        let states = query.effectiveStates
-        request.bucket = states.count == 1 ? (states.first?.apiBucket ?? "all") : "in_warehouse"
+        request.bucket = query.apiBucket
         if query.filter.channels.count == 1, let channel = query.filter.channels.first {
             request.channel = channel.apiKey
         }
         if query.filter.pickers.count == 1, let picker = query.filter.pickers.first {
             request.picker = pickerKey(picker)
         }
-        if query.filter.dates.count == 1, let date = query.filter.dates.first, let range = dateRange(date, today: today, timeZone: timeZone) {
+        if query.filter.range.isSet {
+            request.from = query.filter.range.from.map { ListDates.apiDay($0) }
+            request.to = query.filter.range.to.map { ListDates.apiDay($0) }
+        } else if query.filter.dates.count == 1, let date = query.filter.dates.first, let range = dateRange(date, today: today, timeZone: timeZone) {
             request.from = range.from
             request.to = range.to
         }
-        request.sort = sortKey(query.filter.sort)
+        request.sort = query.filter.sort?.apiKey
         let search = query.search.trimmingCharacters(in: .whitespacesAndNewlines)
         request.search = search.isEmpty ? nil : search
         return request
@@ -166,16 +168,6 @@ enum GoodsOutMapper {
         case .me: "me"
         case .noPicker: "none"
         case .otherPickers: "others"
-        }
-    }
-
-    static func sortKey(_ sort: GoodsOutSort) -> String? {
-        switch sort {
-        case .oldestFirst: nil
-        case .newestFirst: "-date"
-        case .items: "-number_items"
-        case .weight: "-effective_weight"
-        case .customer: "customer_name"
         }
     }
 
@@ -265,10 +257,8 @@ enum GoodsOutMapper {
             weightKg: weight,
             skoCount: 0
         )
-        note.listDetail = [
-            "\(items) \(items == 1 ? "item" : "items")",
-            weight > 0 ? note.weightText : nil
-        ].compactMap { $0 }.joined(separator: " · ")
+        note.listDate = ListDates.recordDate(row.date)
+        note.listItemCount = items
         note.apiID = row.id
         note.pickerID = row.picker?.id
         note.packerSameAsPicker = row.packer == nil || row.packer?.id == row.picker?.id

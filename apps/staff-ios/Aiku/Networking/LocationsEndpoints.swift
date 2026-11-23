@@ -128,7 +128,7 @@ struct MobileLocation: Decodable, Sendable, Equatable {
         let code: String
         let name: String?
         let locationOrgStockId: Int
-        let quantity: FlexibleDouble
+        var quantity: FlexibleDouble
         let type: String
         let value: FlexibleDouble?
         let notes: String?
@@ -137,6 +137,9 @@ struct MobileLocation: Decodable, Sendable, Equatable {
         let minStock: FlexibleInt?
         let maxStock: FlexibleInt?
         let replenishmentStock: FlexibleInt?
+        var version: Int? = nil
+        var quantityLabel: String? = nil
+        var packedIn: OptionalFlexibleDouble? = nil
     }
 
     let id: Int
@@ -155,7 +158,7 @@ struct MobileLocation: Decodable, Sendable, Equatable {
     let numberPallets: Int
     let stockValue: Double
     let auditedAt: String?
-    let orgStocks: [OrgStock]?
+    var orgStocks: [OrgStock]?
     let can: Abilities?
     var pallets: [Pallet]? = nil
 
@@ -201,12 +204,14 @@ struct MobileLocationAuditCount: Encodable, Sendable, Equatable {
 
 struct MobileLocationAuditBody: Encodable, Sendable {
     let counts: [MobileLocationAuditCount]
+    var clientRequestId: String? = nil
 }
 
 struct MobileMoveAllBody: Encodable, Sendable {
     let locationId: Int
     let removeAfterMove: Bool
     let reason: String
+    var clientRequestId: String? = nil
 }
 
 struct MobileMovedOrgStock: Encodable, Sendable, Equatable {
@@ -219,6 +224,7 @@ struct MobileMoveSomeBody: Encodable, Sendable {
     let locationId: Int
     let orgStocks: [MobileMovedOrgStock]
     let reason: String
+    var clientRequestId: String? = nil
 }
 
 struct MobileRemoveOrgStocksBody: Encodable, Sendable {
@@ -402,16 +408,24 @@ extension Endpoint {
         ])
     }
 
-    static func mobileLocationAudit(id: Int, counts: [MobileLocationAuditCount]) -> Endpoint {
-        .jsonBody("mobile/locations/\(id)/audit", method: .post, MobileLocationAuditBody(counts: counts))
+    static func mobileLocationAudit(id: Int, counts: [MobileLocationAuditCount], clientRequestID: String? = nil) -> Endpoint {
+        .jsonBody("mobile/locations/\(id)/audit", method: .post, MobileLocationAuditBody(counts: counts, clientRequestId: clientRequestID))
     }
 
-    static func mobileLocationMoveAll(id: Int, targetID: Int, removeAfterMove: Bool) -> Endpoint {
-        .jsonBody("mobile/locations/\(id)/move-all", method: .post, MobileMoveAllBody(locationId: targetID, removeAfterMove: removeAfterMove, reason: MobileStockMovementReason.transfer))
+    static func mobileLocationMoveAll(id: Int, targetID: Int, removeAfterMove: Bool, clientRequestID: String? = nil) -> Endpoint {
+        .jsonBody(
+            "mobile/locations/\(id)/move-all",
+            method: .post,
+            MobileMoveAllBody(locationId: targetID, removeAfterMove: removeAfterMove, reason: MobileStockMovementReason.transfer, clientRequestId: clientRequestID)
+        )
     }
 
-    static func mobileLocationMoveSome(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock]) -> Endpoint {
-        .jsonBody("mobile/locations/\(id)/move-some", method: .post, MobileMoveSomeBody(locationId: targetID, orgStocks: orgStocks, reason: MobileStockMovementReason.transfer))
+    static func mobileLocationMoveSome(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock], clientRequestID: String? = nil) -> Endpoint {
+        .jsonBody(
+            "mobile/locations/\(id)/move-some",
+            method: .post,
+            MobileMoveSomeBody(locationId: targetID, orgStocks: orgStocks, reason: MobileStockMovementReason.transfer, clientRequestId: clientRequestID)
+        )
     }
 
     static func mobileLocationRemoveOrgStocks(id: Int, orgStockIDs: [Int]) -> Endpoint {
@@ -460,16 +474,22 @@ extension APIClient {
         try await send(.mobileLocationStockMovements(id: id, page: page, perPage: perPage), as: MobileLocationMovementsPage.self)
     }
 
-    func auditLocation(id: Int, counts: [MobileLocationAuditCount]) async throws -> MobileLocation {
-        try await send(.mobileLocationAudit(id: id, counts: counts), as: DataEnvelope<MobileLocation>.self).value
+    func auditLocation(id: Int, counts: [MobileLocationAuditCount], clientRequestID: String? = nil) async throws -> MobileLocation {
+        try await send(.mobileLocationAudit(id: id, counts: counts, clientRequestID: clientRequestID), as: DataEnvelope<MobileLocation>.self).value
     }
 
-    func moveAllFromLocation(id: Int, targetID: Int, removeAfterMove: Bool) async throws -> MobileLocation {
-        try await send(.mobileLocationMoveAll(id: id, targetID: targetID, removeAfterMove: removeAfterMove), as: DataEnvelope<MobileLocation>.self).value
+    func moveAllFromLocation(id: Int, targetID: Int, removeAfterMove: Bool, clientRequestID: String? = nil) async throws -> MobileLocation {
+        try await send(
+            .mobileLocationMoveAll(id: id, targetID: targetID, removeAfterMove: removeAfterMove, clientRequestID: clientRequestID),
+            as: DataEnvelope<MobileLocation>.self
+        ).value
     }
 
-    func moveSomeFromLocation(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock]) async throws -> MobileLocation {
-        try await send(.mobileLocationMoveSome(id: id, targetID: targetID, orgStocks: orgStocks), as: DataEnvelope<MobileLocation>.self).value
+    func moveSomeFromLocation(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock], clientRequestID: String? = nil) async throws -> MobileLocation {
+        try await send(
+            .mobileLocationMoveSome(id: id, targetID: targetID, orgStocks: orgStocks, clientRequestID: clientRequestID),
+            as: DataEnvelope<MobileLocation>.self
+        ).value
     }
 
     func removeOrgStocks(fromLocation id: Int, orgStockIDs: [Int]) async throws -> MobileRemovedOrgStocks {

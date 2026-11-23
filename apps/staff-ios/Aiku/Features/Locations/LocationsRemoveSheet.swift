@@ -11,7 +11,7 @@ struct LocationsRemoveSheet: View {
             ForEach(location.slots) { slot in
                 RadioCard(
                     slot.skoReference,
-                    subtitle: "\(slot.type.title) · \(slot.quantity.locationsGrouped) in location",
+                    subtitle: "\(slot.type.title) · \(slot.quantityText) in location",
                     isSelected: selected.contains(slot.skoReference)
                 ) {
                     selected.formSymmetricDifference([slot.skoReference])

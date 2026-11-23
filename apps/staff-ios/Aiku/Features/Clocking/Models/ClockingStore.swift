@@ -29,6 +29,7 @@ final class ClockingStore {
     private(set) var isLoading = false
     private(set) var hasLoaded = false
     private(set) var loadError: String?
+    private(set) var loadedAt: Date?
     var pendingAction: ClockingPendingAction?
     var openedErrorFromClocking = false
     var isShowingDetails = true
@@ -129,11 +130,16 @@ final class ClockingStore {
             }
             loadError = nil
             hasLoaded = true
+            loadedAt = Date()
         } catch where error.isCancellation {
             return
         } catch {
-            loadError = error.localizedDescription
+            loadError = ClockingText.loadProblem(error)
         }
+    }
+
+    var lastUpdatedAt: Date? {
+        loadError == nil ? nil : loadedAt
     }
 
     func apply(_ status: ClockingStatusResponse) {
@@ -166,6 +172,7 @@ final class ClockingStore {
         hasLoadedAdjustments = false
         hasLoaded = false
         loadError = nil
+        loadedAt = nil
     }
 
     func setLocation(_ coordinate: ClockingCoordinate?) {
@@ -287,5 +294,13 @@ final class ClockingStore {
 
     func download(_ attachment: ClockingAttachment) async throws -> URL {
         try await service.downloadAttachment(attachment)
+    }
+}
+
+enum ClockingText {
+    static let offline = "There is no connection. Check Wi-Fi and try again."
+
+    static func loadProblem(_ error: Error) -> String {
+        error as? APIError == .offline ? offline : error.localizedDescription
     }
 }

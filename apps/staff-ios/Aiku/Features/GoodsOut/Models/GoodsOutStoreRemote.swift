@@ -47,8 +47,17 @@ extension GoodsOutStore {
         } catch where error.isCancellation {
             finishListLoad(generation, error: nil)
         } catch {
-            finishListLoad(generation, error: GoodsOutMapper.message(for: error))
+            if error as? APIError == .offline, let saved = savedDeliveryNotes(warehouseID: warehouseID) {
+                showSavedList(saved, generation: generation)
+            } else {
+                finishListLoad(generation, error: GoodsOutMapper.message(for: error))
+            }
         }
+    }
+
+    func savedDeliveryNotes(warehouseID: Int) -> SavedRows<GoodsOutDeliveryNoteRowDTO>? {
+        guard let reader = savedListUserID() ?? userID else { return nil }
+        return savedLists.rows(GoodsOutDeliveryNoteRowDTO.self, userID: reader, warehouseID: warehouseID, kind: .deliveryNotes)
     }
 
     var hasMoreList: Bool { isRemote && listPage > 0 && listPage < listLastPage }

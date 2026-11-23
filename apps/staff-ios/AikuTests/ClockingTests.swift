@@ -208,7 +208,8 @@ struct ClockingTests {
         await store.load()
 
         #expect(store.hasLoaded == false)
-        #expect(store.loadError == "No connection")
+        #expect(store.loadError == "There is no connection. Check Wi-Fi and try again.")
+        #expect(store.lastUpdatedAt == nil)
     }
 
     @Test("A QR clocking sends the code with the location and returns the clocking")

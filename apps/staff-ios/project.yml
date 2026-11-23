@@ -48,6 +48,8 @@ targets:
         NSLocalNetworkUsageDescription: Aiku connects to your organisation's Aiku server on this network.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        UIBackgroundModes: [fetch, processing]
+        BGTaskSchedulerPermittedIdentifiers: [com.inikoo.aiku.offline-sync, com.inikoo.aiku.offline-sync-processing]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(AIKU_BUNDLE_ID)
