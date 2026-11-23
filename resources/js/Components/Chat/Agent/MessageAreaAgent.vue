@@ -1044,6 +1044,27 @@ const customerLink = computed(() => {
         name: (props.session as any)?.contact_name || webUser.email || webUser.slug,
     }
 })
+const signalTone: Record<string, string> = {
+    red: "bg-red-50 text-red-700 ring-red-200",
+    amber: "bg-amber-50 text-amber-700 ring-amber-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    gray: "bg-gray-100 text-gray-600 ring-gray-200",
+}
+const customerSignals = computed<{ key: string, label: string, tone: string }[]>(() => (props.session as any)?.customer_signals ?? [])
+const moodSignal = computed<{ key: string, label: string, tone: string, rank: number } | null>(() => {
+    const mood = (aiDraftBox.value as any)?.draft?.mood
+    if (!mood || (mood.value === "neutral" && !mood.usual)) return null
+    const usual = mood.usual ? (mood.usual.same ? ctrans("always like this") : ctrans("usually :mood", { mood: mood.usual.label.toLowerCase() })) : null
+    const severe = ["angry", "may_leave_us", "our_big_mistake"].includes(mood.value)
+    return { key: "mood", label: usual ? `${mood.label} · ${usual}` : mood.label, tone: mood.tone, rank: severe ? 1 : mood.value === "upset" ? 2 : 4 }
+})
+const rankedSignals = computed(() => {
+    const ranks: Record<string, number> = { complaints: 0, emails_today: 2, first_order: 3, top_customer: 5, long_standing: 5 }
+    return [...customerSignals.value.map((signal) => ({ ...signal, rank: ranks[signal.key] ?? 6 })), ...(moodSignal.value ? [moodSignal.value] : [])]
+        .sort((a, b) => a.rank - b.rank)
+})
+const shownSignals = computed(() => rankedSignals.value.slice(0, 2))
+const hiddenSignals = computed(() => rankedSignals.value.slice(2))
 const customerWaitingHours = computed(() => customerWaitingSince.value ? (Date.now() - customerWaitingSince.value) / 3600000 : 0)
 
 const mailFoldAll = ref<{ open: boolean, at: number } | null>(null)
