@@ -830,4 +830,26 @@ describe('nightly stock value check', function () {
         expect($finding->refresh()->state)->toBe(\App\Models\Inventory\StockValueFinding::STATE_RESOLVED)
             ->and($finding->ticket->refresh()->status)->toBe(\App\Enums\Helpers\Ticket\TicketStatusEnum::RESOLVED);
     });
+
+    test('stock worth far more than everything ever bought is put on its packing change', function () {
+        [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'SVV'.random_int(1000, 9999));
+
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::PURCHASE->value, 'quantity' => 11327])
+            ->update(['cost_per_sku' => 0.11, 'org_amount' => 1245.97, 'date' => now()->subDays(40)]);
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => OrgStockMovementTypeEnum::AUDIT->value, 'reason' => 'uom', 'quantity' => -11268, 'audited_quantity' => 59])
+            ->update(['org_amount' => 0, 'date' => now()->subDays(30), 'user_id' => null]);
+        $orgStock->updateQuietly(['quantity_in_locations' => 59, 'sku_value' => 4067.655097, 'value_in_locations' => 239991.65]);
+
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation);
+
+        $finding = \App\Models\Inventory\StockValueFinding::where('org_stock_id', $orgStock->id)->where('rule', \App\Models\Inventory\StockValueFinding::RULE_VALUE)->sole();
+        expect($finding->owner)->toBe(\App\Models\Inventory\StockValueFinding::OWNER_ENGINEERING)
+            ->and((float) $finding->excess_amount)->toBe(238745.68)
+            ->and(\App\Actions\Inventory\OrgStock\CheckStockValues::make()->ruleText($finding))->toContain('everything ever bought of it cost 1245.97');
+
+        $orgStock->updateQuietly(['sku_value' => 21.1525, 'value_in_locations' => 1248.0]);
+        \App\Actions\Inventory\OrgStock\CheckStockValues::make()->handle($this->organisation);
+
+        expect($finding->refresh()->state)->toBe(\App\Models\Inventory\StockValueFinding::STATE_RESOLVED);
+    });
 });

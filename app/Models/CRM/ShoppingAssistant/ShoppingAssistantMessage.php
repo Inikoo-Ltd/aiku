@@ -13,6 +13,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Web\Webpage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\UploadedFile;
@@ -46,6 +47,8 @@ use App\Models\Helpers\Media;
  * @property string|null $staff_rating
  * @property int|null $staff_rated_by_user_id
  * @property \Illuminate\Support\Carbon|null $staff_rated_at
+ * @property int|null $webpage_id
+ * @property array<int, int>|null $trail_webpage_ids
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read ShoppingAssistantConversation $conversation
@@ -78,12 +81,18 @@ class ShoppingAssistantMessage extends Model implements HasMedia
             'hand_over_offer' => ShoppingAssistantHandOverReasonEnum::class,
             'staff_rated_at'  => 'datetime',
             'feedback_at'     => 'datetime',
+            'trail_webpage_ids' => 'array',
         ];
     }
 
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(ShoppingAssistantConversation::class, 'shopping_assistant_conversation_id');
+    }
+
+    public function webpage(): BelongsTo
+    {
+        return $this->belongsTo(Webpage::class);
     }
 
     public function events(): HasMany

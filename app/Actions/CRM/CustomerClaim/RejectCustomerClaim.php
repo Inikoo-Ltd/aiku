@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\CustomerClaim;
 
+use App\Actions\Accounting\Invoice\DeleteInProcessInvoice;
 use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaim;
 use App\Actions\OrgAction;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
@@ -37,6 +38,10 @@ class RejectCustomerClaim extends OrgAction
     {
         if ($claim->state !== CustomerClaimStateEnum::IN_REVIEW) {
             return $claim;
+        }
+
+        if ($claim->refund?->in_process) {
+            DeleteInProcessInvoice::make()->action($claim->refund, ['deleted_note' => __('Claim :reference rejected', ['reference' => $claim->reference]), 'deleted_by' => $reviewer->id]);
         }
 
         $claim->update([

@@ -8,10 +8,12 @@
 
 namespace App\Actions\CRM\CustomerClaim\UI;
 
+use App\Actions\Chat\ChatSession\PlanChatClaim;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\Ordering\Order;
@@ -37,10 +39,10 @@ class CreateStaffCustomerClaim extends OrgAction
     {
         $form       = GetCustomerClaimForm::run($order->customer, $order);
         $hasInvoice = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->exists();
-        $outcomes   = array_values(array_filter([
-            ...($form['outcomes'] ?? []),
-            $hasInvoice ? 'invoice_refund' : null,
-        ]));
+        $outcomes   = array_values(array_filter(
+            [...($form['outcomes'] ?? []), $hasInvoice ? 'invoice_refund' : null],
+            fn (?string $outcome) => $outcome && $request->user()->authTo(ShopPermissionsEnum::getPermissionName(PlanChatClaim::permission($outcome)->value, $order->shop))
+        ));
 
         return Inertia::render('Org/Shop/CRM/CreateCustomerClaim', [
             'breadcrumbs' => $this->claimsBreadcrumbs($order->shop, ['route' => ['name' => $request->route()->getName(), 'parameters' => $request->route()->originalParameters()], 'label' => __('New claim')]),

@@ -33,6 +33,8 @@ type Claim = {
     created_at: string
     reviewed_at: string | null
     reviewer: string | null
+    settled_by: string
+    refund: { reference: string, in_process: boolean, route: RouteRef | null } | null
     rejection_reason: string | null
     rejection_note: string | null
     result: Record<string, any> | null
@@ -53,6 +55,7 @@ const props = defineProps<{
     title: string
     claim: Claim
     can_review: boolean
+    can_approve: boolean
     approve_route: RouteRef
     reject_route: RouteRef
     rejection_reasons: { value: string, label: string }[]
@@ -124,7 +127,7 @@ const stateClass: Record<string, string> = {
                 <Button type="tertiary" :label="ctrans('Reject')" @click="showReject = true">
                     <template #icon><FontAwesomeIcon :icon="faBan" class="text-red-500" fixed-width aria-hidden="true" /></template>
                 </Button>
-                <Button type="tertiary" :label="ctrans('Approve')" @click="showApprove = true">
+                <Button v-if="can_approve" type="tertiary" :label="ctrans('Approve')" @click="showApprove = true">
                     <template #icon><FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" /></template>
                 </Button>
             </div>
@@ -145,11 +148,15 @@ const stateClass: Record<string, string> = {
                 {{ rejection_reasons.find((reason) => reason.value === claim.rejection_reason)?.label }}<span v-if="claim.rejection_note">: {{ claim.rejection_note }}</span>
                 <span class="text-xs text-red-500"> · {{ claim.reviewer }} · {{ useFormatTime(claim.reviewed_at) }}</span>
             </div>
+            <div v-if="claim.state === 'in_review' && claim.refund?.in_process" class="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                {{ ctrans("Settles when refund :reference is finalised. Rejecting the claim deletes the draft refund.", { reference: claim.refund.reference }) }}
+                <Link v-if="claim.refund.route" :href="route(claim.refund.route.name, claim.refund.route.parameters)" class="secondaryLink whitespace-nowrap">{{ ctrans("Open refund") }}</Link>
+            </div>
             <div v-if="claim.state === 'settled'" class="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                 <span v-if="claim.result?.refund">{{ ctrans("Refund :reference", { reference: claim.result.refund }) }} · {{ money(claim.amount) }}</span>
                 <span v-else-if="claim.result?.replacement">{{ ctrans("Replacement :reference", { reference: claim.result.replacement }) }}</span>
                 <span v-else-if="claim.result?.in_next_order">{{ ctrans("In next order") }}: {{ claim.result.in_next_order.join(", ") }}</span>
-                <span class="text-xs text-green-600"> · {{ claim.reviewer ?? ctrans("Approved automatically") }}</span>
+                <span class="text-xs text-green-600"> · {{ claim.settled_by }}</span>
             </div>
 
             <table class="w-full text-sm">

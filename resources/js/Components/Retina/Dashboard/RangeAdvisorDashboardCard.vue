@@ -7,7 +7,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faArrowRight } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-import { shoppingAssistantQuestionKey } from "@/Iris/Composables/useShoppingAssistant"
+import { shoppingAssistantPageKey, shoppingAssistantQuestionKey } from "@/Iris/Composables/useShoppingAssistant"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import AssistantIcon from "@/Iris/Components/AssistantIcon.vue"
 library.add(faArrowRight)
@@ -25,6 +25,7 @@ const starterQuestions = computed(() => [
 const ask = (question: string) => {
     if (question.trim()) {
         sessionStorage.setItem(shoppingAssistantQuestionKey, question.trim().slice(0, 1000))
+        sessionStorage.removeItem(shoppingAssistantPageKey)
         router.visit(route("retina.ecom.range_advisor.show"))
     }
 }

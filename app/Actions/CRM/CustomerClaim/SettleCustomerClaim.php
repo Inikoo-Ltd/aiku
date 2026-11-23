@@ -36,6 +36,10 @@ class SettleCustomerClaim
                 return $claim;
             }
 
+            if ($claim->resolution === 'invoice_refund') {
+                throw ValidationException::withMessages(['claim' => __('An invoice refund claim is settled when its refund is finalised.')]);
+            }
+
             $percentage = (float) data_get($claim->result, 'percentage', 100);
             $plan       = PlanChatClaim::make()->planOrder(
                 $claim->order,

@@ -139,7 +139,7 @@ class RecordStaffClaim
                 ->all();
             $amount = abs((float) $refund->total_amount);
 
-            return $this->store($refund->customer, $refund->order, $kind, 'refund_to_balance', $lines, ['refund' => $refund->reference, 'credited' => $amount], $user, $amount, $amount, $refund->id);
+            return $this->store($refund->customer, $refund->order, $kind, 'invoice_refund', $lines, ['refund' => $refund->reference, 'credited' => $amount], $user, $amount, $amount, $refund->id);
         });
     }
 
@@ -165,7 +165,7 @@ class RecordStaffClaim
                 'delivery_note_items' => [],
             ])->values()->all();
 
-        return $this->store($refund->customer, $refund->order, $refund->is_tax_only ? CustomerClaimKindEnum::TAX_CORRECTION : CustomerClaimKindEnum::REFUND, 'refund_to_balance', $lines, ['refund' => $refund->reference, 'credited' => $amount, 'backfilled' => true], null, $amount, $amount, $refund->id, $refund->date ?? $refund->created_at);
+        return $this->store($refund->customer, $refund->order, $refund->is_tax_only ? CustomerClaimKindEnum::TAX_CORRECTION : CustomerClaimKindEnum::REFUND, 'invoice_refund', $lines, ['refund' => $refund->reference, 'credited' => $amount, 'backfilled' => true], null, $amount, $amount, $refund->id, $refund->date ?? $refund->created_at);
     }
 
     /**
@@ -200,7 +200,7 @@ class RecordStaffClaim
                 ];
             })->values()->all();
 
-        return $this->store($replacement->customer, $replacement->order, CustomerClaimKindEnum::ITEMS, 'replacement', $lines, ['replacement' => $replacement->reference, 'state' => $replacement->state->value, 'backfilled' => true], null, round($value, 2), 0.0, null, $replacement->created_at);
+        return $this->store($replacement->customer, $replacement->orders()->first(), CustomerClaimKindEnum::ITEMS, 'replacement', $lines, ['replacement' => $replacement->reference, 'state' => $replacement->state->value, 'backfilled' => true], null, round($value, 2), 0.0, null, $replacement->created_at);
     }
 
     /**

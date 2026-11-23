@@ -34,6 +34,7 @@ import { announcementsAtPosition, useAnnouncementClock, type AnnouncementAudienc
 import axios from 'axios'
 const BundleSidebar = defineAsyncComponent(() => import('@/Components/Dropshipping/BundleSidebar.vue'))
 import { useBundle } from '@/Composables/useBundle'
+import { recordShoppingAssistantPage } from '@/Iris/Composables/useShoppingAssistant'
 import { createSidePanel } from '@/Iris/Composables/useSidePanel'
 import SidePanel from '@/Iris/Components/SidePanel.vue'
 const WebsiteLanguageSwitch = defineAsyncComponent(() => import('@/Components/Utils/WebsiteLanguageSwitch.vue'))
@@ -250,6 +251,9 @@ createSidePanel(layout, screenType, !!useChat)
 const syncLoggedInClass = () => document.documentElement.classList.toggle('iris-logged-in', !!layout.iris?.is_logged_in)
 
 onMounted(syncLoggedInClass)
+
+onMounted(() => recordShoppingAssistantPage(window.location.pathname))
+watch(() => page.url, () => recordShoppingAssistantPage(window.location.pathname))
 
 watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
 

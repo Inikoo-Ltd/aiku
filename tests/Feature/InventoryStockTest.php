@@ -496,13 +496,15 @@ describe('packing change guard', function () {
         ];
 
         foreach ($movements as $order => [$location, $type, $quantity, $fix]) {
+            $date = now()->subDays($fix['days_ago'] ?? 0)->subMinutes(20 - $order);
+            unset($fix['days_ago']);
             $data = ['type' => $type->value, 'quantity' => $quantity];
             if ($type === OrgStockMovementTypeEnum::AUDIT) {
                 $data += ['reason' => OrgStockMovementReasonEnum::UOM, 'audited_quantity' => $fix['audited_quantity'], 'org_amount' => 0];
                 $fix  = [];
             }
             \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $locations[$location], $data)
-                ->update(array_merge($fix, ['date' => now()->subDays(20 - $order)]));
+                ->update(array_merge($fix, ['date' => $date]));
         }
 
         $valuation = \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSkuValue::make()->getValuationPerSku($orgStock->refresh(), now());
@@ -522,9 +524,9 @@ describe('packing change guard', function () {
             ['shelf', OrgStockMovementTypeEnum::AUDIT, 50, ['audited_quantity' => 60]],
         ], 1.0],
         'a change that leaves nothing on hand, then a found and a purchase' => [[
-            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60]],
-            ['shelf', OrgStockMovementTypeEnum::AUDIT, -10, ['audited_quantity' => 0]],
-            ['shelf', OrgStockMovementTypeEnum::FOUND, 5, ['org_amount' => 30]],
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60, 'days_ago' => 3]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, -10, ['audited_quantity' => 0, 'days_ago' => 2]],
+            ['shelf', OrgStockMovementTypeEnum::FOUND, 5, ['org_amount' => 30, 'days_ago' => 1]],
             ['shelf', OrgStockMovementTypeEnum::PURCHASE, 100, ['cost_per_sku' => 2, 'org_amount' => 200]],
         ], 230 / 105],
         'an uncosted purchase and a negative location converted first' => [[
@@ -534,6 +536,24 @@ describe('packing change guard', function () {
             ['production', OrgStockMovementTypeEnum::AUDIT, -150, ['audited_quantity' => -180]],
             ['shelf', OrgStockMovementTypeEnum::AUDIT, 500, ['audited_quantity' => 600]],
         ], 1.0],
+        'one change over two locations rounded to whole skos' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 8440, ['cost_per_sku' => 1, 'org_amount' => 8440]],
+            ['production', OrgStockMovementTypeEnum::PURCHASE, 2887, ['cost_per_sku' => 1, 'org_amount' => 2887]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, -8396, ['audited_quantity' => 44]],
+            ['production', OrgStockMovementTypeEnum::AUDIT, -2872, ['audited_quantity' => 15]],
+        ], 11327 / 59],
+        'one change over two locations with a pick between them' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 4, ['cost_per_sku' => 70, 'org_amount' => 280]],
+            ['production', OrgStockMovementTypeEnum::PURCHASE, 4, ['cost_per_sku' => 70, 'org_amount' => 280]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, 276, ['audited_quantity' => 280]],
+            ['shelf', OrgStockMovementTypeEnum::PICKED, -70, ['org_amount' => -70]],
+            ['production', OrgStockMovementTypeEnum::AUDIT, 276, ['audited_quantity' => 280]],
+        ], 1.0],
+        'a change reverted on the same location' => [[
+            ['shelf', OrgStockMovementTypeEnum::PURCHASE, 10, ['cost_per_sku' => 6, 'org_amount' => 60]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, 50, ['audited_quantity' => 60]],
+            ['shelf', OrgStockMovementTypeEnum::AUDIT, -50, ['audited_quantity' => 10]],
+        ], 6.0],
     ]);
 
     test('a revaluation sets the cost of the stock on hand and the stored stock value follows it', function () {

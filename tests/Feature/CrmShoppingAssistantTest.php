@@ -52,6 +52,9 @@ use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 use App\Models\Web\Website;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Actions\CRM\ShoppingAssistant\WipeShoppingAssistantConversations;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -3153,7 +3156,8 @@ test('the assistant remembers facts about the shop without figures, starts the n
 
     $customer->updateQuietly(['shop_profile' => 'florist', 'is_staff' => true]);
     AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'Hi again');
-    expect(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('answering emails');
+    expect(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('a light, friendly joke of your own')
+        ->and(Http::recorded()->last()[0]['messages'][0]['content'])->toContain('never reuse a joke or its idea from your earlier openings to them, which were: "Hello again."; "Noted, thanks."');
 
     AnonymiseCustomer::make()->action($customer->refresh(), 'Erasure request', false);
     expect($customer->refresh()->shop_profile)->toBeNull();
@@ -4920,4 +4924,64 @@ test('a not sure answer Jev doubts stays the fixed sentence alone', function () 
 
     expect($turn['message']->flags)->toContain('partial_answer_refused')
         ->and($turn['message']->body)->not->toContain('mid December');
+});
+
+test('the page the customer asks from reaches the prompt only when it is a live page of that website', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    Queue::fake();
+
+    expect($product->webpage->website_id)->toBe($website->id);
+
+    $asked = fn (string $page, string $message) => ShoppingAssistantMessage::find($this->actingAs($webUser, 'retina')->postJson($url, ['message' => $message, 'entry_point' => 'chat', 'page' => $page])->assertStatus(202)->json('message_id'));
+
+    $family = $product->family;
+    $family->update(['state' => ProductCategoryStateEnum::ACTIVE]);
+    $familyPage = $family->webpage ?: StoreProductCategoryWebpage::make()->action($family);
+    $familyPage->update(['state' => WebpageStateEnum::LIVE]);
+
+    $onPage = ShoppingAssistantMessage::find($this->actingAs($webUser, 'retina')->postJson($url, [
+        'message'     => 'Suggest an opening order from this page',
+        'entry_point' => 'chat',
+        'page'        => '/some/range/'.strtoupper($product->webpage->url).'/?ref=x',
+        'trail'       => ['/some/range/'.$product->webpage->url, '/no-such-page', '/'.$familyPage->url, '/assistant', 42],
+    ])->assertStatus(202)->json('message_id'));
+    expect($onPage->webpage_id)->toBe($product->webpage->id)
+        ->and($onPage->trail_webpage_ids)->toBe([$familyPage->id]);
+
+    ShoppingAssistantConversation::where('customer_id', $customer->id)->update(['status' => ShoppingAssistantConversationStatusEnum::CLOSED]);
+    expect($asked('/no-such-page', 'Candles please')->webpage_id)->toBeNull();
+
+    ShoppingAssistantConversation::where('customer_id', $customer->id)->update(['status' => ShoppingAssistantConversationStatusEnum::CLOSED]);
+    $product->webpage->update(['state' => WebpageStateEnum::CLOSED]);
+    expect($asked('/'.$product->webpage->url, 'Mugs please')->webpage_id)->toBeNull();
+    $product->webpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    Http::fake(['*chat/completions' => Http::response(shoppingAssistantModelReply(['content' => 'Here you go.'], 'stop'))]);
+    AskShoppingAssistant::make()->answer($onPage->conversation, $onPage);
+    $messages = collect(Http::recorded())->first(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'];
+    $prompt   = last($messages)['content'];
+    expect($messages[0]['content'])->toContain('call search_products with its family code as the query')->not->toContain($product->name);
+    expect($prompt)->toContain('Page open: the product "'.$product->name.'" (code '.$product->code)
+        ->and($prompt)->toContain('Pages looked at before, latest first: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').');
+
+    $onPage->conversation->update(['entry_point' => ShoppingAssistantEntryPointEnum::SEARCH]);
+    $onPage->update(['webpage_id' => $familyPage->id]);
+    $followUp = $onPage->conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::CUSTOMER, 'body' => 'And the retail value?']);
+    AskShoppingAssistant::make()->answer($onPage->conversation->refresh(), $followUp);
+    $prompt = last(collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'])['content'];
+    expect($prompt)->toContain('Page open: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').');
+
+    $onPage->conversation->update(['entry_point' => ShoppingAssistantEntryPointEnum::CHAT]);
+    $elsewhere = $onPage->conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::CUSTOMER, 'body' => 'And from this one?']);
+    AskShoppingAssistant::make()->answer($onPage->conversation->refresh(), $elsewhere);
+    $prompt = last(collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'])['content'];
+    expect($prompt)->toBe('And from this one?');
+
+    WipeShoppingAssistantConversations::run([$onPage->shopping_assistant_conversation_id]);
+    expect($onPage->refresh()->webpage_id)->toBeNull()
+        ->and($onPage->trail_webpage_ids)->toBeNull();
 });

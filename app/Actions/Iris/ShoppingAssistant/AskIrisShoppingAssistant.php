@@ -20,12 +20,15 @@ use App\Actions\IrisAction;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Models\Web\Webpage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -46,10 +49,12 @@ class AskIrisShoppingAssistant extends IrisAction
 
     public const float ACCEPTANCE_CONFIDENCE = 0.8;
 
+    public const int TRAIL_PAGES = 5;
+
     /**
      * @param  array<int, UploadedFile>  $images
      */
-    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH, bool $canHandOver = false, array $images = []): JsonResponse
+    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH, bool $canHandOver = false, array $images = [], ?int $webpageId = null, array $trailWebpageIds = []): JsonResponse
     {
         if ($conversation?->isPending()) {
             return response()->json(['pending' => true], 409);
@@ -65,7 +70,7 @@ class AskIrisShoppingAssistant extends IrisAction
 
         $conversation ??= StartShoppingAssistantConversation::run($customer, $entryPoint, ['web_user_id' => $webUserId]);
 
-        $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, $message, $images);
+        $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, $message, $images, $webpageId, $trailWebpageIds);
         AnswerShoppingAssistantMessage::dispatch($customerMessage);
 
         return response()->json([
@@ -138,6 +143,9 @@ class AskIrisShoppingAssistant extends IrisAction
             'images.*'     => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
             'can_hand_over' => ['sometimes', 'boolean'],
             'conversation' => ['sometimes', 'nullable', 'string', 'ulid'],
+            'page'         => ['sometimes', 'nullable', 'string'],
+            'trail'        => ['sometimes', 'nullable', 'array', 'max:10'],
+            'trail.*'      => ['nullable'],
             'entry_point'  => ['sometimes', 'nullable', Rule::in([ShoppingAssistantEntryPointEnum::SEARCH->value, ShoppingAssistantEntryPointEnum::CHAT->value])],
         ];
     }
@@ -168,6 +176,55 @@ class AskIrisShoppingAssistant extends IrisAction
             abort_unless($conversation, 404);
         }
 
-        return $this->handle($customer, $conversation, (string) Arr::get($this->validatedData, 'message'), $request->user()->id, ShoppingAssistantEntryPointEnum::tryFrom((string) Arr::get($this->validatedData, 'entry_point')) ?? ShoppingAssistantEntryPointEnum::SEARCH, (bool) Arr::get($this->validatedData, 'can_hand_over', false), Arr::get($this->validatedData, 'images', []));
+        return $this->handle($customer, $conversation, (string) Arr::get($this->validatedData, 'message'), $request->user()->id, ShoppingAssistantEntryPointEnum::tryFrom((string) Arr::get($this->validatedData, 'entry_point')) ?? ShoppingAssistantEntryPointEnum::SEARCH, (bool) Arr::get($this->validatedData, 'can_hand_over', false), Arr::get($this->validatedData, 'images', []), $webpageId = $this->openWebpageId(Arr::get($this->validatedData, 'page')), $this->trailWebpageIds(Arr::get($this->validatedData, 'trail') ?? [], $webpageId));
+    }
+
+    /**
+     * The live page of this website at the path the customer asked from; webpages are found by the
+     * last part of the path, as the storefront finds them.
+     */
+    private function openWebpageId(?string $page): ?int
+    {
+        return $this->liveWebpageIds([(string) $page])[0] ?? null;
+    }
+
+    /**
+     * The catalogue pages the customer opened before asking, latest first, without the page they
+     * asked from.
+     *
+     * @param  array<int, mixed>  $paths
+     *
+     * @return array<int, int>
+     */
+    private function trailWebpageIds(array $paths, ?int $openWebpageId): array
+    {
+        $ids       = $this->liveWebpageIds(array_filter($paths, 'is_string'));
+        $catalogue = Webpage::whereIn('id', $ids)->whereIn('model_type', ['Product', 'ProductCategory'])->pluck('id')->flip();
+
+        return array_slice(array_values(array_filter($ids, fn (int $id) => $id !== $openWebpageId && isset($catalogue[$id]))), 0, self::TRAIL_PAGES);
+    }
+
+    /**
+     * @param  array<int, string>  $paths
+     *
+     * @return array<int, int> ids in the order of the paths that resolved, each once
+     */
+    private function liveWebpageIds(array $paths): array
+    {
+        $urls = array_values(array_unique(array_filter(array_map(
+            fn (string $path) => Str::of(mb_substr($path, 0, 500))->before('?')->before('#')->trim('/')->afterLast('/')->lower()->toString(),
+            $paths
+        ))));
+        if (!$urls) {
+            return [];
+        }
+
+        $ids = Webpage::where('website_id', $this->website->id)
+            ->whereIn('url', $urls)
+            ->where('state', WebpageStateEnum::LIVE)
+            ->whereNull('deleted_at')
+            ->pluck('id', 'url');
+
+        return array_values(array_filter(array_map(fn (string $url) => $ids[$url] ?? null, $urls)));
     }
 }

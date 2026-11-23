@@ -425,6 +425,7 @@ class GetProductIncomingStock
                 'partners.code as partner_code',
                 'partner_org_stocks.quantity_available as partner_quantity_available',
                 'orders.reference as order_reference',
+                'transactions.created_at as transaction_created_at',
                 'job_orders.reference as job_order_reference',
                 'job_orders.employee_id as job_order_employee_id',
                 DB::raw("job_orders.data->'hold' is not null as job_order_on_hold"),
@@ -474,7 +475,8 @@ class GetProductIncomingStock
             ];
 
             if ($item->state === ShoppingListItemStateEnum::ORDERED->value) {
-                $lines[] = $line($item->order_reference, __('Picked by :partner', ['partner' => $item->partner_name]), (float) $item->quantity, $this->estimate(now(), $toBuyer));
+                $expectedArrival = Carbon::parse($item->transaction_created_at)->addMinutes((int) round($toBuyer * 1440));
+                $lines[]         = $line($item->order_reference, __('Picked by :partner', ['partner' => $item->partner_name]), (float) $item->quantity, $this->estimate($expectedArrival, 0), $expectedArrival->isPast());
                 continue;
             }
 

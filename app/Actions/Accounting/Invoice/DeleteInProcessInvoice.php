@@ -27,8 +27,8 @@ class DeleteInProcessInvoice extends OrgAction
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
         try {
-            $invoice = DB::transaction(function () use ($invoice, $modelData) {
-                $invoice = $this->update($invoice, $modelData);
+            DB::transaction(function () use ($invoice, $modelData) {
+                $this->update($invoice, $modelData);
                 $invoice->invoiceTransactions()->delete();
                 $invoice->delete();
             });

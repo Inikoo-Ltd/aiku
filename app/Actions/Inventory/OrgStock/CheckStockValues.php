@@ -38,7 +38,10 @@ use Throwable;
  * decide, so the same stock always gives the same answer:
  * - count_above_history: more on the shelves than 20 times the largest purchase ever received and
  *   than three years of use;
- * - price_above_purchases: a cost per SKO above three times the median price it was bought at.
+ * - price_above_purchases: a cost per SKO above three times the median price it was bought at;
+ * - value_above_spend: stock worth over ten times everything ever spent buying it, whatever the
+ *   unit, so a packing change applied twice is caught even with no purchase since; only for
+ *   SKOs the other two rules did not already flag.
  * Who acts comes from the movement that caused it: a person's count goes to the warehouse (a task
  * on its Important tasks), a purchase price to procurement (the list only), a system movement to
  * engineering (one PRE ticket per cause, listing every SKO), an Aurora-era movement to no one. AI
@@ -52,6 +55,7 @@ class CheckStockValues
     public const float COUNT_PURCHASE_MULTIPLE = 20;
     public const float COUNT_USAGE_YEARS       = 3;
     public const float PRICE_MULTIPLE          = 3;
+    public const float SPEND_MULTIPLE          = 10;
     public const float MIN_EXCESS              = 500;
     public const int MIN_AGE_DAYS              = 2;
     public const int MAX_ROUTED_PER_NIGHT      = 10;
@@ -66,6 +70,7 @@ class CheckStockValues
     public function handle(Organisation $organisation, bool $route = false): array
     {
         $candidates   = $this->countAboveHistory($organisation)->concat($this->priceAbovePurchases($organisation));
+        $candidates   = $candidates->concat($this->valueAboveSpend($organisation)->whereNotIn('org_stock_id', $candidates->pluck('org_stock_id')));
         $minExcess    = $this->minExcess($organisation);
         $routedBefore = $this->routed;
         $now          = now();
@@ -224,13 +229,49 @@ class CheckStockValues
     }
 
     /**
+     * @return Collection<int, array{org_stock_id: int, rule: string, excess: float, facts: array<string, mixed>}>
+     */
+    protected function valueAboveSpend(Organisation $organisation): Collection
+    {
+        $rows = DB::select(
+            "with spend as (
+                select org_stock_id, sum(org_amount) as spent
+                from org_stock_movements where organisation_id = ? and type = 'purchase' and quantity > 0 and org_amount > 0 group by org_stock_id
+            )
+            select os.id, os.quantity_in_locations as quantity, os.sku_value, os.value_in_locations as value, s.spent
+            from org_stocks os
+            join spend s on s.org_stock_id = os.id
+            where os.organisation_id = ? and os.quantity_in_locations > 0 and os.value_in_locations > ? * s.spent",
+            [$organisation->id, $organisation->id, self::SPEND_MULTIPLE]
+        );
+
+        return collect($rows)
+            ->map(fn ($row) => [
+                'org_stock_id' => $row->id,
+                'rule'         => StockValueFinding::RULE_VALUE,
+                'excess'       => (float)$row->value - (float)$row->spent,
+                'facts'        => [
+                    'quantity'  => (float)$row->quantity,
+                    'sku_value' => (float)$row->sku_value,
+                    'value'     => round((float)$row->value, 2),
+                    'spent'     => round((float)$row->spent, 2),
+                ],
+            ])
+            ->values();
+    }
+
+    /**
      * A count is caused by the movement that added the most units, a price by the one that
      * added the most value in the last year, or failing that the dearest purchase; only
-     * movements that add stock (not transfers), and only since the last packing change.
+     * movements that add stock (not transfers), and only since the last packing change. A value
+     * above everything spent is put on the last packing change when there is one.
      */
     protected function causeMovement(int $orgStockId, string $rule): ?object
     {
         $lastPackingChange = DB::table('org_stock_movements')->where('org_stock_id', $orgStockId)->where('reason', OrgStockMovementReasonEnum::UOM->value)->max('date');
+        if ($rule === StockValueFinding::RULE_VALUE && $lastPackingChange) {
+            return DB::table('org_stock_movements')->where('org_stock_id', $orgStockId)->where('reason', OrgStockMovementReasonEnum::UOM->value)->where('date', $lastPackingChange)->first();
+        }
         $query             = DB::table('org_stock_movements')->where('org_stock_id', $orgStockId)->where('quantity', '>', 0)
             ->where(fn ($query) => $query->whereIn('type', [OrgStockMovementTypeEnum::PURCHASE->value, OrgStockMovementTypeEnum::FOUND->value, OrgStockMovementTypeEnum::ADJUSTMENT->value, OrgStockMovementTypeEnum::AUDIT->value]))
             ->when($lastPackingChange, fn ($query) => $query->where('date', '>=', $lastPackingChange));
@@ -281,6 +322,9 @@ class CheckStockValues
         $who   = $withNames && ($cause['user'] ?? null) ? ' '.__('by :user', ['user' => $cause['user']]) : '';
         $by    = $cause ? __(' It came from a :type on :date:who.', ['type' => trim(($cause['reason'] ?? '').' '.$cause['type']), 'date' => $cause['date'], 'who' => $who]) : '';
 
+        if ($finding->rule === StockValueFinding::RULE_VALUE) {
+            return __('Worth :value, but everything ever bought of it cost :spent.', ['value' => $facts['value'], 'spent' => $facts['spent']]).$by;
+        }
         if ($finding->rule === StockValueFinding::RULE_PRICE) {
             return __('Valued at :value each, but it is usually bought at :median.', ['value' => $facts['sku_value'], 'median' => $facts['median_cost']]).$by;
         }
