@@ -69,7 +69,7 @@ interface PurchaseOrderDetail {
 			status: string
 			days_overdue: number
 			eta: string | null
-			segments: { key: string; state: SegmentState; done_at: string | null; planned_at: string; days_overdue: number }[]
+			segments: { key: string; state: SegmentState; done_at: string | null; planned_at: string; days_overdue: number; no_deposit?: boolean }[]
 		}
 	} | null
 	payments: {
@@ -200,6 +200,7 @@ const stageIcons: Record<string, string> = {
 const segmentsByKey = computed(() => Object.fromEntries((detail.value?.journey?.ribbon.segments ?? []).map((segment) => [segment.key, segment])))
 
 const isStageComplete = (key: string) => ["done", "skipped"].includes(segmentsByKey.value[key]?.state ?? "")
+const isStageSkipped = (key: string) => segmentsByKey.value[key]?.state === "skipped" || Boolean(segmentsByKey.value[key]?.no_deposit)
 const isStageCurrent = (key: string) => detail.value?.journey?.ribbon.current_stage === key
 
 const fromIsoDate = (iso: string): Date => {
@@ -789,10 +790,10 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									</template>
 								</div>
 								<div class="mt-0.5 h-5 whitespace-nowrap text-right text-sm font-semibold" :class="segmentsByKey[stage.key] ? doneDateClass(segmentsByKey[stage.key]) : ''">
-									<template v-if="segmentsByKey[stage.key]?.state === 'done' && segmentsByKey[stage.key].done_at">
+									<span v-if="isStageSkipped(stage.key)" class="text-xs font-normal text-gray-400">{{ ctrans("Skipped") }}</span>
+									<template v-else-if="segmentsByKey[stage.key]?.state === 'done' && segmentsByKey[stage.key].done_at">
 										{{ day(segmentsByKey[stage.key].done_at) }} {{ zDay(segmentsByKey[stage.key].done_at) }}
 									</template>
-									<span v-else-if="segmentsByKey[stage.key]?.state === 'skipped'" class="text-xs font-normal text-gray-400">{{ ctrans("Skipped") }}</span>
 								</div>
 							</div>
 						</div>
