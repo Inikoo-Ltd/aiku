@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\Offline;
 
+use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -147,6 +148,8 @@ class MobileOfflineOperationPresenter
     {
         $versions = $this->versionsOf($operations);
         $labels   = $this->labels($operations);
+        $details  = $this->itemDetails($operations);
+        $skos     = $this->countedRowSkos($operations);
 
         return $operations->map(fn (MobileOfflineOperation $operation) => [
             ...$this->result($operation, $versions),
@@ -161,14 +164,16 @@ class MobileOfflineOperationPresenter
             ] : null,
             'resolutions'  => $this->engine->allowedResolutions($operation, $viewer),
             'can_rollback' => $this->engine->canRollback($operation, $viewer),
-            'counted_rows' => $this->countedRows($operation),
+            'counted_rows' => $this->countedRows($operation, $skos),
+            'item'         => $details[$operation->id] ?? null,
         ])->values()->all();
     }
 
     /**
-     * @return array<int, array{location_code: ?string, counted: ?float, quantity: ?float}>
+     * @param EloquentCollection<int, OrgStock> $skos
+     * @return array<int, array{location_code: ?string, sko_code: ?string, sko_name: ?string, counted: ?float, quantity: ?float}>
      */
-    private function countedRows(MobileOfflineOperation $operation): array
+    private function countedRows(MobileOfflineOperation $operation, EloquentCollection $skos): array
     {
         $rows = data_get($operation->server_snapshot, 'rows');
         if (!is_array($rows)) {
@@ -179,11 +184,89 @@ class MobileOfflineOperationPresenter
             ->filter(fn ($row) => is_array($row) && array_key_exists('counted', $row))
             ->map(fn (array $row) => [
                 'location_code' => $row['location_code'] ?? null,
+                'sko_code'      => isset($row['org_stock_id']) ? $skos->get((int) $row['org_stock_id'])?->code : null,
+                'sko_name'      => isset($row['org_stock_id']) ? $skos->get((int) $row['org_stock_id'])?->name : null,
                 'counted'       => isset($row['counted']) ? (float) $row['counted'] : null,
                 'quantity'      => isset($row['quantity']) ? (float) $row['quantity'] : null,
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * @param Collection<int, MobileOfflineOperation> $operations
+     * @return EloquentCollection<int, OrgStock>
+     */
+    private function countedRowSkos(Collection $operations): EloquentCollection
+    {
+        $ids = $operations
+            ->flatMap(fn (MobileOfflineOperation $operation) => collect(data_get($operation->server_snapshot, 'rows', []))->pluck('org_stock_id'))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return OrgStock::query()->findMany($ids, ['id', 'code', 'name'])->keyBy('id');
+    }
+
+    /**
+     * @param Collection<int, MobileOfflineOperation> $operations
+     * @return array<int, array<string, mixed>>
+     */
+    private function itemDetails(Collection $operations): array
+    {
+        $idsOf = fn (string $type) => $operations->where('subject_type', $type)->pluck('subject_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        $deliveryNoteItems  = DeliveryNoteItem::query()->with(['deliveryNote:id,reference', 'orgStock.tradeUnits'])->findMany($idsOf('DeliveryNoteItem'))->keyBy('id');
+        $lineNumbers        = $this->lineNumbers($deliveryNoteItems->pluck('delivery_note_id')->unique()->values()->all());
+        $returnItems        = ReturnDeliveryNoteItem::query()->with(['returnDeliveryNote:id,reference', 'orgStock.tradeUnits'])->findMany($idsOf('ReturnDeliveryNoteItem'))->keyBy('id');
+        $stockDeliveryItems = StockDeliveryItem::query()->with(['stockDelivery:id,reference', 'orgStock.tradeUnits'])->findMany($idsOf('StockDeliveryItem'))->keyBy('id');
+        $locationOrgStocks  = LocationOrgStock::query()->with(['location:id,code', 'orgStock.tradeUnits'])->findMany($idsOf('LocationOrgStock'))->keyBy('id');
+        $orgStocks          = OrgStock::query()->with('tradeUnits')->findMany($idsOf('OrgStock'))->keyBy('id');
+
+        return $operations->mapWithKeys(function (MobileOfflineOperation $operation) use ($deliveryNoteItems, $lineNumbers, $returnItems, $stockDeliveryItems, $locationOrgStocks, $orgStocks) {
+            $subjectId = (int) $operation->subject_id;
+
+            [$orgStock, $recordType, $recordReference, $line, $quantities] = match ($operation->subject_type) {
+                'DeliveryNoteItem' => ($item = $deliveryNoteItems->get($subjectId)) ? [
+                    $item->orgStock,
+                    'delivery_note',
+                    $item->deliveryNote?->reference,
+                    $lineNumbers[$item->id] ?? null,
+                    [
+                        'required'   => (float) $item->quantity_required,
+                        'picked'     => (float) $item->quantity_picked,
+                        'not_picked' => (float) $item->quantity_not_picked,
+                        'packed'     => (float) $item->quantity_packed,
+                    ],
+                ] : [null, null, null, null, null],
+                'ReturnDeliveryNoteItem' => ($item = $returnItems->get($subjectId)) ? [$item->orgStock, 'return', $item->returnDeliveryNote?->reference, null, null] : [null, null, null, null, null],
+                'StockDeliveryItem'      => ($item = $stockDeliveryItems->get($subjectId)) ? [$item->orgStock, 'stock_delivery', $item->stockDelivery?->reference, null, null] : [null, null, null, null, null],
+                'LocationOrgStock'       => ($item = $locationOrgStocks->get($subjectId)) ? [$item->orgStock, 'location', $item->location?->code, null, ['stock_now' => (float) $item->quantity]] : [null, null, null, null, null],
+                'OrgStock'               => ($item = $orgStocks->get($subjectId)) ? [$item, 'sko', $item->code, null, null] : [null, null, null, null, null],
+                default                  => [null, null, null, null, null],
+            };
+
+            if ($operation->operation === 'audit_location') {
+                $orgStock = null;
+            }
+
+            if (!$orgStock && !$recordReference) {
+                return [$operation->id => null];
+            }
+
+            return [$operation->id => [
+                'sko_code'         => $orgStock?->code,
+                'sko_name'         => $orgStock?->name,
+                'image_url'        => $orgStock ? data_get(ScanSkoBarcode::imageOf($orgStock), 'original') : null,
+                'packed_in'        => $orgStock?->packed_in === null ? null : (float) $orgStock->packed_in,
+                'record_type'      => $recordType,
+                'record_reference' => $recordReference,
+                'line'             => $line,
+                'quantities'       => $quantities,
+            ]];
+        })->all();
     }
 
     /**

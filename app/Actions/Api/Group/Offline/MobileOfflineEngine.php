@@ -42,6 +42,8 @@ class MobileOfflineEngine
 
     public const array RETRY_REASONS = ['location_empty', 'not_enough_stock'];
 
+    public const array NOTHING_TO_PUT_BACK_OPERATIONS = ['not_picked', 'set_waiting_warehouse', 'set_waiting_crm'];
+
     public const string REASON_INVALID = 'invalid';
 
     public const int ROLLBACK_HOURS = 24;
@@ -198,7 +200,7 @@ class MobileOfflineEngine
 
         return match ($operation->state) {
             MobileOfflineOperation::STATE_REFUSED => array_values(array_filter([
-                self::RESOLUTION_PUT_BACK,
+                in_array($operation->operation, self::NOTHING_TO_PUT_BACK_OPERATIONS, true) ? null : self::RESOLUTION_PUT_BACK,
                 self::RESOLUTION_DONE,
                 in_array($operation->outcome_reason, self::RETRY_REASONS, true) ? self::RESOLUTION_RETRY : null,
             ])),

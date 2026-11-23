@@ -14,6 +14,7 @@ namespace Tests\Feature;
 use App\Actions\Api\Group\Offline\CheckMobileOfflineWaitingNotice;
 use App\Actions\Api\Group\Offline\Contracts\MobileOfflineContext;
 use App\Actions\Api\Group\Offline\Contracts\MobileOfflineHandler;
+use App\Actions\Api\Group\Offline\MobileOfflineEngine;
 use App\Actions\Api\Group\Offline\MobileOfflineHandlerRegistry;
 use App\Actions\Api\Group\Offline\MobileOfflineOutcome;
 use App\Actions\Api\Group\Offline\PurgeMobileOfflineOperations;
@@ -514,12 +515,36 @@ test('the open list shows this person\'s open actions on this device with labels
             'can_rollback' => false,
         ])
         ->and($open[0]['performed_at'])->not->toBeNull()
+        ->and($open[0]['item'])->toMatchArray([
+            'sko_code'         => $row->orgStock->code,
+            'sko_name'         => $row->orgStock->name,
+            'record_type'      => 'location',
+            'record_reference' => $row->location->code,
+            'line'             => null,
+            'quantities'       => ['stock_now' => (float) $row->refresh()->quantity],
+        ])
         ->and($open[1]['state'])->toBe('blocked')
         ->and($open[1]['resolutions'])->toBe([]);
 
     expect(collect(offlineIndex($this, 'recent')->assertOk()->json('data'))->pluck('sequence')->all())->toBe([3, 2, 1]);
 
     getJson(route('grp.api.mobile.offline.operations.index').'?state=open', ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnprocessable();
+});
+
+test('a refused not picked or waiting action has nothing to put back', function () {
+    $engine  = app(MobileOfflineEngine::class);
+    $refused = fn (string $operation) => (new MobileOfflineOperation())->forceFill([
+        'user_id'        => $this->user->id,
+        'warehouse_id'   => $this->warehouse->id,
+        'operation'      => $operation,
+        'state'          => MobileOfflineOperation::STATE_REFUSED,
+        'outcome_reason' => 'over_required',
+    ]);
+
+    expect($engine->allowedResolutions($refused('not_picked'), $this->user))->toBe(['done'])
+        ->and($engine->allowedResolutions($refused('set_waiting_warehouse'), $this->user))->toBe(['done'])
+        ->and($engine->allowedResolutions($refused('set_waiting_crm'), $this->user))->toBe(['done'])
+        ->and($engine->allowedResolutions($refused('pick'), $this->user))->toBe(['put_back', 'done']);
 });
 
 test('each resolution closes the right kind of open action', function () {

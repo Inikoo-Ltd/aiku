@@ -19,6 +19,7 @@ use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\MobileOfflineOperation;
 use App\Models\SysAdmin\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
@@ -148,7 +149,7 @@ abstract class AuditOfflineHandler implements MobileOfflineHandler
                 'other_change',
                 __('Someone changed the stock of :locations after you downloaded it. Count again.', ['locations' => $changed->map(fn (LocationOrgStock $link) => $link->location?->code)->filter()->unique()->implode(', ')]),
                 $links->map(fn (LocationOrgStock $link) => $this->snapshotRow($link, $payload))->values()->all(),
-                $this->lastChangedBy($changed, $user)
+                $this->lastChangedBy($changed, $user, $context->seenAt())
             );
         }
 
@@ -201,7 +202,7 @@ abstract class AuditOfflineHandler implements MobileOfflineHandler
     /**
      * @param Collection<int, LocationOrgStock> $changed
      */
-    private function lastChangedBy(Collection $changed, User $user): ?int
+    private function lastChangedBy(Collection $changed, User $user, ?CarbonInterface $seenAt): ?int
     {
         $userId = OrgStockMovement::query()
             ->where(function ($query) use ($changed) {
@@ -211,6 +212,7 @@ abstract class AuditOfflineHandler implements MobileOfflineHandler
             })
             ->whereNotNull('user_id')
             ->where('user_id', '!=', $user->id)
+            ->when($seenAt, fn ($query) => $query->where('created_at', '>', $seenAt))
             ->orderByDesc('id')
             ->value('user_id');
 

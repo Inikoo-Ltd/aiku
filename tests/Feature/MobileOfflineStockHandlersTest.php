@@ -800,6 +800,30 @@ test('walk-through C: a count over a row someone else changed is a conflict, whi
         ->and(offlineStockQuantity($quiet))->toBe(15.0);
 });
 
+test('a count conflict names only someone who changed the row after the phone downloaded it', function () {
+    $user  = offlineStockUser($this);
+    $other = createMobileAppUser($this->group);
+    [$orgStock, $shelf, $elsewhere] = offlineStockPair($this->warehouse, 12, 0);
+
+    MoveOrgStockToOtherLocation::make()->action($shelf->refresh(), $elsewhere->refresh(), ['quantity' => 2], $other);
+    $this->travel(5)->seconds();
+    $seenAt = CarbonImmutable::now();
+    $seen   = (int) $shelf->refresh()->version;
+    $this->travel(5)->seconds();
+    MoveOrgStockToOtherLocation::make()->action($shelf->refresh(), $elsewhere->refresh(), ['quantity' => 1], $user);
+
+    $conflict = offlineStockApply('audit_location', new MobileOfflineTestContext($user, $this->warehouse, CarbonImmutable::now(), $seenAt), [
+        'location_id'       => $shelf->location_id,
+        'counts'            => [['location_org_stock_id' => $shelf->id, 'quantity' => 15, 'reason' => OrgStockMovementReasonEnum::COUNT_GAIN->value]],
+        'versions'          => [(string) $shelf->id => $seen],
+        'client_request_id' => offlineStockRequestId(),
+    ]);
+
+    expect($conflict->state)->toBe(MobileOfflineOutcome::CONFLICT)
+        ->and($conflict->reason)->toBe('other_change')
+        ->and($conflict->conflictingUserId)->toBeNull();
+});
+
 test('audit SKO checks the versions of the counted rows of this warehouse and the reason of a change', function () {
     $user = offlineStockUser($this);
     [$orgStock, $picking, $storing] = offlineStockPair($this->warehouse, 10, 4);
@@ -1053,7 +1077,15 @@ test('an audit conflict lists what was counted next to what Aiku has', function 
 
     expect($open->json('data.0.counted_rows'))->toEqual([[
         'location_code' => $link->location->code,
+        'sko_code'      => $link->orgStock->code,
+        'sko_name'      => $link->orgStock->name,
         'counted'       => 8.0,
         'quantity'      => 9.0,
-    ]]);
+    ]])
+        ->and($open->json('data.0.item'))->toMatchArray([
+            'sko_code'         => null,
+            'record_type'      => 'location',
+            'record_reference' => $link->location->code,
+            'quantities'       => ['stock_now' => 9.0],
+        ]);
 });
