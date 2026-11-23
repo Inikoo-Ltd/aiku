@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
+    @Environment(AuthStore.self) private var authStore
     @Environment(\.apiClient) private var apiClient
     @State private var warehouseStore = WarehouseStore.shared
     private let workBadges = WorkBadgesStore.shared
@@ -40,6 +41,9 @@ struct HomeView: View {
             await clocking.load()
         }
         .screenRefreshable {
+            if authStore.mobileProfile == nil {
+                await authStore.refreshProfile()
+            }
             await clocking.load()
             await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
             if warehouseStore.selectedID == nil {

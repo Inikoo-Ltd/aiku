@@ -51,6 +51,6 @@ struct AikuApp: App {
             return AuthStore(service: .live(.shared), tokens: InMemoryTokenStore(), deviceName: deviceName)
         }
         #endif
-        return AuthStore(service: .live(.shared), tokens: KeychainTokenStore.shared, deviceName: deviceName)
+        return AuthStore(service: .live(.shared), tokens: KeychainTokenStore.shared, deviceName: deviceName, profileCache: FileProfileCache.standard)
     }
 }
