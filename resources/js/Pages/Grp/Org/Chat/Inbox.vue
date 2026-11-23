@@ -802,6 +802,30 @@ const mailTabCountsKey = ref("")
 const mailTabCountsStale = computed(() => mailTabCountsKey.value !== currentListKey.value)
 let mailTabCountsRequest = 0
 
+// Every badge is the total of the list it opens. The badges asked for in the same tick go to
+// the server as one request, each counted by its own list's action.
+type SessionCountQuery = Record<string, unknown> & { source: "sessions" | "all" }
+let queuedSessionCounts: { queries: Record<string, SessionCountQuery>, totals: Promise<Record<string, number>> } | null = null
+
+const countSessions = (queries: Record<string, SessionCountQuery>): Promise<Record<string, number>> => {
+    if (!queuedSessionCounts) {
+        const batch: { queries: Record<string, SessionCountQuery>, totals: Promise<Record<string, number>> } = {
+            queries: {},
+            totals: Promise.resolve().then(() => {
+                queuedSessionCounts = null
+
+                return axios.get(`${baseUrl}/app/api/chats/sessions/counts`, { params: { counts: batch.queries } })
+                    .then((res) => (res.data?.data ?? {}) as Record<string, number>)
+                    .catch(() => ({}))
+            }),
+        }
+        queuedSessionCounts = batch
+    }
+    Object.assign(queuedSessionCounts.queries, queries)
+
+    return queuedSessionCounts.totals
+}
+
 const reloadMailTabCounts = async () => {
     const request = ++mailTabCountsRequest
     const key = currentListKey.value
@@ -813,14 +837,13 @@ const reloadMailTabCounts = async () => {
     }
 
     const { order, closed_period, ...params } = buildParams(1) as Record<string, unknown>
-    const totals = await Promise.all(COUNTED_MAIL_TABS.map((tab) =>
-        axios.get(sessionsUrl.value, { params: { ...params, statuses: mailTabStatuses(tab), reply_state: tab, limit: 1 } })
-            .then((res) => res.data.data.pagination?.total as number | undefined)
-            .catch(() => undefined)
-    ))
+    const source = sessionsUrl.value.endsWith("/all/sessions") ? "all" : "sessions"
+    const totals = await countSessions(Object.fromEntries(COUNTED_MAIL_TABS.map((tab) =>
+        [`mail_${tab}`, { ...params, source, statuses: mailTabStatuses(tab), reply_state: tab }]
+    )))
 
     if (request === mailTabCountsRequest) {
-        mailTabCounts.value = Object.fromEntries(COUNTED_MAIL_TABS.map((tab, index) => [tab, totals[index]]))
+        mailTabCounts.value = Object.fromEntries(COUNTED_MAIL_TABS.map((tab) => [tab, totals[`mail_${tab}`]]))
         mailTabCountsKey.value = key
     }
 }
@@ -2301,43 +2324,55 @@ const reloadInboxCountsSoon = useDebounceFn(() => router.reload({ only: ["inboxe
 
 const fetchInboxNotifications = async () => {
     reloadInboxCountsSoon()
-    await Promise.all([fetchAgentNotifications(), fetchAllShopsTotals()])
-}
-
-const fetchAllShopsTotals = async () => {
-    if (!myAgentId || allShopIds.value.length < 2) return
-    try {
-        const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
-            params: { shop_ids: allShopIds.value },
-        })
-        totalUnclaimed.value = data?.data?.unclaimed ?? 0
-        totalSpam.value = data?.data?.spam ?? 0
-    } catch (e) {
-        // silent — badges are non-critical
-    }
+    await fetchAgentNotifications()
 }
 
 const agentCountsKey = ref("")
 const agentCountsFor = computed(() => JSON.stringify([selectedShopIds.value, activeApp.value]))
 const agentCountsStale = computed(() => !!myAgentId && !isReadOnly.value && agentCountsKey.value !== agentCountsFor.value)
 
-const fetchAgentNotifications = async () => {
-    if (!myAgentId || isReadOnly.value) return
-    const key = agentCountsFor.value
+// The shop watcher and the mount ask in the same tick: calls made together share one request,
+// sent with the selection as it stands then. A call after an action always sends its own, so it
+// never gets numbers counted before the change. The all-shops totals ride on the same request.
+let queuedAgentNotifications: Promise<void> | null = null
+
+const fetchAgentNotifications = (): Promise<void> => {
+    if (!myAgentId || (isReadOnly.value && allShopIds.value.length < 2)) return Promise.resolve()
+
+    queuedAgentNotifications ??= new Promise<void>((resolve) => setTimeout(resolve, 0)).then(() => {
+        queuedAgentNotifications = null
+
+        return loadAgentNotifications(agentCountsFor.value, allShopIds.value.length >= 2)
+    })
+
+    return queuedAgentNotifications
+}
+
+const loadAgentNotifications = async (key: string, wantsAllShops: boolean) => {
     try {
         const { data } = await axios.get(`${baseUrl}/app/api/chats/users/${myAgentId}/agent-notifications`, {
-            params: { shop_ids: selectedShopIds.value, ...(activeApp.value ? { channel: activeApp.value } : {}) },
+            params: {
+                shop_ids: selectedShopIds.value,
+                ...(activeApp.value ? { channel: activeApp.value } : {}),
+                ...(wantsAllShops ? { all_shop_ids: allShopIds.value } : {}),
+            },
         })
-        teamUnreadByShop.value = data?.data?.team_unread ?? {}
-        unclaimedCount.value = data?.data?.unclaimed ?? 0
-        carriersCount.value = data?.data?.carriers ?? 0
-        colleaguesCount.value = data?.data?.colleagues ?? 0
-        promisedCount.value = data?.data?.promised ?? 0
-        spamCount.value = data?.data?.spam ?? 0
+        if (wantsAllShops) {
+            totalUnclaimed.value = data?.data?.all_shops?.unclaimed ?? 0
+            totalSpam.value = data?.data?.all_shops?.spam ?? 0
+        }
+        if (!isReadOnly.value) {
+            teamUnreadByShop.value = data?.data?.team_unread ?? {}
+            unclaimedCount.value = data?.data?.unclaimed ?? 0
+            carriersCount.value = data?.data?.carriers ?? 0
+            colleaguesCount.value = data?.data?.colleagues ?? 0
+            promisedCount.value = data?.data?.promised ?? 0
+            spamCount.value = data?.data?.spam ?? 0
+        }
     } catch (e) {
         // silent — badges are non-critical
     } finally {
-        if (key === agentCountsFor.value) {
+        if (!isReadOnly.value && key === agentCountsFor.value) {
             agentCountsKey.value = key
         }
     }
@@ -2581,19 +2616,16 @@ const reloadInboxViewCounts = async () => {
         shop_ids: selectedShopIds.value,
         pairs: cellsFor([app], kindFilter.value),
         statuses: ["waiting", "active"],
-        limit: 1,
         ...(listIsMine.value ? { assigned_to_me: myAgentId } : {}),
         ...(viewMode.value === "team" && listIsMine.value ? { view_team: 1 } : {}),
     }
-    const total = (extra: Record<string, unknown>) =>
-        axios.get(`${baseUrl}/app/api/chats/all/sessions`, { params: { ...params, ...extra } })
-            .then((res) => res.data.data.pagination?.total as number | undefined)
-            .catch(() => undefined)
-
-    const [unread, replied] = await Promise.all([total({ unread: 1 }), total({ reply_state: "waiting_on_customer" })])
+    const totals = await countSessions({
+        view_unread: { ...params, source: "all", unread: 1 },
+        view_replied: { ...params, source: "all", reply_state: "waiting_on_customer" },
+    })
 
     if (request === inboxViewCountsRequest) {
-        inboxViewCounts.value = { unread, replied }
+        inboxViewCounts.value = { unread: totals.view_unread, replied: totals.view_replied }
         inboxViewCountsKey.value = key
     }
 }
@@ -3235,10 +3267,9 @@ onMounted(async () => {
 
     // Asked once the shops are settled, so the first answer is not for the wrong ones. The rail's
     // counts came with the page, except when Back put the page back as it was left.
-    watch(selectedShopIds, fetchAgentNotifications, { deep: true })
+    watch(selectedShopIds, () => fetchAgentNotifications(), { deep: true })
     watch(selectedShopIds, loadMarketing, { deep: true })
     fetchAgentNotifications()
-    fetchAllShopsTotals()
 
     if (!inboxOpening.isVisit) {
         reloadInboxCountsSoon()

@@ -18,6 +18,7 @@ use App\Actions\Chat\GetChatSessionTickets;
 use App\Actions\Chat\ChatSession\GetChatCustomerProfile;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetChatSessionCounts;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Actions\Chat\ChatSession\GetChatAvailability;
 use App\Actions\Chat\ChatSession\GetChatStatus;
@@ -85,6 +86,7 @@ Route::post('/sessions/{chatSession:ulid}/translate', TranslateSessionMessages::
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sessions', GetChatSessions::class)->name('sessions.index');
     Route::get('/all/sessions', GetCrossChannelSessions::class)->name('all.sessions.index');
+    Route::get('/sessions/counts', GetChatSessionCounts::class)->name('sessions.counts');
     Route::get('/sessions/{chatSession:ulid}/history', GetCustomerChatHistory::class)->name('sessions.history')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/history', [GetCustomerChatHistory::class, 'inMetaChatSession'])->name('meta.sessions.history')->withTrashed();
     Route::get('/meta/sessions', GetMetaChatSessions::class)->name('meta.sessions.index');
