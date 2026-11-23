@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import Dialog from "primevue/dialog"
@@ -96,6 +96,24 @@ watch(selectedContainerId, (containerId) => {
 	}
 })
 
+const isShipmentMissing = computed(() => !isNewContainer.value && !selectedContainerId.value)
+const isShakingShipment = ref(false)
+
+async function flagMissingShipment() {
+	if (!isShipmentMissing.value) {
+		return
+	}
+	isShakingShipment.value = false
+	await nextTick()
+	requestAnimationFrame(() => (isShakingShipment.value = true))
+}
+
+watch(isShipmentMissing, (isMissing) => {
+	if (!isMissing) {
+		isShakingShipment.value = false
+	}
+})
+
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 async function fetchContainers(search?: string) {
@@ -135,6 +153,7 @@ watch(
 		}
 		selectedContainerId.value = null
 		isNewContainer.value = false
+		isShakingShipment.value = false
 		containers.value = []
 		hasFetched.value = false
 		errorMessage.value = null
@@ -155,6 +174,19 @@ const unitsToAdd = computed(() => itemsToAdd.value.reduce((total, item) => total
 const hasQuantityOverAwaiting = computed(() => props.items.some((item) => (quantities.value[item.id] ?? 0) > awaiting(item)))
 
 const canSubmit = computed(() => (isNewContainer.value || !!selectedContainerId.value) && itemsToAdd.value.length > 0 && !hasQuantityOverAwaiting.value)
+
+const submitBlockedReason = computed(() => {
+	if (isShipmentMissing.value) {
+		return ctrans("Choose a shipment in process first, or open a new shipment")
+	}
+	if (!itemsToAdd.value.length) {
+		return ctrans("Enter how many units go in this shipment")
+	}
+	if (hasQuantityOverAwaiting.value) {
+		return ctrans("Some quantities are more than the units not in a shipment yet")
+	}
+	return null
+})
 
 function submit() {
 	const newContainerRoute = warehouse.value?.new_container_route
@@ -211,7 +243,7 @@ function submit() {
 					:placeholder="ctrans('Choose a shipment in process')"
 					:emptyMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment in process for :organisation yet', { organisation: organisationCode })"
 					:emptyFilterMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment found')"
-					:class="fieldFocusClass"
+					:class="[fieldFocusClass, { 'errorShake !border-red-500': isShakingShipment }]"
 					fluid
 					@filter="onFilter"
 				/>
@@ -275,11 +307,13 @@ function submit() {
 						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
-				<Button type="primary" full :label="ctrans('Add to shipment')" :loading="isSaving" :disabled="!canSubmit" @click="submit">
-					<template #icon>
-						<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div v-tooltip.top="submitBlockedReason ?? undefined" class="flex-1" :class="{ 'cursor-not-allowed': !canSubmit }" @click="!canSubmit && flagMissingShipment()">
+					<Button type="primary" full :label="ctrans('Add to shipment')" :loading="isSaving" :disabled="!canSubmit" :class="{ 'pointer-events-none': !canSubmit }" @click="submit">
+						<template #icon>
+							<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</div>
 		</template>
 	</Dialog>
