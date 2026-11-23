@@ -208,6 +208,72 @@ const fromIsoDate = (iso: string): Date => {
 }
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
+const dayZero = computed(() => (detail.value?.order.submitted_at ?? new Date().toISOString()).slice(0, 10))
+const daysBetween = (from: string, to: string) => Math.round((Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / 86400000)
+const zDay = (date: string | null) => {
+	if (!date) {
+		return ""
+	}
+	const days = daysBetween(dayZero.value, date)
+	return `Z${days < 0 ? "" : "+"}${days}`
+}
+
+type StageSegment = NonNullable<PurchaseOrderDetail["journey"]>["ribbon"]["segments"][number]
+
+const planDifference = (segment: StageSegment): number | null =>
+	segment.key !== "submitted" && segment.state === "done" && segment.done_at && segment.planned_at ? daysBetween(segment.planned_at, segment.done_at) : null
+
+const doneDateClass = (segment: StageSegment) => {
+	const difference = planDifference(segment)
+	if (difference === null || difference === 0) {
+		return "text-gray-900"
+	}
+	return difference > 0 ? "text-red-600" : "text-green-700"
+}
+
+const addDays = (iso: string, days: number) => {
+	const date = fromIsoDate(iso)
+	date.setDate(date.getDate() + days)
+	return toLocalIsoDate(date)
+}
+
+const productionChecks = computed(() => {
+	const order = detail.value
+	const plannedStart = segmentsByKey.value.in_production?.planned_at
+	if (!order) {
+		return []
+	}
+
+	const checks: { key: string; ok: boolean; label: string }[] = []
+	const startedAt = order.production.started_at?.slice(0, 10) ?? null
+	if (startedAt && plannedStart) {
+		const late = daysBetween(plannedStart, startedAt)
+		checks.push({
+			key: "start",
+			ok: late <= 0,
+			label: late <= 0
+				? ctrans("Started on plan (target :date)", { date: day(plannedStart) })
+				: ctrans("Started :days days after the plan (target :date)", { days: String(late), date: day(plannedStart) }),
+		})
+	}
+
+	const productionDays = order.production.production_days
+	const finishAt = order.production.expected_finish_at
+	if (finishAt && productionDays && (startedAt || plannedStart)) {
+		const plannedFinish = addDays((startedAt ?? plannedStart)!, productionDays)
+		const longer = daysBetween(plannedFinish, finishAt)
+		checks.push({
+			key: "finish",
+			ok: longer <= 0,
+			label: longer <= 0
+				? ctrans("Expected finish fits the :days production days (by :date)", { days: String(productionDays), date: day(plannedFinish) })
+				: ctrans("Expected finish is :late days longer than the :days production days (by :date)", { late: String(longer), days: String(productionDays), date: day(plannedFinish) }),
+		})
+	}
+
+	return checks
+})
+
 const isProductionNextStep = computed(() => {
 	const order = detail.value
 	if (!order || !order.production.editable || order.production.started_at) {
@@ -525,7 +591,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 					<li
 						v-for="(stage, index) in detail.journey.stages"
 						:key="stage.key"
-						class="min-w-0 p-3"
+						class="flex min-w-0 flex-col p-3"
 						:class="isStageComplete(stage.key) ? 'bg-green-50' : 'bg-white'">
 						<div class="flex items-center gap-2 font-medium" :class="isStageComplete(stage.key) || isStageCurrent(stage.key) ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
 							<span class="w-4 shrink-0 text-center tabular-nums">{{ index + 1 }}</span>
@@ -535,21 +601,6 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 						</div>
 						<div class="text-xs italic text-gray-400">{{ stage.description }}</div>
 						<p v-if="stage.note" class="mt-1 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-1 text-xs text-[var(--app-accent-deep)]">{{ stage.note }}</p>
-
-						<div v-if="segmentsByKey[stage.key]" class="mt-1 tabular-nums">
-							<template v-if="segmentsByKey[stage.key].state === 'done'">
-								<span class="text-gray-700">{{ segmentsByKey[stage.key].done_at ? day(segmentsByKey[stage.key].done_at) : ctrans("Done") }}</span>
-							</template>
-							<span v-else-if="segmentsByKey[stage.key].state === 'skipped'" class="text-green-700">{{ ctrans("Done") }}</span>
-							<span v-else-if="segmentsByKey[stage.key].state === 'untracked'" class="text-gray-400">-</span>
-							<template v-else>
-								<span class="text-gray-400">-</span>
-								<div class="text-xs" :class="segmentsByKey[stage.key].state === 'overdue' ? 'text-red-600' : segmentsByKey[stage.key].state === 'at_risk' ? 'text-amber-700' : 'text-gray-500'">
-									{{ ctrans("Expected :date", { date: day(segmentsByKey[stage.key].planned_at) }) }}
-									<template v-if="segmentsByKey[stage.key].state === 'overdue'"> · {{ ctrans(":days days late", { days: String(segmentsByKey[stage.key].days_overdue) }) }}</template>
-								</div>
-							</template>
-						</div>
 
 						<div v-if="stage.key === 'submitted' && detail.order.submitted_by" class="mt-2 text-xs">
 							<div class="text-gray-500">{{ ctrans("Submitted by") }}</div>
@@ -621,6 +672,12 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<dd class="tabular-nums" :class="detail.production.expected_finish_at ? 'text-gray-700' : 'text-gray-400'">{{ detail.production.expected_finish_at ? day(detail.production.expected_finish_at) : "-" }}</dd>
 								</div>
 							</dl>
+							<ul v-if="productionChecks.length" class="mt-1.5 space-y-0.5">
+								<li v-for="check in productionChecks" :key="check.key" class="flex items-start gap-1" :class="check.ok ? 'text-green-700' : 'text-amber-700'">
+									<FontAwesomeIcon :icon="check.ok ? 'fal fa-check' : 'fal fa-exclamation-circle'" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+									<span>{{ check.label }}</span>
+								</li>
+							</ul>
 							<div v-if="productionRoute && (detail.production.editable || detail.production.blocked)" class="mt-2">
 								<span v-if="!detail.production.editable" class="block" v-tooltip="detail.production.blocked">
 									<Button type="tertiary" size="xs" full disabled :label="ctrans('Start production')">
@@ -721,6 +778,22 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								</p>
 							</div>
 							</template>
+						</div>
+
+						<div class="mt-auto pt-3">
+							<div class="border-t border-gray-200 pt-2 text-xs tabular-nums">
+								<div class="flex h-4 items-baseline justify-between gap-2 text-gray-400">
+									<template v-if="segmentsByKey[stage.key]?.planned_at && stage.key !== 'submitted'">
+										<span>{{ ctrans("Target") }}</span>
+										<span class="whitespace-nowrap">{{ day(segmentsByKey[stage.key].planned_at) }} {{ zDay(segmentsByKey[stage.key].planned_at) }}</span>
+									</template>
+								</div>
+								<div class="mt-0.5 h-5 whitespace-nowrap text-right text-sm font-semibold" :class="segmentsByKey[stage.key] ? doneDateClass(segmentsByKey[stage.key]) : ''">
+									<template v-if="segmentsByKey[stage.key]?.state === 'done' && segmentsByKey[stage.key].done_at">
+										{{ day(segmentsByKey[stage.key].done_at) }} {{ zDay(segmentsByKey[stage.key].done_at) }}
+									</template>
+								</div>
+							</div>
 						</div>
 					</li>
 				</ol>
