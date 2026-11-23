@@ -21,6 +21,7 @@ use Inertia\Testing\AssertableInertia;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patchJson;
 
 require_once __DIR__.'/../Support/ChatHelpers.php';
 
@@ -1275,4 +1276,39 @@ test('a task the AI assistant raised from a customer conversation opens, with no
 
     actingAs($this->user);
     get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('timeline.0.text', 'Description edited')->where('timeline.0.by', null));
+});
+
+test('a department member opening an unassigned department task can take it and then reply in its chat (HELP-4894)', function () {
+    $packer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    \Illuminate\Support\Facades\DB::table('user_has_pseudo_job_positions')->insert([
+        'user_id'         => $packer->id,
+        'job_position_id' => \Illuminate\Support\Facades\DB::table('job_positions')->where('organisation_id', $this->organisation->id)->where('code', 'dist-pak')->value('id'),
+        'group_id'        => $packer->group_id,
+        'scopes'          => '{}',
+    ]);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run($this->user, ['subject' => 'When is the candle back?', 'department' => 'warehouse']);
+
+    actingAs($packer);
+    get(route('grp.tasks.show', $task->reference))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('conversation', null)
+        ->where('can_edit', false)
+        ->where('can_claim', true));
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_claim', true)->assertJsonPath('messages', null);
+
+    $engineer = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'gp-hd', 'scopes' => []]]]))->getUser();
+    actingAs($engineer);
+    getJson(route('grp.tasks.quick_look', $task->reference))->assertOk()->assertJsonPath('can_claim', false);
+    patchJson(route('grp.tasks.update', $task->reference), ['status' => 'in_progress'])->assertForbidden();
+
+    actingAs($packer);
+    patchJson(route('grp.tasks.update', $task->reference), ['status' => 'in_progress'])->assertOk();
+
+    get(route('grp.tasks.show', $task->reference))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('task.assignee.id', $packer->id)
+        ->where('conversation.ulid', $task->conversation->ulid)
+        ->where('can_edit', true)
+        ->where('can_claim', false));
+
+    \App\Models\Tasks\StaffTask::whereKey($task->id)->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
 });

@@ -52,6 +52,7 @@ const props = defineProps<{
         milestone?: string | null
     }
     canEdit: boolean
+    canClaim?: boolean
     canRemoveCollaborators?: boolean
     canReassign?: boolean
     canAskForHelp?: boolean
@@ -434,6 +435,7 @@ const editableChipClass = "cursor-pointer hover:bg-gray-200 active:!bg-gray-300"
                         <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
                     </button>
                 </template>
+                <Button v-else-if="canClaim" type="button" size="small" severity="secondary" :label="ctrans('I will do it')" :loading="isPending('status:in_progress')" @click="runStatusAction('in_progress')" />
             </div>
             <button
                 v-if="canAskForHelp"

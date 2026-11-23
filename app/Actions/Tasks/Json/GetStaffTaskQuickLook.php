@@ -39,6 +39,7 @@ class GetStaffTaskQuickLook
             'task'          => StaffTaskResource::make($task)->resolve(),
             'linked_url'    => $show->linkedRecordUrl($task),
             'can_edit'      => $task->isWorkedOnBy($request->user()),
+            'can_claim'     => $task->canBeClaimedBy($request->user()),
             'due_access'    => $task->dueAccessFor($request->user()),
             'can_remove_collaborators' => $task->canRemoveCollaboratorsBy($request->user()),
             'can_reassign' => $task->canReassignBy($request->user()),

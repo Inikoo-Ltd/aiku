@@ -290,6 +290,14 @@ class StaffTask extends Model implements Auditable, HasMedia
         return $this->assignee_id === $user->id || $this->collaborators->contains('id', $user->id);
     }
 
+    /**
+     * An open task with nobody on it can be taken by anyone who sees it, except engineers and QA.
+     */
+    public function canBeClaimedBy(User $user): bool
+    {
+        return !$this->assignee_id && $this->isOpen() && self::canBeAssigned($user);
+    }
+
     public function canReassignBy(User $user): bool
     {
         return $this->requester_id === $user->id

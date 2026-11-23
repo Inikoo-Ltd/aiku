@@ -199,6 +199,7 @@ class ShowStaffTask extends OrgAction
             'linked_url'   => $this->linkedRecordUrl($staffTask),
             'conversation' => $conversation?->canBeAccessedBy($viewer) ? StaffConversationResource::make($conversation)->resolve() : null,
             'can_edit'     => $staffTask->isWorkedOnBy($viewer),
+            'can_claim'    => $staffTask->canBeClaimedBy($viewer),
             'due_access'   => $staffTask->dueAccessFor($viewer),
             'can_remove_collaborators' => $staffTask->canRemoveCollaboratorsBy($viewer),
             'can_reassign' => $staffTask->canReassignBy($viewer),

@@ -38,6 +38,7 @@ type QuickLookData = {
     task: any
     linked_url: string | null
     can_edit: boolean
+    can_claim?: boolean
     due_access: StaffTaskDueAccess
     can_remove_collaborators: boolean
     can_reassign: boolean
@@ -195,7 +196,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                             </span>
                         </div>
                         <TicketControlPanel v-if="!isDesktop && panelSummary" :ticket="panelSummary" storage-key="staff_task_quick_look_controls_open" :default-open="false">
-                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
+                            <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :can-claim="data!.can_claim" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
                         </TicketControlPanel>
                     </div>
 
@@ -255,7 +256,7 @@ onBeforeUnmount(() => desktopQuery?.removeEventListener("change", onDesktopQuery
                 </div>
 
                 <aside v-if="isDesktop" class="text-sm lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-gray-200 lg:pl-6 lg:pr-1">
-                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
+                    <StaffTaskControls ref="controls" :task="shown" :can-edit="data!.can_edit" :can-claim="data!.can_claim" :due-access="data!.due_access" :can-remove-collaborators="data!.can_remove_collaborators" :can-reassign="data!.can_reassign" :can-ask-for-help="data!.can_ask_for_help" :can-add-department="data!.can_add_department" :can-remove-department="data!.can_remove_department" :department-options="data!.department_options" :options="data!.options" :project-options="data!.project_options" :milestone-options="data!.milestone_options" :can-change-project="data!.can_change_project" :project-route="data!.project_route" @updated="reload" />
                 </aside>
             </div>
         </div>
