@@ -26175,5 +26175,16 @@
     "Problem with an order": "Problemă cu o comandă",
     "Which order?": "Care comandă?",
     "Dispatched :date": "Expediată pe :date",
-    "I reported a problem with order :order (claim :reference).": "Am raportat o problemă cu comanda :order (reclamația :reference)."
+    "I reported a problem with order :order (claim :reference).": "Am raportat o problemă cu comanda :order (reclamația :reference).",
+    "Claims": "Reclamații",
+    "Customers can claim themselves": "Clienții pot face singuri reclamații",
+    "Approve small claims automatically": "Aprobă automat reclamațiile mici",
+    "Largest claim approved automatically": "Cea mai mare reclamație aprobată automat",
+    "Days counted": "Zile numărate",
+    "Allowance at least": "Plafon minim",
+    "Or % of what they bought": "Sau % din ce au cumpărat",
+    "Most claims": "Număr maxim de reclamații",
+    "Only organisation admins can change the claim settings.": "Doar administratorii organizației pot modifica setările reclamațiilor.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, contul clientului, e-mailul de expediere și chatul de pe site deschid formularul de reclamație când un client raportează produse deteriorate, lipsă sau greșite.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "O reclamație este aprobată fără o persoană când nu depășește cea mai mare reclamație, clientul a făcut mai puține reclamații decât maximul și tot ce i s-a aprobat automat, inclusiv această reclamație, rămâne în plafonul mai mare. Reclamațiile aprobate de o persoană nu se numără. Coletele pierdute ajung întotdeauna la o persoană."
 }

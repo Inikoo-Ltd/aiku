@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
 use App\Actions\Comms\Email\SendOrderPaymentReminderEmail;
 use App\Actions\Comms\Mailbox\WithCustomerMailboxBlueprint;
@@ -822,6 +823,8 @@ class EditShop extends OrgAction
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderSettingsFields($shop) : [],
 
                 in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) ? $this->preOrderTextFields($shop) : [],
+
+                in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING]) && $request->user()->authTo('org-admin.'.$shop->organisation_id) ? $this->claimSettingsFields($shop) : [],
 
                 $shop->type === ShopTypeEnum::B2B ? [
                     'label'  => __('Unpaid bank transfer orders'),
@@ -1880,6 +1883,67 @@ class EditShop extends OrgAction
                     'addLabel' => __('Add country'),
                 ],
             ]),
+        ];
+    }
+
+    /**
+     * The same claim settings as the Claims dashboard's Settings dialog (HELP-4869), here too because
+     * Edit shop is where admins look first. The one-way "claims only" switch stays on the dashboard.
+     *
+     * @return array<string, mixed>
+     */
+    public function claimSettingsFields(Shop $shop): array
+    {
+        $settings = GetCustomerClaimSettings::for($shop);
+        $currency = $shop->currency->code;
+
+        return [
+            'label'  => __('Claims'),
+            'icon'   => 'fal fa-box-open',
+            'fields' => [
+                'claims_self_service'         => [
+                    'type'        => 'toggle',
+                    'label'       => __('Customers can claim themselves'),
+                    'value'       => $settings['self_service'],
+                    'information' => __('Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.'),
+                ],
+                'claims_auto_approve'         => [
+                    'type'        => 'toggle',
+                    'label'       => __('Approve small claims automatically'),
+                    'value'       => $settings['auto_approve'],
+                    'information' => __('A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.'),
+                ],
+                'claims_max_claim_amount'     => [
+                    'type'  => 'input_number',
+                    'bind'  => ['min' => 0, 'max' => 100000, 'maxFractionDigits' => 2, 'suffix' => ' '.$currency],
+                    'label' => __('Largest claim approved automatically'),
+                    'value' => $settings['max_claim_amount'],
+                ],
+                'claims_window_days'          => [
+                    'type'  => 'input_number',
+                    'bind'  => ['min' => 1, 'max' => 365, 'maxFractionDigits' => 0, 'suffix' => ' '.__('days')],
+                    'label' => __('Days counted'),
+                    'value' => $settings['window_days'],
+                ],
+                'claims_allowance_floor'      => [
+                    'type'  => 'input_number',
+                    'bind'  => ['min' => 0, 'max' => 100000, 'maxFractionDigits' => 2, 'suffix' => ' '.$currency],
+                    'label' => __('Allowance at least'),
+                    'value' => $settings['allowance_floor'],
+                ],
+                'claims_allowance_share'      => [
+                    'type'  => 'input_number',
+                    'bind'  => ['min' => 0, 'max' => 100, 'maxFractionDigits' => 1, 'suffix' => '%'],
+                    'label' => __('Or % of what they bought'),
+                    'value' => $settings['allowance_share'],
+                ],
+                'claims_max_claims_in_window' => [
+                    'type'  => 'input_number',
+                    'bind'  => ['min' => 1, 'max' => 1000, 'maxFractionDigits' => 0],
+                    'label' => __('Most claims'),
+                    'value' => $settings['max_claims_in_window'],
+                ],
+            ],
         ];
     }
 }

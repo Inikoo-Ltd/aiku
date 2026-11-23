@@ -26963,5 +26963,16 @@
     "Problem with an order": "Problem mit einer Bestellung",
     "Which order?": "Welche Bestellung?",
     "Dispatched :date": "Versandt am :date",
-    "I reported a problem with order :order (claim :reference).": "Ich habe ein Problem mit der Bestellung :order gemeldet (Reklamation :reference)."
+    "I reported a problem with order :order (claim :reference).": "Ich habe ein Problem mit der Bestellung :order gemeldet (Reklamation :reference).",
+    "Claims": "Reklamationen",
+    "Customers can claim themselves": "Kunden können selbst reklamieren",
+    "Approve small claims automatically": "Kleine Reklamationen automatisch genehmigen",
+    "Largest claim approved automatically": "Größte automatisch genehmigte Reklamation",
+    "Days counted": "Gezählte Tage",
+    "Allowance at least": "Mindestkontingent",
+    "Or % of what they bought": "Oder % ihrer Einkäufe",
+    "Most claims": "Höchstzahl an Reklamationen",
+    "Only organisation admins can change the claim settings.": "Nur Organisationsadministratoren können die Reklamationseinstellungen ändern.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, das Kundenkonto, die Versand-E-Mail und der Website-Chat öffnen das Reklamationsformular, wenn ein Kunde beschädigte, fehlende oder falsche Artikel meldet.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Eine Reklamation wird ohne Person genehmigt, wenn sie nicht größer als die größte Reklamation ist, der Kunde weniger Reklamationen als die Höchstzahl gemacht hat und alles, was für ihn automatisch genehmigt wurde, diese Reklamation eingeschlossen, im größeren Kontingent bleibt. Von einer Person genehmigte Reklamationen zählen nicht. Verlorene Pakete gehen immer an eine Person."
 }

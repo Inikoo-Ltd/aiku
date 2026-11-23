@@ -9243,5 +9243,16 @@
     "Problem with an order": "Probléma egy rendeléssel",
     "Which order?": "Melyik rendelés?",
     "Dispatched :date": "Feladva: :date",
-    "I reported a problem with order :order (claim :reference).": "Problémát jelentettem a(z) :order rendeléssel kapcsolatban (reklamáció: :reference)."
+    "I reported a problem with order :order (claim :reference).": "Problémát jelentettem a(z) :order rendeléssel kapcsolatban (reklamáció: :reference).",
+    "Claims": "Reklamációk",
+    "Customers can claim themselves": "Az ügyfelek maguk is reklamálhatnak",
+    "Approve small claims automatically": "Kis reklamációk automatikus elfogadása",
+    "Largest claim approved automatically": "A legnagyobb automatikusan elfogadott reklamáció",
+    "Days counted": "Számolt napok",
+    "Allowance at least": "Keret legalább",
+    "Or % of what they bought": "Vagy a vásárlásaik %-a",
+    "Most claims": "Legtöbb reklamáció",
+    "Only organisation admins can change the claim settings.": "A reklamációs beállításokat csak a szervezet adminisztrátorai módosíthatják.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, az ügyfélfiók, a feladási e-mail és a weboldal chatje megnyitja a reklamációs űrlapot, amikor egy ügyfél sérült, hiányzó vagy rossz terméket jelez.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Egy reklamációt személy nélkül fogadunk el, ha nem nagyobb a legnagyobb reklamációnál, az ügyfél kevesebb reklamációt tett a maximumnál, és minden, amit automatikusan elfogadtunk neki, ezzel a reklamációval együtt, a nagyobb kereten belül marad. A személy által elfogadott reklamációk nem számítanak. Az elveszett csomagok mindig személyhez kerülnek."
 }

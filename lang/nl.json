@@ -10042,5 +10042,16 @@
     "Problem with an order": "Probleem met een bestelling",
     "Which order?": "Welke bestelling?",
     "Dispatched :date": "Verzonden op :date",
-    "I reported a problem with order :order (claim :reference).": "Ik heb een probleem gemeld met bestelling :order (claim :reference)."
+    "I reported a problem with order :order (claim :reference).": "Ik heb een probleem gemeld met bestelling :order (claim :reference).",
+    "Claims": "Claims",
+    "Customers can claim themselves": "Klanten kunnen zelf een claim indienen",
+    "Approve small claims automatically": "Kleine claims automatisch goedkeuren",
+    "Largest claim approved automatically": "Grootste automatisch goedgekeurde claim",
+    "Days counted": "Getelde dagen",
+    "Allowance at least": "Minimaal tegoed",
+    "Or % of what they bought": "Of % van wat ze kochten",
+    "Most claims": "Maximaal aantal claims",
+    "Only organisation admins can change the claim settings.": "Alleen organisatiebeheerders kunnen de claiminstellingen wijzigen.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, het klantaccount, de verzendmail en de websitechat openen het claimformulier wanneer een klant beschadigde, ontbrekende of verkeerde artikelen meldt.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Een claim wordt zonder tussenkomst van een persoon goedgekeurd als hij niet groter is dan de grootste claim, de klant minder claims deed dan het maximum en alles wat automatisch voor hem is goedgekeurd, deze claim inbegrepen, binnen het grootste tegoed blijft. Claims die een persoon goedkeurt tellen niet mee. Verloren pakketten gaan altijd naar een persoon."
 }

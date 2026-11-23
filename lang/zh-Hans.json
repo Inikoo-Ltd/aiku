@@ -26002,5 +26002,16 @@
     "Problem with an order": "订单有问题",
     "Which order?": "哪个订单？",
     "Dispatched :date": "发货于 :date",
-    "I reported a problem with order :order (claim :reference).": "我已报告订单 :order 的问题（索赔 :reference）。"
+    "I reported a problem with order :order (claim :reference).": "我已报告订单 :order 的问题（索赔 :reference）。",
+    "Claims": "索赔",
+    "Customers can claim themselves": "客户可以自行索赔",
+    "Approve small claims automatically": "自动批准小额索赔",
+    "Largest claim approved automatically": "自动批准的最大索赔金额",
+    "Days counted": "计算天数",
+    "Allowance at least": "最低额度",
+    "Or % of what they bought": "或其购买额的 %",
+    "Most claims": "最多索赔次数",
+    "Only organisation admins can change the claim settings.": "只有组织管理员可以更改索赔设置。",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "当客户报告商品破损、缺少或发错时，Merlin、客户账户、发货邮件和网站聊天会打开索赔表单。",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "当索赔不超过最大索赔金额、客户的索赔次数少于上限，且为其自动批准的全部金额（包括本次索赔）不超过较大的额度时，索赔无需人工即可批准。人工批准的索赔不计入。丢失的包裹始终交由人工处理。"
 }

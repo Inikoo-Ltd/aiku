@@ -27155,5 +27155,16 @@
     "Problem with an order": "Problém s objednávkou",
     "Which order?": "Která objednávka?",
     "Dispatched :date": "Odesláno :date",
-    "I reported a problem with order :order (claim :reference).": "Nahlásil(a) jsem problém s objednávkou :order (reklamace :reference)."
+    "I reported a problem with order :order (claim :reference).": "Nahlásil(a) jsem problém s objednávkou :order (reklamace :reference).",
+    "Claims": "Reklamace",
+    "Customers can claim themselves": "Zákazníci mohou reklamovat sami",
+    "Approve small claims automatically": "Automaticky schvalovat malé reklamace",
+    "Largest claim approved automatically": "Největší automaticky schválená reklamace",
+    "Days counted": "Započítané dny",
+    "Allowance at least": "Limit alespoň",
+    "Or % of what they bought": "Nebo % z toho, co nakoupili",
+    "Most claims": "Nejvíce reklamací",
+    "Only organisation admins can change the claim settings.": "Nastavení reklamací mohou měnit pouze správci organizace.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, zákaznický účet, e-mail o odeslání a chat na webu otevřou reklamační formulář, když zákazník nahlásí poškozené, chybějící nebo nesprávné zboží.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Reklamace se schválí bez člověka, když není větší než největší reklamace, zákazník podal méně reklamací, než je maximum, a vše, co mu bylo automaticky schváleno, včetně této reklamace, zůstává v rámci většího limitu. Reklamace schválené člověkem se nepočítají. Ztracené balíky vždy jdou k člověku."
 }

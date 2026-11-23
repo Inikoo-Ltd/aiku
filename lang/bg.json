@@ -9634,5 +9634,16 @@
     "Problem with an order": "Проблем с поръчка",
     "Which order?": "Коя поръчка?",
     "Dispatched :date": "Изпратена на :date",
-    "I reported a problem with order :order (claim :reference).": "Съобщих за проблем с поръчка :order (рекламация :reference)."
+    "I reported a problem with order :order (claim :reference).": "Съобщих за проблем с поръчка :order (рекламация :reference).",
+    "Claims": "Рекламации",
+    "Customers can claim themselves": "Клиентите могат сами да подават рекламации",
+    "Approve small claims automatically": "Автоматично одобряване на малки рекламации",
+    "Largest claim approved automatically": "Най-голяма автоматично одобрена рекламация",
+    "Days counted": "Брой дни",
+    "Allowance at least": "Лимит поне",
+    "Or % of what they bought": "Или % от покупките им",
+    "Most claims": "Най-много рекламации",
+    "Only organisation admins can change the claim settings.": "Само администраторите на организацията могат да променят настройките за рекламации.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, клиентският профил, имейлът за изпращане и чатът на сайта отварят формуляра за рекламация, когато клиент съобщи за повредени, липсващи или грешни артикули.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Рекламацията се одобрява без човек, когато не е по-голяма от най-голямата рекламация, клиентът е подал по-малко рекламации от максимума и всичко, одобрено автоматично за него, включително тази рекламация, остава в рамките на по-големия лимит. Рекламациите, одобрени от човек, не се броят. Изгубените пратки винаги отиват при човек."
 }

@@ -25878,5 +25878,16 @@
     "Problem with an order": "Problema com uma encomenda",
     "Which order?": "Que encomenda?",
     "Dispatched :date": "Expedida a :date",
-    "I reported a problem with order :order (claim :reference).": "Comuniquei um problema com a encomenda :order (reclamação :reference)."
+    "I reported a problem with order :order (claim :reference).": "Comuniquei um problema com a encomenda :order (reclamação :reference).",
+    "Claims": "Reclamações",
+    "Customers can claim themselves": "Os clientes podem reclamar sozinhos",
+    "Approve small claims automatically": "Aprovar automaticamente as reclamações pequenas",
+    "Largest claim approved automatically": "Maior reclamação aprovada automaticamente",
+    "Days counted": "Dias contados",
+    "Allowance at least": "Limite mínimo",
+    "Or % of what they bought": "Ou % do que compraram",
+    "Most claims": "Máximo de reclamações",
+    "Only organisation admins can change the claim settings.": "Só os administradores da organização podem alterar as definições de reclamações.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "O Merlin, a conta do cliente, o e-mail de expedição e o chat do site abrem o formulário de reclamação quando um cliente comunica artigos danificados, em falta ou errados.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Uma reclamação é aprovada sem intervenção de uma pessoa quando não é maior do que a maior reclamação, o cliente fez menos reclamações do que o máximo e tudo o que foi aprovado automaticamente para ele, incluindo esta reclamação, fica dentro do limite maior. As reclamações aprovadas por uma pessoa não contam. As encomendas perdidas vão sempre para uma pessoa."
 }

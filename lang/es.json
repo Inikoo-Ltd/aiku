@@ -27025,5 +27025,16 @@
     "Problem with an order": "Problema con un pedido",
     "Which order?": "¿Qué pedido?",
     "Dispatched :date": "Enviado el :date",
-    "I reported a problem with order :order (claim :reference).": "He informado de un problema con el pedido :order (reclamación :reference)."
+    "I reported a problem with order :order (claim :reference).": "He informado de un problema con el pedido :order (reclamación :reference).",
+    "Claims": "Reclamaciones",
+    "Customers can claim themselves": "Los clientes pueden reclamar por sí mismos",
+    "Approve small claims automatically": "Aprobar automáticamente las reclamaciones pequeñas",
+    "Largest claim approved automatically": "Reclamación más grande aprobada automáticamente",
+    "Days counted": "Días contados",
+    "Allowance at least": "Asignación mínima",
+    "Or % of what they bought": "O % de lo que compraron",
+    "Most claims": "Máximo de reclamaciones",
+    "Only organisation admins can change the claim settings.": "Solo los administradores de la organización pueden cambiar los ajustes de reclamaciones.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, la cuenta del cliente, el correo de envío y el chat del sitio web abren el formulario de reclamación cuando un cliente informa de artículos dañados, faltantes o equivocados.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Una reclamación se aprueba sin intervención de una persona cuando no supera la reclamación más grande, el cliente ha hecho menos reclamaciones que el máximo y todo lo aprobado automáticamente para él, incluida esta reclamación, se mantiene dentro de la asignación mayor. Las reclamaciones que aprueba una persona no cuentan. Los paquetes perdidos siempre pasan a una persona."
 }

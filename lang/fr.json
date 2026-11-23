@@ -27106,5 +27106,16 @@
     "Problem with an order": "Problème avec une commande",
     "Which order?": "Quelle commande ?",
     "Dispatched :date": "Expédiée le :date",
-    "I reported a problem with order :order (claim :reference).": "J’ai signalé un problème avec la commande :order (réclamation :reference)."
+    "I reported a problem with order :order (claim :reference).": "J’ai signalé un problème avec la commande :order (réclamation :reference).",
+    "Claims": "Réclamations",
+    "Customers can claim themselves": "Les clients peuvent faire une réclamation eux-mêmes",
+    "Approve small claims automatically": "Accepter automatiquement les petites réclamations",
+    "Largest claim approved automatically": "Plus grosse réclamation acceptée automatiquement",
+    "Days counted": "Jours comptés",
+    "Allowance at least": "Plafond minimum",
+    "Or % of what they bought": "Ou % de leurs achats",
+    "Most claims": "Nombre maximum de réclamations",
+    "Only organisation admins can change the claim settings.": "Seuls les administrateurs de l’organisation peuvent modifier les paramètres des réclamations.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, le compte client, l’e-mail d’expédition et le chat du site ouvrent le formulaire de réclamation quand un client signale des articles endommagés, manquants ou erronés.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Une réclamation est acceptée sans intervention humaine si elle ne dépasse pas la plus grosse réclamation, si le client a fait moins de réclamations que le maximum et si tout ce qui lui a été accepté automatiquement, cette réclamation comprise, reste dans le plus grand des plafonds. Les réclamations acceptées par une personne ne comptent pas. Les colis perdus passent toujours par une personne."
 }

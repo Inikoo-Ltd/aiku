@@ -13186,5 +13186,16 @@
     "Problem with an order": "Problema con un ordine",
     "Which order?": "Quale ordine?",
     "Dispatched :date": "Spedito il :date",
-    "I reported a problem with order :order (claim :reference).": "Ho segnalato un problema con l’ordine :order (reclamo :reference)."
+    "I reported a problem with order :order (claim :reference).": "Ho segnalato un problema con l’ordine :order (reclamo :reference).",
+    "Claims": "Reclami",
+    "Customers can claim themselves": "I clienti possono fare reclamo da soli",
+    "Approve small claims automatically": "Approva automaticamente i reclami piccoli",
+    "Largest claim approved automatically": "Reclamo più grande approvato automaticamente",
+    "Days counted": "Giorni conteggiati",
+    "Allowance at least": "Plafond minimo",
+    "Or % of what they bought": "Oppure % di quanto hanno acquistato",
+    "Most claims": "Numero massimo di reclami",
+    "Only organisation admins can change the claim settings.": "Solo gli amministratori dell’organizzazione possono modificare le impostazioni dei reclami.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, l’account del cliente, l’e-mail di spedizione e la chat del sito aprono il modulo di reclamo quando un cliente segnala articoli danneggiati, mancanti o sbagliati.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Un reclamo viene approvato senza una persona quando non supera il reclamo più grande, il cliente ha fatto meno reclami del massimo e tutto ciò che è stato approvato automaticamente per lui, questo reclamo incluso, resta entro il plafond maggiore. I reclami approvati da una persona non contano. I pacchi persi passano sempre a una persona."
 }

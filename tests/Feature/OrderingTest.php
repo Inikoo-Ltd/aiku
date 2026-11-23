@@ -247,6 +247,9 @@ use App\Actions\UI\Profile\EditProfileSettings;
 use App\Enums\Ordering\Order\OrderAlertTypeEnum;
 use App\Events\BroadcastNewOrderAlert;
 use App\Events\RetinaBasketChangedEvent;
+use App\Models\SysAdmin\Organisation;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Event;
 use App\Models\SysAdmin\Permission;
@@ -8192,6 +8195,41 @@ test('a claim that would be approved automatically has its photos checked first,
     expect($store(UploadedFile::fake()->image('again.jpg', 42, 42))->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
 
     UpcomingTransaction::where('customer_id', $customer->id)->delete();
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('organisation admins also set the claim settings in Edit shop, and shop admins cannot', function () {
+    $settings = $this->shop->settings;
+    $user     = User::factory()->create(['group_id' => $this->shop->group_id, 'status' => true]);
+    $edit     = fn () => collect(get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]))->assertOk()->viewData('page')['props']['formData']['blueprint'])->keyBy('label')->get('Claims');
+    $update   = fn (array $data) => patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), $data);
+
+    actingAsUserWithOnlyPermissions($user, ['shop-admin.'.$this->shop->id]);
+    expect($edit())->toBeNull();
+    $update(['claims_self_service' => true])->assertSessionHasErrors('claims_self_service');
+
+    actingAsUserWithOnlyPermissions($user, ['org-admin.'.$this->organisation->id]);
+    expect($edit()['fields']['claims_max_claim_amount']['value'])->toEqual(GetCustomerClaimSettings::for($this->shop->refresh())['max_claim_amount']);
+    $update(['claims_self_service' => true, 'claims_max_claim_amount' => 22.5])->assertSessionHasNoErrors();
+    $update(['claims_window_days' => 0])->assertSessionHasErrors('claims_window_days');
+
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'clm'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($this->organisation->group, $otherOrganisationData);
+    actingAsUserWithOnlyPermissions($user, ['org-admin.'.$otherOrganisation->id]);
+    patch(route('grp.models.org.shop.update', [$otherOrganisation->id, $this->shop->id]), ['claims_max_claim_amount' => 99])->assertForbidden();
+
+    $this->shop->update(['settings' => array_merge($this->shop->refresh()->settings, ['claims' => array_merge($this->shop->settings['claims'], ['framework_since' => '2026-11-01T00:00:00+00:00'])])]);
+    actingAsUserWithOnlyPermissions($user, ['org-admin.'.$this->organisation->id]);
+    $update(['claims_allowance_share' => 4])->assertSessionHasNoErrors();
+    expect($this->shop->refresh()->settings['claims']['framework_since'])->toBe('2026-11-01T00:00:00+00:00');
+
+    $claims = GetCustomerClaimSettings::for($this->shop->refresh());
+    expect($claims['self_service'])->toBeTrue()
+        ->and($claims['max_claim_amount'])->toEqual(22.5)
+        ->and($claims['auto_approve'])->toBe(GetCustomerClaimSettings::DEFAULTS['auto_approve']);
+
     $this->shop->update(['settings' => $settings]);
 });
 

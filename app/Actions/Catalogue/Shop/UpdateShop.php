@@ -94,12 +94,26 @@ class UpdateShop extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
+        return $request->user()->authTo(['org-admin.' . $this->shop->organisation_id, 'shop-admin.' . $this->shop->id]);
     }
+
+    public const array CLAIM_SETTINGS = [
+        'self_service'         => 'bool',
+        'auto_approve'         => 'bool',
+        'max_claim_amount'     => 'float',
+        'window_days'          => 'int',
+        'allowance_floor'      => 'float',
+        'allowance_share'      => 'float',
+        'max_claims_in_window' => 'int',
+    ];
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        if (!$this->asAction && $request->has('faire_order_from_days') && !$request->user()->authTo('org-admin.' . $this->organisation->id)) {
+        if (!$this->asAction && collect(array_keys(self::CLAIM_SETTINGS))->contains(fn (string $setting) => $request->has("claims_$setting")) && !$request->user()->authTo('org-admin.' . $this->shop->organisation_id)) {
+            $validator->errors()->add('claims_self_service', __('Only organisation admins can change the claim settings.'));
+        }
+
+        if (!$this->asAction && $request->has('faire_order_from_days') && !$request->user()->authTo('org-admin.' . $this->shop->organisation_id)) {
             $validator->errors()->add('faire_order_from_days', __('Only organisation admins can change the days to dispatch.'));
         }
     }
@@ -281,6 +295,17 @@ class UpdateShop extends OrgAction
                 throw ValidationException::withMessages([
                     "unpaid_channel_orders_$field" => __('The days have to go up: reminder on day :reminder, final reminder on day :final, cancelled on day :cancel.', ['reminder' => $days['reminder_day'], 'final' => $days['final_reminder_day'], 'cancel' => $days['cancel_after_days']]),
                 ]);
+            }
+        }
+
+        foreach (self::CLAIM_SETTINGS as $claimSetting => $cast) {
+            if (Arr::has($modelData, "claims_$claimSetting")) {
+                $value = Arr::pull($modelData, "claims_$claimSetting");
+                data_set($modelData, "settings.claims.$claimSetting", match ($cast) {
+                    'bool' => (bool) $value,
+                    'int' => (int) $value,
+                    default => (float) $value,
+                });
             }
         }
 
@@ -1311,6 +1336,13 @@ class UpdateShop extends OrgAction
             'unpaid_channel_orders_reminder_day'                      => ['sometimes', 'integer', 'min:1', 'max:60'],
             'unpaid_channel_orders_final_reminder_day'                => ['sometimes', 'integer', 'min:2', 'max:90'],
             'unpaid_channel_orders_cancel_after_days'                 => ['sometimes', 'integer', 'min:3', 'max:120'],
+            'claims_self_service'                                     => ['sometimes', 'boolean'],
+            'claims_auto_approve'                                     => ['sometimes', 'boolean'],
+            'claims_max_claim_amount'                                 => ['sometimes', 'numeric', 'min:0', 'max:100000'],
+            'claims_window_days'                                      => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'claims_allowance_floor'                                  => ['sometimes', 'numeric', 'min:0', 'max:100000'],
+            'claims_allowance_share'                                  => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'claims_max_claims_in_window'                             => ['sometimes', 'integer', 'min:1', 'max:1000'],
             'unpaid_bank_orders_enabled'                              => ['sometimes', 'boolean'],
             'unpaid_bank_orders_reminder_every_days'                  => ['sometimes', 'integer', 'min:1', 'max:60'],
             'unpaid_bank_orders_cancel_after_days'                    => ['sometimes', 'integer', 'min:2', 'max:180'],

@@ -1697,5 +1697,16 @@
     "Problem with an order": "注文の問題",
     "Which order?": "どのご注文ですか？",
     "Dispatched :date": "発送日 :date",
-    "I reported a problem with order :order (claim :reference).": "ご注文 :order の問題を報告しました（クレーム :reference）。"
+    "I reported a problem with order :order (claim :reference).": "ご注文 :order の問題を報告しました（クレーム :reference）。",
+    "Claims": "クレーム",
+    "Customers can claim themselves": "お客様が自分でクレームを申請できる",
+    "Approve small claims automatically": "小額のクレームを自動承認する",
+    "Largest claim approved automatically": "自動承認する最大のクレーム額",
+    "Days counted": "対象日数",
+    "Allowance at least": "最低限度額",
+    "Or % of what they bought": "または購入額の %",
+    "Most claims": "最大クレーム件数",
+    "Only organisation admins can change the claim settings.": "クレーム設定を変更できるのは組織の管理者のみです。",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "お客様が破損・不足・誤りのある商品を報告すると、Merlin、お客様アカウント、発送メール、ウェブサイトのチャットがクレームフォームを開きます。",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "クレームは、最大クレーム額を超えず、お客様のクレーム件数が上限未満で、このクレームを含めて自動承認された合計が大きい方の限度額内に収まる場合、担当者なしで承認されます。担当者が承認したクレームは数えません。紛失した荷物は常に担当者が対応します。"
 }

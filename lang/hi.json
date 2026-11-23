@@ -22737,5 +22737,16 @@
     "Problem with an order": "किसी ऑर्डर में समस्या",
     "Which order?": "कौन-सा ऑर्डर?",
     "Dispatched :date": "भेजा गया :date",
-    "I reported a problem with order :order (claim :reference).": "मैंने ऑर्डर :order की समस्या की रिपोर्ट की है (दावा :reference)।"
+    "I reported a problem with order :order (claim :reference).": "मैंने ऑर्डर :order की समस्या की रिपोर्ट की है (दावा :reference)।",
+    "Claims": "दावे",
+    "Customers can claim themselves": "ग्राहक स्वयं दावा कर सकते हैं",
+    "Approve small claims automatically": "छोटे दावे अपने आप स्वीकृत करें",
+    "Largest claim approved automatically": "अपने आप स्वीकृत होने वाला सबसे बड़ा दावा",
+    "Days counted": "गिने गए दिन",
+    "Allowance at least": "कम से कम सीमा",
+    "Or % of what they bought": "या उनकी खरीद का %",
+    "Most claims": "सबसे अधिक दावे",
+    "Only organisation admins can change the claim settings.": "दावे की सेटिंग केवल संगठन के एडमिन बदल सकते हैं।",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "जब कोई ग्राहक टूटे, कम या गलत आइटम की रिपोर्ट करता है, तो Merlin, ग्राहक खाता, डिस्पैच ईमेल और वेबसाइट चैट दावा फ़ॉर्म खोलते हैं।",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "कोई दावा बिना व्यक्ति के तब स्वीकृत होता है जब वह सबसे बड़े दावे से बड़ा न हो, ग्राहक ने अधिकतम से कम दावे किए हों, और उसके लिए अपने आप स्वीकृत सब कुछ, इस दावे सहित, बड़ी सीमा के भीतर रहे। व्यक्ति द्वारा स्वीकृत दावे नहीं गिने जाते। खोए हुए पार्सल हमेशा किसी व्यक्ति के पास जाते हैं।"
 }

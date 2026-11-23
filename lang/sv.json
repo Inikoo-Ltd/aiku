@@ -10077,5 +10077,16 @@
     "Problem with an order": "Problem med en beställning",
     "Which order?": "Vilken beställning?",
     "Dispatched :date": "Skickad :date",
-    "I reported a problem with order :order (claim :reference).": "Jag har rapporterat ett problem med beställning :order (reklamation :reference)."
+    "I reported a problem with order :order (claim :reference).": "Jag har rapporterat ett problem med beställning :order (reklamation :reference).",
+    "Claims": "Reklamationer",
+    "Customers can claim themselves": "Kunder kan reklamera själva",
+    "Approve small claims automatically": "Godkänn små reklamationer automatiskt",
+    "Largest claim approved automatically": "Största reklamation som godkänns automatiskt",
+    "Days counted": "Räknade dagar",
+    "Allowance at least": "Utrymme minst",
+    "Or % of what they bought": "Eller % av vad de köpt",
+    "Most claims": "Flest reklamationer",
+    "Only organisation admins can change the claim settings.": "Endast organisationens administratörer kan ändra reklamationsinställningarna.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, kundkontot, leveransmejlet och webbplatsens chatt öppnar reklamationsformuläret när en kund rapporterar skadade, saknade eller fel varor.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "En reklamation godkänns utan en person när den inte är större än den största reklamationen, kunden har gjort färre reklamationer än det högsta antalet och allt som godkänts automatiskt för kunden, inklusive denna reklamation, ryms inom det större utrymmet. Reklamationer som en person godkänner räknas inte. Förlorade paket går alltid till en person."
 }

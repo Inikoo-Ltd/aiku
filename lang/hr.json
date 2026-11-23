@@ -9240,5 +9240,16 @@
     "Problem with an order": "Problem s narudžbom",
     "Which order?": "Koja narudžba?",
     "Dispatched :date": "Poslano :date",
-    "I reported a problem with order :order (claim :reference).": "Prijavio/la sam problem s narudžbom :order (reklamacija :reference)."
+    "I reported a problem with order :order (claim :reference).": "Prijavio/la sam problem s narudžbom :order (reklamacija :reference).",
+    "Claims": "Reklamacije",
+    "Customers can claim themselves": "Kupci mogu sami podnijeti reklamaciju",
+    "Approve small claims automatically": "Automatski odobri male reklamacije",
+    "Largest claim approved automatically": "Najveća automatski odobrena reklamacija",
+    "Days counted": "Brojeni dani",
+    "Allowance at least": "Limit najmanje",
+    "Or % of what they bought": "Ili % onoga što su kupili",
+    "Most claims": "Najviše reklamacija",
+    "Only organisation admins can change the claim settings.": "Postavke reklamacija mogu mijenjati samo administratori organizacije.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, korisnički račun, e-pošta o slanju i chat na web-stranici otvaraju obrazac za reklamaciju kad kupac prijavi oštećene, nedostajuće ili pogrešne artikle.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Reklamacija se odobrava bez osobe kad nije veća od najveće reklamacije, kupac je podnio manje reklamacija od najvećeg broja i sve što mu je automatski odobreno, uključujući ovu reklamaciju, ostaje unutar većeg limita. Reklamacije koje odobri osoba se ne broje. Izgubljeni paketi uvijek idu osobi."
 }

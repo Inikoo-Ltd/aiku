@@ -23686,5 +23686,16 @@
     "Problem with an order": "Masalah dengan pesanan",
     "Which order?": "Pesanan yang mana?",
     "Dispatched :date": "Dikirim :date",
-    "I reported a problem with order :order (claim :reference).": "Saya melaporkan masalah dengan pesanan :order (klaim :reference)."
+    "I reported a problem with order :order (claim :reference).": "Saya melaporkan masalah dengan pesanan :order (klaim :reference).",
+    "Claims": "Klaim",
+    "Customers can claim themselves": "Pelanggan dapat mengajukan klaim sendiri",
+    "Approve small claims automatically": "Setujui klaim kecil secara otomatis",
+    "Largest claim approved automatically": "Klaim terbesar yang disetujui otomatis",
+    "Days counted": "Hari yang dihitung",
+    "Allowance at least": "Batas minimal",
+    "Or % of what they bought": "Atau % dari pembelian mereka",
+    "Most claims": "Klaim terbanyak",
+    "Only organisation admins can change the claim settings.": "Hanya admin organisasi yang dapat mengubah pengaturan klaim.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, akun pelanggan, email pengiriman, dan obrolan situs web membuka formulir klaim saat pelanggan melaporkan barang rusak, kurang, atau salah.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Klaim disetujui tanpa petugas jika tidak lebih besar dari klaim terbesar, pelanggan mengajukan klaim lebih sedikit dari batas terbanyak, dan semua yang disetujui otomatis untuknya, termasuk klaim ini, tetap dalam batas yang lebih besar. Klaim yang disetujui petugas tidak dihitung. Paket hilang selalu ditangani petugas."
 }

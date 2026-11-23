@@ -2163,5 +2163,16 @@
     "Problem with an order": "Problēma ar pasūtījumu",
     "Which order?": "Kurš pasūtījums?",
     "Dispatched :date": "Nosūtīts :date",
-    "I reported a problem with order :order (claim :reference).": "Es ziņoju par problēmu ar pasūtījumu :order (pretenzija :reference)."
+    "I reported a problem with order :order (claim :reference).": "Es ziņoju par problēmu ar pasūtījumu :order (pretenzija :reference).",
+    "Claims": "Pretenzijas",
+    "Customers can claim themselves": "Klienti var iesniegt pretenzijas paši",
+    "Approve small claims automatically": "Automātiski apstiprināt mazas pretenzijas",
+    "Largest claim approved automatically": "Lielākā automātiski apstiprinātā pretenzija",
+    "Days counted": "Uzskaitītās dienas",
+    "Allowance at least": "Limits vismaz",
+    "Or % of what they bought": "Vai % no viņu pirkumiem",
+    "Most claims": "Visvairāk pretenziju",
+    "Only organisation admins can change the claim settings.": "Pretenziju iestatījumus var mainīt tikai organizācijas administratori.",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "Merlin, klienta konts, nosūtīšanas e-pasts un vietnes tērzēšana atver pretenzijas veidlapu, kad klients ziņo par bojātām, trūkstošām vai nepareizām precēm.",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "Pretenziju apstiprina bez cilvēka, ja tā nav lielāka par lielāko pretenziju, klients iesniedzis mazāk pretenziju nekā maksimums un viss, kas viņam automātiski apstiprināts, ieskaitot šo pretenziju, iekļaujas lielākajā limitā. Cilvēka apstiprinātās pretenzijas netiek skaitītas. Pazudušie sūtījumi vienmēr nonāk pie cilvēka."
 }

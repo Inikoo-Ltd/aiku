@@ -23476,5 +23476,16 @@
     "Problem with an order": "अर्डरमा समस्या",
     "Which order?": "कुन अर्डर?",
     "Dispatched :date": "पठाइएको :date",
-    "I reported a problem with order :order (claim :reference).": "मैले अर्डर :order को समस्या रिपोर्ट गरेँ (दाबी :reference)।"
+    "I reported a problem with order :order (claim :reference).": "मैले अर्डर :order को समस्या रिपोर्ट गरेँ (दाबी :reference)।",
+    "Claims": "दाबीहरू",
+    "Customers can claim themselves": "ग्राहकले आफैं दाबी गर्न सक्छन्",
+    "Approve small claims automatically": "सानो दाबी स्वतः स्वीकृत गर्नुहोस्",
+    "Largest claim approved automatically": "स्वतः स्वीकृत हुने सबैभन्दा ठूलो दाबी",
+    "Days counted": "गणना गरिएका दिन",
+    "Allowance at least": "कम्तीमा सीमा",
+    "Or % of what they bought": "वा उनीहरूले किनेको %",
+    "Most claims": "धेरैमा धेरै दाबी",
+    "Only organisation admins can change the claim settings.": "दाबी सेटिङ संस्थाका प्रशासकले मात्र परिवर्तन गर्न सक्छन्।",
+    "Merlin, the customer account, the dispatch email and the website chat open the claim form when a customer reports damaged, missing or wrong items.": "ग्राहकले फुटेको, नपुगेको वा गलत सामान रिपोर्ट गर्दा Merlin, ग्राहक खाता, पठाइएको इमेल र वेबसाइट च्याटले दाबी फारम खोल्छन्।",
+    "A claim is approved with no person when it is no bigger than the largest claim, the customer made fewer claims than the most claims, and everything approved automatically for them, this claim included, stays within the larger allowance. Claims a person approves do not count. Lost parcels always go to a person.": "दाबी सबैभन्दा ठूलो दाबीभन्दा ठूलो नभएमा, ग्राहकले अधिकतमभन्दा कम दाबी गरेमा, र उनका लागि स्वतः स्वीकृत सबै, यो दाबीसमेत, ठूलो सीमाभित्र रहेमा व्यक्ति बिना स्वीकृत हुन्छ। व्यक्तिले स्वीकृत गरेका दाबी गनिँदैनन्। हराएका पार्सल सधैं व्यक्तिकहाँ जान्छन्।"
 }
