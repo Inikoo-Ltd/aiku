@@ -394,8 +394,10 @@ defineExpose({ take, draft, busy, offerToEditor, discard: () => decide("discard"
                     </Button>
                 </div>
                 <div v-if="staffNote || staffActions.length" :class="inline ? 'flex-col items-start' : 'mr-12 flex-wrap items-center'" class="flex gap-x-2 gap-y-1 rounded-md border border-pink-200 bg-pink-100 px-2 py-1 text-[11px] text-pink-950">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-pink-600" fixed-width aria-hidden="true" />
-                    <span v-if="staffNote" role="button" tabindex="0" class="min-w-0 flex-1 cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
+                    <div class="flex min-w-0 flex-1 items-start gap-1.5 self-stretch">
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-px shrink-0 text-pink-600" fixed-width aria-hidden="true" />
+                        <span v-if="staffNote" role="button" tabindex="0" class="min-w-0 flex-1 cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
+                    </div>
                     <template v-for="action in staffActions" :key="action.index">
                         <span v-if="action.done" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 ring-1 ring-inset ring-emerald-200">
                             <FontAwesomeIcon :icon="faCheck" fixed-width />{{ action.label }}
