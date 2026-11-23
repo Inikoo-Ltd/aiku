@@ -97,8 +97,8 @@
     <string name="inventory_min">min %1$s</string>
     <string name="inventory_max">max %1$s</string>
     <string name="inventory_replenish">replenish %1$s</string>
-    <string name="inventory_audited_on">audited %1$s</string>
-    <string name="inventory_never_audited">never audited</string>
+    <string name="inventory_audited_on">Last audited %1$s</string>
+    <string name="inventory_never_audited">Never audited</string>
     <string name="inventory_recent_movements">Recent movements</string>
     <string name="inventory_stock_actions">Stock actions</string>
     <string name="inventory_stock_actions_footnote">Stock actions need stock edit rights. Move stock needs at least two locations.</string>
@@ -193,4 +193,9 @@
     <string name="inventory_history_out">Out</string>
     <string name="inventory_history_audit">Audit</string>
     <string name="inventory_movement_chip">%1$s %2$s</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s unit in total</item>
+        <item quantity="other">%1$s units in total</item>
+    </plurals>
+    <string name="inventory_default_for">Default for %1$s</string>
 </resources>

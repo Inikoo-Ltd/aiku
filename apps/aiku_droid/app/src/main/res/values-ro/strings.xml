@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · numărați fiecare locație</string>
     <string name="inventory_audit_title">Audit stoc · %1$s</string>
     <string name="inventory_audit_was_counted">era %1$s · numărat %2$s</string>
-    <string name="inventory_audited_on">auditat %1$s</string>
+    <string name="inventory_audited_on">Ultimul audit %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">En-gros</string>
     <string name="inventory_chip_abnormalities">Anomalii</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Încă nicio mișcare de stoc.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Mișcări de stocuri</string>
-    <string name="inventory_never_audited">niciodată auditat</string>
+    <string name="inventory_never_audited">Niciodată auditat</string>
     <string name="inventory_no_location_found">Nicio locație nu începe cu „%1$s”</string>
     <string name="inventory_no_locations">Acest SKO nu are locație în acest depozit.</string>
     <string name="inventory_not_a_location">%1$s nu este o locație în acest depozit</string>
@@ -2563,4 +2563,16 @@
     <string name="fulfilment_inbound_filter_title">Filtrați livrările</string>
     <string name="cache_saved_rows_only">Copie salvată: sunt incluse doar rândurile încărcate anterior</string>
     <string name="filter_online_only">%1$s (doar online)</string>
+    <string name="conflict_whats_different">Ce diferă</string>
+    <string name="conflict_required">Necesar</string>
+    <string name="conflict_stock_now">Stoc acum</string>
+    <string name="conflict_line">Rândul %1$d</string>
+    <string name="conflict_done_offline">Făcut offline</string>
+    <string name="conflict_changed_by">Modificat în Aiku de</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s unitate în total</item>
+        <item quantity="few">%1$s unități în total</item>
+        <item quantity="other">%1$s de unități în total</item>
+    </plurals>
+    <string name="inventory_default_for">Implicită pentru %1$s</string>
 </resources>

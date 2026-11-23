@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · policz każdą lokalizację</string>
     <string name="inventory_audit_title">Audyt zapasów · %1$s</string>
     <string name="inventory_audit_was_counted">było %1$s · policzono %2$s</string>
-    <string name="inventory_audited_on">audyt %1$s</string>
+    <string name="inventory_audited_on">Ostatni audyt %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Hurt</string>
     <string name="inventory_chip_abnormalities">Nieprawidłowości</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Brak ruchów zapasów.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Ruchy zapasów</string>
-    <string name="inventory_never_audited">nigdy nie audytowane</string>
+    <string name="inventory_never_audited">Nigdy nie audytowane</string>
     <string name="inventory_no_location_found">Żadna lokalizacja nie zaczyna się od „%1$s”</string>
     <string name="inventory_no_locations">To SKO nie ma lokalizacji w tym magazynie.</string>
     <string name="inventory_not_a_location">%1$s nie jest lokalizacją w tym magazynie</string>
@@ -2673,4 +2673,17 @@
     <string name="fulfilment_inbound_filter_title">Filtruj dostawy</string>
     <string name="cache_saved_rows_only">Zapisana kopia: zawiera tylko wcześniej wczytane wiersze</string>
     <string name="filter_online_only">%1$s (tylko online)</string>
+    <string name="conflict_whats_different">Co się różni</string>
+    <string name="conflict_required">Wymagane</string>
+    <string name="conflict_stock_now">Stan teraz</string>
+    <string name="conflict_line">Wiersz %1$d</string>
+    <string name="conflict_done_offline">Wykonano offline</string>
+    <string name="conflict_changed_by">Zmienione w Aiku przez</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">łącznie %1$s sztuka</item>
+        <item quantity="few">łącznie %1$s sztuki</item>
+        <item quantity="many">łącznie %1$s sztuk</item>
+        <item quantity="other">łącznie %1$s sztuki</item>
+    </plurals>
+    <string name="inventory_default_for">Domyślna dla %1$s</string>
 </resources>

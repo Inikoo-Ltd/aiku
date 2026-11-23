@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · saskaitiet katru vietu</string>
     <string name="inventory_audit_title">Inventarizēt krājumu · %1$s</string>
     <string name="inventory_audit_was_counted">bija %1$s · saskaitīts %2$s</string>
-    <string name="inventory_audited_on">inventarizēts %1$s</string>
+    <string name="inventory_audited_on">Pēdējā inventarizācija %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Vairumtirdzniecība</string>
     <string name="inventory_chip_abnormalities">Novirzes</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Vēl nav krājumu kustību.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Krājumu kustības</string>
-    <string name="inventory_never_audited">nekad nav inventarizēts</string>
+    <string name="inventory_never_audited">Nekad nav inventarizēts</string>
     <string name="inventory_no_location_found">Neviena vieta nesākas ar “%1$s”</string>
     <string name="inventory_no_locations">Šim SKO šajā noliktavā nav vietas.</string>
     <string name="inventory_not_a_location">%1$s nav vieta šajā noliktavā</string>
@@ -2563,4 +2563,16 @@
     <string name="fulfilment_inbound_filter_title">Filtrēt piegādes</string>
     <string name="cache_saved_rows_only">Saglabāta kopija: iekļautas tikai iepriekš ielādētās rindas</string>
     <string name="filter_online_only">%1$s (tikai tiešsaistē)</string>
+    <string name="conflict_whats_different">Kas atšķiras</string>
+    <string name="conflict_required">Nepieciešams</string>
+    <string name="conflict_stock_now">Krājums tagad</string>
+    <string name="conflict_line">Rinda %1$d</string>
+    <string name="conflict_done_offline">Veikts bezsaistē</string>
+    <string name="conflict_changed_by">Aiku mainīja</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="zero">kopā %1$s vienību</item>
+        <item quantity="one">kopā %1$s vienība</item>
+        <item quantity="other">kopā %1$s vienības</item>
+    </plurals>
+    <string name="inventory_default_for">Noklusējums: %1$s</string>
 </resources>

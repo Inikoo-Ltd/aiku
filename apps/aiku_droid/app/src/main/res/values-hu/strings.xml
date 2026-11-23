@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · minden raktárhelyet számoljon meg</string>
     <string name="inventory_audit_title">Készlet leltározása · %1$s</string>
     <string name="inventory_audit_was_counted">volt: %1$s · megszámolva: %2$s</string>
-    <string name="inventory_audited_on">leltározva: %1$s</string>
+    <string name="inventory_audited_on">Utolsó leltár %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Nagykereskedelem</string>
     <string name="inventory_chip_abnormalities">Rendellenességek</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Még nincsenek készletmozgások.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Készletmozgások</string>
-    <string name="inventory_never_audited">soha nem leltározták</string>
+    <string name="inventory_never_audited">Soha nem leltározták</string>
     <string name="inventory_no_location_found">Nincs „%1$s” kezdetű raktárhely</string>
     <string name="inventory_no_locations">Ennek az SKO-nak nincs raktárhelye ebben a raktárban.</string>
     <string name="inventory_not_a_location">%1$s nem raktárhely ebben a raktárban</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">Beszállítások szűrése</string>
     <string name="cache_saved_rows_only">Mentett másolat: csak a korábban betöltött sorokat tartalmazza</string>
     <string name="filter_online_only">%1$s (csak online)</string>
+    <string name="conflict_whats_different">Mi tér el</string>
+    <string name="conflict_required">Szükséges</string>
+    <string name="conflict_stock_now">Készlet most</string>
+    <string name="conflict_line">%1$d. sor</string>
+    <string name="conflict_done_offline">Offline végezve</string>
+    <string name="conflict_changed_by">Aikuban módosította</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">összesen %1$s egység</item>
+        <item quantity="other">összesen %1$s egység</item>
+    </plurals>
+    <string name="inventory_default_for">Alapértelmezett: %1$s</string>
 </resources>

@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
+import io.aiku.droid.ui.inventory.fractionGlyphs
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DispatchChannel
 import io.aiku.droid.ui.clocking.LocalClocking
@@ -103,7 +104,7 @@ internal fun channelName(channel: String, fallback: String? = null): String? =
         ?: fallback?.takeIf { it.isNotBlank() }
 
 internal fun quantityText(value: Double, label: String? = null): String =
-    label?.takeIf { it.isNotBlank() } ?: decimalFormat().format(value)
+    label?.takeIf { it.isNotBlank() }?.let(::fractionGlyphs) ?: decimalFormat().format(value)
 
 internal fun skoLabel(value: Double, packedIn: Double?, roundToUnits: Boolean = false): String? {
     val perSko = packedIn?.roundToInt() ?: return null

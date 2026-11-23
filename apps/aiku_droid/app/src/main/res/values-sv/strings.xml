@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · räkna varje lagerplats</string>
     <string name="inventory_audit_title">Granska lager · %1$s</string>
     <string name="inventory_audit_was_counted">var %1$s · räknat %2$s</string>
-    <string name="inventory_audited_on">granskad %1$s</string>
+    <string name="inventory_audited_on">Senast granskad %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Grossist</string>
     <string name="inventory_chip_abnormalities">Avvikelser</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Inga lagerrörelser än.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Lagerrörelser</string>
-    <string name="inventory_never_audited">aldrig granskad</string>
+    <string name="inventory_never_audited">Aldrig granskad</string>
     <string name="inventory_no_location_found">Ingen lagerplats börjar med ”%1$s”</string>
     <string name="inventory_no_locations">Den här SKO:n har ingen lagerplats i det här lagret.</string>
     <string name="inventory_not_a_location">%1$s är inte en lagerplats i det här lagret</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">Filtrera leveranser</string>
     <string name="cache_saved_rows_only">Sparad kopia: bara rader som laddats tidigare ingår</string>
     <string name="filter_online_only">%1$s (endast online)</string>
+    <string name="conflict_whats_different">Vad som skiljer</string>
+    <string name="conflict_required">Behövs</string>
+    <string name="conflict_stock_now">Lager nu</string>
+    <string name="conflict_line">Rad %1$d</string>
+    <string name="conflict_done_offline">Gjort offline</string>
+    <string name="conflict_changed_by">Ändrat i Aiku av</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s enhet totalt</item>
+        <item quantity="other">%1$s enheter totalt</item>
+    </plurals>
+    <string name="inventory_default_for">Standard för %1$s</string>
 </resources>

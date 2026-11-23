@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · her lokasyonu sayın</string>
     <string name="inventory_audit_title">Stok sayımı · %1$s</string>
     <string name="inventory_audit_was_counted">önceki %1$s · sayılan %2$s</string>
-    <string name="inventory_audited_on">denetlendi %1$s</string>
+    <string name="inventory_audited_on">Son denetim %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Toptan</string>
     <string name="inventory_chip_abnormalities">Anormallikler</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Henüz stok hareketi yok.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Stok hareketleri</string>
-    <string name="inventory_never_audited">hiç denetlenmedi</string>
+    <string name="inventory_never_audited">Hiç denetlenmedi</string>
     <string name="inventory_no_location_found">“%1$s” ile başlayan lokasyon yok</string>
     <string name="inventory_no_locations">Bu SKO\'nun bu depoda lokasyonu yok.</string>
     <string name="inventory_not_a_location">%1$s bu depoda bir lokasyon değil</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">Teslimatları filtrele</string>
     <string name="cache_saved_rows_only">Kayıtlı kopya: yalnızca daha önce yüklenen satırlar dahildir</string>
     <string name="filter_online_only">%1$s (yalnızca çevrimiçi)</string>
+    <string name="conflict_whats_different">Ne farklı</string>
+    <string name="conflict_required">Gerekli</string>
+    <string name="conflict_stock_now">Şu anki stok</string>
+    <string name="conflict_line">Satır %1$d</string>
+    <string name="conflict_done_offline">Çevrimdışı yapıldı</string>
+    <string name="conflict_changed_by">Aiku\'da değiştiren</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">toplam %1$s birim</item>
+        <item quantity="other">toplam %1$s birim</item>
+    </plurals>
+    <string name="inventory_default_for">%1$s için varsayılan</string>
 </resources>

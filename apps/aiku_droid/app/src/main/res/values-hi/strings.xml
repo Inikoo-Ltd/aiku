@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · हर लोकेशन गिनें</string>
     <string name="inventory_audit_title">स्टॉक ऑडिट · %1$s</string>
     <string name="inventory_audit_was_counted">पहले %1$s · गिना गया %2$s</string>
-    <string name="inventory_audited_on">ऑडिट किया गया %1$s</string>
+    <string name="inventory_audited_on">अंतिम ऑडिट %1$s</string>
     <string name="inventory_channel_dropshipping">ड्रॉपशिपिंग</string>
     <string name="inventory_channel_wholesale">होलसेल</string>
     <string name="inventory_chip_abnormalities">असामान्यताएं</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">डिलीवरी फ़िल्टर करें</string>
     <string name="cache_saved_rows_only">सहेजी गई कॉपी: केवल पहले लोड की गई पंक्तियाँ शामिल हैं</string>
     <string name="filter_online_only">%1$s (केवल ऑनलाइन)</string>
+    <string name="conflict_whats_different">क्या अलग है</string>
+    <string name="conflict_required">आवश्यक</string>
+    <string name="conflict_stock_now">अभी का स्टॉक</string>
+    <string name="conflict_line">पंक्ति %1$d</string>
+    <string name="conflict_done_offline">ऑफ़लाइन किया गया</string>
+    <string name="conflict_changed_by">Aiku में बदला गया, द्वारा</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">कुल %1$s यूनिट</item>
+        <item quantity="other">कुल %1$s यूनिट</item>
+    </plurals>
+    <string name="inventory_default_for">%1$s के लिए डिफ़ॉल्ट</string>
 </resources>

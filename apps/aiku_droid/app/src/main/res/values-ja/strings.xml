@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · 各ロケーションを数える</string>
     <string name="inventory_audit_title">在庫を棚卸 · %1$s</string>
     <string name="inventory_audit_was_counted">変更前 %1$s · カウント %2$s</string>
-    <string name="inventory_audited_on">棚卸 %1$s</string>
+    <string name="inventory_audited_on">最終棚卸 %1$s</string>
     <string name="inventory_channel_dropshipping">ドロップシッピング</string>
     <string name="inventory_channel_wholesale">卸売</string>
     <string name="inventory_chip_abnormalities">異常</string>
@@ -2343,4 +2343,14 @@
     <string name="fulfilment_inbound_filter_title">入荷を絞り込む</string>
     <string name="cache_saved_rows_only">保存済みのコピー：以前に読み込んだ行のみ含まれます</string>
     <string name="filter_online_only">%1$s（オンラインのみ）</string>
+    <string name="conflict_whats_different">違い</string>
+    <string name="conflict_required">必要数</string>
+    <string name="conflict_stock_now">現在の在庫</string>
+    <string name="conflict_line">%1$d行目</string>
+    <string name="conflict_done_offline">オフラインで実行</string>
+    <string name="conflict_changed_by">Aikuで変更した人</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="other">合計%1$s個</item>
+    </plurals>
+    <string name="inventory_default_for">%1$sの既定</string>
 </resources>

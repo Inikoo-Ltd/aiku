@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · порахуйте кожну комірку</string>
     <string name="inventory_audit_title">Аудит запасу · %1$s</string>
     <string name="inventory_audit_was_counted">було %1$s · пораховано %2$s</string>
-    <string name="inventory_audited_on">перевірено %1$s</string>
+    <string name="inventory_audited_on">Остання перевірка %1$s</string>
     <string name="inventory_channel_dropshipping">Дропшиппінг</string>
     <string name="inventory_channel_wholesale">Гуртова торгівля</string>
     <string name="inventory_chip_abnormalities">Аномалії</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Переміщень запасів ще немає.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Переміщення запасів</string>
-    <string name="inventory_never_audited">ніколи не перевірялося</string>
+    <string name="inventory_never_audited">Ніколи не перевірялося</string>
     <string name="inventory_no_location_found">Немає комірки, що починається з «%1$s»</string>
     <string name="inventory_no_locations">Цей SKO не має комірки на цьому складі.</string>
     <string name="inventory_not_a_location">%1$s не є коміркою на цьому складі</string>
@@ -2673,4 +2673,17 @@
     <string name="fulfilment_inbound_filter_title">Фільтр доставок</string>
     <string name="cache_saved_rows_only">Збережена копія: містить лише рядки, завантажені раніше</string>
     <string name="filter_online_only">%1$s (лише онлайн)</string>
+    <string name="conflict_whats_different">Що відрізняється</string>
+    <string name="conflict_required">Потрібно</string>
+    <string name="conflict_stock_now">Запас зараз</string>
+    <string name="conflict_line">Рядок %1$d</string>
+    <string name="conflict_done_offline">Зроблено офлайн</string>
+    <string name="conflict_changed_by">Змінено в Aiku користувачем</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">усього %1$s одиниця</item>
+        <item quantity="few">усього %1$s одиниці</item>
+        <item quantity="many">усього %1$s одиниць</item>
+        <item quantity="other">усього %1$s одиниці</item>
+    </plurals>
+    <string name="inventory_default_for">За замовчуванням для %1$s</string>
 </resources>

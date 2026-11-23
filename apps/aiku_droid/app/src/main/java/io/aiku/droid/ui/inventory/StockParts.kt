@@ -82,7 +82,7 @@ internal fun countLabel(label: String, count: Int?): String =
 
 @Composable
 internal fun signedQuantity(value: Double, label: String? = null): String {
-    val shown = label?.takeIf { it.isNotBlank() }?.trimStart('-', '+', '−')
+    val shown = label?.takeIf { it.isNotBlank() }?.trimStart('-', '+', '−')?.let(::fractionGlyphs)
     return when {
         value > 0 -> stringResource(R.string.inventory_delta_increase, shown ?: stockText(value))
         value < 0 -> stringResource(R.string.inventory_delta_decrease, shown ?: stockText(-value))

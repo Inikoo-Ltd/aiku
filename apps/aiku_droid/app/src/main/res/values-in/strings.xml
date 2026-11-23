@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · hitung setiap lokasi</string>
     <string name="inventory_audit_title">Audit stok · %1$s</string>
     <string name="inventory_audit_was_counted">sebelumnya %1$s · dihitung %2$s</string>
-    <string name="inventory_audited_on">diaudit %1$s</string>
+    <string name="inventory_audited_on">Terakhir diaudit %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Grosir</string>
     <string name="inventory_chip_abnormalities">Anomali</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Belum ada pergerakan stok.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Pergerakan stok</string>
-    <string name="inventory_never_audited">tidak pernah diaudit</string>
+    <string name="inventory_never_audited">Tidak pernah diaudit</string>
     <string name="inventory_no_location_found">Tidak ada lokasi yang diawali “%1$s”</string>
     <string name="inventory_no_locations">SKO ini tidak memiliki lokasi di gudang ini.</string>
     <string name="inventory_not_a_location">%1$s bukan lokasi di gudang ini</string>
@@ -2343,4 +2343,14 @@
     <string name="fulfilment_inbound_filter_title">Filter penerimaan</string>
     <string name="cache_saved_rows_only">Salinan tersimpan: hanya baris yang dimuat sebelumnya yang disertakan</string>
     <string name="filter_online_only">%1$s (hanya online)</string>
+    <string name="conflict_whats_different">Apa yang berbeda</string>
+    <string name="conflict_required">Dibutuhkan</string>
+    <string name="conflict_stock_now">Stok sekarang</string>
+    <string name="conflict_line">Baris %1$d</string>
+    <string name="conflict_done_offline">Dilakukan saat offline</string>
+    <string name="conflict_changed_by">Diubah di Aiku oleh</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="other">total %1$s unit</item>
+    </plurals>
+    <string name="inventory_default_for">Default untuk %1$s</string>
 </resources>

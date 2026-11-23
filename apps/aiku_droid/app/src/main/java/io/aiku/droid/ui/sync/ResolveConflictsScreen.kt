@@ -48,6 +48,7 @@ fun ResolveConflictsScreen(viewModel: ResolveConflictsViewModel) {
         header = { AppHeader(title = stringResource(R.string.sync_conflicts_title), kicker = stringResource(R.string.sync_title)) },
         activeTab = MainTab.Menu,
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh),
+        showNeedYou = false,
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.offline_stock_conflicts_failed), onRetry = viewModel::retry) }
         when {

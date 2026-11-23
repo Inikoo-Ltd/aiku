@@ -37,6 +37,25 @@ internal fun stockFractionLabel(value: Double, packedIn: Double?): String {
     }
 }
 
+private val FRACTION_PATTERN = Regex("(\\d) (\\d+)/(\\d+)(?![\\d/])|(?<![\\d/.])(\\d+)/(\\d+)(?![\\d/])")
+private const val SUPERSCRIPT_DIGITS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+private const val SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉"
+private const val FRACTION_SLASH = '⁄'
+private const val NARROW_SPACE = '\u202F'
+
+internal fun fractionGlyphs(text: String): String = FRACTION_PATTERN.replace(text) { match ->
+    val groups = match.groupValues
+    if (groups[1].isNotEmpty()) {
+        "${groups[1]}$NARROW_SPACE${raised(groups[2])}$FRACTION_SLASH${lowered(groups[3])}"
+    } else {
+        "${raised(groups[4])}$FRACTION_SLASH${lowered(groups[5])}"
+    }
+}
+
+private fun raised(digits: String): String = digits.map { SUPERSCRIPT_DIGITS[it - '0'] }.joinToString("")
+
+private fun lowered(digits: String): String = digits.map { SUBSCRIPT_DIGITS[it - '0'] }.joinToString("")
+
 internal fun stockTotal(value: Double): Double = BigDecimal.valueOf(value).setScale(TOTAL_DECIMALS, RoundingMode.HALF_UP).toDouble()
 
 private fun plainNumber(value: Double): String =

@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · tel elke locatie</string>
     <string name="inventory_audit_title">Voorraad controleren · %1$s</string>
     <string name="inventory_audit_was_counted">was %1$s · geteld %2$s</string>
-    <string name="inventory_audited_on">gecontroleerd %1$s</string>
+    <string name="inventory_audited_on">Laatst gecontroleerd %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Groothandel</string>
     <string name="inventory_chip_abnormalities">Afwijkingen</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Nog geen voorraadmutaties.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Voorraadmutaties</string>
-    <string name="inventory_never_audited">nooit gecontroleerd</string>
+    <string name="inventory_never_audited">Nooit gecontroleerd</string>
     <string name="inventory_no_location_found">Geen locatie begint met ‘%1$s’</string>
     <string name="inventory_no_locations">Deze SKO heeft geen locatie in dit magazijn.</string>
     <string name="inventory_not_a_location">%1$s is geen locatie in dit magazijn</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">Leveringen filteren</string>
     <string name="cache_saved_rows_only">Opgeslagen kopie: alleen eerder geladen rijen staan erin</string>
     <string name="filter_online_only">%1$s (alleen online)</string>
+    <string name="conflict_whats_different">Wat er anders is</string>
+    <string name="conflict_required">Vereist</string>
+    <string name="conflict_stock_now">Voorraad nu</string>
+    <string name="conflict_line">Regel %1$d</string>
+    <string name="conflict_done_offline">Offline gedaan</string>
+    <string name="conflict_changed_by">In Aiku gewijzigd door</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s eenheid in totaal</item>
+        <item quantity="other">%1$s eenheden in totaal</item>
+    </plurals>
+    <string name="inventory_default_for">Standaard voor %1$s</string>
 </resources>

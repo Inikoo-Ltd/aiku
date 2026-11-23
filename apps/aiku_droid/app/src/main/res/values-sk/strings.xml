@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · spočítajte každú lokáciu</string>
     <string name="inventory_audit_title">Audit zásob · %1$s</string>
     <string name="inventory_audit_was_counted">bolo %1$s · spočítané %2$s</string>
-    <string name="inventory_audited_on">auditované %1$s</string>
+    <string name="inventory_audited_on">Posledný audit %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Veľkoobchod</string>
     <string name="inventory_chip_abnormalities">Anomálie</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Zatiaľ žiadne pohyby zásob.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Pohyby zásob</string>
-    <string name="inventory_never_audited">nikdy neauditované</string>
+    <string name="inventory_never_audited">Nikdy neauditované</string>
     <string name="inventory_no_location_found">Žiadna lokácia nezačína na „%1$s“</string>
     <string name="inventory_no_locations">Toto SKO nemá v tomto sklade žiadnu lokáciu.</string>
     <string name="inventory_not_a_location">%1$s nie je lokácia v tomto sklade</string>
@@ -2673,4 +2673,17 @@
     <string name="fulfilment_inbound_filter_title">Filtrovať dodávky</string>
     <string name="cache_saved_rows_only">Uložená kópia: obsahuje len predtým načítané riadky</string>
     <string name="filter_online_only">%1$s (len online)</string>
+    <string name="conflict_whats_different">Čo sa líši</string>
+    <string name="conflict_required">Požadované</string>
+    <string name="conflict_stock_now">Zásoba teraz</string>
+    <string name="conflict_line">Riadok %1$d</string>
+    <string name="conflict_done_offline">Vykonané offline</string>
+    <string name="conflict_changed_by">V Aiku zmenil(a)</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">spolu %1$s kus</item>
+        <item quantity="few">spolu %1$s kusy</item>
+        <item quantity="many">spolu %1$s kusu</item>
+        <item quantity="other">spolu %1$s kusov</item>
+    </plurals>
+    <string name="inventory_default_for">Predvolené pre %1$s</string>
 </resources>

@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · пребройте всяка локация</string>
     <string name="inventory_audit_title">Одит на наличност · %1$s</string>
     <string name="inventory_audit_was_counted">беше %1$s · преброени %2$s</string>
-    <string name="inventory_audited_on">одитиран %1$s</string>
+    <string name="inventory_audited_on">Последен одит %1$s</string>
     <string name="inventory_channel_dropshipping">Дропшипинг</string>
     <string name="inventory_channel_wholesale">На едро</string>
     <string name="inventory_chip_abnormalities">Аномалии</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Все още няма движения на наличности.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Движения на наличности</string>
-    <string name="inventory_never_audited">никога не е одитиран</string>
+    <string name="inventory_never_audited">Никога не е одитиран</string>
     <string name="inventory_no_location_found">Няма локация, започваща с „%1$s“</string>
     <string name="inventory_no_locations">Този SKO няма локация в този склад.</string>
     <string name="inventory_not_a_location">%1$s не е локация в този склад</string>
@@ -2453,4 +2453,15 @@
     <string name="fulfilment_inbound_filter_title">Филтриране на доставки</string>
     <string name="cache_saved_rows_only">Запазено копие: включени са само редовете, заредени преди</string>
     <string name="filter_online_only">%1$s (само онлайн)</string>
+    <string name="conflict_whats_different">Какво се различава</string>
+    <string name="conflict_required">Изисквано</string>
+    <string name="conflict_stock_now">Наличност сега</string>
+    <string name="conflict_line">Ред %1$d</string>
+    <string name="conflict_done_offline">Направено офлайн</string>
+    <string name="conflict_changed_by">Променено в Aiku от</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s бройка общо</item>
+        <item quantity="other">%1$s бройки общо</item>
+    </plurals>
+    <string name="inventory_default_for">По подразбиране за %1$s</string>
 </resources>

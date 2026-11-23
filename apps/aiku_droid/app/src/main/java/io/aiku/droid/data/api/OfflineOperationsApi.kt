@@ -64,6 +64,8 @@ data class OfflineOperationLabels(
 @Serializable
 data class OfflineCountedRow(
     @SerialName("location_code") val locationCode: String? = null,
+    @SerialName("sko_code") val skoCode: String? = null,
+    @SerialName("sko_name") val skoName: String? = null,
     @Serializable(with = LenientDoubleOrNull::class) val counted: Double? = null,
     @Serializable(with = LenientDoubleOrNull::class) val quantity: Double? = null,
 )
@@ -96,6 +98,7 @@ data class OfflineOperationEntry(
     val resolutions: List<String> = emptyList(),
     @SerialName("can_rollback") val canRollback: Boolean = false,
     @SerialName("counted_rows") val countedRows: List<OfflineCountedRow> = emptyList(),
+    val item: OfflineOperationItem? = null,
 ) {
     val key: Long? get() = operationId ?: id
 
@@ -111,6 +114,28 @@ data class OfflineOperationEntry(
         }
 }
 
+@Serializable
+data class OfflineOperationItem(
+    @SerialName("sko_code") val skoCode: String? = null,
+    @SerialName("sko_name") val skoName: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("packed_in") val packedIn: Double? = null,
+    @SerialName("record_type") val recordType: String? = null,
+    @SerialName("record_reference") val recordReference: String? = null,
+    @Serializable(with = LenientIntOrNull::class) val line: Int? = null,
+    val quantities: OfflineItemQuantities? = null,
+)
+
+@Serializable
+data class OfflineItemQuantities(
+    @Serializable(with = LenientDoubleOrNull::class) val required: Double? = null,
+    @Serializable(with = LenientDoubleOrNull::class) val picked: Double? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("not_picked") val notPicked: Double? = null,
+    @Serializable(with = LenientDoubleOrNull::class) val packed: Double? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("stock_now") val stockNow: Double? = null,
+)
+
+@Serializable
 data class OfflineResolveOutcome(val operation: OfflineOperationEntry, val results: List<OfflineOperationEntry>)
 
 @Serializable

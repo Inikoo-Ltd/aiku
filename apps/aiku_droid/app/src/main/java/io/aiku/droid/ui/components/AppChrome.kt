@@ -101,13 +101,14 @@ fun AppScreen(
     spacing: Dp = 14.dp,
     scrollState: ScrollState = rememberScrollState(),
     refresh: PullRefresh? = null,
+    showNeedYou: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalAikuColors.current
 
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         header()
-        OfflineIndicator()
+        OfflineIndicator(showNeedYou = showNeedYou)
         PullRefreshBox(refresh = refresh, modifier = Modifier.weight(1f).fillMaxWidth()) {
             Column(
                 modifier = Modifier

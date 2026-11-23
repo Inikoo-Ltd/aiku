@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · spočítejte každou lokaci</string>
     <string name="inventory_audit_title">Audit zásob · %1$s</string>
     <string name="inventory_audit_was_counted">bylo %1$s · spočítáno %2$s</string>
-    <string name="inventory_audited_on">auditováno %1$s</string>
+    <string name="inventory_audited_on">Poslední audit %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Velkoobchod</string>
     <string name="inventory_chip_abnormalities">Abnormality</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Zatím žádné pohyby zásob.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Pohyby zásob</string>
-    <string name="inventory_never_audited">nikdy neauditováno</string>
+    <string name="inventory_never_audited">Nikdy neauditováno</string>
     <string name="inventory_no_location_found">Žádná lokace nezačíná na „%1$s“</string>
     <string name="inventory_no_locations">Toto SKO nemá v tomto skladu žádnou lokaci.</string>
     <string name="inventory_not_a_location">%1$s není lokace v tomto skladu</string>
@@ -2673,4 +2673,17 @@
     <string name="fulfilment_inbound_filter_title">Filtrovat dodávky</string>
     <string name="cache_saved_rows_only">Uložená kopie: obsahuje jen dříve načtené řádky</string>
     <string name="filter_online_only">%1$s (jen online)</string>
+    <string name="conflict_whats_different">Co se liší</string>
+    <string name="conflict_required">Požadováno</string>
+    <string name="conflict_stock_now">Zásoba nyní</string>
+    <string name="conflict_line">Řádek %1$d</string>
+    <string name="conflict_done_offline">Provedeno offline</string>
+    <string name="conflict_changed_by">V Aiku změnil(a)</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">celkem %1$s kus</item>
+        <item quantity="few">celkem %1$s kusy</item>
+        <item quantity="many">celkem %1$s kusu</item>
+        <item quantity="other">celkem %1$s kusů</item>
+    </plurals>
+    <string name="inventory_default_for">Výchozí pro %1$s</string>
 </resources>

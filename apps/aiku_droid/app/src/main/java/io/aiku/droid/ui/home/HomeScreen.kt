@@ -112,6 +112,7 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
         header = { HomeHeader() },
         activeTab = MainTab.Home,
         spacing = 20.dp,
+        showNeedYou = false,
         refresh = PullRefresh(
             isRefreshing = clockingState.isRefreshing,
             onRefresh = {

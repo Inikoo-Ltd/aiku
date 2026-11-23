@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · conte cada localização</string>
     <string name="inventory_audit_title">Auditar stock · %1$s</string>
     <string name="inventory_audit_was_counted">antes %1$s · contado %2$s</string>
-    <string name="inventory_audited_on">auditado %1$s</string>
+    <string name="inventory_audited_on">Última auditoria %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Venda por grosso</string>
     <string name="inventory_chip_abnormalities">Anomalias</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Ainda não há movimentos de stock.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Movimentos de stock</string>
-    <string name="inventory_never_audited">nunca auditado</string>
+    <string name="inventory_never_audited">Nunca auditado</string>
     <string name="inventory_no_location_found">Nenhuma localização começa por «%1$s»</string>
     <string name="inventory_no_locations">Este SKO não tem localização neste armazém.</string>
     <string name="inventory_not_a_location">%1$s não é uma localização deste armazém</string>
@@ -2563,4 +2563,16 @@
     <string name="fulfilment_inbound_filter_title">Filtrar entregas</string>
     <string name="cache_saved_rows_only">Cópia guardada: só inclui as linhas carregadas antes</string>
     <string name="filter_online_only">%1$s (só online)</string>
+    <string name="conflict_whats_different">O que é diferente</string>
+    <string name="conflict_required">Necessário</string>
+    <string name="conflict_stock_now">Stock agora</string>
+    <string name="conflict_line">Linha %1$d</string>
+    <string name="conflict_done_offline">Feito offline</string>
+    <string name="conflict_changed_by">Alterado no Aiku por</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">%1$s unidade no total</item>
+        <item quantity="many">%1$s unidades no total</item>
+        <item quantity="other">%1$s unidades no total</item>
+    </plurals>
+    <string name="inventory_default_for">Predefinida para %1$s</string>
 </resources>

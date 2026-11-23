@@ -64,4 +64,10 @@
     <string name="sync_conflicts_title">Resolve conflicts</string>
     <string name="sync_yours">Yours</string>
     <string name="sync_now_in_aiku">Now in Aiku</string>
+    <string name="conflict_whats_different">What\'s different</string>
+    <string name="conflict_required">Required</string>
+    <string name="conflict_stock_now">Stock now</string>
+    <string name="conflict_line">Line %1$d</string>
+    <string name="conflict_done_offline">Done offline</string>
+    <string name="conflict_changed_by">Changed in Aiku by</string>
 </resources>

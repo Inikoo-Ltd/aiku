@@ -44,10 +44,8 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.locations.stockTypeLabel
-import io.aiku.droid.ui.locations.stockTypeTone
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocationSkuRoute
@@ -206,37 +204,31 @@ private fun SkuBlocks(detail: OrgStockDetail, state: SkoUiState, actions: List<S
         DetailCard(title = stringResource(R.string.inventory_sko_card_title), lines = lines)
     }
     val coverDays = detail.cover.days
-    InventoryStatGrid(
-        stats = listOf(
-            InventoryStat(value = stockText(detail.quantityInLocations, detail.quantityInLocationsLabel), label = stringResource(R.string.inventory_stat_in_locations)),
-            InventoryStat(value = stockText(detail.quantityReserved, detail.quantityReservedLabel), label = stringResource(R.string.inventory_stat_reserved)),
-            InventoryStat(value = stockText(detail.quantityToBePicked, detail.quantityToBePickedLabel), label = stringResource(R.string.inventory_stat_to_be_picked)),
-            InventoryStat(
+    SkoStockCard(
+        quantity = detail.quantityInLocations,
+        quantityLabel = detail.quantityInLocationsLabel,
+        packedIn = detail.packedIn,
+        figures = listOf(
+            SkoStockFigure(label = stringResource(R.string.inventory_stat_reserved), value = stockText(detail.quantityReserved, detail.quantityReservedLabel)),
+            SkoStockFigure(label = stringResource(R.string.inventory_stat_to_be_picked), value = stockText(detail.quantityToBePicked, detail.quantityToBePickedLabel)),
+            SkoStockFigure(
+                label = stringResource(R.string.inventory_stat_cover),
                 value = coverDays?.let { days ->
                     val whole = days.toInt()
                     pluralStringResource(R.plurals.inventory_cover_days, whole, whole)
                 } ?: stringResource(R.string.inventory_cover_unknown),
-                label = stringResource(R.string.inventory_stat_cover),
             ),
         ),
-        columns = 4,
     )
     InventorySectionHeading(text = stringResource(R.string.inventory_locations_heading), trailingText = countText(detail.locations.size))
     if (detail.locations.isEmpty()) {
         BoardFootnote(text = stringResource(R.string.inventory_no_locations))
     } else {
-        ListGroup {
-            detail.locations.forEachIndexed { index, location ->
-                if (index > 0) {
-                    RowDivider()
-                }
-                IconItemRow(
-                    icon = R.drawable.ic_ui_location,
-                    title = location.location.code,
-                    subtitle = skoLocationSubtitle(location),
-                    chip = skoLocationChip(location),
-                    chipTone = stockTypeTone(location.stockType),
-                    trailing = stockText(location.quantity, location.quantityLabel),
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            detail.locations.forEach { location ->
+                SkoLocationCard(
+                    location = location,
+                    packedIn = detail.packedIn,
                     onClick = if (can.viewLocations) {
                         {
                             navigator.open(
@@ -342,21 +334,4 @@ internal fun skoLocationChip(location: OrgStockLocation): String? {
         if (location.isDefaultDropshipping) stringResource(R.string.inventory_channel_dropshipping) else null,
     )
     return (listOf(type) + channels).joinToString(LIST_SEPARATOR)
-}
-
-@Composable
-private fun skoLocationSubtitle(location: OrgStockLocation): String {
-    val zone = organisationZone()
-    val min = location.minStock
-    val max = location.maxStock
-    val replenish = location.replenishmentStock
-    val levels = when {
-        min != null && max != null -> stringResource(R.string.inventory_min_max, stockText(min), stockText(max))
-        min != null -> stringResource(R.string.inventory_min, stockText(min))
-        max != null -> stringResource(R.string.inventory_max, stockText(max))
-        replenish != null -> stringResource(R.string.inventory_replenish, stockText(replenish))
-        else -> null
-    }
-    val audited = dayText(location.auditedAt, zone)?.let { stringResource(R.string.inventory_audited_on, it) } ?: stringResource(R.string.inventory_never_audited)
-    return listOfNotNull(levels, audited).joinToString(LIST_SEPARATOR)
 }

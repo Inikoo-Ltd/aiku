@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · prebrojite svaku lokaciju</string>
     <string name="inventory_audit_title">Inventura zalihe · %1$s</string>
     <string name="inventory_audit_was_counted">bilo %1$s · prebrojano %2$s</string>
-    <string name="inventory_audited_on">inventura %1$s</string>
+    <string name="inventory_audited_on">Zadnja inventura %1$s</string>
     <string name="inventory_channel_dropshipping">Dropshipping</string>
     <string name="inventory_channel_wholesale">Veleprodaja</string>
     <string name="inventory_chip_abnormalities">Abnormalnosti</string>
@@ -1488,7 +1488,7 @@
     <string name="inventory_movements_none">Još nema kretanja zaliha.</string>
     <string name="inventory_movements_sko_kicker">SKO · %1$s</string>
     <string name="inventory_movements_title">Kretanja zaliha</string>
-    <string name="inventory_never_audited">nikad inventurirano</string>
+    <string name="inventory_never_audited">Nikad inventurirano</string>
     <string name="inventory_no_location_found">Nijedna lokacija ne počinje s „%1$s”</string>
     <string name="inventory_no_locations">Ovaj SKO nema lokaciju u ovom skladištu.</string>
     <string name="inventory_not_a_location">%1$s nije lokacija u ovom skladištu</string>
@@ -2563,4 +2563,16 @@
     <string name="fulfilment_inbound_filter_title">Filtriraj isporuke</string>
     <string name="cache_saved_rows_only">Spremljena kopija: uključeni su samo prethodno učitani redovi</string>
     <string name="filter_online_only">%1$s (samo na mreži)</string>
+    <string name="conflict_whats_different">Što se razlikuje</string>
+    <string name="conflict_required">Potrebno</string>
+    <string name="conflict_stock_now">Zaliha sada</string>
+    <string name="conflict_line">Redak %1$d</string>
+    <string name="conflict_done_offline">Učinjeno izvanmrežno</string>
+    <string name="conflict_changed_by">U Aiku promijenio/la</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="one">ukupno %1$s komad</item>
+        <item quantity="few">ukupno %1$s komada</item>
+        <item quantity="other">ukupno %1$s komada</item>
+    </plurals>
+    <string name="inventory_default_for">Zadano za %1$s</string>
 </resources>

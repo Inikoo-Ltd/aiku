@@ -1428,7 +1428,7 @@
     <string name="inventory_audit_subtitle">%1$s · 逐个库位清点</string>
     <string name="inventory_audit_title">盘点库存 · %1$s</string>
     <string name="inventory_audit_was_counted">原为 %1$s · 清点为 %2$s</string>
-    <string name="inventory_audited_on">盘点于 %1$s</string>
+    <string name="inventory_audited_on">上次盘点 %1$s</string>
     <string name="inventory_channel_dropshipping">代发货</string>
     <string name="inventory_channel_wholesale">批发</string>
     <string name="inventory_chip_abnormalities">异常</string>
@@ -2343,4 +2343,14 @@
     <string name="fulfilment_inbound_filter_title">筛选入库</string>
     <string name="cache_saved_rows_only">已保存的副本：仅包含之前加载过的行</string>
     <string name="filter_online_only">%1$s（仅限在线）</string>
+    <string name="conflict_whats_different">有何不同</string>
+    <string name="conflict_required">需要数量</string>
+    <string name="conflict_stock_now">当前库存</string>
+    <string name="conflict_line">第%1$d行</string>
+    <string name="conflict_done_offline">离线完成</string>
+    <string name="conflict_changed_by">在 Aiku 中修改者</string>
+    <plurals name="inventory_stock_units">
+        <item quantity="other">共 %1$s 件</item>
+    </plurals>
+    <string name="inventory_default_for">%1$s 的默认库位</string>
 </resources>

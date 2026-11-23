@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -49,12 +50,12 @@ fun offlineIndicatorState(isOnline: Boolean, waiting: Int, needYou: Int): Offlin
 }
 
 @Composable
-fun OfflineIndicator(modifier: Modifier = Modifier) {
+fun OfflineIndicator(modifier: Modifier = Modifier, showNeedYou: Boolean = true) {
     val offlineWork = LocalOfflineIndicator.current
     val isOnline by offlineWork.isOnline.collectAsStateWithLifecycle()
     val waiting by offlineWork.waitingCount.collectAsStateWithLifecycle()
     val needYou by offlineWork.needsYouCount.collectAsStateWithLifecycle()
-    val state = offlineIndicatorState(isOnline = isOnline, waiting = waiting, needYou = needYou) ?: return
+    val state = offlineIndicatorState(isOnline = isOnline, waiting = waiting, needYou = if (showNeedYou) needYou else 0) ?: return
     val navigator = LocalAppNavigator.current
     val colors = LocalAikuColors.current
 
@@ -107,12 +108,13 @@ private fun IndicatorBar(
             .background(background)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
             .semantics { liveRegion = LiveRegionMode.Polite }
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Icon(painter = painterResource(icon), contentDescription = null, tint = content, modifier = Modifier.size(16.dp))
-        Text(text = text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = content, modifier = Modifier.weight(1f))
+        Icon(painter = painterResource(icon), contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
+        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = content, modifier = Modifier.weight(1f))
         if (onClick != null) {
-            Icon(painter = painterResource(R.drawable.ic_ui_next), contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+            Icon(painter = painterResource(R.drawable.ic_ui_next), contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
         }
     }
 }
