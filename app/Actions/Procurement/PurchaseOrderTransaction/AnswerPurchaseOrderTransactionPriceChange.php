@@ -91,8 +91,8 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
             || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
             $validator->errors()->add('answer', __('There is no new price waiting for an answer on this line'));
         } elseif ($this->get('answer') !== PurchaseOrderTransactionPriceQueryStateEnum::REJECTED->value
-            && (!AskPurchaseOrderTransactionPriceChange::isAskable($this->purchaseOrderTransaction) || AskPurchaseOrderTransactionQuantityChange::isShipped($this->purchaseOrderTransaction))) {
-            $validator->errors()->add('answer', __('The supplier has started production, the price can no longer be changed, only kept'));
+            && !AskPurchaseOrderTransactionPriceChange::isAskable($this->purchaseOrderTransaction)) {
+            $validator->errors()->add('answer', __('The goods are shipped, the price can no longer be changed, only kept'));
         }
     }
 

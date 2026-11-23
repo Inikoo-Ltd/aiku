@@ -64,3 +64,6 @@ HELP-4841 (20 Nov 2026). PrepareSupplierPurchaseOrder (supplier Shopping dashboa
 
 ## Free supplier PO references end with the organisation label
 Vika, 23 Nov 2026. A supplier without an agent numbers its POs per supplier (PP-%04d), and like an agent format that ends at the number it gets the buying organisation as suffix: PP-0021-UK, PP-0017-SK, PP-0015-ES (WithProcurementSerialReferences::organisationSuffix). The label is the organisation code, except Ancient Wisdom (country GB, not Aroma) which reads UK, as the agents' own formats (AWIndo-%03d-UK) and the old Aurora references (PP-019_UK) do. PO creation from the supplier product upload goes through the same StorePurchaseOrder path, so never give it its own numbering.
+
+## An agent asks for a new line price until the line is shipped, not until production starts
+Vika, 23 Nov 2026 (NB-AWIndo-230-UK, BBamC-10 in_warehouse). AskPurchaseOrderTransactionPriceChange::isAskable: agent order, order state open(), line submitted/confirmed, and not shipped (AskPurchaseOrderTransactionQuantityChange::isShipped). hasProductionStarted() no longer blocks it, as for quantities. The buyer can accept/adjust under the same rule (AnswerPurchaseOrderTransactionPriceChange); a shipped line can only keep its price.
