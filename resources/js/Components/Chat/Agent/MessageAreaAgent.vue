@@ -2473,7 +2473,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
             <p v-if="aiDraftInEditor" class="mt-1 px-1 text-[11px] text-pink-700">
-                {{ aiDraftEdited ? ctrans("Your reply, based on her draft") : ctrans("Her draft: read it, change what you need, then send") }}
+                {{ aiDraftEdited ? ctrans("Your reply, based on the Aura AI draft") : ctrans("Aura AI draft: read it, change what you need, then send") }}
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
