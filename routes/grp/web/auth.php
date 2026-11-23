@@ -33,6 +33,7 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Actions\SupplyChain\SupplierShareLink\CompleteSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPurchaseOrderDocument;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderNotes;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderProduction;
@@ -70,6 +71,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('purchase-orders/{purchaseOrder}/notes', UpdateSupplierPortalPurchaseOrderNotes::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.notes');
         Route::post('purchase-orders/{purchaseOrder}/deposit', UpdateSupplierPortalPurchaseOrderDeposit::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.deposit');
         Route::post('purchase-orders/{purchaseOrder}/documents', StoreSupplierPortalPurchaseOrderDocument::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.documents.store');
+        Route::post('purchase-orders/{purchaseOrder}/complete', CompleteSupplierPortalPurchaseOrder::class)->middleware('throttle:supplier-portal-submit')->whereNumber('purchaseOrder')->name('purchase_order.complete');
         Route::get('purchase-orders/{purchaseOrder}/documents/{media:ulid}', DownloadSupplierPortalPurchaseOrderDocument::class)->whereNumber('purchaseOrder')->name('purchase_order.document');
         Route::get('purchase-orders/{purchaseOrder}/receipts/{media:ulid}', DownloadSupplierPortalPaymentReceipt::class)->whereNumber('purchaseOrder')->name('purchase_order.receipt');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');

@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Actions\SupplyChain\SupplierShareLink\CompleteSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\NotifyPurchasingOfSupplierDepositRequest;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalPurchaseOrderDeposit;
@@ -58,7 +59,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, notes: array{note_list: list<array<string, mixed>>}, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, completion: array<string, mixed>, notes: array{note_list: list<array<string, mixed>>}, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
@@ -103,6 +104,7 @@ class ShowSupplierPortalPurchaseOrder
             'deposit'    => $this->deposit($purchaseOrder, $supplier),
             'production' => [...$this->production($purchaseOrder), 'production_days' => $this->productionDays($journey, $supplier)],
             'documents'  => $this->documents($purchaseOrder, $token),
+            'completion' => $this->completion($purchaseOrder),
             'notes'      => GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_SUPPLIER, true),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
         ];
@@ -329,6 +331,40 @@ class ShowSupplierPortalPurchaseOrder
             'expected_finish_at' => Arr::get($purchaseOrder->data ?? [], 'estimated_production_date'),
             'editable'           => $open && $blocked === null,
             'blocked'            => $blocked,
+        ];
+    }
+
+    /**
+     * Whether a supplier selling direct (no agent) can mark the order complete: it is agreed and open, the goods are
+     * not handed over yet and the supplier uploaded at least one shipping document. Done once handed over.
+     *
+     * @return array{available: bool, completed_at: mixed, by_supplier: bool, completable: bool, blocked: string|null}
+     */
+    public function completion(PurchaseOrder $purchaseOrder): array
+    {
+        $available = !$purchaseOrder->isAgentOrder();
+        if (!$available) {
+            return ['available' => false, 'completed_at' => null, 'by_supplier' => false, 'completable' => false, 'blocked' => null];
+        }
+
+        $handedOver  = GetPurchaseOrderStages::run($purchaseOrder)[PurchaseOrderStageEnum::HANDED_OVER->value] ?? null;
+        $completedAt = ($handedOver['recorded'] ?? false) ? ($handedOver['date'] ?? $purchaseOrder->handed_over_at) : null;
+        $isCompleted = (bool) ($handedOver['recorded'] ?? false);
+
+        $blocked = match (true) {
+            $isCompleted => null,
+            !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true) => __('This order is closed.'),
+            $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => __('The order can be completed once it is agreed.'),
+            !$this->supplierDocumentsQuery($purchaseOrder)->exists() => __('Upload at least one shipping document first.'),
+            default => null,
+        };
+
+        return [
+            'available'    => true,
+            'completed_at' => $completedAt,
+            'by_supplier'  => $isCompleted && Arr::get($purchaseOrder->data ?? [], CompleteSupplierPortalPurchaseOrder::COMPLETED_BY_SUPPLIER_KEY) !== null,
+            'completable'  => !$isCompleted && $blocked === null,
+            'blocked'      => $blocked,
         ];
     }
 

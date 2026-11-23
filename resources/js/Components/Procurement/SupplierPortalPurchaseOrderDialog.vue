@@ -107,6 +107,13 @@ interface PurchaseOrderDetail {
 		types: { value: string; label: string }[]
 		files: { type: string; file_name: string | null; uploaded_at: string | null; view_url: string; download_url: string }[]
 	}
+	completion: {
+		available: boolean
+		completed_at: string | null
+		by_supplier: boolean
+		completable: boolean
+		blocked: string | null
+	}
 	lines: {
 		id: number
 		code: string | null
@@ -129,6 +136,7 @@ const props = defineProps<{
 	productionRoute?: string
 	depositRoute?: string
 	documentsRoute?: string
+	completeRoute?: string
 	notesRoute?: string
 }>()
 
@@ -417,6 +425,38 @@ const uploadDocuments = async () => {
 	}
 }
 
+const isConfirmingCompletion = ref(false)
+const isCompleting = ref(false)
+const completionError = ref<string | null>(null)
+
+const openCompletionConfirm = () => {
+	completionError.value = null
+	isConfirmingCompletion.value = true
+}
+
+const completeOrder = async () => {
+	const id = purchaseOrderId.value
+	if (!props.completeRoute || id === null) {
+		return
+	}
+
+	isCompleting.value = true
+	completionError.value = null
+	try {
+		const { data } = await axios.post<PurchaseOrderDetail>(props.completeRoute.replace(/\/0\/complete$/, `/${id}/complete`))
+		if (purchaseOrderId.value === id) {
+			detail.value = data
+		}
+		isConfirmingCompletion.value = false
+		emit("productionSaved")
+	} catch (error: any) {
+		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
+		completionError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The order could not be completed. Try again.")
+	} finally {
+		isCompleting.value = false
+	}
+}
+
 const tomorrow = computed(() => {
 	const date = new Date()
 	date.setDate(date.getDate() + 1)
@@ -631,6 +671,27 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								</div>
 							</dl>
 						</div>
+
+						<div v-else-if="stage.key === 'handed_over' && detail.completion.available" class="mt-2 text-xs">
+							<div v-if="detail.completion.completed_at" class="flex items-center gap-1 text-green-700">
+								<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+								{{ detail.completion.by_supplier ? ctrans("Order complete") : ctrans("Handed over") }}
+							</div>
+							<div v-else-if="completeRoute && detail.order.open">
+								<span v-if="!detail.completion.completable" class="block" v-tooltip="detail.completion.blocked">
+									<Button type="tertiary" size="xs" full disabled :label="ctrans('Order complete')">
+										<template #icon><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></template>
+									</Button>
+								</span>
+								<Button v-else type="tertiary" size="xs" full :label="ctrans('Order complete')" @click="openCompletionConfirm">
+									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+								</Button>
+								<p v-if="detail.completion.blocked" class="mt-1 flex items-start gap-1 text-amber-700">
+									<FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+									<span>{{ detail.completion.blocked }}</span>
+								</p>
+							</div>
+						</div>
 					</li>
 				</ol>
 			</section>
@@ -783,6 +844,29 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				</Button>
 				<Button type="primary" full :label="depositChoice === 'request' ? ctrans('Send request') : ctrans('Confirm')" :loading="isSavingDeposit" @click="saveDeposit">
 					<template #icon><FontAwesomeIcon :icon="depositChoice === 'request' ? 'fal fa-hand-holding-usd' : 'fal fa-check'" fixed-width aria-hidden="true" /></template>
+				</Button>
+			</div>
+		</template>
+	</Dialog>
+
+	<Dialog v-model:visible="isConfirmingCompletion" modal :header="ctrans('Order complete')" :style="{ width: '26rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div v-if="detail" class="space-y-3 text-sm">
+			<p class="text-gray-700">{{ ctrans("Confirm you dispatched :reference to :organisation today. This records the Clean Hand Over (CHO) of the order.", { reference: detail.order.reference, organisation: detail.order.organisation_name }) }}</p>
+			<div>
+				<div class="mb-1 text-xs font-semibold text-gray-500">{{ ctrans("Shipping documents") }}</div>
+				<ul class="list-inside list-disc text-xs text-gray-700">
+					<li v-for="(document, documentIndex) in detail.documents.files" :key="documentIndex">{{ document.type }}: {{ document.file_name }}</li>
+				</ul>
+			</div>
+			<p v-if="completionError" class="text-xs text-red-600">{{ completionError }}</p>
+		</div>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isConfirmingCompletion = false">
+					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+				</Button>
+				<Button type="primary" full :label="ctrans('Order complete')" :loading="isCompleting" @click="completeOrder">
+					<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
 		</template>
