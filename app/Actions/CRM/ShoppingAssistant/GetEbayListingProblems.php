@@ -79,18 +79,19 @@ class GetEbayListingProblems
                 $causes[] = 'connection';
             }
 
-            $listed  = $portfolio()->where('platform_status', true)->count();
-            $drafts  = $portfolio()->where('platform_status', false)->where('data->is_platform_draft', true)->count();
-            $failed  = $portfolio()->where('platform_status', false)->where(fn ($query) => $query->whereNotNull('upload_warning')->orWhereRaw("errors_response is not null and errors_response::text not in ('{}', '[]', 'null')"));
+            $refusal     = fn ($query) => $query->whereNotNull('upload_warning')->orWhereRaw("errors_response is not null and errors_response::text not in ('{}', '[]', 'null')");
+            $listed      = $portfolio()->where('platform_status', true)->count();
+            $failed      = $portfolio()->where('platform_status', false)->where($refusal);
             $failedCount = (clone $failed)->count();
-            $waiting = $portfolio()->where('platform_status', false)->whereNull('platform_product_id')->count();
+            $drafts      = $portfolio()->where('platform_status', false)->where('data->is_platform_draft', true)->whereNot($refusal)->count();
+            $waiting     = $portfolio()->where('platform_status', false)->whereNull('platform_product_id')->whereNot($refusal)->count();
 
             $facts[] = __('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', [
                 'channel' => $name,
                 'listed'  => $number($listed),
                 'drafts'  => $number($drafts),
                 'failed'  => $number($failedCount),
-                'waiting' => $number(max(0, $waiting - $failedCount)),
+                'waiting' => $number($waiting),
             ], $locale);
 
             if ($drafts > 0) {

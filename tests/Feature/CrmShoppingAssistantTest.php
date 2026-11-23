@@ -3790,6 +3790,8 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
         $portfolio($customer, $channel, 'EB-04', false, null, ['message' => 'A user error has occurred. The item specific Brand is missing. Add Brand to this listing, enter a valid value, and then try again.']);
         $portfolio($customer, $channel, 'EB-05', false, null, [['domain' => 'API_INVENTORY', 'errorId' => 25002, 'message' => 'A user error has occurred. You are not allowed to revise an ended item "960079898083".']]);
         $portfolio($customer, $channel, 'EB-06', false);
+        $portfolio($customer, $channel, 'EB-08', false, 'A user error has occurred. This listing would cause you to exceed the number of items you can list.', null, ['is_platform_draft' => true]);
+        $portfolio($customer, $channel, 'EB-09', false);
         $portfolio($stranger, $theirs, 'XX-99', false, 'A user error has occurred. Before you can list this item we need some additional information to create a seller account.');
         $portfolio($customer, $channel, 'EB-07', false, '[{"errorId":25002,"domain":"API_INVENTORY","message":"A user error has occurred. System error. Unable to process your request. Please try again later."}]');
         $uploadLog = fn (string $status, string $response) => DB::table('platform_portfolio_logs')->insert([
@@ -3825,7 +3827,7 @@ test('on a dropshipping shop Merlin reads why products do not list on the custom
             ->and($result['content']['product_data'])->toContain('products team has been asked')
             ->and(\App\Models\Tasks\StaffTask::where('data->kind', \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantEngineerTicket::CATALOGUE_TASK_KIND)->where('data->customer_id', $customer->id)->first()?->description)->toContain('EB-04')
             ->and(json_encode($result['content']))->not->toMatch('/\d/')
-            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 4, 'waiting' => 1], 'en'))
+            ->and($fact)->toContain(__('eBay ":channel": :listed listed, :drafts drafts not published, :failed refused by eBay, :waiting not sent yet.', ['channel' => 'Moon eBay', 'listed' => 1, 'drafts' => 1, 'failed' => 5, 'waiting' => 2], 'en'))
             ->and($fact)->toContain(__('Upload as draft is on in Manage Sales Channel, so new uploads stay drafts.', [], 'en'))
             ->and($fact)->toContain('EB-03 · Bath Bomb EB-03 · '.__('Your eBay selling limit for this month is reached: upload fewer or cheaper products, ask eBay to raise your limits, or wait for next month.', [], 'en'))
             ->and($fact)->toContain('EB-04 · Bath Bomb EB-04 · '.__('eBay needs information about this product that only we can add: we are looking at it.', [], 'en'))
