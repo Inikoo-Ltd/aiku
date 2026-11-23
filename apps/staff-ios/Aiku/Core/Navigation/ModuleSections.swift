@@ -63,9 +63,9 @@ extension AppModule {
     func sections(for modules: ModuleAccess) -> [ModuleSection] {
         let all: [ModuleSection] = switch self {
         case .inventory: [
-            ModuleSection(.inventoryDashboard, "Dashboard", InventoryRoute.dashboard),
-            ModuleSection(.skoFamilies, "SKO families", InventoryRoute.families),
-            ModuleSection(.skos, "SKOs", InventoryRoute.skos),
+            ModuleSection(.inventoryDashboard, "Dashboard", InventoryRoute.dashboard, requires: .inventory),
+            ModuleSection(.skoFamilies, "SKO families", InventoryRoute.families, requires: .inventory),
+            ModuleSection(.skos, "SKOs", InventoryRoute.skos, requires: .inventory),
             ModuleSection(.storedPallets, "Stored pallets", FulfilmentRoute.pallets, requires: .fulfilment),
             ModuleSection(.storedItems, "Stored items", FulfilmentRoute.storedItems, requires: .fulfilment)
         ]
@@ -81,12 +81,12 @@ extension AppModule {
             ModuleSection(.goodsInReturns, "Returns", GoodsInRoute.returns, requires: .returns)
         ]
         case .goodsOut: [
-            ModuleSection(.goodsOutBacklog, "Backlog", GoodsOutRoute.backlog),
-            ModuleSection(.deliveryNotes, "Delivery notes", GoodsOutRoute.deliveryNotes),
-            ModuleSection(.pickingSessions, "Picking sessions", DispatchRoute.pickingSessions),
+            ModuleSection(.goodsOutBacklog, "Backlog", GoodsOutRoute.backlog, requires: .goodsOut),
+            ModuleSection(.deliveryNotes, "Delivery notes", GoodsOutRoute.deliveryNotes, requires: .goodsOut),
+            ModuleSection(.pickingSessions, "Picking sessions", DispatchRoute.pickingSessions, requires: .goodsOut),
             ModuleSection(.fulfilmentReturns, "Fulfilment returns", FulfilmentRoute.returns, requires: .fulfilment),
-            ModuleSection(.trolleys, "Trolleys", DispatchRoute.trolleys),
-            ModuleSection(.pickedBays, "Picked bays", DispatchRoute.pickedBays)
+            ModuleSection(.trolleys, "Trolleys", DispatchRoute.trolleys, requires: .goodsOut),
+            ModuleSection(.pickedBays, "Picked bays", DispatchRoute.pickedBays, requires: .goodsOut)
         ]
         }
         return all.filter { $0.requirement?.isMet(by: modules) ?? true }

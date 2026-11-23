@@ -3,242 +3,148 @@ import Testing
 @testable import Aiku
 
 struct GoodsInTests {
-    private func item(_ sko: String, delivered: Double, checked: Double? = nil, picking: String? = "A-01-01") -> GoodsInItem {
-        GoodsInItem(sko: sko, name: "[Product name]", delivered: delivered, checked: checked, pickingLocation: picking)
+    private func item(_ id: Int, state: String = "received", expected: Double = 10, checked: Double? = nil, placed: Double = 0, toPlace: Double = 0) -> MobileStockDeliveryItem {
+        MobileStockDeliveryItem(
+            id: id,
+            state: state,
+            sko: MobileGoodsInSko(id: id, code: "SKO-\(id)", name: "Item \(id)", barcode: "50\(id)"),
+            skoExpected: expected,
+            skoChecked: checked,
+            skoPlaced: placed,
+            skoToPlace: toPlace
+        )
     }
 
-    private func delivery(phase: GoodsInDeliveryPhase = .inGoodsIn, items: [GoodsInItem], dispatchedAt: Date = .now, source: GoodsInSource = .supplier, reference: String = "SDaw-0001") -> GoodsInDelivery {
-        GoodsInDelivery(reference: reference, source: source, sourceName: "[Supplier]", phase: phase, dispatchedAt: dispatchedAt, items: items)
+    private func delivery(_ state: String, items: [MobileStockDeliveryItem], actions: [String] = [], checklist: Bool = false) -> MobileStockDelivery {
+        MobileStockDelivery(
+            id: 1,
+            reference: "SD-1",
+            state: state,
+            items: items,
+            checklist: checklist ? MobileStockDeliveryChecklist(sections: []) : nil,
+            availableActions: actions.map { MobileGoodsInAction(key: $0) }
+        )
     }
 
-    @Test("Marking an arriving delivery as received moves it to Received")
-    func markAsReceived() {
-        var sample = delivery(phase: .dispatched, items: [item("SKO-1", delivered: 10)])
-        #expect(sample.state == .arriving)
+    @Test func beforeReceivingOnlyTheItemsTabShows() {
+        let arriving = delivery("dispatched", items: [item(1)])
 
-        sample.markAsReceived(label: "today 09:00")
-
-        #expect(sample.state == .received)
-        #expect(sample.receivedLabel == "today 09:00")
+        #expect(arriving.views == [.items])
+        #expect(arriving.defaultView == .items)
+        #expect(arriving.stage == .dispatched)
     }
 
-    @Test("The delivery becomes Checked once every item has a checked quantity")
-    func checkingAllItemsMovesToChecked() {
-        var sample = delivery(items: [item("SKO-1", delivered: 10), item("SKO-2", delivered: 5)])
-
-        sample.setChecked("SKO-1", quantity: 10)
-        #expect(sample.state == .received)
-
-        sample.setChecked("SKO-2", quantity: 4)
-        #expect(sample.state == .checked)
+    @Test func inGoodsInTheTabsFollowTheStateAsOnAndroid() {
+        #expect(delivery("received", items: [item(1)]).views == [.check, .place, .done])
+        #expect(delivery("booked_in", items: [item(1)], checklist: true).views == [.check, .done, .checklist])
+        #expect(delivery("placed", items: [item(1)]).views == [.done])
+        #expect(delivery("not_received", items: [item(1)]).stage == nil)
     }
 
-    @Test("Checking every item as 0 makes the delivery Not received")
-    func checkingAllAsZeroIsNotReceived() {
-        var sample = delivery(items: [item("SKO-1", delivered: 10)])
-
-        sample.setChecked("SKO-1", quantity: 0)
-
-        #expect(sample.state == .notReceived)
-        #expect(sample.item("SKO-1")?.checkStatus == .notReceived(10))
+    @Test func theDefaultTabIsWhereTheWorkIs() {
+        #expect(delivery("received", items: [item(1)]).defaultView == .check)
+        #expect(delivery("checked", items: [item(1, checked: 10, toPlace: 10)]).defaultView == .place)
+        #expect(delivery("booked_in", items: [item(1, state: "placed", checked: 10, placed: 10)]).defaultView == .done)
     }
 
-    @Test("Checked quantities are classified as exact, under, over or not received")
-    func underOverClassification() {
-        #expect(GoodsInCheckStatus.classify(checked: nil, delivered: 120) == .pending)
-        #expect(GoodsInCheckStatus.classify(checked: 120, delivered: 120) == .exact)
-        #expect(GoodsInCheckStatus.classify(checked: 108, delivered: 120) == .under(12))
-        #expect(GoodsInCheckStatus.classify(checked: 125, delivered: 120) == .over(5))
-        #expect(GoodsInCheckStatus.classify(checked: 0, delivered: 60) == .notReceived(60))
-        #expect(GoodsInCheckStatus.under(12).differenceChip == Chip("Under −12", .warn))
-        #expect(GoodsInCheckStatus.notReceived(60).differenceChip == Chip("Not received −60", .danger))
+    @Test func eachTabListsItsItems() {
+        let open = item(1)
+        let checked = item(2, checked: 5, toPlace: 5)
+        let notReceived = item(3, state: "not_received", checked: 0)
+        let placed = item(4, state: "placed", checked: 3, placed: 3)
+        let sample = delivery("booking_in", items: [open, checked, notReceived, placed])
+
+        #expect(sample.items(for: .check).map(\.id) == [1, 2, 3])
+        #expect(sample.items(for: .place).map(\.id) == [2, 4])
+        #expect(sample.items(for: .done).map(\.id) == [4])
+        #expect(sample.nextToPlace?.id == 2)
     }
 
-    @Test("Under and over counts follow the items")
-    func underOverCounts() {
-        let sample = delivery(items: [
-            item("SKO-1", delivered: 120, checked: 108),
-            item("SKO-2", delivered: 10, checked: 12),
-            item("SKO-3", delivered: 6, checked: 6),
-            item("SKO-4", delivered: 60, checked: 0)
-        ])
+    @Test func linesAreScannedByBarcodeOrCode() {
+        let items = [item(1), item(2)]
 
-        #expect(sample.underCount == 1)
-        #expect(sample.overCount == 1)
-        #expect(sample.differenceItems.map(\.sko) == ["SKO-1", "SKO-2", "SKO-4"])
+        #expect(items.matching(code: " 501 ").map(\.id) == [1])
+        #expect(items.matching(code: "sko-2").map(\.id) == [2])
+        #expect(items.matching(code: "").isEmpty)
     }
 
-    @Test("Every scan counts 1 and an unknown code is not counted")
-    func scanningCountsOne() {
-        var sample = delivery(items: [item("SKO-01187", delivered: 2)])
+    @Test func aCheckRaisedAbovePlacedStockIsNoticed() {
+        let raised = item(1, checked: 6)
 
-        #expect(sample.registerScan("sko-01187") == .counted(sko: "SKO-01187", checked: 1, delivered: 2))
-        #expect(sample.currentScanItem?.sko == "SKO-01187")
-        #expect(sample.registerScan("SKO-01187") == .counted(sko: "SKO-01187", checked: 2, delivered: 2))
-        #expect(sample.currentScanItem == nil)
-        #expect(sample.registerScan("SKO-02210") == .notOnDelivery(code: "SKO-02210"))
-        #expect(sample.state == .checked)
+        #expect(raised.wasRaised(above: 4))
+        #expect(!raised.wasRaised(above: 6))
     }
 
-    @Test("Placing never exceeds the checked quantity and adds up per location")
-    func placementArithmetic() {
-        var sample = delivery(items: [item("SKO-00953", delivered: 200, checked: 200)])
-
-        #expect(sample.place("SKO-00953", quantity: 150, in: "b-01-04") == 150)
-        #expect(sample.item("SKO-00953")?.leftToPlace == 50)
-        #expect(sample.state == .bookingIn)
-        #expect(sample.place("SKO-00953", quantity: 80, in: "C-04-02") == 50)
-        #expect(sample.item("SKO-00953")?.placementSummary == "150 in B-01-04 · 50 in C-04-02")
-        #expect(sample.place("SKO-00953", quantity: 1, in: "C-04-02") == 0)
+    @Test func checkedQuantitiesShowTheirDifference() {
+        #expect(GoodsInDifference.of(checked: 0, expected: 4).chip == Chip("Not received −4", .danger))
+        #expect(GoodsInDifference.of(checked: 3, expected: 4).chip == Chip("Under −1", .warn))
+        #expect(GoodsInDifference.of(checked: 5.5, expected: 4).chip == Chip("Over +1.5", .orange))
+        #expect(GoodsInDifference.of(checked: 4, expected: 4).description == "Matches the expected quantity")
     }
 
-    @Test("The delivery becomes Booked in when every checked item is placed")
-    func allPlacedIsBookedIn() {
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-        var sample = delivery(items: [item("SKO-1", delivered: 10, checked: 10), item("SKO-2", delivered: 5, checked: 0)])
-        sample.startBookingIn()
-        #expect(sample.state == .bookingIn)
-
-        sample.place("SKO-1", quantity: 10, in: "A-07-01", now: now)
-
-        #expect(sample.state == .bookedIn)
-        #expect(sample.bookedInAt == now)
-        sample.setAsPlaced()
-        #expect(sample.state == .placed)
+    @Test func checkedRowsCarryTheirChip() {
+        #expect(item(1).checkLook.chip == nil)
+        #expect(item(1, checked: 10).checkLook.chip == Chip("Checked", .success))
+        #expect(item(1, checked: 4).checkLook.chip == Chip("Checked · under", .warn))
+        #expect(item(1, checked: 0).checkLook.chip == Chip("Not received", .danger))
     }
 
-    @Test("Placing a new SKO can set its picking location")
-    func placingSetsPickingLocation() {
-        var sample = delivery(items: [item("SKO-02210", delivered: 6, checked: 6, picking: nil)])
+    @Test func actionsComeFromTheServer() {
+        let disabled = MobileGoodsInAction(key: "place", label: "Place", disabledReason: "Check it first")
+        let sample = MobileStockDelivery(id: 1, reference: "SD-1", state: "received", availableActions: [MobileGoodsInAction(key: "check"), disabled])
 
-        sample.place("SKO-02210", quantity: 6, in: "A-09-04", setAsPicking: true)
-
-        #expect(sample.item("SKO-02210")?.pickingLocation == "A-09-04")
+        #expect(sample.canCheck)
+        #expect(!sample.canPlace)
+        #expect(sample.availableActions.action("place")?.isDisabled == true)
     }
 
-    @Test("A placed item cannot be checked below what is already placed")
-    func checkedNeverBelowPlaced() {
-        var sample = delivery(items: [item("SKO-1", delivered: 10, checked: 10), item("SKO-2", delivered: 3)])
-        sample.place("SKO-1", quantity: 6, in: "A-01-01")
+    @Test func clearingFiltersKeepsTheStateAndSearch() {
+        let filter = GoodsInDeliveryFilter(state: .checked, source: .agents, search: "AR", dispatched: .week, sort: .reference)
 
-        sample.setChecked("SKO-1", quantity: 2)
-
-        #expect(sample.item("SKO-1")?.checked == 6)
+        #expect(filter.activeFilterCount == 2)
+        #expect(filter.isFiltered)
+        #expect(filter.cleared() == GoodsInDeliveryFilter(state: .checked, search: "AR"))
+        #expect(!GoodsInDeliveryFilter(sort: .items).cleared().isFiltered)
     }
 
-    @Test("Actions follow the delivery state and the user's rights")
-    func actionsFollowStateAndRights() {
-        let arriving = delivery(phase: .dispatched, items: [item("SKO-1", delivered: 10)])
-        #expect(GoodsInDeliveryAction.available(for: arriving, rights: .warehouseStaff) == [.markAsReceived])
-        #expect(GoodsInDeliveryAction.available(for: arriving, rights: .full) == [.markAsReceived, .unmarkAsDispatched])
-        #expect(GoodsInDeliveryAction.available(for: arriving, rights: .viewOnly).isEmpty)
+    @Test func filterQueryUsesAndroidKeys() {
+        let items = GoodsInDeliveryFilter(state: .bookingIn, source: .partners, search: " AR ", dispatched: .week, sort: .newest).query(page: 2).queryItems
 
-        let received = delivery(items: [item("SKO-1", delivered: 10, checked: 4), item("SKO-2", delivered: 3)])
-        #expect(GoodsInDeliveryAction.available(for: received, rights: .full) == [.checkItems, .placeItems, .unmarkAsReceived, .cancel])
-
-        var bookedIn = delivery(items: [item("SKO-1", delivered: 10, checked: 10)])
-        bookedIn.place("SKO-1", quantity: 10, in: "A-01-01")
-        #expect(GoodsInDeliveryAction.available(for: bookedIn, rights: .warehouseStaff).isEmpty)
-        #expect(GoodsInDeliveryAction.available(for: bookedIn, rights: .full) == [.setAsPlaced])
+        #expect(items.contains(URLQueryItem(name: "state", value: "booking_in")))
+        #expect(items.contains(URLQueryItem(name: "dispatched", value: "week")))
+        #expect(items.contains(URLQueryItem(name: "sort", value: "-date")))
+        #expect(items.contains(URLQueryItem(name: "q", value: "AR")))
     }
 
-    @Test("Cancelling is refused once something is placed")
-    func cancelOnlyWhileNothingPlaced() {
-        var sample = delivery(items: [item("SKO-1", delivered: 10, checked: 10)])
-        sample.place("SKO-1", quantity: 1, in: "A-01-01")
-
-        sample.cancel()
-
-        #expect(sample.state == .bookingIn)
+    @Test func quantitiesUseTheServerLabelOrAtMostTwoDecimals() {
+        #expect(GoodsInText.quantity(2.75, label: "2 6/8") == "2 6/8")
+        #expect(GoodsInText.quantity(1234.5) == "1234.5")
+        #expect(GoodsInText.number(1.256) == "1.26")
     }
 
-    @Test("Dispatch dates fall into today, this week or older")
-    func dispatchWindows() {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
-        let now = Date(timeIntervalSince1970: 1_800_000_000)
-
-        #expect(GoodsInDispatchWindow.classify(now.addingTimeInterval(-3600), now: now, calendar: calendar) == .today)
-        #expect(GoodsInDispatchWindow.classify(now.addingTimeInterval(-3 * 86_400), now: now, calendar: calendar) == .thisWeek)
-        #expect(GoodsInDispatchWindow.classify(now.addingTimeInterval(-10 * 86_400), now: now, calendar: calendar) == .older)
+    @Test func datesShowDayAndMonth() {
+        let utc = TimeZone(identifier: "UTC")!
+        #expect(GoodsInText.date("2026-11-11T10:30:02+00:00", timeZone: utc) == "11 Nov")
+        #expect(GoodsInText.date("2026-11-11", timeZone: utc) == "11 Nov 2026")
+        #expect(GoodsInText.date(nil) == nil)
     }
 
-    @Test("The filter matches state and source and sorts by reference")
-    func filterAndSort() {
-        let now = Date.now
-        let deliveries = [
-            delivery(phase: .dispatched, items: [item("SKO-1", delivered: 1)], source: .agent, reference: "SDaw-0003"),
-            delivery(items: [item("SKO-1", delivered: 1)], source: .supplier, reference: "SDaw-0002"),
-            delivery(phase: .dispatched, items: [item("SKO-1", delivered: 1)], source: .supplier, reference: "SDaw-0001")
-        ]
-        var filter = GoodsInDeliveryFilter(states: [.arriving], sort: .reference)
-
-        #expect(filter.apply(to: deliveries, now: now).map(\.reference) == ["SDaw-0001", "SDaw-0003"])
-
-        filter.sources = [.agent]
-        #expect(filter.apply(to: deliveries, now: now).map(\.reference) == ["SDaw-0003"])
-        #expect(filter.activeCount == 2)
-        #expect(filter.summary == "2 filters · sorted by reference")
-        #expect(GoodsInDeliveryFilter().summary == "No filters · sorted by dispatched date")
+    @Test func problemsUseTheServerMessageOrTheAndroidText() {
+        #expect(GoodsInText.problem(APIError.offline) == GoodsInText.offline)
+        #expect(GoodsInText.problem(APIError.rejected(message: "No")) == "No")
+        #expect(GoodsInText.problem(APIError.http(statusCode: 403)) == GoodsInText.forbidden)
+        #expect(GoodsInText.problem(APIError.http(statusCode: 500)) == GoodsInText.server)
+        #expect(GoodsInText.isUnsure(APIError.offline))
+        #expect(GoodsInText.isUnsure(APIError.http(statusCode: 503)))
+        #expect(!GoodsInText.isUnsure(APIError.http(statusCode: 422)))
     }
 
-    @Test("Backlog counts group deliveries by state")
-    func backlogCounts() {
-        let now = Date.now
-        var booked = delivery(items: [item("SKO-1", delivered: 1, checked: 1)])
-        booked.place("SKO-1", quantity: 1, in: "A-01-01", now: now)
-        let counts = GoodsInBacklogCounts.count([
-            delivery(phase: .dispatched, items: [item("SKO-1", delivered: 1)]),
-            delivery(items: [item("SKO-1", delivered: 1)]),
-            booked
-        ], now: now)
-
-        #expect(counts == GoodsInBacklogCounts(arriving: 1, received: 1, checked: 0, bookingIn: 0, bookedInLastWeek: 1))
-    }
-
-    @Test("Sample data matches the design list counts")
-    @MainActor
-    func sampleDataCounts() {
-        let store = GoodsInStore()
-
-        #expect(store.count(in: .state(.arriving)) == 3)
-        #expect(store.count(in: .state(.received)) == 2)
-        #expect(store.count(in: .state(.checked)) == 1)
-        #expect(store.count(in: .state(.bookingIn)) == 1)
-        #expect(store.delivery("SDaw-0091").placedItemCount == 2)
-        #expect(store.delivery("unknown").reference == "SDaw-0093")
-    }
-
-    @Test("The store moves a delivery from Arriving to Booked in")
-    @MainActor
-    func storeFlow() {
-        let store = GoodsInStore(deliveries: [delivery(phase: .dispatched, items: [item("SKO-1", delivered: 4)])], returns: [])
-
-        store.markAsReceived("SDaw-0001")
-        store.setChecked("SDaw-0001", sko: "SKO-1", quantity: 4)
-        #expect(store.delivery("SDaw-0001").state == .checked)
-
-        store.place("SDaw-0001", sko: "SKO-1", quantity: 4, in: "A-07-01")
-        #expect(store.delivery("SDaw-0001").state == .bookedIn)
-    }
-
-    @Test("A return moves from Received to Returning to Returned as items are processed")
-    func returnFlow() {
-        var sample = GoodsInReturn(reference: "[Return ref] 0409", customer: "[Customer]", items: [
-            GoodsInReturnItem(sko: "SKO-00733", name: "Bath bomb – rose 180g", quantity: 2, homeLocation: "A-03-02"),
-            GoodsInReturnItem(sko: "SKO-01187", name: "Soy wax candle – vanilla", quantity: 1, homeLocation: "A-07-01")
-        ])
-        #expect(sample.state == .received)
-
-        sample.process("SKO-00733", outcome: .toLocation("A-03-02"))
-        #expect(sample.state == .returning)
-        #expect(sample.listSubtitle == "[Customer] · 1 of 2 items processed")
-
-        sample.setAsReturned()
-        #expect(sample.state == .returning)
-
-        sample.process("SKO-01187", outcome: .damaged)
-        sample.setAsReturned()
-        #expect(sample.state == .returned)
+    @Test func stateTonesMatchAndroid() {
+        #expect(GoodsInText.deliveryTone("received") == .info)
+        #expect(GoodsInText.deliveryTone("booking_in") == .lime)
+        #expect(GoodsInText.deliveryTone("placed") == .success)
+        #expect(GoodsInText.deliveryTone("cancelled") == .danger)
+        #expect(GoodsInText.returnTone("returning") == .info)
+        #expect(GoodsInText.returnTone("done") == .success)
     }
 }

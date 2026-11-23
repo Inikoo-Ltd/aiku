@@ -23,7 +23,12 @@ struct FulfilmentReturnsView: View {
             }
             SearchField(text: $feed.search, placeholder: "Search reference or customer")
             if let message = feed.loadError {
-                InlineAlert(title: "Couldn’t load the fulfilment returns", message: message)
+                GoodsOutLoadProblem(title: "Couldn’t load the fulfilment returns", message: message) {
+                    Task {
+                        guard let warehouseID else { return }
+                        await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+                    }
+                }
             }
             rows
             FulfilmentNote("Each return is whole pallets or stored items. Stored item returns from a customer’s shop show the platform.")

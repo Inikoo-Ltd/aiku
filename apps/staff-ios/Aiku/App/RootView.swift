@@ -135,7 +135,7 @@ struct RootView: View {
         session.modules = .everything
         LocationsStore.shared.resetToSample()
         InventoryFamiliesFeed.shared.reset()
-        GoodsInStore.shared.resetToSample()
+        GoodsInFeeds.shared.reset()
         PalletDeliveriesFeed.shared.reset()
         WorkBadgesStore.shared.reset()
         ShellInboxStore.shared.reset()

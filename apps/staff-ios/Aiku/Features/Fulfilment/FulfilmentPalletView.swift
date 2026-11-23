@@ -61,6 +61,11 @@ private struct StoredPalletScreen: View {
 
     private func loaded(_ pallet: MobileStoredPallet) -> some View {
         AppScreen(title: pallet.reference, kicker: PalletDeliveryText.joined([FulfilmentStorageText.typeText(pallet) ?? "Pallet", pallet.customer?.name])) {
+            if let message = live.loadError {
+                GoodsOutLoadProblem(title: "Couldn’t refresh this pallet", message: message) {
+                    Task { await live.load() }
+                }
+            }
             facts(pallet)
             incidentNotice(pallet)
             details(pallet)
@@ -98,18 +103,18 @@ private struct StoredPalletScreen: View {
 
     private func facts(_ pallet: MobileStoredPallet) -> some View {
         var facts = [
-            GoodsInFact("State", pallet.stateLabel ?? pallet.state),
-            GoodsInFact("Status", pallet.statusLabel ?? pallet.status ?? "—"),
-            GoodsInFact("Type", FulfilmentStorageText.typeText(pallet) ?? "—"),
-            GoodsInFact("Location", FulfilmentStorageText.locationText(pallet))
+            GoodsInField("State", pallet.stateLabel ?? pallet.state),
+            GoodsInField("Status", pallet.statusLabel ?? pallet.status ?? "—"),
+            GoodsInField("Type", FulfilmentStorageText.typeText(pallet) ?? "—"),
+            GoodsInField("Location", FulfilmentStorageText.locationText(pallet))
         ]
         if let customerReference = PalletDeliveryText.quoted(pallet.customerReference) {
-            facts.append(GoodsInFact("Customer ref", customerReference))
+            facts.append(GoodsInField("Customer ref", customerReference))
         }
         if let notes = pallet.notes, !notes.isEmpty {
-            facts.append(GoodsInFact("Notes", notes))
+            facts.append(GoodsInField("Notes", notes))
         }
-        return GoodsInFactGrid(title: "Pallet", facts: facts)
+        return GoodsInFieldGrid(title: "Pallet", fields: facts)
     }
 
     @ViewBuilder
@@ -177,9 +182,14 @@ private struct StoredPalletScreen: View {
                 }
                 if canAudit {
                     if canMove { RowDivider() }
-                    ListRow(pallet.openAuditId != nil ? "Continue audit" : "Stored item audit", subtitle: "Count the items on this pallet", icon: .check, iconTone: .info) {
+                    ListRow(pallet.openAuditId != nil ? "Continue audit" : "Stored item audit", subtitle: "Count the items on this pallet", icon: .check, iconTone: .info, action: {
                         Task { await live.startAudit() }
-                    }
+                    }, trailing: {
+                        if live.working == "audit" {
+                            ProgressView()
+                                .accessibilityLabel("Starting the audit")
+                        }
+                    })
                     .disabled(live.isWorking)
                     .accessibilityIdentifier("fulfilment.pallet.audit")
                 }
@@ -230,7 +240,7 @@ private struct MovePalletSheet: View {
             }
         } footer: {
             if let target = live.pickedLocation {
-                AikuButton("Move to \(target.code)", icon: .locations) {
+                AikuButton("Move to \(target.code)", icon: .locations, isLoading: live.working == "move") {
                     Task {
                         if await live.move(to: target) { onClose() }
                     }
@@ -296,7 +306,7 @@ private struct PalletIncidentReportSheet: View {
             HelperText("Saved as the incident report with your name and today’s date. The pallet’s location is cleared.")
         } footer: {
             if let selected {
-                AikuButton(selected == "lost" ? "Set as lost" : "Set as damaged", look: FulfilmentInboundActionLooks.look(for: selected == "lost" ? "lost" : "damaged")) {
+                AikuButton(selected == "lost" ? "Set as lost" : "Set as damaged", look: FulfilmentInboundActionLooks.look(for: selected == "lost" ? "lost" : "damaged"), isLoading: live.working == "incident") {
                     Task {
                         if await live.reportIncident(state: selected, message: String(note.prefix(1000))) { onClose() }
                     }

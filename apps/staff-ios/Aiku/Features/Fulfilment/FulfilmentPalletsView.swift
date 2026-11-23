@@ -8,6 +8,7 @@ struct FulfilmentPalletsView: View {
     @State private var feed = StoredPalletsFeed()
     @State private var warehouseStore = WarehouseStore.shared
     @State private var lookingUpCode: String?
+    @State private var scanMisses = 0
 
     @State private var appearance = 0
 
@@ -21,7 +22,7 @@ struct FulfilmentPalletsView: View {
             FilterChipBar(options: StoredPalletFilter.allCases, selection: $feed.filter, title: \.title) { filter in
                 filter.count(in: feed.counts)
             }
-            SearchField(text: $feed.search, placeholder: "Search pallet, customer ref or location")
+            SearchField(text: $feed.search, placeholder: "Search pallet, customer ref or location", onScan: { router.select(.scan) })
             if feed.filter == .incidents {
                 Card {
                     ListRow("Incident reports", subtitle: "What was reported, by whom and when", icon: .warning, iconTone: .danger) {
@@ -34,7 +35,12 @@ struct FulfilmentPalletsView: View {
                 InlineAlert(tone: .info, title: "Looking up \(lookingUpCode)…")
             }
             if let message = feed.loadError {
-                InlineAlert(title: "Couldn’t load the pallets", message: message)
+                GoodsOutLoadProblem(title: "Couldn’t load the pallets", message: message) {
+                    Task {
+                        guard let warehouseID else { return }
+                        await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+                    }
+                }
             }
             StoredPalletRows(feed: feed, warehouseID: warehouseID, showsIncident: false, emptyTitle: "No pallets here.") { pallet in
                 router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference))
@@ -57,6 +63,7 @@ struct FulfilmentPalletsView: View {
         .hardwareScanner { code in
             Task { await openScanned(code) }
         }
+        .scanMissFeedback(scanMisses)
     }
 
     private func openScanned(_ code: String) async {
@@ -73,6 +80,7 @@ struct FulfilmentPalletsView: View {
             if result.scanType == .pallet, let pallet = result.pallet {
                 router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference))
             } else {
+                scanMisses += 1
                 toasts.show("\(scanned) is not a pallet in this warehouse", tone: .info)
             }
         } catch {

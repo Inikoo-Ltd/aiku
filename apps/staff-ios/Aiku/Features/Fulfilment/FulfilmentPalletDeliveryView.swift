@@ -46,6 +46,7 @@ private struct PalletDeliveryScreen: View {
     @State private var confirm: PalletDeliveryConfirm?
     @State private var sheetPallet: SheetPallet?
     @State private var isScanningLocation = false
+    @State private var scanMisses = 0
 
     var body: some View {
         Group {
@@ -96,6 +97,7 @@ private struct PalletDeliveryScreen: View {
         .hardwareScanner(isEnabled: delivery.canScanForBookIn && confirm == nil && sheetPallet == nil && !isScanningLocation) { code in
             Task { await scanForBookIn(code, delivery: delivery) }
         }
+        .scanMissFeedback(scanMisses)
         .aikuSheet(item: $sheetPallet) { item in
             if let pallet = live.delivery?.pallet(item.id) {
                 palletSheet(pallet)
@@ -128,13 +130,24 @@ private struct PalletDeliveryScreen: View {
     private func screen<Content: View>(_ delivery: MobilePalletDeliveryDetail, kicker: String, @ViewBuilder content: () -> Content) -> some View {
         if let footer = footerKind(delivery) {
             AppScreen(title: delivery.reference, kicker: kicker) {
+                refreshProblem
                 content()
             } footer: {
                 footerView(footer, delivery: delivery)
             }
         } else {
             AppScreen(title: delivery.reference, kicker: kicker) {
+                refreshProblem
                 content()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var refreshProblem: some View {
+        if let message = live.loadError {
+            GoodsOutLoadProblem(title: "Couldn’t refresh this delivery", message: message) {
+                Task { await live.load() }
             }
         }
     }
@@ -220,20 +233,20 @@ private struct PalletDeliveryScreen: View {
     private func countsCard(_ delivery: MobilePalletDeliveryDetail) -> some View {
         let counts = delivery.counts
         var facts = [
-            GoodsInFact("Pallets", counts.pallets.grouped),
-            GoodsInFact("Boxes", counts.boxes.grouped),
-            GoodsInFact("Oversize", counts.oversizes.grouped),
-            GoodsInFact("Total", counts.total.grouped)
+            GoodsInField("Pallets", counts.pallets.grouped),
+            GoodsInField("Boxes", counts.boxes.grouped),
+            GoodsInField("Oversize", counts.oversizes.grouped),
+            GoodsInField("Total", counts.total.grouped)
         ]
         if delivery.state != "confirmed" {
             facts += [
-                GoodsInFact("Received", (counts.received ?? 0).grouped),
-                GoodsInFact("Booking in", (counts.bookingIn ?? 0).grouped),
-                GoodsInFact("Booked in", counts.bookedIn.grouped),
-                GoodsInFact("Not received", counts.notReceived.grouped)
+                GoodsInField("Received", (counts.received ?? 0).grouped),
+                GoodsInField("Booking in", (counts.bookingIn ?? 0).grouped),
+                GoodsInField("Booked in", counts.bookedIn.grouped),
+                GoodsInField("Not received", counts.notReceived.grouped)
             ]
         }
-        return GoodsInFactGrid(title: "Summary", facts: facts)
+        return GoodsInFieldGrid(title: "Summary", fields: facts)
     }
 
     @ViewBuilder
@@ -334,7 +347,7 @@ private struct PalletDeliveryScreen: View {
                 FieldError(fieldError)
             }
             if canBookIn, let target = live.pickedLocation {
-                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in")) {
+                AikuButton("Book in at \(target.code)", look: FulfilmentInboundActionLooks.look(for: "book_in"), isLoading: live.isWorking(on: "book_in")) {
                     Task { await live.bookIn(pallet.id, location: target) }
                 }
                 .disabled(live.isWorking)
@@ -342,7 +355,7 @@ private struct PalletDeliveryScreen: View {
             }
             HStack(spacing: 8) {
                 if let notReceived {
-                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key)) {
+                    AikuButton(notReceived.label.isEmpty ? "Not received" : notReceived.label, look: FulfilmentInboundActionLooks.look(for: notReceived.key), isLoading: live.isWorking(on: "not_received")) {
                         confirm = .notReceived(id: pallet.id, reference: pallet.reference)
                     }
                     .disabled(live.isWorking)
@@ -388,7 +401,7 @@ private struct PalletDeliveryScreen: View {
             router.open(FulfilmentRoute.pallets)
         }
         AikuButton("Next delivery", icon: .next) {
-            router.back()
+            router.replace(with: FulfilmentRoute.deliveries)
         }
         .accessibilityIdentifier("fulfilment.delivery.next")
     }
@@ -466,19 +479,19 @@ private struct PalletDeliveryScreen: View {
     private func footerView(_ kind: FooterKind, delivery: MobilePalletDeliveryDetail) -> some View {
         switch kind {
         case .receive(let action):
-            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Mark as received" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "receive")) {
                 confirm = .receive
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.receive")
         case .startBooking(let action):
-            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Start booking in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "start_booking")) {
                 Task { await live.startBooking() }
             }
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.startBookingIn")
         case .finish(let action):
-            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key)) {
+            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "finish_booking")) {
                 confirm = .finish
             }
             .disabled(live.isWorking)
@@ -537,6 +550,7 @@ private struct PalletDeliveryScreen: View {
 
     private func scanForBookIn(_ code: String, delivery: MobilePalletDeliveryDetail) async {
         if case .notOnDelivery(let scanned) = await live.scanForBookIn(code) {
+            scanMisses += 1
             toasts.show("\(scanned) is not a pallet of \(delivery.reference). Scan the pallet label first.", tone: .info)
         }
     }

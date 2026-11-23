@@ -8,6 +8,8 @@ struct GoodsInAPITests {
         let responses: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
+        private var statuses: [String: Int] = [:]
+        private var bodies: [String: String] = [:]
 
         init(responses: [String: String]) {
             self.responses = responses
@@ -17,13 +19,29 @@ struct GoodsInAPITests {
             lock.withLock { recorded }
         }
 
-        private func record(_ request: URLRequest) {
-            lock.withLock { recorded.append(request) }
+        func fail(_ path: String, status: Int, body: String = "{}") {
+            lock.withLock {
+                statuses[path] = status
+                bodies[path] = body
+            }
+        }
+
+        func heal(_ path: String) {
+            lock.withLock {
+                statuses[path] = nil
+                bodies[path] = nil
+            }
         }
 
         func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-            record(request)
             let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            let failure: (Int, String)? = lock.withLock {
+                recorded.append(request)
+                return statuses[path].map { ($0, bodies[path] ?? "{}") }
+            }
+            if let failure {
+                return (Data(failure.1.utf8), HTTPURLResponse(url: request.url!, statusCode: failure.0, httpVersion: nil, headerFields: nil)!)
+            }
             guard let body = responses[path] else {
                 return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
             }
@@ -51,16 +69,28 @@ struct GoodsInAPITests {
         "mobile/warehouses/1/returns/635/items/6427/returned": #"{"data":"# + returnDetail + #","result":{"status":"done","message":"Returned"}}"#,
     ]
 
-    private func setUp() -> (GoodsInStore, RecordingTransport, APIClient) {
+    private func setUp() -> (GoodsInService, RecordingTransport) {
         let transport = RecordingTransport(responses: Self.responses)
         let client = APIClient(
             configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
             transport: transport,
             tokenProvider: { "1|tok" }
         )
-        let store = GoodsInStore(deliveries: [], returns: [])
-        store.prepareRemote(warehouseID: 1, apiClient: client)
-        return (store, transport, client)
+        return (.live(client), transport)
+    }
+
+    private func loadedDelivery() async -> (GoodsInDeliveryFeed, RecordingTransport) {
+        let (service, transport) = setUp()
+        let feed = GoodsInDeliveryFeed(warehouseID: 1, deliveryID: 36604, service: service)
+        await feed.load()
+        return (feed, transport)
+    }
+
+    private func loadedReturn() async -> (GoodsInReturnFeed, RecordingTransport) {
+        let (service, transport) = setUp()
+        let feed = GoodsInReturnFeed(warehouseID: 1, returnID: 635, service: service)
+        await feed.load()
+        return (feed, transport)
     }
 
     private func body(_ request: URLRequest?) throws -> [String: Any] {
@@ -68,300 +98,203 @@ struct GoodsInAPITests {
         return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    private func waitFor(_ condition: () -> Bool) async {
-        for _ in 0..<50 where !condition() {
-            try? await Task.sleep(for: .milliseconds(20))
+    private func last(_ transport: RecordingTransport, _ suffix: String) -> URLRequest? {
+        transport.requests.last { $0.url?.path.hasSuffix(suffix) == true }
+    }
+
+    @Test func hubKeepsNullFiguresHiddenAndOpensTheListItCounts() async throws {
+        let (service, _) = setUp()
+        let feed = GoodsInBacklogFeed(warehouseID: 1, service: service)
+        await feed.load()
+        let rows = try #require(feed.rows)
+
+        #expect(rows.map(\.key) == ["stock_deliveries", "returns"])
+        #expect(rows[0].counts.map(\.figure) == [.arriving, .received, .checked, .bookingIn, .bookedInWeek, .placedWeek])
+        #expect(rows[1].counts.map(\.figure) == [.received, .bookingIn])
+        #expect(rows[0].source == .suppliers)
+        #expect(GoodsInHubFigure.arriving.deliveryState == .dispatched)
+        #expect(GoodsInHubFigure.bookedInWeek.deliveryState == .bookedIn)
+        #expect(GoodsInHubFigure.bookingIn.returnState == .returning)
+        #expect(GoodsInHubFigure.checked.returnState == nil)
+    }
+
+    @Test func hubRowsFollowTheWarehouseRights() async throws {
+        let (service, _) = setUp()
+        let feed = GoodsInBacklogFeed(warehouseID: 1, service: service)
+        await feed.load()
+        let rows = try #require(feed.rows)
+        let returnsOnly = MobileWarehouse.Abilities(viewLocations: false, editLocations: false, viewReturns: true)
+
+        #expect(rows.filter { $0.isVisible(returnsOnly) }.map(\.key) == ["returns"])
+    }
+
+    @Test func listAsksForTheChosenStateAndKeepsTheCounts() async throws {
+        let (service, transport) = setUp()
+        let feed = GoodsInDeliveriesFeed(warehouseID: 1, filter: GoodsInDeliveryFilter(state: .dispatched, source: .partners), service: service)
+
+        await feed.start()
+
+        let query = URLComponents(url: try #require(transport.requests.last?.url), resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(query.contains(URLQueryItem(name: "state", value: "dispatched")))
+        #expect(query.contains(URLQueryItem(name: "source", value: "partners")))
+        #expect(feed.list.rows.map(\.reference) == ["AR27075"])
+        #expect(feed.list.total == 12)
+        #expect(feed.list.canLoadMore)
+        #expect(feed.counts?.count("placed") == 11739)
+        #expect(GoodsInRowText.delivery(feed.list.rows[0]) == "AW Aromatics Ltd · 39 items · Dispatched 11 Nov")
+    }
+
+    @Test func theFilterSheetShowsHowManyDeliveriesItWouldList() async throws {
+        let (service, _) = setUp()
+        let feed = GoodsInDeliveriesFeed(warehouseID: 1, filter: GoodsInDeliveryFilter(state: .dispatched), service: service)
+        await feed.start()
+
+        #expect(feed.total(for: feed.filter) == 12)
+
+        var draft = feed.filter
+        draft.source = .agents
+        feed.previewTotal(draft)
+        for _ in 0..<40 where feed.total(for: draft) == nil {
+            try await Task.sleep(for: .milliseconds(25))
         }
+        #expect(feed.total(for: draft) == 12)
     }
 
-    @Test func hubFillsTheBacklogCards() async {
-        let (store, _, client) = setUp()
+    @Test func detailDecodesItemsChecklistLocationsAndActions() async throws {
+        let (feed, _) = await loadedDelivery()
+        let delivery = try #require(feed.delivery)
+        let item = try #require(delivery.item(177817))
 
-        await store.loadHub(apiClient: client)
-
-        let deliveries = store.backlogCounts(for: [.supplier, .production])
-        #expect(deliveries.arriving == 1)
-        #expect(deliveries.received == 2)
-        #expect(deliveries.bookedInLastWeek == 4)
-        #expect(store.returnsBacklog.received == 14)
+        #expect(item.code == "ABB-07a")
+        #expect(item.needsCheck)
+        #expect(item.locations.first?.location.code == "67A6")
+        #expect(item.locations.first?.quantityLabel == "2 6/8")
+        #expect(delivery.checklist?.check("seal")?.label == "Seal intact")
+        #expect(delivery.views == [.check, .place, .done, .checklist])
+        #expect(delivery.defaultView == .check)
+        #expect(delivery.canCheck && delivery.canPlace)
+        #expect(!delivery.canRecordChecks)
     }
 
-    @Test func listUsesTheServerStateBucketAndCounts() async throws {
-        let (store, transport, client) = setUp()
-        store.listScope = .state(.arriving)
+    @Test func checkingWaitsForAikuAndShowsItsMessage() async throws {
+        let (feed, transport) = await loadedDelivery()
 
-        await store.reloadList(apiClient: client)
+        await feed.check(itemID: 177817, skoQuantity: 30)
 
-        let items = URLComponents(url: try #require(transport.requests.last?.url), resolvingAgainstBaseURL: false)?.queryItems ?? []
-        #expect(items.contains(URLQueryItem(name: "state", value: "dispatched")))
-        #expect(store.count(in: .state(.arriving)) == 8)
-        #expect(store.count(in: .state(.checked)) == 2)
-        #expect(store.hasMorePages)
-        let row = try #require(store.listedDeliveries().first)
-        #expect(row.reference == "AR27075")
-        #expect(row.state == .arriving)
-        #expect(row.source == .partner)
-        #expect(row.listSubtitle().contains("39 items"))
-    }
-
-    @Test func detailMapsItemsChecklistAndLocations() async throws {
-        let (store, _, client) = setUp()
-        store.listScope = .all
-        await store.reloadList(apiClient: client)
-
-        await store.loadDelivery("AR27075", apiClient: client)
-
-        let delivery = store.delivery("AR27075")
-        #expect(delivery.isDetailLoaded)
-        #expect(delivery.state == .received)
-        #expect(delivery.purchaseOrders == "Purchase orders PO-1")
-        #expect(delivery.deliveryFacts.contains(GoodsInFact("Tracking", "TRK1")))
-        #expect(delivery.checks.first?.id == "seal")
-        let item = try #require(delivery.items.first)
-        #expect(item.sko == "ABB-07a")
-        #expect(item.delivered == 33)
-        #expect(item.checked == nil)
-        #expect(item.pickingLocation == "67A6")
-        #expect(item.locationLinks["67A6"] == 77204)
-    }
-
-    @Test func serverActionsDecideWhatTheDeliveryOffers() async {
-        let (store, _, client) = setUp()
-        store.listScope = .all
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-
-        let actions = GoodsInDeliveryAction.available(for: store.delivery("AR27075"), rights: .full)
-
-        #expect(actions == [.checkItems])
-    }
-
-    @Test func checkedItemsCanBePlacedBeforeBookingInLikeAndroid() async {
-        let (store, _, client) = setUp()
-        store.listScope = .all
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-
-        store.setChecked("AR27075", sko: "ABB-07a", quantity: 30)
-        let delivery = store.delivery("AR27075")
-
-        #expect(GoodsInDeliveryAction.available(for: delivery, rights: .full).contains(.placeItems))
-        #expect(delivery.nextItemToPlace?.sko == "ABB-07a")
-        #expect(delivery.state == .received)
-    }
-
-    @Test func checkingAnItemSendsTheCountedSkos() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-
-        store.setChecked("AR27075", sko: "ABB-07a", quantity: 30)
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/check") == true } }
-
-        let request = transport.requests.last { $0.url?.path.hasSuffix("/items/177817/check") == true }
+        let request = last(transport, "/items/177817/check")
         #expect(request?.httpMethod == "POST")
-        #expect(try body(request)["sko_quantity"] as? Double == 30)
+        #expect(try body(request)["sko_quantity"] as? Int == 30)
+        #expect(feed.event == .done(message: "Checked", isNothingChanged: false, wasRaised: false))
+        #expect(feed.delivery?.item(177817)?.skoChecked == nil)
+        #expect(!feed.isWorking)
+    }
+
+    @Test func aRefusedCheckChangesNothingAndSaysWhy() async throws {
+        let (feed, transport) = await loadedDelivery()
+        transport.fail("mobile/warehouses/1/stock-deliveries/36604/items/177817/check", status: 422, body: #"{"message":"The quantity is too big.","errors":{"sko_quantity":["The quantity is too big."]}}"#)
+
+        await feed.check(itemID: 177817, skoQuantity: 3000)
+
+        #expect(feed.event == .refused(message: "The quantity is too big."))
+        #expect(feed.writeErrors["sko_quantity"] == "The quantity is too big.")
+        #expect(feed.delivery?.item(177817)?.skoChecked == nil)
+    }
+
+    @Test func aServerErrorIsReportedNotHidden() async throws {
+        let (feed, transport) = await loadedDelivery()
+        transport.fail("mobile/warehouses/1/stock-deliveries/36604/check-all", status: 500)
+
+        await feed.checkAll()
+
+        #expect(feed.event == .refused(message: GoodsInText.server))
+        #expect(feed.delivery?.items.allSatisfy { $0.skoChecked == nil } == true)
     }
 
     @Test func placingInAKnownLocationSendsItsLinkAndARequestID() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-        store.setChecked("AR27075", sko: "ABB-07a", quantity: 33)
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/check") == true } }
-        await store.loadDelivery("AR27075", apiClient: client)
-        if let index = store.deliveries.firstIndex(where: { $0.reference == "AR27075" }) {
-            store.deliveries[index].items[0].checked = 33
-        }
+        let (feed, transport) = await loadedDelivery()
 
-        store.place("AR27075", sko: "ABB-07a", quantity: 10, in: "67a6")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place") == true } }
+        await feed.place(itemID: 177817, quantity: 10, target: .link(locationOrgStockID: 77204, code: "67A6"), setAsPickingLocation: false)
 
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/place") == true })
-        #expect(sent["quantity"] as? Double == 10)
+        let sent = try body(last(transport, "/items/177817/place"))
+        #expect(sent["quantity"] as? Int == 10)
         #expect(sent["location_org_stock_id"] as? Int == 77204)
         #expect(sent["location_id"] == nil)
+        #expect(sent["set_as_picking_location"] as? Bool == false)
         #expect(UUID(uuidString: sent["client_request_id"] as? String ?? "") != nil)
     }
 
-    @Test func returningAnItemStartsTheReturnFirst() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadReturns(apiClient: client)
-        #expect(store.listedReturns.first?.listSubtitle == "Thimble and Wick · 2 items")
-        await store.loadReturn("GB591132-r2", apiClient: client)
+    @Test func placingInAnotherLocationSendsTheLocationAndPlaceAllSendsNoQuantity() async throws {
+        let (feed, transport) = await loadedDelivery()
 
-        store.processReturnItem("GB591132-r2", sko: "GemTG-20", outcome: .toLocation("27A12"))
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/returned") == true } }
+        await feed.placeAll(itemID: 177817, target: .location(locationID: 1594, code: "27A12"), setAsPickingLocation: true)
 
-        let paths = transport.requests.map { $0.url?.path ?? "" }
-        let start = try #require(paths.firstIndex { $0.hasSuffix("/returns/635/start") })
-        let returned = try #require(paths.firstIndex { $0.hasSuffix("/items/6427/returned") })
-        #expect(start < returned)
-        #expect(try body(transport.requests[returned])["location_org_stock_id"] as? Int == 157240)
-    }
-
-    @Test func actionsWithoutAnEndpointSayTheyAreDoneOnTheWeb() {
-        let (store, _, _) = setUp()
-
-        store.cancel("AR27075")
-
-        #expect(store.actionError == "Cancelling a stock delivery is done on the web for now.")
-    }
-
-    @Test func signingOutGoesBackToSampleData() {
-        let (store, _, _) = setUp()
-
-        store.resetToSample()
-
-        #expect(!store.isRemote)
-        #expect(!store.deliveries.isEmpty)
-    }
-
-    @Test func fractionalSkosShowAsThePackAndLooseUnitsTheWebShows() {
-        #expect(GoodsInQuantity.text(2.75, packedIn: 8) == "2 6/8")
-        #expect(GoodsInQuantity.text(0.25, packedIn: 8) == "2/8")
-        #expect(GoodsInQuantity.text(33, packedIn: 8) == "33")
-        #expect(GoodsInQuantity.text(1.5) == "1.5")
-        #expect(GoodsInQuantity.text(2.3333, packedIn: 8) == "2.3333")
-    }
-
-    @Test func fractionalExpectedQuantityIsKeptAndSentWhole() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-        if let index = store.deliveries.firstIndex(where: { $0.reference == "AR27075" }) {
-            store.deliveries[index].items[0] = GoodsInItem(sko: "ABB-07a", name: "", delivered: 2.75, remoteID: 177817, packedIn: 8)
-        }
-        let item = try #require(store.delivery("AR27075").item("ABB-07a"))
-
-        #expect(item.text(item.delivered) == "2 6/8")
-
-        store.setChecked("AR27075", sko: "ABB-07a", quantity: item.delivered)
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/check") == true } }
-
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/check") == true })
-        #expect(sent["sko_quantity"] as? Double == 2.75)
-    }
-
-    @Test func fullyCheckedFractionalItemIsExactNotUnder() {
-        let item = GoodsInItem(sko: "ABB-07a", name: "", delivered: 2.75, checked: 2.75, packedIn: 8)
-
-        #expect(item.checkStatus == .exact)
-        #expect(item.leftToCheck == 0)
-        #expect(item.leftToPlace == 2.75)
-    }
-
-    @Test func placingTheWholeRemainderUsesPlaceAllWithoutAQuantity() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-        if let index = store.deliveries.firstIndex(where: { $0.reference == "AR27075" }) {
-            var item = GoodsInItem(sko: "ABB-07a", name: "", delivered: 2.75, checked: 2.75, remoteID: 177817, packedIn: 8)
-            item.locationLinks = ["67A6": 77204]
-            store.deliveries[index].items[0] = item
-        }
-
-        let placed = store.place("AR27075", sko: "ABB-07a", quantity: 2.75, in: "67A6")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place-all") == true } }
-
-        #expect(placed == 2.75)
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/place-all") == true })
+        let sent = try body(last(transport, "/items/177817/place-all"))
         #expect(sent["quantity"] == nil)
-        #expect(sent["location_org_stock_id"] as? Int == 77204)
+        #expect(sent["location_id"] as? Int == 1594)
+        #expect(sent["set_as_picking_location"] as? Bool == true)
     }
 
-    @Test func placingPartOfAFractionalRemainderSendsTheQuantity() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
-        if let index = store.deliveries.firstIndex(where: { $0.reference == "AR27075" }) {
-            var item = GoodsInItem(sko: "ABB-07a", name: "", delivered: 2.75, checked: 2.75, remoteID: 177817, packedIn: 8)
-            item.locationLinks = ["67A6": 77204]
-            store.deliveries[index].items[0] = item
-        }
+    @Test func anUnsurePlacementIsRetriedWithTheSameRequestID() async throws {
+        let (feed, transport) = await loadedDelivery()
+        let path = "mobile/warehouses/1/stock-deliveries/36604/items/177817/place"
+        transport.fail(path, status: 502)
 
-        store.place("AR27075", sko: "ABB-07a", quantity: 1.25, in: "67A6")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/place") == true } }
+        await feed.place(itemID: 177817, quantity: 4, target: .link(locationOrgStockID: 77204, code: "67A6"), setAsPickingLocation: false)
+        let first = try body(last(transport, "/items/177817/place"))["client_request_id"] as? String
+        #expect(feed.unsurePlacement != nil)
 
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/items/177817/place") == true })
-        #expect(sent["quantity"] as? Double == 1.25)
+        transport.heal(path)
+        await feed.retryPlacement()
+        let second = try body(last(transport, "/items/177817/place"))["client_request_id"] as? String
+
+        #expect(first != nil)
+        #expect(first == second)
+        #expect(feed.unsurePlacement == nil)
     }
 
-    @Test func checkAllItemsUsesTheDeliveryCheckAllEndpoint() async {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
+    @Test func aRefusedPlacementIsNotUnsure() async throws {
+        let (feed, transport) = await loadedDelivery()
+        transport.fail("mobile/warehouses/1/stock-deliveries/36604/items/177817/place", status: 403, body: #"{"message":"You can’t place here."}"#)
 
-        store.checkAll("AR27075")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/check-all") == true } }
+        await feed.place(itemID: 177817, quantity: 4, target: .link(locationOrgStockID: 77204, code: "67A6"), setAsPickingLocation: false)
 
-        let request = transport.requests.last { $0.url?.path.hasSuffix("/stock-deliveries/36604/check-all") == true }
-        #expect(request?.httpMethod == "POST")
-        #expect(!transport.requests.contains { $0.url?.path.hasSuffix("/items/177817/check") == true })
+        #expect(feed.unsurePlacement == nil)
+        #expect(feed.event == .refused(message: "You can’t place here."))
     }
 
-    @Test func failedCheckSendsTheIncidentTypeAndQuantity() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
+    @Test func failedCheckSendsTheNoteIncidentTypeAndQuantity() async throws {
+        let (feed, transport) = await loadedDelivery()
 
-        store.recordCheck("AR27075", checkID: "seal", passed: false, note: "Seal broken", incidentType: "damaged", incidentQuantity: 2.5, by: "Andi")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/checklist") == true } }
+        await feed.recordCheck(key: "seal", result: .failed, body: "  Broken  ", incidentType: "damaged", incidentQuantity: 2)
 
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/checklist") == true })
+        let sent = try body(last(transport, "/checklist"))
+        #expect(sent["key"] as? String == "seal")
         #expect(sent["result"] as? String == "failed")
-        #expect(sent["body"] as? String == "Seal broken")
+        #expect(sent["body"] as? String == "Broken")
         #expect(sent["incident_type"] as? String == "damaged")
-        #expect(sent["incident_quantity"] as? Double == 2.5)
+        #expect(sent["incident_quantity"] as? Int == 2)
     }
 
     @Test func passedCheckSendsNoIncident() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
+        let (feed, transport) = await loadedDelivery()
 
-        store.recordCheck("AR27075", checkID: "seal", passed: true, note: "", incidentType: "damaged", by: "Andi")
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/checklist") == true } }
+        await feed.recordCheck(key: "seal", result: .passed, body: "", incidentType: "damaged", incidentQuantity: 2)
 
-        let sent = try body(transport.requests.last { $0.url?.path.hasSuffix("/checklist") == true })
-        #expect(sent["incident_type"] == nil)
-        #expect(sent["body"] == nil)
+        let sent = try body(last(transport, "/checklist"))
+        #expect(sent["result"] as? String == "passed")
+        #expect(sent["body"] is NSNull)
+        #expect(sent["incident_type"] is NSNull)
+        #expect(sent["incident_quantity"] is NSNull)
     }
 
-    @Test func checklistIncidentTypesComeFromTheServer() throws {
-        let json = Self.detail.replacingOccurrences(of: #""incident_types":[]"#, with: #""incident_types":[{"value":"damaged","label":"Damaged"},{"value":"late","label":"Late"}]"#)
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let detail = try decoder.decode(MobileStockDeliveryDetail.self, from: Data(json.utf8))
+    @Test func aScannedBarcodeOpensItsLine() async throws {
+        let (feed, _) = await loadedDelivery()
 
-        let delivery = GoodsInDelivery(detail: detail)
+        await feed.scanLine("5055796547838")
+        #expect(feed.scanOutcome == .line(itemID: 177817))
 
-        #expect(delivery.incidentTypes == [GoodsInIncidentType(id: "damaged", label: "Damaged"), GoodsInIncidentType(id: "late", label: "Late")])
-    }
-
-    @Test func undoingAReturnPutDeletesItOnTheServer() async throws {
-        let (store, transport, client) = setUp()
-        await store.reloadReturns(apiClient: client)
-        await store.loadReturn("GB591132-r2", apiClient: client)
-        let put = GoodsInReturnPut(id: 91, sko: "GemTG-20", kind: "sow", label: "Returned", quantity: 1, location: "27A12")
-
-        store.undoPut("GB591132-r2", put: put)
-        await waitFor { transport.requests.contains { $0.url?.path.hasSuffix("/puts/91") == true } }
-
-        let request = try #require(transport.requests.last { $0.url?.path.hasSuffix("/returns/635/puts/91") == true })
-        #expect(request.httpMethod == "DELETE")
-        #expect(put.undoMessage == "1 is taken back out of 27A12 and goes back to remaining.")
-    }
-
-    @Test func returnPutsMapWithTheirLabels() throws {
-        let json = Self.returnDetail.replacingOccurrences(of: #""puts":[]"#, with: #""puts":[{"id":91,"type":"sow","type_label":"Returned","quantity":1,"location":{"id":1594,"code":"27A12"}},{"id":92,"type":"not-sow","quantity":1,"location":null}]"#)
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let detail = try decoder.decode(MobileReturnDetail.self, from: Data(json.utf8))
-
-        let puts = GoodsInReturn(detail: detail).items.first?.puts ?? []
-
-        #expect(puts.map(\.title) == ["1 · Returned · 27A12", "1 · Not returned"])
+        await feed.scanLine("abb-07A")
+        #expect(feed.scanOutcome == .line(itemID: 177817))
     }
 
     @Test func scannedStockDeliveryOpensItsScreen() throws {
@@ -373,27 +306,50 @@ struct GoodsInAPITests {
         let target = try #require(ShellScanCatalog.target(from: result))
 
         #expect(target.kind == .stockDelivery)
-        #expect(target.detail == "Checked")
-        #expect(target.link == .goodsIn(.scannedStockDelivery(id: 36573, reference: "AEU10106")))
+        #expect(target.link == .goodsIn(.stockDelivery(id: 36573, reference: "AEU10106")))
     }
 
-    @Test func scannedDeliveryLoadsByIDWithoutTheList() async {
-        let (store, _, client) = setUp()
+    @Test func startingAReturnWaitsForAiku() async throws {
+        let (feed, transport) = await loadedReturn()
 
-        await store.loadDelivery(id: 36604, apiClient: client)
+        await feed.start()
 
-        #expect(store.delivery("AR27075").isDetailLoaded)
-        #expect(!store.isWaitingForDelivery("AR27075"))
+        #expect(last(transport, "/returns/635/start")?.httpMethod == "POST")
+        #expect(feed.goodsReturn?.state == "returning")
+        #expect(feed.event == .done(message: "Started", isNothingChanged: false, wasRaised: false))
     }
 
-    @Test func detailKeepsTheFractionalQuantitiesFromTheServer() async throws {
-        let (store, _, client) = setUp()
-        await store.reloadList(apiClient: client)
-        await store.loadDelivery("AR27075", apiClient: client)
+    @Test func backToStockSendsTheQuantityAndTheChosenLocation() async throws {
+        let (feed, transport) = await loadedReturn()
 
-        let item = try #require(store.delivery("AR27075").items.first)
-        #expect(item.packedIn == 8)
-        #expect(item.locationOptions.first?.detail == "Picking · 2 6/8 in location")
+        await feed.backToStock(itemID: 6427, quantity: 1, locationOrgStockID: 157240)
+
+        let sent = try body(last(transport, "/items/6427/returned"))
+        #expect(sent["quantity"] as? Int == 1)
+        #expect(sent["location_org_stock_id"] as? Int == 157240)
+        #expect(UUID(uuidString: sent["client_request_id"] as? String ?? "") != nil)
+        #expect(transport.requests.contains { $0.url?.path.hasSuffix("/start") == true } == false)
+    }
+
+    @Test func undoingAReturnPutDeletesItOnTheServer() async throws {
+        let (feed, transport) = await loadedReturn()
+
+        await feed.undo(putID: 91)
+
+        #expect(last(transport, "/returns/635/puts/91")?.httpMethod == "DELETE")
+        #expect(feed.event == .done(message: "Undone: Returned.", isNothingChanged: false, wasRaised: false))
+    }
+
+    @Test func returnsListAsksForTheChosenState() async throws {
+        let (service, transport) = setUp()
+        let feed = GoodsInReturnsFeed(warehouseID: 1, state: .toProcess, service: service)
+
+        await feed.start()
+
+        let query = URLComponents(url: try #require(transport.requests.last?.url), resolvingAgainstBaseURL: false)?.queryItems ?? []
+        #expect(query.contains(URLQueryItem(name: "state", value: "to_process")))
+        #expect(feed.list.rows.map(\.reference) == ["GB591132-r2"])
+        #expect(feed.counts?.count("returning") == 21)
+        #expect(GoodsInRowText.goodsReturn(feed.list.rows[0]) == "Cancellation · Thimble and Wick · 2 items · 23 Oct")
     }
 }
-

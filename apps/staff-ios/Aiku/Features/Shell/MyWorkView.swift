@@ -87,7 +87,7 @@ struct MyWorkView: View {
         switch row.kind {
         case .deliveryNote: router.open(GoodsOutRoute.deliveryNoteID(id: row.id))
         case .pickingSession: router.open(DispatchRoute.pickingSessionID(id: row.id))
-        case .customerReturn: router.open(GoodsInRoute.returnID(id: row.id, reference: row.reference))
+        case .customerReturn: router.open(GoodsInRoute.returnDetail(id: row.id, reference: row.reference))
         case .palletReturn: router.open(FulfilmentRoute.palletReturn(id: row.id, reference: row.reference))
         }
     }

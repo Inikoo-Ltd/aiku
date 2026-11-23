@@ -86,20 +86,40 @@ struct SystemSessionExpiredView: View {
     }
 }
 
+enum SystemNoAccessText {
+    static func title(module: String, warehouse: String) -> String {
+        let name = warehouse.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? module : name
+    }
+
+    static func message(module: String, warehouse: String) -> String {
+        let name = warehouse.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            return "Your account can’t open **\(module)**. Ask your warehouse manager to add the permission in Aiku."
+        }
+        return "Your account can’t open **\(module)** in **\(name)**. Ask your warehouse manager to add the permission in Aiku."
+    }
+
+    static func canChangeWarehouse(warehouseCount: Int) -> Bool {
+        warehouseCount > 1
+    }
+}
+
 struct SystemNoAccessView: View {
     @Environment(AppRouter.self) private var router
+    @State private var warehouseStore = WarehouseStore.shared
     var module = "Goods in"
     var warehouse = "[Warehouse 2]"
     var permission = "incoming.view"
 
     var body: some View {
         SystemStateScreen {
-            SystemStateHeader(title: "Warehouse 2", kicker: "Access")
+            SystemStateHeader(title: SystemNoAccessText.title(module: module, warehouse: warehouse), kicker: "Access")
         } body: {
             SystemStateBody(
                 icon: SystemStateIcon(icon: .shield, foreground: AikuColor.warn, background: AikuColor.warnSoft),
                 title: "You don’t have access",
-                message: SystemRichText.text("Your account can’t open **\(module)** in **\(warehouse)**. Ask your warehouse manager to add the permission in Aiku.")
+                message: SystemRichText.text(SystemNoAccessText.message(module: module, warehouse: warehouse))
             ) {
                 Text("Missing permission: \(permission)")
                     .font(.aiku(12))
@@ -108,7 +128,9 @@ struct SystemNoAccessView: View {
         } actions: {
             AikuButton("Back to Home", icon: .home) { router.select(.home) }
                 .accessibilityIdentifier("system.noAccess.home")
-            AikuButton("Change warehouse", kind: .tertiary) { router.open(ShellRoute.profile) }
+            if SystemNoAccessText.canChangeWarehouse(warehouseCount: warehouseStore.warehouses.count) {
+                AikuButton("Change warehouse", kind: .tertiary) { router.open(ShellRoute.profile) }
+            }
         }
     }
 }

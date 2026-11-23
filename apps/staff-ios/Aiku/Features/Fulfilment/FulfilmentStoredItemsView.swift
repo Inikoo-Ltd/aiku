@@ -22,7 +22,12 @@ struct FulfilmentStoredItemsView: View {
             }
             SearchField(text: $feed.search, placeholder: "Search reference, barcode or name")
             if let message = feed.loadError {
-                InlineAlert(title: "Couldn’t load the stored items", message: message)
+                GoodsOutLoadProblem(title: "Couldn’t load the stored items", message: message) {
+                    Task {
+                        guard let warehouseID else { return }
+                        await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+                    }
+                }
             }
             rows
             FulfilmentNote("Stored items are the customer’s own SKOs, counted per pallet. The barcode is usually the manufacturer’s EAN.")

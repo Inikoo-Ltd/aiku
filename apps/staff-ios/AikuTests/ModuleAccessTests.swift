@@ -72,6 +72,17 @@ struct ModuleAccessTests {
         #expect(!AppModule.inventory.sections(for: without).map(\.id).contains(.storedPallets))
     }
 
+    @MainActor
+    @Test func fulfilmentOnlyStaffSeeOnlyTheFulfilmentTabsLikeAndroid() {
+        let fulfilmentOnly = ModuleAccess(inventory: false, locations: false, goodsIn: false, returns: false, goodsOut: false, fulfilment: true)
+
+        #expect(AppModule.inventory.sections(for: fulfilmentOnly).map(\.id) == [.storedPallets, .storedItems])
+        #expect(AppModule.goodsOut.sections(for: fulfilmentOnly).map(\.id) == [.fulfilmentReturns])
+        #expect(AppModule.goodsIn.sections(for: fulfilmentOnly).map(\.id) == [.fulfilmentDeliveries])
+        #expect(AppModule.inventory.sections(for: .everything).map(\.id) == [.inventoryDashboard, .skoFamilies, .skos, .storedPallets, .storedItems])
+        #expect(AppModule.goodsOut.sections(for: .everything).map(\.id) == [.goodsOutBacklog, .deliveryNotes, .pickingSessions, .fulfilmentReturns, .trolleys, .pickedBays])
+    }
+
     @Test func menuOnlyListsModulesTheUserCanOpen() {
         let modules = ModuleAccess(inventory: false, locations: false, goodsIn: false, goodsOut: true, fulfilment: false)
 

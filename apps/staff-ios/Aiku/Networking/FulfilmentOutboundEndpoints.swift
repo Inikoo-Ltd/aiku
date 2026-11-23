@@ -219,7 +219,7 @@ struct MobilePalletReturnDetail: Decodable, Sendable, Equatable {
     var availableActions: [MobileFulfilmentAction] = []
 
     var isItems: Bool { typeGroup == "items" }
-    func action(_ key: String) -> MobileFulfilmentAction? { availableActions.first { $0.key == key } }
+    func action(_ key: String) -> MobileFulfilmentAction? { availableActions.first { $0.key == key && $0.disabledReason == nil } }
     var hasLineActions: Bool { pallets.contains { $0.hasActions } || storedItems.contains { $0.lines.contains { $0.hasActions } } }
     func palletLine(_ id: Int) -> MobileReturnPalletLine? { pallets.first { $0.lineId == id } }
     func itemLine(_ id: Int) -> (MobileReturnStoredItem, MobileReturnItemLine)? {

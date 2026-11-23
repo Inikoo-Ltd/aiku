@@ -17,7 +17,12 @@ struct FulfilmentIncidentsView: View {
                 filter.count(in: feed.counts)
             }
             if let message = feed.loadError {
-                InlineAlert(title: "Couldn’t load the incidents", message: message)
+                GoodsOutLoadProblem(title: "Couldn’t load the incidents", message: message) {
+                    Task {
+                        guard let warehouseID else { return }
+                        await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
+                    }
+                }
             }
             StoredPalletRows(feed: feed, warehouseID: warehouseID, showsIncident: true, emptyTitle: "No pallet incidents.") { pallet in
                 router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference))

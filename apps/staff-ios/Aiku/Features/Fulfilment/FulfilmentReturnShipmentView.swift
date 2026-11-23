@@ -100,6 +100,7 @@ private struct ReturnShipmentScreen: View {
             toasts.show(message, tone: tone)
             live.clearEvent()
         }
+        .onChange(of: parcels) { showsParcelProblems = false }
     }
 
     @ViewBuilder
@@ -110,9 +111,10 @@ private struct ReturnShipmentScreen: View {
         let kicker = PalletDeliveryText.joined(["Fulfilment return", detail.reference])
         if canAdd, let selected {
             AppScreen(title: "Add shipment", kicker: kicker) {
+                refreshProblem
                 form(detail, list: list, selected: selected)
             } footer: {
-                AikuButton(selected.isAPI ? "Create label" : "Add shipment", look: PalletReturnActionLooks.look(for: "add_shipment")) {
+                AikuButton(selected.isAPI ? "Create label" : "Add shipment", look: PalletReturnActionLooks.look(for: "add_shipment"), isLoading: live.isWorking) {
                     Task { await submit(selected) }
                 }
                 .disabled(live.isWorking)
@@ -120,6 +122,7 @@ private struct ReturnShipmentScreen: View {
             }
         } else {
             AppScreen(title: "Add shipment", kicker: kicker) {
+                refreshProblem
                 if canAdd {
                     form(detail, list: list, selected: nil)
                 } else {
@@ -131,7 +134,17 @@ private struct ReturnShipmentScreen: View {
     }
 
     @ViewBuilder
+    private var refreshProblem: some View {
+        if let message = live.loadError {
+            GoodsOutLoadProblem(title: "Couldn’t refresh this screen", message: message) {
+                Task { await live.load() }
+            }
+        }
+    }
+
+    @ViewBuilder
     private func form(_ detail: MobilePalletReturnDetail, list: GoodsOutShipperList, selected: GoodsOutShipperChoice?) -> some View {
+        let errors = ReturnShipmentErrors(live.fieldErrors)
         if live.isLoadingShippers, list.available.isEmpty {
             SkeletonRow()
             SkeletonRow()
@@ -156,18 +169,22 @@ private struct ReturnShipmentScreen: View {
                 }
             }
         }
+        if !errors.shipper.isEmpty {
+            InlineAlert(title: errors.shipper.joined(separator: " "))
+        }
         if let selected, !selected.isAPI {
             AikuTextField(
                 selected.needsTracking ? "Tracking number" : "Tracking number (optional)",
                 text: $tracking,
-                error: trackingMissing ? "Enter the tracking number." : nil
+                error: errors.tracking ?? (trackingMissing ? "Enter the tracking number." : nil)
             )
+            .onChange(of: tracking) { trackingMissing = false }
             .accessibilityIdentifier("fulfilment.shipment.tracking")
         }
         if selected?.isAPI == true {
-            parcelsEditor
+            parcelsEditor(errors)
         }
-        if let message = live.sheetError {
+        if let message = live.sheetError, !errors.coversTheProblem {
             InlineAlert(title: message)
         }
         FulfilmentNote("Shippers are the same as for delivery notes and are set up in the web app.")
@@ -187,8 +204,11 @@ private struct ReturnShipmentScreen: View {
     }
 
     @ViewBuilder
-    private var parcelsEditor: some View {
+    private func parcelsEditor(_ errors: ReturnShipmentErrors) -> some View {
         SectionHeading("Parcels · \(parcels.count)", detail: "kg · cm")
+        ForEach(errors.parcelGeneral, id: \.self) { message in
+            FieldError(message)
+        }
         ForEach($parcels) { $parcel in
             let index = parcels.firstIndex { $0.id == parcel.id } ?? 0
             VStack(alignment: .leading, spacing: 6) {
@@ -211,6 +231,9 @@ private struct ReturnShipmentScreen: View {
                 }
                 if showsParcelProblems, let problem = parcel.problem {
                     FieldError(problem)
+                }
+                ForEach(errors.parcelRows[index] ?? [], id: \.self) { message in
+                    FieldError(message)
                 }
             }
             .padding(12)

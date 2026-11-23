@@ -176,7 +176,7 @@ struct InboxView: View {
         switch target.kind {
         case .deliveryNote: router.open(GoodsOutRoute.deliveryNoteID(id: target.id))
         case .pickingSession: router.open(DispatchRoute.pickingSessionID(id: target.id))
-        case .customerReturn: router.open(GoodsInRoute.returnID(id: target.id, reference: target.reference))
+        case .customerReturn: router.open(GoodsInRoute.returnDetail(id: target.id, reference: target.reference))
         case .palletReturn: router.open(FulfilmentRoute.palletReturn(id: target.id, reference: target.reference))
         }
     }

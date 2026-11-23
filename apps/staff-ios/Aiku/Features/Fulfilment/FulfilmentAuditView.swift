@@ -84,13 +84,28 @@ private struct StoredItemAuditScreen: View {
             title: (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference,
             kicker: PalletDeliveryText.joined(["Stored item audit", "Pallet \(palletReference)", audit.stateLabel])
         ) {
+            if let message = live.loadError {
+                GoodsOutLoadProblem(title: "Couldn’t refresh this screen", message: message) {
+                    Task { await live.load() }
+                }
+            }
+            if let code = live.unsure?.scannedCode {
+                InlineAlert(tone: .warn, title: PalletReturnText.unsureTitle, message: StoredItemAuditText.unsureMessage(code)) {
+                    LinkButton("Try again", size: 13) {
+                        Task { await live.retryUnsure() }
+                    }
+                    .frame(minHeight: 44, alignment: .leading)
+                    .disabled(live.isWorking)
+                    .accessibilityIdentifier("fulfilment.audit.retryUnsure")
+                }
+            }
             palletCard(audit)
             if canCount {
                 FulfilmentScanCard(
                     title: "Scan to count",
                     detail: "Scan each item on pallet \(palletReference)",
                     highlight: live.lastScanned ?? "Nothing scanned yet",
-                    footnote: live.lastScanned == nil ? nil : "Last scanned",
+                    footnote: live.queuedScans > 0 ? "\(live.queuedScans) scan\(live.queuedScans == 1 ? "" : "s") waiting" : (live.lastScanned == nil ? nil : "Last scanned"),
                     identifier: "fulfilment.audit.scan"
                 ) {
                     isScanning = true
@@ -117,7 +132,7 @@ private struct StoredItemAuditScreen: View {
             HelperText("Completing the audit applies the counted quantities to this pallet. Items not counted stay as they are.")
         } footer: {
             if let complete {
-                AikuButton(complete.label.isEmpty ? "Complete audit" : complete.label, look: StoredItemAuditActionLooks.look(for: complete.key)) {
+                AikuButton(complete.label.isEmpty ? "Complete audit" : complete.label, look: StoredItemAuditActionLooks.look(for: complete.key), isLoading: live.working == .complete) {
                     isConfirmingComplete = true
                 }
                 .disabled(live.isWorking)
@@ -137,6 +152,7 @@ private struct StoredItemAuditScreen: View {
         .hardwareScanner(isEnabled: canCount && counting == nil && !isAddingItem && !isScanning) { code in
             Task { await live.scan(code) }
         }
+        .scanMissFeedback(live.scanMisses)
         .fullScreenCover(isPresented: $isScanning) {
             FulfilmentCodeCamera(title: "Scan to count", onClose: { isScanning = false }) { code in
                 isScanning = false
@@ -165,15 +181,15 @@ private struct StoredItemAuditScreen: View {
     }
 
     private func palletCard(_ audit: MobileStoredItemAudit) -> some View {
-        var facts: [GoodsInFact] = []
+        var facts: [GoodsInField] = []
         if let pallet = audit.pallet {
-            facts.append(GoodsInFact("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
+            facts.append(GoodsInField("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
         }
-        facts.append(GoodsInFact("Location", audit.pallet?.location?.code ?? "no location"))
+        facts.append(GoodsInField("Location", audit.pallet?.location?.code ?? "no location"))
         if let customer = audit.customer?.name {
-            facts.append(GoodsInFact("Customer", customer))
+            facts.append(GoodsInField("Customer", customer))
         }
-        return GoodsInFactGrid(title: "Pallet", facts: facts)
+        return GoodsInFieldGrid(title: "Pallet", fields: facts)
     }
 
     private func lineRow(_ line: MobileStoredItemAudit.Line, canCount: Bool) -> some View {
@@ -224,7 +240,7 @@ private struct CountSheet: View {
             AikuTextField("Counted", text: $text, error: isMissing ? "Enter the counted quantity." : live.sheetError, keyboard: .numberPad)
                 .accessibilityIdentifier("fulfilment.audit.countField")
         } footer: {
-            AikuButton("Save count", look: StoredItemAuditActionLooks.look(for: "count")) {
+            AikuButton("Save count", look: StoredItemAuditActionLooks.look(for: "count"), isLoading: live.isSavingCount) {
                 guard let quantity = Int(text.trimmingCharacters(in: .whitespacesAndNewlines)), quantity >= 0 else {
                     isMissing = true
                     return

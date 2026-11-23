@@ -9,6 +9,9 @@ struct FulfilmentReturnsAPITests {
         let refusals: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
+        private var statuses: [String: (Int, String)] = [:]
+        private var held: Set<String> = []
+        private var waiting: [CheckedContinuation<Void, Never>] = []
 
         init(responses: [String: String], refusals: [String: String] = [:]) {
             self.responses = responses
@@ -19,9 +22,48 @@ struct FulfilmentReturnsAPITests {
             lock.withLock { recorded }
         }
 
+        func fail(_ path: String, status: Int, body: String = "{}") {
+            lock.withLock { statuses[path] = (status, body) }
+        }
+
+        func heal(_ path: String) {
+            lock.withLock { statuses[path] = nil }
+        }
+
+        func hold(_ path: String) {
+            lock.withLock { _ = held.insert(path) }
+        }
+
+        func release() {
+            let resumed = lock.withLock {
+                held.removeAll()
+                defer { waiting.removeAll() }
+                return waiting
+            }
+            resumed.forEach { $0.resume() }
+        }
+
         func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-            lock.withLock { recorded.append(request) }
             let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            let (isHeld, status) = lock.withLock {
+                recorded.append(request)
+                return (held.contains(path), statuses[path])
+            }
+            if isHeld {
+                await withCheckedContinuation { continuation in
+                    let stillHeld = lock.withLock {
+                        guard held.contains(path) else { return false }
+                        waiting.append(continuation)
+                        return true
+                    }
+                    if !stillHeld {
+                        continuation.resume()
+                    }
+                }
+            }
+            if let (status, failure) = status {
+                return (Data(failure.utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+            }
             if let refusal = refusals[path] {
                 return (Data(refusal.utf8), HTTPURLResponse(url: request.url!, statusCode: 422, httpVersion: nil, headerFields: nil)!)
             }
@@ -78,9 +120,13 @@ struct FulfilmentReturnsAPITests {
         return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
     }
 
-    private func live(_ id: Int, refusals: [String: String] = [:]) async -> (PalletReturnLive, RecordingTransport) {
+    private func live(
+        _ id: Int,
+        refusals: [String: String] = [:],
+        makeRequestID: @escaping @Sendable () -> String = { "11111111-1111-4111-8111-111111111111" }
+    ) async -> (PalletReturnLive, RecordingTransport) {
         let (transport, client) = client(refusals: refusals)
-        let live = PalletReturnLive(warehouseID: 1, returnID: id, apiClient: client, makeRequestID: { "11111111-1111-4111-8111-111111111111" })
+        let live = PalletReturnLive(warehouseID: 1, returnID: id, apiClient: client, makeRequestID: makeRequestID)
         await live.load()
         return (live, transport)
     }
@@ -187,6 +233,98 @@ struct FulfilmentReturnsAPITests {
         #expect(!transport.requests.contains { $0.url?.path.hasSuffix("/scan") == true })
     }
 
+    private static let pickPath = "\(base)/6385/lines/900/pick"
+    private static let scanPath = "\(base)/6385/scan"
+
+    private func requestIDs(_ transport: RecordingTransport, endingWith suffix: String) throws -> [String?] {
+        try transport.requests.filter { $0.url?.path.hasSuffix(suffix) == true }.map { try body($0)["client_request_id"] as? String }
+    }
+
+    @Test func anUnansweredPickIsResentWithTheSameRequestID() async throws {
+        let ids = RequestIDSequence()
+        let (live, transport) = await live(6385, makeRequestID: { ids.next() })
+        transport.fail(Self.pickPath, status: 502)
+
+        #expect(await live.pickItem(900, quantity: 3) == false)
+        #expect(live.unsure == .pickItem(lineID: 900, quantity: 3, requestID: RequestIDSequence.id(1)))
+        #expect(PalletReturnText.unsureMessage(try #require(live.unsure)) == "The pick didn’t get an answer. Try again; it is not picked twice.")
+        #expect(!live.isWorking)
+
+        transport.heal(Self.pickPath)
+        await live.retryUnsure()
+
+        #expect(try requestIDs(transport, endingWith: "/lines/900/pick") == [RequestIDSequence.id(1), RequestIDSequence.id(1)])
+        #expect(live.unsure == nil)
+        #expect(live.event == .done("Picked 3 × SI-55.", .success))
+    }
+
+    @Test func anUnansweredPickFromAnotherPalletIsResentWithTheSameRequestID() async throws {
+        let ids = RequestIDSequence()
+        let (live, transport) = await live(6385, makeRequestID: { ids.next() })
+        let path = "\(Self.base)/6385/pallet-stored-items/77/pick"
+        transport.fail(path, status: 504)
+
+        #expect(await live.pickFromOtherPallet(77, quantity: 2, fromLineID: 900) == false)
+        #expect(PalletReturnText.unsureMessage(try #require(live.unsure)) == "The pick from another pallet didn’t get an answer. Try again; it is not picked twice.")
+
+        transport.heal(path)
+        await live.retryUnsure()
+
+        #expect(try requestIDs(transport, endingWith: "/pallet-stored-items/77/pick") == [RequestIDSequence.id(1), RequestIDSequence.id(1)])
+        #expect(live.unsure == nil)
+    }
+
+    @Test func anUnansweredScanIsResentFirstWhenTheNextScanComes() async throws {
+        let ids = RequestIDSequence()
+        let (live, transport) = await live(6385, makeRequestID: { ids.next() })
+        transport.fail(Self.scanPath, status: 502)
+
+        await live.scan("5055")
+        #expect(live.unsure == .scan(barcode: "5055", requestID: RequestIDSequence.id(1)))
+        #expect(live.queuedScans == 1)
+
+        transport.heal(Self.scanPath)
+        await live.scan("5055")
+
+        #expect(try requestIDs(transport, endingWith: "/scan") == [RequestIDSequence.id(1), RequestIDSequence.id(1), RequestIDSequence.id(2)])
+        #expect(live.unsure == nil)
+        #expect(live.queuedScans == 0)
+    }
+
+    @Test func anUnansweredStateChangeIsNotLeftUnsure() async {
+        let (live, transport) = await live(6385)
+        transport.fail("\(Self.base)/6385/finish-picking", status: 502)
+
+        #expect(await live.finishPicking() == false)
+
+        #expect(live.unsure == nil)
+        guard case .done(_, let tone) = live.event else {
+            Issue.record("Expected a refusal toast, got \(String(describing: live.event))")
+            return
+        }
+        #expect(tone == .danger)
+    }
+
+    @Test func aScanDuringAPickWaitsUntilThePickIsAnswered() async throws {
+        let (live, transport) = await live(6385)
+        transport.hold(Self.pickPath)
+
+        async let picked = live.pickItem(900, quantity: 3)
+        await waitUntil { transport.requests.contains { $0.url?.path.hasSuffix("/lines/900/pick") == true } }
+        await live.scan("5055")
+
+        #expect(live.queuedScans == 1)
+        #expect(!transport.requests.contains { $0.url?.path.hasSuffix("/scan") == true })
+
+        transport.release()
+        #expect(await picked)
+
+        let order = transport.requests.compactMap(\.url?.path).filter { $0.hasSuffix("/pick") || $0.hasSuffix("/scan") }
+        #expect(order.map { $0.hasSuffix("/scan") ? "scan" : "pick" } == ["pick", "scan"])
+        #expect(live.queuedScans == 0)
+        #expect(!live.isWorking)
+    }
+
     @Test func pickedReturnShowsWhyDispatchIsBlocked() async throws {
         let (live, _) = await live(6381)
         let detail = try #require(live.detail)
@@ -289,5 +427,87 @@ struct FulfilmentReturnsAPITests {
         #expect(draft.problem == "Each side must be above 0 and at most 1000 cm.")
         draft.height = "10"
         #expect(draft.body == MobileReturnParcelBody(weightKg: 2.5, dimensionsCm: [30, 20, 10]))
+    }
+
+    @Test func aRefusedShipmentKeepsTheServerErrorsPerField() async {
+        let (live, transport) = await live(6381)
+        transport.fail("\(Self.base)/6381/shipments", status: 422, body: #"{"message":"The tracking must not be greater than 1000 characters.","errors":{"tracking":["The tracking must not be greater than 1000 characters."]}}"#)
+
+        #expect(await live.createShipment(shipperID: 5, tracking: "TRK", parcels: nil) == false)
+
+        let errors = ReturnShipmentErrors(live.fieldErrors)
+        #expect(errors.tracking == "The tracking must not be greater than 1000 characters.")
+        #expect(errors.coversTheProblem)
+    }
+
+    @Test func aRefusalWithoutFieldsIsShownAsItsOwnProblem() async {
+        let (live, transport) = await live(6381)
+        transport.fail("\(Self.base)/6381/shipments", status: 403, body: #"{"message":"You can’t add shipments."}"#)
+
+        #expect(await live.createShipment(shipperID: 5, tracking: nil, parcels: nil) == false)
+
+        #expect(!ReturnShipmentErrors(live.fieldErrors).coversTheProblem)
+        #expect(live.sheetError == "You can’t add shipments.")
+    }
+
+    @Test func shipmentErrorsLandOnTheirFieldOrParcelLikeAndroid() {
+        let errors = ReturnShipmentErrors([
+            "shipper_id": ["Choose an active shipper of this organisation that can ship pallet returns."],
+            "parcels": ["At most 50 parcels."],
+            "parcels.1.weight_kg": ["The weight must be at most 1000 kg."],
+            "parcels.0.dimensions_cm.2": ["Each side must be at most 1000 cm."],
+        ])
+
+        #expect(errors.shipper == ["Choose an active shipper of this organisation that can ship pallet returns."])
+        #expect(errors.tracking == nil)
+        #expect(errors.parcelGeneral == ["At most 50 parcels."])
+        #expect(errors.parcelRows == [0: ["Each side must be at most 1000 cm."], 1: ["The weight must be at most 1000 kg."]])
+        #expect(!ReturnShipmentErrors([:]).coversTheProblem)
+    }
+
+    @Test func returnActionsWithADisabledReasonAreHiddenLikeAndroid() throws {
+        let json = Self.palletsReturn.replacingOccurrences(
+            of: #""available_actions":[{"key":"add_shipment","label":"Add shipment"}]}"#,
+            with: #""available_actions":[{"key":"add_shipment","label":"Add shipment"},{"key":"dispatch","label":"Dispatch","disabled_reason":"Print the customer inserts first."}]}"#
+        )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let detail = try decoder.decode(MobilePalletReturnDetail.self, from: Data(json.utf8))
+
+        #expect(detail.availableActions.count == 2)
+        #expect(detail.action("add_shipment") != nil)
+        #expect(detail.action("dispatch") == nil)
+    }
+
+    @Test func aScanThatPicksNothingVibratesButAMissingAnswerDoesNotLikeAndroid() async {
+        let (live, transport) = await live(6385, makeRequestID: { UUID().uuidString.lowercased() })
+
+        await live.scan("5055")
+        #expect(live.scanMisses == 0)
+
+        transport.fail(Self.scanPath, status: 200, body: Self.write(Self.itemsReturn, status: "not_found", message: "999 isn’t on this return"))
+        await live.scan("999")
+        #expect(live.scanMisses == 1)
+        #expect(live.event == .done("999 isn’t on this return", .warn))
+
+        transport.fail(Self.scanPath, status: 200, body: Self.write(Self.itemsReturn, status: "already_picked", message: "SI-55 is already picked"))
+        await live.scan("5055")
+        #expect(live.scanMisses == 2)
+
+        transport.fail(Self.scanPath, status: 502)
+        await live.scan("5055")
+        #expect(live.scanMisses == 2)
+        #expect(live.unsure != nil)
+    }
+
+    @Test func aCodeNotOnAReturnWithoutScanToPickVibratesLikeAndroid() async {
+        let (live, _) = await live(6381)
+
+        await live.scan("p-11")
+        #expect(live.scanMisses == 0)
+
+        await live.scan("nothing-here")
+        #expect(live.scanMisses == 1)
+        #expect(live.event == .done("nothing-here isn’t on this return", .info))
     }
 }
