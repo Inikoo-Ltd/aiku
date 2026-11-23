@@ -69,7 +69,7 @@ class GetPayables
             select '$kind' as kind, si.id, si.organisation_id, 'supplier' as creditor_type, si.supplier_id as creditor_id, s.name as creditor_name,
                 (select os.slug from org_suppliers os where os.supplier_id = si.supplier_id and os.organisation_id = si.organisation_id limit 1) as creditor_slug,
                 si.reference, si.date, null::date as due_date, si.currency_id, si.total_amount as total,
-                coalesce((select sum(sp.amount) from supplier_payments sp where sp.stock_delivery_id = si.stock_delivery_id and sp.deleted_at is null), 0)
+                coalesce((select sum(sp.amount) from supplier_payments sp where sp.stock_delivery_id = si.stock_delivery_id and sp.deleted_at is null and sp.date <= current_date), 0)
                 + coalesce((
                     select sum(coalesce(
                         (select sum(dp.amount) from purchase_order_deposit_payments dp where dp.purchase_order_id = po.id and dp.deleted_at is null),

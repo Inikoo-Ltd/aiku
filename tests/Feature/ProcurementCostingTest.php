@@ -3634,6 +3634,21 @@ test('supplier payments are recorded on the stock delivery against its invoice, 
     $this->delete(route('grp.models.supplier_payment.delete', $payments[1]->id))->assertRedirect();
     expect(ShowStockDelivery::make()->getInvoiceSummary($stockDelivery->refresh())['supplier']['balance_due'])->toBe(200.0);
 
+    $scheduledOn = now()->addDays(8)->toDateString();
+    $this->post($storeRoute, ['date' => now()->addYears(2)->toDateString(), 'amount' => 200, 'method' => 'cash'])->assertSessionHasErrors('date');
+    $this->post($storeRoute, ['date' => $scheduledOn, 'amount' => 200, 'method' => 'cash'])->assertRedirect()->assertSessionHasNoErrors();
+
+    $summary = ShowStockDelivery::make()->getInvoiceSummary($stockDelivery->refresh());
+    $balance = collect(\App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryImportFile::run($stockDelivery)['steps'])->firstWhere('key', 'balance_payment');
+    expect($summary['supplier']['balance_due'])->toBe(200.0)
+        ->and(collect($summary['supplier']['payments'])->pluck('is_scheduled')->all())->toBe([false, true])
+        ->and($balance['money']['left'])->toBe(500.0)
+        ->and($balance['money']['scheduled'])->toBe(['amount' => 200.0, 'date' => $scheduledOn]);
+
+    $this->travelTo(now()->addDays(8));
+    expect(ShowStockDelivery::make()->getInvoiceSummary($stockDelivery->refresh())['supplier']['balance_due'])->toBe(0.0);
+    $this->travelBack();
+
     $stockDelivery->updateQuietly(['agent_id' => \App\Models\SupplyChain\Agent::query()->value('id')]);
     $this->post($storeRoute, ['date' => date('Y-m-d'), 'amount' => 10, 'method' => 'cash'])->assertNotFound();
 });

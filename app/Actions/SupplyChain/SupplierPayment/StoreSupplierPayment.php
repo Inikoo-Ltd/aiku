@@ -56,7 +56,7 @@ class StoreSupplierPayment extends OrgAction
     public function rules(): array
     {
         return [
-            'date'           => ['required', 'date', 'before_or_equal:tomorrow'],
+            'date'           => ['required', 'date', 'before_or_equal:+1 year'],
             'amount'         => ['required', 'numeric', 'gt:0', 'max:999999999999'],
             'method'         => ['required', Rule::enum(PurchaseOrderPaymentMethodEnum::class)],
             'reference'      => ['sometimes', 'nullable', 'string', 'max:255'],

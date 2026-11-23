@@ -22,6 +22,7 @@ use App\Models\GoodsIn\StockDeliveryServiceInvoice;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierPayment;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -273,6 +274,8 @@ class GetStockDeliveryImportFile
         $paidRows        = $deposits->where('is_paid', true);
         $invoice         = $stockDelivery->agentInvoice ?? $stockDelivery->supplierInvoice;
         $payments        = $stockDelivery->agent_id ? $stockDelivery->agentPayments()->get() : $stockDelivery->supplierPayments()->get();
+        $scheduled       = $payments->filter(fn ($payment) => $payment instanceof SupplierPayment && $payment->isScheduled());
+        $payments        = $payments->diffKeys($scheduled);
         $currencies      = $paidRows->pluck('currency')
             ->concat(Currency::whereIn('id', $payments->pluck('currency_id')->unique())->pluck('code'))
             ->push($invoice ? $invoice->currency->code : null)
@@ -296,6 +299,10 @@ class GetStockDeliveryImportFile
                 'deposits'     => $sent,
                 'payments'     => $paid,
                 'left'         => round($total - $sent - $paid, 2),
+                'scheduled'    => $scheduled->isEmpty() ? null : [
+                    'amount' => round((float) $scheduled->sum('amount'), 2),
+                    'date'   => $scheduled->min('date')->toDateString(),
+                ],
             ] : null,
         ];
     }
@@ -377,9 +384,12 @@ class GetStockDeliveryImportFile
             $auto['bill_of_lading'] = $done(null, __('Bill of lading attached'));
         }
 
-        $balanceAt = $stockDelivery->supplierPayments()->max('date') ?? $stockDelivery->agentPayments()->max('date');
+        $balanceAt   = $stockDelivery->supplierPayments()->whereDate('date', '<=', today())->max('date') ?? $stockDelivery->agentPayments()->max('date');
+        $scheduledAt = $stockDelivery->supplierPayments()->whereDate('date', '>', today())->min('date');
         if ($balanceAt) {
             $auto['balance_payment'] = $done($balanceAt, __('Payment recorded on the delivery'));
+        } elseif ($scheduledAt) {
+            $auto['balance_payment'] = ['status' => 'pending', 'date' => $date($scheduledAt), 'source' => __('Scheduled in the bank, not paid yet')];
         } elseif ($purchaseOrders->isNotEmpty() && $purchaseOrders->every(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->balance_paid_at)) {
             $auto['balance_payment'] = $done($purchaseOrders->pluck('balance_paid_at')->max(), __('Balance marked paid on the purchase orders'));
         }

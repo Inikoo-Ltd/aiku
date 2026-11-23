@@ -33,6 +33,7 @@ interface Payment {
 	method: string
 	reference: string | null
 	bank_statement: string | null
+	is_scheduled: boolean
 	delete_route: routeType
 }
 
@@ -72,6 +73,7 @@ const isPaymentDialogOpen = ref(false)
 const isLoading = ref(false)
 const isSettled = computed(() => props.supplier.paid > 0 && props.supplier.balance_due <= 0)
 
+const oneYearAhead = new Date(new Date().setFullYear(new Date().getFullYear() + 1))
 const emptyPayment = () => ({ date: new Date() as Date | null, amount: props.supplier.balance_due > 0 ? props.supplier.balance_due : (null as number | null), method: "bank_transfer", reference: "", file: null as File | null })
 const payment = ref(emptyPayment())
 
@@ -81,6 +83,7 @@ const openPaymentDialog = () => {
 }
 
 const needsStatement = computed(() => payment.value.method !== "cash")
+const isScheduledDate = computed(() => !!payment.value.date && toIsoDate(payment.value.date as Date) > toIsoDate(new Date()))
 const canSubmit = computed(() => !!payment.value.date && !!payment.value.amount && (!needsStatement.value || !!payment.value.file))
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
@@ -172,6 +175,7 @@ const confirmDeletePayment = (row: Payment) =>
 						<li v-for="row in supplier.payments" :key="`payment-${row.id}`" class="flex items-center justify-between gap-4">
 							<span class="min-w-0 text-gray-700">
 								<span class="mr-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{{ row.method }}</span>
+								<span v-if="row.is_scheduled" class="mr-1.5 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700" :title="ctrans('Not counted as paid until this date')">{{ ctrans("Scheduled") }}</span>
 								{{ row.reference ?? "—" }}
 								<span class="text-gray-400"> · {{ useFormatTime(row.date) }}</span>
 								<a
@@ -219,8 +223,9 @@ const confirmDeletePayment = (row: Payment) =>
 					<span v-if="orgMoney(payment.amount)" class="mt-1 block text-xs tabular-nums text-gray-400">{{ orgMoney(payment.amount) }}</span>
 				</div>
 				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Date the payment was sent") }}</span>
-					<DatePicker v-model="payment.date" dateFormat="dd/mm/yy" :maxDate="new Date()" :manualInput="false" showIcon iconDisplay="input" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
+					<span class="text-gray-600">{{ ctrans("Date the payment leaves the bank") }}</span>
+					<DatePicker v-model="payment.date" dateFormat="dd/mm/yy" :maxDate="oneYearAhead" :manualInput="false" showIcon iconDisplay="input" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
+					<span v-if="isScheduledDate" class="mt-1 block text-xs text-amber-700">{{ ctrans("A later date records a scheduled payment. It counts as paid only from that date.") }}</span>
 				</label>
 				<label class="block text-sm">
 					<span class="text-gray-600">{{ ctrans("Payment method") }}</span>

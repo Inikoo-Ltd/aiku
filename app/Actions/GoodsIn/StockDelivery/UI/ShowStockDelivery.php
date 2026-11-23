@@ -957,6 +957,7 @@ class ShowStockDelivery extends OrgAction
                     'notes'          => $payment->notes,
                     'method'         => $payment->method?->labels()[$payment->method->value],
                     'bank_statement' => $payment->bankStatement?->ulid,
+                'is_scheduled'   => $payment->isScheduled(),
                     'delete_route'   => ['name' => 'grp.models.agent_payment.delete', 'parameters' => ['agentPayment' => $payment->id]],
                 ])->values()->all(),
                 'payment_store_route' => ['name' => 'grp.models.stock-delivery.agent_payment.store', 'parameters' => ['stockDelivery' => $stockDelivery->id]],
@@ -993,7 +994,7 @@ class ShowStockDelivery extends OrgAction
                 ])->values();
 
         $payments = $stockDelivery->supplierPayments()->with('bankStatement:id,ulid')->orderBy('date')->get();
-        $paid     = round((float) $deposits->sum('amount') + (float) $payments->sum('amount'), 2);
+        $paid     = round((float) $deposits->sum('amount') + (float) $payments->reject(fn (SupplierPayment $payment) => $payment->isScheduled())->sum('amount'), 2);
 
         return [
             'can_edit'            => $this->canEditPayments,
@@ -1006,6 +1007,7 @@ class ShowStockDelivery extends OrgAction
                 'method'         => $payment->method->labels()[$payment->method->value],
                 'reference'      => $payment->reference,
                 'bank_statement' => $payment->bankStatement?->ulid,
+                'is_scheduled'   => $payment->isScheduled(),
                 'delete_route'   => ['name' => 'grp.models.supplier_payment.delete', 'parameters' => ['supplierPayment' => $payment->id]],
             ])->values()->all(),
             'paid'                => $paid,

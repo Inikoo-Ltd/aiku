@@ -57,7 +57,7 @@ type DepositRow = {
 
 type DepositMoney = { rows: DepositRow[]; currency: string | null; total: number | null }
 
-type BalanceMoney = { currency: string; total: number; total_source: "invoice" | "orders"; deposits: number; payments: number; left: number }
+type BalanceMoney = { currency: string; total: number; total_source: "invoice" | "orders"; deposits: number; payments: number; left: number; scheduled: { amount: number; date: string } | null }
 
 const props = defineProps<{
 	data: {
@@ -123,6 +123,9 @@ const depositMoney = (step: Step) => (step.key === "deposit" ? (step.money as De
 const balanceMoney = (step: Step) => (step.key === "balance_payment" ? (step.money as BalanceMoney | null) : null)
 const balanceWarning = (step: Step) => {
 	const balance = balanceMoney(step)
+	if (balance?.scheduled && balance.left > 0) {
+		return ctrans("Scheduled in the bank for :date. Aiku cannot see scheduled bank payments, so it counts as paid only from that date: check the bank that it went out.", { date: useFormatTime(balance.scheduled.date) })
+	}
 	if (!balance || balance.left <= 0 || (step.status !== "done" && step.files.length === 0)) {
 		return null
 	}
@@ -367,6 +370,10 @@ const statusIconClass: Record<Status, string> = {
 								<template v-if="balanceMoney(step)!.payments">
 									<dt class="whitespace-nowrap text-gray-500">{{ ctrans("Paid") }}</dt>
 									<dd class="text-right tabular-nums text-gray-700">−{{ money(balanceMoney(step)!.currency, balanceMoney(step)!.payments) }}</dd>
+								</template>
+								<template v-if="balanceMoney(step)!.scheduled">
+									<dt class="whitespace-nowrap text-gray-500">{{ ctrans("Scheduled for :date", { date: useFormatTime(balanceMoney(step)!.scheduled!.date) }) }}</dt>
+									<dd class="text-right tabular-nums text-gray-500">{{ money(balanceMoney(step)!.currency, balanceMoney(step)!.scheduled!.amount) }}</dd>
 								</template>
 								<dt class="whitespace-nowrap font-semibold text-gray-800">{{ balanceMoney(step)!.left < 0 ? ctrans("Overpaid") : ctrans("Left to pay") }}</dt>
 								<dd class="text-right font-semibold tabular-nums" :class="balanceMoney(step)!.left < 0 ? 'text-red-600' : 'text-gray-900'">{{ money(balanceMoney(step)!.currency, Math.abs(balanceMoney(step)!.left)) }}</dd>

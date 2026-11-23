@@ -49,6 +49,15 @@ class SupplierPayment extends Model
         ];
     }
 
+    /**
+     * A payment dated after today was booked in the bank to go out later (HELP-4878). Aiku cannot see scheduled
+     * bank payments, so it is not counted as paid until its date: the bank may still cancel or change it.
+     */
+    public function isScheduled(): bool
+    {
+        return $this->date->isAfter(today());
+    }
+
     public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class);
