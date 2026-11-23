@@ -411,7 +411,7 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
         </div>
 
         <IrisWebsiteDialog />
-        <CookieConsent />
+        <CookieConsent v-if="layout.iris?.own_cookie_banner" />
 
     </div>
 
