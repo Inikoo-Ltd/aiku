@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
 use App\Rules\AlphaDashDot;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Middleware\SetWebUserLocale;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -34,6 +35,10 @@ class UpdateRetinaProfile extends RetinaAction
         if (Arr::exists($modelData, 'display_currency')) {
             $displayCurrency = Arr::pull($modelData, 'display_currency');
             data_set($modelData, 'settings.display_currency', $displayCurrency === $webUser->shop->currency->code ? null : $displayCurrency);
+        }
+
+        if (Arr::exists($modelData, 'language_id')) {
+            session()->forget(SetWebUserLocale::ADDRESS_LOCALE_SESSION_KEY);
         }
 
         return UpdateWebUser::run($webUser, $modelData);

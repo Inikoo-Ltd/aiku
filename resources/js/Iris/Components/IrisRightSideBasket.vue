@@ -9,6 +9,7 @@ import { faCheckCircle, faExclamationTriangle, faPlus as fasPlus } from "@fas"
 import { faMinus, faArrowRight, faPlus, faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import { withVisitorLocale } from '@/Composables/Iris/withVisitorLocale'
 import { useSidePanel } from '@/Iris/Composables/useSidePanel'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -419,7 +420,7 @@ const onProceedToCheckout = async () => {
     }
 
     sidePanel?.close()
-    window.location.href = '/app/checkout'
+    window.location.href = withVisitorLocale('/app/checkout', layout.iris)
 }
 
 const onPageShow = (event: PageTransitionEvent) => {

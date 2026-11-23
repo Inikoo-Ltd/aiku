@@ -2748,6 +2748,24 @@ test('logged in visitor to an auth page is redirected without being cached', fun
         ->and($response->headers->get('X-Aiku-Cacheable-Redirect'))->toBe('0');
 })->depends('launch website');
 
+test('a page redirect keeps the language the visitor reads the website in', function (Website $website) {
+    $request = ActionRequest::createFrom(Request::create('https://'.$website->domain.'/old-path?locale=xx&page=2'));
+    $request->merge(['website' => $website, 'locale' => $website->shop->language->code]);
+    app()->instance('request', $request);
+    \App\Helpers\WebsiteLanguage::set($website->shop, 'xx');
+
+    $response = ShowIrisWebpage::make()->htmlResponse('https://'.$website->domain.'/new-path');
+
+    expect($response->getStatusCode())->toBe(301)
+        ->and($response->getTargetUrl())->toBe('https://'.$website->domain.'/new-path?page=2&locale=xx')
+        ->and($response->headers->get('X-Aiku-Cacheable-Redirect'))->toBe('0');
+
+    \App\Helpers\WebsiteLanguage::set($website->shop, $website->shop->language->code);
+    $response = ShowIrisWebpage::make()->htmlResponse('https://'.$website->domain.'/new-path');
+
+    expect($response->getTargetUrl())->toBe('https://'.$website->domain.'/new-path?page=2');
+})->depends('launch website');
+
 test('process website time series records', function (Website $website) {
     ProcessWebsiteTimeSeriesRecords::run(
         $website->id,

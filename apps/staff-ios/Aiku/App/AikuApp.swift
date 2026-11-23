@@ -51,6 +51,11 @@ struct AikuApp: App {
             return AuthStore(service: .live(.shared), tokens: InMemoryTokenStore(), deviceName: deviceName)
         }
         #endif
-        return AuthStore(service: .live(.shared), tokens: KeychainTokenStore.shared, deviceName: deviceName, profileCache: FileProfileCache.standard)
+        let store = AuthStore(service: .live(.shared), tokens: KeychainTokenStore.shared, deviceName: deviceName, profileCache: FileProfileCache.standard)
+        if let userID = store.userID {
+            ScreenCache.shared.signedIn(userID: userID)
+            WarehouseStore.shared.restoreCached(for: userID)
+        }
+        return store
     }
 }

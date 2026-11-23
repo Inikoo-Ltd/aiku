@@ -104,9 +104,10 @@ const accept = (issue: WritingQualityIssue) => {
 <template>
     <div v-if="compact" class="flex items-center">
         <button ref="trigger" type="button" @mousedown.prevent @click="openFromIcon" :disabled="isChecking"
-            class="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-wait"
-            v-tooltip="ctrans('Check writing: points at generic, padded or unnatural wording, with a suggestion for each')" :aria-label="ctrans('Check writing')">
-            <FontAwesomeIcon :icon="isChecking ? faSpinnerThird : faSpellCheck" :spin="isChecking" class="text-sm" fixed-width aria-hidden="true" />
+            class="relative inline-flex shrink-0 items-center gap-1 rounded-md border border-pink-300 bg-white px-1.5 py-0.5 text-[11px] font-medium text-pink-800 transition-colors hover:bg-pink-50 disabled:cursor-wait"
+            v-tooltip="ctrans('Check writing: points at generic, padded or unnatural wording, with a suggestion for each')">
+            <FontAwesomeIcon :icon="isChecking ? faSpinnerThird : faSpellCheck" :spin="isChecking" class="text-pink-500" fixed-width aria-hidden="true" />
+            {{ ctrans("Style fixer") }}
             <span v-if="issues.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white tabular-nums">
                 {{ issues.length }}
             </span>

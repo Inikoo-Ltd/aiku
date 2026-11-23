@@ -76,7 +76,7 @@ enum ShellHomeContent {
 
     @MainActor
     static func clockStatus(_ clocking: ClockingStore) -> ShellClockStatus? {
-        guard clocking.hasLoaded else {
+        guard clocking.hasStatus else {
             return clocking.loadError == nil ? nil : ShellClockStatus(title: "Clocking", detail: "Clocking status unavailable", isClockedIn: false)
         }
         let today = clocking.today
@@ -98,7 +98,7 @@ enum ShellHomeContent {
 
     @MainActor
     static func weekTotal(_ clocking: ClockingStore) -> String? {
-        guard clocking.hasLoaded, let week = clocking.weeks.first, week.label == "This week" else { return nil }
+        guard clocking.hasStatus, let week = clocking.weeks.first, week.label == "This week" else { return nil }
         return ClockingFormat.duration(week.working(now: clocking.now))
     }
 

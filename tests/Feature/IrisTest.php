@@ -1713,6 +1713,49 @@ test('preview languages work in the website address and for staff customers, nev
     enableShopLanguages($this->shop, null);
 });
 
+test('a signed-in customer opening the customer area with ?locale keeps that language for the session when the shop offers it to them', function () {
+    Http::fake();
+    [$previewCode] = otherLanguageCodes($this->shop);
+    $previewLanguageId = Language::where('code', $previewCode)->value('id');
+    enableShopLanguages($this->shop, [$this->shop->language->code]);
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['preview_languages' => [$previewLanguageId]]);
+
+    $customer = createCustomer($shop);
+    $webUser  = createWebUser($customer);
+    $webUser->updateQuietly(['language_id' => $shop->language_id]);
+    $session = app('session.store');
+    $session->forget(\App\Http\Middleware\SetWebUserLocale::ADDRESS_LOCALE_SESSION_KEY);
+    $localeFor = function (string $uri) use ($session) {
+        $request = Request::create('http://'.$this->website->domain.$uri);
+        $request->merge(['website' => $this->website->fresh()]);
+        $request->setLaravelSession($session);
+        (new \App\Http\Middleware\SetWebUserLocale())->handle($request, fn () => response('ok'));
+
+        return app()->getLocale();
+    };
+
+    $customer->updateQuietly(['is_staff' => false]);
+    actingAs($webUser->fresh()->load('customer'), 'retina');
+    expect($localeFor('/app/dashboard?locale='.$previewCode))->toBe($shop->language->code);
+
+    $customer->updateQuietly(['is_staff' => true]);
+    actingAs($webUser->fresh()->load('customer'), 'retina');
+    expect($localeFor('/app/dashboard?locale='.$previewCode))->toBe($previewCode)
+        ->and($localeFor('/app/basket'))->toBe($previewCode)
+        ->and($webUser->fresh()->language_id)->toBe($shop->language_id);
+
+    \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['language_id' => $shop->language_id]);
+    expect($localeFor('/app/basket'))->toBe($shop->language->code);
+
+    auth('retina')->logout();
+    $session->forget(\App\Http\Middleware\SetWebUserLocale::ADDRESS_LOCALE_SESSION_KEY);
+    $settings = $shop->fresh()->settings;
+    unset($settings['preview_languages']);
+    $shop->settings = $settings;
+    $shop->saveQuietly();
+    enableShopLanguages($this->shop, null);
+});
+
 test('enabled languages shop setting is saved, always keeps the main language, is audited and reaches the iris data', function () {
     Http::fake();
     [$otherCode] = otherLanguageCodes($this->shop);

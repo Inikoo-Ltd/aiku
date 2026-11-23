@@ -119,7 +119,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');
     Route::post('/ai-drafts/{chatAiDraft}/copied', [HandleChatAiDraft::class, 'copied'])->name('ai_drafts.copied');
     Route::post('/ai-drafts/{chatAiDraft}/discard', [HandleChatAiDraft::class, 'discard'])->name('ai_drafts.discard');
-    Route::post('/ai-drafts/{chatAiDraft}/rate', [HandleChatAiDraft::class, 'rate'])->name('ai_drafts.rate');
     Route::post('/ai-drafts/{chatAiDraft}/actions/{index}', RunChatAiDraftAction::class)->whereNumber('index')->name('ai_drafts.action');
     Route::post('/ai-drafts/{chatAiDraft}/translate', [HandleChatAiDraft::class, 'translateForStaff'])->name('ai_drafts.translate');
     Route::post('/ai-drafts/{chatAiDraft}/edit-in-my-language', [HandleChatAiDraft::class, 'editInMyLanguage'])->name('ai_drafts.edit_in_my_language');

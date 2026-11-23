@@ -13,6 +13,7 @@ final class WarehouseStore {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let cache: WarehouseCaching
     @ObservationIgnored private var userID: Int?
+    @ObservationIgnored private var fetchedUserID: Int?
 
     init(defaults: UserDefaults = .standard, cache: WarehouseCaching = FileWarehouseCache.standard) {
         self.defaults = defaults
@@ -25,11 +26,14 @@ final class WarehouseStore {
         warehouses.first { $0.id == selectedID }
     }
 
+    func restoreCached(for userID: Int) {
+        guard self.userID != userID || warehouses.isEmpty, let cached = cache.load(for: userID) else { return }
+        apply(cached, for: userID)
+    }
+
     func load(for userID: Int, apiClient: APIClient) async {
-        guard self.userID != userID || warehouses.isEmpty else { return }
-        if let cached = cache.load(for: userID) {
-            apply(cached, for: userID)
-        }
+        guard fetchedUserID != userID || warehouses.isEmpty else { return }
+        restoreCached(for: userID)
         await refresh(for: userID, apiClient: apiClient)
     }
 
@@ -37,6 +41,7 @@ final class WarehouseStore {
         do {
             let fetched = try await apiClient.fetchWarehouses()
             apply(fetched, for: userID)
+            fetchedUserID = userID
             loadError = nil
             try? cache.save(fetched, for: userID)
         } catch where error.isCancellation {
@@ -59,6 +64,7 @@ final class WarehouseStore {
         selectedID = nil
         loadError = nil
         userID = nil
+        fetchedUserID = nil
         cache.clear()
     }
 

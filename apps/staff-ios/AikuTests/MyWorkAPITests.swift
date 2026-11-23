@@ -129,6 +129,28 @@ struct MyWorkAPITests {
         #expect(backlog(3) == .pill(Chip("3 unassigned", .warn)))
     }
 
+    @Test func savedBadgesShowAtOnceWhenAikuCannotBeReachedLikeAndroid() async {
+        let file = FileManager.default.temporaryDirectory.appending(path: "screen-cache-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: file) }
+        let cache = ScreenCache(fileURL: file)
+        cache.signedIn(userID: 291)
+        let (_, ok) = client(["mobile/warehouses/1/badges": (200, #"{"data":{"my_work":4,"goods_out_unassigned":"12","goods_in_received":3}}"#)])
+        await WorkBadgesStore(cache: cache).refresh(warehouseID: 1, apiClient: ok)
+
+        let (_, down) = client(["mobile/warehouses/1/badges": (503, "")])
+        let relaunched = WorkBadgesStore(cache: cache)
+        await relaunched.refresh(warehouseID: 1, apiClient: down)
+        #expect(relaunched.myWorkCount == 4)
+        #expect(relaunched.goodsOutUnassignedCount == 12)
+        #expect(relaunched.goodsInReceivedCount == 3)
+
+        let (_, forbidden) = client(["mobile/warehouses/1/badges": (403, "")])
+        let refused = WorkBadgesStore(cache: cache)
+        await refused.refresh(warehouseID: 1, apiClient: forbidden)
+        #expect(refused.myWorkCount == 0)
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) == nil)
+    }
+
     @Test func theMenuShowsOnlyRealCountsLikeAndroid() {
         let items = { (received: Int) in
             ShellMenuCatalog.groups(for: .everything, goodsInReceived: received).flatMap(\.items)

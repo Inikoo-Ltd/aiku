@@ -25,9 +25,10 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Only ever run when the customer presses Re-translate on the portfolios they selected: it replaces their own name and
  * description with ours in the channel language where we have a translation, and sends only the texts that changed to
- * their store (Shopify title/description, WooCommerce name/description, eBay title, never a description): no price is
- * sent and an eBay draft is not published. A product already in their store keeps its handle. When the store refuses,
- * the portfolio goes back to its texts, so My Products never shows a text the store does not have.
+ * their store (Shopify title/description, WooCommerce name/description with its document links and short description,
+ * eBay title, never a description): no price is sent and an eBay draft is not published. A product already in their
+ * store keeps its handle. When the store refuses, the portfolio goes back to its texts, so My Products never shows a
+ * text the store does not have.
  */
 class RetranslateRetinaPortfolios extends RetinaAction
 {

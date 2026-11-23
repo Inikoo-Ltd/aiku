@@ -24,6 +24,9 @@ class UpdateWooProduct implements ShouldBeUnique
     use AsAction;
 
     /**
+     * A description goes out as the product got it on create: with its document links, in both the description and the
+     * short description.
+     *
      * @param  array<int, string>|null  $onlyFields  name and/or description: sends just those, and never the price
      *
      * @return bool whether WooCommerce took the update
@@ -45,14 +48,17 @@ class UpdateWooProduct implements ShouldBeUnique
             return false;
         }
 
-        $productData = [
+        $fields = $onlyFields ?? ['regular_price', 'name', 'description'];
+
+        $productData = Arr::only([
             'regular_price' => (string) $portfolio->customer_price,
             'name'          => $portfolio->customer_product_name,
-            'description'   => $portfolio->customer_description
-        ];
+        ], $fields);
 
-        if ($onlyFields !== null) {
-            $productData = Arr::only($productData, $onlyFields);
+        if (in_array('description', $fields)) {
+            $description                      = StoreWooCommerceProduct::make()->descriptionWithAttachments($portfolio);
+            $productData['description']       = $description;
+            $productData['short_description'] = $description;
         }
 
         $platformPortfolioLog = StorePlatformPortfolioLog::run($portfolio, []);
