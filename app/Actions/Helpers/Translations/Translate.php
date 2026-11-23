@@ -56,7 +56,8 @@ class Translate extends OrgAction
             if ($qualityCheck && $this->isBelowQuality($text, $translated, $languageFrom, $languageTo, $qualityCheck['min_score'])) {
                 $retried     = rescue(fn () => $this->translateWith($text, $languageFrom, $languageTo, $qualityCheck['retry_driver'], $brief));
                 $isConfirmed = $retried !== null;
-                $translated  = $retried !== null && $retried !== $text ? $retried : $translated;
+                $keepsSource = $retried === $text && $translated !== $text && $this->isAlreadyIn($text, $languageTo, $languageFrom);
+                $translated  = $retried !== null && ($retried !== $text || $keepsSource) ? $retried : $translated;
             }
 
             if ($translated !== $text) {
@@ -75,6 +76,18 @@ class Translate extends OrgAction
 
             return $text;
         }
+    }
+
+    /**
+     * A retry that hands the text back unchanged is either a silent failure or right because the
+     * text was already in the target language. Labelled English, an Italian staff answer came back
+     * from the first model translated into English, and that English reached the Italian customer
+     * because the retry's unchanged Italian was taken as a failure (PRE-133). The source language
+     * is listed first so that without Jev the first translation stands, as before.
+     */
+    public function isAlreadyIn(string $text, Language $languageTo, Language $languageFrom): bool
+    {
+        return rescue(fn () => DetectLanguageWithJev::run($text, [$languageFrom, $languageTo])?->code === $languageTo->code, false, false);
     }
 
     /**

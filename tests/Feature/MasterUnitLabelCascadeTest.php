@@ -18,6 +18,7 @@ use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Translations\ChatGPT5Driver;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Helpers\Translations\GetCatalogueTranslationBrief;
 use App\Actions\Helpers\Translations\MineTranslationTerms;
 use App\Actions\Helpers\Translations\Translate;
@@ -517,6 +518,21 @@ test('a text the stronger model confirms stays as it is, like a size code, is tr
 
     expect(Translate::run($size, $english, $slovak, 'catalogue', brief: 'brief'))->toBe($size)
         ->and(Translate::run($size, $english, $slovak, 'catalogue', brief: 'brief'))->toBe($size);
+});
+
+test('a text already in the target language that the first model turned into the source language stays as written when the stronger model hands it back, and an unchanged retry of a text in the source language keeps the first translation', function () {
+    $english     = Language::where('code', 'en')->first();
+    $italian     = Language::where('code', 'it')->first();
+    $answer      = 'Mi dispiace, non inviamo campioni. '.Str::random(6);
+    $englishText = 'Sorry, we do not send samples. '.Str::random(6);
+
+    $translate = Translate::partialMock();
+    $translate->shouldReceive('translateWith')->times(4)->andReturn('Sorry, we do not send samples.', $answer, 'Ci dispiace, niente campioni.', $englishText);
+    $translate->shouldReceive('isBelowQuality')->twice()->andReturn(true);
+    DetectLanguageWithJev::shouldRun()->twice()->andReturn($italian, $english);
+
+    expect(Translate::run($answer, $english, $italian, 'email'))->toBe($answer)
+        ->and(Translate::run($englishText, $english, $italian, 'email'))->toBe('Ci dispiace, niente campioni.');
 });
 
 test('the master meta description and share image reach the webpages of products in shops that follow the master', function () {
