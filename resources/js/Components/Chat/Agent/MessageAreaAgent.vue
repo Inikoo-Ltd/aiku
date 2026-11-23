@@ -2350,7 +2350,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
 
-            <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
+            <div :class="isEmailChat ? 'flex flex-wrap items-start gap-x-5 gap-y-2' : ''">
             <div class="flex min-w-0 flex-1 basis-[28rem] flex-col">
             <div class="relative flex min-w-0 flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
