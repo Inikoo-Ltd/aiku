@@ -1896,6 +1896,17 @@ test('language readiness counts active products with a name and a description pe
         ->and($rows[0]['names'])->toBeGreaterThanOrEqual(1);
 });
 
+test('language readiness skips products whose translations were all removed and saved as an empty array', function () {
+    [, $product] = createProduct($this->shop);
+    $product->state = \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE;
+    $product->saveQuietly();
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['name_i8n' => '[]', 'description_i8n' => '[]']);
+
+    $rows = \App\Actions\Catalogue\Shop\UI\GetShopLanguageReadiness::run($this->shop->fresh());
+
+    expect($rows[0]['code'])->toBe($this->shop->language->code);
+});
+
 afterEach(function () {
     request()->attributes->remove('website_translation_locale');
 });
