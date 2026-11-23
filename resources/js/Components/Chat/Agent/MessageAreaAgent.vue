@@ -21,7 +21,6 @@ import {
     faEye,
     faArchive,
     faAngleDown,
-    faAngleLeft,
     faLock,
     faExclamationCircle,
     faCircle,
@@ -89,7 +88,7 @@ import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChat
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { followPointer } from "@/Composables/followPointer"
-import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight, faExclamationTriangle as faExclamationTriangleLight } from "@fal"
+import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight, faExclamationTriangle as faExclamationTriangleLight, faChevronLeft as faChevronLeftLight } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
 const props = defineProps<{
@@ -2479,9 +2478,11 @@ const handleClickOutside = (e: MouseEvent) => {
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
                 :class="!aiDraftBox?.draft ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
-                    class="flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
+                    class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
-                    <FontAwesomeIcon :icon="faAngleLeft" class="text-[11px] text-pink-500" fixed-width aria-hidden="true" />
+                    <span class="flex w-5 aspect-square shrink-0 items-center justify-center rounded-full border border-pink-300 bg-pink-50 text-pink-500 group-hover/aura:bg-pink-100 group-hover/aura:text-pink-700" aria-hidden="true">
+                        <FontAwesomeIcon :icon="faChevronLeftLight" class="h-[10px] leading-none" fixed-width />
+                    </span>
                     <span class="rotate-180 text-[11px] font-semibold text-pink-700 [writing-mode:vertical-rl]">Aura</span>
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
