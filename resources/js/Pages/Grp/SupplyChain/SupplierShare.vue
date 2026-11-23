@@ -163,6 +163,18 @@ const openProduct = (code: string) => {
 }
 
 const openPurchaseOrderId = ref<number | null>(null)
+const startsProduction = ref(false)
+
+const startProduction = (purchaseOrderId: number) => {
+	startsProduction.value = true
+	openPurchaseOrderId.value = purchaseOrderId
+}
+
+const reloadPurchaseOrderStages = () => {
+	if (props.purchase_order_stages) {
+		router.reload({ only: ["purchase_order_stages"] })
+	}
+}
 
 const openOrder = (reference: string) => {
 	const url = new URL(window.location.href)
@@ -294,7 +306,7 @@ onMounted(() => {
 				<SalesDashboard v-else-if="tab === 'sales' && valuation" seller="supplier" :staff="false" :links="null" :valuation="valuation" :sales="sales" :feedback="feedback" :language="language" />
 
 				<template v-else-if="tab === 'purchase_orders'">
-					<SupplierPortalPurchaseOrderStages v-if="purchase_order_stages" :data="purchase_order_stages" @list="go('purchase_order_list')" @open="openPurchaseOrderId = $event" />
+					<SupplierPortalPurchaseOrderStages v-if="purchase_order_stages" :data="purchase_order_stages" @list="go('purchase_order_list')" @open="openPurchaseOrderId = $event" @start-production="startProduction" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 
@@ -328,7 +340,7 @@ onMounted(() => {
 			</div>
 		</main>
 
-		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" :deposit-route="purchase_order_deposit_route" :notes-route="purchase_order_notes_route" :documents-route="purchase_order_documents_route" @agreement="go('agreement')" />
+		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" v-model:start-production="startsProduction" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" :deposit-route="purchase_order_deposit_route" :notes-route="purchase_order_notes_route" :documents-route="purchase_order_documents_route" @agreement="go('agreement')" @production-saved="reloadPurchaseOrderStages" />
 
 		<footer class="fixed bottom-0 left-0 z-20 flex h-6 w-screen items-center justify-between gap-x-4 bg-black px-4 text-xs text-slate-400">
 			<a href="https://aiku.io/" target="_blank" rel="noopener" class="flex shrink-0 items-center gap-x-1.5 whitespace-nowrap hover:text-white">

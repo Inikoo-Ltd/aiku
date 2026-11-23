@@ -9,7 +9,7 @@
 import { computed, ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
-import PurchaseOrderJourneyRibbon, { type JourneyRibbon } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
+import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -25,7 +25,15 @@ const props = defineProps<{
 	data: { stages: Stage[]; ribbons: JourneyRibbon[] }
 }>()
 
-const emit = defineEmits<{ list: []; open: [purchaseOrderId: number] }>()
+const emit = defineEmits<{ list: []; open: [purchaseOrderId: number]; startProduction: [purchaseOrderId: number] }>()
+
+const stageActions = { in_production: ctrans("Click to start production") }
+
+const runStageAction = (ribbon: JourneyRibbon, segment: JourneySegment) => {
+	if (segment.key === "in_production") {
+		emit("startProduction", ribbon.id)
+	}
+}
 
 const locale = useLocaleStore()
 
@@ -119,7 +127,9 @@ const amount = (ribbon: JourneyRibbon): string => (ribbon.amount !== null && rib
 					:stages="data.stages"
 					:group-currency="ribbon.currency_code"
 					:can-mark="false"
-					:expand-all="false">
+					:expand-all="false"
+					:stage-actions="stageActions"
+					@mark="runStageAction">
 					<template #details>
 						<div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
 							<div class="flex items-center gap-1.5">

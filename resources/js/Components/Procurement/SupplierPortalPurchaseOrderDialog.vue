@@ -133,8 +133,9 @@ const props = defineProps<{
 }>()
 
 const purchaseOrderId = defineModel<number | null>({ required: true })
+const startsProduction = defineModel<boolean>("startProduction", { default: false })
 
-const emit = defineEmits<{ agreement: [] }>()
+const emit = defineEmits<{ agreement: []; productionSaved: [] }>()
 
 const openAgreement = () => {
 	purchaseOrderId.value = null
@@ -168,11 +169,15 @@ watch(purchaseOrderId, async (id) => {
 		const { data } = await axios.get<PurchaseOrderDetail>(props.purchaseOrderRoute.replace(/\/0$/, `/${id}`))
 		if (purchaseOrderId.value === id) {
 			detail.value = data
+			if (startsProduction.value && data.production.editable && !data.production.started_at) {
+				openProductionEditor()
+			}
 		}
 	} catch {
 		loadError.value = ctrans("This order could not be opened. Try again.")
 	} finally {
 		isLoading.value = false
+		startsProduction.value = false
 	}
 })
 
@@ -263,6 +268,7 @@ const saveProduction = async () => {
 			detail.value = data
 		}
 		isEditingProduction.value = false
+		emit("productionSaved")
 	} catch (error: any) {
 		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
 		productionError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The dates could not be saved. Try again.")

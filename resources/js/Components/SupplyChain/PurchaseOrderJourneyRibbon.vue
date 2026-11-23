@@ -79,6 +79,7 @@ const props = defineProps<{
     expandAll: boolean
     selectable?: boolean
     selected?: boolean
+    stageActions?: Record<string, string>
 }>()
 
 const emit = defineEmits<{
@@ -268,6 +269,8 @@ function cellTitle(segment: JourneySegment): string {
     const blocked = blockedReason(segment)
     if (props.canMark && segment.mark_column !== null && blocked) {
         parts.push(blocked)
+    } else if (stageAction(segment)) {
+        parts.push(stageAction(segment)!)
     } else if (isMarkable(segment)) {
         parts.push(ctrans("Click to mark done"))
     }
@@ -291,8 +294,12 @@ function blockedReason(segment: JourneySegment): string | null {
     return open && index > lastPassed + 1 ? ctrans("Finish :stage first", { stage: open.label }) : null
 }
 
+function stageAction(segment: JourneySegment): string | null {
+    return isCurrent(segment) ? props.stageActions?.[segment.key] ?? null : null
+}
+
 function isMarkable(segment: JourneySegment): boolean {
-    return props.canMark && segment.mark_column !== null && !blockedReason(segment)
+    return (props.canMark && segment.mark_column !== null && !blockedReason(segment)) || stageAction(segment) !== null
 }
 </script>
 
