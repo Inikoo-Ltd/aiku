@@ -14,11 +14,13 @@ use App\Actions\Goods\Barcode\SyncBarcodeToTradeUnit;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Actions\Traits\WithActionUpdate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -63,12 +65,13 @@ class UpdateOrgStockUnitBarcode extends OrgAction
 
         if ($barcode) {
             $holder = $barcode->tradeUnitsActive->first();
-            if ($holder && $holder->id !== $tradeUnit->id) {
+            if ($holder && $holder->id !== $tradeUnit->id && $this->isInUse($holder)) {
                 throw ValidationException::withMessages([
-                    'unit_barcode' => __('Barcode :number already belongs to a different item, :item. Each item needs its own barcode.', [
+                    'unit_barcode'            => __('Barcode :number already belongs to a different item, :item. Each item needs its own barcode.', [
                         'number' => $number,
                         'item'   => $holder->name ? $holder->code.' ('.$holder->name.')' : $holder->code,
                     ]),
+                    'unit_barcode_holder_url' => route('grp.trade_units.units.show', ['tradeUnit' => $holder->slug]),
                 ]);
             }
         } else {
@@ -83,6 +86,12 @@ class UpdateOrgStockUnitBarcode extends OrgAction
         SyncBarcodeToTradeUnit::make()->action($barcode, $tradeUnit);
 
         return $orgStock->refresh();
+    }
+
+    private function isInUse(TradeUnit $tradeUnit): bool
+    {
+        return DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists()
+            || DB::table('invoice_transaction_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists();
     }
 
     public function authorize(ActionRequest $request): bool

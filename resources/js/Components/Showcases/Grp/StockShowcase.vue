@@ -238,6 +238,7 @@ const editingHasNumber = ref(false)
 const editingWarning = ref<string | null>(null)
 
 const barcodeError = ref<string | null>(null)
+const barcodeHolderUrl = ref<string | null>(null)
 
 const barcodeInputElement = ref<{ $el: HTMLInputElement } | null>(null)
 
@@ -273,6 +274,7 @@ const applyBarcodeChange = (value: string | null, fromPool = false) => {
             onStart: () => {
                 isSavingBarcode.value = true
                 barcodeError.value = null
+                barcodeHolderUrl.value = null
             },
             onFinish: () => isSavingBarcode.value = false,
             onSuccess: () => {
@@ -281,6 +283,7 @@ const applyBarcodeChange = (value: string | null, fromPool = false) => {
             },
             onError: (errors) => {
                 barcodeError.value = errors[field] || errors.barcode || ctrans("Could not save the barcode")
+                barcodeHolderUrl.value = errors.unit_barcode_holder_url || null
                 nextTick(() => barcodeInputElement.value?.$el?.select())
             },
         }
@@ -717,6 +720,9 @@ const saveBarcode = (value: string | null) => {
                     <div>
                         <div class="font-semibold">{{ ctrans("The barcode was not saved") }}</div>
                         <div class="mt-1">{{ barcodeError }}</div>
+                        <a v-if="barcodeHolderUrl" :href="barcodeHolderUrl" target="_blank" class="mt-2 inline-block font-semibold underline">
+                            {{ ctrans("Open that trade unit") }}
+                        </a>
                     </div>
                 </div>
                 <Button

@@ -16,6 +16,7 @@ use App\Enums\Helpers\Barcode\BarcodeTypeEnum;
 use App\Enums\Helpers\Barcode\BarcodeStatusEnum;
 use App\Actions\Goods\Barcode\Json\GetNextFreeBarcode;
 use App\Actions\Inventory\OrgStock\UpdateOrgStockUnitBarcode;
+use Illuminate\Support\Facades\DB;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
@@ -384,6 +385,21 @@ test('a unit EAN held by another trade unit is refused naming that item by code 
 
     expect($orgStock->tradeUnits->first()->refresh()->barcode)->toBeNull()
         ->and($holder->refresh()->barcode)->toBe($number);
+});
+
+test('HELP-4891 a unit EAN held by a trade unit nothing uses moves to the SKO being edited', function () {
+    $number = '50'.substr((string) hrtime(true), -11);
+
+    $zombieOrgStock = ($this->makeOrgStock)([[]], null);
+    UpdateOrgStockUnitBarcode::make()->handle($zombieOrgStock, ['unit_barcode' => $number]);
+    $zombie = $zombieOrgStock->tradeUnits->first()->refresh();
+    DB::table('model_has_trade_units')->where('trade_unit_id', $zombie->id)->delete();
+
+    $orgStock = ($this->makeOrgStock)([['barcode' => null, 'barcode_id' => null]], null);
+    UpdateOrgStockUnitBarcode::make()->handle($orgStock, ['unit_barcode' => $number]);
+
+    expect($orgStock->tradeUnits->first()->refresh()->barcode)->toBe($number)
+        ->and($zombie->refresh()->barcode)->toBeNull();
 });
 
 test('a pack and a carton get a GTIN-14 of their own from the unit EAN, and a scan of it reads back the unit and the batch', function () {
