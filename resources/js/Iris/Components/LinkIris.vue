@@ -119,8 +119,20 @@ const resolvedHref = computed<string | null>(() => {
     return href.slice(1) // "#section"
   }
 
-  return href
+  return location === "iris" && linkLocation.value === "retina" ? withVisitorLocale(href) : href
 })
+
+const withVisitorLocale = (href: string): string => {
+  const visitorLocale = layout?.iris?.locale
+  if (!visitorLocale || visitorLocale === layout?.iris?.website_i18n?.shop_language?.code || /[?&]locale=/.test(href)) {
+    return href
+  }
+
+  const [pathAndQuery, hash] = href.split("#", 2)
+  const separator = pathAndQuery.includes("?") ? "&" : "?"
+
+  return `${pathAndQuery}${separator}locale=${encodeURIComponent(visitorLocale)}${hash !== undefined ? `#${hash}` : ""}`
+}
 
 /**
  * Routing decision only (never for anchors)
