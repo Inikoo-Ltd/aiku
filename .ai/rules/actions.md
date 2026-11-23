@@ -17,3 +17,6 @@ Vika, 3 Nov 2026: a form blueprint field that holds money (cost, price, expense,
 
 ## UpdateCustomer reads tax_number from the live request even under action()
 HELP-4808 (18 Nov 2026). WithPrepareTaxNumberValidation::prepareForValidation (UpdateCustomer and other tax-number actions) reads `tax_number` from the current HTTP request, also when the action is called with ->action($model, [...]) inside a controller. If the outer request has a `tax_number` field of another shape (e.g. a string), it overwrites the array you passed and the customer's tax number is set to null/deleted. Never name an outer request field `tax_number` when the controller calls UpdateCustomer::make()->action() with a tax number; UpdateInvoiceTaxNumber uses `formatted_tax_number` for that reason.
+
+## ActionRequest::validate() takes no rules
+Lorisleiva's ActionRequest::validate() (ValidateActions trait) takes no arguments and returns void: `$request->validate(['x' => ...])` on an ActionRequest silently ignores the rules and returns null. In a plain AsAction method that validates inline, type-hint Illuminate\Http\Request, whose validate(array) macro returns the validated data, or define rules() on the action.

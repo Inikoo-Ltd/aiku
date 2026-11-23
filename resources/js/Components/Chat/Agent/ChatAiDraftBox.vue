@@ -360,7 +360,14 @@ watch(() => props.sessionUlid, () => {
 
 onBeforeUnmount(stopListening)
 
-defineExpose({ take, draft, busy, offerToEditor, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
+const replaceText = (draftId: number, text: string) => {
+    if (draft.value?.id !== draftId) return
+    draft.value.text = text
+    staffTranslation.value = null
+    showTranslation.value = false
+}
+
+defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
 </script>
 
 <template>

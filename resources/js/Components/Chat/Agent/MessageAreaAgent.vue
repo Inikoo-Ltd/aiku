@@ -44,6 +44,7 @@ import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Link } from "@inertiajs/vue3"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
+import AskAuraDialog from "@/Components/Chat/Agent/AskAuraDialog.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
 import Image from "@common/Components/Image.vue"
@@ -936,6 +937,18 @@ const putAiDraftBack = () => {
     } finally {
         aiDraftBox.value?.offerToEditor()
     }
+}
+
+const askAuraOpen = ref(false)
+const onAuraRedrafted = (text: string, draftId: number | null) => {
+    if (draftId === null) {
+        newMessage.value = text
+        return
+    }
+    aiDraftBox.value?.replaceText(draftId, text)
+    newMessage.value = ""
+    aiDraftText.value = null
+    putAiDraftBack()
 }
 
 const AURA_COLLAPSED_KEY = "chat-aura-collapsed"
@@ -2420,12 +2433,19 @@ const handleClickOutside = (e: MouseEvent) => {
                     <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
                 </div>
                 <div v-if="showAuraRow" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium text-pink-700">
-                    <span class="aura-tag inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+                    <button type="button" class="aura-tag inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
                         :class="{ 'aura-tag-angry': aiDraftBox?.draft?.aura_angry && aiDraftInEditor, 'aura-tag-off': !aiDraftInEditor }"
-                        :title="!aiDraftInEditor ? ctrans('Aura is resting: this reply is yours') : aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
+                        :title="(!aiDraftInEditor ? ctrans('Aura is resting: this reply is yours') : aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')) + ' · ' + ctrans('Ask Aura')"
+                        @click="askAuraOpen = true">
                         Aura
                         <span v-if="!aiDraftInEditor" class="aura-zz relative ml-0.5 h-3 w-2.5" aria-hidden="true"><span>z</span><span>z</span></span>
-                    </span>
+                    </button>
+                    <button type="button" class="shrink-0 rounded px-1 text-[11px] font-medium text-pink-600 underline-offset-2 hover:text-pink-800 hover:underline"
+                        v-tooltip="ctrans('Ask Aura about this conversation')" @click="askAuraOpen = true">
+                        {{ ctrans("Ask") }}
+                    </button>
+                    <AskAuraDialog v-model:visible="askAuraOpen" :session-ulid="chatSession?.ulid" :reply="newMessage"
+                        :draft-id="aiDraftInEditor || !newMessage.trim() ? aiDraftBox?.draft?.id ?? null : null" @redrafted="onAuraRedrafted" />
                     <div v-if="newMessage.trim()" class="flex items-center gap-1">
                         <PolishMessageButton v-model="newMessage"
                             :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />

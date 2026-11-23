@@ -2063,6 +2063,93 @@ test('the languages staff read are taken from what they wrote themselves until t
     expect(\App\Actions\Chat\ChatSession\GetChatLanguagesRead::make()->handle($this->user->refresh()))->toBe(['fr']);
 });
 
+test('an agent asks Aura about the chat: she looks it up read only as that agent, keeps the answer for them alone, and redrafts her draft with it', function () {
+    config()->set('services.openrouter.api_key', 'or-key');
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatAiDraft::class]);
+    \App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(null);
+
+    $english = Language::where('code', 'en')->value('id');
+    $session = ChatSession::create([
+        'ulid'                    => (string) Str::ulid(),
+        'status'                  => ChatSessionStatusEnum::ACTIVE,
+        'channel'                 => ChatChannelEnum::EMAIL,
+        'shop_id'                 => $this->shop->id,
+        'user_language_id'        => $english,
+        'active_user_language_id' => $english,
+        'last_visitor_message_at' => now(),
+        'metadata'                => ['email_from' => 'buyer@example.com', 'email_subject' => 'Replacement'],
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'One candle arrived broken, can you send another?',
+    ]);
+    $draft = \App\Actions\Chat\ChatSession\StoreAssistantChatDraft::make()->handle($session, $this->user, 'Sorry about the candle, we will look into it.', 'test');
+
+    $completion = fn (array $message) => ['choices' => [['message' => $message, 'finish_reason' => 'stop']], 'usage' => ['prompt_tokens' => 100, 'completion_tokens' => 20]];
+    \Illuminate\Support\Facades\Http::fake([
+        'openrouter.ai/api/v1/chat/completions' => \Illuminate\Support\Facades\Http::sequence()
+            ->push($completion(['role' => 'assistant', 'content' => null, 'tool_calls' => [['id' => 'c1', 'type' => 'function', 'function' => ['name' => 'check_products', 'arguments' => '{"codes":["NOPE-404"]}']]]]))
+            ->push($completion(['role' => 'assistant', 'content' => 'NOPE-404 is not a product of this shop, so I cannot say it is in stock.']))
+            ->push($completion(['role' => 'assistant', 'content' => null, 'tool_calls' => [['id' => 'l1', 'type' => 'function', 'function' => ['name' => 'read_brief', 'arguments' => '{}']]]]))
+            ->push($completion(['role' => 'assistant', 'content' => null, 'tool_calls' => [['id' => 'l2', 'type' => 'function', 'function' => ['name' => 'open_order', 'arguments' => '{"order":"NOT-HIS"}']]]]))
+            ->push($completion(['role' => 'assistant', 'content' => null, 'tool_calls' => [['id' => 'l3', 'type' => 'function', 'function' => ['name' => 'check_products', 'arguments' => '{"codes":["X"]}']]]]))
+            ->push($completion(['role' => 'assistant', 'content' => 'I could not find that order for this customer.']))
+            ->push($completion(['role' => 'assistant', 'content' => json_encode(['text' => 'Sorry about the candle. We will send another one with your next order.'])])),
+    ]);
+
+    actingAs($this->user);
+    $asked = $this->postJson(route('grp.api.chats.sessions.aura_questions.store', [$session->ulid]), ['question' => 'Is NOPE-404 in stock to send a replacement?'])
+        ->assertOk()
+        ->json('data');
+
+    $question = \App\Models\Chat\ChatAuraQuestion::where('chat_session_id', $session->id)->sole();
+    expect($asked)->toHaveCount(1)
+        ->and($asked[0]['answered'])->toBeTrue()
+        ->and($asked[0]['answer'])->toBe('NOPE-404 is not a product of this shop, so I cannot say it is in stock.')
+        ->and($question->user_id)->toBe($this->user->id)
+        ->and($question->model_calls)->toBe(2)
+        ->and(array_column($question->tool_calls, 'name'))->toBe(['check_products']);
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        $tools = array_column(array_column($request['tools'] ?? [], 'function'), 'name');
+
+        return $tools === ['open_order', 'check_products', 'read_brief'];
+    });
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains(json_encode($request['messages'] ?? []), 'One candle arrived broken'));
+
+    $colleague = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAs($colleague)->getJson(route('grp.api.chats.sessions.aura_questions.index', [$session->ulid]))->assertForbidden();
+    actingAs($colleague)->postJson(route('grp.api.chats.aura_questions.redraft', [$question->id]), ['text' => 'x'])->assertForbidden();
+
+    \Illuminate\Support\Facades\Auth::setUser($colleague);
+    $looped = \App\Actions\Chat\ChatSession\AskChatAura::make()->handle($session, $this->user, 'Where is order NOT-HIS?')->refresh();
+    expect($looped->answer)->toBe('I could not find that order for this customer.')
+        ->and($looped->model_calls)->toBe(\App\Actions\Chat\ChatSession\AnswerChatAuraQuestion::MAX_MODEL_CALLS)
+        ->and(array_column($looped->tool_calls, 'name'))->toBe(['read_brief', 'open_order', 'check_products'])
+        ->and($looped->tool_calls[1]['error'])->toContain('not linked to a customer')
+        ->and(\Illuminate\Support\Facades\Auth::id())->toBe($colleague->id);
+    \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => ($request['tool_choice'] ?? null) === 'none');
+
+    actingAs($this->user)->getJson(route('grp.api.chats.sessions.aura_questions.index', [$session->ulid]))->assertOk()->assertJsonCount(2, 'data');
+
+    $redraft = $this->postJson(route('grp.api.chats.aura_questions.redraft', [$question->id]), ['text' => 'Sorry about the candle, we will look into it.', 'draft_id' => $draft->id])
+        ->assertOk()
+        ->json('data');
+
+    expect($redraft)->toBe(['text' => 'Sorry about the candle. We will send another one with your next order.', 'draft_id' => $draft->id])
+        ->and($draft->refresh()->text)->toBe('Sorry about the candle. We will send another one with your next order.')
+        ->and($draft->status)->toBe(\App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::PENDING)
+        ->and(data_get($draft->facts, 'redrafts.0.from'))->toBe('Sorry about the candle, we will look into it.')
+        ->and(data_get($draft->facts, 'redrafts.0.aura_question_id'))->toBe($question->id)
+        ->and($question->refresh()->redrafted_at)->not->toBeNull();
+
+    $this->postJson(route('grp.api.chats.aura_questions.redraft', [$question->id]), ['text' => '', 'draft_id' => $draft->id + 1000])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('redraft');
+});
+
 test('the Re: line signals are counted for a linked customer: complaints this week, emails today, first order', function () {
     $customer = createOwnCustomer($this->shop, 'signals-case');
     $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
