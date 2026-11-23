@@ -344,7 +344,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         }
 
         $orgStocks = OrgStock::with('tradeUnits.image', 'stats', 'stock.stockFamily')->whereIn('id', $orgStockIds)->get()->keyBy('id');
-        $supplierProducts    = SupplierProduct::whereIn('id', $paginator->getCollection()->pluck('supplier_product_id')->filter()->unique())->get()->keyBy('id');
+        $supplierProducts    = SupplierProduct::with('image')->whereIn('id', $paginator->getCollection()->pluck('supplier_product_id')->filter()->unique())->get()->keyBy('id');
         $partnerLeadTimeDays = $purchaseOrder?->parent instanceof OrgPartner ? GetPartnerLeadTime::run($purchaseOrder->parent)['days'] : null;
         $fallbackLeadTimeDays = match (true) {
             $purchaseOrder?->parent instanceof OrgSupplier => GetSupplierLeadTime::run($purchaseOrder->parent)['days'],
@@ -358,9 +358,11 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
         $paginator->getCollection()->transform(function ($row) use ($orgStocks, $quarterlyUsage, $stockDeliveries, $discontinueSuggestions, $supplierProducts, $partnerLeadTimeDays, $fallbackLeadTimeDays) {
             $orgStock  = $orgStocks->get($row->org_stock_id);
-            $tradeUnit = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+            $tradeUnit       = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+            $supplierProduct = $supplierProducts->get($row->supplier_product_id ?? null);
+            $imageOwner      = $tradeUnit ?? ($supplierProduct?->image_id ? $supplierProduct : null);
 
-            $row->image_sources      = $tradeUnit?->imageSources(240, 240);
+            $row->image_sources      = $imageOwner?->imageSources(240, 240);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
             $row->stock_available    = $orgStock?->quantity_available;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();

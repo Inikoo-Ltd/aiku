@@ -128,17 +128,18 @@ class GetPurchaseOrderContainers
                 && AddPurchaseOrdersToStockDelivery::userCanAdd($stockDelivery, $user))
             ->mapWithKeys(fn (StockDelivery $stockDelivery) => [
                 $stockDelivery->id => RemovePurchaseOrderFromStockDelivery::itemsOfPurchaseOrder($stockDelivery, $purchaseOrder)
-                    ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+                    ->with(['supplierProduct:id,code,name,image_id', 'supplierProduct.image', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
                     ->orderBy('stock_delivery_items.id')
                     ->get()
                     ->map(function (StockDeliveryItem $item) {
-                        $tradeUnit = $item->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+                        $tradeUnit  = $item->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+                        $imageOwner = $tradeUnit ?? ($item->supplierProduct?->image_id ? $item->supplierProduct : null);
 
                         return [
                             'id'              => $item->id,
                             'code'            => $item->supplierProduct?->code ?? $item->orgStock?->code,
                             'name'            => $item->supplierProduct?->name ?? $item->orgStock?->name,
-                            'image_thumbnail' => $tradeUnit?->imageSources(80, 80),
+                            'image_thumbnail' => $imageOwner?->imageSources(80, 80),
                             'unit_quantity'   => (float) $item->unit_quantity,
                         ];
                     })
@@ -155,7 +156,7 @@ class GetPurchaseOrderContainers
         $query = $purchaseOrder->purchaseOrderTransactions()->getQuery()
             ->select('purchase_order_transactions.*')
             ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::CONFIRMED)
-            ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image', 'organisation:id,code'])
+            ->with(['supplierProduct:id,code,name,image_id', 'supplierProduct.image', 'orgStock:id,code,name', 'orgStock.tradeUnits.image', 'organisation:id,code'])
             ->orderBy('purchase_order_transactions.id');
 
         IndexPurchaseOrderTransactions::selectAgentWarehouseQuantities($query);
@@ -165,12 +166,13 @@ class GetPurchaseOrderContainers
                 $transaction->setRelation('purchaseOrder', $purchaseOrder);
                 $agentWarehouse = PurchaseOrderTransactionResource::make($transaction)->agentWarehouse($transaction, $request);
                 $tradeUnit      = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+                $imageOwner     = $tradeUnit ?? ($transaction->supplierProduct?->image_id ? $transaction->supplierProduct : null);
 
                 return [
                     'id'              => $transaction->id,
                     'code'            => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
                     'name'            => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
-                    'image_thumbnail' => $tradeUnit?->imageSources(80, 80),
+                    'image_thumbnail' => $imageOwner?->imageSources(80, 80),
                     'agent_warehouse' => $agentWarehouse,
                 ];
             })

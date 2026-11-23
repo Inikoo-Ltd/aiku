@@ -361,18 +361,19 @@ class ShowPurchaseOrder extends OrgAction
                 'delivery_items'            => $purchaseOrder->state->isAgreed()
                     ? $purchaseOrder->purchaseOrderTransactions()
                         ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
-                        ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+                        ->with(['supplierProduct:id,code,name,image_id', 'supplierProduct.image', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
                         ->get(['id', 'supplier_product_id', 'org_stock_id', 'quantity_ordered'])
                         ->map(function (PurchaseOrderTransaction $transaction) {
-                            $tradeUnit = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+                            $tradeUnit  = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+                            $imageOwner = $tradeUnit ?? ($transaction->supplierProduct?->image_id ? $transaction->supplierProduct : null);
 
                             return [
                                 'id'               => $transaction->id,
                                 'code'             => $transaction->supplierProduct?->code ?? $transaction->orgStock?->code,
                                 'name'             => $transaction->supplierProduct?->name ?? $transaction->orgStock?->name,
                                 'quantity_ordered' => $transaction->quantity_ordered,
-                                'image_thumbnail'  => $tradeUnit?->imageSources(80, 80),
-                                'image_full'       => $tradeUnit?->image?->fullResolutionUrls(),
+                                'image_thumbnail'  => $imageOwner?->imageSources(80, 80),
+                                'image_full'       => $imageOwner?->image?->fullResolutionUrls(),
                             ];
                         })->values()
                     : [],

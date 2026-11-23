@@ -45,7 +45,7 @@ class GetPurchaseOrderReadyChecks
 
         $transactions = $purchaseOrder->purchaseOrderTransactions()
             ->whereIn('id', $receiptItems->pluck('purchase_order_transaction_id')->filter()->unique())
-            ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+            ->with(['supplierProduct:id,code,name,image_id', 'supplierProduct.image', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
             ->get()
             ->keyBy('id');
 
@@ -131,12 +131,13 @@ class GetPurchaseOrderReadyChecks
      */
     private function product(?PurchaseOrderTransaction $transaction): array
     {
-        $tradeUnit = $transaction?->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $tradeUnit  = $transaction?->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $imageOwner = $tradeUnit ?? ($transaction?->supplierProduct?->image_id ? $transaction->supplierProduct : null);
 
         return [
             'code'            => $transaction?->supplierProduct?->code ?? $transaction?->orgStock?->code,
             'name'            => $transaction?->supplierProduct?->name ?? $transaction?->orgStock?->name,
-            'image_thumbnail' => $tradeUnit?->imageSources(80, 80),
+            'image_thumbnail' => $imageOwner?->imageSources(80, 80),
         ];
     }
 }
