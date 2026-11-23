@@ -143,6 +143,7 @@ enum GoodsInReturnPutType {
 
 enum GoodsInEvent: Equatable, Sendable {
     case done(message: String?, isNothingChanged: Bool, wasRaised: Bool)
+    case queued
     case refused(message: String)
 }
 
@@ -197,6 +198,19 @@ struct GoodsInPagedList<Row: Sendable & Equatable>: Equatable, Sendable {
         copy.loadingPage = nil
         copy.failedPage = page
         copy.problem = problem
+        copy.isRefreshing = false
+        return copy
+    }
+
+    func savedCopy(_ shown: [Row]) -> GoodsInPagedList {
+        var copy = self
+        copy.rows = shown
+        copy.page = 1
+        copy.lastPage = 1
+        copy.total = shown.count
+        copy.loadingPage = nil
+        copy.failedPage = nil
+        copy.problem = nil
         copy.isRefreshing = false
         return copy
     }
@@ -295,7 +309,8 @@ enum GoodsInLineScanOutcome: Equatable, Sendable {
 final class GoodsInDeliveryFeed {
     let warehouseID: Int
     let deliveryID: Int
-    private(set) var delivery: MobileStockDelivery?
+    private(set) var base: MobileStockDelivery?
+    private(set) var copyAt: Date?
     private(set) var isLoading = false
     private(set) var loadError: String?
     var chosenView: GoodsInDeliveryView?
@@ -313,9 +328,18 @@ final class GoodsInDeliveryFeed {
         self.warehouseID = warehouseID
         self.deliveryID = deliveryID
         self.service = service
+        OfflineRecordFollowers.shared.follow(.stockDelivery(deliveryID), by: self) { feed in
+            Task { await feed.load() }
+        }
     }
 
     var isWorking: Bool { working != nil }
+
+    var offlineQueue: OfflineRecordQueue { OfflineRecordQueue(warehouseID: warehouseID, record: .stockDelivery(deliveryID)) }
+
+    var delivery: MobileStockDelivery? {
+        base.map { GoodsInOfflineOverlay.apply(offlineQueue.unsent, to: $0) }
+    }
 
     var view: GoodsInDeliveryView? {
         guard let delivery else { return nil }
@@ -337,12 +361,18 @@ final class GoodsInDeliveryFeed {
         do {
             let fetched = try await service.delivery(warehouseID, deliveryID)
             guard !Task.isCancelled else { return }
-            delivery = fetched
+            base = fetched
+            copyAt = nil
             isLoading = false
         } catch where error.isCancellation {
             return
         } catch {
             isLoading = false
+            if error as? APIError == .offline, let copy = offlineQueue.copy(MobileStockDelivery.self) {
+                base = copy.value
+                copyAt = copy.downloadedAt
+                return
+            }
             loadError = GoodsInText.problem(error)
         }
     }
@@ -419,7 +449,7 @@ final class GoodsInDeliveryFeed {
     }
 
     private func act(_ write: GoodsInDeliveryWrite) async {
-        guard delivery != nil, !isWorking else { return }
+        guard let shown = delivery, !isWorking else { return }
         loadTask?.cancel()
         isLoading = false
         working = write
@@ -427,9 +457,18 @@ final class GoodsInDeliveryFeed {
         writeErrors = [:]
         unsurePlacement = nil
         defer { working = nil }
+        let offlinePayload = GoodsInOfflinePayloads.placement(write, deliveryID: deliveryID, shown: shown)
+        if let offlinePayload {
+            if offlineQueue.shouldQueue, queueOffline(write, offlinePayload) { return }
+        } else if let reason = await offlineQueue.blockingReason() {
+            lastWrite = write
+            event = .refused(message: reason)
+            return
+        }
         do {
             let result = try await service.writeDelivery(warehouseID, deliveryID, write)
-            delivery = result.data
+            base = result.data
+            copyAt = nil
             loadError = nil
             lastWrite = write
             var wasRaised = false
@@ -448,12 +487,20 @@ final class GoodsInDeliveryFeed {
         } catch where error.isCancellation {
             return
         } catch {
+            if error as? APIError == .offline, let offlinePayload, queueOffline(write, offlinePayload) { return }
             lastWrite = write
             if write.isPlacement, GoodsInText.isUnsure(error) {
                 unsurePlacement = write
             }
             event = .refused(message: GoodsInText.problem(error))
         }
+    }
+
+    private func queueOffline(_ write: GoodsInDeliveryWrite, _ payload: OfflinePayload) -> Bool {
+        guard offlineQueue.enqueue(.placeStockDeliveryItem, payload: payload) != nil else { return false }
+        lastWrite = write
+        event = .queued
+        return true
     }
 
     static func nonEmpty(_ text: String?) -> String? {
@@ -467,7 +514,8 @@ final class GoodsInDeliveryFeed {
 final class GoodsInReturnFeed {
     let warehouseID: Int
     let returnID: Int
-    private(set) var goodsReturn: MobileReturn?
+    private(set) var base: MobileReturn?
+    private(set) var copyAt: Date?
     private(set) var isLoading = false
     private(set) var loadError: String?
     private(set) var working: GoodsInReturnWrite?
@@ -481,9 +529,18 @@ final class GoodsInReturnFeed {
         self.warehouseID = warehouseID
         self.returnID = returnID
         self.service = service
+        OfflineRecordFollowers.shared.follow(.customerReturn(returnID), by: self) { feed in
+            Task { await feed.load() }
+        }
     }
 
     var isWorking: Bool { working != nil }
+
+    var offlineQueue: OfflineRecordQueue { OfflineRecordQueue(warehouseID: warehouseID, record: .customerReturn(returnID)) }
+
+    var goodsReturn: MobileReturn? {
+        base.map { GoodsInOfflineOverlay.apply(offlineQueue.unsent, to: $0) }
+    }
 
     func load() async {
         guard !isWorking else { return }
@@ -499,12 +556,18 @@ final class GoodsInReturnFeed {
         do {
             let fetched = try await service.goodsReturn(warehouseID, returnID)
             guard !Task.isCancelled else { return }
-            goodsReturn = fetched
+            base = fetched
+            copyAt = nil
             isLoading = false
         } catch where error.isCancellation {
             return
         } catch {
             isLoading = false
+            if error as? APIError == .offline, let copy = offlineQueue.copy(MobileReturn.self) {
+                base = copy.value
+                copyAt = copy.downloadedAt
+                return
+            }
             loadError = GoodsInText.problem(error)
         }
     }
@@ -531,16 +594,25 @@ final class GoodsInReturnFeed {
     }
 
     private func act(_ write: GoodsInReturnWrite) async {
-        guard goodsReturn != nil, !isWorking else { return }
+        guard let shown = goodsReturn, !isWorking else { return }
         loadTask?.cancel()
         isLoading = false
         working = write
         event = nil
         writeErrors = [:]
         defer { working = nil }
+        let offlinePut = GoodsInOfflinePayloads.returnPut(write, returnID: returnID, shown: shown)
+        if let offlinePut {
+            if offlineQueue.shouldQueue, queueOffline(write, offlinePut) { return }
+        } else if let reason = await offlineQueue.blockingReason() {
+            lastWrite = write
+            event = .refused(message: reason)
+            return
+        }
         do {
             let result = try await service.writeReturn(warehouseID, returnID, write)
-            goodsReturn = result.data
+            base = result.data
+            copyAt = nil
             loadError = nil
             lastWrite = write
             event = .done(
@@ -555,9 +627,17 @@ final class GoodsInReturnFeed {
         } catch where error.isCancellation {
             return
         } catch {
+            if error as? APIError == .offline, let offlinePut, queueOffline(write, offlinePut) { return }
             lastWrite = write
             event = .refused(message: GoodsInText.problem(error))
         }
+    }
+
+    private func queueOffline(_ write: GoodsInReturnWrite, _ put: (operation: OfflineOperation, payload: OfflinePayload)) -> Bool {
+        guard offlineQueue.enqueue(put.operation, payload: put.payload) != nil else { return false }
+        lastWrite = write
+        event = .queued
+        return true
     }
 }
 
@@ -567,16 +647,19 @@ struct GoodsInDeliveryFilter: Hashable, Sendable {
     var search = ""
     var dispatched: GoodsInDispatchedBucket?
     var sort: GoodsInDeliverySort?
+    var dates = ListDateRange()
 
-    var activeFilterCount: Int { [source != nil, dispatched != nil].filter { $0 }.count }
+    var activeFilterCount: Int { [source != nil, dispatched != nil, dates.isSet].filter { $0 }.count }
+    var panelCount: Int { activeFilterCount + (sort == nil ? 0 : 1) }
     var isFiltered: Bool { activeFilterCount > 0 || sort != nil }
+    var datesAndSort: ListFilter<GoodsInDeliverySort> { ListFilter(dates: dates, sort: sort) }
 
     func cleared() -> GoodsInDeliveryFilter {
         GoodsInDeliveryFilter(state: state, search: search)
     }
 
     func query(page: Int, perPage: Int = 50) -> MobileStockDeliveriesQuery {
-        MobileStockDeliveriesQuery(state: state, source: source, search: search, dispatched: dispatched, sort: sort, page: page, perPage: perPage)
+        MobileStockDeliveriesQuery(state: state, source: source, search: search, dispatched: dispatched, dates: dates, sort: sort, page: page, perPage: perPage)
     }
 }
 
@@ -596,20 +679,34 @@ final class GoodsInDeliveriesFeed {
     private(set) var list = GoodsInPagedList<MobileStockDeliveryRow>()
     private(set) var counts: MobileGoodsInCounts?
     private(set) var preview: (filter: GoodsInDeliveryFilter, total: Int)?
+    private(set) var savedCopy: SavedRows<MobileStockDeliveryRow>?
     private(set) var lookingUpCode: String?
     var scanOutcome: GoodsInListScanOutcome?
     @ObservationIgnored private let service: GoodsInService
     @ObservationIgnored private let perPage: Int
+    @ObservationIgnored private let savedLists: SavedLists
+    @ObservationIgnored private let userID: @MainActor () -> Int?
     @ObservationIgnored private var listTask: Task<Void, Never>?
     @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private var previewTask: Task<Void, Never>?
 
-    init(warehouseID: Int, filter: GoodsInDeliveryFilter = GoodsInDeliveryFilter(), service: GoodsInService, perPage: Int = 50) {
+    init(
+        warehouseID: Int,
+        filter: GoodsInDeliveryFilter = GoodsInDeliveryFilter(),
+        service: GoodsInService,
+        perPage: Int = 50,
+        savedLists: SavedLists = .shared,
+        userID: @escaping @MainActor () -> Int? = { OfflineWork.shared.userID }
+    ) {
         self.warehouseID = warehouseID
         self.filter = filter
         self.service = service
         self.perPage = perPage
+        self.savedLists = savedLists
+        self.userID = userID
     }
+
+    var savedAt: Date? { savedCopy?.savedAt }
 
     func start() async {
         guard list.loadingPage == nil, !list.hasLoaded || list.page <= 1 else { return }
@@ -660,6 +757,7 @@ final class GoodsInDeliveriesFeed {
     }
 
     func total(for draft: GoodsInDeliveryFilter) -> Int? {
+        if let savedCopy { return GoodsInListOffline.deliveries(savedCopy.rows, filter: draft).count }
         if draft == filter, list.hasLoaded, list.loadingPage == nil { return list.total }
         if let preview, preview.filter == draft { return preview.total }
         return nil
@@ -705,17 +803,27 @@ final class GoodsInDeliveriesFeed {
             do {
                 let result = try await service.deliveries(warehouseID, requested.query(page: page, perPage: perPage))
                 guard !Task.isCancelled, requested == filter else { return }
+                savedCopy = nil
                 list = list.loaded(result.data, meta: result.meta, id: \.id)
                 counts = result.counts ?? counts
             } catch where error.isCancellation {
                 return
             } catch {
                 guard requested == filter else { return }
+                if page == 1, error as? APIError == .offline, showSavedRows() { return }
                 list = list.failed(page, problem: GoodsInText.problem(error))
             }
         }
         listTask = task
         await task.value
+    }
+
+    private func showSavedRows() -> Bool {
+        guard let userID = userID(),
+              let saved = savedLists.rows(MobileStockDeliveryRow.self, userID: userID, warehouseID: warehouseID, kind: .stockDeliveries) else { return false }
+        savedCopy = saved
+        list = list.savedCopy(GoodsInListOffline.deliveries(saved.rows, filter: filter))
+        return true
     }
 }
 
@@ -725,18 +833,43 @@ final class GoodsInReturnsFeed {
     let warehouseID: Int
     private(set) var state: GoodsInReturnStateFilter
     private(set) var search = ""
+    private(set) var filter = ListFilter<GoodsInReturnSort>()
     private(set) var list = GoodsInPagedList<MobileReturnRow>()
     private(set) var counts: MobileGoodsInCounts?
+    private(set) var savedCopy: SavedRows<MobileReturnRow>?
     @ObservationIgnored private let service: GoodsInService
     @ObservationIgnored private let perPage: Int
+    @ObservationIgnored private let savedLists: SavedLists
+    @ObservationIgnored private let userID: @MainActor () -> Int?
     @ObservationIgnored private var listTask: Task<Void, Never>?
     @ObservationIgnored private var searchTask: Task<Void, Never>?
 
-    init(warehouseID: Int, state: GoodsInReturnStateFilter = .all, service: GoodsInService, perPage: Int = 50) {
+    init(
+        warehouseID: Int,
+        state: GoodsInReturnStateFilter = .all,
+        service: GoodsInService,
+        perPage: Int = 50,
+        savedLists: SavedLists = .shared,
+        userID: @escaping @MainActor () -> Int? = { OfflineWork.shared.userID }
+    ) {
         self.warehouseID = warehouseID
         self.state = state
         self.service = service
         self.perPage = perPage
+        self.savedLists = savedLists
+        self.userID = userID
+    }
+
+    var savedAt: Date? { savedCopy?.savedAt }
+
+    func query(page: Int) -> MobileReturnsQuery {
+        MobileReturnsQuery(state: state, search: search, dates: filter.dates, sort: filter.sort, page: page, perPage: perPage)
+    }
+
+    func total(for draft: ListFilter<GoodsInReturnSort>) -> Int? {
+        if let savedCopy { return GoodsInListOffline.returns(savedCopy.rows, state: state, search: search, filter: draft).count }
+        if draft == filter, list.hasLoaded, list.loadingPage == nil { return list.total }
+        return nil
     }
 
     func start() async {
@@ -763,6 +896,17 @@ final class GoodsInReturnsFeed {
         }
     }
 
+    func apply(_ newFilter: ListFilter<GoodsInReturnSort>) async {
+        searchTask?.cancel()
+        filter = newFilter
+        list = GoodsInPagedList()
+        await loadPage(1)
+    }
+
+    func clearFilters() async {
+        await apply(ListFilter())
+    }
+
     func loadMore() async {
         guard list.canLoadMore else { return }
         await loadPage(list.page + 1)
@@ -778,23 +922,34 @@ final class GoodsInReturnsFeed {
     }
 
     private func loadPage(_ page: Int) async {
-        let query = MobileReturnsQuery(state: state, search: search, page: page, perPage: perPage)
+        let requested = query(page: page)
         listTask?.cancel()
         list = list.loading(page)
         let task = Task {
             do {
-                let result = try await service.returns(warehouseID, query)
-                guard !Task.isCancelled, query.state == state, query.search == search else { return }
+                let result = try await service.returns(warehouseID, requested)
+                guard !Task.isCancelled, requested == query(page: page) else { return }
+                savedCopy = nil
                 list = list.loaded(result.data, meta: result.meta, id: \.id)
                 counts = result.counts ?? counts
             } catch where error.isCancellation {
                 return
             } catch {
+                guard requested == query(page: page) else { return }
+                if page == 1, error as? APIError == .offline, showSavedRows() { return }
                 list = list.failed(page, problem: GoodsInText.problem(error))
             }
         }
         listTask = task
         await task.value
+    }
+
+    private func showSavedRows() -> Bool {
+        guard let userID = userID(),
+              let saved = savedLists.rows(MobileReturnRow.self, userID: userID, warehouseID: warehouseID, kind: .returns) else { return false }
+        savedCopy = saved
+        list = list.savedCopy(GoodsInListOffline.returns(saved.rows, state: state, search: search, filter: filter))
+        return true
     }
 }
 

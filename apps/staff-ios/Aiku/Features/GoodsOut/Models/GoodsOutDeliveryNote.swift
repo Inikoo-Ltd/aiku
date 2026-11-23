@@ -91,6 +91,8 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     var weightKg: Double
     var skoCount: Int
     var listDetail: String?
+    var listDate: String?
+    var listItemCount: Int?
     var packingMaterials: [String] = []
     var parcels: [GoodsOutParcel] = []
     var shipments: [GoodsOutShipment] = []
@@ -168,12 +170,24 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
         lines.first { $0.id == id }
     }
 
-    func listSubtitle(currentUser: String) -> String {
-        var parts = [customer, channel.title]
+    var recordDate: String? {
+        isRemote ? listDate : ListDates.text(createdAt)
+    }
+
+    func listDetails(currentUser: String) -> [String] {
+        var parts = [channel.title]
         if let platform {
             parts.append(platform)
         }
-        if let listDetail {
+        if let listItemCount {
+            if shipper == .collection {
+                parts.append("Collection")
+            }
+            parts.append("\(listItemCount) \(listItemCount == 1 ? "item" : "items")")
+            if weightKg > 0 {
+                parts.append(weightText)
+            }
+        } else if let listDetail {
             parts.append(listDetail)
         } else if state == .picking, let picker, picker != currentUser {
             parts.append("picked by \(picker)")
@@ -181,7 +195,7 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
             parts.append("\(units) \(units == 1 ? "item" : "items")")
             parts.append(weightText)
         }
-        return parts.joined(separator: " · ")
+        return parts
     }
 
     func matches(search: String) -> Bool {

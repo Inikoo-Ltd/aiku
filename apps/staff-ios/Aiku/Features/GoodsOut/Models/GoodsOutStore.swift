@@ -42,8 +42,12 @@ final class GoodsOutStore {
     private(set) var packersNow: [GoodsOutPersonActivity] = []
     private(set) var personnelError: String?
     private(set) var knownIDs: [String: Int] = [:]
+    private(set) var listSavedAt: Date?
     @ObservationIgnored var service: GoodsOutService
+    @ObservationIgnored var savedLists: SavedLists = .shared
+    @ObservationIgnored var savedListUserID: @MainActor () -> Int? = { OfflineWork.shared.userID }
     @ObservationIgnored private var listGeneration = 0
+    @ObservationIgnored private var savedListRows: [GoodsOutDeliveryNoteRowDTO] = []
 
     init(
         notes: [GoodsOutDeliveryNote] = GoodsOutSampleData.notes,
@@ -319,6 +323,8 @@ extension GoodsOutStore {
         listTotal = nil
         isLoadingList = false
         listError = nil
+        listSavedAt = nil
+        savedListRows = []
         canWorkInWarehouse = false
         counts = nil
         countsError = nil
@@ -373,8 +379,36 @@ extension GoodsOutStore {
         listTotal = page.pagination?.total ?? listRows.count
         canWorkInWarehouse = page.data.canWorkInWarehouse ?? false
         selectedForSession = selectedForSession.filter { reference in listRows.contains { $0.reference == reference } }
+        listSavedAt = nil
+        savedListRows = []
         isLoadingList = false
         listError = nil
+    }
+
+    func showSavedList(_ saved: SavedRows<GoodsOutDeliveryNoteRowDTO>, generation: Int) {
+        guard generation == listGeneration else { return }
+        savedListRows = saved.rows
+        listSavedAt = saved.savedAt
+        let date = now()
+        let rows = GoodsOutSavedList.rows(saved.rows, query: listQuery, userID: userID, today: date)
+            .map { GoodsOutMapper.note(from: $0, currentUserID: userID, currentUser: currentUser, now: date) }
+        for row in rows {
+            if let id = row.apiID {
+                knownIDs[row.reference] = id
+            }
+        }
+        listRows = rows
+        listPage = 1
+        listLastPage = 1
+        listTotal = rows.count
+        selectedForSession = selectedForSession.filter { reference in rows.contains { $0.reference == reference } }
+        isLoadingList = false
+        listError = nil
+    }
+
+    func savedListTotal(for query: GoodsOutListQuery) -> Int? {
+        guard isRemote, listSavedAt != nil else { return nil }
+        return GoodsOutSavedList.rows(savedListRows, query: query, userID: userID, today: now()).count
     }
 
     func setCountsLoading(_ loading: Bool) {

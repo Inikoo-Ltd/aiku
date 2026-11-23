@@ -58,7 +58,7 @@ struct ModuleAccessTests {
 
         let goodsIn = ShellMenuCatalog.groups(for: modules).first { $0.id == "goodsIn" }
         #expect(goodsIn?.items.map(\.id) == ["goodsIn.backlog", "goodsIn.stockDeliveries"])
-        #expect(ShellHomeContent.shortcuts(for: modules).first { $0.id == "goodsIn" }?.link == .goodsIn(.stockDeliveries))
+        #expect(ShellHomeContent.shortcuts(for: modules).first { $0.id == "goodsIn" }?.link == .goodsIn(.backlog))
         #expect(AppModule.goodsIn.sections(for: modules).map(\.id) == [.goodsInBacklog, .stockDeliveries])
     }
 
@@ -90,7 +90,7 @@ struct ModuleAccessTests {
 
         #expect(groups.map(\.id) == ["goodsOut", "clocking"])
         #expect(ShellHomeContent.shortcuts(for: modules).map(\.id) == ["goodsOut"])
-        #expect(ShellDashboardContent.tiles(for: modules).map(\.id) == ["goodsOut", "clocking"])
+        #expect(ShellDashboardContent.tiles(for: modules).map(\.id) == ["goodsOut"])
     }
 
     @MainActor

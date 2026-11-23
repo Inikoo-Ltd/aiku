@@ -10,14 +10,22 @@ final class OfflineNetworkObserver: APIResponseObserving, @unchecked Sendable {
     private let clock: ServerClock
     private let downloads: OfflineDownloads
     private let sessions: OfflineSessionBox
+    private let savedLists: SavedLists
     private let screens: ScreenCache
     private let lock = NSLock()
     private var prefetch: (@Sendable (DownloadPrefetch) -> Void)?
 
-    init(clock: ServerClock = .shared, downloads: OfflineDownloads = .shared, sessions: OfflineSessionBox = .shared, screens: ScreenCache = .shared) {
+    init(
+        clock: ServerClock = .shared,
+        downloads: OfflineDownloads = .shared,
+        sessions: OfflineSessionBox = .shared,
+        savedLists: SavedLists = .shared,
+        screens: ScreenCache = .shared
+    ) {
         self.clock = clock
         self.downloads = downloads
         self.sessions = sessions
+        self.savedLists = savedLists
         self.screens = screens
     }
 
@@ -41,6 +49,7 @@ final class OfflineNetworkObserver: APIResponseObserving, @unchecked Sendable {
 
         if response.statusCode == 401 {
             downloads.clear()
+            savedLists.clear()
         } else if request.httpMethod == HTTPMethod.get.rawValue {
             recordRead(userID: userID, token: token, route: route, response: response, data: data, seenAt: seenAt)
         } else if (200..<300).contains(response.statusCode) {
@@ -58,6 +67,9 @@ final class OfflineNetworkObserver: APIResponseObserving, @unchecked Sendable {
             return
         }
         guard response.statusCode == 200 else { return }
+        if route.count == 3, route[0] == "warehouses", let warehouseID = Int(route[1]), let kind = SavedListKind(rawValue: route[2]) {
+            savedLists.remember(userID: userID, warehouseID: warehouseID, kind: kind, page: data)
+        }
         if let warehouseID = OfflineRoutes.warehouseList(of: route, named: "my-work") {
             let notes = Self.rows(in: data)
                 .filter { $0.kind == "delivery_note" && Self.offlineNoteStates.contains($0.state ?? "") }

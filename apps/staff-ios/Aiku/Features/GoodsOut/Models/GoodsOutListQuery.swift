@@ -53,6 +53,7 @@ enum GoodsOutSort: String, CaseIterable, Hashable, Sendable {
     case items
     case weight
     case customer
+    case reference
 
     var title: String {
         switch self {
@@ -61,8 +62,22 @@ enum GoodsOutSort: String, CaseIterable, Hashable, Sendable {
         case .items: "Items"
         case .weight: "Weight"
         case .customer: "Customer"
+        case .reference: "Reference"
         }
     }
+
+    var apiKey: String {
+        switch self {
+        case .oldestFirst: "date"
+        case .newestFirst: "-date"
+        case .items: "-number_items"
+        case .weight: "-effective_weight"
+        case .customer: "customer_name"
+        case .reference: "reference"
+        }
+    }
+
+    static let options: [ListSortOption<GoodsOutSort>] = allCases.map { ListSortOption(sort: $0, label: $0.title) }
 
     func sorted(_ notes: [GoodsOutDeliveryNote]) -> [GoodsOutDeliveryNote] {
         notes.sorted { lhs, rhs in
@@ -72,25 +87,59 @@ enum GoodsOutSort: String, CaseIterable, Hashable, Sendable {
             case .items: (lhs.units, lhs.reference) > (rhs.units, rhs.reference)
             case .weight: (lhs.weightKg, lhs.reference) > (rhs.weightKg, rhs.reference)
             case .customer: (lhs.customer, lhs.reference) < (rhs.customer, rhs.reference)
+            case .reference: lhs.reference < rhs.reference
             }
         }
     }
 }
 
 struct GoodsOutDeliveryNoteFilter: Hashable, Sendable {
+    static let dateLabel = "Date"
+
     var states: Set<GoodsOutDeliveryNoteState> = []
     var pickers: Set<GoodsOutPickerFilter> = []
     var channels: Set<GoodsOutChannel> = []
     var shippers: Set<GoodsOutShipper> = []
     var dates: Set<GoodsOutDateFilter> = []
-    var sort: GoodsOutSort = .oldestFirst
+    var range = ListDateRange()
+    var sort: GoodsOutSort?
 
-    var activeCount: Int { states.count + pickers.count + channels.count + shippers.count + dates.count }
+    var activeCount: Int {
+        states.count + pickers.count + channels.count + shippers.count + dates.count + (range.isSet ? 1 : 0) + (sort == nil ? 0 : 1)
+    }
 
-    var summary: String {
-        let count = activeCount
-        let filters = count == 0 ? "No filters" : "\(count) \(count == 1 ? "filter" : "filters")"
-        return "\(filters) · sorted by \(sort.title.lowercased())"
+    var isFiltered: Bool { activeCount > 0 }
+
+    mutating func toggleDate(_ preset: GoodsOutDateFilter, allowsSeveral: Bool) {
+        if allowsSeveral {
+            dates.formSymmetricDifference([preset])
+        } else {
+            dates = dates.contains(preset) ? [] : [preset]
+        }
+        if !dates.isEmpty {
+            range = ListDateRange()
+        }
+    }
+
+    func withRange(_ chosen: ListDateRange) -> GoodsOutDeliveryNoteFilter {
+        var updated = self
+        updated.range = chosen
+        if chosen.isSet {
+            updated.dates = []
+        }
+        return updated
+    }
+
+    @MainActor
+    func summary() -> [String] {
+        let stateTitles = GoodsOutDeliveryNoteState.allCases.filter { states.contains($0) }.map(\.title)
+        let pickerTitles = GoodsOutPickerFilter.allCases.filter { pickers.contains($0) }.map(\.title)
+        let channelTitles = GoodsOutChannel.allCases.filter { channels.contains($0) }.map(\.title)
+        let shipperTitles = GoodsOutShipper.allCases.filter { shippers.contains($0) }.map(\.title)
+        let dateTitles = GoodsOutDateFilter.allCases.filter { dates.contains($0) }.map(\.title)
+        let chosen = stateTitles + pickerTitles + channelTitles + shipperTitles + dateTitles
+        let datesAndSort = ListFilter<GoodsOutSort>(dates: range, sort: sort).summary(sorts: GoodsOutSort.options, dateLabel: Self.dateLabel)
+        return chosen.map { L10n.text($0) } + datesAndSort
     }
 
     func matches(_ note: GoodsOutDeliveryNote, currentUser: String, includingState: Bool = true) -> Bool {
@@ -99,6 +148,16 @@ struct GoodsOutDeliveryNoteFilter: Hashable, Sendable {
         if !channels.isEmpty, !channels.contains(note.channel) { return false }
         if !shippers.isEmpty, !shippers.contains(where: { $0 == note.shipper }) { return false }
         if !dates.isEmpty, !dates.contains(where: { $0.matches(note) }) { return false }
+        if !isWithinRange(note.createdAt) { return false }
+        return true
+    }
+
+    private func isWithinRange(_ date: Date) -> Bool {
+        guard range.isSet else { return true }
+        let calendar = Calendar.gregorian(in: .current)
+        let day = calendar.startOfDay(for: date)
+        if let from = range.from, day < calendar.startOfDay(for: from) { return false }
+        if let to = range.to, day > calendar.startOfDay(for: to) { return false }
         return true
     }
 }
@@ -114,6 +173,23 @@ struct GoodsOutListQuery: Hashable, Sendable {
         return Set(GoodsOutDeliveryNoteState.allCases)
     }
 
+    var apiBucket: String {
+        let states = effectiveStates
+        return states.count == 1 ? (states.first?.apiBucket ?? "all") : "in_warehouse"
+    }
+
+    var defaultSort: GoodsOutSort {
+        apiBucket == "dispatched" || apiBucket == "all" ? .newestFirst : .oldestFirst
+    }
+
+    var shownSort: GoodsOutSort { filter.sort ?? defaultSort }
+
+    var sortOptions: [ListSortOption<GoodsOutSort>] {
+        let serverDefault = defaultSort
+        return [ListSortOption<GoodsOutSort>(sort: nil, label: serverDefault.title)]
+            + GoodsOutSort.options.filter { $0.sort != serverDefault }
+    }
+
     func results(in notes: [GoodsOutDeliveryNote], currentUser: String) -> [GoodsOutDeliveryNote] {
         let states = effectiveStates
         let matching = notes.filter { note in
@@ -121,7 +197,7 @@ struct GoodsOutListQuery: Hashable, Sendable {
                 && filter.matches(note, currentUser: currentUser, includingState: false)
                 && note.matches(search: search)
         }
-        return filter.sort.sorted(matching)
+        return shownSort.sorted(matching)
     }
 
     func count(for state: GoodsOutDeliveryNoteState, in notes: [GoodsOutDeliveryNote], currentUser: String) -> Int {
@@ -140,6 +216,7 @@ struct GoodsOutListQuery: Hashable, Sendable {
     mutating func select(tab state: GoodsOutDeliveryNoteState) {
         tab = state
         filter.states = []
+        dropDefaultSort()
     }
 
     mutating func apply(_ newFilter: GoodsOutDeliveryNoteFilter) {
@@ -148,6 +225,17 @@ struct GoodsOutListQuery: Hashable, Sendable {
             tab = nil
         } else if tab == nil {
             tab = .todo
+        }
+        dropDefaultSort()
+    }
+
+    mutating func clearFilters() {
+        apply(GoodsOutDeliveryNoteFilter())
+    }
+
+    private mutating func dropDefaultSort() {
+        if filter.sort == defaultSort {
+            filter.sort = nil
         }
     }
 }

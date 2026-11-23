@@ -8,6 +8,7 @@ enum InventoryStockError: Error, Equatable, Sendable {
     case missingReason(String)
     case locationAlreadyAssigned(String)
     case nothingSelected
+    case waitingForOfflineWork(String)
 
     var message: String {
         switch self {
@@ -18,6 +19,7 @@ enum InventoryStockError: Error, Equatable, Sendable {
         case .missingReason(let code): "Choose a reason for \(code)."
         case .locationAlreadyAssigned(let code): "\(code) is already a location of this SKO."
         case .nothingSelected: "Choose at least one location."
+        case .waitingForOfflineWork(let reason): reason
         }
     }
 }

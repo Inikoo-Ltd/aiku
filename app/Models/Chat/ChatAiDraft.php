@@ -11,6 +11,7 @@ namespace App\Models\Chat;
 use App\Enums\CRM\Livechat\ChatAiDraftChangeEnum;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
 use App\Enums\CRM\Livechat\ChatAiReactionEnum;
+use App\Enums\CRM\Livechat\ChatAiMoodEnum;
 use App\Enums\CRM\Livechat\ChatAiRiskEnum;
 use App\Enums\CRM\Livechat\ChatIntentEnum;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
@@ -48,6 +49,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $rated_at
  * @property ChatIntentEnum|null $intent
  * @property ChatAiRiskEnum|null $risk
+ * @property ChatAiMoodEnum|null $mood
  * @property bool|null $answers_all
  * @property bool|null $would_send
  * @property bool|null $time_lost
@@ -83,6 +85,7 @@ class ChatAiDraft extends Model
         'rated_at'   => 'datetime',
         'intent'       => ChatIntentEnum::class,
         'risk'         => ChatAiRiskEnum::class,
+        'mood'         => ChatAiMoodEnum::class,
         'answers_all'  => 'boolean',
         'time_lost'    => 'boolean',
         'would_send'   => 'boolean',

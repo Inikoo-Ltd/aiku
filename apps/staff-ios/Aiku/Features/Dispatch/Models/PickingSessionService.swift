@@ -1,7 +1,7 @@
 import Foundation
 
 struct PickingSessionService: Sendable {
-    var sessions: @Sendable (_ warehouseID: Int, _ state: String?, _ page: Int) async throws -> MobilePickingSessionsPage
+    var sessions: @Sendable (_ warehouseID: Int, _ query: MobilePickingSessionsQuery) async throws -> MobilePickingSessionsPage
     var session: @Sendable (_ id: Int) async throws -> MobilePickingSession
     var create: @Sendable (_ warehouseID: Int, _ deliveryNoteIDs: [Int]) async throws -> MobilePickingSession
     var write: @Sendable (_ id: Int, _ write: PickingSessionWrite) async throws -> MobilePickingSessionOutcome
@@ -13,7 +13,7 @@ struct PickingSessionService: Sendable {
 
     static func live(_ client: APIClient) -> PickingSessionService {
         PickingSessionService(
-            sessions: { try await client.pickingSessions(warehouseID: $0, state: $1, page: $2) },
+            sessions: { try await client.pickingSessions(warehouseID: $0, query: $1) },
             session: { try await client.pickingSession(id: $0) },
             create: { try await client.createPickingSession(warehouseID: $0, deliveryNoteIDs: $1) },
             write: { try await client.writePickingSession(id: $0, $1) },

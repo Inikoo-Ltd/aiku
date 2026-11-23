@@ -11,6 +11,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\Reports\GetChatAiAcceptance;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiMoodEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
@@ -96,6 +97,7 @@ class HandleChatAiDraft
             'text'        => $draft->text,
             'topic'       => $draft->topic->value,
             'topic_label' => $draft->topic->label(),
+            'mood'        => $draft->mood ? ['value' => $draft->mood->value, 'label' => $draft->mood->label(), 'tone' => $draft->mood->tone(), 'usual' => self::usualMood($chatSession, $draft)] : null,
             'assistant'   => array_filter([
                 'of'     => User::find(data_get($draft->facts, 'user_id'))?->contact_name,
                 'client' => data_get($draft->facts, 'client'),
@@ -124,6 +126,46 @@ class HandleChatAiDraft
             'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,
             'customer_language' => Language::find(self::replyLanguageId($chatSession, $draft) ?? 0)?->name,
         ] : null]);
+    }
+
+    public const USUAL_MOOD_MIN_DRAFTS = 3;
+
+    /**
+     * The most common mood on this customer's earlier drafts, only once there are enough of them.
+     * Null when the customer is not linked, the history is short or nothing leads.
+     *
+     * @return array{value: string, label: string, same: bool}|null
+     */
+    public static function usualMood(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft): ?array
+    {
+        $customerId = $chatSession instanceof ChatSession ? $chatSession->webUser?->customer_id : null;
+        if (!$customerId) {
+            return null;
+        }
+
+        $counts = ChatAiDraft::query()
+            ->join('chat_sessions', 'chat_sessions.id', '=', 'chat_ai_drafts.chat_session_id')
+            ->join('web_users', 'web_users.id', '=', 'chat_sessions.web_user_id')
+            ->where('web_users.customer_id', $customerId)
+            ->where('chat_ai_drafts.id', '<', $draft->id)
+            ->whereNotNull('chat_ai_drafts.mood')
+            ->groupBy('chat_ai_drafts.mood')
+            ->selectRaw('chat_ai_drafts.mood, count(*) as total')
+            ->pluck('total', 'mood');
+
+        if ($counts->sum() < self::USUAL_MOOD_MIN_DRAFTS) {
+            return null;
+        }
+
+        $top = $counts->max();
+        $leaders = $counts->filter(fn ($total) => $total === $top);
+        if ($leaders->count() > 1) {
+            return null;
+        }
+
+        $mood = ChatAiMoodEnum::from($leaders->keys()->first());
+
+        return ['value' => $mood->value, 'label' => $mood->label(), 'same' => $mood === $draft->mood];
     }
 
     /**

@@ -89,9 +89,9 @@ private func service(
 ) -> PickingSessionService {
     let pickQueue = PickOutcomes(pickOutcomes)
     return PickingSessionService(
-        sessions: { warehouse, state, page in
-            await calls.list(warehouse, state, page)
-            return pages[page] ?? MobilePickingSessionsPage(data: [])
+        sessions: { warehouse, query in
+            await calls.list(warehouse, query.state, query.page)
+            return pages[query.page] ?? MobilePickingSessionsPage(data: [])
         },
         session: { _ in
             guard let detail else { throw APIError.rejected(message: "Not found") }
@@ -154,7 +154,7 @@ struct PickingSessionTests {
     }
 
     @Test("Session rows read like the Android list and mark the signed-in picker")
-    func rowSubtitle() throws {
+    func rowDetails() throws {
         let json = """
         {"data": [{"id": 1, "reference": "PS-1", "state": "picking_finished", "state_label": "Picking finished", "picker": {"id": 7, "name": "Sam"},
           "number_delivery_notes": 1, "number_items": 4, "number_trolleys": 2, "picking_percentage": 100, "packing_percentage": 49.6}],
@@ -162,8 +162,9 @@ struct PickingSessionTests {
         """
         let page = try decoder().decode(MobilePickingSessionsPage.self, from: Data(json.utf8))
 
-        #expect(page.data[0].subtitle(currentUserID: 7) == "Sam (you) · 1 delivery note · 4 items · 2 trolleys · packing 50%")
-        #expect(page.data[0].subtitle(currentUserID: 8) == "Sam · 1 delivery note · 4 items · 2 trolleys · packing 50%")
+        #expect(page.data[0].details == ["1 delivery note", "4 items", "2 trolleys", "packing 50%"])
+        #expect(PickingSessionFormat.personName(page.data[0].picker, currentUserID: 7) == "Sam (you)")
+        #expect(PickingSessionFormat.personName(page.data[0].picker, currentUserID: 8) == "Sam")
         #expect(page.data[0].tone == .success)
         #expect(page.counts["in_process"] == 2)
         #expect(page.pagination.lastPage == 3)
@@ -392,7 +393,7 @@ struct PickingSessionTests {
     func endpoints() throws {
         let client = APIClient(configuration: AppConfiguration(apiBaseURL: URL(string: "http://localhost/app/api")!))
 
-        let list = client.makeRequest(for: .pickingSessions(warehouseID: 5, state: "handling", page: 2))
+        let list = client.makeRequest(for: .pickingSessions(warehouseID: 5, query: MobilePickingSessionsQuery(state: "handling", page: 2)))
         #expect(list.url?.absoluteString == "http://localhost/app/api/mobile/warehouses/5/picking-sessions?state=handling&page=2")
 
         let detach = client.makeRequest(for: .pickingSessionWrite(id: 42, .detachTrolley(3)))

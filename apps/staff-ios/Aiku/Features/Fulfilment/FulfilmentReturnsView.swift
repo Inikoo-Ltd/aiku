@@ -7,6 +7,7 @@ struct FulfilmentReturnsView: View {
     @State private var feed = PalletReturnsFeed()
     @State private var warehouseStore = WarehouseStore.shared
     @State private var appearance = 0
+    @State private var isFiltering = false
 
     private var warehouseID: Int? { warehouseStore.selected?.id }
 
@@ -21,7 +22,13 @@ struct FulfilmentReturnsView: View {
             FilterChipBar(options: PalletReturnTypeFilter.allCases, selection: $feed.type, title: \.title) { type in
                 type.count(in: feed.counts)
             }
-            SearchField(text: $feed.search, placeholder: "Search reference or customer")
+            SearchWithFilter(filterCount: feed.listFilter.activeCount, onFilter: { isFiltering = true }) {
+                SearchField(text: $feed.search, placeholder: "Search reference or customer")
+            }
+            ActiveFiltersLine(
+                parts: feed.listFilter.summary(sorts: PalletReturnSort.options, onlineOnlySorts: feed.onlineOnlySorts),
+                onClear: { feed.listFilter = ListFilter() }
+            )
             if let message = feed.loadError {
                 GoodsOutLoadProblem(title: "Couldn’t load the fulfilment returns", message: message) {
                     Task {
@@ -30,8 +37,24 @@ struct FulfilmentReturnsView: View {
                     }
                 }
             }
+            if let savedAt = feed.savedAt {
+                SavedCopyNote(savedAt: savedAt)
+            }
             rows
             FulfilmentNote("Each return is whole pallets or stored items. Stored item returns from a customer’s shop show the platform.")
+        }
+        .sidePanel(isPresented: $isFiltering) {
+            ListFilterPanel(
+                title: "Filter returns",
+                filter: feed.listFilter,
+                sorts: PalletReturnSort.options,
+                total: { _ in warehouseID.flatMap { feed.previewTotal(warehouseID: $0) } },
+                onApply: { applied in
+                    isFiltering = false
+                    feed.listFilter = applied
+                },
+                onClose: { isFiltering = false }
+            )
         }
         .onAppear { appearance += 1 }
         .task(id: ListLoadKey(request: warehouseID.map { feed.request(warehouseID: $0) }, appearance: appearance)) {
@@ -54,10 +77,12 @@ struct FulfilmentReturnsView: View {
         let isCurrent = warehouseID.map { feed.loadedRequest == feed.request(warehouseID: $0) } ?? false
         if !feed.rows.isEmpty, isCurrent {
             CardList(feed.rows) { row in
-                ListRow(
+                RecordRow(
                     row.reference,
-                    subtitle: PalletReturnText.rowSubtitle(row),
-                    chips: [Chip(row.stateLabel ?? row.state, PalletReturnText.stateTone(row.state))],
+                    date: PalletReturnText.rowDate(row),
+                    party: row.customer?.name,
+                    badges: [PalletReturnText.rowChip(row)],
+                    details: PalletReturnText.rowDetails(row),
                     action: { router.open(FulfilmentRoute.palletReturn(id: row.id, reference: row.reference)) }
                 )
                 .accessibilityIdentifier("fulfilment.return.\(row.reference)")

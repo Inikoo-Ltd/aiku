@@ -701,7 +701,7 @@ struct LocationsAPITests {
             LocationsAuditCount(skoReference: "SKO-00733", counted: 25, reason: .countShortage),
         ], apiClient: client())
 
-        #expect(differences == 1)
+        #expect(differences == .saved(1))
         #expect(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")?.quantity == 25)
     }
 
@@ -737,7 +737,7 @@ struct LocationsAPITests {
 
         let moved = try await store.moveRemotely(from: "A-03-02", to: "a-03-02", quantities: ["SKO-00733": 10], removeFromSource: false, movesEverything: false, apiClient: client())
 
-        #expect(moved == 10)
+        #expect(moved == .saved(10))
         #expect(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")?.quantity == 20)
     }
 

@@ -123,6 +123,7 @@ struct MobileOrgStockRow: Decodable, Sendable, Equatable, Identifiable {
     var locationOrgStockId: Int? = nil
     var location: MobileOrgStockDetail.LocationReference? = nil
     var locationQuantity: OptionalFlexibleDouble? = nil
+    var locationQuantityLabel: String? = nil
 }
 
 struct MobileOrgStocksPage: Decodable, Sendable, Equatable {
@@ -198,7 +199,7 @@ struct MobileOrgStockDetail: Decodable, Sendable, Equatable {
     struct Link: Decodable, Sendable, Equatable {
         let locationOrgStockId: Int
         var type: String? = nil
-        let quantity: FlexibleDouble
+        var quantity: FlexibleDouble
         var quantityLabel: String? = nil
         var minStock: OptionalFlexibleDouble? = nil
         var maxStock: OptionalFlexibleDouble? = nil
@@ -207,9 +208,10 @@ struct MobileOrgStockDetail: Decodable, Sendable, Equatable {
         var isDefaultDropshipping = false
         var auditedAt: String? = nil
         let location: Location
+        var version: Int? = nil
 
         private enum CodingKeys: String, CodingKey {
-            case locationOrgStockId, type, quantity, quantityLabel, minStock, maxStock, replenishmentStock, isDefaultWholesale, isDefaultDropshipping, auditedAt, location
+            case locationOrgStockId, type, quantity, quantityLabel, minStock, maxStock, replenishmentStock, isDefaultWholesale, isDefaultDropshipping, auditedAt, location, version
         }
 
         init(locationOrgStockId: Int, type: String?, quantity: Double, location: Location) {
@@ -232,6 +234,7 @@ struct MobileOrgStockDetail: Decodable, Sendable, Equatable {
             isDefaultDropshipping = try container.decodeIfPresent(Bool.self, forKey: .isDefaultDropshipping) ?? false
             auditedAt = try container.decodeIfPresent(String.self, forKey: .auditedAt)
             location = try container.decode(Location.self, forKey: .location)
+            version = try? container.decodeIfPresent(Int.self, forKey: .version)
         }
     }
 
@@ -292,6 +295,7 @@ struct MobileOrgStockMovement: Decodable, Sendable, Equatable, Identifiable {
     var quantity: OptionalFlexibleDouble? = nil
     var quantityLabel: String? = nil
     var runningQuantityOrgStock: OptionalFlexibleDouble? = nil
+    var runningQuantityOrgStockLabel: String? = nil
     var location: MobileOrgStockDetail.LocationReference? = nil
     var reason: String? = nil
     var reasonLabel: String? = nil
@@ -356,6 +360,7 @@ struct MobileOrgStockAuditCount: Encodable, Sendable, Equatable {
 
 struct MobileOrgStockAuditBody: Encodable, Sendable {
     let counts: [MobileOrgStockAuditCount]
+    var clientRequestId: String? = nil
 }
 
 struct MobileOrgStockMoveTarget: Encodable, Sendable, Equatable {
@@ -365,6 +370,7 @@ struct MobileOrgStockMoveTarget: Encodable, Sendable, Equatable {
 
 struct MobileOrgStockMoveBody: Encodable, Sendable {
     let targets: [MobileOrgStockMoveTarget]
+    var clientRequestId: String? = nil
 }
 
 struct MobileOrgStockConsumeBody: Encodable, Sendable, Equatable {
@@ -404,8 +410,8 @@ extension Endpoint {
 
     static let mobileStockMovementReasons = Endpoint(path: "mobile/stock-movement-reasons")
 
-    static func mobileOrgStockAudit(warehouseID: Int, id: Int, counts: [MobileOrgStockAuditCount]) -> Endpoint {
-        .jsonBody("mobile/warehouses/\(warehouseID)/org-stocks/\(id)/audit", method: .post, MobileOrgStockAuditBody(counts: counts))
+    static func mobileOrgStockAudit(warehouseID: Int, id: Int, counts: [MobileOrgStockAuditCount], clientRequestID: String? = nil) -> Endpoint {
+        .jsonBody("mobile/warehouses/\(warehouseID)/org-stocks/\(id)/audit", method: .post, MobileOrgStockAuditBody(counts: counts, clientRequestId: clientRequestID))
     }
 
     static func mobileOrgStockAddLocation(warehouseID: Int, id: Int, body: MobileOrgStockAddLocationBody) -> Endpoint {
@@ -416,8 +422,8 @@ extension Endpoint {
         .jsonBody("mobile/warehouses/\(warehouseID)/org-stocks/\(id)/remove-locations", method: .post, MobileOrgStockRemoveLocationsBody(locationOrgStockIds: linkIDs))
     }
 
-    static func mobileLocationOrgStockMove(linkID: Int, targets: [MobileOrgStockMoveTarget]) -> Endpoint {
-        .jsonBody("mobile/location-org-stocks/\(linkID)/move", method: .post, MobileOrgStockMoveBody(targets: targets))
+    static func mobileLocationOrgStockMove(linkID: Int, targets: [MobileOrgStockMoveTarget], clientRequestID: String? = nil) -> Endpoint {
+        .jsonBody("mobile/location-org-stocks/\(linkID)/move", method: .post, MobileOrgStockMoveBody(targets: targets, clientRequestId: clientRequestID))
     }
 
     static func mobileLocationOrgStockConsume(linkID: Int, body: MobileOrgStockConsumeBody) -> Endpoint {
@@ -446,12 +452,12 @@ extension APIClient {
         try MobileStockMovementReasons.decode(from: await send(.mobileStockMovementReasons))
     }
 
-    func auditOrgStock(warehouseID: Int, id: Int, counts: [MobileOrgStockAuditCount]) async throws -> MobileOrgStockWriteResult {
-        try await send(.mobileOrgStockAudit(warehouseID: warehouseID, id: id, counts: counts), as: MobileOrgStockWriteResult.self)
+    func auditOrgStock(warehouseID: Int, id: Int, counts: [MobileOrgStockAuditCount], clientRequestID: String? = nil) async throws -> MobileOrgStockWriteResult {
+        try await send(.mobileOrgStockAudit(warehouseID: warehouseID, id: id, counts: counts, clientRequestID: clientRequestID), as: MobileOrgStockWriteResult.self)
     }
 
-    func moveOrgStock(fromLinkID linkID: Int, targets: [MobileOrgStockMoveTarget]) async throws -> MobileOrgStockWriteResult {
-        try await send(.mobileLocationOrgStockMove(linkID: linkID, targets: targets), as: MobileOrgStockWriteResult.self)
+    func moveOrgStock(fromLinkID linkID: Int, targets: [MobileOrgStockMoveTarget], clientRequestID: String? = nil) async throws -> MobileOrgStockWriteResult {
+        try await send(.mobileLocationOrgStockMove(linkID: linkID, targets: targets, clientRequestID: clientRequestID), as: MobileOrgStockWriteResult.self)
     }
 
     func consumeOrgStock(linkID: Int, body: MobileOrgStockConsumeBody) async throws -> MobileOrgStockWriteResult {

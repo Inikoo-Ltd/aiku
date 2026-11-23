@@ -29,6 +29,7 @@ final class ClockingStore {
     private(set) var isLoading = false
     private(set) var hasLoaded = false
     private(set) var loadError: String?
+    private(set) var loadedAt: Date?
     var pendingAction: ClockingPendingAction?
     var openedErrorFromClocking = false
     var isShowingDetails = true
@@ -48,7 +49,7 @@ final class ClockingStore {
 
     var hasStatus: Bool { hasLoaded || savedAt != nil }
 
-    var lastUpdated: Date? { loadError == nil ? nil : savedAt }
+    var lastUpdated: Date? { loadError == nil ? nil : savedAt ?? loadedAt }
 
     var now: Int {
         let seconds = ClockingMapper.secondsSinceMidnight(ISO8601DateFormatter().string(from: clock()), in: timeZone) ?? 0
@@ -136,10 +137,11 @@ final class ClockingStore {
             savedAt = nil
             loadError = nil
             hasLoaded = true
+            loadedAt = Date()
         } catch where error.isCancellation {
             return
         } catch {
-            loadError = error.localizedDescription
+            loadError = ClockingText.loadProblem(error)
         }
     }
 
@@ -195,6 +197,7 @@ final class ClockingStore {
         hasLoadedAdjustments = false
         hasLoaded = false
         loadError = nil
+        loadedAt = nil
         savedAt = nil
     }
 
@@ -347,5 +350,13 @@ struct ClockingSavedCopy: Codable, Equatable, Sendable {
             organisationName: status.employee?.organisation?.name,
             thisWeek: timesheets.filter { $0.date >= weekStart && $0.date <= today }
         )
+    }
+}
+
+enum ClockingText {
+    static let offline = "There is no connection. Check Wi-Fi and try again."
+
+    static func loadProblem(_ error: Error) -> String {
+        error as? APIError == .offline ? offline : error.localizedDescription
     }
 }

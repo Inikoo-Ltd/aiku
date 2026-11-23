@@ -73,8 +73,9 @@ struct SystemConflictResolveView: View {
                 }
             }
             if let record = entry.record?.key {
-                AikuButton("Open \(record.type.title(entry.labels.title.components(separatedBy: " · ").first ?? "#\(record.id)"))", kind: .tertiary) {
-                    open(record)
+                let reference = recordReference(entry, record: record)
+                AikuButton("Open \(record.type.title(reference))", kind: .tertiary) {
+                    open(record, reference: reference)
                 }
             }
         } footer: {
@@ -165,12 +166,28 @@ struct SystemConflictResolveView: View {
         }
     }
 
-    private func open(_ record: OfflineRecordKey) {
+    private func recordReference(_ entry: OfflineOperationEntry, record: OfflineRecordKey) -> String {
+        let title = entry.labels.title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces) ?? ""
+        if !title.isEmpty { return title }
+        return OfflineWork.shared.downloaded(record).flatMap { SystemSyncStore.reference(in: $0.body) } ?? "#\(record.id)"
+    }
+
+    private func open(_ record: OfflineRecordKey, reference: String) {
         switch record.type {
         case .deliveryNote:
             router.open(GoodsOutRoute.deliveryNoteID(id: record.id))
-        default:
-            router.open(SystemRoute.syncQueue)
+        case .stockDelivery:
+            router.open(GoodsInRoute.stockDelivery(id: record.id, reference: reference))
+        case .customerReturn:
+            router.open(GoodsInRoute.returnDetail(id: record.id, reference: reference))
+        case .orgStock:
+            router.open(InventoryRoute.skoID(id: record.id))
+        case .location:
+            if reference.hasPrefix("#") {
+                router.open(SystemRoute.syncQueue)
+            } else {
+                router.open(LocationsRoute.location(code: reference))
+            }
         }
     }
 }

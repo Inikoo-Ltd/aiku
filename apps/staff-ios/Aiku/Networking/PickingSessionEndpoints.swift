@@ -16,9 +16,13 @@ struct MobilePickingSessionRow: Decodable, Sendable, Equatable, Identifiable {
     var numberTrolleys: Int = 0
     var pickingPercentage: Double = 0
     var packingPercentage: Double = 0
+    var startAt: String?
+    var endAt: String?
+    var createdAt: String?
 
     private enum CodingKeys: String, CodingKey {
         case id, reference, state, stateLabel, picker, numberDeliveryNotes, numberItems, numberTrolleys, pickingPercentage, packingPercentage
+        case startAt, endAt, createdAt
     }
 
     init(
@@ -31,7 +35,10 @@ struct MobilePickingSessionRow: Decodable, Sendable, Equatable, Identifiable {
         numberItems: Int = 0,
         numberTrolleys: Int = 0,
         pickingPercentage: Double = 0,
-        packingPercentage: Double = 0
+        packingPercentage: Double = 0,
+        startAt: String? = nil,
+        endAt: String? = nil,
+        createdAt: String? = nil
     ) {
         self.id = id
         self.reference = reference
@@ -43,6 +50,9 @@ struct MobilePickingSessionRow: Decodable, Sendable, Equatable, Identifiable {
         self.numberTrolleys = numberTrolleys
         self.pickingPercentage = pickingPercentage
         self.packingPercentage = packingPercentage
+        self.startAt = startAt
+        self.endAt = endAt
+        self.createdAt = createdAt
     }
 
     init(from decoder: Decoder) throws {
@@ -57,6 +67,9 @@ struct MobilePickingSessionRow: Decodable, Sendable, Equatable, Identifiable {
         numberTrolleys = try container.decodeIfPresent(Int.self, forKey: .numberTrolleys) ?? 0
         pickingPercentage = try container.decodeIfPresent(Double.self, forKey: .pickingPercentage) ?? 0
         packingPercentage = try container.decodeIfPresent(Double.self, forKey: .packingPercentage) ?? 0
+        startAt = try? container.decodeIfPresent(String.self, forKey: .startAt)
+        endAt = try? container.decodeIfPresent(String.self, forKey: .endAt)
+        createdAt = try? container.decodeIfPresent(String.self, forKey: .createdAt)
     }
 }
 
@@ -395,13 +408,33 @@ private struct TrolleyBody: Encodable, Sendable {
 
 private struct EmptyBody: Encodable, Sendable {}
 
+enum PickingSessionSort: String, CaseIterable, Hashable, Sendable {
+    case reference
+    case picker = "user_name"
+    case started = "-start_at"
+    case finished = "-end_at"
+}
+
+struct MobilePickingSessionsQuery: Hashable, Sendable {
+    var state: String?
+    var search = ""
+    var sort: PickingSessionSort?
+    var page = 1
+
+    var queryItems: [URLQueryItem] {
+        var items: [URLQueryItem] = []
+        if let state { items.append(URLQueryItem(name: "state", value: state)) }
+        let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { items.append(URLQueryItem(name: "q", value: trimmed)) }
+        if let sort { items.append(URLQueryItem(name: "sort", value: sort.rawValue)) }
+        items.append(URLQueryItem(name: "page", value: String(page)))
+        return items
+    }
+}
+
 extension Endpoint {
-    static func pickingSessions(warehouseID: Int, state: String?, page: Int) -> Endpoint {
-        var query = [URLQueryItem(name: "page", value: String(page))]
-        if let state {
-            query.insert(URLQueryItem(name: "state", value: state), at: 0)
-        }
-        return Endpoint(path: "mobile/warehouses/\(warehouseID)/picking-sessions", queryItems: query)
+    static func pickingSessions(warehouseID: Int, query: MobilePickingSessionsQuery) -> Endpoint {
+        Endpoint(path: "mobile/warehouses/\(warehouseID)/picking-sessions", queryItems: query.queryItems)
     }
 
     static func pickingSession(id: Int) -> Endpoint {
@@ -458,8 +491,8 @@ extension Endpoint {
 }
 
 extension APIClient {
-    func pickingSessions(warehouseID: Int, state: String?, page: Int) async throws -> MobilePickingSessionsPage {
-        try await send(.pickingSessions(warehouseID: warehouseID, state: state, page: page), as: MobilePickingSessionsPage.self)
+    func pickingSessions(warehouseID: Int, query: MobilePickingSessionsQuery) async throws -> MobilePickingSessionsPage {
+        try await send(.pickingSessions(warehouseID: warehouseID, query: query), as: MobilePickingSessionsPage.self)
     }
 
     func pickingSession(id: Int) async throws -> MobilePickingSession {

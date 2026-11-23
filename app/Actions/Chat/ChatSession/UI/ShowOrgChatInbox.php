@@ -20,6 +20,7 @@ use App\Enums\CRM\Livechat\ChatPhoneCallContactTypeEnum;
 use App\Enums\CRM\Livechat\ChatPhoneCallStatusEnum;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
+use App\Actions\Chat\ChatSession\GetChatCustomerSignals;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
@@ -279,7 +280,10 @@ class ShowOrgChatInbox extends OrgAction
             'staffTasks' => fn ($q) => $q->open()->with('assignee'),
         ]);
 
-        return (new ChatSessionListResource($this->selectedSession))->resolve();
+        return [
+            ...(new ChatSessionListResource($this->selectedSession))->resolve(),
+            'customer_signals' => GetChatCustomerSignals::run($this->selectedSession),
+        ];
     }
 
     /**

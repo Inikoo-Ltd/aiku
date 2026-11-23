@@ -12,6 +12,7 @@ use App\Actions\Chat\ChatSession\CloseChatAfterThanks;
 use App\Actions\Chat\ChatSession\DraftChatReply;
 use App\Actions\Chat\ChatSession\StoreChatAiOutcome;
 use App\Enums\CRM\Livechat\ChatAiOutcomeEnum;
+use App\Enums\CRM\Livechat\ChatAiMoodEnum;
 use App\Enums\CRM\Livechat\ChatAiRiskEnum;
 use App\Enums\CRM\Livechat\ChatAiRunKindEnum;
 use App\Models\Chat\ChatAiRun;
@@ -114,6 +115,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'facts_used.*' => ['integer'],
             'intent'       => ['sometimes', 'nullable', Rule::enum(ChatIntentEnum::class)],
             'risk'         => ['sometimes', 'nullable', Rule::enum(ChatAiRiskEnum::class)],
+            'mood'         => ['sometimes', 'nullable', Rule::enum(ChatAiMoodEnum::class)],
             'answers_all'  => ['sometimes', 'nullable', 'boolean'],
             'would_send'   => ['sometimes', 'nullable', 'boolean'],
             'fact_title'   => ['required_if:action,remember_fact', 'nullable', 'string', 'max:200'],
@@ -333,6 +335,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         ])] + array_filter([
             'intent'      => $request->get('intent'),
             'risk'        => $request->get('risk'),
+            'mood'        => $request->get('mood'),
             'answers_all' => $request->get('answers_all') === null ? null : $request->boolean('answers_all'),
             'would_send'  => $request->get('would_send') === null ? null : $request->boolean('would_send'),
         ], fn ($value) => $value !== null));
@@ -745,6 +748,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'account'      => $schema->string()->description('For start_run: the label of the claude.ai account running the sweep, as given in its routine prompt, so runs can be told apart by account'),
             'intent'       => $schema->string()->enum(ChatIntentEnum::values())->description('For save_draft only: the one thing the customer\'s latest message asks for: '.collect(ChatIntentEnum::definitions())->map(fn (string $meaning, string $intent) => "$intent = $meaning")->implode('; ')),
             'risk'         => $schema->string()->enum(ChatAiRiskEnum::values())->description('For save_draft only: what the draft does, the highest that applies: '.collect(ChatAiRiskEnum::definitions())->map(fn (string $meaning, string $risk) => "$risk = $meaning")->implode('; ')),
+            'mood'         => $schema->string()->enum(ChatAiMoodEnum::values())->description('For save_draft only: how the customer sounds in their latest message, the most worrying that applies: '.collect(ChatAiMoodEnum::definitions())->map(fn (string $meaning, string $mood) => "$mood = $meaning")->implode('; ')),
             'answers_all'  => $schema->boolean()->description('For save_draft only: true when the draft answers every question the customer asked'),
             'would_send'   => $schema->boolean()->description('For save_draft only: true when you would send this draft to the customer exactly as it is, without a person reading it first. Nothing is sent either way; it is counted against what staff then do'),
             'facts_used'   => $schema->array()->items($schema->integer())->description('For save_draft only: the fact_id of every verified fact (house_rules.verified_facts or remember_fact) the draft relies on. If staff discard the draft or rate it a wrong fact, those facts stop being trusted until checked again'),

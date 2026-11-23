@@ -124,6 +124,9 @@ private struct GoodsInDeliveryContent: View {
                 Task { await feed.load() }
             }
         }
+        OfflineRecordNotices(queue: feed.offlineQueue, operations: [.placeStockDeliveryItem], copyAt: feed.copyAt) { entry in
+            GoodsInOfflineText.summary(entry, delivery: delivery)
+        }
         GoodsInDeliveryStatus(delivery: delivery)
         GoodsInOrdererCard(delivery: delivery)
         GoodsInDeliveryInfoCard(delivery: delivery)

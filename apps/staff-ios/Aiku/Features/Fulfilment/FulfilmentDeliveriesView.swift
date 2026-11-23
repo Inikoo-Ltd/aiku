@@ -8,8 +8,8 @@ struct FulfilmentDeliveriesView: View {
     @State private var feed = PalletDeliveriesFeed.shared
     @State private var warehouseStore = WarehouseStore.shared
     @State private var lookingUpCode: String?
-
     @State private var appearance = 0
+    @State private var isFiltering = false
 
     private var warehouseID: Int? { warehouseStore.selected?.id }
 
@@ -21,7 +21,13 @@ struct FulfilmentDeliveriesView: View {
             FilterChipBar(options: PalletDeliveryFilter.allCases, selection: $feed.filter, title: \.title) { filter in
                 filter.count(in: feed.counts)
             }
-            SearchField(text: $feed.search, placeholder: "Search reference or customer", onScan: { router.select(.scan) })
+            SearchWithFilter(filterCount: feed.listFilter.activeCount, onFilter: { isFiltering = true }) {
+                SearchField(text: $feed.search, placeholder: "Search reference or customer", onScan: { router.select(.scan) })
+            }
+            ActiveFiltersLine(
+                parts: feed.listFilter.summary(sorts: PalletDeliverySort.options, dateLabel: PalletDeliverySort.dateLabel),
+                onClear: { feed.listFilter = ListFilter() }
+            )
             if let lookingUpCode {
                 InlineAlert(tone: .info, title: "Looking up \(lookingUpCode)…")
             }
@@ -33,8 +39,25 @@ struct FulfilmentDeliveriesView: View {
                     }
                 }
             }
+            if let savedAt = feed.savedAt {
+                SavedCopyNote(savedAt: savedAt)
+            }
             listContent
             FulfilmentNote("Fulfilment customers’ goods arrive as pallets, boxes or oversize items. References are per customer (customer code + number).")
+        }
+        .sidePanel(isPresented: $isFiltering) {
+            ListFilterPanel(
+                title: "Filter deliveries",
+                filter: feed.listFilter,
+                sorts: PalletDeliverySort.options,
+                dateLabel: PalletDeliverySort.dateLabel,
+                total: { draft in warehouseID.flatMap { feed.previewTotal(for: draft, warehouseID: $0) } },
+                onApply: { applied in
+                    isFiltering = false
+                    feed.listFilter = applied
+                },
+                onClose: { isFiltering = false }
+            )
         }
         .onAppear { appearance += 1 }
         .task(id: ListLoadKey(request: warehouseID.map { feed.request(warehouseID: $0) }, appearance: appearance)) {
@@ -49,7 +72,7 @@ struct FulfilmentDeliveriesView: View {
             guard let warehouseID else { return }
             await feed.reload(warehouseID: warehouseID, apiClient: apiClient)
         }
-        .hardwareScanner { code in
+        .hardwareScanner(isEnabled: !isFiltering) { code in
             Task { await openScanned(code) }
         }
     }
@@ -60,10 +83,14 @@ struct FulfilmentDeliveriesView: View {
         let isCurrent = warehouseID.map { feed.loadedRequest == feed.request(warehouseID: $0) } ?? false
         if !feed.rows.isEmpty, isCurrent {
             CardList(feed.rows.map(PalletDeliveryListItem.init)) { item in
-                ListRow(
+                let moment = PalletDeliveryText.rowMoment(item.row)
+                RecordRow(
                     item.row.reference,
-                    subtitle: PalletDeliveryText.rowSubtitle(item.row),
-                    chips: [Chip(item.row.stateLabel ?? item.row.state, PalletDeliveryText.deliveryTone(item.row.state))],
+                    date: moment.date,
+                    dateCaption: moment.caption,
+                    party: item.row.customer?.name,
+                    badges: [PalletDeliveryText.rowChip(item.row)],
+                    details: PalletDeliveryText.rowDetails(item.row),
                     action: { open(item.row.id, item.row.reference) }
                 )
                 .accessibilityIdentifier("fulfilment.delivery.\(item.row.reference)")

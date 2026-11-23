@@ -188,7 +188,8 @@ struct GoodsOutTests {
         query.apply(filter)
         #expect(query.tab == nil)
         #expect(Set(query.results(in: notes, currentUser: "Alex Morgan").map(\.reference)) == ["AR24811", "AR24813"])
-        #expect(filter.summary == "3 filters · sorted by date (oldest first)")
+        #expect(filter.activeCount == 3)
+        #expect(query.shownSort == .oldestFirst)
 
         query.search = "24813"
         #expect(query.results(in: notes, currentUser: "Alex Morgan").map(\.reference) == ["AR24813"])

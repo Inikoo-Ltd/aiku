@@ -8,7 +8,7 @@ struct ClockingOvertimeView: View {
     @State private var form: ClockingOvertimeFormMode?
 
     var body: some View {
-        AppScreen(title: "Overtime", kicker: "Clocking & HR · \(ClockingStore.shared.organisationName ?? session.profile.organisation)") {
+        AppScreen(title: "Overtime", kicker: ShellClockingText.kicker(ClockingStore.shared.organisationName ?? session.profile.organisation)) {
             ClockingSectionTabs(current: .overtime) { isAdjusting = true }
         } content: {
             if let error = store.loadError {
