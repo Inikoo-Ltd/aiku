@@ -5405,6 +5405,17 @@ test('a dirty line takes the new composition once its picks are undone or its wa
     expect($deliveryNoteItem->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
         ->and((float) $deliveryNoteItem->quantity_required)->toBe(2.0)
         ->and($deliveryNoteItem->composition_dirty_at)->toBeNull();
+
+    $deliveryNoteItem->updateQuietly(['state' => DeliveryNoteItemStateEnum::HANDLING_BLOCKED, 'quantity_waiting_warehouse' => 1]);
+    $link(0.08333333);
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    $deliveryNoteItem->updateQuietly(['quantity_waiting_warehouse' => 0]);
+    CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem->refresh());
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(0.083333)
+        ->and($deliveryNoteItem->composition_dirty_at)->toBeNull();
 });
 
 test('picking an item auto ignores zero quantity items and hides them from the index', function () {

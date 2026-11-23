@@ -33,7 +33,12 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
         $orgStock         = $deliveryNoteItem->orgStock;
         $quantityRequired = SyncDeliveryNoteItemsRequiredPickQuantity::make()->getQuantityRequired($orgStock, $deliveryNoteItem);
 
-        if (!is_null($quantityRequired) && $quantityRequired != $deliveryNoteItem->quantity_required) {
+        $deliveryNoteItem->update([
+            'composition_dirty_at'                => null,
+            'composition_dirty_quantity_required' => null,
+        ]);
+
+        if (!is_null($quantityRequired) && abs($quantityRequired - (float)$deliveryNoteItem->quantity_required) >= 0.000001) {
             UpdateDeliveryNoteItem::make()->action($deliveryNoteItem, [
                 'quantity_required'          => $quantityRequired,
                 'original_quantity_required' => $quantityRequired,
@@ -41,11 +46,6 @@ class ApplyNewCompositionToDeliveryNoteItem extends OrgAction
             ], strict: false);
             WorkNotifier::modified($deliveryNoteItem->deliveryNote, 'lines');
         }
-
-        $deliveryNoteItem->update([
-            'composition_dirty_at'                => null,
-            'composition_dirty_quantity_required' => null,
-        ]);
 
         DeliveryNoteHydrateCompositionDirtyItems::run($deliveryNoteItem->delivery_note_id);
 
