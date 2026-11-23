@@ -44,6 +44,7 @@ class StockValueFinding extends Model
 {
     public const string RULE_COUNT = 'count_above_history';
     public const string RULE_PRICE = 'price_above_purchases';
+    public const string RULE_VALUE = 'value_above_spend';
 
     public const string OWNER_WAREHOUSE   = 'warehouse';
     public const string OWNER_PROCUREMENT = 'procurement';
