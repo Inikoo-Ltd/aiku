@@ -312,6 +312,10 @@ class ShowGoogleAdsCampaign extends OrgAction
      */
     private function stateActions(TrafficSourceCampaign $campaign): array
     {
+        if ($campaign->state->isNotSynced()) {
+            return [];
+        }
+
         $isServing = $campaign->state === GoogleAdsCampaignStateEnum::PUBLISHED_SERVING;
 
         return [[
@@ -342,7 +346,7 @@ class ShowGoogleAdsCampaign extends OrgAction
 
         return [
             'current'  => $campaign->state->value,
-            'timeline' => collect(GoogleAdsCampaignStateEnum::cases())
+            'timeline' => collect(GoogleAdsCampaignStateEnum::timelineCases())
                 ->map(function (GoogleAdsCampaignStateEnum $state) use ($campaign, $labels, $icons) {
                     $reachedAt = $campaign->{$state->timestampColumn()};
 
