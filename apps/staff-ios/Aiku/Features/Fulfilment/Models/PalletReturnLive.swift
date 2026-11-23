@@ -61,6 +61,15 @@ enum PalletReturnTypeFilter: String, CaseIterable, Hashable, Sendable {
 enum PalletReturnText {
     static let stages = ["confirmed", "picking", "picked", "dispatched"]
     static let stageTitles = ["Confirmed", "Picking", "Picked", "Dispatched"]
+    static let unsureTitle = "Not sure it was saved"
+
+    static func unsureMessage(_ write: MobilePalletReturnWrite) -> String {
+        switch write {
+        case .scan(let barcode, _): "The scan of \(barcode) didn’t get an answer. Try again; it is not counted twice."
+        case .pickFromOtherPallet: "The pick from another pallet didn’t get an answer. Try again; it is not picked twice."
+        default: "The pick didn’t get an answer. Try again; it is not picked twice."
+        }
+    }
 
     static func stateTone(_ state: String) -> Tone {
         switch state {
@@ -218,6 +227,32 @@ enum PalletReturnEvent: Equatable {
     case lineFound(Int)
 }
 
+enum FulfilmentWriteOutcome: Equatable {
+    case saved
+    case refused
+    case unsure
+}
+
+extension MobilePalletReturnWrite {
+    var isScan: Bool {
+        if case .scan = self { return true }
+        return false
+    }
+
+    var isResentWhenUnsure: Bool {
+        switch self {
+        case .scan, .pickItem, .pickFromOtherPallet: true
+        default: false
+        }
+    }
+}
+
+private struct QueuedReturnWrite {
+    let id = UUID()
+    let write: MobilePalletReturnWrite
+    let announce: Bool
+}
+
 @MainActor
 @Observable
 final class PalletReturnLive {
@@ -233,12 +268,15 @@ final class PalletReturnLive {
     private(set) var sheetError: String?
     private(set) var fieldErrors: [String: String] = [:]
     private(set) var queuedScans = 0
+    private(set) var unsure: MobilePalletReturnWrite?
     private(set) var shippers = GoodsOutShipperList()
     private(set) var isLoadingShippers = false
     private(set) var shippersError: String?
     var selectedPalletID: Int?
 
-    private var pending: [MobilePalletReturnWrite] = []
+    private var pending: [QueuedReturnWrite] = []
+    private var outcomes: [UUID: FulfilmentWriteOutcome] = [:]
+    private var awaited: Set<UUID> = []
     private var isDraining = false
 
     init(warehouseID: Int, returnID: Int, apiClient: APIClient, makeRequestID: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() }) {
@@ -294,9 +332,7 @@ final class PalletReturnLive {
         let scanned = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !scanned.isEmpty, let detail else { return }
         if detail.canScan {
-            pending.append(.scan(barcode: scanned, requestID: makeRequestID()))
-            queuedScans = pending.count
-            await drain()
+            await enqueue(.scan(barcode: scanned, requestID: makeRequestID()), announce: true)
         } else {
             event = localMatch(detail, code: scanned)
         }
@@ -365,27 +401,58 @@ final class PalletReturnLive {
         return .lineFound(line.lineId)
     }
 
+    func retryUnsure() async {
+        guard unsure != nil, !isDraining else { return }
+        unsure = nil
+        await drain()
+    }
+
     @discardableResult
     private func act(_ write: MobilePalletReturnWrite, announce: Bool = true) async -> Bool {
         guard detail != nil, !isWorking else { return false }
-        return await run(write, announce: announce)
+        return await enqueue(write, announce: announce) == .saved
+    }
+
+    @discardableResult
+    private func enqueue(_ write: MobilePalletReturnWrite, announce: Bool) async -> FulfilmentWriteOutcome? {
+        let queued = QueuedReturnWrite(write: write, announce: announce)
+        pending.append(queued)
+        awaited.insert(queued.id)
+        unsure = nil
+        await drain()
+        awaited.remove(queued.id)
+        return outcomes.removeValue(forKey: queued.id)
     }
 
     private func drain() async {
-        guard !isDraining else { return }
+        guard !isDraining else {
+            queuedScans = waitingScans(behindHead: true)
+            return
+        }
         isDraining = true
         defer {
             isDraining = false
-            queuedScans = pending.count
+            queuedScans = waitingScans(behindHead: false)
         }
-        while !pending.isEmpty {
-            let next = pending.removeFirst()
-            queuedScans = pending.count
-            _ = await run(next, announce: true)
+        while let next = pending.first {
+            queuedScans = waitingScans(behindHead: true)
+            let outcome = await run(next.write, announce: next.announce)
+            if awaited.contains(next.id) {
+                outcomes[next.id] = outcome
+            }
+            if outcome == .unsure {
+                unsure = next.write
+                return
+            }
+            pending.removeFirst()
         }
     }
 
-    private func run(_ write: MobilePalletReturnWrite, announce: Bool) async -> Bool {
+    private func waitingScans(behindHead: Bool) -> Int {
+        pending.dropFirst(behindHead ? 1 : 0).filter(\.write.isScan).count
+    }
+
+    private func run(_ write: MobilePalletReturnWrite, announce: Bool) async -> FulfilmentWriteOutcome {
         working = write
         clearErrors()
         do {
@@ -399,17 +466,21 @@ final class PalletReturnLive {
                 let nothingChanged = result.result?.status == "nothing_changed"
                 event = .done(result.result?.message ?? "Done", nothingChanged ? .info : .success)
             }
-            return true
+            return .saved
         } catch {
             working = nil
             let message = PalletDeliveryText.message(for: error)
             sheetError = message
+            if write.isResentWhenUnsure, GoodsInText.isUnsure(error) {
+                event = .done(message, .warn)
+                return .unsure
+            }
             if case .validation(let text, _) = error as? APIError {
                 fieldErrors["form"] = text
             }
             event = .done(message, .danger)
             await reloadQuietly()
-            return false
+            return .refused
         }
     }
 

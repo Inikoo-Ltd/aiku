@@ -499,6 +499,13 @@ final class StoredItemAuditLive {
     private(set) var sheetError: String?
     private(set) var lastScanned: String?
     private(set) var isCompleted = false
+    private(set) var queuedScans = 0
+    private(set) var unsure: MobileStoredItemAuditWrite?
+
+    private var pending: [QueuedAuditWrite] = []
+    private var outcomes: [UUID: FulfilmentWriteOutcome] = [:]
+    private var awaited: Set<UUID> = []
+    private var isDraining = false
 
     var choiceSearch = ""
     private(set) var choices: [MobileAuditChoice] = []
@@ -512,7 +519,7 @@ final class StoredItemAuditLive {
         self.makeRequestID = makeRequestID
     }
 
-    var isWorking: Bool { working != nil }
+    var isWorking: Bool { working != nil || isDraining }
 
     func load() async {
         guard !isWorking else { return }
@@ -530,33 +537,27 @@ final class StoredItemAuditLive {
     func clearSheetError() { sheetError = nil }
 
     func count(storedItemID: Int, quantity: Int) async -> Bool {
-        await act(.count(MobileAuditCountBody(storedItemId: storedItemID, auditedQuantity: quantity))) { audit in
-            let reference = audit.line(storedItemID)?.storedItem.reference ?? ""
-            return "\(reference) counted: \(quantity)"
-        }
+        await act(.count(MobileAuditCountBody(storedItemId: storedItemID, auditedQuantity: quantity)))
     }
 
     func scan(_ code: String) async {
         let scanned = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !scanned.isEmpty, audit?.can("count") == true else { return }
-        let succeeded = await act(.count(MobileAuditCountBody(barcode: scanned, add: 1, clientRequestId: makeRequestID()))) { audit in
-            guard let line = audit.lineForCode(scanned) else { return nil }
-            return "\(line.storedItem.reference ?? scanned) counted: \(line.auditedQuantity ?? 0)"
-        }
-        if succeeded {
-            lastScanned = audit?.lineForCode(scanned)?.storedItem.reference ?? scanned
-        }
+        await enqueue(.count(MobileAuditCountBody(barcode: scanned, add: 1, clientRequestId: makeRequestID())))
+    }
+
+    func retryUnsure() async {
+        guard unsure != nil, !isDraining else { return }
+        unsure = nil
+        await drain()
     }
 
     func removeCount(deltaID: Int) async -> Bool {
-        await act(.removeCount(deltaID: deltaID)) { _ in "Count removed" }
+        await act(.removeCount(deltaID: deltaID))
     }
 
     func complete() async {
-        let reference = audit?.reference ?? ""
-        if await act(.complete, message: { _ in "Audit \(reference) completed" }) {
-            isCompleted = true
-        }
+        await act(.complete)
     }
 
     func searchChoices(_ query: String) async {
@@ -580,23 +581,111 @@ final class StoredItemAuditLive {
     }
 
     @discardableResult
-    private func act(_ write: MobileStoredItemAuditWrite, message: (MobileStoredItemAudit) -> String?) async -> Bool {
+    private func act(_ write: MobileStoredItemAuditWrite) async -> Bool {
         guard audit != nil, !isWorking else { return false }
+        return await enqueue(write) == .saved
+    }
+
+    @discardableResult
+    private func enqueue(_ write: MobileStoredItemAuditWrite) async -> FulfilmentWriteOutcome? {
+        let queued = QueuedAuditWrite(write: write)
+        pending.append(queued)
+        awaited.insert(queued.id)
+        unsure = nil
+        await drain()
+        awaited.remove(queued.id)
+        return outcomes.removeValue(forKey: queued.id)
+    }
+
+    private func drain() async {
+        guard !isDraining else {
+            queuedScans = waitingScans(behindHead: true)
+            return
+        }
+        isDraining = true
+        defer {
+            isDraining = false
+            queuedScans = waitingScans(behindHead: false)
+        }
+        while let next = pending.first {
+            queuedScans = waitingScans(behindHead: true)
+            let outcome = await run(next.write)
+            if awaited.contains(next.id) {
+                outcomes[next.id] = outcome
+            }
+            if outcome == .unsure {
+                unsure = next.write
+                return
+            }
+            pending.removeFirst()
+        }
+    }
+
+    private func waitingScans(behindHead: Bool) -> Int {
+        pending.dropFirst(behindHead ? 1 : 0).filter { $0.write.scannedCode != nil }.count
+    }
+
+    private func run(_ write: MobileStoredItemAuditWrite) async -> FulfilmentWriteOutcome {
         working = write
         sheetError = nil
+        let reference = audit?.reference ?? ""
         do {
             let result = try await apiClient.writeStoredItemAudit(warehouseID: warehouseID, id: auditID, write: write)
             working = nil
             audit = result.data
             let nothingChanged = result.result?.status == "nothing_changed"
-            done = FulfilmentDone(message: message(result.data) ?? result.result?.message ?? "Done", tone: nothingChanged ? .info : .success)
-            return true
+            done = FulfilmentDone(message: doneMessage(write, audit: result.data, reference: reference) ?? result.result?.message ?? "Done", tone: nothingChanged ? .info : .success)
+            if let code = write.scannedCode {
+                lastScanned = result.data.lineForCode(code)?.storedItem.reference ?? code
+            }
+            if write == .complete {
+                isCompleted = true
+            }
+            return .saved
         } catch {
             working = nil
             let text = PalletDeliveryText.message(for: error)
             sheetError = text
+            if write.scannedCode != nil, GoodsInText.isUnsure(error) {
+                done = FulfilmentDone(message: text, tone: .warn)
+                return .unsure
+            }
             done = FulfilmentDone(message: text, tone: .danger)
-            return false
+            return .refused
         }
+    }
+
+    private func doneMessage(_ write: MobileStoredItemAuditWrite, audit: MobileStoredItemAudit, reference: String) -> String? {
+        switch write {
+        case .count(let body):
+            if let code = body.barcode {
+                guard let line = audit.lineForCode(code) else { return nil }
+                return "\(line.storedItem.reference ?? code) counted: \(line.auditedQuantity ?? 0)"
+            }
+            guard let storedItemID = body.storedItemId else { return nil }
+            return "\(audit.line(storedItemID)?.storedItem.reference ?? "") counted: \(body.auditedQuantity ?? 0)"
+        case .removeCount:
+            return "Count removed"
+        case .complete:
+            return "Audit \(reference) completed"
+        }
+    }
+}
+
+private struct QueuedAuditWrite {
+    let id = UUID()
+    let write: MobileStoredItemAuditWrite
+}
+
+extension MobileStoredItemAuditWrite {
+    var scannedCode: String? {
+        guard case .count(let body) = self, body.add != nil else { return nil }
+        return body.barcode
+    }
+}
+
+enum StoredItemAuditText {
+    static func unsureMessage(_ code: String) -> String {
+        "The scan of \(code) didn’t get an answer. Try again; it is not counted twice."
     }
 }

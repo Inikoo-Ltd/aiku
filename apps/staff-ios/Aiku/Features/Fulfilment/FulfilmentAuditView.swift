@@ -84,13 +84,23 @@ private struct StoredItemAuditScreen: View {
             title: (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference,
             kicker: PalletDeliveryText.joined(["Stored item audit", "Pallet \(palletReference)", audit.stateLabel])
         ) {
+            if let code = live.unsure?.scannedCode {
+                InlineAlert(tone: .warn, title: PalletReturnText.unsureTitle, message: StoredItemAuditText.unsureMessage(code)) {
+                    LinkButton("Try again", size: 13) {
+                        Task { await live.retryUnsure() }
+                    }
+                    .frame(minHeight: 44, alignment: .leading)
+                    .disabled(live.isWorking)
+                    .accessibilityIdentifier("fulfilment.audit.retryUnsure")
+                }
+            }
             palletCard(audit)
             if canCount {
                 FulfilmentScanCard(
                     title: "Scan to count",
                     detail: "Scan each item on pallet \(palletReference)",
                     highlight: live.lastScanned ?? "Nothing scanned yet",
-                    footnote: live.lastScanned == nil ? nil : "Last scanned",
+                    footnote: live.queuedScans > 0 ? "\(live.queuedScans) scan\(live.queuedScans == 1 ? "" : "s") waiting" : (live.lastScanned == nil ? nil : "Last scanned"),
                     identifier: "fulfilment.audit.scan"
                 ) {
                     isScanning = true

@@ -177,6 +177,16 @@ private struct PalletReturnScreen: View {
 
     @ViewBuilder
     private func notices(_ detail: MobilePalletReturnDetail) -> some View {
+        if let unsure = live.unsure {
+            InlineAlert(tone: .warn, title: PalletReturnText.unsureTitle, message: PalletReturnText.unsureMessage(unsure)) {
+                LinkButton("Try again", size: 13) {
+                    Task { await live.retryUnsure() }
+                }
+                .frame(minHeight: 44, alignment: .leading)
+                .disabled(live.isWorking)
+                .accessibilityIdentifier("fulfilment.return.retryUnsure")
+            }
+        }
         if detail.inPickingSession {
             InlineAlert(tone: .info, title: "In a picking session", message: "This return is in a picking session; work it on the web.")
         }

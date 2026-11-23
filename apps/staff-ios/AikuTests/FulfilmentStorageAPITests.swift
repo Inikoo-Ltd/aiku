@@ -2,12 +2,38 @@ import Foundation
 import Testing
 @testable import Aiku
 
+final class RequestIDSequence: @unchecked Sendable {
+    private let lock = NSLock()
+    private var issued = 0
+
+    func next() -> String {
+        lock.withLock {
+            issued += 1
+            return String(format: "00000000-0000-4000-8000-%012d", issued)
+        }
+    }
+
+    static func id(_ number: Int) -> String {
+        String(format: "00000000-0000-4000-8000-%012d", number)
+    }
+}
+
+@MainActor
+func waitUntil(_ condition: () -> Bool) async {
+    for _ in 0..<400 where !condition() {
+        try? await Task.sleep(for: .milliseconds(5))
+    }
+}
+
 @MainActor
 struct FulfilmentStorageAPITests {
     private final class RecordingTransport: HTTPTransport, @unchecked Sendable {
         let responses: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
+        private var statuses: [String: Int] = [:]
+        private var held: Set<String> = []
+        private var waiting: [CheckedContinuation<Void, Never>] = []
 
         init(responses: [String: String]) {
             self.responses = responses
@@ -17,9 +43,48 @@ struct FulfilmentStorageAPITests {
             lock.withLock { recorded }
         }
 
+        func fail(_ path: String, status: Int) {
+            lock.withLock { statuses[path] = status }
+        }
+
+        func heal(_ path: String) {
+            lock.withLock { statuses[path] = nil }
+        }
+
+        func hold(_ path: String) {
+            lock.withLock { _ = held.insert(path) }
+        }
+
+        func release() {
+            let resumed = lock.withLock {
+                held.removeAll()
+                defer { waiting.removeAll() }
+                return waiting
+            }
+            resumed.forEach { $0.resume() }
+        }
+
         func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-            lock.withLock { recorded.append(request) }
             let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            let (isHeld, status) = lock.withLock {
+                recorded.append(request)
+                return (held.contains(path), statuses[path])
+            }
+            if isHeld {
+                await withCheckedContinuation { continuation in
+                    let stillHeld = lock.withLock {
+                        guard held.contains(path) else { return false }
+                        waiting.append(continuation)
+                        return true
+                    }
+                    if !stillHeld {
+                        continuation.resume()
+                    }
+                }
+            }
+            if let status {
+                return (Data("{}".utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+            }
             guard let body = responses[path] else {
                 return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
             }
@@ -226,6 +291,108 @@ struct FulfilmentStorageAPITests {
         #expect(transport.requests.last?.url?.path.hasSuffix("/stored-item-audits/70/complete") == true)
         #expect(live.isCompleted)
         #expect(live.done?.message == "Audit AUD-70 completed")
+    }
+
+    private static let countPath = "mobile/warehouses/1/stored-item-audits/70/count"
+
+    private func countRequests(_ transport: RecordingTransport) throws -> [(code: String?, requestID: String?)] {
+        try transport.requests.filter { $0.url?.path.hasSuffix("/count") == true }.map {
+            let sent = try body($0)
+            return (sent["barcode"] as? String, sent["client_request_id"] as? String)
+        }
+    }
+
+    @Test func scansArrivingWhileOneIsSavingWaitAndAreAllSent() async throws {
+        let (transport, client) = client()
+        let ids = RequestIDSequence()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client, makeRequestID: { ids.next() })
+        await live.load()
+        transport.hold(Self.countPath)
+
+        async let first: Void = live.scan("501")
+        await waitUntil { (try? countRequests(transport).count) == 1 }
+        await live.scan("501")
+        await live.scan("502")
+
+        #expect(live.queuedScans == 2)
+        #expect(live.isWorking)
+        #expect(try countRequests(transport).count == 1)
+
+        transport.release()
+        await first
+
+        let sent = try countRequests(transport)
+        #expect(sent.map(\.code) == ["501", "501", "502"])
+        #expect(sent.map(\.requestID) == [RequestIDSequence.id(1), RequestIDSequence.id(2), RequestIDSequence.id(3)])
+        #expect(live.queuedScans == 0)
+        #expect(!live.isWorking)
+        #expect(live.lastScanned == "SI-6")
+    }
+
+    @Test func anUnansweredScanIsResentWithTheSameRequestID() async throws {
+        let (transport, client) = client()
+        let ids = RequestIDSequence()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client, makeRequestID: { ids.next() })
+        await live.load()
+        transport.fail(Self.countPath, status: 502)
+
+        await live.scan("501")
+
+        #expect(live.unsure?.scannedCode == "501")
+        #expect(live.done?.tone == .warn)
+        #expect(live.queuedScans == 1)
+        #expect(!live.isWorking)
+
+        transport.heal(Self.countPath)
+        await live.retryUnsure()
+
+        let sent = try countRequests(transport)
+        #expect(sent.map(\.requestID) == [RequestIDSequence.id(1), RequestIDSequence.id(1)])
+        #expect(live.unsure == nil)
+        #expect(live.queuedScans == 0)
+        #expect(live.lastScanned == "SI-5")
+    }
+
+    @Test func aScanAfterAnUnansweredOneResendsThatOneFirst() async throws {
+        let (transport, client) = client()
+        let ids = RequestIDSequence()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client, makeRequestID: { ids.next() })
+        await live.load()
+        transport.fail(Self.countPath, status: 503)
+        await live.scan("501")
+        transport.heal(Self.countPath)
+
+        await live.scan("502")
+
+        let sent = try countRequests(transport)
+        #expect(sent.map(\.code) == ["501", "501", "502"])
+        #expect(sent.map(\.requestID) == [RequestIDSequence.id(1), RequestIDSequence.id(1), RequestIDSequence.id(2)])
+        #expect(live.unsure == nil)
+    }
+
+    @Test func aRefusedScanIsDroppedNotLeftUnsure() async throws {
+        let (transport, client) = client()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client)
+        await live.load()
+        transport.fail(Self.countPath, status: 403)
+
+        await live.scan("501")
+
+        #expect(live.unsure == nil)
+        #expect(live.done?.tone == .danger)
+        #expect(live.queuedScans == 0)
+    }
+
+    @Test func anUnansweredTypedCountIsNotLeftUnsure() async throws {
+        let (transport, client) = client()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client)
+        await live.load()
+        transport.fail(Self.countPath, status: 502)
+
+        #expect(await live.count(storedItemID: 6, quantity: 3) == false)
+
+        #expect(live.unsure == nil)
+        #expect(live.sheetError != nil)
     }
 
     @Test func addItemChoicesComeFromTheAudit() async {
