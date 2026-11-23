@@ -40,7 +40,7 @@ enum GoodsInText {
             switch apiError {
             case .offline: return offline
             case .unauthorized: return "Your session has ended. Sign in again."
-            case .rejected(let message), .validation(let message, _), .tooManyAttempts(let message): return message
+            case .rejected(let message), .validation(let message, _, _), .tooManyAttempts(let message): return message
             case .http(403): return forbidden
             case .http(404): return notFound
             default: return server

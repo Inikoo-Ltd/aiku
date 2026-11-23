@@ -63,6 +63,7 @@ private struct PalletReturnScreen: View {
     @State private var isScanning = false
     @State private var labelURL: URL?
     @State private var openingLabel: Int?
+    @State private var warehouseStore = WarehouseStore.shared
 
     var body: some View {
         Group {
@@ -149,6 +150,11 @@ private struct PalletReturnScreen: View {
 
     @ViewBuilder
     private func sections(_ detail: MobilePalletReturnDetail) -> some View {
+        if let message = live.loadError {
+            GoodsOutLoadProblem(title: "Couldn’t refresh this screen", message: message) {
+                Task { await live.load() }
+            }
+        }
         stateBlock(detail)
         notices(detail)
         switch detail.state {
@@ -296,7 +302,7 @@ private struct PalletReturnScreen: View {
             }
         }
         parcels(detail)
-        shipments(detail, canPrintAndDelete: true)
+        shipments(detail, canPrint: warehouseStore.selected?.can.editFulfilment == true, canDelete: true)
         if detail.action("add_shipment") != nil, !detail.shipments.isEmpty {
             AikuButton("Add another shipment", icon: .plus, kind: .secondary) {
                 openShipment(detail)
@@ -354,13 +360,13 @@ private struct PalletReturnScreen: View {
             )
         }
         parcels(detail)
-        shipments(detail, canPrintAndDelete: false)
+        shipments(detail, canPrint: false, canDelete: false)
         details(detail)
         if detail.state == "dispatched", detail.platform != nil {
             FulfilmentNote("For dropshipping returns from Shopify or TikTok, dispatching also sends the fulfilment back to the customer’s shop.")
         }
         AikuButton("Next return", icon: .next) {
-            router.back()
+            router.replace(with: FulfilmentRoute.returns)
         }
         .accessibilityIdentifier("fulfilment.return.next")
     }
@@ -382,7 +388,7 @@ private struct PalletReturnScreen: View {
     }
 
     @ViewBuilder
-    private func shipments(_ detail: MobilePalletReturnDetail, canPrintAndDelete: Bool) -> some View {
+    private func shipments(_ detail: MobilePalletReturnDetail, canPrint: Bool, canDelete: Bool) -> some View {
         if !detail.shipments.isEmpty {
             SectionHeading("Shipments")
             CardList(detail.shipments) { shipment in
@@ -409,13 +415,13 @@ private struct PalletReturnScreen: View {
                         } else if shipment.label.kind == "external", let raw = shipment.label.url, let url = URL(string: raw) {
                             LinkButton("Open label") { openURL(url) }
                         }
-                        if canPrintAndDelete, shipment.isPrintable {
+                        if canPrint, shipment.isPrintable {
                             LinkButton(live.working == .printLabel(shipmentID: shipment.id) ? "Printing…" : "Print label") {
                                 Task { await live.printLabel(shipment.id) }
                             }
                             .disabled(live.isWorking)
                         }
-                        if canPrintAndDelete, shipment.canDelete {
+                        if canDelete, shipment.canDelete {
                             Button("Delete") { confirm = .deleteShipment(shipment) }
                                 .font(.aiku(14, .semibold))
                                 .foregroundStyle(AikuColor.danger)

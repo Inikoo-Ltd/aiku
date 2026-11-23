@@ -8,6 +8,7 @@ struct FulfilmentInboundAPITests {
         let responses: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
+        private var failures: [String: (Int, String)] = [:]
 
         init(responses: [String: String]) {
             self.responses = responses
@@ -17,9 +18,19 @@ struct FulfilmentInboundAPITests {
             lock.withLock { recorded }
         }
 
+        func fail(_ path: String, status: Int, body: String = "{}") {
+            lock.withLock { failures[path] = (status, body) }
+        }
+
         func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-            lock.withLock { recorded.append(request) }
             let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            let failure = lock.withLock {
+                recorded.append(request)
+                return failures[path]
+            }
+            if let (status, body) = failure {
+                return (Data(body.utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+            }
             guard let body = responses[path] else {
                 return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
             }
@@ -141,6 +152,44 @@ struct FulfilmentInboundAPITests {
         #expect(sent["location_id"] as? Int == 77)
         #expect(sent["location_code"] == nil)
         #expect(live.openPalletID == nil)
+    }
+
+    private static let bookInPath = "mobile/warehouses/1/pallets/39217/book-in"
+
+    @Test func aRefusedLocationShowsUnderTheLocationAndKeepsThePalletOpen() async {
+        let (live, transport) = await loadedLive()
+        transport.fail(Self.bookInPath, status: 422, body: #"{"message":"That location is not in this warehouse.","errors":{"location_code":["That location is not in this warehouse."]}}"#)
+        live.openPallet(39217)
+
+        await live.bookIn(39217, scannedCode: "ZZZ999")
+
+        #expect(live.fieldError == "That location is not in this warehouse.")
+        #expect(live.done == PalletDeliveryDone(message: "That location is not in this warehouse.", tone: .danger))
+        #expect(live.openPalletID == 39217)
+    }
+
+    @Test func otherBookInFailuresAreAToastOnlyAndDoNotReload() async {
+        let (live, transport) = await loadedLive()
+        transport.fail(Self.bookInPath, status: 403, body: #"{"message":"You can’t book in pallets here."}"#)
+        live.openPallet(39217)
+        let loadsBefore = transport.requests.filter { $0.httpMethod == "GET" }.count
+
+        await live.bookIn(39217, location: MobileFulfilmentLocation(id: 77, code: "F-01", numberPallets: 3))
+
+        #expect(live.fieldError == nil)
+        #expect(live.done == PalletDeliveryDone(message: "You can’t book in pallets here.", tone: .danger))
+        #expect(transport.requests.filter { $0.httpMethod == "GET" }.count == loadsBefore)
+    }
+
+    @Test func aServerErrorOnBookInIsNotShownUnderTheLocation() async {
+        let (live, transport) = await loadedLive()
+        transport.fail(Self.bookInPath, status: 500)
+        live.openPallet(39217)
+
+        await live.bookIn(39217, scannedCode: "F-02")
+
+        #expect(live.fieldError == nil)
+        #expect(live.done?.tone == .danger)
     }
 
     @Test func scanningThePalletLabelOpensItThenTheLocationBooksItIn() async throws {

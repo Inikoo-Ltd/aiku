@@ -38,7 +38,7 @@ enum LoginFailure: Error, Equatable, Sendable {
 
     init(_ error: APIError) {
         switch error {
-        case .validation(let message, let code):
+        case .validation(let message, let code, _):
             if code == LoginRejection.codeRequired {
                 self = .otpRequired(message: message)
             } else if code == LoginRejection.setupRequired {

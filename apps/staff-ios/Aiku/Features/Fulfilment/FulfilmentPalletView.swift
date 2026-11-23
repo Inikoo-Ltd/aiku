@@ -61,6 +61,11 @@ private struct StoredPalletScreen: View {
 
     private func loaded(_ pallet: MobileStoredPallet) -> some View {
         AppScreen(title: pallet.reference, kicker: PalletDeliveryText.joined([FulfilmentStorageText.typeText(pallet) ?? "Pallet", pallet.customer?.name])) {
+            if let message = live.loadError {
+                GoodsOutLoadProblem(title: "Couldn’t refresh this pallet", message: message) {
+                    Task { await live.load() }
+                }
+            }
             facts(pallet)
             incidentNotice(pallet)
             details(pallet)

@@ -21,7 +21,7 @@ struct FulfilmentDeliveriesView: View {
             FilterChipBar(options: PalletDeliveryFilter.allCases, selection: $feed.filter, title: \.title) { filter in
                 filter.count(in: feed.counts)
             }
-            SearchField(text: $feed.search, placeholder: "Search reference or customer")
+            SearchField(text: $feed.search, placeholder: "Search reference or customer", onScan: { router.select(.scan) })
             if let lookingUpCode {
                 InlineAlert(tone: .info, title: "Looking up \(lookingUpCode)…")
             }

@@ -247,6 +247,31 @@ extension MobilePalletReturnWrite {
     }
 }
 
+struct ReturnShipmentErrors: Equatable {
+    private(set) var shipper: [String] = []
+    private(set) var tracking: String?
+    private(set) var parcelGeneral: [String] = []
+    private(set) var parcelRows: [Int: [String]] = [:]
+
+    init(_ fields: [String: [String]]) {
+        shipper = fields["shipper_id"] ?? []
+        tracking = fields["tracking"]?.first
+        for key in fields.keys.sorted() where key == "parcels" || key.hasPrefix("parcels.") {
+            let messages = fields[key] ?? []
+            let parts = key.split(separator: ".")
+            if parts.count >= 3, let index = Int(parts[1]) {
+                parcelRows[index, default: []] += messages
+            } else {
+                parcelGeneral += messages
+            }
+        }
+    }
+
+    var coversTheProblem: Bool {
+        !shipper.isEmpty || tracking != nil || !parcelGeneral.isEmpty || !parcelRows.isEmpty
+    }
+}
+
 private struct QueuedReturnWrite {
     let id = UUID()
     let write: MobilePalletReturnWrite
@@ -266,7 +291,7 @@ final class PalletReturnLive {
     private(set) var working: MobilePalletReturnWrite?
     private(set) var event: PalletReturnEvent?
     private(set) var sheetError: String?
-    private(set) var fieldErrors: [String: String] = [:]
+    private(set) var fieldErrors: [String: [String]] = [:]
     private(set) var queuedScans = 0
     private(set) var unsure: MobilePalletReturnWrite?
     private(set) var shippers = GoodsOutShipperList()
@@ -475,8 +500,8 @@ final class PalletReturnLive {
                 event = .done(message, .warn)
                 return .unsure
             }
-            if case .validation(let text, _) = error as? APIError {
-                fieldErrors["form"] = text
+            if case .validation(_, _, let fields) = error as? APIError {
+                fieldErrors = fields
             }
             event = .done(message, .danger)
             await reloadQuietly()

@@ -435,12 +435,10 @@ final class PalletDeliveryLive {
             done = PalletDeliveryDone(message: result.result?.message ?? "Done", tone: nothingChanged ? .info : .success)
         } catch {
             working = nil
-            let message = PalletDeliveryText.message(for: error)
-            if case .bookIn = write {
-                fieldError = message
+            if case .bookIn = write, case .validation(_, _, let fields) = error as? APIError {
+                fieldError = (fields["location_id"] ?? fields["location_code"])?.first
             }
-            done = PalletDeliveryDone(message: message, tone: .danger)
-            await load()
+            done = PalletDeliveryDone(message: PalletDeliveryText.message(for: error), tone: .danger)
         }
     }
 }

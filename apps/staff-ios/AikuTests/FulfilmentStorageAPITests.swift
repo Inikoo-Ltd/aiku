@@ -31,7 +31,7 @@ struct FulfilmentStorageAPITests {
         let responses: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
-        private var statuses: [String: Int] = [:]
+        private var statuses: [String: (Int, String)] = [:]
         private var held: Set<String> = []
         private var waiting: [CheckedContinuation<Void, Never>] = []
 
@@ -43,8 +43,8 @@ struct FulfilmentStorageAPITests {
             lock.withLock { recorded }
         }
 
-        func fail(_ path: String, status: Int) {
-            lock.withLock { statuses[path] = status }
+        func fail(_ path: String, status: Int, body: String = "{}") {
+            lock.withLock { statuses[path] = (status, body) }
         }
 
         func heal(_ path: String) {
@@ -82,8 +82,8 @@ struct FulfilmentStorageAPITests {
                     }
                 }
             }
-            if let status {
-                return (Data("{}".utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+            if let (status, failure) = status {
+                return (Data(failure.utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
             }
             guard let body = responses[path] else {
                 return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
@@ -402,6 +402,35 @@ struct FulfilmentStorageAPITests {
         await live.searchChoices("")
 
         #expect(live.choices.map(\.reference) == ["SI-9"])
+    }
+
+    @Test func aCompleteActionWithADisabledReasonIsHiddenLikeAndroid() throws {
+        let json = Self.audit.replacingOccurrences(
+            of: #"{"key":"complete","label":"Complete audit"}"#,
+            with: #"{"key":"complete","label":"Complete audit","disabled_reason":"Count every item first."}"#
+        )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let audit = try decoder.decode(MobileStoredItemAudit.self, from: Data(json.utf8))
+
+        #expect(audit.action("count") != nil)
+        #expect(audit.action("complete") == nil)
+        #expect(!audit.can("complete"))
+    }
+
+    @Test func aFailedRefreshKeepsTheAuditAndASuccessfulCountClearsTheProblem() async throws {
+        let (transport, client) = client()
+        let live = StoredItemAuditLive(warehouseID: 1, auditID: 70, apiClient: client)
+        await live.load()
+        transport.fail("mobile/warehouses/1/stored-item-audits/70", status: 500)
+
+        await live.load()
+
+        #expect(live.audit != nil)
+        #expect(live.loadError != nil)
+
+        #expect(await live.count(storedItemID: 6, quantity: 3))
+        #expect(live.loadError == nil)
     }
 
     @Test func scannedPalletOpensThePalletPage() throws {

@@ -9,7 +9,7 @@ struct FulfilmentReturnsAPITests {
         let refusals: [String: String]
         private let lock = NSLock()
         private var recorded: [URLRequest] = []
-        private var statuses: [String: Int] = [:]
+        private var statuses: [String: (Int, String)] = [:]
         private var held: Set<String> = []
         private var waiting: [CheckedContinuation<Void, Never>] = []
 
@@ -22,8 +22,8 @@ struct FulfilmentReturnsAPITests {
             lock.withLock { recorded }
         }
 
-        func fail(_ path: String, status: Int) {
-            lock.withLock { statuses[path] = status }
+        func fail(_ path: String, status: Int, body: String = "{}") {
+            lock.withLock { statuses[path] = (status, body) }
         }
 
         func heal(_ path: String) {
@@ -61,8 +61,8 @@ struct FulfilmentReturnsAPITests {
                     }
                 }
             }
-            if let status {
-                return (Data("{}".utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+            if let (status, failure) = status {
+                return (Data(failure.utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
             }
             if let refusal = refusals[path] {
                 return (Data(refusal.utf8), HTTPURLResponse(url: request.url!, statusCode: 422, httpVersion: nil, headerFields: nil)!)
@@ -427,5 +427,55 @@ struct FulfilmentReturnsAPITests {
         #expect(draft.problem == "Each side must be above 0 and at most 1000 cm.")
         draft.height = "10"
         #expect(draft.body == MobileReturnParcelBody(weightKg: 2.5, dimensionsCm: [30, 20, 10]))
+    }
+
+    @Test func aRefusedShipmentKeepsTheServerErrorsPerField() async {
+        let (live, transport) = await live(6381)
+        transport.fail("\(Self.base)/6381/shipments", status: 422, body: #"{"message":"The tracking must not be greater than 1000 characters.","errors":{"tracking":["The tracking must not be greater than 1000 characters."]}}"#)
+
+        #expect(await live.createShipment(shipperID: 5, tracking: "TRK", parcels: nil) == false)
+
+        let errors = ReturnShipmentErrors(live.fieldErrors)
+        #expect(errors.tracking == "The tracking must not be greater than 1000 characters.")
+        #expect(errors.coversTheProblem)
+    }
+
+    @Test func aRefusalWithoutFieldsIsShownAsItsOwnProblem() async {
+        let (live, transport) = await live(6381)
+        transport.fail("\(Self.base)/6381/shipments", status: 403, body: #"{"message":"You can’t add shipments."}"#)
+
+        #expect(await live.createShipment(shipperID: 5, tracking: nil, parcels: nil) == false)
+
+        #expect(!ReturnShipmentErrors(live.fieldErrors).coversTheProblem)
+        #expect(live.sheetError == "You can’t add shipments.")
+    }
+
+    @Test func shipmentErrorsLandOnTheirFieldOrParcelLikeAndroid() {
+        let errors = ReturnShipmentErrors([
+            "shipper_id": ["Choose an active shipper of this organisation that can ship pallet returns."],
+            "parcels": ["At most 50 parcels."],
+            "parcels.1.weight_kg": ["The weight must be at most 1000 kg."],
+            "parcels.0.dimensions_cm.2": ["Each side must be at most 1000 cm."],
+        ])
+
+        #expect(errors.shipper == ["Choose an active shipper of this organisation that can ship pallet returns."])
+        #expect(errors.tracking == nil)
+        #expect(errors.parcelGeneral == ["At most 50 parcels."])
+        #expect(errors.parcelRows == [0: ["Each side must be at most 1000 cm."], 1: ["The weight must be at most 1000 kg."]])
+        #expect(!ReturnShipmentErrors([:]).coversTheProblem)
+    }
+
+    @Test func returnActionsWithADisabledReasonAreHiddenLikeAndroid() throws {
+        let json = Self.palletsReturn.replacingOccurrences(
+            of: #""available_actions":[{"key":"add_shipment","label":"Add shipment"}]}"#,
+            with: #""available_actions":[{"key":"add_shipment","label":"Add shipment"},{"key":"dispatch","label":"Dispatch","disabled_reason":"Print the customer inserts first."}]}"#
+        )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let detail = try decoder.decode(MobilePalletReturnDetail.self, from: Data(json.utf8))
+
+        #expect(detail.availableActions.count == 2)
+        #expect(detail.action("add_shipment") != nil)
+        #expect(detail.action("dispatch") == nil)
     }
 }

@@ -21,7 +21,7 @@ struct FulfilmentPalletsView: View {
             FilterChipBar(options: StoredPalletFilter.allCases, selection: $feed.filter, title: \.title) { filter in
                 filter.count(in: feed.counts)
             }
-            SearchField(text: $feed.search, placeholder: "Search pallet, customer ref or location")
+            SearchField(text: $feed.search, placeholder: "Search pallet, customer ref or location", onScan: { router.select(.scan) })
             if feed.filter == .incidents {
                 Card {
                     ListRow("Incident reports", subtitle: "What was reported, by whom and when", icon: .warning, iconTone: .danger) {

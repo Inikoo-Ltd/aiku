@@ -128,13 +128,24 @@ private struct PalletDeliveryScreen: View {
     private func screen<Content: View>(_ delivery: MobilePalletDeliveryDetail, kicker: String, @ViewBuilder content: () -> Content) -> some View {
         if let footer = footerKind(delivery) {
             AppScreen(title: delivery.reference, kicker: kicker) {
+                refreshProblem
                 content()
             } footer: {
                 footerView(footer, delivery: delivery)
             }
         } else {
             AppScreen(title: delivery.reference, kicker: kicker) {
+                refreshProblem
                 content()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var refreshProblem: some View {
+        if let message = live.loadError {
+            GoodsOutLoadProblem(title: "Couldn’t refresh this delivery", message: message) {
+                Task { await live.load() }
             }
         }
     }
@@ -388,7 +399,7 @@ private struct PalletDeliveryScreen: View {
             router.open(FulfilmentRoute.pallets)
         }
         AikuButton("Next delivery", icon: .next) {
-            router.back()
+            router.replace(with: FulfilmentRoute.deliveries)
         }
         .accessibilityIdentifier("fulfilment.delivery.next")
     }

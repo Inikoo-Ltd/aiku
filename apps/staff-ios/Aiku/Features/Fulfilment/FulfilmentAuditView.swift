@@ -84,6 +84,11 @@ private struct StoredItemAuditScreen: View {
             title: (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference,
             kicker: PalletDeliveryText.joined(["Stored item audit", "Pallet \(palletReference)", audit.stateLabel])
         ) {
+            if let message = live.loadError {
+                GoodsOutLoadProblem(title: "Couldn’t refresh this screen", message: message) {
+                    Task { await live.load() }
+                }
+            }
             if let code = live.unsure?.scannedCode {
                 InlineAlert(tone: .warn, title: PalletReturnText.unsureTitle, message: StoredItemAuditText.unsureMessage(code)) {
                     LinkButton("Try again", size: 13) {

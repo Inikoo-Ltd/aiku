@@ -194,7 +194,7 @@ extension MobileStoredPallet {
 
 extension MobileStoredItemAudit {
     func action(_ key: String) -> MobileFulfilmentAction? {
-        availableActions?.first { $0.key == key }
+        availableActions?.first { $0.key == key && $0.disabledReason == nil }
     }
 
     func can(_ key: String) -> Bool {
@@ -409,6 +409,7 @@ final class StoredPalletLive {
             let result = try await apiClient.writeStoredPallet(warehouseID: warehouseID, id: palletID, write: write)
             working = nil
             pallet = result.data
+            loadError = nil
             let nothingChanged = result.result?.status == "nothing_changed"
             done = FulfilmentDone(message: result.result?.message ?? "Done", tone: nothingChanged ? .info : .success)
             return true
@@ -633,6 +634,7 @@ final class StoredItemAuditLive {
             let result = try await apiClient.writeStoredItemAudit(warehouseID: warehouseID, id: auditID, write: write)
             working = nil
             audit = result.data
+            loadError = nil
             let nothingChanged = result.result?.status == "nothing_changed"
             done = FulfilmentDone(message: doneMessage(write, audit: result.data, reference: reference) ?? result.result?.message ?? "Done", tone: nothingChanged ? .info : .success)
             if let code = write.scannedCode {

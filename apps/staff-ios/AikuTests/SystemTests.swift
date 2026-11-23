@@ -118,4 +118,14 @@ struct SystemTests {
         #expect(codes.contains("S09"))
         #expect(codes.contains("105"))
     }
+
+    @Test("No access is titled with the warehouse and offers another warehouse only when there is one, like Android")
+    func noAccessFollowsTheWarehouse() {
+        #expect(SystemNoAccessText.title(module: "Fulfilment", warehouse: "Europa Drive") == "Europa Drive")
+        #expect(SystemNoAccessText.title(module: "Fulfilment", warehouse: " ") == "Fulfilment")
+        #expect(SystemNoAccessText.message(module: "Fulfilment", warehouse: "Europa Drive") == "Your account can’t open **Fulfilment** in **Europa Drive**. Ask your warehouse manager to add the permission in Aiku.")
+        #expect(SystemNoAccessText.message(module: "Fulfilment", warehouse: "") == "Your account can’t open **Fulfilment**. Ask your warehouse manager to add the permission in Aiku.")
+        #expect(!SystemNoAccessText.canChangeWarehouse(warehouseCount: 1))
+        #expect(SystemNoAccessText.canChangeWarehouse(warehouseCount: 2))
+    }
 }
