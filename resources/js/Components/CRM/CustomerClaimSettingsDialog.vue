@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { useForm } from "@inertiajs/vue3"
+import { router, useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import ToggleSwitch from "primevue/toggleswitch"
@@ -35,7 +35,10 @@ const openSettings = () => {
 const saveSettings = () => {
     form.patch(route(props.settingsRoute.name, props.settingsRoute.parameters), {
         preserveScroll: true,
-        onSuccess: () => { showSettings.value = false },
+        onSuccess: () => {
+            showSettings.value = false
+            router.reload()
+        },
     })
 }
 </script>
@@ -101,7 +104,10 @@ const saveSettings = () => {
             </div>
 
             <div class="rounded border p-3" :class="settings.framework ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'">
-                <p class="font-semibold text-gray-800">{{ ctrans("Work through claims only") }}</p>
+                <div class="flex items-center justify-between gap-4">
+                    <p class="font-semibold text-gray-800">{{ ctrans("Work through claims only") }}</p>
+                    <ToggleSwitch v-if="!settings.framework" v-model="form.framework" :disabled="!understood" :aria-label="ctrans('Switch this shop to claims only')" />
+                </div>
                 <p v-if="settings.framework" class="text-xs text-green-700">
                     {{ ctrans("On since :date. Every replacement and refund in this shop starts from a claim.", { date: String(useFormatTime(settings.framework_since ?? undefined)) }) }}
                 </p>
@@ -110,10 +116,6 @@ const saveSettings = () => {
                     <label class="mt-2 flex items-center gap-2 text-xs text-gray-700">
                         <Checkbox v-model="understood" binary />
                         {{ ctrans("I have told the team and understand it cannot be undone") }}
-                    </label>
-                    <label class="mt-2 flex items-center justify-between gap-4">
-                        <span class="text-xs font-semibold text-gray-800">{{ ctrans("Switch this shop to claims only") }}</span>
-                        <ToggleSwitch v-model="form.framework" :disabled="!understood" />
                     </label>
                 </template>
             </div>

@@ -1620,7 +1620,7 @@ class AskShoppingAssistant
     {
         $shopName     = $customer->shop->name;
         $claimsRule   = GetCustomerClaimForm::enabledFor($customer->shop)
-            ? ' This replaces the person for items they received damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived, and for photos of them: call report_order_problem (with the order number when they gave one), which opens our claim form in the chat where they choose the items, add photos and pick credit, a replacement or the items in their next order. Then say in one or two short sentences that you are sorry and that the form below is the fastest way to put it right; never promise an outcome or an amount, and offer a person only when the tool says the order cannot be claimed on.'
+            ? ' This replaces the person for items they received damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived, and for photos of them: call report_order_problem (with the order number when they gave one), which opens our claim form in the chat where they choose the items, add photos and pick what they would like us to do (only the outcomes the tool lists). Then say in one or two short sentences that you are sorry and that the form below is the fastest way to put it right; never promise an outcome or an amount, and offer a person only when the tool says the order cannot be claimed on.'
             : '';
         $language     = DB::table('languages')->where('code', $conversation->language_code)->value('name') ?: 'English';
         $businessName = $this->businessName($customer) ?? 'not given';

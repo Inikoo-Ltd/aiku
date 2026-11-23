@@ -64,6 +64,10 @@ class SettleCustomerClaim
                 'settled_at'          => now(),
             ]);
 
+            if ($reviewer) {
+                StoreCustomerClaim::closeReviewTasks($claim, $reviewer);
+            }
+
             return $claim;
         });
     }

@@ -44,6 +44,21 @@ class StoreIrisCustomerClaim extends IrisAction
         ];
     }
 
+    public function getValidationMessages(): array
+    {
+        return [
+            'lines.required'            => __('Please tick the items that went wrong.'),
+            'lines.*.reason.required'   => __('Please choose what happened.'),
+            'lines.*.quantity.*'        => __('Please enter how many.'),
+            'lines.*.photos.*.image'    => __('Photos must be images.'),
+            'lines.*.photos.*.mimes'    => __('Photos must be JPG, PNG, WebP or GIF.'),
+            'lines.*.photos.*.max'      => __('Each photo can be up to 10 MB.'),
+            'lines.*.photos.max'        => __('Up to :count photos per item.', ['count' => GetCustomerClaimForm::MAX_PHOTOS_PER_LINE]),
+            'box_photo.*'               => __('The box photo must be a JPG, PNG, WebP or GIF image up to 10 MB.'),
+            'resolution.*'              => __('Please choose what you would like us to do.'),
+        ];
+    }
+
     /**
      * @return array<string, mixed>
      *

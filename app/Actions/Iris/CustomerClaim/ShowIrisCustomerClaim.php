@@ -8,6 +8,8 @@
 
 namespace App\Actions\Iris\CustomerClaim;
 
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
+use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Actions\IrisAction;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
@@ -36,7 +38,12 @@ class ShowIrisCustomerClaim extends IrisAction
             'amount'        => $claim->state === CustomerClaimStateEnum::SETTLED && $claim->resolution === 'refund_to_balance' ? (float) $claim->amount : null,
             'currency_code' => $claim->currency_code,
             'replacement'   => data_get($claim->result, 'replacement'),
-            'lines'         => $claim->lines->map(fn ($line) => ['code' => $line->code, 'name' => $line->name, 'quantity' => (float) $line->quantity])->all(),
+            'value'         => (float) $claim->value,
+            'rejection'     => $claim->state === CustomerClaimStateEnum::REJECTED ? [
+                'reason' => __(RejectCustomerClaim::reasonLabel((string) $claim->rejection_reason), [], $locale),
+                'note'   => $claim->rejection_note,
+            ] : null,
+            'lines'         => $claim->lines->map(fn ($line) => ['code' => $line->code, 'name' => $line->name, 'quantity' => (float) $line->quantity, 'reason' => GetCustomerClaimForm::reasonLabel($line->reason, $locale)])->all(),
             'created_at'    => $claim->created_at->toIso8601String(),
         ];
     }
