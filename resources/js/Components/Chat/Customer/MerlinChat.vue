@@ -12,7 +12,7 @@ import { isLittleBirdName, shoppingAssistantConversationKey } from "@/Iris/Compo
 import MerlinThinking from "@/Iris/Components/MerlinThinking.vue"
 import MerlinImagePicker from "@/Components/Chat/Customer/MerlinImagePicker.vue"
 import CustomerClaimForm, { type ClaimSummary } from "@/Components/Chat/Customer/CustomerClaimForm.vue"
-import { askPayload } from "@/Iris/Composables/useShoppingAssistant"
+import { askPayload, shoppingAssistantTrail } from "@/Iris/Composables/useShoppingAssistant"
 
 type Card = { id: number, name: string, url?: string | null, web_images?: any }
 type Message = {
@@ -121,7 +121,7 @@ const send = async (text: string) => {
     errorMessage.value = ""
     isPending.value = true
     try {
-        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, entry_point: "chat", can_hand_over: true }, sending))
+        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, entry_point: "chat", can_hand_over: true, page: window.location.pathname, trail: shoppingAssistantTrail() }, sending))
         if (data.accept_offer) {
             isPending.value = false
             draft.value = ""

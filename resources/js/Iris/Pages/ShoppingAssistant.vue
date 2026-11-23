@@ -32,6 +32,8 @@ import { ProductResource } from "@/types/Iris/Products"
 import {
     shoppingAssistantConversationKey,
     shoppingAssistantQuestionKey,
+    shoppingAssistantPageKey,
+    shoppingAssistantTrail,
     useShoppingAssistant,
     askPayload,
 } from "@/Iris/Composables/useShoppingAssistant"
@@ -502,7 +504,7 @@ watch(() => messages.value.length + (isPending.value ? 1 : 0), async (count, pre
     }
 })
 
-const send = async (text: string) => {
+const send = async (text: string, page?: string | null) => {
     const message = text.trim().slice(0, 1000)
     const sending = [...images.value]
     if ((!message && !sending.length) || isPending.value) {
@@ -513,7 +515,7 @@ const send = async (text: string) => {
     isPending.value = true
     const requestGeneration = generation
     try {
-        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, can_hand_over: true }, sending))
+        const { data } = await axios.post(askUrl(), askPayload({ message, conversation: conversation.value, can_hand_over: true, page, trail: shoppingAssistantTrail() }, sending))
         if (requestGeneration !== generation) {
             return
         }
@@ -660,9 +662,11 @@ const askHandedOverQuestion = () => {
         return
     }
     sessionStorage.removeItem(shoppingAssistantQuestionKey)
+    const page = sessionStorage.getItem(shoppingAssistantPageKey)
+    sessionStorage.removeItem(shoppingAssistantPageKey)
     draft.value = question
     if (!isPending.value) {
-        send(question)
+        send(question, page)
     }
 }
 

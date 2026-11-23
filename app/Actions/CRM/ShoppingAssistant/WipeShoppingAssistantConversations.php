@@ -46,7 +46,7 @@ class WipeShoppingAssistantConversations
         foreach (array_chunk($conversationIds, 500) as $chunk) {
             DB::transaction(function () use ($chunk) {
                 ShoppingAssistantMessage::whereIn('shopping_assistant_conversation_id', $chunk)
-                    ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null]);
+                    ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null, 'webpage_id' => null, 'trail_webpage_ids' => null]);
                 ShoppingAssistantEvent::whereIn('shopping_assistant_conversation_id', $chunk)
                     ->update(['reason' => null]);
                 DB::table('shopping_assistant_hand_overs')->whereIn('shopping_assistant_conversation_id', $chunk)->update(['question' => null]);
@@ -81,7 +81,7 @@ class WipeShoppingAssistantConversations
                     ->whereNull('wiped_at')
                     ->orWhereExists(fn ($messages) => $messages->selectRaw('1')->from('shopping_assistant_messages')
                         ->whereColumn('shopping_assistant_messages.shopping_assistant_conversation_id', 'shopping_assistant_conversations.id')
-                        ->where(fn ($text) => $text->whereNotNull('body')->orWhereNotNull('tool_calls')->orWhereNotNull('follow_ups')))
+                        ->where(fn ($text) => $text->whereNotNull('body')->orWhereNotNull('tool_calls')->orWhereNotNull('follow_ups')->orWhereNotNull('trail_webpage_ids')))
                     ->orWhereExists(fn ($images) => $images->selectRaw('1')->from('media')
                         ->join('shopping_assistant_messages', 'shopping_assistant_messages.id', '=', 'media.model_id')
                         ->where('media.model_type', 'ShoppingAssistantMessage')

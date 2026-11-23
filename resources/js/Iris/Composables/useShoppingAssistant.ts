@@ -11,17 +11,39 @@ export interface ShoppingAssistant {
 
 export const shoppingAssistantQuestionKey = "shopping_assistant_question"
 export const shoppingAssistantConversationKey = "shopping_assistant_conversation"
+export const shoppingAssistantPageKey = "shopping_assistant_page"
+export const shoppingAssistantTrailKey = "shopping_assistant_trail"
+const trailLength = 6
+
+export const shoppingAssistantTrail = (): string[] => {
+    try {
+        const trail = JSON.parse(sessionStorage.getItem(shoppingAssistantTrailKey) || "[]")
+        return Array.isArray(trail) ? trail.filter((path) => typeof path === "string").slice(0, trailLength) : []
+    } catch {
+        return []
+    }
+}
+
+export const recordShoppingAssistantPage = (path: string) => {
+    try {
+        sessionStorage.setItem(shoppingAssistantTrailKey, JSON.stringify([path, ...shoppingAssistantTrail().filter((earlier) => earlier !== path)].slice(0, trailLength)))
+    } catch {
+        return
+    }
+}
 
 // ponytail: naive rule (product codes and product names are 1-3 words), replace with data from the search logs
 export const isLittleBirdName = (name?: string | null): boolean => (name ?? "").trim().toLowerCase() === "little bird"
 
-export const askPayload = (fields: Record<string, string | boolean | null>, images: File[]): Record<string, unknown> | FormData => {
+export const askPayload = (fields: Record<string, string | string[] | boolean | null | undefined>, images: File[]): Record<string, unknown> | FormData => {
     if (!images.length) {
         return fields
     }
     const form = new FormData()
     Object.entries(fields).forEach(([key, value]) => {
-        if (value !== null) {
+        if (Array.isArray(value)) {
+            value.forEach((item) => form.append(`${key}[]`, item))
+        } else if (value !== null && value !== undefined) {
             form.append(key, typeof value === "boolean" ? (value ? "1" : "0") : value)
         }
     })
@@ -65,6 +87,7 @@ export const useShoppingAssistant = () => {
         const text = question?.trim()
         if (text) {
             sessionStorage.setItem(shoppingAssistantQuestionKey, text)
+            sessionStorage.setItem(shoppingAssistantPageKey, window.location.pathname)
         }
         if (route().current()?.startsWith("iris.")) {
             router.get("/assistant")
