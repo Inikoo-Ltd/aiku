@@ -61,6 +61,8 @@ class WebpageResource extends JsonResource
         return [
             'id'                           => $webpage->id,
             'slug'                         => $webpage->slug,
+            'shop_id'                      => $webpage->shop_id,
+            'shop_slug'                    => $webpage->shop?->slug,
             'level'                        => $webpage->level,
             'domain'                       => $webpage->website->domain ?? null,
             'website_layout'               => Arr::get($webpage->website->published_layout, 'theme.layout', 'blog'),

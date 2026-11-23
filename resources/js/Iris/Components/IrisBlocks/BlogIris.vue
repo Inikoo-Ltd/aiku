@@ -21,6 +21,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 import { useHtmlWithScripts, useInlineScriptBlocks } from "@/Composables/useHtmlWithScripts"
+import BlogProductCarouselIris from "@/Iris/Components/IrisBlocks/BlogProductCarouselIris.vue"
+import { familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
+import { ProductResource } from "@/types/Iris/Products"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
@@ -35,6 +38,8 @@ const props = defineProps<{
     }
     content: string
     script?: string
+    carousel_products?: Record<string, ProductResource>
+    carousel_families?: Record<string, string[]>
   }
   screenType?: "mobile" | "tablet" | "desktop"
   indexBlock?: number
@@ -57,6 +62,36 @@ const pageUrl = ref("")
 const tableOfContents = computed(() => buildBlogTableOfContents(props.fieldValue?.content ?? ""))
 const contentHtml = computed(() => tableOfContents.value.html)
 useInlineScriptBlocks(contentHtml, contentRef)
+
+interface ProductCarouselTarget {
+  element: HTMLElement
+  codes: string[]
+  title: string
+  perView: number
+}
+
+const productCarousels = ref<ProductCarouselTarget[]>([])
+
+const findProductCarousels = async () => {
+  productCarousels.value = []
+  await nextTick()
+  productCarousels.value = Array.from(contentRef.value?.querySelectorAll<HTMLElement>("[data-product-carousel]") ?? [])
+    .map((element) => {
+      element.classList.add("not-prose")
+
+      return {
+        element,
+        codes: productCarouselSource(element.getAttribute("data-source")) === "family"
+          ? (props.fieldValue?.carousel_families?.[(element.getAttribute("data-family") ?? "").toLowerCase()] ?? []).slice(0, familyProductsLimit(element.getAttribute("data-limit")))
+          : parseProductCodes(element.getAttribute("data-codes") ?? ""),
+        title: element.getAttribute("data-title") ?? "",
+        perView: productsPerView(element.getAttribute("data-per-view")),
+      }
+    })
+}
+
+onMounted(findProductCarousels)
+watch(contentHtml, findProductCarousels, { flush: "post" })
 const headings = computed(() => tableOfContents.value.headings)
 
 let headingObserver: IntersectionObserver | null = null
@@ -177,6 +212,9 @@ const screenType = inject("screenType", "desktop")
       <!-- Article Content -->
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10 break-words" ref="contentRef" v-html="contentHtml" />
+        <Teleport v-for="(carousel, index) in productCarousels" :key="index" :to="carousel.element">
+          <BlogProductCarouselIris :codes="carousel.codes" :title="carousel.title" :perView="carousel.perView" :products="fieldValue.carousel_products ?? {}" />
+        </Teleport>
       </div>
 
       <div v-if="fieldValue?.script" ref="scriptContainer" class="mb-10 w-full" v-html="scriptHtml" />
@@ -232,6 +270,11 @@ const screenType = inject("screenType", "desktop")
 .prose :deep(img) {
   height: auto;
   border-radius: 0.5rem;
+}
+
+.prose :deep([data-product-carousel] img) {
+  height: 100%;
+  border-radius: 0;
 }
 
 .prose :deep(table) {

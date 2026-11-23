@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Workshop;
 
+use App\Actions\Web\WebBlock\Iris\GetIrisBlogProductCarousels;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -51,6 +52,9 @@ class GetWebBlockBlog
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', GetIrisWebBlockBlog::make()->publishedDate($webpage, $webBlock));
         data_set($webBlock, 'web_block.layout.data.fieldValue.latest_blogs', $latestBlogs);
+        $productCarousels = GetIrisBlogProductCarousels::run($webpage, Arr::get($webBlock, 'web_block.layout.data.fieldValue.content'));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.carousel_products', $productCarousels['products']);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.carousel_families', $productCarousels['families']);
 
         return $webBlock;
     }

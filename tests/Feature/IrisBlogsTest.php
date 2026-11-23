@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\Iris\Blog\IndexIrisBlogs;
+use App\Actions\Web\WebBlock\Iris\GetIrisBlogProductCarousels;
 use App\Actions\Web\WebBlock\Iris\GetIrisWebBlockBlog;
 use App\Actions\Web\WebBlock\Workshop\GetWebBlockBlog;
 use App\Actions\Web\Webpage\Json\DiffWebpageSnapshotText;
@@ -357,4 +359,77 @@ test('editing the meta description of a blog is recorded in its changelog with t
     expect($audit->old_values['description'])->toBe('Old meta description')
         ->and($audit->new_values['description'])->toBe('New meta description')
         ->and($audit->user_id)->toBe($this->user->id);
+});
+
+test('a blog product carousel reads the codes of every carousel in the article, once each and capped per carousel', function () {
+    $manyCodes = collect(range(1, GetIrisBlogProductCarousels::MAX_PRODUCTS_PER_CAROUSEL + 5))->map(fn (int $number) => "MANY-$number")->implode(',');
+
+    $content = '<p>Gift ideas</p>'
+        .'<div data-product-carousel="" data-codes="XMAS-01, Xmas-02,XMAS-01" data-per-view="4"></div>'
+        .'<p>More</p><div data-title="Candles &amp; more" data-product-carousel="" data-codes="xmas-02,CANDLE&amp;CO"></div>'
+        .'<div data-product-carousel="" data-codes="'.$manyCodes.'"></div>'
+        .'<div data-script-block="" data-codes="SCRIPT-1"></div>';
+
+    $codes = GetIrisBlogProductCarousels::make()->codesInContent($content);
+
+    expect(array_slice($codes, 0, 3))->toBe(['xmas-01', 'xmas-02', 'candle&co'])
+        ->and($codes)->not->toContain('script-1')
+        ->and($codes)->toContain('many-'.GetIrisBlogProductCarousels::MAX_PRODUCTS_PER_CAROUSEL)
+        ->and($codes)->not->toContain('many-'.(GetIrisBlogProductCarousels::MAX_PRODUCTS_PER_CAROUSEL + 1))
+        ->and(GetIrisBlogProductCarousels::make()->codesInContent('<p>No carousel</p>'))->toBe([]);
+});
+
+test('a blog product carousel shows only products of the website shop with a live webpage, as storefront product cards', function () {
+    [, $product] = createProduct($this->shop);
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $productWebpage->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+    $product->refresh()->updateQuietly(['is_for_sale' => true, 'is_minion_variant' => false, 'price' => 100]);
+
+    $withoutWebpage = $product->replicate(['slug', 'webpage_id', 'is_variant_leader']);
+    $withoutWebpage->forceFill([
+        'code' => $product->code.'-NOPAGE',
+        'slug' => strtolower($product->slug.'-nopage'),
+    ])->saveQuietly();
+
+    $blog    = createBlogWebpage($this->website, 'Christmas gift ideas', []);
+    $content = '<div data-product-carousel="" data-codes="'.strtoupper($product->code).',NOT-A-PRODUCT,'.$withoutWebpage->code.'" data-per-view="4"></div>';
+    $block   = [
+        'type'      => 'blog',
+        'web_block' => ['layout' => ['data' => ['fieldValue' => ['content' => $content]]]],
+    ];
+
+    $carouselProducts = GetIrisWebBlockBlog::run($blog, $block)['structure']['carousel_products'];
+    $workshopProducts = Arr::get(GetWebBlockBlog::run($blog, $block), 'web_block.layout.data.fieldValue.carousel_products');
+    $card             = $carouselProducts[mb_strtolower($product->code)];
+
+    expect(array_keys($carouselProducts))->toBe([mb_strtolower($product->code)])
+        ->and(array_keys($workshopProducts))->toBe([mb_strtolower($product->code)])
+        ->and($card['id'])->toBe($product->id)
+        ->and($card['url'])->toBe($productWebpage->fresh()->canonical_url)
+        ->and($card)->toHaveKeys(['name', 'web_images', 'price', 'stock', 'units', 'unit'])
+        ->and(GetIrisWebBlockBlog::run($blog, ['type' => 'blog', 'web_block' => ['layout' => ['data' => ['fieldValue' => ['content' => '<p>Text</p>']]]]])['structure']['carousel_products'])->toBe([]);
+});
+
+test('a blog family carousel shows the family products of the website shop with a live webpage, up to its limit', function () {
+    [, $product] = createProduct($this->shop);
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $productWebpage->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+    $product->refresh()->updateQuietly(['is_for_sale' => true, 'is_minion_variant' => false, 'price' => 100]);
+    $family = $product->family;
+
+    $blog    = createBlogWebpage($this->website, 'Family carousel', []);
+    $content = '<div data-product-carousel="" data-source="family" data-family="'.strtoupper($family->code).'" data-limit="1"></div>'
+        .'<div data-product-carousel="" data-source="family" data-family="NOT-A-FAMILY" data-limit="5"></div>';
+    $block   = [
+        'type'      => 'blog',
+        'web_block' => ['layout' => ['data' => ['fieldValue' => ['content' => $content]]]],
+    ];
+
+    $structure   = GetIrisWebBlockBlog::run($blog, $block)['structure'];
+    $familyCodes = $structure['carousel_families'][mb_strtolower($family->code)];
+
+    expect($familyCodes)->toHaveCount(1)
+        ->and(array_keys($structure['carousel_families']))->toBe([mb_strtolower($family->code)])
+        ->and(array_keys($structure['carousel_products']))->toBe($familyCodes)
+        ->and(GetIrisBlogProductCarousels::make()->codesInContent($content))->toBe([]);
 });
