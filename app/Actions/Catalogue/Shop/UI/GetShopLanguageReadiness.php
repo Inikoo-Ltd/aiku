@@ -39,8 +39,8 @@ class GetShopLanguageReadiness
                    count(*) filter (where nullif(trim(coalesce(p.description_i8n->>l.locale, case when l.locale = ? then p.description end)), '') is not null) as descriptions
             from products p
             cross join lateral (
-                select jsonb_object_keys(coalesce(p.name_i8n, '{}'))
-                union select jsonb_object_keys(coalesce(p.description_i8n, '{}'))
+                select jsonb_object_keys(case when jsonb_typeof(p.name_i8n) = 'object' then p.name_i8n else '{}' end)
+                union select jsonb_object_keys(case when jsonb_typeof(p.description_i8n) = 'object' then p.description_i8n else '{}' end)
                 union select cast(? as varchar)
             ) l(locale)
             where p.shop_id = ? and p.state = ? and p.deleted_at is null
