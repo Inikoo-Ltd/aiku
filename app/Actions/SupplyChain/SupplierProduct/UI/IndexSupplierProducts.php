@@ -321,7 +321,7 @@ class IndexSupplierProducts extends OrgAction
                 'event'           => 'action-progress',
                 'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => array_map(
-                    fn ($heading) => strtolower(str_replace(' ', '_', trim($heading))),
+                    fn (string $heading) => trim(preg_replace('/[^a-z0-9]+/', '_', strtolower(trim($heading))), '_'),
                     SupplierProductTemplateExport::headings()
                 ),
                 'template'        => [

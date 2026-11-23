@@ -19,7 +19,6 @@ import { Link, router } from "@inertiajs/vue3"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal'
 import Papa from 'papaparse'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { notify } from '@kyvg/vue3-notification'
 import LoadingIcon from './LoadingIcon.vue'
 import { set } from 'lodash-es'
 library.add(falFile, faEllipsisV, faTimes, faTimesCircle, faCheckCircle, faFileDownload, faDownload, faInfoCircle)
@@ -107,7 +106,7 @@ const onUploadFile = async (fileUploaded: File) => {
             const XLSX = await import('xlsx');
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
-            const sheetName = workbook.SheetNames[0];
+            const sheetName = workbook.SheetNames.find((name) => name.trim().toLowerCase() === 'product data') ?? workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, raw: false});
             csvData.value = json;
@@ -126,11 +125,7 @@ const onUploadFile = async (fileUploaded: File) => {
 const idRecentUpload = ref<number | null>(null)
 const submitUpload = async () => {
     if (!props.upload_spreadsheet?.route?.upload?.name) {
-        notify({
-            title: 'Something went wrong.',
-            text: 'Route is not set yet.',
-            type: 'error',
-        })
+        errorMessage.value = ctrans('Route is not set yet.')
         return
     }
     isDraggedFile.value = false
@@ -185,8 +180,40 @@ const closeModal = () =>{
     model.value = false
 }
 
+const HEADING_ROW_SEARCH_LIMIT = 20
+
+const countMatchingHeaders = (row: unknown[]) =>
+    (row ?? []).filter((cell) => fieldForHeader(cell)).length
+
+const compHeadingRowIndex = computed(() => {
+    if (!props.upload_spreadsheet?.required_fields?.length) {
+        return 0
+    }
+
+    let bestIndex = 0
+    let bestCount = countMatchingHeaders(csvData.value?.[0] ?? [])
+    csvData.value.slice(1, HEADING_ROW_SEARCH_LIMIT).forEach((row, index) => {
+        const count = countMatchingHeaders(row)
+        if (count > bestCount) {
+            bestCount = count
+            bestIndex = index + 1
+        }
+    })
+
+    return bestIndex
+})
+
+const isFilledRow = (row: unknown[]) =>
+    (row ?? []).some((cell) => String(cell ?? "").trim() !== "")
+
+const compPreviewHeader = computed(() => csvData.value?.[compHeadingRowIndex.value] ?? [])
+
+const compPreviewRows = computed(() =>
+    csvData.value.slice(compHeadingRowIndex.value + 1).filter(isFilledRow)
+)
+
 const compIndexStoredItemInPreview = computed(() => {
-    return csvData.value?.[0]?.indexOf("stored_items")
+    return compPreviewHeader.value.indexOf("stored_items")
 })
 
 // Fetch data history when Modal is opened
@@ -215,11 +242,6 @@ watch(() => selectedEchopersonal?.recentlyUploaded?.find((upload: {id: number}) 
             router.reload({
                 only: props.propsRefreshAfterFinish ?? ['pallets','goods'],
                 onSuccess: () => {
-                    notify({
-                        title: ctrans('Upload finish'),
-                        text: ctrans('Data in table has reloaded.'),
-                        type: 'success',
-                    })
                     model.value = false
                 },
                 onError: () => {}
@@ -387,7 +409,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                 <table class="w-full">
                                     <thead class="">
                                         <tr class="rounded-t-xl">
-                                            <template v-for="(header, index) in csvData[0]">
+                                            <template v-for="(header, index) in compPreviewHeader">
                                                 <Transition name="slide-to-up">
                                                     <th v-if="index != compIndexStoredItemInPreview || isIncludeStoreItems" :key="index"
                                                         class="whitespace-nowrap overflow-ellipsis pl-3 pr-1"
@@ -403,7 +425,7 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="(row, rowIndex) in csvData.slice(1, 6)" class="border border-gray-300">
+                                        <tr v-for="(row, rowIndex) in compPreviewRows.slice(0, 5)" class="border border-gray-300">
                                             <template v-for="(cell, cellIndex) in row">
                                                 <Transition name="slide-to-up">
                                                     <td v-if="cellIndex != compIndexStoredItemInPreview || isIncludeStoreItems" :key="cellIndex" class="pl-3">{{ cell }}</td>
@@ -412,8 +434,8 @@ const fetchFailedRecords = async (showRoute: { name: string; parameters: any }) 
                                         </tr>
                                     </tbody>
                                 </table>
-                                <div v-if="csvData?.length > 6" class="py-1 text-center bg-gray-100">
-                                    {{ ctrans('and') }} {{ csvData.length-6 }} {{ ctrans('more') }}
+                                <div v-if="compPreviewRows.length > 5" class="py-1 text-center bg-gray-100">
+                                    {{ ctrans('and') }} {{ compPreviewRows.length - 5 }} {{ ctrans('more') }}
                                 </div>
                             </div>
                             <div class="flex justify-end mt-3 w-full">

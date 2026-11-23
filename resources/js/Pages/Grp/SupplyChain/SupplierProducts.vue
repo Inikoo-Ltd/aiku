@@ -66,8 +66,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
         v-model="isModalUploadOpen"
         scope="Supplier Product"
         :title="{
-            label: 'Upload your new products',
-            information: 'The list of column file: customer_reference, notes, stored_items'
+            label: ctrans('Upload your new products'),
+            information: ctrans('Upload the supplier parts sheet (Product data tab). Columns are matched by their heading row, so the title rows above it can stay.')
         }"
         v-if="upload_spreadsheet"
         progressDescription="Adding Products to Supplier"        
