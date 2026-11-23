@@ -53,6 +53,7 @@ use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use Illuminate\Http\Client\ConnectionException;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\ReconnectRetinaCustomerSalesChannel;
+use App\Actions\Retina\Dropshipping\Portfolio\RetranslateRetinaPortfolios;
 use App\Actions\Dropshipping\WooCommerce\StoreTemporaryWooUser;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Maintenance\Dropshipping\RepairWooChannelReconnects;
@@ -73,6 +74,7 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Language;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -1035,7 +1037,41 @@ test('editing a portfolio pushes its name, price and description to the listed p
     UpdateWooProduct::run($portfolio->refresh());
 
     $body = wooSent('PUT', 'products/794')->first()->data();
-    expect($body)->toBe(['regular_price' => '9.99', 'name' => 'Renamed', 'description' => 'New text']);
+    expect($body)->toBe(['regular_price' => '9.99', 'name' => 'Renamed', 'description' => 'New text<br><br>', 'short_description' => 'New text<br><br>']);
+});
+
+test('re-translate sends the translated name and description with its document links and short description, never the price', function () {
+    Queue::fake();
+    $language   = Language::where('code', $this->shop->language->code === 'de' ? 'fr' : 'de')->firstOrFail();
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+
+    $product = wooSecondProduct($this->shop, $this->product);
+    $product->setTranslation('name_i8n', $language->code, 'Übersetzter Name')
+        ->setTranslation('description_i8n', $language->code, '<p>Übersetzte Beschreibung</p>')
+        ->save();
+    $sds = createAttachedMedia('Product', $product->id, 'sds');
+
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    $portfolio       = wooPortfolio($channel, $product, '795', 'aw-retranslate');
+    $portfolio->update(['customer_price' => 7.5]);
+    $channel->update(['language_id' => $language->id]);
+
+    wooFake(['PUT products/795' => Http::response(wooProduct(795))]);
+
+    $result = RetranslateRetinaPortfolios::make()->handle($channel->refresh(), [$portfolio->id]);
+    $body   = wooSent('PUT', 'products/795')->first()->data();
+
+    expect($result)->toBe(['in_store' => 1, 'only_my_products' => 0, 'refused' => []])
+        ->and($body)->toHaveKeys(['name', 'description', 'short_description'])
+        ->and($body)->not->toHaveKey('regular_price')
+        ->and($body['name'])->toBe('Übersetzter Name')
+        ->and($body['description'])->toStartWith('<p>Übersetzte Beschreibung</p><br><br>')
+        ->and($body['description'])->toContain('<strong>SDS</strong>: <a href="https://')
+        ->and($body['description'])->toContain('/attachment/'.$sds->ulid.'/download">SDS</a>')
+        ->and($body['short_description'])->toBe($body['description']);
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });
 
 test('the product deleted webhook drops the portfolio only once the store confirms the product is gone', function () {
