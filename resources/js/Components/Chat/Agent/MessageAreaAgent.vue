@@ -1573,10 +1573,31 @@ const goToReply = async () => {
     await scrollBottom()
 }
 const translatesFor = (message: any) => chatAutoTranslate.value && !!message.original?.language_code && !readsLanguage(message.original.language_code)
+const bareSubject = (subject: string) => subject.replace(/^((re|fw|fwd|aw|odp|sv)\s*:\s*)+/i, "").trim().toLowerCase()
+const mailSubjects = computed(() => {
+    const shown = new Map<number, string>()
+    let previous: string | null = null
+    messagesLocal.value.forEach((message: any) => {
+        if (message.sender_type === "system") return
+        const subject = (message.metadata?.email_subject || "").trim()
+        const bare = bareSubject(subject)
+        if (message.id === firstMessageId.value) {
+            shown.set(message.id, emailSubject.value || subject)
+        } else if (bare && previous !== null && bare !== previous) {
+            shown.set(message.id, subject)
+        }
+        if (bare) previous = bare
+    })
+    return shown
+})
 const lastMailId = computed(() => messagesLocal.value.findLast((message) => message.sender_type !== "system")?.id)
 const openAutoReplyIds = reactive(new Set<number>())
 const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
 
+const lastMessageAt = computed(() => {
+    const last = messagesLocal.value[messagesLocal.value.length - 1]
+    return last ? +new Date(last.created_at) : 0
+})
 const auraNoteBeside = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft) return null
     const note = eventsLocal.value.findLast((event: any) => event.event_type === "internal_note")
@@ -2237,7 +2258,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div v-if="!isEmailChat && (entries[0]?.kind !== 'event' || entries[0].event?.event_type === 'internal_note')" class="text-center text-xs text-gray-400">{{ date }}</div>
                 <template v-for="(entry, position) in entries" :key="entry.key">
-                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" :date="position === 0 && entry.event?.event_type !== 'internal_note' && !(emailSubject && date === firstTimelineDate) ? String(date) : undefined" />
+                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" :folded="isEmailChat && entry.event?.event_type === 'internal_note' && entry.at < lastMessageAt" :date="position === 0 && entry.event?.event_type !== 'internal_note' && !(emailSubject && date === firstTimelineDate) ? String(date) : undefined" />
                     <button v-else-if="isFoldedAutoReply(entry.message)" type="button" :data-message-id="entry.message.id"
                         class="!mt-1 ml-auto flex max-w-full items-center gap-1.5 pr-1 text-[11px] text-gray-500 hover:text-gray-700"
                         v-tooltip="ctrans('Show the automatic reply')" @click="openAutoReplyIds.add(entry.message.id)">
@@ -2250,7 +2271,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         :data-message-id="entry.message.id"
                         :class="isEmailChat ? '' : entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent" format-markup
-                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)" :mail-fold-all="mailFoldAll"
+                            :mail="isEmailChat" :mail-subject="isEmailChat ? mailSubjects.get(entry.message.id) ?? '' : ''" :thread-subject="isEmailChat ? '' : emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)" :mail-fold-all="mailFoldAll"
                             :mail-recipient="isEmailChat ? chatEmailRecipient((session as any)?.metadata) : null"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore, faLifeRing } from "@far"
 import { ctrans } from "@/Composables/useTrans"
@@ -21,6 +21,7 @@ const props = defineProps<{
     }
     date?: string
     beside?: boolean
+    folded?: boolean
 }>()
 
 const ICONS: Record<string, any> = {
@@ -52,6 +53,8 @@ const isPhoneCall = computed(() => props.event.event_type === "phone_call")
 const isInternalNote = computed(() => props.event.event_type === "internal_note")
 
 const payload = computed(() => props.event.payload ?? {})
+
+const unfolded = ref(false)
 
 const isFyi = computed(() => !!(props.event.note_answer_in || props.event.note_follow_up))
 
@@ -124,7 +127,15 @@ const stamp = computed(() => {
 </script>
 
 <template>
-    <div v-if="isInternalNote" class="flex justify-center py-2">
+    <div v-if="isInternalNote && folded && !unfolded" class="flex justify-center py-0.5">
+        <button type="button" class="flex max-w-xl items-center gap-1.5 truncate rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] text-pink-800 hover:bg-pink-100" @click="unfolded = true">
+            <AuraAvatar class="h-3.5 w-3.5 shrink-0" />
+            <span class="shrink-0 font-semibold">{{ ctrans("Aura note") }}</span>
+            <span class="truncate text-pink-700">{{ event.note }}</span>
+            <span class="shrink-0 text-[10px] text-pink-700">· {{ stamp }}</span>
+        </button>
+    </div>
+    <div v-else-if="isInternalNote" class="flex justify-center py-2">
         <div class="w-full max-w-xl rounded-lg border border-pink-300 bg-pink-50 px-3 py-2 text-left shadow-sm">
             <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-800">
                 <FontAwesomeIcon v-if="beside" :icon="isFyi ? faInfoCircle : faExclamationTriangle" class="text-sm text-pink-700" fixed-width aria-hidden="true" />
