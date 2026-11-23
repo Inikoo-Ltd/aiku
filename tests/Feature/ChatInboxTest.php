@@ -1307,6 +1307,67 @@ test('unread holds conversations with a customer message nobody opened, replied 
     }
 });
 
+test('the badge counts are the totals of the lists they open, asked in one request', function () {
+    setPermissionsTeamId($this->user->group_id);
+
+    $supervisor = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisor->assignRole(RolesEnum::getRoleName(RolesEnum::ORG_ADMIN->value, $this->organisation));
+
+    $sessions = collect([[false, false], [true, true], [false, true]])->map(function (array $shape) {
+        [$read, $weWroteLast] = $shape;
+        $session              = ChatSession::create([
+            'shop_id'                 => $this->shop->id,
+            'ulid'                    => (string) Str::ulid(),
+            'channel'                 => ChatChannelEnum::WEBSITE,
+            'status'                  => ChatSessionStatusEnum::ACTIVE,
+            'last_visitor_message_at' => now()->subHour(),
+            'last_agent_message_at'   => $weWroteLast ? now() : null,
+        ]);
+        ChatMessage::create([
+            'chat_session_id' => $session->id,
+            'message_text'    => 'hello',
+            'message_type'    => ChatMessageTypeEnum::TEXT,
+            'sender_type'     => ChatSenderTypeEnum::GUEST,
+            'is_read'         => $read,
+        ]);
+
+        return $session;
+    });
+
+    $base = ['shop_ids' => [$this->shop->id], 'statuses' => [ChatSessionStatusEnum::WAITING->value, ChatSessionStatusEnum::ACTIVE->value]];
+    $queries = [
+        'unread'  => ['sessions', ['unread' => 1]],
+        'replied' => ['sessions', ['reply_state' => 'waiting_on_customer']],
+        'all'     => ['all', ['pairs' => ['website:guest', 'website:customer'], 'unread' => 1]],
+    ];
+
+    $listTotal = fn (string $source, array $filters) => $this->actingAs($supervisor)
+        ->getJson('/app/api/chats/'.($source === 'all' ? 'all/' : '').'sessions?'.http_build_query(array_merge($base, $filters, ['limit' => 1])))
+        ->assertOk()
+        ->json('data.pagination.total');
+
+    $counts = $this->actingAs($supervisor)
+        ->getJson('/app/api/chats/sessions/counts?'.http_build_query(['counts' => collect($queries)->map(fn ($query) => array_merge($base, $query[1], ['source' => $query[0]]))->all()]))
+        ->assertOk()
+        ->json('data');
+
+    foreach ($queries as $name => [$source, $filters]) {
+        expect($counts[$name])->toBe($listTotal($source, $filters));
+    }
+    expect($counts['unread'])->toBeGreaterThanOrEqual(2)
+        ->and($counts['replied'])->toBeGreaterThanOrEqual(2)
+        ->and($counts['all'])->toBeGreaterThanOrEqual(2);
+
+    $this->actingAs($supervisor)
+        ->getJson('/app/api/chats/sessions/counts?'.http_build_query(['counts' => ['x' => ['source' => 'nope']]]))
+        ->assertUnprocessable();
+
+    foreach ($sessions as $session) {
+        $session->messages()->forceDelete();
+        $session->forceDelete();
+    }
+});
+
 test('a supervisor reads spam over the shops they picked, not only the shops they work as an agent', function () {
     setPermissionsTeamId($this->user->group_id);
 

@@ -146,7 +146,14 @@ test('an agent queue can only be read by the agent it belongs to', function () {
         ->assertOk()
         ->assertJsonStructure(['data' => ['team_unread']])
         ->assertJsonMissingPath('data.waiting')
-        ->assertJsonMissingPath('data.whatsapp');
+        ->assertJsonMissingPath('data.whatsapp')
+        ->assertJsonMissingPath('data.all_shops');
+
+    ChatAgent::where('user_id', $this->user->id)->first() ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    getJson('/app/api/chats/users/'.$this->user->id.'/agent-notifications?'.http_build_query(['shop_ids' => [$this->shop->id], 'channel' => 'email', 'all_shop_ids' => [$this->shop->id]]))
+        ->assertOk()
+        ->assertJsonStructure(['data' => ['team_unread', 'all_shops' => ['unclaimed', 'spam']]]);
 });
 
 test('customer chat history merges website and whatsapp sessions', function () {

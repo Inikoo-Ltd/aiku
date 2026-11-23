@@ -136,7 +136,7 @@ class ShowOrgChatInbox extends OrgAction
         // Chat does not belong to the organisation in the address bar either. The shops come
         // from the positions, across organisations, so the view is the same wherever it is
         // opened from and the scope in the url only decides which menu item is lit.
-        $openShops = Shop::where('state', ShopStateEnum::OPEN)->orderBy('name')->get();
+        $openShops = Shop::with('fulfilment')->where('state', ShopStateEnum::OPEN)->orderBy('name')->get();
 
         if ($this->supervising) {
             // Overseeing, unlike working, does follow the address: whoever runs an organisation
@@ -239,11 +239,13 @@ class ShowOrgChatInbox extends OrgAction
             ->orderBy('started_at')
             ->pluck('started_at', 'chat_agent_id');
 
-        $coveredShopIds = fn (ChatAgent $agent) => $agent->user?->status
-            ? array_values(array_intersect($shopIds, $this->workableShopIdsFor($agent->user)))
+        $agents         = ChatAgent::with('user')->get();
+        $workableByUser = $this->workableShopIdsByUser($agents->pluck('user')->filter());
+        $coveredShopIds = fn (ChatAgent $agent) => $agent->user
+            ? array_values(array_intersect($shopIds, $workableByUser[$agent->user->id] ?? []))
             : [];
 
-        return ChatAgent::with('user')->get()
+        return $agents
             ->map(fn (ChatAgent $agent) => ['agent' => $agent, 'shop_ids' => $coveredShopIds($agent)])
             ->filter(fn (array $covering) => $covering['shop_ids'] !== [])
             ->map(fn (array $covering) => [

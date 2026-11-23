@@ -254,14 +254,30 @@ class GetAgentChatNotifications
             ]);
         }
 
+        $data = $this->handle(
+            $user->chatAgent,
+            $this->shopIdsFrom($request, 'shop_ids'),
+            in_array($request->query('channel'), [ChatChannelEnum::WEBSITE->value, ChatChannelEnum::EMAIL->value, 'whatsapp', 'chat'], true) ? $request->query('channel') : null
+        );
+
+        $allShopIds = $this->shopIdsFrom($request, 'all_shop_ids');
+        if ($allShopIds !== []) {
+            $allShops          = self::make()->handle($user->chatAgent, $allShopIds);
+            $data['all_shops'] = ['unclaimed' => $allShops['unclaimed'], 'spam' => $allShops['spam']];
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Agent chat notifications retrieved successfully',
-            'data'    => $this->handle(
-                $user->chatAgent,
-                array_map('intval', array_filter((array) $request->query('shop_ids', []), 'is_numeric')),
-                in_array($request->query('channel'), [ChatChannelEnum::WEBSITE->value, ChatChannelEnum::EMAIL->value, 'whatsapp', 'chat'], true) ? $request->query('channel') : null
-            ),
+            'data'    => $data,
         ]);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function shopIdsFrom(ActionRequest $request, string $key): array
+    {
+        return array_map('intval', array_filter((array) $request->query($key, []), 'is_numeric'));
     }
 }

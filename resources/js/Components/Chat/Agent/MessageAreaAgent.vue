@@ -42,7 +42,7 @@ import MoveToShopDialog from "@/Components/Chat/Agent/MoveToShopDialog.vue"
 import SavedRepliesPicker from "@/Components/Chat/Agent/SavedRepliesPicker.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import TicketStatusChip from "@/Components/Tickets/TicketStatusChip.vue"
 import AskAuraDialog from "@/Components/Chat/Agent/AskAuraDialog.vue"
@@ -1577,6 +1577,33 @@ const lastMailId = computed(() => messagesLocal.value.findLast((message) => mess
 const openAutoReplyIds = reactive(new Set<number>())
 const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
 
+const auraNoteBeside = computed(() => {
+    if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft) return null
+    const note = eventsLocal.value.findLast((event: any) => event.event_type === "internal_note")
+    const lastMessage = messagesLocal.value[messagesLocal.value.length - 1]
+    return note && (!lastMessage || +new Date(note.created_at) >= +new Date(lastMessage.created_at)) ? note : null
+})
+
+const auraFollowUpNote = computed(() => {
+    if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value) return null
+    return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note" && event.note_follow_up) ?? null
+})
+
+const closingToAnswerIn = ref(false)
+const closeAndAnswerIn = async (target: { url: string }) => {
+    if (!props.session || closingToAnswerIn.value) return
+    closingToAnswerIn.value = true
+    try {
+        await axios.patch(route("grp.org.chat.agents.sessions.close", [(props.session as any).organisation.id, props.session.ulid]))
+        emit("close-session")
+        router.visit(target.url)
+    } catch (error: any) {
+        composerError.value = error?.response?.data?.message ?? ctrans("The chat could not be closed.")
+    } finally {
+        closingToAnswerIn.value = false
+    }
+}
+
 const groupedTimeline = computed(() => {
     const entries: TimelineEntry[] = [
         ...messagesLocal.value.map((message) => ({
@@ -1585,7 +1612,7 @@ const groupedTimeline = computed(() => {
             key: `m-${message.id}`,
             message,
         })),
-        ...eventsLocal.value.map((event: any) => ({
+        ...eventsLocal.value.filter((event: any) => event.id !== auraNoteBeside.value?.id && event.id !== auraFollowUpNote.value?.id).map((event: any) => ({
             kind: "event" as const,
             at: +new Date(event.created_at),
             key: `e-${event.id}`,
@@ -2551,7 +2578,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="!aiDraftBox?.draft || !aiDraftBox?.hasNotes ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="auraNoteBeside || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
@@ -2563,6 +2590,10 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
+                <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
+                <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
+                <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
+                    :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"

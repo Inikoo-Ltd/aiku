@@ -194,44 +194,63 @@ trait WithChatAgentAuthorisation
      */
     protected function workableShopIdsFor(User $user): array
     {
-        if (!$user->status) {
+        return $this->workableShopIdsByUser([$user])[$user->id] ?? [];
+    }
+
+    /**
+     * workableShopIdsFor for many people at once, in one query, keyed by user id.
+     *
+     * @param  iterable<User>  $users
+     * @return array<int, array<int, int>>
+     */
+    protected function workableShopIdsByUser(iterable $users): array
+    {
+        $holderIdByUser = collect($users)
+            ->filter(fn (User $user) => $user->status)
+            ->mapWithKeys(fn (User $user) => [$user->id => $user->permissionsHolder()->id]);
+
+        if ($holderIdByUser->isEmpty()) {
             return [];
         }
 
-        $names = DB::table('model_has_roles')
+        $namesByHolder = DB::table('model_has_roles')
             ->join('role_has_permissions', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
             ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
             ->where('model_has_roles.model_type', 'User')
-            ->where('model_has_roles.model_id', $user->permissionsHolder()->id)
+            ->whereIn('model_has_roles.model_id', $holderIdByUser->unique()->values())
             ->where(function ($query) {
                 $query->where('permissions.name', 'like', 'chat.%')
                     ->orWhere('permissions.name', 'like', 'fulfilment-chat.%');
             })
             ->distinct()
-            ->pluck('permissions.name');
+            ->get(['model_has_roles.model_id', 'permissions.name'])
+            ->groupBy('model_id');
 
         $shopByFulfilment = null;
-        $shopIds          = [];
 
-        foreach ($names as $name) {
-            // chat.12.view is a permission to read, never to work, so only the bare form counts.
-            if (preg_match('/^chat\.(\d+)$/', $name, $match)) {
-                $shopIds[] = (int) $match[1];
+        return $holderIdByUser->map(function (int $holderId) use ($namesByHolder, &$shopByFulfilment) {
+            $shopIds = [];
 
-                continue;
-            }
+            foreach ($namesByHolder->get($holderId, collect())->pluck('name') as $name) {
+                // chat.12.view is a permission to read, never to work, so only the bare form counts.
+                if (preg_match('/^chat\.(\d+)$/', $name, $match)) {
+                    $shopIds[] = (int) $match[1];
 
-            if (preg_match('/^fulfilment-chat\.(\d+)$/', $name, $match)) {
-                $shopByFulfilment ??= Fulfilment::pluck('shop_id', 'id');
-                $shopId             = $shopByFulfilment[(int) $match[1]] ?? null;
+                    continue;
+                }
 
-                if ($shopId) {
-                    $shopIds[] = (int) $shopId;
+                if (preg_match('/^fulfilment-chat\.(\d+)$/', $name, $match)) {
+                    $shopByFulfilment ??= Fulfilment::pluck('shop_id', 'id');
+                    $shopId             = $shopByFulfilment[(int) $match[1]] ?? null;
+
+                    if ($shopId) {
+                        $shopIds[] = (int) $shopId;
+                    }
                 }
             }
-        }
 
-        return array_values(array_unique($shopIds));
+            return array_values(array_unique($shopIds));
+        })->all();
     }
 
     /**

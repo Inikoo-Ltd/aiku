@@ -80,6 +80,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'questions'          => ['sometimes', 'nullable', 'array', 'max:20'],
             'questions.*.text'   => ['required', 'string', 'max:300'],
             'questions.*.status' => ['required', 'in:'.implode(',', self::QUESTION_STATUSES)],
+            'answer_in'      => ['sometimes', 'nullable', 'string', 'max:40'],
             'premonitions'   => ['sometimes', 'nullable', 'array', 'max:3'],
             'premonitions.*' => ['string', 'max:20'],
             'actions'                    => ['sometimes', 'nullable', 'array', 'max:4'],
@@ -424,11 +425,31 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         $text    = trim($request->string('message')->toString());
         $outcome = $request->get('outcome') === ChatAiOutcomeEnum::REVIEW_FAILED_NOTE->value ? ChatAiOutcomeEnum::REVIEW_FAILED_NOTE : ChatAiOutcomeEnum::NOTE;
 
-        if (!$request->boolean('confirm')) {
-            return $this->askToConfirm(['action' => 'add_note', 'chat' => $chatSession->ulid, 'note' => $text]);
+        $answerIn = null;
+        if ($request->get('answer_in')) {
+            $answerIn = ChatSession::where('ulid', $request->get('answer_in'))
+                ->whereHas('shop', fn ($query) => $query->where('group_id', $chatSession->shop->group_id))
+                ->where('id', '!=', $chatSession->id)
+                ->first();
+            if (!$answerIn) {
+                return Response::error('answer_in must be the Chat ID of another chat of this customer. Nothing was saved.');
+            }
         }
 
-        $note = StoreChatEvent::make()->internalNote($chatSession, $text, $request->user()->id);
+        if (!$request->boolean('confirm')) {
+            return $this->askToConfirm(array_filter(['action' => 'add_note', 'chat' => $chatSession->ulid, 'note' => $text, 'answer_in' => $answerIn?->ulid]));
+        }
+
+        $note = StoreChatEvent::make()->internalNote($chatSession, $text, $request->user()->id, $answerIn ? ['answer_in' => $answerIn->ulid] : []);
+
+        if ($answerIn) {
+            StoreChatEvent::make()->internalNote(
+                $answerIn,
+                __('Their follow-up email is in another chat: :chat. Answer it here, together with this one.', ['chat' => $chatSession->ulid]),
+                $request->user()->id,
+                ['follow_up_in' => $chatSession->ulid]
+            );
+        }
 
         StoreChatAiOutcome::run($chatSession, $outcome, [
             'note_event_id' => $note->id,
@@ -709,7 +730,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         return [
             'chat_id'      => $schema->string()->description('Chat ID copied from the Overview panel of the chat; not needed for start_run, claim_chats and finish_run'),
             'action'       => $schema->string()->enum(self::ACTIONS)->description('What to do on the chat')->required(),
-            'message'      => $schema->string()->description('For add_note: the note for staff. For save_draft (may be left out with a spam or close action) and reply: the full text for the customer, plain text, in the language reply_in names, signed as the user would sign it. Never [[gaps]]: write the shop\'s usual decision, or ask the customer for what is missing'),
+            'message'      => $schema->string()->description('For add_note: the note for staff, shown beside the reply box while it is the latest thing in the chat. Keep it to ONE short line, under '.self::STAFF_NOTE_MAX.' characters, unless that is truly impossible: say only what staff must do, never how you found it out (that goes in reason) and never start it with the name of your run or routine: start with what it is about, e.g. "The message above is the photo for her other email: answer there"; a chat ID or ticket reference becomes a link or a live chip, so name it rather than describe it. For save_draft (may be left out with a spam or close action) and reply: the full text for the customer, plain text, in the language reply_in names, signed as the user would sign it. Never [[gaps]]: write the shop\'s usual decision, or ask the customer for what is missing'),
             'staff_note'   => $schema->string()->description('For save_draft only: the note for staff shown beside the reply box, never sent to the customer, in the user\'s language. Keep it to ONE short line, under '.self::STAFF_NOTE_MAX.' characters, unless that is truly impossible: staff read it in a narrow column and skip long notes. Say only what staff must do or check before sending, never how you found it out or what you looked up (that goes in checked) and never repeat the draft. Start it with "Before sending:" when staff must do something first. Anything a button can do (link the customer, a claim, a task) goes in actions, not in the note. Leave it out when there is nothing for staff to do'),
             'checked'      => $schema->array()->items($schema->string())->description('For save_draft only: up to 12 short lines of what was checked in Aiku for this answer, each a fact with its reference (e.g. "AWD196419 dispatched 13 Oct, Royal Mail XQ573801258GB"), shown to staff on the draft'),
             'questions'    => $schema->array()->items($schema->object([
@@ -739,6 +760,7 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
             'confirm'      => $schema->boolean()->description('true only after the user has seen the preview and said yes'),
             'request_text' => $schema->string()->description('The user\'s request, verbatim, kept in the AI changes log; required with confirm=true'),
             'outcome'      => $schema->string()->enum([...ChatAiOutcomeEnum::skips(), ChatAiOutcomeEnum::NOTE->value, ChatAiOutcomeEnum::REVIEW_FAILED_NOTE->value])->description('For record_outcome: why the chat was left alone (answered_by_staff, suggestion_already_waiting, held, opened, whatsapp_window_closed, answered_elsewhere, spam, thanks, notice); whatsapp_window_closed only on a WhatsApp chat whose 24-hour window has closed or has fewer than '.MetaChatSession::AI_WHATSAPP_MIN_WINDOW_MINUTES.' minutes left, where only an approved template can be sent. For add_note: review_failed_note when the note replaces a draft that failed review, note otherwise'),
+            'answer_in'    => $schema->string()->description('For add_note only: the Chat ID of the customer\'s other chat where this message is answered, when this chat holds only a follow-up of it (e.g. the photo they forgot, sent as a new email) and there is nothing to answer here. Staff then get one button that closes this chat, sending nothing, and opens that one. Leave it out whenever this chat may still need its own answer'),
             'reason'       => $schema->string()->description('For record_outcome, add_note, mark_spam and close_thanks: one short line on why, for the coverage report'),
             'run_id'       => $schema->integer()->description('The run_id start_run returned; pass it to claim_chats, save_draft, add_note, record_outcome, mark_spam and close_thanks, and to finish_run'),
             'chat_ids'     => $schema->array()->items($schema->string())->description('For claim_chats: the Chat IDs this run is about to work, up to 300'),
