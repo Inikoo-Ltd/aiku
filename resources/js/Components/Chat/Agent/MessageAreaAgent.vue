@@ -45,7 +45,6 @@ import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import ToggleSwitch from "primevue/toggleswitch"
-import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner, faReply } from "@far"
@@ -90,7 +89,7 @@ import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChat
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { followPointer } from "@/Composables/followPointer"
-import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight } from "@fal"
+import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight, faExclamationTriangle as faExclamationTriangleLight } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
 const props = defineProps<{
@@ -983,6 +982,7 @@ const clearReplyBox = () => {
 
 const aiDraftInEditor = computed(() => aiDraftText.value !== null && !!newMessage.value.trim())
 const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== aiDraftText.value)
+const auraQuestionsToCheck = computed(() => ((aiDraftBox.value as any)?.draft?.questions ?? []).filter((question: { status?: string }) => question.status !== "answered").length)
 const showAuraRow = computed(() => aiDraftInEditor.value || isEmailChat.value)
 
 const wordsOf = (text: string) => new Set(text.replace(/<[^>]+>/g, " ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean))
@@ -2481,8 +2481,12 @@ const handleClickOutside = (e: MouseEvent) => {
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
-                    <AuraAvatar class="h-4 w-4" :angry="aiDraftBox.draft.aura_angry" />
                     <FontAwesomeIcon :icon="faAngleLeft" class="text-[11px] text-pink-500" fixed-width aria-hidden="true" />
+                    <span class="rotate-180 text-[11px] font-semibold text-pink-700 [writing-mode:vertical-rl]">Aura</span>
+                    <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
+                        v-tooltip="ctrans('Aura has a note for you before sending')" />
+                    <span v-if="auraQuestionsToCheck" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white tabular-nums"
+                        v-tooltip="ctrans(':count questions to check', { count: auraQuestionsToCheck })">{{ auraQuestionsToCheck }}</span>
                 </button>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
