@@ -485,6 +485,7 @@ const reopenChat = async () => {
 }
 
 const eventsLocal = ref<any[]>([])
+const auraNotesAll = ref<any[]>([])
 const newMessage = ref("")
 
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
@@ -1520,6 +1521,7 @@ const fetchMessages = async (loadMore: boolean) => {
     const events = data?.data?.events ?? []
 
     if (!loadMore) {
+        auraNotesAll.value = data?.data?.aura_notes ?? []
         messagesLocal.value = messages.map((m: ChatMessage) => ({
             ...m,
             _status: "sent",
@@ -1609,6 +1611,16 @@ const auraOldNote = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft || auraNoteBeside.value || auraFollowUpNote.value) return null
     return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note") ?? null
 })
+
+const auraNotes = computed(() => {
+    const byId = new Map<number, any>(auraNotesAll.value.map((note: any) => [note.id, note]))
+    eventsLocal.value.filter((event: any) => event.event_type === "internal_note").forEach((note: any) => byId.set(note.id, note))
+    return [...byId.values()].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)).slice(-10)
+})
+const pickedAuraNoteId = ref<number | null>(null)
+watch(() => props.session?.ulid, () => (pickedAuraNoteId.value = null))
+const pickedAuraNote = computed(() => auraNotes.value.find((note: any) => note.id === pickedAuraNoteId.value) ?? null)
+const noteAge = (note: any) => formatChatAge(+new Date(note.created_at))
 
 const auraFollowUpNote = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value) return null
@@ -2616,11 +2628,25 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
+                <div v-if="auraNotes.length > 1 && (auraNoteBeside || auraOldNote)" class="flex items-center gap-0.5 px-1 text-[10px] text-pink-700" :aria-label="ctrans('Aura notes in this chat')">
+                    <template v-for="(note, position) in auraNotes" :key="note.id">
+                        <span v-if="position" class="h-px w-3 bg-pink-300" aria-hidden="true" />
+                        <button type="button" class="flex items-center gap-1 rounded-full px-1 py-0.5 hover:bg-pink-100"
+                            :class="(pickedAuraNoteId ?? auraNotes[auraNotes.length - 1].id) === note.id ? 'font-semibold text-pink-800' : ''"
+                            v-tooltip="note.note" @click="pickedAuraNoteId = position === auraNotes.length - 1 ? null : note.id">
+                            <span class="h-2 w-2 rounded-full border border-pink-500" :class="position === auraNotes.length - 1 ? 'bg-pink-500' : 'bg-white'" aria-hidden="true" />
+                            {{ position === auraNotes.length - 1 && auraNoteBeside ? ctrans("now") : noteAge(note) }}
+                        </button>
+                    </template>
+                </div>
+                <ChatTimelineEvent v-if="pickedAuraNote" :key="`picked-${pickedAuraNote.id}`" :event="pickedAuraNote" folded open class="!py-0" />
+                <template v-else>
                 <ChatTimelineEvent v-if="auraOldNote" :key="auraOldNote.id" :event="auraOldNote" folded class="!py-0" />
                 <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
                 <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
                 <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
                     :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
+                </template>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"

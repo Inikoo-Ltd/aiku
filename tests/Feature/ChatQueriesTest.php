@@ -735,11 +735,13 @@ test('internal notes reach the staff thread but never the public messages endpoi
 
     $this->getJson($asAgent)->assertOk()
         ->assertJsonCount(0, 'data.events')
+        ->assertJsonCount(0, 'data.aura_notes')
         ->assertDontSee('suggest a pay link');
 
     $this->actingAs($this->user)->getJson($asAgent)->assertOk()
         ->assertJsonPath('data.events.0.event_type', ChatEventTypeEnum::INTERNAL_NOTE->value)
-        ->assertJsonPath('data.events.0.note', 'Declined by her bank, suggest a pay link');
+        ->assertJsonPath('data.events.0.note', 'Declined by her bank, suggest a pay link')
+        ->assertJsonPath('data.aura_notes.0.note', 'Declined by her bank, suggest a pay link');
 });
 
 test('chat status for a session moved to trash answers not found instead of failing', function () {

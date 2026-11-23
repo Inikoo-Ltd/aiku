@@ -83,6 +83,7 @@ class GetChatMessages
             'chatSession' => $chatSession,
             'messages' => $messages,
             'events' => $this->timelineEvents($chatSession, $messages, $validated, $forStaff),
+            'aura_notes' => $this->auraNotes($chatSession, $validated, $forStaff),
             'pagination' => [
                 'has_more'    => $hasMore,
                 'next_cursor' => $hasMore ? $nextCursor : null,
@@ -201,6 +202,7 @@ class GetChatMessages
                 'rating'         => $result['chatSession']->rating,
                 'messages'       => ChatMessageResource::collection($result['messages']),
                 'events'         => ChatTimelineEventResource::collection($result['events']),
+                'aura_notes'     => ChatTimelineEventResource::collection($result['aura_notes']),
                 'pagination'     => $result['pagination'],
             ]
         ]);
@@ -228,6 +230,25 @@ class GetChatMessages
         }
 
         return $query->orderBy('created_at')->get();
+    }
+
+    /**
+     * Every note Aura left on the chat, not just those beside the loaded messages, so the
+     * box beside the reply can show how her notes followed the conversation.
+     */
+    protected function auraNotes(ChatSession $chatSession, array $filters, bool $forStaff): Collection
+    {
+        if (!$forStaff || ($filters['request_from'] ?? null) !== ChatSenderTypeEnum::AGENT->value || !empty($filters['cursor'])) {
+            return collect();
+        }
+
+        return $chatSession->chatEvents()
+            ->where('event_type', ChatEventTypeEnum::INTERNAL_NOTE)
+            ->latest('id')
+            ->limit(10)
+            ->get()
+            ->reverse()
+            ->values();
     }
 
     private function hasMore(ChatSession $chatSession, ?string $cursor): bool

@@ -23,6 +23,7 @@ const props = defineProps<{
     date?: string
     beside?: boolean
     folded?: boolean
+    open?: boolean
 }>()
 
 const ICONS: Record<string, any> = {
@@ -55,7 +56,7 @@ const isInternalNote = computed(() => props.event.event_type === "internal_note"
 
 const payload = computed(() => props.event.payload ?? {})
 
-const unfolded = ref(false)
+const unfolded = ref(!!props.open)
 const age = computed(() => props.event.created_at ? formatChatAge(+new Date(props.event.created_at)) : "")
 
 const isFyi = computed(() => !!(props.event.note_answer_in || props.event.note_follow_up))
