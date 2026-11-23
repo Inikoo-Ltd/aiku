@@ -5,6 +5,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { ctrans } from "@/Composables/useTrans"
 import Discount from "@/Components/Utils/Label/Discount.vue"
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 
 const layout = inject("layout", retinaLayoutStructure)
 const locale = useLocaleStore()
@@ -60,7 +61,7 @@ defineProps<{
       </span>
 
       <span class="font-semibold">
-        {{ locale.currencyFormatRrp(currency?.code, product.rrp) }}
+        <IndicativePrice rrp :currency="currency?.code" :amount="product.rrp" />
         <span class="text-gray-600">/{{ product.units == 1 ? product.unit : ctrans("outer") }}</span>
       </span>
     </div>
@@ -71,7 +72,7 @@ defineProps<{
       </span>
 
       <span class="font-semibold flex items-center">
-        {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
+        <IndicativePrice :currency="currency?.code" :amount="product?.profit || 0" />
         <span v-tooltip="ctrans('Profit margin')" class="ml-1">
           ({{ product?.margin }})
         </span>
@@ -87,7 +88,7 @@ defineProps<{
       </span>
 
       <span class="font-semibold">
-        {{ locale.currencyFormat(currency?.code, product.price) }}
+        <IndicativePrice :currency="currency?.code" :amount="product.price" />
         <span class="text-gray-600">/{{ product.unit }}</span>
       </span>
     </div>
@@ -103,18 +104,18 @@ defineProps<{
         <div>
           <template v-if="Object.keys(product.offers_data || {})?.length">
             <span class="line-through text-xxs opacity-60">
-              {{ locale.currencyFormat(currency?.code, product.price) }}
+              <IndicativePrice :currency="currency?.code" :amount="product.price" />
               / {{ ctrans("outer") }}
             </span>
             
             <span class="font-semibold block text-green-600">
-              {{ locale.currencyFormat(currency?.code, product.offer_net_amount_per_quantity) }}
+              <IndicativePrice :currency="currency?.code" :amount="product.offer_net_amount_per_quantity" />
               / {{ ctrans("outer") }}
             </span>
           </template>
 
           <span v-else class="font-semibold">
-              {{ locale.currencyFormat(currency?.code, product.price) }}
+              <IndicativePrice :currency="currency?.code" :amount="product.price" />
               / {{ ctrans("outer") }}
             </span>
         </div>
@@ -123,18 +124,18 @@ defineProps<{
         <div class="text-right">
           <template v-if="Object.keys(product.offers_data || {})?.length">
             <span class="line-through text-xxs opacity-60">
-              {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+              <IndicativePrice :currency="currency?.code" :amount="product.price_per_unit" />
               / {{ product.unit }}
             </span>
 
             <span class="text-green-600 text-xs block">
-              {{ locale.currencyFormat(currency?.code, product.offer_price_per_unit) }}
+              <IndicativePrice :currency="currency?.code" :amount="product.offer_price_per_unit" />
               / {{ product.unit }}
             </span>
           </template>
 
           <span v-else class="text-gray-600 text-xs">
-            {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+            <IndicativePrice :currency="currency?.code" :amount="product.price_per_unit" />
             / {{ product.unit }}
           </span>
         </div>

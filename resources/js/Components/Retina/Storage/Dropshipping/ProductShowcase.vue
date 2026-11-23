@@ -20,6 +20,7 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 library.add(faLink, faCircle, faTrash)
 
 const props = defineProps<{
@@ -165,8 +166,7 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     </div> -->
                     <div class="flex flex-col">
                         <dt class="text-sm text-gray-500">{{ ctrans("Price") }}</dt>
-                        <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code,
-                            data?.product?.data?.price) }}</dd>
+                        <dd class="text-sm font-medium"><IndicativePrice :currency="data?.product?.data?.currency_code" :amount="data?.product?.data?.price" /></dd>
                     </div>
                     <!--  <ButtonAddPortfolio v-if="productHasPortfolio" :product="data.product.data" :productHasPortfolio="productHasPortfolio.list"
                     :routeToAllPortfolios="{ name: 'retina.models.portfolio.store_to_all_channels', parameters: null }"

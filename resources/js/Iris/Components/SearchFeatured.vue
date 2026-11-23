@@ -15,6 +15,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
 import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import { formatIndicative } from "@/Composables/useDisplayCurrency"
 
 library.add(faTimes)
 
@@ -80,7 +81,7 @@ const getProductName = productNameWithPackAndSize
 
 const formatPrice = (price?: number | string | null): string | null => {
     if (price === null || price === undefined || price === '') return null
-    return locale.currencyFormat(currency?.code, Number(price))
+    return formatIndicative(locale, layout, currency?.code, Number(price))
 }
 
 const isDropshipping = layout?.retina?.type === 'dropshipping'
@@ -88,7 +89,7 @@ const isDropshipping = layout?.retina?.type === 'dropshipping'
 const formatRrp = (product: { rrp?: number | null; rrp_per_unit?: number | null; units?: number | string | null; unit?: string | null }): string | null => {
     const value = isDropshipping ? product.rrp : product.rrp_per_unit
     if (!value) return null
-    const rrp = String(locale.currencyFormatRrp(currency?.code, value))
+    const rrp = String(formatIndicative(locale, layout, currency?.code, value, true))
     const unit = isDropshipping && Number(product.units) !== 1 ? ctrans('outer') : product.unit
     return unit ? `${rrp}/${unit}` : rrp
 }

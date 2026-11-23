@@ -13,6 +13,7 @@ import MemberPriceLabel from '@/Iris/Components/Offer/MemberPriceLabel.vue'
 import { getBestOffer } from '@/Composables/useOffers'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import LoadingOverlay2 from '@/Components/Utils/LoadingOverlay2.vue'
+import { formatIndicative } from "@/Composables/useDisplayCurrency"
 
 // Shown while the search field is still empty: the items the shop merchandises, framed as a
 // centred card so nobody mistakes them for the results of a query they have not typed yet
@@ -94,7 +95,7 @@ const getProductName = productNameWithPackAndSize
 
 const formatPrice = (price?: number | string | null): string | null => {
     if (price === null || price === undefined || price === '') return null
-    return locale.currencyFormat(currency?.code, Number(price))
+    return formatIndicative(locale, layout, currency?.code, Number(price))
 }
 
 const isDropshipping = layout?.retina?.type === 'dropshipping'
@@ -102,7 +103,7 @@ const isDropshipping = layout?.retina?.type === 'dropshipping'
 const formatRrp = (product: { rrp?: number | null; rrp_per_unit?: number | null; units?: number | string | null; unit?: string | null }): string | null => {
     const value = isDropshipping ? product.rrp : product.rrp_per_unit
     if (!value) return null
-    const rrp = String(locale.currencyFormatRrp(currency?.code, value))
+    const rrp = String(formatIndicative(locale, layout, currency?.code, value, true))
     const unit = isDropshipping && Number(product.units) !== 1 ? ctrans('outer') : product.unit
     return unit ? `${rrp}/${unit}` : rrp
 }

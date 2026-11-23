@@ -2,6 +2,7 @@
 import { inject } from 'vue'
 import { FieldOrderSummary } from '@/types/Pallet'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import IndicativePrice from '@/Components/Utils/IndicativePrice.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faQuestionCircle, faInfoCircle } from '@fal'
@@ -14,6 +15,7 @@ const props = defineProps<{
         [key: string]: FieldOrderSummary[]
     } | undefined
     size?: 'sm'
+    indicative?: boolean
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -44,11 +46,13 @@ const locale = inject('locale', aikuLocaleStructure)
                     <slot :name="'cell_' + fieldSummary?.slot_name + '_3'" :fieldSummary="fieldSummary">
                         <div class="relative col-span-3 justify-self-end flex items-center gap-x-2 font-medium overflow-hidden">
                             <span v-if="typeof fieldSummary.price_total_old === 'number'" class="text-gray-400 line-through">
-                                {{ locale.currencyFormat(currency_code, fieldSummary.price_total_old) }}
+                                <IndicativePrice v-if="indicative" charged :currency="currency_code" :amount="fieldSummary.price_total_old" />
+                                <template v-else>{{ locale.currencyFormat(currency_code, fieldSummary.price_total_old) }}</template>
                             </span>
                             <Transition name="spin-to-right">
                                 <dd :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' || typeof fieldSummary.price_total_old === 'number' ? 'text-green-600' : '', fieldSummary.price_total === 'free' ? 'animate-pulse' : '']">
-                                    {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
+                                    <IndicativePrice v-if="indicative" charged :currency="currency_code" :amount="fieldSummary.price_total || 0" />
+                                    <template v-else>{{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}</template>
                                 </dd>
                             </Transition>
                         </div>

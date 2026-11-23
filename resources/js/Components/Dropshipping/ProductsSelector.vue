@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '../NumberWithButtonSave.vue'
 import ToggleSwitch from "primevue/toggleswitch"
 import LoadingIcon from '../Utils/LoadingIcon.vue'
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 library.add(faCheckCircle)
 
 const props = defineProps<{
@@ -261,19 +262,13 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                                 <div class="flex justify-between">
                                                     <div v-if="item.rrp" xclick="() => selectProduct(item)"
                                                         v-tooltip="ctrans('RRP')" class="w-fit text-xs text-gray-x500">
-                                                        <span class="font-medium">RRP:</span> {{
-                                                            locale?.currencyFormat(item.currency_code || 'usd', item.rrp ||
-                                                                0)
-                                                        }}
+                                                        <span class="font-medium">RRP:</span> <IndicativePrice :currency="item.currency_code || 'usd'" :amount="item.rrp || 0" />
                                                     </div>
 
                                                     <!-- Show Normal Price -->
                                                     <div v-if="item.price" xclick="() => selectProduct(item)"
                                                         v-tooltip="ctrans('Price')" class="w-fit text-xs text-blue-500">
-                                                        <span class="font-medium">Price:</span> {{
-                                                            locale?.currencyFormat(item.currency_code || 'usd', item.price
-                                                                || 0)
-                                                        }}
+                                                        <span class="font-medium">Price:</span> <IndicativePrice :currency="item.currency_code || 'usd'" :amount="item.price || 0" />
                                                     </div>
                                                 </div>
 

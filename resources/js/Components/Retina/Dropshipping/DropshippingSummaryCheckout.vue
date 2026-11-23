@@ -269,7 +269,7 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <div class="border border-gray-200 p-2 rounded">
-                <OrderSummary :order_summary="summary.order_summary"
+                <OrderSummary indicative :order_summary="summary.order_summary"
                               :currency_code="summary.order_summary?.currency?.data?.code"/>
                 <IndicativeTotalNote :currency="summary.order_summary?.currency?.data?.code"
                                      :total="Object.values(summary.order_summary ?? {}).filter(Array.isArray).at(-1)?.[0]?.price_total"/>

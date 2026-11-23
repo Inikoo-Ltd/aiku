@@ -15,6 +15,7 @@ import Image from "@common/Components/Image.vue"
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 library.add(faSearch, faText)
 
 interface Portfolio {
@@ -214,7 +215,7 @@ const debounceUpdateName = debounce((description: string) => {
 
             <template #body="{ data }">
                 <div class="whitespace-nowrap relative pr-2 flex items-center gap-x-1">
-                 {{ locale.currencyFormat(data.currency_code, data.price) }}
+                 <IndicativePrice :currency="data.currency_code" :amount="data.price" />
                 </div>
             </template>
         </Column>

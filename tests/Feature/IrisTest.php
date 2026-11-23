@@ -1927,6 +1927,43 @@ test('a customer display currency is saved on the web user, limited to the shop 
     setShopDisplayCurrencies($this->shop, null);
 });
 
+test('display currency defaults to the billing country currency when the shop offers it, and a customer pick, the shop currency included, overrides it', function () {
+    [$czk, $huf] = displayCurrencyCodesFor($this->shop);
+    asDropshippingShop($this->shop);
+    setShopDisplayCurrencies($this->shop, [$czk]);
+    $shop = $this->shop->fresh();
+    Cache::put('current-currency-exchange:'.$shop->currency->code.'-'.$czk, 25.31, 60);
+    $customer = createCustomer($shop);
+    $webUser = createWebUser($customer);
+    $webUser->update(['settings' => \Illuminate\Support\Arr::except($webUser->settings ?? [], 'display_currency')]);
+    $originalAddress = $customer->address->only(['country_id', 'country_code']);
+    $billIn = function (string $currencyCode) use ($customer): void {
+        $country = \App\Models\Helpers\Country::where('currency_id', \App\Models\Helpers\Currency::where('code', $currencyCode)->value('id'))->firstOrFail();
+        $customer->address->update(['country_id' => $country->id, 'country_code' => $country->code]);
+    };
+    $choose = fn (?string $code) => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['display_currency' => $code]);
+
+    $billIn($czk);
+    expect($shop->displayCurrencyFor($webUser->fresh()))->toMatchArray(['code' => $czk]);
+
+    $billIn($huf);
+    expect($shop->displayCurrencyFor($webUser->fresh()))->toBeNull();
+
+    $billIn($czk);
+    $choose($shop->currency->code);
+    expect($webUser->fresh()->settings)->toHaveKey('display_currency')
+        ->and($shop->displayCurrencyFor($webUser->fresh()))->toBeNull();
+
+    $choose($czk);
+    expect($shop->displayCurrencyFor($webUser->fresh()))->toMatchArray(['code' => $czk]);
+
+    setShopDisplayCurrencies($this->shop, null);
+    expect($this->shop->fresh()->displayCurrencyFor($webUser->fresh()))->toBeNull();
+
+    $customer->address->update($originalAddress);
+    asDropshippingShop($this->shop, false);
+});
+
 test('language readiness counts active products with a name and a description per language, the main language first', function () {
     [, $product] = createProduct($this->shop);
     [$otherCode] = otherLanguageCodes($this->shop);

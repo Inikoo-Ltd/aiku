@@ -19,6 +19,7 @@ import { router } from '@inertiajs/vue3';
 import { useBundle } from '@/Composables/useBundle';
 import { useGenerateAIImages } from '@/Composables/useGenerateAIImages';
 import { useConfirm, ConfirmDialog } from "primevue"
+import { formatIndicative } from "@/Composables/useDisplayCurrency"
 library.add(faLayerGroup, faSparkles, faTrash, faImages, faUpload)
 
 const props = defineProps<{
@@ -61,6 +62,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', null)
+const layout = inject('layout', null)
 const emits = defineEmits<{
   (e: "onDone"): void
   (e: "onClose"): void
@@ -628,27 +630,27 @@ watch(
                         <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{ctrans('Cost Price (Individual Purchase)')}}</span>
                             <span class="font-medium text-right whitespace-nowrap">
-                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                                {{ formatIndicative(locale, layout, props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{ctrans('Bundle Price')}}</span>
                             <span class="font-medium text-green-600 text-right whitespace-nowrap">
-                                 {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                                 {{ formatIndicative(locale, layout, props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 border-b pb-1">
                             <span class="text-gray-500">{{ctrans('RRP')}}</span>
                             <span class="font-medium text-right whitespace-nowrap">
-                                {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                                {{ formatIndicative(locale, layout, props.shop_data?.currency_code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between gap-3 pt-1">
                             <span class="text-gray-500">{{ctrans('Profit')}}</span>
-                            <span class="font-semibold text-green-600 text-right whitespace-nowrap"> [{{ bundle.summary.value.profit_percentage }}%] {{ locale?.currencyFormat(props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                            <span class="font-semibold text-green-600 text-right whitespace-nowrap"> [{{ bundle.summary.value.profit_percentage }}%] {{ formatIndicative(locale, layout, props.shop_data?.currency_code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 </span>
                         </div>
                     </template>

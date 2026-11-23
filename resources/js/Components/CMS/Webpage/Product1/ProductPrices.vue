@@ -9,6 +9,7 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import Discount from "@/Components/Utils/Label/Discount.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@far"
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -59,7 +60,7 @@ const closePopover = (close: any): void => {
                         <span class="text-sm font-medium text-gray-600 xmb-1 w-fit" v-tooltip="ctrans('Recommended Retail Price')">{{ ctrans('Retail Price') }}</span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
-                                {{ locale.currencyFormatRrp(currency?.code, fieldValue.product.rrp) }}
+                                <IndicativePrice rrp :currency="currency?.code" :amount="fieldValue.product.rrp" />
                             </span>
                             <span class="text-sm text-gray-500">/ {{ fieldValue.product.units == 1 ? fieldValue.product.unit : ctrans('Outer') }}</span>
 
@@ -74,7 +75,7 @@ const closePopover = (close: any): void => {
                             </span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
-                                    {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit || 0) }}
+                                    <IndicativePrice :currency="currency?.code" :amount="fieldValue.product?.profit || 0" />
                                 </span>
                                 <span class="text-sm text-gray-500 ">/ {{ fieldValue.product.units == 1 ? fieldValue.product.unit : ctrans('Outer') }}</span>
 
@@ -98,11 +99,11 @@ const closePopover = (close: any): void => {
                     <span class="text-gray-700">{{ ctrans('Recommended Retail Price') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-semibold text-gray-900 min-w-[90px] text-end">
-                            {{ locale.currencyFormatRrp(currency?.code, fieldValue.product.rrp) }} / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
+                            <IndicativePrice rrp :currency="currency?.code" :amount="fieldValue.product.rrp" /> / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormatRrp(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
+                            <IndicativePrice rrp :currency="currency?.code" :amount="fieldValue.product.rrp_per_unit.toFixed(2)" /> / {{ fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>
@@ -112,12 +113,11 @@ const closePopover = (close: any): void => {
                     <span class="text-gray-700">{{ ctrans('Cost Price') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-semibold text-gray-900 min-w-[90px] text-end">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }} / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
+                            <IndicativePrice :currency="currency?.code" :amount="fieldValue.product.price" /> / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.price /
-                                fieldValue.product.units).toFixed(2)) }} / {{ fieldValue.product.unit }}
+                            <IndicativePrice :currency="currency?.code" :amount="(fieldValue.product.price / fieldValue.product.units).toFixed(2)" /> / {{ fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>
@@ -127,11 +127,11 @@ const closePopover = (close: any): void => {
                     <span class="font-semibold text-gray-800">{{ ctrans('Profit') }}</span>
                     <div class="flex items-center gap-4 text-right">
                         <span class="font-bold  min-w-[90px] text-end">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.profit) }} / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
+                            <IndicativePrice :currency="currency?.code" :amount="fieldValue.product.profit" /> / <span v-if="fieldValue.product.units != 1">{{ctrans('Outer') }}</span><span v-else>{{ fieldValue.product.unit }}</span>
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs  border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units)).toFixed(2)) }} / {{fieldValue.product.unit }}
+                            <IndicativePrice :currency="currency?.code" :amount="(fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units)).toFixed(2)" /> / {{fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>
@@ -153,13 +153,13 @@ const closePopover = (close: any): void => {
             <div>
                 {{ ctrans("Price") }}:
                 <span v-if="offer_price_per_unit &&  Object.keys(offers_data).length" class="font-semibold text-green-600 text-xl">
-                    <span class="line-through opacity-60 mr-1 text-gray-600 text-xs">{{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}</span> 
-                    <span class="">{{ locale.currencyFormat(currency?.code, offer_price_per_unit || 0) }}</span> 
+                    <span class="line-through opacity-60 mr-1 text-gray-600 text-xs"><IndicativePrice :currency="currency?.code" :amount="fieldValue.product.price" /></span> 
+                    <span class=""><IndicativePrice :currency="currency?.code" :amount="offer_price_per_unit || 0" /></span> 
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
                 </span>
 
                 <span v-else class="font-semibold text-green-600 text-xl">
-                    {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                    <IndicativePrice :currency="currency?.code" :amount="fieldValue.product.price" />
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
                 </span>
             </div>
@@ -171,14 +171,14 @@ const closePopover = (close: any): void => {
                     {{ ctrans("Price") }}:
                     <span v-if="offer_net_amount_per_quantity && Object.keys(offers_data).length">
                         <span class="opacity-60 line-through mr-2 text-xs">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                            <IndicativePrice :currency="currency?.code" :amount="fieldValue.product.price" />
                         </span>
                         <span class="font-semibold text-green-600 text-xl">
-                            {{ locale.currencyFormat(currency?.code, offer_net_amount_per_quantity) }}
+                            <IndicativePrice :currency="currency?.code" :amount="offer_net_amount_per_quantity" />
                         </span>
                     </span>
                     <span v-else class="font-semibold text-green-600 text-xl">
-                        {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                        <IndicativePrice :currency="currency?.code" :amount="fieldValue.product.price" />
                     </span>
                     <span class="text-sm text-gray-500">/ {{ctrans('Outer') }}</span>
                     
@@ -187,14 +187,14 @@ const closePopover = (close: any): void => {
                     <span class="text-xs price_per_unit">
                         <span v-if="offer_price_per_unit && Object.keys(offers_data).length">
                             <span class="line-through opacity-60 mr-2 text-xs">
-                                {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
+                                <IndicativePrice :currency="currency?.code" :amount="Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)" />
                             </span>
                             <span class="text-green-600 text-xl font-semibold">
-                                {{ locale.currencyFormat(currency?.code, offer_price_per_unit || 0) }}
+                                <IndicativePrice :currency="currency?.code" :amount="offer_price_per_unit || 0" />
                             </span>
                         </span>
                         <span v-else class="text-green-600 text-xl font-semibold">
-                            {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
+                            <IndicativePrice :currency="currency?.code" :amount="Number((fieldValue.product.price / fieldValue.product.units).toFixed(2) || 0).toFixed(2)" />
                         </span>
                         <span class="text-gray-600 text-sm"> / {{ fieldValue.product.unit }}</span>
                     </span>

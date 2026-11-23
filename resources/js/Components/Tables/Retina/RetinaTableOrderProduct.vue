@@ -103,6 +103,14 @@ const debounceUpdateQuantity = debounce(
                 <IndicativePrice charged :currency="item.currency_code" :amount="item.net_amount" />
             </template>
 
+            <template #footerRows-cell(price)="{ item }">
+                <IndicativePrice charged :currency="item.currency_code" :amount="item.price ?? item.gross_amount" />
+            </template>
+
+            <template #footerRows-cell(net_amount)="{ item }">
+                <IndicativePrice charged :currency="item.currency_code" :amount="item.net_amount" />
+            </template>
+
             <!-- Column: Quantity -->
             <template #cell(quantity_ordered)="{ item }">
                 <div class="flex items-center justify-end">

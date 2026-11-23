@@ -10,6 +10,8 @@ import { router } from "@inertiajs/vue3"
 import { debounce } from "lodash-es"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { indicativeAmount } from "@/Composables/useDisplayCurrency"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import Textarea from "primevue/textarea"
@@ -94,8 +96,17 @@ const accentStyle = computed(() => ({
     text: `color-mix(in srgb, ${props.accentColor} 70%, #374151)`,
 }))
 
-const formatPrice = (amount: number) =>
-    amount === 0 ? ctrans("Free") : locale.currencyFormat(props.currencyCode, amount)
+const layout = inject("layout", retinaLayoutStructure)
+
+const formatPrice = (amount: number) => {
+    if (amount === 0) {
+        return ctrans("Free")
+    }
+    const displayCurrency = layout?.retina?.display_currency
+    const indicative = indicativeAmount(displayCurrency, layout?.retina?.currency?.code, props.currencyCode, amount)
+
+    return indicative === null ? locale.currencyFormat(props.currencyCode, amount) : `≈ ${locale.currencyFormatUnitCost(displayCurrency.code, indicative)}`
+}
 
 // A family covers several sizes, so its cost is a range until the warehouse picks the size.
 const formatPackagingPrice = (option: PackagingOption) => {

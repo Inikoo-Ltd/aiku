@@ -23,11 +23,7 @@ const indicativeTotal = computed(() => {
 
 <template>
     <div v-if="indicativeTotal" class="mt-2 border-t border-gray-200 pt-2 text-sm">
-        <div class="flex justify-between gap-x-4 text-gray-500">
-            <span>{{ ctrans("Total in :currency (indicative)", { currency: layout.retina.display_currency.code }) }}</span>
-            <span class="whitespace-nowrap">≈ {{ indicativeTotal }}</span>
-        </div>
-        <div class="mt-1 font-medium text-gray-700">
+        <div class="font-medium text-gray-700">
             {{ ctrans("The order total is :amount, charged in :currency. Amounts in :display_currency are indicative, at the daily exchange rate.", { amount: locale.currencyFormat(currency ?? "", total ?? 0), currency: currency ?? "", display_currency: layout.retina.display_currency.code }) }}
         </div>
     </div>

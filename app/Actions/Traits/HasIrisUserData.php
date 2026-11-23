@@ -104,6 +104,8 @@ trait HasIrisUserData
             'offer_data'             => $offerData, // this is used in the top bar
             'shopping_assistant'     => $assistant = GetShoppingAssistantSettings::run($this->website, $this->customer, true),
             'merlin_mode'            => $assistant !== null && !IsChatStaffed::run($this->website->shop),
+            'display_currency'       => $displayCurrency = $this->shop->type === ShopTypeEnum::DROPSHIPPING ? $this->shop->displayCurrencyFor($webUser) : null,
+            'shop_currency_code'     => $displayCurrency ? $this->shop->currency->code : null,
         ];
     }
 

@@ -51,6 +51,7 @@ import GiftMessagePanel from '@/Components/Order/GiftMessagePanel.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
 import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
@@ -547,7 +548,7 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />
                     {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
+                    <span class="text-gray-400">(<IndicativePrice charged :currency="charges.premium_dispatch?.currency_code" :amount="charges.premium_dispatch?.amount" />)</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                     <ToggleSwitch
@@ -571,7 +572,7 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.extra_packing?.description" />
                     {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                    <span class="text-gray-400">(<IndicativePrice charged :currency="charges.extra_packing?.currency_code" :amount="charges.extra_packing?.amount" />)</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                     <ToggleSwitch
@@ -595,7 +596,7 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="px-2 flex justify-end items-center gap-x-1 relative">
                     <InformationIcon :information="charges.insurance?.description" />
                     {{ charges.insurance?.label ?? charges.insurance?.name }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                    <span class="text-gray-400">(<IndicativePrice charged :currency="charges.insurance?.currency_code" :amount="charges.insurance?.amount" />)</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                     <ToggleSwitch
@@ -619,7 +620,7 @@ const onChangeInsurance = async (val: boolean) => {
                 <div class="px-2 flex justify-end items-center gap-x-1 relative">
                     <InformationIcon :information="charges.gift_message?.description" />
                     {{ charges.gift_message?.label ?? charges.gift_message?.name }}
-                    <span class="text-gray-400">({{ locale.currencyFormat(charges.gift_message?.currency_code, charges.gift_message?.amount) }})</span>
+                    <span class="text-gray-400">(<IndicativePrice charged :currency="charges.gift_message?.currency_code" :amount="charges.gift_message?.amount" />)</span>
                 </div>
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                     <ToggleSwitch

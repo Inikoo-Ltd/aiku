@@ -92,6 +92,11 @@ class HandleRetinaInertiaRequests extends Middleware
             ])
             ->toArray() ?? [];
 
+        $rates                = null;
+        $displayCurrencyRates = function () use (&$rates, $webUser, $website): array {
+            return $rates ??= $webUser ? $website->shop->displayCurrencyRates() : [];
+        };
+
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -118,8 +123,8 @@ class HandleRetinaInertiaRequests extends Middleware
                 "retina"   => [
                     "type"     => $website->shop->type->value,
                     "currency" => CurrencyResource::make($website->shop->currency)->toArray(request()),
-                    'display_currencies' => $displayCurrencies = $webUser ? $website->shop->displayCurrencyRates() : [],
-                    'display_currency'   => collect($displayCurrencies)->firstWhere('code', Arr::get($webUser?->settings, 'display_currency')),
+                    'display_currencies' => fn () => $displayCurrencyRates(),
+                    'display_currency'   => fn () => $website->shop->displayCurrencyFor($webUser, $displayCurrencyRates()),
                     'portal_link' => Arr::get($website->shop->settings, 'portal.link', ''),
                     "balance"  => $webUser?->customer?->balance,
                     'organisation'      => $website->organisation->slug,

@@ -13,6 +13,7 @@ import { inject, onMounted, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {faSearch, faRepeatAlt, faClone, faLink} from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
 library.add(faSearch, faRepeatAlt, faClone, faLink)
 
 const model = defineModel<{}[]>()
@@ -195,7 +196,7 @@ const valueTableFilter = ref({})
 
             <template #body="{ data }">
                 <div  class="whitespace-nowrap text-right w-full">
-                    {{ locale.currencyFormat(data.currency_code, data.price) }}
+                    <IndicativePrice :currency="data.currency_code" :amount="data.price" />
                 </div>
             </template>
         </Column>

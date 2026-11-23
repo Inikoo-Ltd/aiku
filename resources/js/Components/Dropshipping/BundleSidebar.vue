@@ -20,6 +20,7 @@ import Image from '../../Common/Components/Image.vue';
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { useConfirm, ConfirmDialog } from "primevue"
+import { formatIndicative } from "@/Composables/useDisplayCurrency"
 
 const props = defineProps<{
     symbol: string
@@ -715,7 +716,7 @@ onBeforeUnmount(() => {
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-400">Cost Price (Individual Purchase)</span>
                             <span class="font-medium">
-                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
+                                {{ formatIndicative(useLocaleStore(), layout, layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_price ?? 0) }}
                             </span>
                         </div>
 
@@ -725,21 +726,21 @@ onBeforeUnmount(() => {
                                 <!-- <span class="text-green-600">({{bundle.summary.value.profit_percentage }}%)</span> -->
                             </div>
                             <span>
-                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
+                                {{ formatIndicative(useLocaleStore(), layout, layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_bundle_price ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between text-sm">
                             <span>RRP</span>
                             <span>
-                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
+                                {{ formatIndicative(useLocaleStore(), layout, layout.iris.currency?.code ?? 'usd', bundle.summary.value.total_rrp ?? 0) }}
                             </span>
                         </div>
 
                         <div class="flex justify-between text-xs">
                             <span>Profit</span>
                             <span>
-                                {{ useLocaleStore().currencyFormat(layout.iris.currency?.code ?? 'usd', bundle.summary.value.profit ?? 0) }}
+                                {{ formatIndicative(useLocaleStore(), layout, layout.iris.currency?.code ?? 'usd', bundle.summary.value.profit ?? 0) }}
                                 ({{
                                 bundle.summary.value.profit_percentage }}%)</span>
                         </div>

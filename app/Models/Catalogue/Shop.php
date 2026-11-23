@@ -1101,6 +1101,31 @@ class Shop extends Model implements HasMedia, Auditable
             ->values()->all();
     }
 
+    /**
+     * The customer's own pick, else the currency of their billing country when the shop offers it; null shows shop prices.
+     *
+     * @param  array<int, array{code: string, name: string, rate: float, fraction_digits: int}>|null  $rates
+     *
+     * @return array{code: string, name: string, rate: float, fraction_digits: int}|null
+     */
+    public function displayCurrencyFor(?WebUser $webUser, ?array $rates = null): ?array
+    {
+        $rates ??= $webUser ? $this->displayCurrencyRates() : [];
+        if (!$webUser || $rates === []) {
+            return null;
+        }
+
+        $code = Arr::exists($webUser->settings ?? [], 'display_currency')
+            ? $webUser->settings['display_currency']
+            : Currency::whereIn('id', Country::whereIn('id', Address::where('id', $webUser->customer?->address_id)->select('country_id'))->select('currency_id'))->value('code');
+
+        if (!$code || $code === $this->currency->code) {
+            return null;
+        }
+
+        return collect($rates)->firstWhere('code', $code);
+    }
+
     public function enablesLanguage(mixed $code): bool
     {
         return is_string($code) && in_array($code, $this->enabledLanguageCodes(), true);

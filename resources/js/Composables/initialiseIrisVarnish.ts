@@ -39,6 +39,10 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       if (storageIris.offer_meters) {
         layout.offer_meters = storageIris.offer_meters
       }
+      if (storageIris.display_currency && !window.location.pathname.startsWith("/app")) {
+        set(layout, ["retina", "display_currency"], storageIris.display_currency)
+        set(layout, ["retina", "currency", "code"], storageIris.shop_currency_code)
+      }
       if (storageIris.shopping_assistant && !window.location.pathname.startsWith("/app")) {
         layout.iris.shopping_assistant = storageIris.shopping_assistant
       }
@@ -76,7 +80,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
           iris_variables: null,
           offer_data: null,
           offer_meters: null,
-          shopping_assistant: null
+          shopping_assistant: null,
+          display_currency: null
         }))
         layout.iris.is_logged_in = false
         layout.iris.shopping_assistant = null
@@ -114,7 +119,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       iris_variables: varnish?.variables ?? null,
       offer_data: null,
       offer_meters: varnish?.offer_meters ?? null,
-      shopping_assistant: null
+      shopping_assistant: null,
+      display_currency: null
     }))
 
     layout.is_blocked = varnish.is_blocked
@@ -159,7 +165,9 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       iris_variables: varnish.variables,
       offer_data: varnish.offer_data ?? null,
       offer_meters: varnish.offer_meters ?? null,
-      shopping_assistant: layout.iris.shopping_assistant ?? null
+      shopping_assistant: layout.iris.shopping_assistant ?? null,
+      display_currency: varnish.display_currency ?? null,
+      shop_currency_code: varnish.shop_currency_code ?? null
     }))
 
     layout.user = varnish.auth?.user || null
@@ -170,6 +178,13 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     layout.iris.is_logged_in = true
     layout.iris.customer = varnish.customer ?? null
+
+    if (!isAppRoute && "display_currency" in varnish) {
+      set(layout, ["retina", "display_currency"], varnish.display_currency ?? null)
+      if (varnish.shop_currency_code) {
+        set(layout, ["retina", "currency", "code"], varnish.shop_currency_code)
+      }
+    }
   }
 
 }

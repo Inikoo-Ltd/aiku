@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject } from "vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { useLocaleStore } from "@/Stores/locale"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { indicativeAmount } from "@/Composables/useDisplayCurrency"
@@ -9,12 +9,13 @@ const props = defineProps<{
     currency?: string | null
     amount: number | string | null | undefined
     charged?: boolean
+    rrp?: boolean
 }>()
 
-const locale = inject("locale", aikuLocaleStructure)
+const locale = useLocaleStore()
 const layout = inject("layout", retinaLayoutStructure)
 
-const shopAmount = computed(() => locale.currencyFormat(props.currency ?? "", props.amount ?? 0))
+const shopAmount = computed(() => props.rrp ? locale.currencyFormatRrp(props.currency ?? "", props.amount ?? 0) : locale.currencyFormat(props.currency ?? "", props.amount ?? 0))
 
 const displayAmount = computed(() => {
     const displayCurrency = layout?.retina?.display_currency
