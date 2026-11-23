@@ -39,6 +39,9 @@ class ReviewSiteAuditPagesWithAi
 
     private const int SEARCH_QUERIES = 15;
 
+    /** Room for 8 findings quoting the page; at 3000 about half the answers of 15 Nov 2026 were cut off before the JSON closed. */
+    private const int MAX_TOKENS = 8000;
+
     public string $jobQueue = 'long-low-priority';
 
     public int $jobTimeout = 1800;
@@ -113,7 +116,7 @@ class ReviewSiteAuditPagesWithAi
                         ['role' => 'user', 'content' => $this->pageContext($page, $html)],
                     ],
                     'response_format' => ['type' => 'json_object'],
-                    'max_tokens'      => 3000,
+                    'max_tokens'      => self::MAX_TOKENS,
                 ])
                 ->throw();
         } catch (Throwable $e) {
@@ -125,8 +128,13 @@ class ReviewSiteAuditPagesWithAi
         $content = (string) $response->json('choices.0.message.content');
         $review  = preg_match('/\{.*\}/s', $content, $match) ? json_decode($match[0], true) : null;
         $isValid = is_array($review) && is_numeric($review['score'] ?? null) && is_string($review['summary'] ?? null) && is_array($review['findings'] ?? null);
+        $error   = match (true) {
+            $isValid                                                    => null,
+            $response->json('choices.0.finish_reason') === 'length' => 'The answer was cut off at '.self::MAX_TOKENS.' tokens before its JSON closed: '.Str::limit($content, 300),
+            default                                                     => 'No usable JSON in the answer: '.Str::limit($content, 300),
+        };
 
-        $this->log($crawl, $isValid, $this->aiUsageCost($response->json('usage') ?? []), $startedAt, $isValid ? null : 'No usable JSON in the answer: '.Str::limit($content, 300));
+        $this->log($crawl, $isValid, $this->aiUsageCost($response->json('usage') ?? []), $startedAt, $error);
 
         if (!$isValid) {
             return null;

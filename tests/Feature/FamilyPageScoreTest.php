@@ -778,6 +778,25 @@ test('the most visited pages of a completed site audit are reviewed by AI and sh
     $audit->delete();
 });
 
+test('a site audit AI review cut off at the token limit is logged as cut off, not as a bad answer', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    $audit->update(['state' => CrawlStateEnum::FINISH, 'end_at' => now(), 'health_score' => 90]);
+    $home = CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/', 'url_hash' => md5('https://ecom.test/'), 'status_code' => 200, 'is_indexable' => true, 'link_depth' => 0, 'title' => 'Home']);
+    DB::table('search_console_page_days')->where('website_id', $this->website->id)->delete();
+    Http::fake([
+        'https://ecom.test/' => Http::response(siteAuditHtml('Home')),
+        'openrouter.ai/*'    => Http::response(['choices' => [['message' => ['content' => "```json\n{\"score\": 50, \"summary\": \"Clear topic, but the copy is about"], 'finish_reason' => 'length']], 'usage' => ['cost' => 0.05]]),
+    ]);
+
+    expect(ReviewSiteAuditPagesWithAi::run($audit))->toBe(0)
+        ->and($home->refresh()->ai_review)->toBeNull()
+        ->and(SeoApiRequest::where('endpoint', 'site_audit_ai_review')->latest('id')->value('error'))->toStartWith('The answer was cut off at 8000 tokens');
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'openrouter.ai') && $request['max_tokens'] === 8000);
+
+    $audit->delete();
+});
+
 test('a storefront request from a site audit tags its Sentry events with the audit', function () {
     $hub = SentrySdk::getCurrentHub();
     $hub->pushScope();
