@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\Fulfilment;
 
+use App\Actions\Api\Group\WithMobileDateRange;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Enums\Fulfilment\PalletDelivery\PalletDeliveryStateEnum;
@@ -28,6 +29,7 @@ use Lorisleiva\Actions\Concerns\AsController;
 class IndexMobilePalletDeliveries
 {
     use AsController;
+    use WithMobileDateRange;
     use WithMobilePalletDeliveries;
 
     public const array STATES = ['confirmed', 'received', 'booking_in', 'booked_in', 'not_received', 'active'];
@@ -38,7 +40,7 @@ class IndexMobilePalletDeliveries
     ];
 
     /**
-     * @param array{state?: string|null, q?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
+     * @param array{state?: string|null, q?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
      */
     public function handle(Warehouse $warehouse, array $filters): LengthAwarePaginator
     {
@@ -63,6 +65,8 @@ class IndexMobilePalletDeliveries
                     ->orWhereWith('customers.name', $search);
             });
         }
+
+        $this->whereWithinDays($query, 'pallet_deliveries.booked_in_at', $warehouse, $filters['from'] ?? null, $filters['to'] ?? null);
 
         $sort       = $filters['sort'] ?? 'estimated_delivery_date';
         $descending = str_starts_with($sort, '-');
@@ -164,6 +168,7 @@ class IndexMobilePalletDeliveries
         $filters = Validator::make($request->query(), [
             'state'    => ['sometimes', 'nullable', Rule::in(self::STATES)],
             'q'        => ['sometimes', 'nullable', 'string', 'max:64'],
+            ...$this->dateRangeRules($request->query()),
             'sort'     => ['sometimes', 'nullable', Rule::in(collect(array_keys(self::SORTS))->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all())],
             'per_page' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.self::MAX_PER_PAGE],
             'page'     => ['sometimes', 'nullable', 'integer', 'min:1'],

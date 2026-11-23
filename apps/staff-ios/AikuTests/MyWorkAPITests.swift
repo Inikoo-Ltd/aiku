@@ -92,12 +92,13 @@ struct MyWorkAPITests {
 
     @Test func badgesFollowTheWarehouseAndSurviveAnOutage() async {
         let store = WorkBadgesStore()
-        let (transport, ok) = client(["mobile/warehouses/1/badges": (200, #"{"data":{"my_work":4,"goods_out_unassigned":"12"}}"#)])
+        let (transport, ok) = client(["mobile/warehouses/1/badges": (200, #"{"data":{"my_work":4,"goods_out_unassigned":"12","goods_in_received":3}}"#)])
 
         await store.refresh(warehouseID: 1, apiClient: ok)
         #expect(transport.requests.last?.url?.path == "/app/api/mobile/warehouses/1/badges")
         #expect(store.myWorkCount == 4)
         #expect(store.goodsOutUnassignedCount == 12)
+        #expect(store.goodsInReceivedCount == 3)
 
         let (_, down) = client(["mobile/warehouses/1/badges": (503, "")])
         await store.refresh(warehouseID: 1, apiClient: down)
@@ -126,5 +127,15 @@ struct MyWorkAPITests {
         }
         #expect(backlog(0) == nil)
         #expect(backlog(3) == .pill(Chip("3 unassigned", .warn)))
+    }
+
+    @Test func theMenuShowsOnlyRealCountsLikeAndroid() {
+        let items = { (received: Int) in
+            ShellMenuCatalog.groups(for: .everything, goodsInReceived: received).flatMap(\.items)
+        }
+
+        #expect(items(0).first { $0.id == "inventory.skos" }?.badge == nil)
+        #expect(items(0).first { $0.id == "goodsIn.stockDeliveries" }?.badge == nil)
+        #expect(items(2).first { $0.id == "goodsIn.stockDeliveries" }?.badge == .pill(Chip("2 received", .success)))
     }
 }

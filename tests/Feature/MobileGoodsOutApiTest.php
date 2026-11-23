@@ -23,6 +23,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Helpers\Timezone;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\Inventory\Warehouse;
@@ -44,10 +45,11 @@ beforeEach(function () {
     $this->order            = createOrder($this->customer, createProduct($this->shop)[1]);
     $this->warehouse        = StoreWarehouse::make()->action($this->organisation, Warehouse::factory()->definition());
     $this->originalSettings = $this->organisation->settings;
+    $this->originalTimezone = $this->organisation->timezone_id;
 });
 
 afterEach(function () {
-    $this->organisation->update(['settings' => $this->originalSettings]);
+    $this->organisation->update(['settings' => $this->originalSettings, 'timezone_id' => $this->originalTimezone]);
 });
 
 test('mobile delivery notes list filters by bucket, search, date, picker and warehouse, and sorts and pages like the web', function () {
@@ -106,6 +108,31 @@ test('mobile delivery notes list filters by bucket, search, date, picker and war
     getGoodsOut('grp.api.mobile.warehouses.delivery_notes', $this->warehouse->id, ['bucket' => 'nope', 'per_page' => 101])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['bucket', 'per_page']);
+});
+
+test('mobile delivery notes list sorts by reference and reads from and to as whole days of the organisation timezone', function () {
+    actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+    $this->organisation->update(['timezone_id' => Timezone::where('name', 'Asia/Jakarta')->firstOrFail()->id]);
+    $prefix = 'TZ'.Str::upper(Str::random(6));
+
+    $dayBefore = goodsOutDeliveryNote($this->order, $this->warehouse, ['reference' => $prefix.'D', 'date' => '2026-02-09 16:59:59']);
+    $dayStart  = goodsOutDeliveryNote($this->order, $this->warehouse, ['reference' => $prefix.'A', 'date' => '2026-02-09 17:00:00']);
+    $dayEnd    = goodsOutDeliveryNote($this->order, $this->warehouse, ['reference' => $prefix.'C', 'date' => '2026-02-10 16:59:59']);
+    $dayAfter  = goodsOutDeliveryNote($this->order, $this->warehouse, ['reference' => $prefix.'B', 'date' => '2026-02-10 17:00:00']);
+
+    expect(goodsOutReferences($this->warehouse, ['from' => '2026-02-10', 'to' => '2026-02-10', 'sort' => 'date']))->toBe([$dayStart->reference, $dayEnd->reference])
+        ->and(goodsOutReferences($this->warehouse, ['from' => '2026-02-11', 'sort' => 'date']))->toBe([$dayAfter->reference])
+        ->and(goodsOutReferences($this->warehouse, ['to' => '2026-02-09', 'sort' => 'date']))->toBe([$dayBefore->reference])
+        ->and(goodsOutReferences($this->warehouse, ['sort' => 'reference']))->toBe([$dayStart->reference, $dayAfter->reference, $dayEnd->reference, $dayBefore->reference])
+        ->and(goodsOutReferences($this->warehouse, ['sort' => '-reference']))->toBe([$dayBefore->reference, $dayEnd->reference, $dayAfter->reference, $dayStart->reference]);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes', $this->warehouse->id, ['sort' => 'shop_name', 'from' => '10-02-2026'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['sort', 'from']);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes', $this->warehouse->id, ['from' => '2026-02-10', 'to' => '2026-02-09'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['to']);
 });
 
 test('mobile delivery notes list filters by the dispatching channel', function () {

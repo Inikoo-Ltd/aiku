@@ -22,7 +22,7 @@ fun AuditLocationSheet(
 ) {
     val lines = detail.orgStocks
         .filter { onlyLinkId == null || it.locationOrgStockId == onlyLinkId }
-        .map { sko -> AuditLine(locationOrgStockId = sko.locationOrgStockId, title = sko.code, subtitle = sko.name.takeIf { it.isNotBlank() }, current = sko.stock) }
+        .map { sko -> AuditLine(locationOrgStockId = sko.locationOrgStockId, title = sko.code, subtitle = sko.name.takeIf { it.isNotBlank() }, current = sko.stock, currentLabel = sko.stockLabel) }
 
     LaunchedEffect(Unit) { onLoadReasons() }
 

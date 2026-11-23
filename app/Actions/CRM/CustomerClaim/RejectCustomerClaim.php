@@ -51,6 +51,7 @@ class RejectCustomerClaim extends OrgAction
             'reviewed_by_user_id' => $reviewer->id,
             'reviewed_at'         => now(),
         ]);
+        StoreCustomerClaim::closeReviewTasks($claim, $reviewer);
 
         return $claim;
     }

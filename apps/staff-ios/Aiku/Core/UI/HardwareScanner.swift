@@ -132,7 +132,10 @@ private struct HardwareScanner: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                HardwareScanCapture(isListening: isVisible && isEnabled && inputMode.listensToScannerDevice, onCode: onCode)
+                HardwareScanCapture(isListening: isVisible && isEnabled && inputMode.listensToScannerDevice) { code in
+                    ScanFeedback.shared.accepted()
+                    onCode(code)
+                }
                     .frame(width: 0, height: 0)
                     .accessibilityHidden(true)
             }

@@ -76,3 +76,88 @@ struct ScanTests {
         #expect(await lookup(.failure(.unauthorized)).lookUp("A", warehouseID: 1) == .sessionExpired)
     }
 }
+
+@MainActor
+private final class RecordingScanSignals: ScanSignals {
+    var played: [String] = []
+
+    func successTone() { played.append("successTone") }
+    func errorTone() { played.append("errorTone") }
+    func successVibration() { played.append("successVibration") }
+    func errorVibration() { played.append("errorVibration") }
+}
+
+@MainActor
+struct ScanFeedbackTests {
+    private func freshDefaults() -> UserDefaults {
+        let name = "scan-feedback-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    @Test func anAcceptedScanBeepsAndVibratesLikeAndroid() {
+        let signals = RecordingScanSignals()
+        let feedback = ScanFeedback(defaults: freshDefaults(), signals: signals)
+
+        feedback.accepted()
+
+        #expect(signals.played == ["successTone", "successVibration"])
+    }
+
+    @Test func aRejectedScanPlaysTheLowToneAndTheErrorVibrationLikeAndroid() {
+        let signals = RecordingScanSignals()
+        let feedback = ScanFeedback(defaults: freshDefaults(), signals: signals)
+
+        feedback.rejected()
+
+        #expect(signals.played == ["errorTone", "errorVibration"])
+    }
+
+    @Test func soundAndVibrationFollowTheProfileSwitches() {
+        let settings = freshDefaults()
+        let signals = RecordingScanSignals()
+        let feedback = ScanFeedback(defaults: settings, signals: signals)
+
+        settings.set(false, forKey: ScanSettingsKey.sound)
+        feedback.accepted()
+        feedback.rejected()
+        #expect(signals.played == ["successVibration", "errorVibration"])
+
+        signals.played = []
+        settings.set(true, forKey: ScanSettingsKey.sound)
+        settings.set(false, forKey: ScanSettingsKey.vibrate)
+        feedback.accepted()
+        feedback.rejected()
+        #expect(signals.played == ["successTone", "errorTone"])
+    }
+
+    @Test func theTonesAreShortWavesAndTheLowOneLastsLonger() {
+        let success = ScanTone.success
+        let error = ScanTone.error
+
+        #expect(success.prefix(4) == Data("RIFF".utf8))
+        #expect(success.subdata(in: 8..<12) == Data("WAVE".utf8))
+        #expect(success.count == 44 + Int(Double(22_050) * 0.15) * 2)
+        #expect(error.count == 44 + Int(Double(22_050) * 0.4) * 2)
+    }
+
+    @Test func aScannedCodeThatIsNotALocationIsAMissButALostConnectionIsNot() async {
+        let missing = GoodsInLocationFinder(warehouseID: 1, service: GoodsInService(scan: { _, _ in throw APIError.http(statusCode: 404) }))
+        await missing.scan("X-1")
+        #expect(missing.notALocation == "X-1")
+        #expect(missing.scanMisses == 1)
+
+        let offline = GoodsInLocationFinder(warehouseID: 1, service: GoodsInService(scan: { _, _ in throw APIError.offline }))
+        await offline.scan("X-1")
+        #expect(offline.notALocation == nil)
+        #expect(offline.scanMisses == 0)
+    }
+
+    @Test func onlyAQrCodeAikuRefusesIsARejectedClockingScan() {
+        #expect(ClockingStore.isRefusal(APIError.validation(message: "This QR code is not valid.", code: nil)))
+        #expect(ClockingStore.isRefusal(APIError.rejected(message: "This QR code has expired.")))
+        #expect(!ClockingStore.isRefusal(APIError.http(statusCode: 500)))
+        #expect(!ClockingStore.isRefusal(APIError.offline))
+    }
+}

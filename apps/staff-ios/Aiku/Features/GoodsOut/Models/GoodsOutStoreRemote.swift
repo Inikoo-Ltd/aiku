@@ -151,6 +151,9 @@ extension GoodsOutStore {
 
     func scanToPick(_ reference: String, code: String, line: GoodsOutLine?) async -> (outcome: GoodsOutScanOutcome, message: String?) {
         if let id = noteID(for: reference), let offlineScan = offlineScanToPick(noteID: id, code: code, lineID: line?.apiID) {
+            if case .picked = offlineScan.outcome {} else {
+                scanMissed()
+            }
             return offlineScan
         }
         let (outcome, result) = await performForResult(.scanPick(barcode: code, lineID: line?.apiID), on: reference)
@@ -160,6 +163,9 @@ extension GoodsOutStore {
         let item = result?.item
         let sko = item?.code ?? line?.sko ?? code
         let message = result?.message.flatMap(GoodsOutMapper.nonEmpty)
+        if let status = result?.status, status != "picked" {
+            scanMissed()
+        }
         switch result?.status {
         case "picked":
             return (.picked(sko: sko, left: GoodsOutMapper.quantity(item?.quantityToPick)), message)

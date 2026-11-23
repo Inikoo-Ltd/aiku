@@ -27,6 +27,9 @@ use Illuminate\Support\Facades\DB;
  * the click StampOrderGoogleAdsClick froze on the order, matched to its campaign through the click
  * log. That is how Google counts a conversion too. Orders without an ad click are not counted.
  *
+ * The campaign Google reports for the click wins over the gad_campaignid of its URL, which for
+ * Performance Max is an id Google does not know, and a campaign merged into another is read as it.
+ *
  * Profit is what the margin box of the order shows: the picked cost of each line, topped up from
  * the last purchase price for what is not picked yet. Lines without a cost are left out, never
  * counted as free.
@@ -82,9 +85,9 @@ trait WithGoogleAdsProfit
             ->where('shop_id', $shop->id)
             ->where('type', TrafficSourcesTypeEnum::GOOGLE_ADS->value)
             ->whereNotNull('click_id')
-            ->whereNotNull('campaign_ref')
+            ->whereRaw('COALESCE(google_campaign_ref, campaign_ref) IS NOT NULL')
             ->when($this->earliestClickAt($previous), fn (Builder $query, Carbon $earliest) => $query->where('created_at', '>=', $earliest))
-            ->select('click_id', 'campaign_ref')
+            ->select('click_id', DB::raw('COALESCE(google_campaign_ref, campaign_ref) as campaign_ref'))
             ->distinct();
 
         $orders = DB::table('orders')
@@ -93,14 +96,15 @@ trait WithGoogleAdsProfit
                 $join->on('traffic_source_campaigns.reference', '=', 'ad_clicks.campaign_ref')
                     ->whereIn('traffic_source_campaigns.traffic_source_id', $this->googleAdsTrafficSourceIds($shop));
             })
+            ->leftJoin('traffic_source_campaigns as merged_campaigns', 'merged_campaigns.id', '=', 'traffic_source_campaigns.merged_into_id')
             ->where('orders.shop_id', $shop->id)
             ->whereNotNull('orders.google_ads_click_id')
             ->whereNotIn('orders.state', $this->excludedOrderStates())
             ->select(
                 'orders.id as order_id',
                 'orders.goods_amount',
-                'traffic_source_campaigns.id as traffic_source_campaign_id',
-                'traffic_source_campaigns.name as campaign'
+                DB::raw('COALESCE(merged_campaigns.id, traffic_source_campaigns.id) as traffic_source_campaign_id'),
+                DB::raw('COALESCE(merged_campaigns.name, traffic_source_campaigns.name) as campaign')
             );
 
         return $this->wherePeriodOrPrevious($orders, 'orders.submitted_at', $previous)->get();

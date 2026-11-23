@@ -777,6 +777,7 @@ class EditShop extends OrgAction
                             'label'        => __('Products with texts per language'),
                             'information'  => __('Active products with a name and a description in each language, to check a language is ready before customers can choose it.'),
                             'noSaveButton' => true,
+                            'full'         => true,
                             'value'        => GetShopLanguageReadiness::run($shop),
                         ],
                         ...($shop->type === ShopTypeEnum::DROPSHIPPING ? [

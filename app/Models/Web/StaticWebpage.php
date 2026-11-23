@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Models\Traits\BansStaticWebsitePagesFromVarnish;
 use App\Models\Traits\HasStaticWebsiteSnapshots;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class StaticWebpage extends Model
 {
+    use BansStaticWebsitePagesFromVarnish;
     use HasStaticWebsiteSnapshots;
 
     protected $guarded = [];
@@ -42,5 +44,13 @@ class StaticWebpage extends Model
     public function staticWebsite(): BelongsTo
     {
         return $this->belongsTo(StaticWebsite::class);
+    }
+
+    /**
+     * A moved page is stale at its old path as well as its new one.
+     */
+    public function stalePaths(): array
+    {
+        return array_values(array_unique(array_filter([$this->path, $this->getOriginal('path')])));
     }
 }

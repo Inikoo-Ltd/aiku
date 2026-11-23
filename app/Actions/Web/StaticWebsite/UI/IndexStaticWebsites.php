@@ -9,16 +9,23 @@
 namespace App\Actions\Web\StaticWebsite\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard;
+use App\Http\Resources\Web\StaticWebsitesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\Group;
 use App\Models\Web\StaticWebsite;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexStaticWebsites extends OrgAction
 {
+    use WithStaticWebsiteAuthorisation;
+
     public function handle(Group $group, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -77,5 +84,47 @@ class IndexStaticWebsites extends OrgAction
                 ->column(key: 'preview', label: '', canBeHidden: false)
                 ->defaultSort('name');
         };
+    }
+
+    public function asController(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($this->group);
+    }
+
+    public function htmlResponse(LengthAwarePaginator $staticWebsites, ActionRequest $request): Response
+    {
+        $title = __('Info websites');
+
+        return Inertia::render(
+            'Org/Marketing/StaticWebsites',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title'       => $title,
+                'pageHead'    => [
+                    'title' => $title,
+                    'icon'  => ['icon' => 'fal fa-globe', 'title' => $title],
+                ],
+                'data'        => StaticWebsitesResource::collection($staticWebsites),
+            ]
+        )->table($this->tableStructure());
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return array_merge(
+            ShowAggregatedMarketingDashboard::make()->getBreadcrumbs(true),
+            [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => ['name' => 'grp.marketing.info_websites.index'],
+                        'label' => __('Info websites'),
+                        'icon'  => 'fal fa-globe',
+                    ],
+                ],
+            ]
+        );
     }
 }

@@ -46,7 +46,6 @@ private struct PalletDeliveryScreen: View {
     @State private var confirm: PalletDeliveryConfirm?
     @State private var sheetPallet: SheetPallet?
     @State private var isScanningLocation = false
-    @State private var scanMisses = 0
 
     var body: some View {
         Group {
@@ -97,7 +96,6 @@ private struct PalletDeliveryScreen: View {
         .hardwareScanner(isEnabled: delivery.canScanForBookIn && confirm == nil && sheetPallet == nil && !isScanningLocation) { code in
             Task { await scanForBookIn(code, delivery: delivery) }
         }
-        .scanMissFeedback(scanMisses)
         .aikuSheet(item: $sheetPallet) { item in
             if let pallet = live.delivery?.pallet(item.id) {
                 palletSheet(pallet)
@@ -550,7 +548,7 @@ private struct PalletDeliveryScreen: View {
 
     private func scanForBookIn(_ code: String, delivery: MobilePalletDeliveryDetail) async {
         if case .notOnDelivery(let scanned) = await live.scanForBookIn(code) {
-            scanMisses += 1
+            ScanFeedback.shared.rejected()
             toasts.show("\(scanned) is not a pallet of \(delivery.reference). Scan the pallet label first.", tone: .info)
         }
     }

@@ -9,15 +9,17 @@
 namespace App\Actions\Web\StaticWebsite\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\UI\Marketing\ShowAggregatedMarketingDashboard;
+use App\Actions\Web\StaticWebsite\GetStaticWebsiteCruxReport;
 use App\Enums\Helpers\Snapshot\SnapshotBuilderEnum;
 use App\Enums\UI\Web\StaticWebsiteTabsEnum;
+use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum;
 use App\Http\Resources\Web\StaticWebpagesResource;
 use App\Http\Resources\Web\StaticWebsiteComponentsResource;
 use App\Http\Resources\Web\StaticWebsiteSnapshotsResource;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\StaticWebsite;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -59,10 +61,14 @@ class ShowStaticWebsite extends OrgAction
                 'can_restore' => $request->user()->authTo('group-webmaster.edit'),
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => StaticWebsiteTabsEnum::navigation(),
+                    'navigation' => $this->tabsNavigation($staticWebsite),
                 ],
 
-                StaticWebsiteTabsEnum::SHOWCASE->value => $tab(StaticWebsiteTabsEnum::SHOWCASE, fn () => $this->showcase($staticWebsite)),
+                StaticWebsiteTabsEnum::SHOWCASE->value => $tab(StaticWebsiteTabsEnum::SHOWCASE, fn () => $this->showcase($staticWebsite, $request)),
+
+                'real_user_speed_history' => $this->tab === StaticWebsiteTabsEnum::SHOWCASE->value
+                    ? Inertia::defer(fn () => ['crux' => GetStaticWebsiteCruxReport::run($staticWebsite)], 'real_user_speed_history')
+                    : null,
 
                 StaticWebsiteTabsEnum::WEBPAGES->value => $tab(StaticWebsiteTabsEnum::WEBPAGES, fn () => StaticWebpagesResource::collection(
                     IndexStaticWebpages::make()->handle($staticWebsite, StaticWebsiteTabsEnum::WEBPAGES->value)
@@ -82,45 +88,52 @@ class ShowStaticWebsite extends OrgAction
             ->table(IndexStaticWebsiteSnapshots::make()->tableStructure(prefix: StaticWebsiteTabsEnum::SNAPSHOTS->value));
     }
 
-    private function showcase(StaticWebsite $staticWebsite): array
+    private function showcase(StaticWebsite $staticWebsite, ActionRequest $request): array
     {
-        $snapshots = Snapshot::where('builder', SnapshotBuilderEnum::STATIC_HTML)
-            ->where(function ($query) use ($staticWebsite) {
-                $query->where(fn ($query) => $query->where('parent_type', 'StaticWebpage')->whereIn('parent_id', $staticWebsite->webpages()->select('id')))
-                    ->orWhere(fn ($query) => $query->where('parent_type', 'StaticWebsiteComponent')->whereIn('parent_id', $staticWebsite->components()->select('id')));
-            });
-
-        $lastChange = collect([$staticWebsite->webpages()->max('updated_at'), $staticWebsite->components()->max('updated_at')])->filter()->max();
+        $lastChange  = collect([$staticWebsite->webpages()->max('updated_at'), $staticWebsite->components()->max('updated_at')])->filter()->max();
+        $homepageId  = $staticWebsite->webpages()->where('path', '/')->value('id');
+        $sharedParts = $staticWebsite->components()->pluck('code');
+        $partRoute   = fn (StaticWebsiteComponentEnum $part) => $sharedParts->contains($part->value)
+            ? ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $part->value]]
+            : null;
 
         return [
-            'stats'   => [
-                [
-                    'label' => __('Webpages'),
-                    'value' => $staticWebsite->webpages()->count(),
-                    'icon'  => 'fal fa-browser',
-                    'route' => ['name' => 'grp.marketing.info_websites.webpages.index', 'parameters' => [$staticWebsite->slug]],
-                ],
-                [
-                    'label' => __('Shared parts'),
-                    'value' => $staticWebsite->components()->count(),
-                    'icon'  => 'fal fa-puzzle-piece',
-                    'tab'   => StaticWebsiteTabsEnum::COMPONENTS->value,
-                ],
-                [
-                    'label' => __('Snapshots'),
-                    'value' => $snapshots->count(),
-                    'icon'  => 'fal fa-history',
-                    'tab'   => StaticWebsiteTabsEnum::SNAPSHOTS->value,
-                ],
-            ],
-            'details' => [
-                ['label' => __('Domain'), 'value' => 'www.'.$staticWebsite->domain, 'href' => 'https://www.'.$staticWebsite->domain, 'hint' => __('Shows the old host until the domain points to Aiku')],
+            'id'               => $staticWebsite->id,
+            'url'              => 'https://www.'.$staticWebsite->domain,
+            'url_hint'         => __('Shows the old host until the domain points to Aiku'),
+            'can_edit'         => $request->user()->authTo('group-webmaster.edit'),
+            'route_storefront' => $homepageId
+                ? ['name' => 'grp.marketing.info_websites.webpages.show', 'parameters' => [$staticWebsite->slug, $homepageId]]
+                : null,
+            'route_header'     => $partRoute(StaticWebsiteComponentEnum::HEADER),
+            'route_footer'     => $partRoute(StaticWebsiteComponentEnum::FOOTER),
+            'details'          => [
                 ['label' => __('State'), 'value' => StaticWebsiteStateEnum::labels()[$staticWebsite->state->value]],
                 ['label' => __('Copied from'), 'value' => $staticWebsite->source_url, 'href' => $staticWebsite->source_url],
                 ['label' => __('Copied on'), 'value' => $staticWebsite->crawled_at?->toIso8601String(), 'type' => 'date'],
                 ['label' => __('Last change'), 'value' => $lastChange ? Carbon::parse($lastChange)->toIso8601String() : null, 'type' => 'date'],
             ],
         ];
+    }
+
+    private function tabsNavigation(StaticWebsite $staticWebsite): array
+    {
+        $navigation = StaticWebsiteTabsEnum::navigation();
+
+        $navigation[StaticWebsiteTabsEnum::WEBPAGES->value]['number']   = $staticWebsite->webpages()->count();
+        $navigation[StaticWebsiteTabsEnum::COMPONENTS->value]['number'] = $staticWebsite->components()->count();
+        $navigation[StaticWebsiteTabsEnum::SNAPSHOTS->value]['number']  = $this->snapshots($staticWebsite)->count();
+
+        return $navigation;
+    }
+
+    private function snapshots(StaticWebsite $staticWebsite): Builder
+    {
+        return Snapshot::where('builder', SnapshotBuilderEnum::STATIC_HTML)
+            ->where(function ($query) use ($staticWebsite) {
+                $query->where(fn ($query) => $query->where('parent_type', 'StaticWebpage')->whereIn('parent_id', $staticWebsite->webpages()->select('id')))
+                    ->orWhere(fn ($query) => $query->where('parent_type', 'StaticWebsiteComponent')->whereIn('parent_id', $staticWebsite->components()->select('id')));
+            });
     }
 
     /**
@@ -131,13 +144,8 @@ class ShowStaticWebsite extends OrgAction
         $crumb = fn (array $item) => ['type' => 'simple', 'simple' => $item];
 
         return array_merge(
-            ShowAggregatedMarketingDashboard::make()->getBreadcrumbs(true),
+            IndexStaticWebsites::make()->getBreadcrumbs(),
             [
-                $crumb([
-                    'route' => ['name' => 'grp.marketing.dashboard', 'parameters' => ['tab' => 'info_websites']],
-                    'label' => __('Info websites'),
-                    'icon'  => 'fal fa-globe',
-                ]),
                 $crumb([
                     'route' => ['name' => 'grp.marketing.info_websites.show', 'parameters' => [$staticWebsite->slug]],
                     'label' => $staticWebsite->name,

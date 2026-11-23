@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\Api\Group\WithMobileDateRange;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -25,9 +26,14 @@ use Lorisleiva\Actions\Concerns\AsController;
 class IndexMobileReturns
 {
     use AsController;
+    use WithMobileDateRange;
     use WithMobileReturns;
 
-    public const array SORTS = ['created_at'];
+    public const array SORTS = [
+        'created_at' => 'return_delivery_notes.created_at',
+        'reference'  => 'return_delivery_notes.reference',
+        'customer'   => 'customers.name',
+    ];
 
     public const string TO_PROCESS = 'to_process';
 
@@ -37,7 +43,7 @@ class IndexMobileReturns
     ];
 
     /**
-     * @param array{state?: string|null, q?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
+     * @param array{state?: string|null, q?: string|null, from?: string|null, to?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
      */
     public function handle(Warehouse $warehouse, array $filters): LengthAwarePaginator
     {
@@ -46,15 +52,20 @@ class IndexMobileReturns
         $sort       = $filters['sort'] ?? '-created_at';
         $descending = str_starts_with($sort, '-');
 
-        return self::returnsQuery($warehouse, $state)
+        $query = self::returnsQuery($warehouse, $state)
+            ->leftJoin('customers', 'customers.id', '=', 'return_delivery_notes.customer_id')
             ->select('return_delivery_notes.*')
-            ->when($search !== '', fn ($query) => $query->whereWith('return_delivery_notes.reference', $search))
+            ->when($search !== '', fn ($query) => $query->whereWith('return_delivery_notes.reference', $search));
+
+        $this->whereWithinDays($query, 'return_delivery_notes.created_at', $warehouse, $filters['from'] ?? null, $filters['to'] ?? null);
+
+        return $query
             ->withCount([
                 'returnDeliveryNoteItem as number_items',
                 'returnDeliveryNoteItem as number_handled' => fn ($query) => $query->where('is_handled', true),
             ])
             ->with(['customer', 'deliveryNote', 'handlerUser'])
-            ->orderBy('return_delivery_notes.'.ltrim($sort, '-'), $descending ? 'desc' : 'asc')
+            ->orderByRaw(self::SORTS[ltrim($sort, '-')].($descending ? ' desc nulls last' : ' asc nulls last'))
             ->orderBy('return_delivery_notes.id', $descending ? 'desc' : 'asc')
             ->paginate(min((int) ($filters['per_page'] ?? 0), self::WEB_MAX_PER_PAGE) ?: (int) config('ui.table.records_per_page'), ['*'], 'page', (int) ($filters['page'] ?? 1));
     }
@@ -115,7 +126,8 @@ class IndexMobileReturns
         $filters = Validator::make($request->query(), [
             'state'    => ['sometimes', 'nullable', Rule::in([...ReturnDeliveryNoteStateEnum::values(), self::TO_PROCESS, 'all'])],
             'q'        => ['sometimes', 'nullable', 'string', 'max:64'],
-            'sort'     => ['sometimes', 'nullable', Rule::in(collect(self::SORTS)->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all())],
+            ...$this->dateRangeRules($request->query()),
+            'sort'     => ['sometimes', 'nullable', Rule::in(collect(array_keys(self::SORTS))->flatMap(fn (string $sort) => [$sort, '-'.$sort])->all())],
             'per_page' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:'.self::WEB_MAX_PER_PAGE],
             'page'     => ['sometimes', 'nullable', 'integer', 'min:1'],
         ])->validate();

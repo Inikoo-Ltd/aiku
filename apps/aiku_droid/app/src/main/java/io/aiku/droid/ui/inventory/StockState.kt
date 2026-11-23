@@ -62,6 +62,9 @@ data class PagedList<T>(
     }
 
     fun failed(page: Int, problem: GoodsOutProblem): PagedList<T> = copy(loadingPage = null, problem = problem, failedPage = page, isRefreshing = false)
+
+    fun savedCopy(savedRows: List<T>): PagedList<T> =
+        PagedList(rows = savedRows, page = 1, lastPage = 1, total = savedRows.size, problem = GoodsOutProblem.Offline, failedPage = 1)
 }
 
 sealed interface StockEvent {

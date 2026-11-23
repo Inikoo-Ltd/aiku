@@ -62,7 +62,15 @@ struct RootView: View {
         .onChange(of: authStore.isSignedIn) { _, isSignedIn in
             if !isSignedIn {
                 OfflineWork.shared.signedOut()
+                session.forgetProfile()
             }
+        }
+        .onChange(of: warehouseStore.selected, initial: true) { _, _ in
+            applySelectedWarehouse()
+        }
+        .onChange(of: OfflineWork.shared.isOnline) { _, isOnline in
+            guard isOnline, authStore.isSignedIn, authStore.mobileProfile == nil else { return }
+            Task { await authStore.refreshProfile() }
         }
         .task(id: authStore.userID) {
             guard let userID = authStore.userID, userID > 0 else { return }

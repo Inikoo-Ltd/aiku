@@ -137,14 +137,15 @@ class IndexMobileOrgStocks
                 'state_label'           => OrgStockStateEnum::labels()[$row->state->value],
                 'family'                => $family ? ['id' => $family->id, 'code' => $family->code] : null,
                 'image_url'             => $sko ? $this->orgStockImageUrl($sko) : null,
-                ...$this->quantityFields('quantity_available', $row->quantity_available),
-                ...$this->quantityFields('quantity_in_locations', $row->getAttribute('quantity_in_locations')),
+                ...$this->quantityFields('quantity_available', $row->quantity_available, $sko?->packed_in),
+                ...$this->quantityFields('quantity_in_locations', $row->getAttribute('quantity_in_locations'), $sko?->packed_in),
                 'stock_value'           => (float) $row->getAttribute('stock_value'),
                 'number_locations'      => (int) $row->getAttribute('number_locations'),
                 'last_seen_at'          => $row->discontinued_in_organisation_at?->toIso8601String(),
                 'location_org_stock_id' => $row->getAttribute('location_org_stock_id') === null ? null : (int) $row->getAttribute('location_org_stock_id'),
                 'location'              => $row->getAttribute('location_id') === null ? null : ['id' => (int) $row->getAttribute('location_id'), 'code' => $row->getAttribute('location_code')],
                 'location_quantity'     => $row->getAttribute('location_quantity') === null ? null : (float) $row->getAttribute('location_quantity'),
+                'location_quantity_label' => $row->getAttribute('location_quantity') === null ? null : $this->stockFractionLabel((float) $row->getAttribute('location_quantity'), $sko?->packed_in),
             ];
         })->values()->all();
     }

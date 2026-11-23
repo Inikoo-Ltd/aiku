@@ -187,6 +187,8 @@ data class LocationOrgStock(
     val type: String = "",
     @Serializable(with = LenientDouble::class) val quantity: Double = 0.0,
     @Serializable(with = LenientDoubleOrNull::class) @SerialName("quantity_value") val quantityValue: Double? = null,
+    @SerialName("quantity_label") val quantityLabel: String? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("packed_in") val packedIn: Double? = null,
     val notes: String? = null,
     @SerialName("location_org_stock_id") val locationOrgStockId: Long,
     @SerialName("default_wholesale_picking_location") val isDefaultWholesale: Boolean = false,
@@ -201,6 +203,8 @@ data class LocationOrgStock(
     @Serializable(with = LenientIntOrNull::class) val version: Int? = null,
 ) {
     val stock: Double get() = quantityValue ?: quantity
+
+    val stockLabel: String? get() = quantityLabel
 
     val stockType: LocationStockType? get() = LocationStockType.ofKey(type)
 }
@@ -272,6 +276,7 @@ data class StockMovement(
     @SerialName("quantity_label") val quantityLabel: String? = null,
     @Serializable(with = LenientDoubleOrNull::class) @SerialName("running_quantity") val runningQuantity: Double? = null,
     @Serializable(with = LenientDoubleOrNull::class) @SerialName("running_quantity_org_stock") val runningQuantityOrgStock: Double? = null,
+    @SerialName("running_quantity_org_stock_label") val runningQuantityOrgStockLabel: String? = null,
     val location: PlaceRef? = null,
     val reason: String? = null,
     @SerialName("reason_label") val reasonLabel: String? = null,
@@ -286,6 +291,8 @@ data class StockMovement(
     val who: String? get() = user?.name?.takeIf { it.isNotBlank() } ?: userName?.takeIf { it.isNotBlank() }
 
     val running: Double? get() = runningQuantityOrgStock ?: runningQuantity
+
+    val runningLabel: String? get() = runningQuantityOrgStockLabel.takeIf { runningQuantityOrgStock != null }
 }
 
 data class MovementPage(val movements: List<StockMovement>, val meta: ListMeta)
@@ -367,6 +374,7 @@ data class OrgStockRow(
     @SerialName("location_org_stock_id") val locationOrgStockId: Long? = null,
     val location: PlaceRef? = null,
     @Serializable(with = LenientDoubleOrNull::class) @SerialName("location_quantity") val locationQuantity: Double? = null,
+    @SerialName("location_quantity_label") val locationQuantityLabel: String? = null,
 )
 
 @Serializable

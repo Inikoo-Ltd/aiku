@@ -24,13 +24,15 @@ class SetWebUserLocale
         /** @var WebUser $webUser */
         if ($webUser = auth()->user()) {
             $locale = $webUser->language?->code;
-        } elseif ($shop->enablesLanguage($request->query('locale'))) {
+        } elseif ($shop->showsWebsiteIn($request->query('locale'))) {
             $locale = $request->query('locale');
         } else {
             $locale = $request->cookie('aiku_guest_locale');
         }
 
-        if (!is_string($locale) || ($shop->restrictsLanguages() && !$shop->offersLanguageTo($webUser?->customer, $locale))) {
+        $isAllowed = $webUser ? $shop->offersLanguageTo($webUser->customer, $locale) : $shop->showsWebsiteIn($locale);
+
+        if (!is_string($locale) || ($shop->restrictsLanguages() && !$isAllowed)) {
             $locale = $shop->language->code;
         }
 

@@ -167,11 +167,16 @@ struct ShellWarehouseRow: View {
                     Text(L10n.text(label))
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.text3)
-                    Text(value)
-                        .font(.aiku(15, .semibold))
-                        .foregroundStyle(AikuColor.text)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
+                    if value.isEmpty {
+                        SkeletonBlock(width: 180, height: 14)
+                            .padding(.vertical, 3)
+                    } else {
+                        Text(value)
+                            .font(.aiku(15, .semibold))
+                            .foregroundStyle(AikuColor.text)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                    }
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)

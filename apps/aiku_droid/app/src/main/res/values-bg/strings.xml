@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Качи болничен лист</string>
     <string name="clocking_load_failed_title">Отчитането ви не можа да се зареди</string>
     <string name="clocking_load_more_failed">Не можа да се зареди още</string>
-    <string name="clocking_load_offline_body">Нямате връзка. Свържете се с интернет и опитайте отново.</string>
+    <string name="clocking_load_offline_body">Няма връзка. Проверете Wi-Fi и опитайте отново.</string>
     <string name="clocking_load_server_body">Aiku не отговори. Опитайте отново след малко.</string>
     <string name="clocking_location_accuracy">%1$s · точност до %2$d м</string>
     <string name="clocking_location_detect">Открий местоположението ми</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Изберете работно време</string>
     <string name="dashboard_abnormal">Аномалии</string>
     <string name="dashboard_below_minimum">Под минимума</string>
-    <string name="dashboard_clocking">Отчитане на работно време</string>
     <string name="dashboard_dispatched">Изпратени</string>
     <string name="dashboard_dispatched_compared">%1$s днес · %2$s вчера по това време</string>
     <string name="dashboard_dispatched_count">%1$s днес</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Опитайте отново</string>
     <string name="login_username">Потребителско име</string>
     <string name="login_username_required">Въведете потребителското си име.</string>
-    <string name="menu_all_staff">Всички служители</string>
     <string name="menu_appearance">Външен вид</string>
     <string name="menu_appearance_subtitle">Цвят на темата · светъл или тъмен</string>
     <string name="menu_change">Промяна</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Търсене на SKO, локации или стокови разписки</string>
     <string name="menu_search_placeholder">Търсене на SKO, локация, стокова разписка</string>
     <string name="menu_timesheets">Отчети за работно време</string>
-    <string name="module_clocking">Работно време и ЧР</string>
+    <string name="module_clocking">Отчитане на времето и присъствие</string>
     <string name="module_goods_in">Приемане на стока</string>
     <string name="module_goods_out">Изпращане на стока</string>
     <string name="module_inventory">Наличности</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d избран</item>
         <item quantity="other">%d избрани</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Покажи %d резултат</item>
+        <item quantity="other">Покажи %d резултата</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">Заприходени: %1$d от %2$d</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d действие</item>
         <item quantity="other">%d действия</item>
     </plurals>
+    <string name="record_date_expected">Очаквано</string>
+    <string name="record_date_dispatched">Изпратено</string>
+    <string name="record_date_received">Получено</string>
+    <string name="record_date_booked_in">Заприходено</string>
+    <string name="record_date_started">Започнато</string>
+    <string name="record_date_created">Създадено</string>
+    <string name="filter_and_sort">Филтриране и сортиране</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">От</string>
+    <string name="filter_date_to">До</string>
+    <string name="filter_date_any">Всяка дата</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">От %1$s</string>
+    <string name="filter_date_until">До %1$s</string>
+    <string name="filter_sort_oldest">Първо най-старите</string>
+    <string name="filter_show_results_unknown">Покажи резултатите</string>
+    <string name="goodsout_extra_sessions_search">Търсене на сесии</string>
+    <string name="goodsout_extra_sessions_filter_title">Филтриране на сесии на събиране</string>
+    <string name="goodsout_extra_sort_finished">Завършено</string>
+    <string name="goodsin_sort_supplier">Доставчик</string>
+    <string name="goodsin_sort_expected_date">Очаквана дата</string>
+    <string name="goodsin_returns_filter_title">Филтриране на връщания</string>
+    <string name="goodsin_returns_date_received">Дата на получаване</string>
+    <string name="goodsin_returns_sort_newest">Първо последно получените</string>
+    <string name="goodsin_returns_sort_oldest">Първо най-рано получените</string>
+    <string name="fulfilment_inbound_filter_title">Филтриране на доставки</string>
+    <string name="cache_saved_rows_only">Запазено копие: включени са само редовете, заредени преди</string>
+    <string name="filter_online_only">%1$s (само онлайн)</string>
 </resources>

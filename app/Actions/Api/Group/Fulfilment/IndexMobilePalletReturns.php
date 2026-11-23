@@ -32,7 +32,7 @@ class IndexMobilePalletReturns
     public const array STATES = ['confirmed', 'picking', 'picked', 'dispatched', 'cancel'];
     public const array ACTIVE_STATES = ['confirmed', 'picking', 'picked'];
     public const array TYPE_GROUPS = ['pallets', 'items'];
-    public const array SORTS = ['date', 'reference', 'dispatched_at'];
+    public const array SORTS = ['date', 'reference', 'dispatched_at', 'customer'];
 
     /**
      * @param array{state?: string|null, type?: string|null, q?: string|null, sort?: string|null, per_page?: int|null, page?: int|null} $filters
@@ -46,6 +46,7 @@ class IndexMobilePalletReturns
         $sortColumn = match (ltrim($sort, '-')) {
             'reference'     => 'pallet_returns.reference',
             'dispatched_at' => 'pallet_returns.dispatched_at',
+            'customer'      => 'customers.name',
             default         => 'COALESCE(pallet_returns.confirmed_at, pallet_returns.date)',
         };
 

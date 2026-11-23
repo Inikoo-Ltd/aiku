@@ -78,15 +78,17 @@ const structuredDataTypes = computed(() =>
 const TITLE_LIMIT = 60
 const DESCRIPTION_LIMIT = 150
 
+const hasField = (key: string) => !!props.seo && key in props.seo
+
 const fields = computed(() => [
-	{ label: ctrans("Meta title"), value: props.seo?.title, limit: TITLE_LIMIT, hint: ctrans("Rendered with the prefix and suffix of the website") },
-	{ label: ctrans("Meta description"), value: props.seo?.description, limit: DESCRIPTION_LIMIT },
-	{ label: ctrans("Breadcrumb label"), value: props.seo?.breadcrumb_label },
-	{ label: ctrans("Canonical URL"), value: props.seo?.canonical_url },
-	{ label: ctrans("Title prefix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_prefix : null },
-	{ label: ctrans("Title suffix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_suffix : null },
-	{ label: ctrans("Share image alt"), value: props.seo?.share_image?.alt },
-])
+	{ key: "title", label: ctrans("Meta title"), value: props.seo?.title, limit: TITLE_LIMIT, hint: hasField("use_title_prefix_suffix") ? ctrans("Rendered with the prefix and suffix of the website") : undefined },
+	{ key: "description", label: ctrans("Meta description"), value: props.seo?.description, limit: DESCRIPTION_LIMIT },
+	{ key: "breadcrumb_label", label: ctrans("Breadcrumb label"), value: props.seo?.breadcrumb_label },
+	{ key: "canonical_url", label: ctrans("Canonical URL"), value: props.seo?.canonical_url },
+	{ key: "title_prefix", label: ctrans("Title prefix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_prefix : null },
+	{ key: "title_suffix", label: ctrans("Title suffix"), value: props.seo?.use_title_prefix_suffix ? props.seo?.title_suffix : null },
+	{ key: "share_image", label: ctrans("Share image alt"), value: props.seo?.share_image?.alt },
+].filter((field) => hasField(field.key)))
 
 const robotFlags = computed(() => [
 	{ label: ctrans("Indexed by search engines"), on: props.seo?.index_page },
@@ -126,7 +128,7 @@ const robotFlags = computed(() => [
 					</span>
 				</div>
 
-				<div class="border-t pt-4">
+				<div v-if="hasField('hreflang')" class="border-t pt-4">
 					<dt class="text-xs text-gray-500">{{ ctrans("Language versions (hreflang)") }}</dt>
 					<dd v-if="seo.hreflang?.length" class="mt-1 space-y-1">
 						<div v-for="alternate in seo.hreflang" :key="alternate.hreflang" class="flex gap-2 text-sm">

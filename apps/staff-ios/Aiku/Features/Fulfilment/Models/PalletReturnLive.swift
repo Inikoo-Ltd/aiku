@@ -314,6 +314,11 @@ final class PalletReturnLive {
 
     var isWorking: Bool { working != nil || isDraining }
 
+    private func scanMissed() {
+        scanMisses += 1
+        ScanFeedback.shared.rejected()
+    }
+
     func load() async {
         guard !isWorking else { return }
         do {
@@ -417,7 +422,7 @@ final class PalletReturnLive {
             return .done("Pallet \(pallet.reference ?? code): now scan its items", .info)
         }
         guard let item = detail.storedItems.first(where: { $0.storedItem.matches(code) }) else {
-            scanMisses += 1
+            scanMissed()
             return .done("\(code) isn’t on this return", .info)
         }
         let line = item.lines.first { $0.pallet?.id == selectedPalletID && $0.hasActions }
@@ -425,7 +430,7 @@ final class PalletReturnLive {
             ?? item.lines.first { $0.hasActions }
             ?? item.lines.first
         guard let line else {
-            scanMisses += 1
+            scanMissed()
             return .done("\(code) isn’t on this return", .info)
         }
         return .lineFound(line.lineId)
@@ -518,7 +523,7 @@ final class PalletReturnLive {
         let status = result?.status ?? ""
         let message = result?.message
         if status != "picked", status != "done" {
-            scanMisses += 1
+            scanMissed()
         }
         switch status {
         case "picked", "done": return .done(message ?? "\(code) picked", .success)

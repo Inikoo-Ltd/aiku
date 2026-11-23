@@ -1,18 +1,18 @@
 import Foundation
 
-struct MobileProfileResponse: Decodable, Equatable, Sendable {
-    struct JobPosition: Decodable, Equatable, Sendable {
+struct MobileProfileResponse: Codable, Equatable, Sendable {
+    struct JobPosition: Codable, Equatable, Sendable {
         let code: String?
         let name: String
     }
 
-    struct Organisation: Decodable, Equatable, Sendable {
+    struct Organisation: Codable, Equatable, Sendable {
         let id: Int
         let code: String?
         let name: String
     }
 
-    struct Language: Decodable, Equatable, Sendable {
+    struct Language: Codable, Equatable, Sendable {
         let code: String
         let name: String?
     }

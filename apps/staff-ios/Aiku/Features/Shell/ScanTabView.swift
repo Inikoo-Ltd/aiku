@@ -5,15 +5,12 @@ struct ScanTabView: View {
     @Environment(Session.self) private var session
     @Environment(ToastCenter.self) private var toasts
     @AppStorage(ScanSettingsKey.inputMode) private var inputMode = ScanInputMode.automatic
-    @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
     @State private var lookup = ShellScanLookup.live(.shared)
     @State private var warehouseStore = WarehouseStore.shared
     @State private var isCameraOpen = false
     @State private var isChoosingWarehouse = false
     @State private var lastCode: String?
     @State private var typedCode = ""
-    @State private var scanCount = 0
-    @State private var missCount = 0
     @FocusState private var isTypingCode: Bool
 
     var body: some View {
@@ -32,8 +29,6 @@ struct ScanTabView: View {
             look(up: code)
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
-        .sensoryFeedback(.success, trigger: scanCount) { _, _ in vibrates }
-        .sensoryFeedback(.error, trigger: missCount) { _, _ in vibrates }
         .onAppear {
             if inputMode == .camera, lookup.outcome == nil, session.canScan {
                 isCameraOpen = true
@@ -160,13 +155,12 @@ struct ScanTabView: View {
             let outcome = await lookup.lookUp(code, warehouseID: warehouseStore.selectedID)
             switch outcome {
             case .found:
-                scanCount += 1
                 if closingCamera {
                     isCameraOpen = false
                 }
-            case .some:
-                missCount += 1
-            case nil:
+            case .notFound:
+                ScanFeedback.shared.rejected()
+            case .failed, .needsWarehouse, .sessionExpired, nil:
                 break
             }
         }

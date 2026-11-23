@@ -22,7 +22,7 @@
     <string name="clocking_summary_unavailable">Clocking status unavailable</string>
 
     <string name="clocking_load_failed_title">Couldn’t load your clocking</string>
-    <string name="clocking_load_offline_body">You’re offline. Connect to the internet and try again.</string>
+    <string name="clocking_load_offline_body">There is no connection. Check Wi-Fi and try again.</string>
     <string name="clocking_load_server_body">Aiku didn’t respond. Try again in a moment.</string>
 
     <string name="clocking_no_methods_title">No clocking method</string>

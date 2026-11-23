@@ -1675,6 +1675,14 @@ test('preview languages work in the website address and for staff customers, nev
     $irisData = (new HandleIrisInertiaRequests())->getIrisData($this->website->fresh(), $previewCode);
     expect(collect($irisData['website_i18n']['enabled_languages'])->pluck('code')->all())->not->toContain($previewCode);
 
+    auth('retina')->logout();
+    runWebUserLocale($this->website, [], '/app/login?locale='.$previewCode);
+    expect(app()->getLocale())->toBe($previewCode);
+    runWebUserLocale($this->website, ['aiku_guest_locale' => $previewCode], '/app/register');
+    expect(app()->getLocale())->toBe($previewCode);
+    runWebUserLocale($this->website, [], '/app/login?locale='.$otherCode);
+    expect(app()->getLocale())->toBe($shop->language->code);
+
     $customer = createCustomer($shop);
     $webUser  = createWebUser($customer);
     $choosePreview = fn () => \App\Actions\Retina\UI\Profile\UpdateRetinaProfile::make()->action($webUser->fresh(), ['language_id' => $previewLanguageId]);

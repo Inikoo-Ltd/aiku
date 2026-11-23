@@ -7,6 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class GoodsInResponsesTest {
 
@@ -295,5 +296,28 @@ class GoodsInResponsesTest {
         assertFalse(can.viewGoodsIn)
         assertTrue(can.allows(Ability.ViewReturns))
         assertFalse(can.allows(Ability.BookIn))
+    }
+
+    @Test
+    fun `stock delivery and return lists send the date range and the new sorts`() {
+        val deliveries = StockDeliveryQuery(from = LocalDate.of(2026, 11, 18), to = LocalDate.of(2026, 11, 23), sort = StockDeliverySort.Supplier)
+
+        assertEquals(
+            listOf("state" to "active", "from" to "2026-11-18", "to" to "2026-11-23", "sort" to "supplier", "page" to "1", "per_page" to "50"),
+            GoodsInResponses.stockDeliveriesParameters(deliveries),
+        )
+        assertEquals(
+            listOf("state" to "active", "to" to "2026-11-23", "sort" to "estimated_receiving_date", "page" to "1", "per_page" to "50"),
+            GoodsInResponses.stockDeliveriesParameters(StockDeliveryQuery(to = LocalDate.of(2026, 11, 23), sort = StockDeliverySort.ExpectedDate)),
+        )
+        assertEquals(
+            listOf("-date", "date", "reference", "supplier", "estimated_receiving_date", "-dispatched_at", "-number_items"),
+            StockDeliverySort.entries.map { it.key },
+        )
+        assertEquals(
+            listOf("state" to "all", "q" to "DN1", "from" to "2026-11-01", "sort" to "customer", "page" to "1", "per_page" to "50"),
+            GoodsInResponses.returnsParameters(ReturnQuery(search = "DN1", from = LocalDate.of(2026, 11, 1), sort = ReturnSort.Customer)),
+        )
+        assertEquals(listOf("created_at", "reference", "customer"), ReturnSort.entries.map { it.key })
     }
 }

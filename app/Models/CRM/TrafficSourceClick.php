@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $webpage_id
  * @property string $type
  * @property string|null $campaign_ref
+ * @property string|null $google_campaign_ref
  * @property string|null $click_id
  * @property string|null $ip
  * @property string|null $country_code

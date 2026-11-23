@@ -196,6 +196,9 @@ final class ClockingStore {
         } catch APIError.offline {
             return .offline
         } catch {
+            if Self.isRefusal(error) {
+                ScanFeedback.shared.rejected()
+            }
             let message = error.localizedDescription
             rejection = ClockingRejection(message: message, scanned: code)
             if message.localizedCaseInsensitiveContains("location") {
@@ -203,6 +206,13 @@ final class ClockingStore {
                 return .locationNeeded
             }
             return .rejected
+        }
+    }
+
+    static func isRefusal(_ error: Error) -> Bool {
+        switch error as? APIError {
+        case .validation, .rejected, .http(statusCode: 400), .http(statusCode: 422): true
+        default: false
         }
     }
 

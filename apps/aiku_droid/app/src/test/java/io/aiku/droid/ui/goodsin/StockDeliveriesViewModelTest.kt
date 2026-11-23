@@ -14,6 +14,7 @@ import io.aiku.droid.data.api.StockDeliveryRow
 import io.aiku.droid.data.api.StockDeliverySort
 import io.aiku.droid.data.api.StockDeliverySource
 import io.aiku.droid.data.api.StockDeliveryStateFilter
+import io.aiku.droid.ui.components.DateRange
 import io.aiku.droid.ui.inventory.FakeSessions
 import io.aiku.droid.ui.inventory.StockScanOutcome
 import io.aiku.droid.ui.navigation.StockDeliveryRoute
@@ -26,8 +27,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StockDeliveriesViewModelTest {
@@ -186,5 +189,32 @@ class StockDeliveriesViewModelTest {
 
     private companion object {
         const val SEARCH_WAIT_MILLIS = 301L
+    }
+
+    @Test
+    fun `a date range and a new sort reach the query, count on the filter button and clear together`() {
+        val deliveries = viewModel()
+        deliveries.onStart()
+        deliveries.loadMore()
+        val range = DateRange(from = LocalDate.of(2026, 11, 18), to = LocalDate.of(2026, 11, 23))
+
+        deliveries.applyFilter(deliveries.state.value.filter.copy(dates = range, sort = StockDeliverySort.ExpectedDate))
+
+        val query = api.deliveryQueries.last()
+        assertEquals(LocalDate.of(2026, 11, 18), query.from)
+        assertEquals(LocalDate.of(2026, 11, 23), query.to)
+        assertEquals(StockDeliverySort.ExpectedDate, query.sort)
+        assertEquals(1, query.page)
+        assertEquals(1, deliveries.state.value.filter.activeFilterCount)
+        assertEquals(2, deliveries.state.value.filter.panelCount)
+        assertTrue(deliveries.state.value.filter.isFiltered)
+
+        deliveries.clearFilters()
+
+        val cleared = api.deliveryQueries.last()
+        assertNull(cleared.from)
+        assertNull(cleared.to)
+        assertNull(cleared.sort)
+        assertEquals(0, deliveries.state.value.filter.panelCount)
     }
 }

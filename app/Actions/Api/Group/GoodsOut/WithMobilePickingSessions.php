@@ -171,6 +171,7 @@ trait WithMobilePickingSessions
             'is_waiting_ready'      => (bool) $pickingSession->is_waiting_ready,
             'start_at'              => $this->isoDate($pickingSession->start_at),
             'end_at'                => $this->isoDate($pickingSession->end_at),
+            'created_at'            => $this->isoDate($pickingSession->created_at),
         ];
     }
 

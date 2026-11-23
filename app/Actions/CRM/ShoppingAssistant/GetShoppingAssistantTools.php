@@ -1426,7 +1426,21 @@ class GetShoppingAssistantTools
                 : 'Everything on this order has already been claimed. Offer a person with offer_reason order_question if they think something is still wrong.'], 'products' => [], 'error' => null];
         }
 
-        return ['content' => ['found' => true, 'claimable' => true, 'note' => 'The claim form for this order is shown under your reply.'], 'products' => [], 'error' => null, 'claim_order_id' => $order->id];
+        $otherOrders = $reference === ''
+            ? Order::where('customer_id', $customer->id)->whereIn('state', [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])->where('id', '!=', $order->id)
+                ->where('dispatched_at', '>=', now()->subDays($form['max_age_days']))->latest('dispatched_at')->limit(3)->pluck('reference')->all()
+            : [];
+
+        return ['content' => [
+            'found'              => true,
+            'claimable'          => true,
+            'order'              => $order->reference,
+            'dispatched_on'      => $order->dispatched_at?->toDateString(),
+            'items_on_order'     => array_map(fn (array $line) => $line['name'] ?: $line['code'], $form['lines']),
+            'outcomes'           => $form['outcomes'],
+            'other_recent_orders' => $otherOrders,
+            'note'               => 'The claim form for this order is shown under your reply. Say which order it is for. If what they described is not among items_on_order, say so plainly, never repeat their words as if the item were on this order, and ask whether the problem is with another order (they can give its number; other_recent_orders are theirs). Mention only the outcomes listed (refund_to_balance is credit to their balance, replacement is a replacement sent now, next_order is the items free in their next order).',
+        ], 'products' => [], 'error' => null, 'claim_order_id' => $order->id];
     }
 
     private function orderStatus(Customer $customer, array $arguments, string $locale, ?ShoppingAssistantConversation $conversation = null): array

@@ -400,6 +400,7 @@ struct DispatchBarcodeCamera: UIViewControllerRepresentable {
                 if value == lastCode, now.timeIntervalSince(lastScannedAt) < DispatchBarcodeCamera.repeatDelay { return }
                 lastCode = value
                 lastScannedAt = now
+                ScanFeedback.shared.accepted()
                 onCode(value)
                 return
             }

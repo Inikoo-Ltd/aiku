@@ -12,10 +12,12 @@ use App\Actions\Chat\ChatSession\PlanChatClaim;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
+use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimSourceEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -23,6 +25,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -122,9 +125,29 @@ class StoreCustomerClaim
             }
         }
 
-        $this->askCustomerServices($claim);
+        try {
+            $this->askCustomerServices($claim);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return $claim;
+    }
+
+    /**
+     * The customer-services task asking to review the claim is done once a person approved or
+     * rejected it.
+     */
+    public static function closeReviewTasks(CustomerClaim $claim, User $reviewer): void
+    {
+        try {
+            StaffTask::where('model_type', 'CustomerClaim')->where('model_id', $claim->id)
+                ->whereIn('status', [StaffTaskStatusEnum::TODO, StaffTaskStatusEnum::IN_PROGRESS])
+                ->get()
+                ->each(fn (StaffTask $task) => UpdateStaffTask::make()->handle($task, $reviewer, ['status' => StaffTaskStatusEnum::DONE->value]));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**

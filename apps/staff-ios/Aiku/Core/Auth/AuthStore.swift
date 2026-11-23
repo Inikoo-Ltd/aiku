@@ -39,12 +39,19 @@ final class AuthStore {
     @ObservationIgnored private let service: AuthService
     @ObservationIgnored private let tokens: TokenStoring
     @ObservationIgnored private let deviceName: String
+    @ObservationIgnored private let profileCache: ProfileCaching
 
-    init(service: AuthService, tokens: TokenStoring, deviceName: String) {
+    init(service: AuthService, tokens: TokenStoring, deviceName: String, profileCache: ProfileCaching = NoProfileCache()) {
         self.service = service
         self.tokens = tokens
         self.deviceName = deviceName
+        self.profileCache = profileCache
         isSignedIn = tokens.load() != nil
+        if isSignedIn {
+            mobileProfile = profileCache.load()
+        } else {
+            profileCache.clear()
+        }
     }
 
     func signIn(
@@ -64,6 +71,10 @@ final class AuthStore {
         do {
             let response = try await service.login(request)
             tokens.save(response.token, persist: remember)
+            if mobileProfile?.id != response.user.id {
+                mobileProfile = nil
+                profileCache.clear()
+            }
             profile = response.user
             lastProfileError = nil
             isSignedIn = true
@@ -81,8 +92,10 @@ final class AuthStore {
         isRefreshingProfile = true
         defer { isRefreshingProfile = false }
         do {
-            mobileProfile = try await service.fetchProfile()
+            let fresh = try await service.fetchProfile()
+            mobileProfile = fresh
             lastProfileError = nil
+            try? profileCache.save(fresh)
         } catch APIError.unauthorized {
             endSession()
         } catch where error.isCancellation {
@@ -101,6 +114,7 @@ final class AuthStore {
 
     func endSession() {
         tokens.clear()
+        profileCache.clear()
         profile = nil
         mobileProfile = nil
         lastProfileError = nil

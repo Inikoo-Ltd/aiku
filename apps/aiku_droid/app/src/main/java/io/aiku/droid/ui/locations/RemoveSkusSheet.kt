@@ -51,7 +51,7 @@ fun RemoveSkusSheet(
                         isMissing = false
                         selected = if (isSelected) selected - sko.id else selected + sko.id
                     },
-                    subtitle = listOfNotNull(type, stringResource(R.string.locations_in_location, stockText(sko.stock))).joinToString(LIST_SEPARATOR),
+                    subtitle = listOfNotNull(type, stringResource(R.string.locations_in_location, stockText(sko.stock, sko.stockLabel))).joinToString(LIST_SEPARATOR),
                 )
             }
         }

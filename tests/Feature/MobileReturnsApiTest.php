@@ -11,6 +11,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Inventory\Location\StoreLocation;
@@ -25,6 +26,7 @@ use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
@@ -170,9 +172,41 @@ test('mobile returns list filters by state and reference, newest first, with the
             'all'        => (int) $stats->number_return_delivery_notes,
         ]);
 
-    getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['state' => 'processed', 'sort' => 'reference'])
+    getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['state' => 'processed', 'sort' => 'date'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['state', 'sort']);
+});
+
+test('mobile returns list sorts by reference and customer name and filters by the received day from and to', function () {
+    [$first]  = mobileReturnFixture($this);
+    [$second] = mobileReturnFixture($this);
+    $prefix   = 'MRS'.Str::upper(Str::random(5));
+    $zoe      = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $amy      = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $zoe->update(['name' => 'Zoe '.$prefix]);
+    $amy->update(['name' => 'Amy '.$prefix]);
+    $first->update(['reference' => $prefix.'-A', 'customer_id' => $zoe->id, 'created_at' => '2026-07-01 12:00:00']);
+    $second->update(['reference' => $prefix.'-B', 'customer_id' => $amy->id, 'created_at' => '2026-07-03 12:00:00']);
+
+    mobileReturnsUser($this);
+    $ids = fn (array $query) => collect(getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['q' => $prefix, ...$query])->assertOk()->json('data'))->pluck('id')->all();
+
+    expect($ids([]))->toBe([$second->id, $first->id])
+        ->and($ids(['sort' => 'reference']))->toBe([$first->id, $second->id])
+        ->and($ids(['sort' => '-reference']))->toBe([$second->id, $first->id])
+        ->and($ids(['sort' => 'customer']))->toBe([$second->id, $first->id])
+        ->and($ids(['sort' => '-customer']))->toBe([$first->id, $second->id])
+        ->and($ids(['from' => '2026-07-01', 'to' => '2026-07-03']))->toBe([$second->id, $first->id])
+        ->and($ids(['from' => '2026-07-02']))->toBe([$second->id])
+        ->and($ids(['to' => '2026-07-02']))->toBe([$first->id]);
+
+    getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['from' => 'tomorrow', 'to' => '01-07-2026'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['from', 'to']);
+
+    getGoodsOut('grp.api.mobile.warehouses.returns', $this->warehouse->id, ['from' => '2026-07-03', 'to' => '2026-07-01'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['to']);
 });
 
 test('mobile return detail lists the items with this warehouse locations and is not found from another warehouse', function () {

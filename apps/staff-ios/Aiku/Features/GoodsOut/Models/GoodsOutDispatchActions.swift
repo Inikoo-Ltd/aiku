@@ -226,6 +226,9 @@ extension GoodsOutStore {
             return nil
         }()
         let sko = result.item?.code.flatMap(GoodsOutMapper.nonEmpty) ?? code
+        if let status = result.status, status != "packed" {
+            scanMissed()
+        }
         switch result.status {
         case "packed":
             return .packed(code: sko, message: message, lineDone: (result.item?.quantityToPack ?? 1) <= 0)

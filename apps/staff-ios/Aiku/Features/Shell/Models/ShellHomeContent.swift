@@ -102,7 +102,11 @@ enum ShellHomeContent {
         return ClockingFormat.duration(week.working(now: clocking.now))
     }
 
-    static func context(hasWarehouseAccess: Bool, organisation: String, warehouseName: String) -> String {
-        "\(organisation) · \(hasWarehouseAccess ? warehouseName : staffWorkplace)"
+    static func context(hasWarehouseAccess: Bool, organisation: String, warehouseName: String) -> String? {
+        guard !organisation.isEmpty else { return nil }
+        if hasWarehouseAccess {
+            return warehouseName.isEmpty ? nil : "\(organisation) · \(warehouseName)"
+        }
+        return "\(organisation) · \(staffWorkplace)"
     }
 }

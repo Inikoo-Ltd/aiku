@@ -49,6 +49,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/vue"
 import { ctrans } from "@/Composables/useTrans"
 import PingIcon from "../Utils/PingIcon.vue"
+import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
+import { useScrollArrows } from "@/Composables/useScrollArrows"
 library.add(falClock, falPencil, 
 	faListUl,
 	faShapes,
@@ -106,6 +108,7 @@ const onChangeTab = async (tabSlug: string) => {
 }
 
 const leftTabsElement = ref<HTMLElement | null>(null)
+const { canScrollLeft, canScrollRight, scrollBy } = useScrollArrows(leftTabsElement)
 
 const scrollActiveTabIntoView = () => {
 	const scroller = leftTabsElement.value
@@ -285,7 +288,8 @@ const placeMobileTabOptions = () => {
 		<div class="hidden sm:block">
 			<div class="border-b border-gray-200 flex">
 				<!-- Left section -->
-				<nav ref="leftTabsElement" class="-mb-px flex min-w-0 flex-1 gap-x-6 ml-4 pr-4 overflow-x-auto [scrollbar-width:thin]" aria-label="Tabs">
+				<div class="relative isolate -mb-px flex min-w-0 flex-1 ml-4">
+				<nav ref="leftTabsElement" class="flex min-w-0 flex-1 gap-x-6 pr-4 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Tabs">
 					<template v-for="(tab, tabSlug) in navigation" :key="tabSlug">
 						<button
 							v-if="tab.align !== 'right'"
@@ -363,6 +367,9 @@ const placeMobileTabOptions = () => {
 						</button>
 					</template>
 				</nav>
+				<ScrollFadeArrow direction="left" :visible="canScrollLeft" @click="scrollBy(-1)" />
+				<ScrollFadeArrow direction="right" :visible="canScrollRight" @click="scrollBy(1)" />
+				</div>
 
 				<!-- Right section -->
 				<nav class="flex shrink-0 flex-row-reverse mr-4" aria-label="Secondary Tabs">

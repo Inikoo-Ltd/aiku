@@ -275,3 +275,71 @@ struct AuthAPITests {
         #expect(profile.employee?.first?.jobTitle == "Picker")
     }
 }
+
+private final class MemoryProfileCache: ProfileCaching, @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: MobileProfileResponse?
+
+    init(_ stored: MobileProfileResponse? = nil) {
+        self.stored = stored
+    }
+
+    var current: MobileProfileResponse? { lock.withLock { stored } }
+
+    func load() -> MobileProfileResponse? { lock.withLock { stored } }
+    func save(_ profile: MobileProfileResponse) throws { lock.withLock { stored = profile } }
+    func clear() { lock.withLock { stored = nil } }
+}
+
+@MainActor
+struct ProfileCacheTests {
+    @Test func aSignedInLaunchShowsTheLastProfileBeforeAikuAnswersLikeAndroid() {
+        let cache = MemoryProfileCache(sampleMobileProfile)
+
+        let store = AuthStore(service: makeService(log: CallLog(), login: .failure(.offline)), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: cache)
+
+        #expect(store.mobileProfile == sampleMobileProfile)
+        #expect(store.userID == 214)
+    }
+
+    @Test func aFreshProfileIsKeptAndAFailedRefreshKeepsTheLastOne() async {
+        let cache = MemoryProfileCache()
+        let store = AuthStore(service: makeService(log: CallLog(), login: .failure(.offline)), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: cache)
+
+        await store.refreshProfile()
+        #expect(cache.current == sampleMobileProfile)
+
+        let offline = AuthStore(service: makeService(log: CallLog(), login: .failure(.offline), profile: .failure(.offline)), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: cache)
+        await offline.refreshProfile()
+        #expect(offline.mobileProfile == sampleMobileProfile)
+        #expect(offline.lastProfileError != nil)
+    }
+
+    @Test func signingOutOrSigningInAsSomeoneElseForgetsTheLastProfile() async throws {
+        let cache = MemoryProfileCache(sampleMobileProfile)
+        let store = AuthStore(service: makeService(log: CallLog(), login: .success(MobileLoginResponse(token: "1|new", expiresAt: nil, user: sampleProfile))), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: cache)
+
+        try await store.signIn(username: "alex.morgan", password: "secret", remember: true)
+        #expect(store.mobileProfile == nil)
+        #expect(cache.current == nil)
+
+        try cache.save(sampleMobileProfile)
+        store.endSession()
+        #expect(cache.current == nil)
+
+        let signedOut = AuthStore(service: makeService(log: CallLog(), login: .failure(.offline)), tokens: InMemoryTokenStore(), deviceName: "iPhone", profileCache: MemoryProfileCache(sampleMobileProfile))
+        #expect(signedOut.mobileProfile == nil)
+    }
+
+    @Test func theProfileFileRoundTrips() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "profile-cache-\(UUID().uuidString)")
+        let cache = FileProfileCache(fileURL: folder.appending(path: "profile.json"))
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        #expect(cache.load() == nil)
+        try cache.save(sampleMobileProfile)
+        #expect(cache.load() == sampleMobileProfile)
+        cache.clear()
+        #expect(cache.load() == nil)
+    }
+}

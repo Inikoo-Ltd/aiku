@@ -8,7 +8,6 @@ struct FulfilmentPalletsView: View {
     @State private var feed = StoredPalletsFeed()
     @State private var warehouseStore = WarehouseStore.shared
     @State private var lookingUpCode: String?
-    @State private var scanMisses = 0
 
     @State private var appearance = 0
 
@@ -63,7 +62,6 @@ struct FulfilmentPalletsView: View {
         .hardwareScanner { code in
             Task { await openScanned(code) }
         }
-        .scanMissFeedback(scanMisses)
     }
 
     private func openScanned(_ code: String) async {
@@ -80,7 +78,7 @@ struct FulfilmentPalletsView: View {
             if result.scanType == .pallet, let pallet = result.pallet {
                 router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference))
             } else {
-                scanMisses += 1
+                ScanFeedback.shared.rejected()
                 toasts.show("\(scanned) is not a pallet in this warehouse", tone: .info)
             }
         } catch {

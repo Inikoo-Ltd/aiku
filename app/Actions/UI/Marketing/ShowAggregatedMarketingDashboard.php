@@ -12,9 +12,6 @@ use App\Actions\CRM\TrafficSource\GetAggregatedMarketingOverview;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Dashboards\WithMarketingPeriod;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
-use App\Actions\Web\StaticWebsite\UI\IndexStaticWebsites;
-use App\Enums\UI\Marketing\AggregatedMarketingDashboardTabsEnum;
-use App\Http\Resources\Web\StaticWebsitesResource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
@@ -53,7 +50,7 @@ class ShowAggregatedMarketingDashboard extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
     {
         $this->parent = $organisation;
-        $this->initialisation($organisation, $request)->withTab(AggregatedMarketingDashboardTabsEnum::values());
+        $this->initialisation($organisation, $request);
         $this->setMarketingPeriod($request->user()->settings);
 
         return $request;
@@ -62,7 +59,7 @@ class ShowAggregatedMarketingDashboard extends OrgAction
     public function inGroup(ActionRequest $request): ActionRequest
     {
         $this->parent = group();
-        $this->initialisationFromGroup(group(), $request)->withTab(AggregatedMarketingDashboardTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request);
         $this->setMarketingPeriod($request->user()->settings);
 
         return $request;
@@ -85,10 +82,6 @@ class ShowAggregatedMarketingDashboard extends OrgAction
             ]
         );
 
-        $infoWebsites = fn () => StaticWebsitesResource::collection(
-            IndexStaticWebsites::make()->handle($this->group, AggregatedMarketingDashboardTabsEnum::INFO_WEBSITES->value)
-        );
-
         return Inertia::render(
             'Org/Marketing/AggregatedMarketingDashboard',
             [
@@ -103,22 +96,12 @@ class ShowAggregatedMarketingDashboard extends OrgAction
                 ],
                 'intervals'   => $this->intervalsProp($userSettings),
                 'settings'    => [],
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => AggregatedMarketingDashboardTabsEnum::navigation(),
-                ],
                 /* The roll-up scans every shop's invoices, orders and customers over the period, which
                    is the slow part of the screen. Deferred, so the page head and the period picker
                    arrive immediately and the figures land when they are ready. */
-                AggregatedMarketingDashboardTabsEnum::OVERVIEW->value => $this->tab == AggregatedMarketingDashboardTabsEnum::OVERVIEW->value
-                    ? Inertia::defer($overview)
-                    : Inertia::optional($overview),
-
-                AggregatedMarketingDashboardTabsEnum::INFO_WEBSITES->value => $this->tab == AggregatedMarketingDashboardTabsEnum::INFO_WEBSITES->value
-                    ? $infoWebsites
-                    : Inertia::optional($infoWebsites),
+                'overview'    => Inertia::defer($overview),
             ]
-        )->table(IndexStaticWebsites::make()->tableStructure(prefix: AggregatedMarketingDashboardTabsEnum::INFO_WEBSITES->value));
+        );
     }
 
     public function getBreadcrumbs(bool $isGroup): array

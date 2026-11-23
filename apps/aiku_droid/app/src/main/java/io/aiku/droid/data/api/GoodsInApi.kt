@@ -9,6 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonElement
+import java.time.LocalDate
 
 object LenientIntOrNull : KSerializer<Int?> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("io.aiku.droid.LenientIntOrNull", PrimitiveKind.INT)
@@ -107,8 +108,11 @@ enum class DispatchedBucket(val key: String) {
 
 enum class StockDeliverySort(val key: String) {
     Newest("-date"),
-    DispatchedAt("-dispatched_at"),
+    Oldest("date"),
     Reference("reference"),
+    Supplier("supplier"),
+    ExpectedDate("estimated_receiving_date"),
+    DispatchedAt("-dispatched_at"),
     Items("-number_items"),
 }
 
@@ -117,6 +121,8 @@ data class StockDeliveryQuery(
     val source: StockDeliverySource? = null,
     val search: String? = null,
     val dispatched: DispatchedBucket? = null,
+    val from: LocalDate? = null,
+    val to: LocalDate? = null,
     val sort: StockDeliverySort? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
@@ -427,9 +433,18 @@ object PutType {
     const val DAMAGED = "damaged"
 }
 
+enum class ReturnSort(val key: String) {
+    OldestReceived("created_at"),
+    Reference("reference"),
+    Customer("customer"),
+}
+
 data class ReturnQuery(
     val state: ReturnStateFilter = ReturnStateFilter.All,
     val search: String? = null,
+    val from: LocalDate? = null,
+    val to: LocalDate? = null,
+    val sort: ReturnSort? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
 ) {

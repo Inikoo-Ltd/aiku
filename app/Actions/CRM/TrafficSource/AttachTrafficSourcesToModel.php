@@ -211,12 +211,12 @@ class AttachTrafficSourcesToModel
     public function resolveCampaignId(TrafficSource $trafficSource, string $reference): ?int
     {
         try {
-            $campaignId = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
+            $campaign = TrafficSourceCampaign::where('traffic_source_id', $trafficSource->id)
                 ->where('reference', $reference)
-                ->value('id');
+                ->first(['id', 'merged_into_id']);
 
-            if ($campaignId) {
-                return $campaignId;
+            if ($campaign) {
+                return $campaign->merged_into_id ?? $campaign->id;
             }
 
             /* Touch strings originate in client-controlled cookies, so auto-creation is limited to

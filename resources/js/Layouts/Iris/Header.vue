@@ -111,7 +111,7 @@ onErrorCaptured((error, _instance, info) => {
              :colorThemed="colorThemed" class="hidden md:block" />
 
   <!-- Section: Mobile Header -->
-  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50">
+  <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)" class="sticky top-0 z-50" data-iris-header>
       <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu?.product_categories ?? []" :screenType="screenType" />
   </div>
 

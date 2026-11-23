@@ -60,6 +60,7 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.QrCode
 import io.aiku.droid.ui.components.qrMatrixOf
@@ -124,6 +125,7 @@ fun ClockingScreen() {
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = { clocking.refresh(isPull = true) }),
     ) {
         state.statusProblem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = clocking::refresh) }
+        state.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
         when {
             status == null && state.statusProblem == null -> {
                 SkeletonStatCard()

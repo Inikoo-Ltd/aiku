@@ -71,7 +71,7 @@ enum ShellMenuCatalog {
         ShellMenuGroup(id: "inventory", title: "Inventory", icon: .inventory, items: [
             ShellMenuItem(id: "inventory.dashboard", title: "Dashboard", icon: .dashboard, requirement: .inventory, link: .inventory(.dashboard)),
             ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .skoFamilies, requirement: .inventory, link: .inventory(.families)),
-            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, badge: .pill(Chip("17 low", .warn)), requirement: .inventory, link: .inventory(.skos)),
+            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, requirement: .inventory, link: .inventory(.skos)),
             ShellMenuItem(id: "inventory.pallets", title: "Stored pallets", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.pallets)),
             ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems))
         ]),
@@ -82,7 +82,7 @@ enum ShellMenuCatalog {
         ]),
         ShellMenuGroup(id: "goodsIn", title: "Goods in", icon: .goodsIn, items: [
             ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .backlog, requirement: .goodsIn, link: .goodsIn(.backlog)),
-            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, badge: .pill(Chip("2 received", .success)), requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
+            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
             ShellMenuItem(id: "goodsIn.fulfilmentDeliveries", title: "Fulfilment deliveries", icon: .stockDelivery, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.deliveries)),
             ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .returns, link: .goodsIn(.returns))
         ]),
@@ -100,12 +100,15 @@ enum ShellMenuCatalog {
         ])
     ]
 
-    static func groups(for modules: ModuleAccess, goodsOutUnassigned: Int = 0, clocking: ShellMenuClocking? = nil) -> [ShellMenuGroup] {
+    static func groups(for modules: ModuleAccess, goodsOutUnassigned: Int = 0, goodsInReceived: Int = 0, clocking: ShellMenuClocking? = nil) -> [ShellMenuGroup] {
         allGroups.compactMap { group in
             let visible = group.items.filter { $0.requirement.isMet(by: modules) }.map { item in
                 var item = item
                 if item.id == "goodsOut.backlog", goodsOutUnassigned > 0 {
                     item.badge = .pill(Chip("\(goodsOutUnassigned) unassigned", .warn))
+                }
+                if item.id == "goodsIn.stockDeliveries", goodsInReceived > 0 {
+                    item.badge = .pill(Chip("\(goodsInReceived) received", .success))
                 }
                 if item.id == "clocking.clocking", let clocking {
                     item.subtitle = clocking.subtitle

@@ -17,6 +17,7 @@ final class WorkBadgesStore {
 
     var myWorkCount: Int { Self.visible(badges.myWork) }
     var goodsOutUnassignedCount: Int { Self.visible(badges.goodsOutUnassigned) }
+    var goodsInReceivedCount: Int { Self.visible(badges.goodsInReceived) }
 
     static func visible(_ count: Int?) -> Int { max(count ?? 0, 0) }
 

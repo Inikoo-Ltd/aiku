@@ -152,7 +152,6 @@ private struct StoredItemAuditScreen: View {
         .hardwareScanner(isEnabled: canCount && counting == nil && !isAddingItem && !isScanning) { code in
             Task { await live.scan(code) }
         }
-        .scanMissFeedback(live.scanMisses)
         .fullScreenCover(isPresented: $isScanning) {
             FulfilmentCodeCamera(title: "Scan to count", onClose: { isScanning = false }) { code in
                 isScanning = false

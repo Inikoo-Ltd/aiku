@@ -122,6 +122,31 @@ test('mobile pallet deliveries list the active ones of this warehouse, filter by
     mobileFulInboundGet('pallet_deliveries.index', ['warehouse' => $this->warehouse->id])->assertForbidden()->assertJsonStructure(['message']);
 });
 
+test('mobile pallet deliveries filter by the booked in day from and to and refuse a bad range', function () {
+    mobileFulInboundUser($this);
+    $customer = mobileFulInboundCustomer($this->fulfilment);
+    $early    = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse));
+    $late     = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse));
+    $notYet   = mobileFulInboundConfirmed(mobileFulInboundDelivery($customer, $this->warehouse));
+    DB::table('pallet_deliveries')->where('id', $early->id)->update(['booked_in_at' => '2026-06-01 12:00:00']);
+    DB::table('pallet_deliveries')->where('id', $late->id)->update(['booked_in_at' => '2026-06-03 12:00:00']);
+
+    $ids = fn (array $query) => collect(mobileFulInboundGet('pallet_deliveries.index', ['warehouse' => $this->warehouse->id], ['q' => $customer->customer->name, 'sort' => 'booked_in_at', ...$query])->assertOk()->json('data'))->pluck('id')->all();
+
+    expect($ids([]))->toBe([$early->id, $late->id, $notYet->id])
+        ->and($ids(['from' => '2026-06-01', 'to' => '2026-06-03']))->toBe([$early->id, $late->id])
+        ->and($ids(['from' => '2026-06-02']))->toBe([$late->id])
+        ->and($ids(['to' => '2026-06-02']))->toBe([$early->id]);
+
+    mobileFulInboundGet('pallet_deliveries.index', ['warehouse' => $this->warehouse->id], ['from' => '2026/06/01', 'sort' => 'customer'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['from', 'sort']);
+
+    mobileFulInboundGet('pallet_deliveries.index', ['warehouse' => $this->warehouse->id], ['from' => '2026-06-03', 'to' => '2026-06-01'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['to']);
+});
+
 test('mobile pallet delivery detail sends no money, orders pallets to book in first and lists actions by state and right', function () {
     $customer = mobileFulInboundCustomer($this->fulfilment);
     $delivery = mobileFulInboundDelivery($customer, $this->warehouse, [['customer_reference' => 'MFI-C-'.Str::random(4)], ['type' => PalletTypeEnum::BOX->value], ['notes' => 'Fragile']]);

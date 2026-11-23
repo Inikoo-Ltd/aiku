@@ -191,6 +191,7 @@ Route::middleware(
             Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'inGroup'])->name('channels.show');
             Route::get('/social-media', [App\Actions\UI\Marketing\ShowSocialMediaDashboard::class, 'inGroup'])->name('social_media.dashboard');
             Route::get('/social-media/export', [App\Actions\UI\Marketing\ExportSocialMediaPosts::class, 'inGroup'])->name('social_media.export');
+            Route::get('/info-websites', App\Actions\Web\StaticWebsite\UI\IndexStaticWebsites::class)->name('info_websites.index');
             Route::prefix('info-websites/{staticWebsite}')->name('info_websites.')->scopeBindings()->group(function () {
                 Route::get('', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsite::class)->name('show');
                 Route::get('webpages', App\Actions\Web\StaticWebsite\UI\IndexStaticWebpages::class)->name('webpages.index');

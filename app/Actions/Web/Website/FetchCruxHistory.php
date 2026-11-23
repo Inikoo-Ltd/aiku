@@ -127,7 +127,7 @@ class FetchCruxHistory
     /**
      * @return array<string, mixed>|string|null the record, the error message, or null when Google has no data
      */
-    private function query(string $scope, string $url, ?string $formFactor): array|string|null
+    public function query(string $scope, string $url, ?string $formFactor): array|string|null
     {
         try {
             $response = Http::timeout(15)
@@ -157,18 +157,38 @@ class FetchCruxHistory
      */
     private function rows(Website $website, ?Webpage $webpage, string $url, string $formFactor, array $record): array
     {
-        $rows = [];
+        return array_map(fn (array $period) => [
+            'website_id'   => $website->id,
+            'webpage_id'   => $webpage?->id,
+            'url'          => $url,
+            'form_factor'  => $formFactor,
+            'period_start' => $period['period_start'],
+            'period_end'   => $period['period_end'],
+            'created_at'   => now(),
+            'updated_at'   => now(),
+            'lcp_p75'      => $period['lcp'],
+            'inp_p75'      => $period['inp'],
+            'cls_p75'      => $period['cls'],
+            'fcp_p75'      => $period['fcp'],
+            'ttfb_p75'     => $period['ttfb'],
+            'histograms'   => json_encode((object)$period['histograms']),
+        ], $this->periods($record));
+    }
 
-        foreach (Arr::get($record, 'collectionPeriods', []) as $index => $period) {
-            $row = [
-                'website_id'   => $website->id,
-                'webpage_id'   => $webpage?->id,
-                'url'          => $url,
-                'form_factor'  => $formFactor,
-                'period_start' => $this->date(Arr::get($period, 'firstDate')),
-                'period_end'   => $this->date(Arr::get($period, 'lastDate')),
-                'created_at'   => now(),
-                'updated_at'   => now(),
+    /**
+     * The 28 day windows of one Chrome UX Report record, each with the p75 of every metric and its
+     * histogram densities. A window without any metric is left out.
+     *
+     * @return array<int, array{period_start: string, period_end: string, lcp: int|null, inp: int|null, cls: float|null, fcp: int|null, ttfb: int|null, histograms: array<string, array<int, float>>}>
+     */
+    public function periods(array $record): array
+    {
+        $periods = [];
+
+        foreach (Arr::get($record, 'collectionPeriods', []) as $index => $collectionPeriod) {
+            $period = [
+                'period_start' => $this->date(Arr::get($collectionPeriod, 'firstDate')),
+                'period_end'   => $this->date(Arr::get($collectionPeriod, 'lastDate')),
             ];
 
             $histograms = [];
@@ -176,7 +196,7 @@ class FetchCruxHistory
             foreach (self::METRICS as $key => $names) {
                 $metric = collect($names)->map(fn ($name) => Arr::get($record, "metrics.$name"))->filter()->first();
 
-                $row[$key.'_p75'] = $this->number(Arr::get($metric, "percentilesTimeseries.p75s.$index"), $key);
+                $period[$key] = $this->number(Arr::get($metric, "percentilesTimeseries.p75s.$index"), $key);
 
                 $densities = collect(Arr::get($metric, 'histogramTimeseries', []))->map(fn ($bin) => Arr::get($bin, "densities.$index"));
 
@@ -185,14 +205,14 @@ class FetchCruxHistory
                 }
             }
 
-            if (collect(array_keys(self::METRICS))->every(fn ($key) => $row[$key.'_p75'] === null)) {
+            if (collect(array_keys(self::METRICS))->every(fn ($key) => $period[$key] === null)) {
                 continue;
             }
 
-            $rows[] = $row + ['histograms' => json_encode((object)$histograms)];
+            $periods[] = $period + ['histograms' => $histograms];
         }
 
-        return $rows;
+        return $periods;
     }
 
     private function number(mixed $value, string $metric): int|float|null

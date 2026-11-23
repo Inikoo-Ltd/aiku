@@ -75,7 +75,7 @@ data class SkoLocationLine(val code: String, val quantity: String?, val isNegati
 internal fun OrgStockRow.locationLine(): SkoLocationLine? {
     val place = location ?: return null
     val quantity = locationQuantity
-    return SkoLocationLine(code = place.code, quantity = quantity?.let { stockText(abs(it)) }, isNegative = quantity != null && quantity < 0)
+    return SkoLocationLine(code = place.code, quantity = quantity?.let { stockText(abs(it), locationQuantityLabel?.trimStart('-')) }, isNegative = quantity != null && quantity < 0)
 }
 
 internal fun OrgStockRow.listRoute(): Any {

@@ -97,4 +97,5 @@
     <string name="fulfilment_inbound_now_in">Now in %1$s</string>
     <string name="fulfilment_inbound_move_to">Move to %1$s</string>
     <string name="fulfilment_inbound_incident_footnote">Saved as the incident report with your name and today’s date. The pallet’s location is cleared.</string>
+    <string name="fulfilment_inbound_filter_title">Filter deliveries</string>
 </resources>

@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Augšupielādēt slimības lapu</string>
     <string name="clocking_load_failed_title">Neizdevās ielādēt jūsu pierakstu</string>
     <string name="clocking_load_more_failed">Neizdevās ielādēt vairāk</string>
-    <string name="clocking_load_offline_body">Jūs esat bezsaistē. Izveidojiet savienojumu ar internetu un mēģiniet vēlreiz.</string>
+    <string name="clocking_load_offline_body">Nav savienojuma. Pārbaudiet Wi-Fi un mēģiniet vēlreiz.</string>
     <string name="clocking_load_server_body">Aiku neatbildēja. Mēģiniet vēlreiz pēc brīža.</string>
     <string name="clocking_location_accuracy">%1$s · precizitāte %2$d m</string>
     <string name="clocking_location_detect">Noteikt manu atrašanās vietu</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Izvēlieties darba laiku</string>
     <string name="dashboard_abnormal">Neparasts</string>
     <string name="dashboard_below_minimum">Zem minimuma</string>
-    <string name="dashboard_clocking">Pieraksts</string>
     <string name="dashboard_dispatched">Nosūtīts</string>
     <string name="dashboard_dispatched_compared">%1$s šodien · %2$s vakar līdz šim laikam</string>
     <string name="dashboard_dispatched_count">%1$s šodien</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Mēģināt vēlreiz</string>
     <string name="login_username">Lietotājvārds</string>
     <string name="login_username_required">Ievadiet lietotājvārdu.</string>
-    <string name="menu_all_staff">Viss personāls</string>
     <string name="menu_appearance">Izskats</string>
     <string name="menu_appearance_subtitle">Motīva krāsa · gaišs vai tumšs</string>
     <string name="menu_change">Mainīt</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Meklēt SKO, vietas vai piegādes pavadzīmes</string>
     <string name="menu_search_placeholder">Meklēt SKO, vietu, piegādes pavadzīmi</string>
     <string name="menu_timesheets">Darba laika uzskaite</string>
-    <string name="module_clocking">Pieraksts un personāls</string>
+    <string name="module_clocking">Laika uzskaite un apmeklējums</string>
     <string name="module_goods_in">Preču pieņemšana</string>
     <string name="module_goods_out">Preču izsniegšana</string>
     <string name="module_inventory">Inventārs</string>
@@ -2026,6 +2024,11 @@
         <item quantity="zero">%d atlasīti</item>
         <item quantity="one">%d atlasīts</item>
         <item quantity="other">%d atlasīti</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="zero">Rādīt %d rezultātus</item>
+        <item quantity="one">Rādīt %d rezultātu</item>
+        <item quantity="other">Rādīt %d rezultātus</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="zero">Iegrāmatotas: %1$d no %2$d</item>
@@ -2532,4 +2535,32 @@
         <item quantity="one">%d darbība</item>
         <item quantity="other">%d darbības</item>
     </plurals>
+    <string name="record_date_expected">Gaidāms</string>
+    <string name="record_date_dispatched">Nosūtīts</string>
+    <string name="record_date_received">Saņemts</string>
+    <string name="record_date_booked_in">Iegrāmatots</string>
+    <string name="record_date_started">Sākts</string>
+    <string name="record_date_created">Izveidots</string>
+    <string name="filter_and_sort">Filtrēt un kārtot</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">No</string>
+    <string name="filter_date_to">Līdz</string>
+    <string name="filter_date_any">Jebkurš datums</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">No %1$s</string>
+    <string name="filter_date_until">Līdz %1$s</string>
+    <string name="filter_sort_oldest">Vecākās vispirms</string>
+    <string name="filter_show_results_unknown">Rādīt rezultātus</string>
+    <string name="goodsout_extra_sessions_search">Meklēt sesijas</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtrēt komplektēšanas sesijas</string>
+    <string name="goodsout_extra_sort_finished">Pabeigts</string>
+    <string name="goodsin_sort_supplier">Piegādātājs</string>
+    <string name="goodsin_sort_expected_date">Gaidāmais datums</string>
+    <string name="goodsin_returns_filter_title">Filtrēt atgriezumus</string>
+    <string name="goodsin_returns_date_received">Saņemšanas datums</string>
+    <string name="goodsin_returns_sort_newest">Pēdējie saņemtie vispirms</string>
+    <string name="goodsin_returns_sort_oldest">Pirmie saņemtie vispirms</string>
+    <string name="fulfilment_inbound_filter_title">Filtrēt piegādes</string>
+    <string name="cache_saved_rows_only">Saglabāta kopija: iekļautas tikai iepriekš ielādētās rindas</string>
+    <string name="filter_online_only">%1$s (tikai tiešsaistē)</string>
 </resources>

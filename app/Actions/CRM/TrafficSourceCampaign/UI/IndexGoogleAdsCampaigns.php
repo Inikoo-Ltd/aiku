@@ -56,6 +56,7 @@ class IndexGoogleAdsCampaigns extends OrgAction
             ->join('traffic_sources', 'traffic_sources.id', '=', 'traffic_source_campaigns.traffic_source_id')
             ->where('traffic_sources.shop_id', $shop->id)
             ->where('traffic_sources.type', TrafficSourcesTypeEnum::GOOGLE_ADS->value)
+            ->whereNull('traffic_source_campaigns.merged_into_id')
             ->leftJoinSub($this->periodMetrics(), 'metrics', 'metrics.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
             ->leftJoinSub($this->periodCosts(), 'costs', 'costs.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
             ->leftJoinSub($this->periodConversions(), 'conversions', 'conversions.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');

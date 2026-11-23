@@ -18,6 +18,7 @@ final class GoodsOutStore {
     @ObservationIgnored var now: () -> Date
 
     private(set) var source: GoodsOutSource = .sample
+    private(set) var scanMisses = 0
     private(set) var userID: Int?
     private(set) var warehouseID: Int?
     private(set) var listRows: [GoodsOutDeliveryNote] = []
@@ -65,6 +66,11 @@ final class GoodsOutStore {
     }
 
     var isRemote: Bool { source == .remote }
+
+    func scanMissed() {
+        scanMisses += 1
+        ScanFeedback.shared.rejected()
+    }
 
     func contains(_ reference: String) -> Bool {
         notes.contains { $0.reference == reference } || listRows.contains { $0.reference == reference }

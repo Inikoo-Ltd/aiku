@@ -46,7 +46,30 @@ class GetCustomerClaimForm
         DeliveryNoteItemReplacementReasonEnum::POOR_PACKAGING,
     ];
 
+    public const array LISTED_REASONS = [
+        DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT,
+        DeliveryNoteItemReplacementReasonEnum::MISSING_FROM_PARCEL,
+        DeliveryNoteItemReplacementReasonEnum::WRONG_ITEM_SENT,
+        DeliveryNoteItemReplacementReasonEnum::FAULTY_PRODUCT,
+    ];
+
     public const int MAX_PHOTOS_PER_LINE = 4;
+
+    /**
+     * Reasons in the customer's words. Lost parcels are claimed for the whole parcel, and poor
+     * packaging is ours to judge, so neither is listed per item.
+     */
+    public static function reasonLabel(DeliveryNoteItemReplacementReasonEnum $reason, ?string $locale): string
+    {
+        return match ($reason) {
+            DeliveryNoteItemReplacementReasonEnum::DAMAGED_IN_TRANSIT => __('Arrived broken or damaged', [], $locale),
+            DeliveryNoteItemReplacementReasonEnum::MISSING_FROM_PARCEL => __('Missing from the parcel', [], $locale),
+            DeliveryNoteItemReplacementReasonEnum::WRONG_ITEM_SENT    => __('Wrong item sent', [], $locale),
+            DeliveryNoteItemReplacementReasonEnum::FAULTY_PRODUCT     => __('Faulty or does not work', [], $locale),
+            DeliveryNoteItemReplacementReasonEnum::LOST_IN_TRANSIT    => __('The parcel never arrived', [], $locale),
+            default                                                   => __($reason->label(), [], $locale),
+        };
+    }
 
     /**
      * @return array<string, mixed>|null null when the order is not one of the customer's dispatched orders
@@ -76,6 +99,7 @@ class GetCustomerClaimForm
                 'code'           => $line['code'],
                 'name'           => $line['name'],
                 'claimable'      => (int) $line['claimable'],
+                'unit_value'     => $line['dispatched'] > 0 ? round(($case['invoiced_net'][$line['transaction_id']] ?? 0) / $line['dispatched'] * ($case['tax_ratio'] ?? 1), 2) : 0.0,
                 'can_replace'    => (float) ($products->get($transactions->get($line['transaction_id']))?->available_quantity ?? 0) >= $line['claimable'],
             ])
             ->values()
@@ -88,9 +112,9 @@ class GetCustomerClaimForm
             'lines'           => $lines,
             'reasons'         => array_map(fn (DeliveryNoteItemReplacementReasonEnum $reason) => [
                 'value'        => $reason->value,
-                'label'        => __($reason->label(), [], $locale),
+                'label'        => self::reasonLabel($reason, $locale),
                 'needs_photos' => in_array($reason, self::PHOTO_REASONS, true),
-            ], self::CUSTOMER_REASONS),
+            ], self::LISTED_REASONS),
             'outcomes'        => self::outcomesFor($order, !empty($case['invoiced'])),
             'currency'        => $case['currency'],
             'max_photos'      => self::MAX_PHOTOS_PER_LINE,

@@ -58,6 +58,7 @@ enum class DeliveryNoteSort(val key: String) {
     MostItems("-number_items"),
     Heaviest("-effective_weight"),
     Customer("customer_name"),
+    Reference("reference"),
 }
 
 data class DeliveryNoteQuery(

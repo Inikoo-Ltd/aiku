@@ -5,12 +5,15 @@ import io.aiku.droid.data.api.ListMeta
 import io.aiku.droid.data.api.PalletDeliveryPage
 import io.aiku.droid.data.api.PalletDeliveryQuery
 import io.aiku.droid.data.api.PalletDeliveryRow
+import io.aiku.droid.data.api.PalletDeliverySort
 import io.aiku.droid.data.api.PalletDeliveryStateFilter
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.ScannedPallet
 import io.aiku.droid.data.api.ScannedPalletDelivery
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.ui.components.DateRange
+import io.aiku.droid.ui.components.ListFilter
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
 import io.aiku.droid.ui.inventory.StockScanOutcome
@@ -29,6 +32,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PalletDeliveriesViewModelTest {
@@ -189,5 +193,26 @@ class PalletDeliveriesViewModelTest {
 
     private companion object {
         const val SEARCH_WAIT_MILLIS = 301L
+    }
+
+    @Test
+    fun `the booked-in range and the sort reach the query and reload from page 1`() {
+        val deliveries = viewModel()
+        deliveries.onStart()
+        deliveries.loadMore()
+        val range = DateRange(from = LocalDate.of(2026, 11, 18))
+
+        deliveries.applyFilter(ListFilter(dates = range, sort = PalletDeliverySort.BookedIn))
+
+        assertEquals(
+            PalletDeliveryQuery(from = LocalDate.of(2026, 11, 18), sort = PalletDeliverySort.BookedIn, perPage = 50),
+            api.deliveryQueries.last(),
+        )
+        assertEquals(listOf(1L, 2L), deliveries.state.value.list.rows.map { it.id })
+        assertEquals(2, deliveries.state.value.filter.activeCount)
+
+        deliveries.clearFilters()
+
+        assertEquals(PalletDeliveryQuery(perPage = 50), api.deliveryQueries.last())
     }
 }

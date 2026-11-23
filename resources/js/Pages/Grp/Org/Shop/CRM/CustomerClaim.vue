@@ -28,6 +28,7 @@ type Claim = {
     resolution: string
     resolution_label: string
     amount: number
+    value: number
     currency_code: string | null
     comment: string | null
     created_at: string
@@ -140,7 +141,8 @@ const stateClass: Record<string, string> = {
                 <span class="rounded border px-2 py-0.5 text-xs font-semibold" :class="stateClass[claim.state]">{{ claim.state_label }}</span>
                 <span v-if="claim.kind !== 'items'" class="rounded border px-2 py-0.5 text-xs text-gray-600">{{ claim.kind_label }}</span>
                 <span class="text-gray-600">{{ ctrans("Asked for") }}: <span class="font-semibold text-gray-800">{{ claim.resolution_label }}</span></span>
-                <span v-if="claim.resolution === 'refund_to_balance'" class="text-gray-600">{{ money(claim.amount) }}</span>
+                <span v-if="claim.resolution === 'refund_to_balance' && claim.amount" class="text-gray-600">{{ money(claim.amount) }}</span>
+                <span v-if="claim.value" class="text-gray-600">{{ ctrans("Value") }}: <span class="font-semibold text-gray-800">{{ money(claim.value) }}</span></span>
                 <span v-if="claim.source === 'merlin'" class="text-gray-500"><FontAwesomeIcon :icon="faHatWizard" fixed-width aria-hidden="true" /> {{ ctrans("Made in Merlin") }}</span>
             </div>
 
@@ -230,9 +232,10 @@ const stateClass: Record<string, string> = {
                 <ul v-else class="space-y-1">
                     <li v-for="other in claim.earlier" :key="other.reference" class="flex justify-between gap-2 text-xs">
                         <Link :href="route(other.route.name, other.route.parameters)" class="secondaryLink whitespace-nowrap">{{ other.reference }}</Link>
-                        <span class="text-gray-500">{{ other.resolution }} · {{ other.state_label }}</span>
+                        <span class="text-right text-gray-500">{{ other.resolution }} · {{ other.state_label }} · <span class="whitespace-nowrap">{{ useFormatTime(other.created_at) }}</span></span>
                     </li>
                 </ul>
+                <p v-if="claim.claims_of_customer - 1 > claim.earlier.length" class="mt-2 text-xs text-gray-400">{{ ctrans("The latest :shown of :total earlier claims", { shown: String(claim.earlier.length), total: locale.number(claim.claims_of_customer - 1) }) }}</p>
             </div>
         </div>
     </div>

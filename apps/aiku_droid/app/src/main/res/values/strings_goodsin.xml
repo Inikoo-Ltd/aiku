@@ -293,4 +293,10 @@
     <string name="goodsin_toast_not_returned">%1$s set as not returned</string>
     <string name="goodsin_toast_put_undone">Undone</string>
     <string name="goodsin_toast_returned">%1$s set as returned</string>
+    <string name="goodsin_sort_supplier">Supplier</string>
+    <string name="goodsin_sort_expected_date">Expected date</string>
+    <string name="goodsin_returns_filter_title">Filter returns</string>
+    <string name="goodsin_returns_date_received">Date received</string>
+    <string name="goodsin_returns_sort_newest">Newest received</string>
+    <string name="goodsin_returns_sort_oldest">Oldest received</string>
 </resources>

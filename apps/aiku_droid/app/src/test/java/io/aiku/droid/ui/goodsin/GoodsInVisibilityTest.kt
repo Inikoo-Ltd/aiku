@@ -7,6 +7,7 @@ import io.aiku.droid.ui.components.WarehouseModule
 import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.goodsInEntry
 import io.aiku.droid.ui.navigation.FulfilmentDeliveriesRoute
+import io.aiku.droid.ui.navigation.GoodsInBacklogRoute
 import io.aiku.droid.ui.navigation.GoodsInReturnsRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
 import org.junit.Assert.assertEquals
@@ -44,7 +45,7 @@ class GoodsInVisibilityTest {
 
     @Test
     fun `the goods in shortcut opens what the user can see`() {
-        assertEquals(StockDeliveriesRoute(), goodsInEntry(goodsInClerk))
+        assertEquals(GoodsInBacklogRoute, goodsInEntry(goodsInClerk))
         assertEquals(GoodsInReturnsRoute(), goodsInEntry(returnsClerk))
         assertNull(goodsInEntry(WarehouseAbilities(viewGoodsOut = true)))
     }

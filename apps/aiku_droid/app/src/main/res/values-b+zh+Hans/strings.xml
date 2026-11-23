@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">上传医疗证明</string>
     <string name="clocking_load_failed_title">无法加载您的打卡记录</string>
     <string name="clocking_load_more_failed">无法加载更多</string>
-    <string name="clocking_load_offline_body">您处于离线状态。请连接网络后重试。</string>
+    <string name="clocking_load_offline_body">无网络连接。请检查 Wi-Fi 后重试。</string>
     <string name="clocking_load_server_body">Aiku 没有响应。请稍后重试。</string>
     <string name="clocking_location_accuracy">%1$s · 精度 %2$d 米</string>
     <string name="clocking_location_detect">检测我的位置</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">选择工作时间</string>
     <string name="dashboard_abnormal">异常</string>
     <string name="dashboard_below_minimum">低于最低库存</string>
-    <string name="dashboard_clocking">考勤打卡</string>
     <string name="dashboard_dispatched">已发货</string>
     <string name="dashboard_dispatched_compared">今天 %1$s · 昨天同一时间 %2$s</string>
     <string name="dashboard_dispatched_count">今天 %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">重试</string>
     <string name="login_username">用户名</string>
     <string name="login_username_required">请输入用户名。</string>
-    <string name="menu_all_staff">所有员工</string>
     <string name="menu_appearance">外观</string>
     <string name="menu_appearance_subtitle">主题颜色 · 浅色或深色</string>
     <string name="menu_change">更改</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">搜索 SKO、库位或发货单</string>
     <string name="menu_search_placeholder">搜索 SKO、库位、发货单</string>
     <string name="menu_timesheets">工时表</string>
-    <string name="module_clocking">考勤与人事</string>
+    <string name="module_clocking">打卡与考勤</string>
     <string name="module_goods_in">入库</string>
     <string name="module_goods_out">出库</string>
     <string name="module_inventory">库存</string>
@@ -2010,6 +2008,9 @@
     </plurals>
     <plurals name="filter_selected">
         <item quantity="other">已选择 %d 项</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="other">显示 %d 条结果</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="other">已入库 %1$d / %2$d</item>
@@ -2314,4 +2315,32 @@
     <plurals name="states_offline_actions">
         <item quantity="other">%d 个操作</item>
     </plurals>
+    <string name="record_date_expected">预计</string>
+    <string name="record_date_dispatched">已发货</string>
+    <string name="record_date_received">已收货</string>
+    <string name="record_date_booked_in">已入库</string>
+    <string name="record_date_started">已开始</string>
+    <string name="record_date_created">已创建</string>
+    <string name="filter_and_sort">筛选和排序</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">开始日期</string>
+    <string name="filter_date_to">结束日期</string>
+    <string name="filter_date_any">任意日期</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">%1$s 起</string>
+    <string name="filter_date_until">截至 %1$s</string>
+    <string name="filter_sort_oldest">最早在前</string>
+    <string name="filter_show_results_unknown">显示结果</string>
+    <string name="goodsout_extra_sessions_search">搜索批次</string>
+    <string name="goodsout_extra_sessions_filter_title">筛选拣货批次</string>
+    <string name="goodsout_extra_sort_finished">已完成</string>
+    <string name="goodsin_sort_supplier">供应商</string>
+    <string name="goodsin_sort_expected_date">预计日期</string>
+    <string name="goodsin_returns_filter_title">筛选退货</string>
+    <string name="goodsin_returns_date_received">收货日期</string>
+    <string name="goodsin_returns_sort_newest">最近收货在前</string>
+    <string name="goodsin_returns_sort_oldest">最早收货在前</string>
+    <string name="fulfilment_inbound_filter_title">筛选入库</string>
+    <string name="cache_saved_rows_only">已保存的副本：仅包含之前加载过的行</string>
+    <string name="filter_online_only">%1$s（仅限在线）</string>
 </resources>

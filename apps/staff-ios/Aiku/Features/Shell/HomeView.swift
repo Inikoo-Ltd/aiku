@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
+    @Environment(AuthStore.self) private var authStore
     @Environment(\.apiClient) private var apiClient
     @State private var warehouseStore = WarehouseStore.shared
     private let workBadges = WorkBadgesStore.shared
@@ -40,6 +41,9 @@ struct HomeView: View {
             await clocking.load()
         }
         .screenRefreshable {
+            if authStore.mobileProfile == nil {
+                await authStore.refreshProfile()
+            }
             await clocking.load()
             await workBadges.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
             if warehouseStore.selectedID == nil {
@@ -53,27 +57,41 @@ struct HomeView: View {
             Button {
                 router.open(ShellRoute.profile)
             } label: {
-                Avatar(session.profile.initials, size: 44)
-                    .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 2))
+                if session.hasProfile {
+                    Avatar(session.profile.initials, size: 44)
+                        .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 2))
+                } else {
+                    SkeletonBlock(width: 44, height: 44, radius: 22, color: AikuColor.onNav.opacity(0.25))
+                }
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Your profile and settings")
             .accessibilityIdentifier("shell.home.profile")
             VStack(alignment: .leading, spacing: 2) {
-                Text(ShellHomeContent.context(
+                if let context = ShellHomeContent.context(
                     hasWarehouseAccess: session.hasWarehouseAccess,
                     organisation: session.profile.organisation,
                     warehouseName: session.profile.warehouseName
-                ))
-                .font(.aiku(12))
-                .foregroundStyle(AikuColor.onNav2)
-                .lineLimit(1)
-                Text(ShellHomeContent.greeting(hour: Calendar.current.component(.hour, from: .now), firstName: session.profile.firstName))
-                    .font(.aiku(20, .bold))
-                    .foregroundStyle(AikuColor.onNav)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .accessibilityAddTraits(.isHeader)
+                ) {
+                    Text(context)
+                        .font(.aiku(12))
+                        .foregroundStyle(AikuColor.onNav2)
+                        .lineLimit(1)
+                } else {
+                    SkeletonBlock(width: 160, height: 10, radius: 5, color: AikuColor.onNav.opacity(0.25))
+                        .padding(.vertical, 3)
+                }
+                if session.hasProfile {
+                    Text(ShellHomeContent.greeting(hour: Calendar.current.component(.hour, from: .now), firstName: session.profile.firstName))
+                        .font(.aiku(20, .bold))
+                        .foregroundStyle(AikuColor.onNav)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .accessibilityAddTraits(.isHeader)
+                } else {
+                    SkeletonBlock(width: 200, height: 20, radius: 6, color: AikuColor.onNav.opacity(0.25))
+                        .padding(.vertical, 4)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -171,9 +189,14 @@ struct HomeView: View {
                                 Text(module.title)
                                     .font(.aiku(15, .bold))
                                     .foregroundStyle(AikuColor.text)
-                                Text(module.subtitle)
-                                    .font(.aiku(12))
-                                    .foregroundStyle(AikuColor.text3)
+                                if module.subtitle.isEmpty {
+                                    SkeletonBlock(width: 110, height: 10, radius: 5)
+                                        .padding(.vertical, 3)
+                                } else {
+                                    Text(module.subtitle)
+                                        .font(.aiku(12))
+                                        .foregroundStyle(AikuColor.text3)
+                                }
                             }
                             .multilineTextAlignment(.leading)
                         }

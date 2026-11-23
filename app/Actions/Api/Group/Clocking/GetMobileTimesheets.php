@@ -49,7 +49,7 @@ class GetMobileTimesheets
         $employee = GetUserCurrentEmployee::run($user);
 
         if (!$employee) {
-            return ['from' => $from, 'to' => $to, 'statistics' => [], 'target_seconds' => null, 'timesheets' => []];
+            return ['from' => $from, 'to' => $to, 'statistics' => null, 'target_seconds' => null, 'timesheets' => []];
         }
 
         $timezone     = $employee->organisation->timezone?->name ?? config('app.timezone');

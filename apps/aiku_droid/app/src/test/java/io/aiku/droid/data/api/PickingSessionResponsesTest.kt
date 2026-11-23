@@ -53,8 +53,24 @@ class PickingSessionResponsesTest {
 
     @Test
     fun `the list query names the state only when one is chosen`() {
-        assertEquals(listOf("page" to "2"), PickingSessionResponses.listParameters(state = null, page = 2))
-        assertEquals(listOf("state" to "handling_blocked", "page" to "1"), PickingSessionResponses.listParameters(PickingSessionState.HandlingBlocked, page = 1))
+        assertEquals(listOf("page" to "2"), PickingSessionResponses.listParameters(PickingSessionQuery(page = 2)))
+        assertEquals(
+            listOf("state" to "handling_blocked", "page" to "1"),
+            PickingSessionResponses.listParameters(PickingSessionQuery(state = PickingSessionState.HandlingBlocked)),
+        )
+    }
+
+    @Test
+    fun `the list query sends a trimmed search and the chosen sort, and nothing for the default order`() {
+        assertEquals(
+            listOf("q" to "PS-12", "sort" to "user_name", "page" to "1"),
+            PickingSessionResponses.listParameters(PickingSessionQuery(search = "  PS-12 ", sort = PickingSessionSort.Picker)),
+        )
+        assertEquals(listOf("page" to "1"), PickingSessionResponses.listParameters(PickingSessionQuery(search = "   ")))
+        assertEquals(
+            listOf("reference", "user_name", "-start_at", "-end_at"),
+            PickingSessionSort.entries.map { it.key },
+        )
     }
 
     @Test

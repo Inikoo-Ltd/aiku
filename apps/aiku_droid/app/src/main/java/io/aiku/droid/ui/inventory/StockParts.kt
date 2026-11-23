@@ -106,7 +106,7 @@ internal fun MovementRow(movement: StockMovement, title: String, showSko: Boolea
         movement.note?.takeIf { it.isNotBlank() },
         movement.who,
         momentText(movement.date, zone),
-        movement.running?.let { stringResource(R.string.inventory_running, stockText(it)) },
+        movement.running?.let { stringResource(R.string.inventory_running, stockText(it, movement.runningLabel)) },
     ).joinToString(LIST_SEPARATOR)
 
     ItemRow(

@@ -683,9 +683,20 @@ const startOnce = () => {
 watch(assistant, startOnce)
 
 let stopListeningToVisits: (() => void) | null = null
+let headerObserver: ResizeObserver | null = null
+
+const followHeaderHeight = () => {
+    const header = document.querySelector<HTMLElement>("[data-iris-header]")
+    if (!header || typeof ResizeObserver === "undefined") {
+        return
+    }
+    headerObserver = new ResizeObserver(() => document.documentElement.style.setProperty("--iris-header-height", `${header.offsetHeight}px`))
+    headerObserver.observe(header)
+}
 
 onMounted(() => {
     isMounted.value = true
+    followHeaderHeight()
     try {
         isSidebarCollapsed.value = localStorage.getItem(sidebarCollapsedKey) === "1"
     } catch {
@@ -703,6 +714,7 @@ onBeforeUnmount(() => {
     generation++
     stopPolling()
     stopListeningToVisits?.()
+    headerObserver?.disconnect()
 })
 
 const recordClick = (event: MouseEvent, card: Card) => {
@@ -1189,7 +1201,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     </div>
                                 </template>
 
-                                <div v-if="message.id === latestAssistantId && message.follow_ups?.length" class="merlin-cards chat-follow-ups">
+                                <div v-if="message.id === latestAssistantId && message.follow_ups?.length && !message.claim" class="merlin-cards chat-follow-ups">
                                     <button
                                         v-for="(followUp, index) in message.follow_ups"
                                         :key="followUp"
@@ -1419,8 +1431,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
     position: relative;
     display: grid;
     width: 100%;
-    height: min(85vh, 920px);
+    height: min(calc(100vh - var(--iris-header-height, 0px) - 1rem), 920px);
     min-height: 560px;
+    scroll-margin-top: var(--iris-header-height, 0px);
     border-top: 1px solid var(--chat-edge);
     background-color: var(--chat-bg);
     color: #ffffff;
@@ -2016,6 +2029,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-hero {
+    --merlin-hero-accent: oklch(from var(--theme-color-4, #e87928) max(l, 0.72) c h);
     text-align: left;
 }
 
@@ -2038,6 +2052,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .merlin-hero-icon {
+    --theme-color-4: var(--merlin-hero-accent);
     display: block;
     width: 5rem;
     height: 5rem;
@@ -2079,6 +2094,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .merlin-title em {
     font-style: normal;
     color: color-mix(in srgb, var(--merlin-accent) 75%, #fff);
+    color: oklch(from var(--merlin-accent) max(l, 0.78) c h);
 }
 
 .merlin-intro {
