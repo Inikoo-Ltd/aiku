@@ -112,7 +112,9 @@ async function fetchContainers(search?: string) {
 			isNewContainer.value = true
 		}
 	} catch (error: any) {
-		errorMessage.value = error?.response?.data?.message || ctrans("Something went wrong")
+		errorMessage.value = error?.response?.status === 403
+			? ctrans("You are not allowed to see the shipments of this order")
+			: error?.response?.data?.message || ctrans("The shipments could not be loaded, please try again")
 	} finally {
 		isFetching.value = false
 	}

@@ -37,6 +37,7 @@ class KeepAgentStaffInTheirOrganisation
         'grp.json.org_supplier_products.',
         'grp.json.org_suppliers.',
         'grp.json.purchase_order.reference_availability',
+        'grp.json.purchase_order.open_agent_containers',
         'grp.json.crm_return_badge',
         'grp.json.crm_waiting_badge',
         'grp.json.dispatching_waiting_badge',
