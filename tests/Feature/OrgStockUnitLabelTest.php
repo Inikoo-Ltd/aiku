@@ -387,19 +387,32 @@ test('a unit EAN held by another trade unit is refused naming that item by code 
         ->and($holder->refresh()->barcode)->toBe($number);
 });
 
-test('HELP-4891 a unit EAN held by a trade unit nothing uses moves to the SKO being edited', function () {
-    $number = '50'.substr((string) hrtime(true), -11);
+test('HELP-4891 a unit EAN held by an Aurora trade unit nothing uses moves to the SKO being edited, one made in Aiku keeps it', function () {
+    $makeUnusedHolder = function (string $number, ?string $sourceId) {
+        $holderOrgStock = ($this->makeOrgStock)([[]], null);
+        UpdateOrgStockUnitBarcode::make()->handle($holderOrgStock, ['unit_barcode' => $number]);
+        $holder = $holderOrgStock->tradeUnits->first()->refresh();
+        DB::table('model_has_trade_units')->where('trade_unit_id', $holder->id)->delete();
+        $holder->updateQuietly(['source_id' => $sourceId]);
 
-    $zombieOrgStock = ($this->makeOrgStock)([[]], null);
-    UpdateOrgStockUnitBarcode::make()->handle($zombieOrgStock, ['unit_barcode' => $number]);
-    $zombie = $zombieOrgStock->tradeUnits->first()->refresh();
-    DB::table('model_has_trade_units')->where('trade_unit_id', $zombie->id)->delete();
+        return $holder;
+    };
 
-    $orgStock = ($this->makeOrgStock)([['barcode' => null, 'barcode_id' => null]], null);
-    UpdateOrgStockUnitBarcode::make()->handle($orgStock, ['unit_barcode' => $number]);
+    $auroraNumber = '50'.substr((string) hrtime(true), -11);
+    $auroraCopy   = $makeUnusedHolder($auroraNumber, '1:'.hrtime(true));
+    $orgStock     = ($this->makeOrgStock)([['barcode' => null, 'barcode_id' => null]], null);
+    UpdateOrgStockUnitBarcode::make()->handle($orgStock, ['unit_barcode' => $auroraNumber]);
 
-    expect($orgStock->tradeUnits->first()->refresh()->barcode)->toBe($number)
-        ->and($zombie->refresh()->barcode)->toBeNull();
+    expect($orgStock->tradeUnits->first()->refresh()->barcode)->toBe($auroraNumber)
+        ->and($auroraCopy->refresh()->barcode)->toBeNull();
+
+    $aikuNumber = '50'.substr((string) hrtime(true), -11);
+    $inProcess  = $makeUnusedHolder($aikuNumber, null);
+    $other      = ($this->makeOrgStock)([['barcode' => null, 'barcode_id' => null]], null);
+
+    expect(fn () => UpdateOrgStockUnitBarcode::make()->handle($other, ['unit_barcode' => $aikuNumber]))
+        ->toThrow(ValidationException::class);
+    expect($inProcess->refresh()->barcode)->toBe($aikuNumber);
 });
 
 test('a pack and a carton get a GTIN-14 of their own from the unit EAN, and a scan of it reads back the unit and the batch', function () {

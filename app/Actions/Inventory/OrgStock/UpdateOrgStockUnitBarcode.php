@@ -65,7 +65,7 @@ class UpdateOrgStockUnitBarcode extends OrgAction
 
         if ($barcode) {
             $holder = $barcode->tradeUnitsActive->first();
-            if ($holder && $holder->id !== $tradeUnit->id && $this->isInUse($holder)) {
+            if ($holder && $holder->id !== $tradeUnit->id && !$this->isAbandonedAuroraCopy($holder)) {
                 throw ValidationException::withMessages([
                     'unit_barcode'            => __('Barcode :number already belongs to a different item, :item. Each item needs its own barcode.', [
                         'number' => $number,
@@ -88,10 +88,11 @@ class UpdateOrgStockUnitBarcode extends OrgAction
         return $orgStock->refresh();
     }
 
-    private function isInUse(TradeUnit $tradeUnit): bool
+    private function isAbandonedAuroraCopy(TradeUnit $tradeUnit): bool
     {
-        return DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists()
-            || DB::table('invoice_transaction_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists();
+        return $tradeUnit->source_id !== null
+            && !DB::table('model_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists()
+            && !DB::table('invoice_transaction_has_trade_units')->where('trade_unit_id', $tradeUnit->id)->exists();
     }
 
     public function authorize(ActionRequest $request): bool
