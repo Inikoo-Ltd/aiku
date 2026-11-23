@@ -3339,6 +3339,27 @@ describe('customer service tools', function () {
             ->and($note->actor_type)->toBe(App\Enums\CRM\Livechat\ChatActorTypeEnum::AI)
             ->and($note->payload['requested_by_user_id'])->toBe($this->user->id);
 
+        $original = App\Models\Chat\ChatSession::create([
+            'ulid'             => (string) Illuminate\Support\Str::ulid(),
+            'shop_id'          => $this->shop->id,
+            'language_id'      => 68,
+            'ai_model_version' => 'default',
+            'status'           => App\Enums\CRM\Livechat\ChatSessionStatusEnum::WAITING->value,
+            'channel'          => App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        ]);
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'add_note', 'message' => 'The message above is the photo for her other email: answer there.', 'answer_in' => 'NOPE', 'confirm' => true, 'request_text' => 'post the note'])
+            ->assertHasErrors(['answer_in must be the Chat ID']);
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'add_note', 'message' => 'The message above is the photo for her other email: answer there.', 'answer_in' => $original->ulid, 'confirm' => true, 'request_text' => 'post the note'])
+            ->assertOk();
+
+        $this->actingAs($this->user);
+        $pointer = $this->chat->chatEvents()->where('event_type', App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE)->latest('id')->first();
+        $mirror  = $original->chatEvents()->where('event_type', App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE)->sole();
+
+        expect((new App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($pointer))->resolve()['note_answer_in']['ulid'])->toBe($original->ulid)
+            ->and((new App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($mirror))->resolve()['note_follow_up']['ulid'])->toBe($this->chat->ulid)
+            ->and($mirror->payload['text'])->toContain($this->chat->ulid);
+
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'reply', 'message' => 'Sorry', 'confirm' => true, 'request_text' => 'reply'])
             ->assertHasErrors(['not enabled for this user']);
     });

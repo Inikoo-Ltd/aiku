@@ -52,9 +52,12 @@ class StoreChatEvent
      * signed by Aiku, not by whoever asked for it (kept in the payload), and as an event rather than
      * a message it never reaches the customer and does not answer the chat.
      */
-    public function internalNote(ChatSession $chatSession, string $text, ?int $requestedByUserId = null): ChatEvent
+    /**
+     * @param  array{answer_in?: string, follow_up_in?: string}  $links
+     */
+    public function internalNote(ChatSession $chatSession, string $text, ?int $requestedByUserId = null, array $links = []): ChatEvent
     {
-        return $this->handle($chatSession, ChatEventTypeEnum::INTERNAL_NOTE, ChatActorTypeEnum::AI, null, ['text' => $text, 'requested_by_user_id' => $requestedByUserId]);
+        return $this->handle($chatSession, ChatEventTypeEnum::INTERNAL_NOTE, ChatActorTypeEnum::AI, null, ['text' => $text, 'requested_by_user_id' => $requestedByUserId] + $links);
     }
 
     public function openSession(
