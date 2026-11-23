@@ -422,6 +422,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'quantity', label: __('Qty'), canBeHidden: false)
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
+                    ->column(key: 'unit_cost', label: __('Unit cost'), canBeHidden: false, align: 'right', tooltip: __('Cost of one unit (each), not of an SKO or a carton'), tooltipIcon: true)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
 
                 if (in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {

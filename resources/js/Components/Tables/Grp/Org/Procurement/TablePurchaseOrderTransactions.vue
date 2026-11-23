@@ -1289,6 +1289,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             />
         </template>
 
+        <template #cell(unit_cost)="{ item }">
+            <span v-tooltip="ctrans('Cost of one unit (each), not of an SKO or a carton')" class="cursor-help whitespace-nowrap tabular-nums">{{ unitCostLabel(item) }} <span class="text-xs text-gray-500">/ {{ ctrans('each') }}</span></span>
+        </template>
+
         <template #cell(amount)="{ item }">
             <span v-tooltip="amountTooltip(item)" class="cursor-help">{{ amount(item) }}</span>
         </template>
