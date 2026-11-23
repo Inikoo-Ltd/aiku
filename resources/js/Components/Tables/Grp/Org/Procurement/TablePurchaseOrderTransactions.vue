@@ -249,6 +249,12 @@ function unitCostLabel(item: any) {
 
 const priceErrors = ref<Record<number, string>>({})
 
+function differsFromSupplierPrice(item: any) {
+    const isSameCurrency = !item.supplier_unit_cost_currency || item.supplier_unit_cost_currency === item.net_currency
+
+    return isSameCurrency && isPriceChanged(item)
+}
+
 function isPriceChanged(item: any) {
     return item.supplier_unit_cost !== undefined && item.supplier_unit_cost !== null && Number(item.supplier_unit_cost) !== Number(item.unit_cost)
 }
@@ -1290,7 +1296,17 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(unit_cost)="{ item }">
-            <span v-tooltip="ctrans('Cost of one unit (each), not of an SKO or a carton')" class="cursor-help whitespace-nowrap tabular-nums">{{ unitCostLabel(item) }} <span class="text-xs text-gray-500">/ {{ ctrans('each') }}</span></span>
+            <div class="flex flex-col items-end">
+                <span v-tooltip="ctrans('Cost of one unit (each), not of an SKO or a carton')" class="cursor-help whitespace-nowrap tabular-nums">{{ unitCostLabel(item) }} <span class="text-xs text-gray-500">/ {{ ctrans('each') }}</span></span>
+                <span
+                    v-if="differsFromSupplierPrice(item)"
+                    v-tooltip="ctrans('This order has :cost per unit, the supplier product now costs :supplierCost', { cost: unitCostLabel(item), supplierCost: supplierUnitCostLabel(item) })"
+                    class="flex cursor-help items-center gap-1 whitespace-nowrap text-xs font-medium text-amber-600 tabular-nums"
+                >
+                    <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+                    {{ ctrans('Supplier price') }}: {{ supplierUnitCostLabel(item) }}
+                </span>
+            </div>
         </template>
 
         <template #cell(amount)="{ item }">
