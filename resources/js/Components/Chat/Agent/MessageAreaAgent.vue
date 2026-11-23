@@ -2361,10 +2361,9 @@ const handleClickOutside = (e: MouseEvent) => {
                     <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
                 </div>
                 <div v-if="showAuraRow" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium text-pink-700">
-                    <span class="aura-tag inline-flex shrink-0 items-center gap-1 rounded-full py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-white shadow-sm"
+                    <span class="aura-tag inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
                         :class="{ 'aura-tag-angry': aiDraftBox?.draft?.aura_angry && aiDraftInEditor, 'aura-tag-off': !aiDraftInEditor }"
                         :title="aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
-                        <AuraAvatar class="h-4 w-4" :angry="aiDraftBox?.draft?.aura_angry" />
                         Aura
                     </span>
                     <div v-if="newMessage.trim()" class="flex items-center gap-1">
