@@ -1170,7 +1170,8 @@ class MatchBankTransactions
      * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
      * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5 and Tatra in variableSymbol. It names the orders of this organisation
      * in the line's currency whose number is a prefix and those digits; when several shops have that number, the one order owing exactly the
-     * amount received (DPD SK pays SK29284 as VS 29284 while AWS29284 and FR29284 exist too).
+     * amount received (DPD SK pays SK29284 as VS 29284 while AWS29284 and FR29284 exist too), else the one whose total is that amount
+     * rounded to 5 cents, as cash on delivery is (113.00 for SK24958 of 112.98, already paid).
      *
      * @return list<string>
      */
@@ -1186,9 +1187,15 @@ class MatchBankTransactions
             ->whereRaw('reference ~ ?', ['^[A-Z]{2,5}'.$variableSymbol.'$'])
             ->get(['reference', 'total_amount', 'payment_amount']);
 
-        $owingThisAmount = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - (float)$order->payment_amount - (float)$bankTransaction->amount) <= 0.01);
+        $received        = (float)$bankTransaction->amount;
+        $owingThisAmount = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - (float)$order->payment_amount - $received) <= 0.01);
+        $ofThisTotal     = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - $received) <= 0.05);
 
-        return ($owingThisAmount->count() === 1 ? $owingThisAmount : $orders)->pluck('reference')->values()->all();
+        return (match (true) {
+            $owingThisAmount->count() === 1 => $owingThisAmount,
+            $ofThisTotal->count() === 1 => $ofThisTotal,
+            default => $orders,
+        })->pluck('reference')->values()->all();
     }
 
     /**

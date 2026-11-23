@@ -2927,10 +2927,22 @@ test('a tatra payment whose variable symbol is the order number without its pref
         'data'                    => ['transaction' => ['variableSymbol' => preg_replace('/^[A-Z]+/', '', $order->reference)]],
     ]);
 
+    $paidOrder = bankMatchingOrder(createCustomer($this->shop), 112.98);
+    bankMatchingOrder(createCustomer($this->shop), 553.69)->update(['reference' => 'AWS'.preg_replace('/^[A-Z]+/', '', $paidOrder->reference)]);
+    $paidOrder->update(['payment_amount' => 112.98]);
+    $roundedCashOnDelivery = $line->replicate()->fill([
+        'provider_transaction_id' => 'tatra-vs2',
+        'amount'                  => 113.00,
+        'data'                    => ['transaction' => ['variableSymbol' => preg_replace('/^[A-Z]+/', '', $paidOrder->reference)]],
+    ]);
+    $roundedCashOnDelivery->save();
+
     MatchBankTransactions::run($bankConnection);
 
     expect($line->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
-        ->and($line->order_id)->toBe($order->id);
+        ->and($line->order_id)->toBe($order->id)
+        ->and($roundedCashOnDelivery->refresh()->match_data['reason'] ?? null)->not->toBe('several orders named')
+        ->and($roundedCashOnDelivery->order_id)->toBe($paidOrder->id);
 });
 
 test('a payment quoting the invoice number instead of the order number is matched to the invoiced order', function () {
