@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watchEffect, inject, provide, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
-import { useDebounceFn, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
+import { useDebounceFn, useEventListener, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
 import axios, { type AxiosResponse } from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { chatAutoTranslate, loadChatTranslation, saveChatTranslation } from "@/Composables/useChatTranslation"
@@ -29,8 +29,8 @@ import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes, faArrowUp } from "@far"
-import { faCog, faLanguage, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faSortAmountDown, faSortAmountDownAlt } from "@fal"
-import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { faCog, faLanguage, faStar, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faSortAmountDown, faSortAmountDownAlt } from "@fal"
+import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faChevronLeft, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
@@ -280,13 +280,6 @@ const promisedOnly = ref(false)
 const promisedCount = ref(0)
 const spamCount = ref(0)
 
-// Folded, the rail is one icon wide and has nowhere to put the number, so the tooltip says it.
-const spamRailTooltip = computed(() =>
-    spamCount.value
-        ? ctrans("Spam (:count)", { count: String(spamCount.value) })
-        : ctrans("Spam")
-)
-
 // The list header already names the shop; only the views that span shops need it repeated
 // on the conversation.
 const crossShopView = computed(() => (marketingView.value || trashView.value || rubbishView.value || spamView.value || highlightView.value || carrierView.value || colleagueView.value || unclaimedView.value)
@@ -425,8 +418,10 @@ const selectedItemStyle = {
 }
 
 const railRowClass = (on: boolean) => railCollapsed.value
-    ? ["w-full justify-center py-2.5", on ? "font-medium text-gray-800" : "text-gray-600 hover:bg-gray-100"]
-    : ["h-8 w-[calc(100%-0.5rem)] gap-3 rounded-r-full pl-5 pr-3", on ? "bg-[--app-accent-soft] font-semibold text-gray-900" : "text-gray-700 hover:bg-gray-100"]
+    ? ["relative flex h-9 w-11 items-center justify-center rounded-lg text-sm transition-colors", on ? "bg-[var(--app-accent-soft)] text-gray-900 shadow-[inset_3px_0_0_var(--app-accent)]" : "text-gray-600 hover:bg-gray-200"]
+    : ["h-8 w-[calc(100%-0.5rem)] gap-3 rounded-r-full pl-5 pr-3", on ? "bg-[var(--app-accent-soft)] font-semibold text-gray-900" : "text-gray-700 hover:bg-gray-100"]
+
+const RAIL_BADGE = "absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none tabular-nums text-white ring-2 ring-gray-50"
 
 const sidePanelVisible = ref(false)
 const sidePanelPreferred = useLocalStorage(`chat-inbox-side-panel:${layout.user?.id ?? "anonymous"}`, true)
@@ -1360,33 +1355,27 @@ onUnmounted(() => {
     chatAreaObserver?.disconnect()
 })
 
-type FolderGroup = "queues" | "bins"
-
-// The chevron alone decides whether the rest of a group shows: closed, a click pins it open;
-// open, a click closes it. No hover timing involved — hover is just a plain visual highlight.
-const pinnedFolderGroups = ref<Record<FolderGroup, boolean>>({ queues: false, bins: false })
-
-const folderGroupLead = computed<Record<FolderGroup, string>>(() => ({
-    queues: carrierView.value ? "carriers" : colleagueView.value ? "colleagues" : marketingView.value ? "marketing" : "unclaimed",
-    bins: rubbishView.value ? "ignored" : trashView.value ? "trash" : "spam",
-}))
-
-const isFolderGroupOpen = (group: FolderGroup) => pinnedFolderGroups.value[group]
-
-const showsFolder = (group: FolderGroup, folder: string) =>
-    !railCollapsed.value || pinnedFolderGroups.value[group] || folderGroupLead.value[group] === folder
-
-const toggleFolderGroupPin = (group: FolderGroup) => {
-    pinnedFolderGroups.value[group] = !pinnedFolderGroups.value[group]
-}
-
-watch(railCollapsed, () => {
-    pinnedFolderGroups.value = { queues: false, bins: false }
-})
-
 const railElement = ref<HTMLElement | null>(null)
 
-// A column of avatar circles gives no hint that there is more above or below, so the edge
+// The rail's round handle sits at the same height as the main menu's, so the two read as one control.
+const railToggleTop = ref<string | null>(null)
+
+const alignRailToggle = () => {
+    const mainToggle = document.querySelector("#leftSidebar > div[class*='translate-x-1/2']")
+
+    if (!mainToggle || !railElement.value) {
+        railToggleTop.value = null
+
+        return
+    }
+
+    railToggleTop.value = `${mainToggle.getBoundingClientRect().top - railElement.value.getBoundingClientRect().top}px`
+}
+
+onMounted(() => nextTick(alignRailToggle))
+useEventListener("resize", alignRailToggle)
+
+// A column of icons gives no hint that there is more above or below, so the edge
 // that actually has more gets a shade. Recomputed on scroll and whenever the list's own size
 // changes — a shop added, the rail folded, the window resized.
 const shopListElement = ref<HTMLElement | null>(null)
@@ -1471,15 +1460,15 @@ onUnmounted(() => {
 
 const SHOP_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"]
 
-const shopInitials = (name: string) => {
+const initials = (name: string) => {
     const words = (name || "?").trim().split(/\s+/).filter(Boolean)
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
     return (words[0] ?? "?").slice(0, 2).toUpperCase()
 }
 
-const shopAvatarStyle = (inbox: { id: number }) => {
+const shopChipStyle = (inbox: { id: number }, on: boolean) => {
     const color = SHOP_COLORS[(inbox.id ?? 0) % SHOP_COLORS.length]
-    return { backgroundColor: color + "1A", color }
+    return on ? { backgroundColor: color, color: "white" } : { backgroundColor: color + "1A", color }
 }
 
 const shopDotStyle = (inbox: { id: number }) => ({ backgroundColor: SHOP_COLORS[(inbox.id ?? 0) % SHOP_COLORS.length] })
@@ -3434,228 +3423,159 @@ onUnmounted(() => {
             :class="[railCollapsed ? 'w-16' : 'w-72 max-[1439px]:shadow-xl', railCollapsed && (selectedSession || phoneView) ? 'max-md:hidden' : '']"
             @pointerdown="startRailIdle" @pointermove="startRailIdle" @wheel="startRailIdle"
             @focusin="startRailIdle" @keydown="startRailIdle">
-            <template v-if="railCollapsed">
-            <!-- Header + collapse toggle -->
-            <div class="flex shrink-0 items-center h-[41px]"
-                :class="railCollapsed ? 'justify-center border-b border-gray-200' : 'justify-between pl-5 pr-2 pt-2'">
-                <button type="button" @click="toggleRail"
-                    v-tooltip="railCollapsed ? ctrans('Expand') : ctrans('Collapse')"
-                    class="py-1 px-2 rounded hover:bg-gray-200 text-gray-600">
-                    <FontAwesomeIcon :icon="railCollapsed ? faAngleRight : faAngleLeft" class="text-xs" fixed-width />
-                </button>
-            </div>
-
-            <nav :aria-label="ctrans('Channels')" class="flex shrink-0 flex-col items-center gap-1 border-b border-gray-200 py-2">
-                <button v-for="app in RAIL_APPS" :key="app.key" type="button"
-                    :disabled="!appIsAvailable(app.key)" :aria-label="app.label" v-tooltip="app.label"
-                    class="relative flex h-9 w-11 items-center justify-center rounded-full transition-colors disabled:opacity-40"
-                    :class="activeApp === app.key ? 'bg-[--app-accent-soft] text-gray-900' : 'text-gray-600 hover:bg-gray-200'"
-                    @click="openApp(app.key)">
-                    <FontAwesomeIcon :icon="app.icon" class="text-base" fixed-width aria-hidden="true" />
-                    <span v-if="appWaiting(app.key)"
-                        class="absolute -top-1 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white tabular-nums">
-                        {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
-                    </span>
-                </button>
-            </nav>
-
-            <!-- Shop list -->
-            <div class="relative" :class="railCollapsed ? 'flex-1 min-h-0' : 'shrink-0'">
-
+            <!-- The same round handle the main menu folds with, on the rail's edge halfway down. -->
+            <button type="button" @click="toggleRail"
+                v-tooltip="railCollapsed ? ctrans('Expand') : ctrans('Collapse')" :aria-label="railCollapsed ? ctrans('Expand') : ctrans('Collapse')"
+                class="absolute right-0 z-50 flex w-8 lg:w-5 aspect-square translate-x-1/2 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                :class="railToggleTop ? '' : 'top-2/4 -translate-y-full'" :style="railToggleTop ? { top: railToggleTop } : {}">
+                <FontAwesomeIcon :icon="faChevronLeft" class="h-[10px] leading-none transition-transform duration-300" :class="railCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
+            </button>
+            <!-- Folded, the rail is the menu again in icons: the same items in the same order, each
+                 with its count on it, so nothing needs the rail opened to be reached. -->
+            <div v-if="railCollapsed" class="relative min-h-0 flex-1">
             <div ref="shopListElement" @scroll="updateShopListOverflow"
-                :class="railCollapsed ? 'absolute inset-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'pb-1'">
-                <div v-for="inbox in inboxes" :key="inbox.id"
-                    class="transition-colors"
-                    :class="railCollapsed ? ['border-b border-gray-200', shopIsOn(inbox.id) ? 'bg-white' : 'hover:bg-gray-100'] : ''">
-                    <button type="button" @click="toggleShop(inbox.id)"
-                        v-tooltip="railCollapsed ? inbox.name : undefined"
-                        class="flex items-center min-w-0 text-sm transition-colors"
-                        :class="railCollapsed
-                            ? ['w-full justify-center gap-2 py-2', shopIsOn(inbox.id) ? 'font-medium text-gray-800' : 'text-gray-700']
-                            : railRowClass(shopIsOn(inbox.id))">
-                        <!-- The initials only stand in for the name when the rail is folded and
-                             there is no room for it; beside the name they said it twice. -->
-                        <div v-if="railCollapsed" class="relative shrink-0">
-                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition hover:scale-110"
-                                :class="shopIsOn(inbox.id) ? 'ring-2 ring-green-500 ring-offset-1' : (!agentView && selectedShopIds.length ? 'opacity-50' : '')"
-                                :style="shopAvatarStyle(inbox)">
-                                {{ shopInitials(inbox.name) }}
-                            </div>
-                            <FontAwesomeIcon v-if="shopIsOn(inbox.id)" :icon="faCircleCheck"
-                                class="absolute -bottom-1.5 -right-1.5 rounded-full bg-white text-[11px] text-green-500" fixed-width aria-hidden="true" />
-                            <span v-if="inboxUnread[inbox.id]"
-                                v-tooltip="ctrans('Customers waiting')"
-                                class="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 text-[9px] font-semibold leading-4 text-white rounded-full text-center bg-red-500 ring-2 ring-gray-50">
-                                {{ inboxUnread[inbox.id] }}
-                            </span>
-                        </div>
-                    </button>
-
-                </div>
-                <div v-if="!inboxes.length && !railCollapsed" class="px-3 py-6 text-xs text-gray-400 text-center">
-                    {{ ctrans("No inboxes assigned") }}
-                </div>
-            </div>
-
-            <!-- A column of circles says nothing about what is past the edge on its own, so a
-                 shade stands in for it — only on the edge that actually has more behind it. -->
-            <div v-show="railCollapsed && shopListHasMoreAbove" class="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-black/15 to-transparent" />
-            <div v-show="railCollapsed && shopListHasMoreBelow" class="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-t from-black/15 to-transparent" />
-            </div>
-
-            <!-- The people on these shops: who is there and what they are holding -->
-
-            <!-- Everything that is not a shop: the group's queue and the places things are put -->
-
-            <div
-                class="shrink-0"
-                :class="railCollapsed && 'overflow-y-auto border-t border-gray-200'">
-            <div class="py-1">
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'unclaimed') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectUnclaimed"
-                    v-tooltip="ctrans('Nobody has taken these yet, on any shop')"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(unclaimedView)"
-                    :style="unclaimedView && railCollapsed ? selectedItemStyle : {}">
-                    <!-- Folded, the count rides on the bell the way the shops' does on their
-                         initials; beside it there is no width for both. -->
-                    <span class="relative shrink-0">
-                        <FontAwesomeIcon :icon="faBell" class="text-sm"
-                            :class="unclaimedCount ? 'text-red-500' : unclaimedView ? 'text-gray-600' : ''" fixed-width />
-                        <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="railCollapsed && unclaimedCount"
-                            class="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-center text-[9px] font-semibold leading-4 text-white ring-2 ring-gray-50">
-                            {{ unclaimedCount }}
+                class="absolute inset-0 overflow-y-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <nav :aria-label="ctrans('Channels')" class="flex flex-col items-center gap-1 border-b border-gray-200 py-2">
+                    <button v-for="app in RAIL_APPS" :key="app.key" type="button"
+                        :disabled="!appIsAvailable(app.key)" :aria-label="app.label" v-tooltip="app.label"
+                        class="relative flex h-9 w-11 items-center justify-center rounded-lg transition-colors disabled:opacity-40"
+                        :class="activeApp === app.key ? 'bg-[var(--app-accent-soft)] text-gray-900 shadow-[inset_0_-2px_0_var(--app-accent)]' : 'text-gray-600 hover:bg-gray-200'"
+                        @click="openApp(app.key)">
+                        <FontAwesomeIcon :icon="app.icon" class="text-base" fixed-width aria-hidden="true" />
+                        <span v-if="appWaiting(app.key)" :class="RAIL_BADGE" class="bg-red-500">
+                            {{ appWaiting(app.key) > 99 ? "99+" : appWaiting(app.key) }}
                         </span>
-                    </span>
-                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Unclaimed") }}</span>
-                    <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="!railCollapsed && unclaimedCount"
-                        class="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none tabular-nums text-white">
-                        {{ unclaimedCount }}
-                    </span>
-                </button>
-                </div>
-                </div>
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'carriers') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectCarriers"
-                    v-tooltip="ctrans('Emails from couriers about deliveries')"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(carrierView)"
-                    :style="carrierView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faTruck" class="text-sm shrink-0" :class="carrierView ? 'text-gray-600' : ''" fixed-width />
-                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Couriers") }}</span>
-                    <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="!railCollapsed && carriersCount"
-                        class="shrink-0 text-xs tabular-nums text-gray-600">
-                        {{ carriersCount }}
-                    </span>
-                </button>
-                </div>
-                </div>
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'colleagues') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectColleagues"
-                    v-tooltip="ctrans('Emails colleagues wrote to this mailbox; their circulars, newsletters and notifications stay out')"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(colleagueView)"
-                    :style="colleagueView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faUsers" class="text-sm shrink-0" :class="colleagueView ? 'text-gray-600' : ''" fixed-width />
-                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Colleagues") }}</span>
-                    <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="!railCollapsed && colleaguesCount"
-                        class="shrink-0 text-xs tabular-nums text-gray-600">
-                        {{ colleaguesCount }}
-                    </span>
-                </button>
-                </div>
-                </div>
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('queues', 'marketing') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectMarketing"
-                    v-tooltip="ctrans('Newsletters and campaigns the shops sent their customers, to know what customers ask about')"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(marketingView)"
-                    :style="marketingView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faBullhorn" class="text-sm shrink-0" :class="marketingView ? 'text-gray-600' : ''" fixed-width />
-                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Marketing") }}</span>
-                    <span v-if="!railCollapsed && marketingUnreadCount"
-                        class="shrink-0 text-xs tabular-nums text-gray-600">
-                        {{ marketingUnreadCount }}
-                    </span>
-                </button>
-                </div>
-                </div>
-                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('queues')"
-                    :aria-label="pinnedFolderGroups.queues ? ctrans('Show less') : ctrans('Show more')"
-                    class="relative w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
-                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('queues') && 'rotate-180'" fixed-width aria-hidden="true" />
-                    <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="!isFolderGroupOpen('queues') && folderGroupLead.queues !== 'unclaimed' && unclaimedCount"
-                        class="absolute top-0.5 right-5 h-1.5 w-1.5 rounded-full bg-red-500" />
-                </button>
-            </div>
+                    </button>
+                </nav>
 
-            <!-- Spam -->
-            <div v-if="!isReadOnly" :class="railCollapsed ? 'border-t border-gray-200 py-1' : 'pt-2'">
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'spam') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectSpam"
-                    v-tooltip="railCollapsed ? spamRailTooltip : undefined"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(spamView)"
-                    :style="spamView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faBan" class="text-sm shrink-0" :class="spamView ? 'text-red-500' : ''" fixed-width />
-                    <span v-if="!railCollapsed" class="flex-1 text-left">{{ ctrans("Spam") }}</span>
-                    <!-- Grey, unlike the unclaimed badge: what is in the bin is how much there is
-                         to clear out, never anything anybody has to hurry to. -->
-                    <span :class="{ 'animate-pulse opacity-40': agentCountsStale }" v-if="!railCollapsed && spamCount" class="shrink-0 text-xs tabular-nums text-gray-500">
-                        {{ spamCount }}
-                    </span>
-                </button>
+                <div v-if="menuApp === 'phone'" class="flex flex-col items-center gap-0.5 border-b border-gray-200 py-2">
+                    <button type="button" @click="openPhoneCallView('all')" v-tooltip="ctrans('All calls')" :aria-label="ctrans('All calls')"
+                        :class="railRowClass(phoneCallView === 'all')">
+                        <FontAwesomeIcon :icon="faList" fixed-width aria-hidden="true" />
+                    </button>
+                    <button type="button" @click="openPhoneCallView('in_progress')" v-tooltip="ctrans('On the phone now')" :aria-label="ctrans('On the phone now')"
+                        :class="railRowClass(phoneCallView === 'in_progress')">
+                        <span class="relative flex h-3.5 w-3.5 items-center justify-center">
+                            <span v-if="phoneOnNow" class="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-400 opacity-75" />
+                            <span class="relative inline-flex h-2 w-2 rounded-full" :class="phoneOnNow ? 'bg-emerald-500' : 'bg-gray-300'" />
+                        </span>
+                        <span v-if="phoneOnNow" :class="RAIL_BADGE" class="bg-emerald-600">{{ phoneOnNow }}</span>
+                    </button>
+                    <button type="button" @click="openPhoneCallView('today')" v-tooltip="ctrans('Today')" :aria-label="ctrans('Today')"
+                        :class="railRowClass(phoneCallView === 'today')">
+                        <FontAwesomeIcon :icon="faPhone" fixed-width aria-hidden="true" />
+                        <span v-if="phoneCallsToday" :class="RAIL_BADGE" class="bg-gray-500">{{ phoneCallsToday }}</span>
+                    </button>
                 </div>
-                </div>
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'ignored') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectRubbish"
-                    v-tooltip="railCollapsed ? ctrans('Ignored') : undefined"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(rubbishView)"
-                    :style="rubbishView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faArchive" class="text-sm shrink-0" :class="rubbishView ? 'text-gray-600' : ''" fixed-width />
-                    <span v-if="!railCollapsed">{{ ctrans("Ignored") }}</span>
-                </button>
-                </div>
-                </div>
-                <div class="grid transition-all duration-300 ease-out" :class="showsFolder('bins', 'trash') ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
-                <div class="overflow-hidden">
-                <button type="button" @click="selectTrash"
-                    v-tooltip="railCollapsed ? ctrans('Trash') : undefined"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(trashView)"
-                    :style="trashView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faTrash" class="text-sm shrink-0" :class="trashView ? 'text-red-500' : ''" fixed-width />
-                    <span v-if="!railCollapsed">{{ ctrans("Trash") }}</span>
-                </button>
-                </div>
-                </div>
-                <button v-if="railCollapsed" type="button" @click="toggleFolderGroupPin('bins')"
-                    :aria-label="pinnedFolderGroups.bins ? ctrans('Show less') : ctrans('Show more')"
-                    class="w-full flex justify-center py-0.5 text-gray-400 hover:text-gray-600">
-                    <FontAwesomeIcon :icon="faAngleDown" class="text-[10px] transition-transform" :class="isFolderGroupOpen('bins') && 'rotate-180'" fixed-width aria-hidden="true" />
-                </button>
-            </div>
 
-            <!-- Highlighted -->
-            <div v-if="!isReadOnly" :class="railCollapsed ? 'border-t border-gray-200 py-1' : 'pt-2'">
-                <button type="button" @click="selectHighlight"
-                    v-tooltip="railCollapsed ? ctrans('Highlighted') : undefined"
-                    class="flex items-center text-sm transition-colors"
-                    :class="railRowClass(highlightView)"
-                    :style="highlightView && railCollapsed ? selectedItemStyle : {}">
-                    <FontAwesomeIcon :icon="faStar" class="text-sm shrink-0" :class="highlightView ? 'text-amber-400' : ''" fixed-width />
-                    <span v-if="!railCollapsed">{{ ctrans("Highlighted") }}</span>
-                </button>
+                <template v-else>
+                <div class="flex flex-col items-center gap-0.5 border-b border-gray-200 py-2">
+                    <button type="button" @click="openInboxView('all')" v-tooltip="ctrans('All')" :aria-label="ctrans('All')"
+                        :class="railRowClass(!isFolderView && activeInboxView === 'all')">
+                        <FontAwesomeIcon :icon="faInbox" fixed-width aria-hidden="true" />
+                    </button>
+                    <button type="button" @click="openInboxView('unread')" v-tooltip="ctrans('Unread')" :aria-label="ctrans('Unread')"
+                        :class="railRowClass(activeInboxView === 'unread')">
+                        <FontAwesomeIcon :icon="faEnvelope" fixed-width aria-hidden="true" />
+                        <span v-if="inboxViewCounts.unread" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': inboxViewCountsStale }]" class="bg-gray-800">{{ inboxViewCounts.unread }}</span>
+                    </button>
+                    <button type="button" @click="openInboxView('replied')" v-tooltip="ctrans('Replied')" :aria-label="ctrans('Replied')"
+                        :class="railRowClass(activeInboxView === 'replied')">
+                        <FontAwesomeIcon :icon="faReply" fixed-width aria-hidden="true" />
+                        <span v-if="inboxViewCounts.replied" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': inboxViewCountsStale }]" class="bg-gray-500">{{ inboxViewCounts.replied }}</span>
+                    </button>
+                    <button type="button" @click="selectUnclaimed" v-tooltip="ctrans('Unclaimed')" :aria-label="ctrans('Unclaimed')"
+                        :class="railRowClass(unclaimedView)">
+                        <FontAwesomeIcon :icon="faBell" :class="unclaimedCount ? 'text-red-500' : ''" fixed-width aria-hidden="true" />
+                        <span v-if="unclaimedCount" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': agentCountsStale }]" class="bg-red-500">{{ unclaimedCount }}</span>
+                    </button>
+                    <button v-if="!isReadOnly" type="button" @click="selectHighlight" v-tooltip="ctrans('Starred')" :aria-label="ctrans('Starred')"
+                        :class="railRowClass(highlightView)">
+                        <FontAwesomeIcon :icon="faStar" :class="highlightView ? 'text-amber-400' : ''" fixed-width aria-hidden="true" />
+                    </button>
+                    <button type="button" @click="openInboxView('offline')" v-tooltip="ctrans('Offline messages')" :aria-label="ctrans('Offline messages')"
+                        :class="railRowClass(activeInboxView === 'offline')">
+                        <FontAwesomeIcon :icon="faMoon" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
+
+                <div v-if="chatLabels.length" class="flex flex-col items-center gap-0.5 border-b border-gray-200 py-2">
+                    <button v-for="label in chatLabels" :key="label.id" type="button" @click="openLabelView(label.id)"
+                        v-tooltip="label.name" :aria-label="label.name"
+                        :class="railRowClass(activeInboxView === 'label' && labelFilterId === label.id)">
+                        <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: label.colour }" aria-hidden="true" />
+                    </button>
+                </div>
+
+                <div v-if="menuApp === 'email' || menuApp === null" class="flex flex-col items-center gap-0.5 border-b border-gray-200 py-2">
+                    <button type="button" @click="selectCarriers" v-tooltip="ctrans('Couriers')" :aria-label="ctrans('Couriers')"
+                        :class="railRowClass(carrierView)">
+                        <FontAwesomeIcon :icon="faTruck" fixed-width aria-hidden="true" />
+                        <span v-if="carriersCount" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': agentCountsStale }]" class="bg-gray-500">{{ carriersCount }}</span>
+                    </button>
+                    <button type="button" @click="selectColleagues" v-tooltip="ctrans('Colleagues')" :aria-label="ctrans('Colleagues')"
+                        :class="railRowClass(colleagueView)">
+                        <FontAwesomeIcon :icon="faUsers" fixed-width aria-hidden="true" />
+                        <span v-if="colleaguesCount" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': agentCountsStale }]" class="bg-gray-500">{{ colleaguesCount }}</span>
+                    </button>
+                    <button type="button" @click="selectMarketing" v-tooltip="ctrans('Marketing')" :aria-label="ctrans('Marketing')"
+                        :class="railRowClass(marketingView)">
+                        <FontAwesomeIcon :icon="faBullhorn" fixed-width aria-hidden="true" />
+                        <span v-if="marketingUnreadCount" :class="RAIL_BADGE" class="bg-gray-500">{{ marketingUnreadCount }}</span>
+                    </button>
+                </div>
+
+                <div v-if="!isReadOnly" class="flex flex-col items-center gap-0.5 border-b border-gray-200 py-2">
+                    <button type="button" @click="selectSpam" v-tooltip="ctrans('Spam')" :aria-label="ctrans('Spam')"
+                        :class="railRowClass(spamView)">
+                        <FontAwesomeIcon :icon="faBan" :class="spamView ? 'text-red-500' : ''" fixed-width aria-hidden="true" />
+                        <span v-if="spamCount" :class="[RAIL_BADGE, { 'animate-pulse opacity-40': agentCountsStale }]" class="bg-gray-500">{{ spamCount }}</span>
+                    </button>
+                    <button type="button" @click="selectRubbish" v-tooltip="ctrans('Ignored')" :aria-label="ctrans('Ignored')"
+                        :class="railRowClass(rubbishView)">
+                        <FontAwesomeIcon :icon="faArchive" fixed-width aria-hidden="true" />
+                    </button>
+                    <button type="button" @click="selectTrash" v-tooltip="ctrans('Trash')" :aria-label="ctrans('Trash')"
+                        :class="railRowClass(trashView)">
+                        <FontAwesomeIcon :icon="faTrash" :class="trashView ? 'text-red-500' : ''" fixed-width aria-hidden="true" />
+                    </button>
+                </div>
+                </template>
+
+                <!-- Every shop's name starts the same way, so initials told them apart by nothing;
+                     the shop's code is what tells AT from SK. -->
+                <div class="flex flex-col items-center gap-1 border-b border-gray-200 py-2">
+                    <button type="button" @click="openMyShops" v-tooltip="ctrans('My shops')" :aria-label="ctrans('My shops')"
+                        :class="railRowClass(isMyShopsView)">
+                        <FontAwesomeIcon :icon="faStoreAlt" fixed-width aria-hidden="true" />
+                    </button>
+                    <button v-for="inbox in inboxes" :key="inbox.id" type="button"
+                        v-tooltip="ctrans(':shop (Ctrl-click to add or remove it)', { shop: inbox.name })" :aria-label="inbox.name"
+                        class="relative flex h-7 w-11 items-center justify-center rounded-md text-[10px] font-bold uppercase tracking-tight transition"
+                        :style="shopChipStyle(inbox, shopIsOn(inbox.id))"
+                        @click="pickShop(inbox.id, $event)">
+                        {{ inbox.slug.slice(0, 4) }}
+                        <span v-if="waitingOn(inbox, activeApp)" :class="RAIL_BADGE" class="bg-red-500">{{ waitingOn(inbox, activeApp) }}</span>
+                    </button>
+                </div>
+
+                <div v-if="supervisor && agents?.length" class="flex flex-col items-center gap-1 py-2">
+                    <button v-for="agent in agents" :key="agent.id" type="button" @click="showAgentLoad(agent.id)"
+                        v-tooltip="ctrans(':name: :open conversations held, room for :max', { name: agent.name, open: String(agent.open), max: String(agent.max) })"
+                        :aria-label="agent.name"
+                        :class="railRowClass(selectedAgentIds.includes(agent.id))">
+                        <span class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-700"
+                            :class="agent.presence === 'offline' ? 'opacity-50' : ''">
+                            {{ initials(agent.name) }}
+                            <span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-gray-50" :class="PRESENCE_DOT[agent.presence]" />
+                        </span>
+                        <span :class="[RAIL_BADGE, agent.open >= agent.max ? 'bg-red-500' : 'bg-gray-400']">{{ agent.open }}</span>
+                    </button>
+                </div>
             </div>
+            <div v-show="shopListHasMoreAbove" class="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-black/15 to-transparent" />
+            <div v-show="shopListHasMoreBelow" class="pointer-events-none absolute inset-x-0 bottom-0 h-5 bg-gradient-to-t from-black/15 to-transparent" />
             </div>
-            </template>
 
             <div v-else class="flex min-h-0 flex-1">
                 <Teleport defer to="#chat-channels">
@@ -3685,10 +3605,6 @@ onUnmounted(() => {
                 </nav>
                 </Teleport>
 
-                <button type="button" @click="toggleRail" v-tooltip="ctrans('Collapse')" :aria-label="ctrans('Collapse')"
-                    class="absolute right-2 top-2 z-10 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700">
-                    <FontAwesomeIcon :icon="faAngleLeft" class="text-xs" fixed-width />
-                </button>
 
                 <div class="min-w-0 flex-1 overflow-y-auto pb-4 [scrollbar-width:thin]">
                     <template v-if="menuApp === 'phone'">
