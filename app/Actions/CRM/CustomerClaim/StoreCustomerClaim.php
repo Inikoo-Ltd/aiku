@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\CustomerClaim;
 
 use App\Actions\Chat\ChatSession\PlanChatClaim;
+use App\Actions\Comms\Email\SendCustomerClaimEmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
@@ -118,10 +119,16 @@ class StoreCustomerClaim
         }
 
         if ($this->autoApproves($claim)) {
+            $settled = null;
             try {
-                return SettleCustomerClaim::run($claim);
+                $settled = SettleCustomerClaim::run($claim);
             } catch (Throwable $exception) {
                 Log::warning('Customer claim '.$claim->reference.' could not be settled automatically, sent to review: '.$exception->getMessage());
+            }
+            if ($settled) {
+                SendCustomerClaimEmail::run($settled);
+
+                return $settled;
             }
         }
 
@@ -130,6 +137,7 @@ class StoreCustomerClaim
         } catch (Throwable $exception) {
             report($exception);
         }
+        SendCustomerClaimEmail::run($claim);
 
         return $claim;
     }

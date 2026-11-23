@@ -16,6 +16,11 @@ use App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Comms\Email\SendCustomerClaimEmail;
+use App\Actions\SysAdmin\Group\Seeders\SeedEmailTemplates;
+use App\Actions\Comms\Ses\SendSesEmail;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Actions\Comms\Email\SendInvoicePaidEmailToCustomer;
 use App\Http\Resources\Sales\OrderResource;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
@@ -8102,6 +8107,46 @@ test('small customer claims settle with no person until the customer uses up the
     $this->shop->update(['settings' => array_merge($this->shop->settings, ['claims' => array_merge(GetCustomerClaimSettings::for($this->shop), ['allowance_floor' => 100000, 'max_claims_in_window' => 4])])]);
     RejectCustomerClaim::make()->handle($third, $this->user, 'other', 'test');
     expect($store(1)->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
+
+    UpcomingTransaction::where('customer_id', $customer->id)->delete();
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('customers are emailed when their claim is received, approved or rejected, in the words the Merlin card uses, and staff claims are not', function () {
+    SeedEmailTemplates::run($this->group);
+    $settings = $this->shop->settings;
+    $this->shop->update(['settings' => array_merge($settings ?? [], ['claims' => ['self_service' => true, 'auto_approve' => false]])]);
+    $order    = dispatchedOrderToClaim($this);
+    $customer = $order->customer;
+    $customer->update(['email' => 'claimer.'.uniqid().'@example.com']);
+    $line     = GetCustomerClaimForm::run($customer->refresh(), $order)['lines'][0];
+    $store    = fn (CustomerClaimSourceEnum $source = CustomerClaimSourceEnum::MERLIN) => StoreCustomerClaim::run($customer->refresh(), $order->refresh(), ['resolution' => 'next_order', 'lines' => [['transaction_id' => $line['transaction_id'], 'quantity' => 1, 'reason' => 'missing_from_parcel']]], $source);
+
+    $subjects = [];
+    SendSesEmail::mock()->shouldReceive('handle')->andReturnUsing(function (...$args) use (&$subjects) {
+        $subjects[] = $args['subject'] ?? $args[0];
+
+        return $args['dispatchedEmail'] ?? $args[2];
+    });
+
+    $approved = $store();
+    actingAs($this->user);
+    $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $approved->ulid]))->assertRedirect();
+    $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $approved->ulid]));
+    $rejected = $store();
+    RejectCustomerClaim::make()->handle($rejected, $this->user, 'photos_missing', 'The photo shows a different item');
+    $store(CustomerClaimSourceEnum::STAFF);
+
+    $email = SendCustomerClaimEmail::make();
+    expect($this->shop->outboxes()->where('code', OutboxCodeEnum::CUSTOMER_CLAIM_UPDATE)->first()?->state)->toBe(OutboxStateEnum::ACTIVE)
+        ->and($subjects)->toBe([
+            'We have received your claim '.$approved->reference,
+            'Your claim '.$approved->reference.' is approved',
+            'We have received your claim '.$rejected->reference,
+            'About your claim '.$rejected->reference,
+        ])
+        ->and($email->generateBodyHtml($approved->refresh()))->toContain('The items will be added free to your next order.', 'Missing from the parcel')
+        ->and($email->generateBodyHtml($rejected->refresh()))->toContain('Photos missing or unclear', 'The photo shows a different item', 'reply to this email');
 
     UpcomingTransaction::where('customer_id', $customer->id)->delete();
     $this->shop->update(['settings' => $settings]);

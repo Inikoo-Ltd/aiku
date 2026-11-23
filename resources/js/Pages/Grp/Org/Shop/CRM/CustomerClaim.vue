@@ -265,6 +265,7 @@ const stateClass: Record<string, string> = {
             <label class="block">
                 <span class="mb-1 block text-xs text-gray-600">{{ ctrans("Note") }} <span v-if="rejectReason === 'other'" class="text-red-500">*</span></span>
                 <Textarea v-model="rejectNote" rows="3" auto-resize class="w-full" />
+                <span class="text-xs text-gray-500">{{ ctrans("The reason and the note are emailed to the customer.") }}</span>
                 <span v-if="rejectErrors.note" class="text-xs text-red-500">{{ rejectErrors.note }}</span>
             </label>
         </div>

@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\CustomerClaim;
 
+use App\Actions\Comms\Email\SendCustomerClaimEmail;
 use App\Actions\Accounting\Invoice\DeleteInProcessInvoice;
 use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaim;
 use App\Actions\OrgAction;
@@ -52,6 +53,7 @@ class RejectCustomerClaim extends OrgAction
             'reviewed_at'         => now(),
         ]);
         StoreCustomerClaim::closeReviewTasks($claim, $reviewer);
+        SendCustomerClaimEmail::run($claim);
 
         return $claim;
     }
