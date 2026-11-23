@@ -52,7 +52,6 @@ class StoreWooCommerceProduct extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
             $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
-            $website = $customerSalesChannel?->shop?->website;
 
             $images = [];
             if (app()->isProduction()) {
@@ -63,28 +62,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 }
             }
 
-            $customAttributes = [];
-            $tradeUnitAttachments = Arr::get($this->getAttachmentData($product), 'public', []);
-            foreach ($tradeUnitAttachments as $key => $tradeUnitAttachment) {
-                /** @var array{id: int, ulid: string}|null $attachment */
-                $attachment = Arr::get($tradeUnitAttachment, 'attachment');
-
-                if ($attachment) {
-                    $customAttributes[] = [
-                        'id' => (string) $attachment['id'],
-                        'name' => '<strong>' . Arr::get($tradeUnitAttachment, 'label') . '</strong>',
-                        'option' => '<a href="https://' . $website?->domain . '/attachment/'.$attachment['ulid'].'/download' . '">' .
-                            Arr::get($tradeUnitAttachment, 'label') . '</a>'
-                    ];
-                }
-            }
-
-            $attachmentLinks = '';
-            foreach ($customAttributes as $attr) {
-                $attachmentLinks .= $attr['name'] . ': ' . $attr['option'] . '<br>';
-            }
-
-            $description = $portfolio->customer_description . '<br><br>' . $attachmentLinks;
+            $description = $this->descriptionWithAttachments($portfolio);
 
             $availableQuantity = UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $customerSalesChannel);
 
@@ -115,19 +93,6 @@ class StoreWooCommerceProduct extends RetinaAction
                     ]
                 ];
             }
-
-            /*if (! blank($customAttributes)) {
-                foreach ($customAttributes as $key => $attr) {
-                    $attributes[] = [
-                        'id' => 0,
-                        'name' => $attr['name'],
-                        'position' => $key + 1,
-                        'visible' => true,
-                        'variation' => false,
-                        'options' => [$attr['option']]
-                    ];
-                }
-            }*/
 
             $ingredients = array_values(array_filter(array_map('trim', explode(',', (string) $product->marketing_ingredients))));
 
@@ -244,6 +209,30 @@ class StoreWooCommerceProduct extends RetinaAction
 
             return $portfolio;
         }
+    }
+
+    /**
+     * The customer's description followed by the links to the product's public documents (SDS, IFRA, CPSR...), as the
+     * store shows it in both the description and the short description.
+     */
+    public function descriptionWithAttachments(Portfolio $portfolio): string
+    {
+        /** @var Product $product */
+        $product = $portfolio->item;
+        $website = $portfolio->customerSalesChannel?->shop?->website;
+
+        $attachmentLinks = '';
+        foreach (Arr::get($this->getAttachmentData($product), 'public', []) as $tradeUnitAttachment) {
+            /** @var array{id: int, ulid: string}|null $attachment */
+            $attachment = Arr::get($tradeUnitAttachment, 'attachment');
+
+            if ($attachment) {
+                $label           = Arr::get($tradeUnitAttachment, 'label');
+                $attachmentLinks .= '<strong>'.$label.'</strong>: <a href="https://'.$website?->domain.'/attachment/'.$attachment['ulid'].'/download">'.$label.'</a><br>';
+            }
+        }
+
+        return $portfolio->customer_description.'<br><br>'.$attachmentLinks;
     }
 
     private function mapProductStateToWooCommerce($status): string
