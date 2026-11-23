@@ -13,6 +13,7 @@ use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Actions\Chat\UpdateShopChatKnowledgeNote;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
@@ -103,7 +104,8 @@ class AnswerShoppingAssistantTeamQuestion
         $followUp     = FollowUpShoppingAssistantRestockQuestion::make();
 
         if ($conversation?->customer && !$conversation->wiped_at) {
-            $translated = $followUp->translate($this->forCustomer($question, $answer), $conversation->language_code, $user->language_id ? Language::find($user->language_id) : null);
+            $reply      = $this->forCustomer($question, $answer);
+            $translated = $followUp->translate($reply, $conversation->language_code, $this->writtenIn($reply, $conversation, $user));
             $message    = __('Our team answered your question:', [], $conversation->language_code)."\n\n".$translated;
 
             $conversation->messages()->create([
@@ -267,6 +269,20 @@ class AnswerShoppingAssistantTeamQuestion
         );
 
         return $probability !== null && $probability >= self::NOT_AN_ANSWER_CONFIDENCE;
+    }
+
+    /**
+     * Staff often answer in the customer's language rather than their own: an Italian answer from
+     * a colleague whose profile says English was translated "from English" and reached the Italian
+     * customer in English (PRE-133). The reply is read for its language; the profile only decides
+     * when it cannot be told. The profile comes first because the detector falls back to its first
+     * language when Jev cannot answer: the conversation's would send an English answer untranslated.
+     */
+    private function writtenIn(string $reply, ShoppingAssistantConversation $conversation, User $user): ?Language
+    {
+        $profileLanguage = ($user->language_id ? Language::find($user->language_id) : null) ?? Language::where('code', 'en')->first();
+
+        return rescue(fn () => DetectLanguageWithJev::run($reply, [$profileLanguage, Language::where('code', $conversation->language_code)->first()]), null, false) ?? $profileLanguage;
     }
 
     /**

@@ -31,7 +31,10 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Chat\ChatKnowledgeEntry;
+use App\Actions\Helpers\Translations\DetectLanguageWithJev;
+use App\Actions\Helpers\Translations\Translate;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
@@ -508,6 +511,22 @@ test('an answer written about the customer is reworded to speak to them, and goe
     expect($first->messages()->latest('id')->first()->body)->toContain('Yes, you will need to create another channel')
         ->and($first->messages()->latest('id')->first()->body)->not->toContain('they will need')
         ->and($second->messages()->latest('id')->first()->body)->toContain($written);
+});
+
+test('an answer written in the customer\'s language by someone whose profile says English reaches them as written, not translated from English', function () {
+    $italian = Language::where('code', 'it')->firstOrFail();
+    $this->person->update(['language_id' => Language::where('code', 'en')->firstOrFail()->id]);
+    $conversation = teamQuestionConversation($this);
+    $conversation->update(['language_code' => 'it']);
+    $written = 'Mi dispiace, non inviamo campioni.';
+
+    DetectLanguageWithJev::shouldRun()->once()->andReturn($italian);
+    Translate::shouldRun()->never();
+
+    AnswerShoppingAssistantTeamQuestion::run(StoreShoppingAssistantTeamQuestion::run($conversation, 'Mandate campioni?', 'samples?')['task'], $this->person, $written, false);
+
+    expect($conversation->messages()->latest('id')->first()->body)->toContain($written)
+        ->and((new DetectLanguageWithJev())->ask('Sorry, we do not send samples.', [Language::where('code', 'en')->first(), $italian])['choice'] ?? null)->toBe('en');
 });
 
 test('a question that went to customer services still reaches the gurus: they see it once the backups are due, and the agent declining passes it to the first guru instead of closing it', function () {
