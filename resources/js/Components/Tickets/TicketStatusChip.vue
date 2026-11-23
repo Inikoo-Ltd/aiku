@@ -24,6 +24,7 @@ const props = defineProps<{
         resolved_at?: string | null
         url: string
     }
+    compact?: boolean
 }>()
 
 const PROGRESS = {
@@ -37,8 +38,8 @@ const progress = computed(() => PROGRESS[props.ticket.progress ?? "not_fixed"])
 </script>
 
 <template>
-    <span class="group relative inline-flex items-center gap-1 align-middle">
-        <a :href="ticket.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-semibold ring-1 ring-inset" :class="progress.chip"><FontAwesomeIcon :icon="progress.icon" fixed-width />{{ progress.label() }}<span class="font-normal opacity-70">· {{ ticket.reference }}</span></a>
+    <span class="group relative inline-flex items-center gap-1 align-middle" :class="compact ? 'flex-col' : ''">
+        <a :href="ticket.url" target="_blank" rel="noopener" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full py-0.5 font-semibold ring-1 ring-inset" :class="[progress.chip, compact ? 'px-0.5' : 'px-2']" :aria-label="`${progress.label()} · ${ticket.reference}`"><FontAwesomeIcon :icon="progress.icon" fixed-width /><template v-if="!compact">{{ progress.label() }}<span class="font-normal opacity-70">· {{ ticket.reference }}</span></template></a>
         <TicketUserAvatar v-if="ticket.assignee" :name="ticket.assignee" :avatar="ticket.assignee_avatar" size="xs" />
         <span class="pointer-events-none absolute right-0 top-full z-30 mt-1 hidden w-64 whitespace-normal rounded-md border border-gray-200 bg-white px-3 py-2 text-left shadow-lg group-hover:block">
             <span class="flex items-center gap-1.5 text-xs font-semibold text-gray-800">

@@ -327,6 +327,8 @@ const isQuestion = (action: DraftAction) => action.type === "spam" || action.typ
 const actionIcon = (action: DraftAction) => ({ link: faLink, claim: faBoxFragile }[action.type as string] ?? faClipboardCheck)
 const questionActions = computed(() => draft.value?.actions?.filter(isQuestion) ?? [])
 const staffActions = computed(() => draft.value?.actions?.filter((action) => !isQuestion(action)) ?? [])
+const hasNotes = computed(() => !!draft.value && !!(questionActions.value.length || staffNote.value || staffActions.value.length || draft.value.premonitions?.length
+    || sinceLine.value || draft.value.other_chats?.length || (showTranslation.value && staffTranslation.value?.text) || (editsInMyLanguage.value && staffTranslation.value?.editable) || draft.value.text?.includes("[[")))
 const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.actions?.some((action) => action.type === "task")))
 
 const listen = () => {
@@ -364,7 +366,7 @@ const replaceText = (draftId: number, text: string) => {
     showTranslation.value = false
 }
 
-defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
+defineExpose({ hasNotes, take, draft, busy, offerToEditor, replaceText, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
 </script>
 
 <template>
