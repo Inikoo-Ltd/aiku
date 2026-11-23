@@ -476,6 +476,27 @@ describe('production reward pay bands', function () {
             ->and((float) $session->units_per_hour)->toBe(182.0);
     });
 
+    test('artisans page lists the target of every band so the band reached can be compared', function () {
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152]);
+        $session = makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333);
+        $session->update(['standard_rate' => 152]);
+        \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+
+        $response = get(route('grp.org.productions.show.artisans.index', [
+            $this->organisation->slug,
+            $this->production->slug,
+            'from' => now()->toDateString(),
+            'to'   => now()->addDay()->toDateString(),
+        ]))->assertOk();
+
+        $serialized = collect(collect($response->viewData('page')['props']['artisans'])->pluck('jobs')->flatten(1)->pluck('steps')->flatten(1)->pluck('sessions')->flatten(1))
+            ->firstWhere('id', $session->id);
+
+        expect($serialized['band_code'])->toBe('3')
+            ->and($serialized['paid_units_per_hour'])->toBe(182)
+            ->and(collect($serialized['band_targets'])->pluck('units_per_hour', 'band')->all())->toBe(['0' => 152, '1' => 156, '2' => 168, '3' => 180]);
+    });
+
     test('a production without pay bands measures output against the target but pays nothing and has no payroll', function () {
         $production = Production::where('code', 'NOBANDS')->first()
             ?? StoreProduction::make()->action($this->organisation, ['code' => 'NOBANDS', 'name' => 'No bands']);

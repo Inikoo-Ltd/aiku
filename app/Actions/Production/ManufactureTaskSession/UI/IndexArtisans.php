@@ -25,6 +25,7 @@ use App\Models\HumanResources\Employee;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureBreak;
+use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Production\ManufacturePayrollAdjustment;
@@ -184,6 +185,26 @@ class IndexArtisans extends OrgAction
                 ] : null,
         ];
 
+        $measuredBands = ManufacturePayBand::where('production_id', $production->id)
+            ->where(fn ($query) => $query->whereNotNull('target_multiplier')->orWhere('code', '0'))
+            ->orderByDesc('effective_from')
+            ->get();
+        $bandTargets   = fn (ManufactureTaskSession $session): array => $session->standard_rate === null
+            || $session->state != ManufactureTaskSessionStateEnum::CLOSED
+            || $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY
+            || $session->activity_type != ManufactureTaskSessionActivityTypeEnum::PRODUCTION
+            ? []
+            : $measuredBands
+                ->filter(fn (ManufacturePayBand $band) => $band->effective_from->lessThanOrEqualTo($session->ended_at) && (!$band->effective_to || $band->effective_to->greaterThan($session->ended_at)))
+                ->unique('code')
+                ->sortBy(fn (ManufacturePayBand $band) => (float) ($band->target_multiplier ?? 1))
+                ->map(fn (ManufacturePayBand $band) => [
+                    'band'           => $band->code,
+                    'units_per_hour' => (int) ceil(isset($session->tier_thresholds['thresholds'][$band->code]) ? (float) $session->tier_thresholds['thresholds'][$band->code] : (float) $session->standard_rate * (float) ($band->target_multiplier ?? 1)),
+                ])
+                ->values()
+                ->all();
+
         $serializeSession = fn (ManufactureTaskSession $session) => $timeEdit($session) + [
             'id'                  => $session->id,
             'state'               => $session->state,
@@ -212,6 +233,8 @@ class IndexArtisans extends OrgAction
             'units_per_hour'      => $session->paidHours() > 0 ? round($session->quantity_made / $session->paidHours(), 1) : null,
             'standard_rate'       => $session->standard_rate === null ? null : (float)$session->standard_rate,
             'edited_tiers'        => $session->tier_thresholds,
+            'band_targets'        => $bandTargets($session),
+            'paid_units_per_hour' => $session->units_per_hour === null ? null : (int) $session->units_per_hour,
             'band_code'           => $session->state == ManufactureTaskSessionStateEnum::CLOSED ? $session->band_code : null,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
             'is_impossible_rate'  => $session->state == ManufactureTaskSessionStateEnum::CLOSED && $session->paidHours() > 0 && CloseManufactureTaskSession::make()->isImpossibleRate($session),

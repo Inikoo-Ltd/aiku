@@ -84,6 +84,8 @@ interface ArtisanSession extends TimeEditFields {
     units_per_hour: number | null
     standard_rate: number | null
     edited_tiers: null | { source: 'artefact' | 'family', thresholds: Record<string, number> }
+    band_targets: { band: string, units_per_hour: number }[]
+    paid_units_per_hour: number | null
     band_code: string | null
     is_under_target: boolean
     is_impossible_rate?: boolean
@@ -1196,8 +1198,9 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                     <td class="py-1.5 px-3 text-right text-gray-500">{{ sessionHours(session) }}</td>
                                     <td class="py-1.5 px-3 text-right"><span class="whitespace-nowrap">{{ quantityLabel(session.quantity_made) }}<span class="text-xs text-gray-400"> {{ unitWord(session) }}</span></span></td>
                                     <td class="py-1.5 px-3 text-right text-red-500">{{ session.quantity_rejected ? quantityLabel(session.quantity_rejected) : '' }}</td>
-                                    <td class="py-1.5 px-3 text-right whitespace-nowrap" :class="session.is_under_target ? 'text-amber-700' : 'text-gray-400'">
-                                        <template v-if="session.standard_rate !== null">{{ session.units_per_hour ?? 0 }} / {{ session.standard_rate }}</template>
+                                    <td class="py-1.5 px-3 text-right whitespace-nowrap" :class="session.is_under_target ? 'text-amber-700' : 'text-gray-400'"
+                                        v-tooltip="session.band_targets.map(target => ctrans('Band :band :rate', { band: target.band, rate: target.units_per_hour })).join(' · ')">
+                                        <template v-if="session.standard_rate !== null">{{ (session.band_targets.length ? session.paid_units_per_hour : session.units_per_hour) ?? 0 }} / {{ session.band_targets.find(target => target.band === session.band_code)?.units_per_hour ?? session.standard_rate }}</template>
                                         <span v-if="session.band_code" class="ml-2 rounded px-1.5 py-0.5 text-xs font-medium" :class="bandClass(session.band_code)">{{ ctrans('Band') }} {{ session.band_code }}</span>
                                     </td>
                                     <td></td>
