@@ -43,12 +43,12 @@ class IndexMobileOrgStockMovements
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function rows(LengthAwarePaginator $movements): array
+    private function rows(LengthAwarePaginator $movements, OrgStock $orgStock): array
     {
         $listed      = collect($movements->items());
         $locationIds = OrgStockMovement::whereIn('id', $listed->pluck('id'))->pluck('location_id', 'id');
 
-        return $listed->map(function (OrgStockMovement $movement) use ($locationIds) {
+        return $listed->map(function (OrgStockMovement $movement) use ($locationIds, $orgStock) {
             $resource        = OrgStockMovementsResource::make($movement)->resolve();
             $locationId      = $locationIds->get($movement->id);
             $runningQuantity = $resource['running_quantity_org_stock'];
@@ -59,8 +59,9 @@ class IndexMobileOrgStockMovements
                 'type'                       => $movement->type->value,
                 'type_label'                 => $resource['type_label'],
                 'flow'                       => $movement->flow->value,
-                ...$this->quantityFields('quantity', $movement->quantity),
+                ...$this->quantityFields('quantity', $movement->quantity, $orgStock->packed_in),
                 'running_quantity_org_stock' => $runningQuantity === '' ? null : (float) $runningQuantity,
+                'running_quantity_org_stock_label' => $runningQuantity === '' ? null : $this->stockFractionLabel((float) $runningQuantity, $orgStock->packed_in),
                 'location'                   => $locationId ? ['id' => $locationId, 'code' => $movement->getAttribute('location_code')] : null,
                 'reason'                     => $movement->reason?->value,
                 'reason_label'               => $resource['reason_label'],
@@ -88,7 +89,7 @@ class IndexMobileOrgStockMovements
         $movements = $this->handle($warehouse, $orgStock, $filters);
 
         return response()->json([
-            'data' => $this->rows($movements),
+            'data' => $this->rows($movements, $orgStock),
             'meta' => $this->paginationMeta($movements),
         ]);
     }

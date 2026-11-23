@@ -266,8 +266,9 @@ test('mobile negative SKO list gives one row per negative location of this wareh
         ])
         ->and(array_keys($response->json('data.0')))->toBe([
             'id', 'slug', 'code', 'name', 'state', 'state_label', 'family', 'image_url',
-            'quantity_available', 'quantity_available_label', 'quantity_in_locations', 'quantity_in_locations_label',
-            'stock_value', 'number_locations', 'last_seen_at', 'location_org_stock_id', 'location', 'location_quantity',
+            'quantity_available', 'quantity_available_label', 'quantity_available_fraction', 'quantity_in_locations', 'quantity_in_locations_label',
+            'quantity_in_locations_fraction', 'stock_value', 'number_locations', 'last_seen_at', 'location_org_stock_id', 'location', 'location_quantity',
+            'location_quantity_label',
         ]);
 
     $response
@@ -340,7 +341,7 @@ test('mobile SKO detail lists the locations of this warehouse only, picking firs
         ->assertJsonPath('data.locations.2.location.allow_stocks', true);
 
     expect(array_keys($response->json('data.locations.0')))->toBe([
-        'location_org_stock_id', 'type', 'quantity', 'quantity_label', 'picking_priority', 'notes', 'min_stock', 'max_stock',
+        'location_org_stock_id', 'type', 'quantity', 'quantity_label', 'quantity_fraction', 'picking_priority', 'notes', 'min_stock', 'max_stock',
         'replenishment_stock', 'is_default_wholesale', 'is_default_dropshipping', 'audited_at', 'location', 'version',
     ]);
 
@@ -395,7 +396,7 @@ test('mobile SKO stock movements are the web stock history of this warehouse, fi
             'user'       => mobileInventoryPerson($user),
         ])
         ->and(array_keys($rows->first()))->toBe([
-            'id', 'date', 'type', 'type_label', 'flow', 'quantity', 'quantity_label', 'running_quantity_org_stock', 'location',
+            'id', 'date', 'type', 'type_label', 'flow', 'quantity', 'quantity_label', 'quantity_fraction', 'running_quantity_org_stock', 'running_quantity_org_stock_label', 'location',
             'reason', 'reason_label', 'note', 'parent_type', 'parent_reference', 'user',
         ]);
 
@@ -425,7 +426,7 @@ test('mobile SKO audit confirms an unchanged count as a recount and records the 
         ->assertJsonPath('result.status', 'done')
         ->assertJsonPath('data.locations.0.quantity', 30)
         ->assertJsonPath('data.locations.1.quantity', 23.5)
-        ->assertJsonPath('data.locations.1.quantity_label', '23.5')
+        ->assertJsonPath('data.locations.1.quantity_label', '23 1/2')
         ->assertJsonPath('data.quantity_in_locations', 53.5);
 
     $audit = fn (LocationOrgStock $link) => OrgStockMovement::where('org_stock_id', $orgStock->id)->where('location_id', $link->location_id)->where('type', OrgStockMovementTypeEnum::AUDIT)->latest('id')->first();
@@ -678,10 +679,11 @@ test('mobile locations gain a barcode, last audit, pick locations, image and num
     expect(array_slice(array_keys($detail), 0, count($summaryKeys)))->toBe($summaryKeys)
         ->and(array_slice(array_keys($detail), count($summaryKeys)))->toBe(['pallets', 'org_stocks', 'can'])
         ->and($detail['last_audited_at'])->toBe($lastAudited)
-        ->and(array_slice(array_keys($sko), -11))->toBe([
+        ->and(array_slice(array_keys($sko), -14))->toBe([
             'default_wholesale_picking_location', 'default_dropshipping_picking_location', 'min_stock', 'max_stock', 'replenishment_stock', 'audited_at',
-            'image_url', 'picking_location', 'picking_dropshipping_location', 'quantity_value', 'version',
+            'image_url', 'picking_location', 'picking_dropshipping_location', 'quantity_value', 'packed_in', 'quantity_label', 'quantity_fraction', 'version',
         ])
+        ->and($sko['quantity_label'])->toBe('30')
         ->and($sko['version'])->toBe((int) $link->version)
         ->and($sko['quantity'])->toBe('30')
         ->and($sko['quantity_value'])->toBe(30)
@@ -700,6 +702,31 @@ test('mobile locations gain a barcode, last audit, pick locations, image and num
     ])
         ->and($overview['currency_code'])->toBe($warehouse->organisation->currency->code)
         ->and($overview['utilisation'])->toBe($stats->number_locations ? mobileInventoryNumber(($stats->number_locations - $stats->number_empty_locations) / $stats->number_locations) : null);
+});
+
+test('mobile SKO and location quantities carry the fractions the web shows, odd ones included, with the total rounded as the web stores it', function () {
+    [, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [$orgStock, $picking, $storing] = mobileInventorySko($warehouse);
+    $orgStock->update(['packed_in' => 16]);
+    $picking->update(['quantity' => 28.625]);
+    $storing->update(['quantity' => 0.333333]);
+    $webFraction = fn (float $quantity) => riseDivisor(divideWithRemainder(findSmallestFactors($quantity)), 16);
+
+    $detail = getJson(route('grp.api.mobile.warehouses.org_stocks.show', [$warehouse->id, $orgStock->id]), mobileInventoryHeaders())->assertOk()->json('data');
+
+    expect($detail['quantity_in_locations'])->toBe(28.958)
+        ->and($detail['quantity_in_locations_label'])->toBe('28 91/95')
+        ->and($detail['quantity_in_locations_fraction'])->toBe($webFraction(28.958))
+        ->and($detail['locations'][0]['quantity_label'])->toBe('28 10/16')
+        ->and($detail['locations'][0]['quantity_fraction'])->toBe([28, [10, 16]])
+        ->and($detail['locations'][1]['quantity_label'])->toBe('1/3')
+        ->and($detail['locations'][1]['quantity_fraction'])->toBe($webFraction(0.333333));
+
+    $location = getJson(route('grp.api.mobile.locations.show', $picking->location_id), mobileInventoryHeaders())->assertOk()->json('data.org_stocks.0');
+
+    expect($location['packed_in'])->toBe(16)
+        ->and($location['quantity_label'])->toBe('28 10/16')
+        ->and($location['quantity_fraction'])->toBe([28, [10, 16]]);
 });
 
 test('mobile SKOs of a family give their number of locations', function () {

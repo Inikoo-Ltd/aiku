@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
 trait WithMobileOrgStocks
 {
     use WithMobileInventoryAccess;
+    use WithMobileStockFractions;
 
     public const int MAX_ID = 2147483647;
 
@@ -112,9 +113,9 @@ trait WithMobileOrgStocks
             'note_to_packers'               => $orgStock->note_to_packers,
             'currency_code'                 => $orgStock->organisation->currency->code,
             'stock_value'                   => (float) $orgStock->stats?->stock_value,
-            ...$this->quantityFields('quantity_in_locations', LocationOrgStock::where('org_stock_id', $orgStock->id)->sum('quantity')),
-            ...$this->quantityFields('quantity_reserved', $summary['quantity_in_submitted_orders']['value']),
-            ...$this->quantityFields('quantity_to_be_picked', $summary['quantity_to_be_picked']['value']),
+            ...$this->quantityFields('quantity_in_locations', round((float) LocationOrgStock::where('org_stock_id', $orgStock->id)->sum('quantity'), 3), $orgStock->packed_in),
+            ...$this->quantityFields('quantity_reserved', $summary['quantity_in_submitted_orders']['value'], $orgStock->packed_in),
+            ...$this->quantityFields('quantity_to_be_picked', $summary['quantity_to_be_picked']['value'], $orgStock->packed_in),
             'cover'                         => $cover ? [
                 'days'        => $cover['days'],
                 'out_at'      => $cover['out_at'] ? Carbon::parse($cover['out_at'])->toIso8601String() : null,
@@ -129,7 +130,7 @@ trait WithMobileOrgStocks
                     fn (LocationOrgStock $a, LocationOrgStock $b) => ($b->type === LocationStockTypeEnum::PICKING) <=> ($a->type === LocationStockTypeEnum::PICKING),
                     fn (LocationOrgStock $a, LocationOrgStock $b) => $a->location->code <=> $b->location->code,
                 ])
-                ->map(fn (LocationOrgStock $link) => $this->linkRow($link))
+                ->map(fn (LocationOrgStock $link) => $this->linkRow($link, $orgStock->packed_in))
                 ->values()
                 ->all(),
             'can'                           => [
@@ -142,7 +143,7 @@ trait WithMobileOrgStocks
     /**
      * @return array<string, mixed>
      */
-    protected function linkRow(LocationOrgStock $link): array
+    protected function linkRow(LocationOrgStock $link, int|float|string|null $packedIn): array
     {
         $location = $link->location;
         $area     = $location->warehouseArea;
@@ -150,7 +151,7 @@ trait WithMobileOrgStocks
         return [
             'location_org_stock_id'   => $link->id,
             'type'                    => $link->type?->value,
-            ...$this->quantityFields('quantity', $link->quantity),
+            ...$this->quantityFields('quantity', $link->quantity, $packedIn),
             'picking_priority'        => $link->picking_priority,
             'notes'                   => $link->notes,
             'min_stock'               => $this->setting($link, 'min_stock'),
@@ -185,16 +186,6 @@ trait WithMobileOrgStocks
         ]);
     }
 
-    /**
-     * @return array<string, float|string>
-     */
-    protected function quantityFields(string $key, int|float|string|null $quantity): array
-    {
-        return [
-            $key          => (float) $quantity,
-            $key.'_label' => trimDecimalZeros($quantity ?? 0),
-        ];
-    }
 
     protected function orgStockImageUrl(OrgStock $orgStock): ?string
     {

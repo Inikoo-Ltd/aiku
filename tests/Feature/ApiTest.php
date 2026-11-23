@@ -793,6 +793,12 @@ test('a user without an employee record is clocked out in the app with no clocki
         ->assertJsonPath('data.employee', null)
         ->assertJsonPath('data.status', 'clocked_out')
         ->assertJsonPath('data.methods', []);
+
+    $timesheets = getJson(route('grp.api.mobile.clocking.timesheets'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertOk();
+
+    expect($timesheets->json('data.statistics'))->toBeNull()
+        ->and($timesheets->json('data.timesheets'))->toBe([])
+        ->and($timesheets->getContent())->toContain('"statistics":null');
 });
 
 /**

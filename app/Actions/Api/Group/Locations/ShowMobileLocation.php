@@ -9,6 +9,7 @@
 namespace App\Actions\Api\Group\Locations;
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
+use App\Actions\Api\Group\Inventory\WithMobileStockFractions;
 use App\Actions\Inventory\OrgStock\Json\ScanSkoBarcode;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInLocation;
 use App\Http\Resources\Fulfilment\PalletsResource;
@@ -28,6 +29,7 @@ class ShowMobileLocation
 {
     use AsController;
     use WithMobileLocationsAccess;
+    use WithMobileStockFractions;
 
     /**
      * The location with the SKOs of the web location page (IndexOrgStocksInLocation). The web
@@ -65,6 +67,9 @@ class ShowMobileLocation
                         'picking_location'                      => $this->pickLocation($sko?->picking_location_id, $pickCodes->all()),
                         'picking_dropshipping_location'         => $this->pickLocation($sko?->picking_dropshipping_location_id, $pickCodes->all()),
                         'quantity_value'                        => (float) $orgStock->quantity,
+                        'packed_in'                             => $sko?->packed_in === null ? null : (int) $sko->packed_in,
+                        'quantity_label'                        => $this->stockFractionLabel((float) $orgStock->quantity, $sko?->packed_in),
+                        'quantity_fraction'                     => $this->stockFraction((float) $orgStock->quantity, $sko?->packed_in),
                         'version'                               => (int) $link?->version,
                     ]);
                 })
