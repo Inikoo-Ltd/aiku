@@ -6,10 +6,15 @@ import io.aiku.droid.data.api.FulfilmentInboundApi
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.PalletDeliveryQuery
 import io.aiku.droid.data.api.PalletDeliveryRow
+import io.aiku.droid.data.api.PalletDeliverySort
 import io.aiku.droid.data.api.PalletDeliveryStateFilter
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.data.cache.SavedLists
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.components.ListFilter
+import io.aiku.droid.ui.components.OfflineRows
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.PagedList
 import io.aiku.droid.ui.inventory.SEARCH_DEBOUNCE_MILLIS
@@ -22,22 +27,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 data class PalletDeliveriesUiState(
     val state: PalletDeliveryStateFilter = PalletDeliveryStateFilter.Active,
     val search: String = "",
+    val filter: ListFilter<PalletDeliverySort> = ListFilter(),
     val list: PagedList<PalletDeliveryRow> = PagedList(),
     val counts: StateCounts? = null,
     val lookingUpCode: String? = null,
     val scanOutcome: StockScanOutcome? = null,
     val isSessionExpired: Boolean = false,
-)
+    val offline: OfflineRows<PalletDeliveryRow>? = null,
+) {
+    val lastUpdated: Instant? get() = offline?.savedAt
+
+    fun query(page: Int, perPage: Int, filter: ListFilter<PalletDeliverySort> = this.filter): PalletDeliveryQuery = PalletDeliveryQuery(
+        state = state,
+        search = search.trim().takeIf { it.isNotEmpty() },
+        from = filter.dates.from,
+        to = filter.dates.to,
+        sort = filter.sort,
+        page = page,
+        perPage = perPage,
+    )
+
+    fun offlineTotalFor(draft: ListFilter<PalletDeliverySort>): Int? =
+        offline?.let { offlinePalletDeliveries(it.rows, query(page = 1, perPage = 1, filter = draft), it.zone).size }
+}
 
 class PalletDeliveriesViewModel(
     private val api: FulfilmentInboundApi,
     private val sessions: SessionRepository,
     private val warehouseId: Long,
     private val perPage: Int = PalletDeliveryQuery.DEFAULT_PER_PAGE,
+    private val cache: ScreenCache? = null,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(PalletDeliveriesUiState())
@@ -71,6 +98,14 @@ class PalletDeliveriesViewModel(
             loadPage(1)
         }
     }
+
+    fun applyFilter(filter: ListFilter<PalletDeliverySort>) {
+        searchJob?.cancel()
+        mutableState.update { it.copy(filter = filter, list = PagedList()) }
+        loadPage(1)
+    }
+
+    fun clearFilters() = applyFilter(ListFilter())
 
     fun loadMore() {
         val list = mutableState.value.list
@@ -127,23 +162,37 @@ class PalletDeliveriesViewModel(
 
     private fun loadPage(page: Int) {
         val token = token() ?: return
-        val current = mutableState.value
-        val query = PalletDeliveryQuery(state = current.state, search = current.search.trim().takeIf { it.isNotEmpty() }, page = page, perPage = perPage)
+        val query = mutableState.value.query(page = page, perPage = perPage)
         listJob?.cancel()
         mutableState.update { it.copy(list = it.list.loading(page)) }
 
         listJob = viewModelScope.launch {
             when (val result = api.palletDeliveries(token, warehouseId, query)) {
-                is GoodsOutResult.Loaded -> mutableState.update { state ->
-                    state.copy(
-                        list = state.list.loaded(result.value.rows, result.value.meta) { it.id },
-                        counts = result.value.counts ?: state.counts,
-                    )
+                is GoodsOutResult.Loaded -> {
+                    mutableState.update { state ->
+                        state.copy(
+                            list = state.list.loaded(result.value.rows, result.value.meta) { it.id },
+                            counts = result.value.counts ?: state.counts,
+                            offline = null,
+                        )
+                    }
+                    cache?.remember(warehouseId, SavedLists.palletDeliveries, result.value.rows)
                 }
                 GoodsOutResult.SessionExpired -> expireSession()
+                GoodsOutResult.Unreachable -> if (page != 1 || !showSavedRows()) mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
                 else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
             }
         }
+    }
+
+    private suspend fun showSavedRows(): Boolean {
+        val saved = cache?.saved(warehouseId, SavedLists.palletDeliveries) ?: return false
+        val rowsZone = zone()
+        val offline = OfflineRows(rows = saved.value, savedAt = saved.fetchedAt, zone = rowsZone, today = LocalDate.now(rowsZone))
+        mutableState.update {
+            it.copy(offline = offline, list = it.list.savedCopy(offlinePalletDeliveries(saved.value, it.query(page = 1, perPage = perPage), rowsZone)))
+        }
+        return true
     }
 
     private fun token(): String? = sessions.session.value?.token

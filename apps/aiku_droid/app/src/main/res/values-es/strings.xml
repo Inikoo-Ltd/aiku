@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Subir certificado médico</string>
     <string name="clocking_load_failed_title">No se pudo cargar su fichaje</string>
     <string name="clocking_load_more_failed">No se pudieron cargar más</string>
-    <string name="clocking_load_offline_body">No tiene conexión. Conéctese a internet e inténtelo de nuevo.</string>
+    <string name="clocking_load_offline_body">No hay conexión. Compruebe el wifi e inténtelo de nuevo.</string>
     <string name="clocking_load_server_body">Aiku no ha respondido. Inténtelo de nuevo en un momento.</string>
     <string name="clocking_location_accuracy">%1$s · precisión de %2$d m</string>
     <string name="clocking_location_detect">Detectar mi ubicación</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Seleccionar horario de trabajo</string>
     <string name="dashboard_abnormal">Anómalo</string>
     <string name="dashboard_below_minimum">Por debajo del mínimo</string>
-    <string name="dashboard_clocking">Fichaje</string>
     <string name="dashboard_dispatched">Expedido</string>
     <string name="dashboard_dispatched_compared">%1$s hoy · %2$s ayer a esta hora</string>
     <string name="dashboard_dispatched_count">%1$s hoy</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Reintentar</string>
     <string name="login_username">Nombre de usuario</string>
     <string name="login_username_required">Introduzca su nombre de usuario.</string>
-    <string name="menu_all_staff">Todo el personal</string>
     <string name="menu_appearance">Apariencia</string>
     <string name="menu_appearance_subtitle">Color del tema · claro u oscuro</string>
     <string name="menu_change">Cambiar</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Buscar SKO, ubicaciones o albaranes</string>
     <string name="menu_search_placeholder">Buscar SKO, ubicación, albarán</string>
     <string name="menu_timesheets">Registros horarios</string>
-    <string name="module_clocking">Fichaje y RR. HH.</string>
+    <string name="module_clocking">Fichaje y asistencia</string>
     <string name="module_goods_in">Recepción de mercancías</string>
     <string name="module_goods_out">Salida de mercancías</string>
     <string name="module_inventory">Inventario</string>
@@ -2026,6 +2024,11 @@
         <item quantity="one">%d seleccionado</item>
         <item quantity="many">%d seleccionados</item>
         <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Mostrar %d resultado</item>
+        <item quantity="many">Mostrar %d resultados</item>
+        <item quantity="other">Mostrar %d resultados</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">Entrada registrada: %1$d de %2$d</item>
@@ -2532,4 +2535,32 @@
         <item quantity="many">%d acciones</item>
         <item quantity="other">%d acciones</item>
     </plurals>
+    <string name="record_date_expected">Previsto</string>
+    <string name="record_date_dispatched">Enviado</string>
+    <string name="record_date_received">Recibido</string>
+    <string name="record_date_booked_in">Registrado</string>
+    <string name="record_date_started">Iniciado</string>
+    <string name="record_date_created">Creado</string>
+    <string name="filter_and_sort">Filtrar y ordenar</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Desde</string>
+    <string name="filter_date_to">Hasta</string>
+    <string name="filter_date_any">Cualquier fecha</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Desde el %1$s</string>
+    <string name="filter_date_until">Hasta el %1$s</string>
+    <string name="filter_sort_oldest">Más antiguos primero</string>
+    <string name="filter_show_results_unknown">Mostrar resultados</string>
+    <string name="goodsout_extra_sessions_search">Buscar sesiones</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtrar sesiones de picking</string>
+    <string name="goodsout_extra_sort_finished">Finalizado</string>
+    <string name="goodsin_sort_supplier">Proveedor</string>
+    <string name="goodsin_sort_expected_date">Fecha prevista</string>
+    <string name="goodsin_returns_filter_title">Filtrar devoluciones</string>
+    <string name="goodsin_returns_date_received">Fecha de recepción</string>
+    <string name="goodsin_returns_sort_newest">Recibidas más recientes primero</string>
+    <string name="goodsin_returns_sort_oldest">Recibidas más antiguas primero</string>
+    <string name="fulfilment_inbound_filter_title">Filtrar entregas</string>
+    <string name="cache_saved_rows_only">Copia guardada: solo incluye las filas cargadas antes</string>
+    <string name="filter_online_only">%1$s (solo en línea)</string>
 </resources>

@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Učitaj liječničku potvrdu</string>
     <string name="clocking_load_failed_title">Učitavanje evidencije radnog vremena nije uspjelo</string>
     <string name="clocking_load_more_failed">Učitavanje više stavki nije uspjelo</string>
-    <string name="clocking_load_offline_body">Niste na mreži. Spojite se na internet i pokušajte ponovno.</string>
+    <string name="clocking_load_offline_body">Nema veze. Provjerite Wi-Fi i pokušajte ponovno.</string>
     <string name="clocking_load_server_body">Aiku nije odgovorio. Pokušajte ponovno za trenutak.</string>
     <string name="clocking_location_accuracy">%1$s · točnost %2$d m</string>
     <string name="clocking_location_detect">Odredi moju lokaciju</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Odaberi radno vrijeme</string>
     <string name="dashboard_abnormal">Nepravilno</string>
     <string name="dashboard_below_minimum">Ispod minimuma</string>
-    <string name="dashboard_clocking">Evidencija radnog vremena</string>
     <string name="dashboard_dispatched">Poslano</string>
     <string name="dashboard_dispatched_compared">%1$s danas · %2$s jučer do sada</string>
     <string name="dashboard_dispatched_count">%1$s danas</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Pokušajte ponovno</string>
     <string name="login_username">Korisničko ime</string>
     <string name="login_username_required">Unesite korisničko ime.</string>
-    <string name="menu_all_staff">Svi zaposlenici</string>
     <string name="menu_appearance">Izgled</string>
     <string name="menu_appearance_subtitle">Boja teme · svijetlo ili tamno</string>
     <string name="menu_change">Promijeni</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Pretraži SKO-ove, lokacije ili otpremnice</string>
     <string name="menu_search_placeholder">Traži SKO, lokaciju, otpremnicu</string>
     <string name="menu_timesheets">Vremenske tablice</string>
-    <string name="module_clocking">Radno vrijeme i HR</string>
+    <string name="module_clocking">Evidencija radnog vremena i prisutnost</string>
     <string name="module_goods_in">Ulaz robe</string>
     <string name="module_goods_out">Izlaz robe</string>
     <string name="module_inventory">Inventar</string>
@@ -2026,6 +2024,11 @@
         <item quantity="one">%d odabran</item>
         <item quantity="few">%d odabrana</item>
         <item quantity="other">%d odabranih</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Prikaži %d rezultat</item>
+        <item quantity="few">Prikaži %d rezultata</item>
+        <item quantity="other">Prikaži %d rezultata</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">Uskladišteno %1$d od %2$d</item>
@@ -2532,4 +2535,32 @@
         <item quantity="few">%d radnje</item>
         <item quantity="other">%d radnji</item>
     </plurals>
+    <string name="record_date_expected">Očekivano</string>
+    <string name="record_date_dispatched">Poslano</string>
+    <string name="record_date_received">Primljeno</string>
+    <string name="record_date_booked_in">Uskladišteno</string>
+    <string name="record_date_started">Započeto</string>
+    <string name="record_date_created">Stvoreno</string>
+    <string name="filter_and_sort">Filtriraj i sortiraj</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Od</string>
+    <string name="filter_date_to">Do</string>
+    <string name="filter_date_any">Bilo koji datum</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Od %1$s</string>
+    <string name="filter_date_until">Do %1$s</string>
+    <string name="filter_sort_oldest">Najstarije prvo</string>
+    <string name="filter_show_results_unknown">Prikaži rezultate</string>
+    <string name="goodsout_extra_sessions_search">Pretraži sesije</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtriraj sesije branja</string>
+    <string name="goodsout_extra_sort_finished">Završeno</string>
+    <string name="goodsin_sort_supplier">Dobavljač</string>
+    <string name="goodsin_sort_expected_date">Očekivani datum</string>
+    <string name="goodsin_returns_filter_title">Filtriraj povrate</string>
+    <string name="goodsin_returns_date_received">Datum primitka</string>
+    <string name="goodsin_returns_sort_newest">Najnovije primljeno prvo</string>
+    <string name="goodsin_returns_sort_oldest">Najstarije primljeno prvo</string>
+    <string name="fulfilment_inbound_filter_title">Filtriraj isporuke</string>
+    <string name="cache_saved_rows_only">Spremljena kopija: uključeni su samo prethodno učitani redovi</string>
+    <string name="filter_online_only">%1$s (samo na mreži)</string>
 </resources>

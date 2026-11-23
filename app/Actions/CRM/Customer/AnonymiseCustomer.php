@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
+use App\Models\Chat\ChatAuraQuestion;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatMessageTranslation;
 use App\Models\Chat\ChatSession;
@@ -299,6 +300,8 @@ class AnonymiseCustomer extends OrgAction
         ]);
 
         ChatSession::whereIn('id', $sessionIds)->update(['metadata' => null, 'guest_identifier' => null]);
+
+        ChatAuraQuestion::whereIn('chat_session_id', $sessionIds)->update(['question' => self::ERASED, 'answer' => self::ERASED, 'tool_calls' => '[]']);
     }
 
     /**

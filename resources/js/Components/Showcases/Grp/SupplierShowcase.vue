@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -13,7 +14,13 @@ import {
     faBoxUsd,
     faBuilding,
     faCalendarPlus,
+    faCalendarTimes,
     faClock,
+    faHourglassHalf,
+    faIndustry,
+    faPencil,
+    faSnowflake,
+    faStopwatch,
     faEnvelope,
     faFileInvoiceDollar,
     faGlobe,
@@ -30,13 +37,20 @@ import {
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import Image from '@common/Components/Image.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 library.add(
     faBoxUsd,
     faBuilding,
     faCalendarPlus,
+    faCalendarTimes,
     faClock,
+    faHourglassHalf,
+    faIndustry,
+    faPencil,
+    faSnowflake,
+    faStopwatch,
     faEnvelope,
     faFileInvoiceDollar,
     faGlobe,
@@ -51,8 +65,32 @@ library.add(
     faUser
 )
 
+type RouteLink = {
+    name: string
+    parameters: Record<string, string | number>
+}
+
+type FactoryHoliday = {
+    from: string
+    to?: string | null
+    note?: string | null
+}
+
 const props = defineProps<{
     data: {
+        leadTimes?: {
+            delivery_time?: number | string | null
+            production_waiting_time?: number | string | null
+            cooling_period?: number | string | null
+            pre_order_lead_time?: number | string | null
+            pre_order_lead_time_unit?: 'days' | 'weeks' | null
+            factory_holidays?: FactoryHoliday[]
+            edit_routes?: {
+                settings: RouteLink
+                factory: RouteLink
+                pre_orders: RouteLink
+            } | null
+        }
         contactCard: {
             created_at?: string
             company?: string
@@ -213,18 +251,6 @@ const supplierInfo = computed(() => {
             value: info.delivery_type === 'container' ? ctrans('Container') : info.delivery_type === 'parcel' ? ctrans('Parcels') : info.delivery_type
         },
         {
-            key: 'delivery_time',
-            label: ctrans('Delivery time'),
-            icon: 'fal fa-clock',
-            value: info.delivery_time ? ctrans(':days days', { days: info.delivery_time }) : null
-        },
-        {
-            key: 'production_waiting_time',
-            label: ctrans('Production time'),
-            icon: 'fal fa-clock',
-            value: info.production_waiting_time ? ctrans(':days days', { days: info.production_waiting_time }) : null
-        },
-        {
             key: 'products_origin',
             label: ctrans('Products origin'),
             icon: 'fal fa-globe',
@@ -268,6 +294,63 @@ const supplierInfo = computed(() => {
         }
     ].filter((row) => row.value)
 })
+
+const leadTimes = computed(() => props.data?.leadTimes)
+
+const hasValue = (value: number | string | null | undefined) => value !== null && value !== undefined && value !== ''
+
+const formatDays = (value: number | string | null | undefined) => (hasValue(value) ? ctrans(':days days', { days: value as number }) : null)
+
+const leadTimeRows = computed(() => {
+    const times = leadTimes.value
+
+    if (!times) {
+        return []
+    }
+
+    const preOrderLeadTime = hasValue(times.pre_order_lead_time)
+        ? times.pre_order_lead_time_unit === 'weeks'
+            ? ctrans(':weeks weeks', { weeks: times.pre_order_lead_time as number })
+            : formatDays(times.pre_order_lead_time)
+        : null
+
+    return [
+        {
+            key: 'delivery_time',
+            label: ctrans('Delivery time'),
+            icon: 'fal fa-clock',
+            value: formatDays(times.delivery_time),
+            editRoute: times.edit_routes?.settings
+        },
+        {
+            key: 'production_waiting_time',
+            label: ctrans('Production time'),
+            icon: 'fal fa-industry',
+            value: formatDays(times.production_waiting_time),
+            editRoute: times.edit_routes?.settings
+        },
+        {
+            key: 'cooling_period',
+            label: ctrans('Cooling period between orders'),
+            icon: 'fal fa-snowflake',
+            value: formatDays(times.cooling_period),
+            editRoute: times.edit_routes?.settings
+        },
+        {
+            key: 'pre_order_lead_time',
+            label: ctrans('Pre-order lead time'),
+            icon: 'fal fa-hourglass-half',
+            value: preOrderLeadTime,
+            editRoute: times.edit_routes?.pre_orders
+        }
+    ]
+})
+
+const formatHoliday = (holiday: FactoryHoliday) => {
+    const from = useFormatTime(holiday.from)
+
+    return holiday.to && holiday.to !== holiday.from ? `${from} – ${useFormatTime(holiday.to)}` : from
+}
 </script>
 
 <template>
@@ -346,33 +429,89 @@ const supplierInfo = computed(() => {
                 </template>
             </div>
 
-            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
-                <div class="flex items-center gap-3 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
-                    <FontAwesomeIcon
-                        icon="fal fa-map-marked-alt"
-                        class="text-gray-400"
-                        fixed-width
-                        aria-hidden="true" />
-                    <h2 class="text-base font-semibold text-gray-900">{{ ctrans('Address') }}</h2>
-                </div>
-
-                <div v-if="hasAddress" class="space-y-4 px-6 py-5 text-sm text-gray-700">
-                    <div v-if="contactCard?.location?.length" class="flex items-center gap-x-3">
+            <div class="space-y-6">
+                <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+                    <div class="flex items-center gap-3 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
                         <FontAwesomeIcon
-                            icon="fal fa-map-marker-alt"
+                            icon="fal fa-map-marked-alt"
                             class="text-gray-400"
                             fixed-width
                             aria-hidden="true" />
-                        <AddressLocation :data="contactCard.location" />
+                        <h2 class="text-base font-semibold text-gray-900">{{ ctrans('Address') }}</h2>
                     </div>
-                    <div
-                        v-if="contactCard?.address?.formatted_address"
-                        class="rounded-lg bg-gray-50 px-4 py-3 leading-relaxed ring-1 ring-inset ring-gray-900/5"
-                        v-html="contactCard.address.formatted_address" />
+
+                    <div v-if="hasAddress" class="space-y-4 px-6 py-5 text-sm text-gray-700">
+                        <div v-if="contactCard?.location?.length" class="flex items-center gap-x-3">
+                            <FontAwesomeIcon
+                                icon="fal fa-map-marker-alt"
+                                class="text-gray-400"
+                                fixed-width
+                                aria-hidden="true" />
+                            <AddressLocation :data="contactCard.location" />
+                        </div>
+                        <div
+                            v-if="contactCard?.address?.formatted_address"
+                            class="rounded-lg bg-gray-50 px-4 py-3 leading-relaxed ring-1 ring-inset ring-gray-900/5"
+                            v-html="contactCard.address.formatted_address" />
+                    </div>
+                    <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
+                        {{ ctrans('No address recorded') }}
+                    </p>
                 </div>
-                <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
-                    {{ ctrans('No address recorded') }}
-                </p>
+
+                <div v-if="leadTimes" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+                    <div class="flex items-center gap-3 border-b border-gray-900/5 bg-gray-50/80 px-6 py-4">
+                        <FontAwesomeIcon icon="fal fa-stopwatch" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <h2 class="flex-1 text-base font-semibold text-gray-900">{{ ctrans('Lead times') }}</h2>
+                        <Link v-if="leadTimes.edit_routes" :href="route(leadTimes.edit_routes.settings.name, leadTimes.edit_routes.settings.parameters)">
+                            <Button type="tertiary" size="xs" :label="ctrans('Edit')" icon="fal fa-pencil" />
+                        </Link>
+                    </div>
+
+                    <dl class="divide-y divide-gray-900/5">
+                        <div v-for="row in leadTimeRows" :key="row.key" class="group flex items-center gap-x-4 px-6 py-3">
+                            <dt class="flex flex-1 items-center gap-x-4 text-sm text-gray-500">
+                                <FontAwesomeIcon :icon="row.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+                                {{ row.label }}
+                            </dt>
+                            <dd class="text-sm font-medium" :class="row.value ? 'text-gray-900' : 'italic text-gray-400 font-normal'">
+                                {{ row.value ?? ctrans('Not set') }}
+                            </dd>
+                            <Link
+                                v-if="row.editRoute"
+                                v-tooltip="ctrans('Edit')"
+                                :href="route(row.editRoute.name, row.editRoute.parameters)"
+                                class="flex-none text-gray-300 transition-colors hover:text-[var(--app-accent)] focus:text-[var(--app-accent)] group-hover:text-gray-400">
+                                <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                <span class="sr-only">{{ ctrans('Edit') }} {{ row.label }}</span>
+                            </Link>
+                        </div>
+
+                        <div class="group flex items-start gap-x-4 px-6 py-3">
+                            <dt class="flex flex-1 items-center gap-x-4 text-sm text-gray-500">
+                                <FontAwesomeIcon icon="fal fa-calendar-times" class="text-gray-400" fixed-width aria-hidden="true" />
+                                {{ ctrans('Upcoming factory holidays') }}
+                            </dt>
+                            <dd class="text-right text-sm">
+                                <template v-if="leadTimes.factory_holidays?.length">
+                                    <div v-for="(holiday, index) in leadTimes.factory_holidays" :key="index" class="font-medium text-gray-900">
+                                        {{ formatHoliday(holiday) }}
+                                        <span v-if="holiday.note" class="font-normal text-gray-500">· {{ holiday.note }}</span>
+                                    </div>
+                                </template>
+                                <span v-else class="italic text-gray-400">{{ ctrans('None') }}</span>
+                            </dd>
+                            <Link
+                                v-if="leadTimes.edit_routes"
+                                v-tooltip="ctrans('Edit')"
+                                :href="route(leadTimes.edit_routes.factory.name, leadTimes.edit_routes.factory.parameters)"
+                                class="flex-none text-gray-300 transition-colors hover:text-[var(--app-accent)] focus:text-[var(--app-accent)] group-hover:text-gray-400">
+                                <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                                <span class="sr-only">{{ ctrans('Edit') }} {{ ctrans('Factory holidays') }}</span>
+                            </Link>
+                        </div>
+                    </dl>
+                </div>
             </div>
         </div>
     </div>

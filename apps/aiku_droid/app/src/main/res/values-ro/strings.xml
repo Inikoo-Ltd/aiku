@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Încărcați certificatul medical</string>
     <string name="clocking_load_failed_title">Pontajul dvs. nu a putut fi încărcat</string>
     <string name="clocking_load_more_failed">Nu s-au putut încărca mai multe</string>
-    <string name="clocking_load_offline_body">Sunteți offline. Conectați-vă la internet și încercați din nou.</string>
+    <string name="clocking_load_offline_body">Nu există conexiune. Verificați Wi-Fi-ul și încercați din nou.</string>
     <string name="clocking_load_server_body">Aiku nu a răspuns. Încercați din nou peste câteva momente.</string>
     <string name="clocking_location_accuracy">%1$s · precizie de %2$d m</string>
     <string name="clocking_location_detect">Detectați locația mea</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Selectați orele de lucru</string>
     <string name="dashboard_abnormal">Anormal</string>
     <string name="dashboard_below_minimum">Sub minim</string>
-    <string name="dashboard_clocking">Pontaj</string>
     <string name="dashboard_dispatched">Expediat</string>
     <string name="dashboard_dispatched_compared">%1$s astăzi · %2$s ieri până la această oră</string>
     <string name="dashboard_dispatched_count">%1$s astăzi</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Încercați din nou</string>
     <string name="login_username">Nume de utilizator</string>
     <string name="login_username_required">Introduceți numele de utilizator.</string>
-    <string name="menu_all_staff">Tot personalul</string>
     <string name="menu_appearance">Aspect</string>
     <string name="menu_appearance_subtitle">Culoarea temei · luminos sau întunecat</string>
     <string name="menu_change">Schimbați</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Căutați SKO-uri, locații sau note de livrare</string>
     <string name="menu_search_placeholder">Căutați SKO, locație, notă de livrare</string>
     <string name="menu_timesheets">Foi de pontaj</string>
-    <string name="module_clocking">Pontaj și HR</string>
+    <string name="module_clocking">Pontaj și prezență</string>
     <string name="module_goods_in">Intrare de mărfuri</string>
     <string name="module_goods_out">Ieșire de mărfuri</string>
     <string name="module_inventory">Stoc</string>
@@ -2026,6 +2024,11 @@
         <item quantity="one">Selectate: %d</item>
         <item quantity="few">Selectate: %d</item>
         <item quantity="other">Selectate: %d</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Afișați %d rezultat</item>
+        <item quantity="few">Afișați %d rezultate</item>
+        <item quantity="other">Afișați %d de rezultate</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d din %2$d recepționate în stoc</item>
@@ -2532,4 +2535,32 @@
         <item quantity="few">%d acțiuni</item>
         <item quantity="other">%d de acțiuni</item>
     </plurals>
+    <string name="record_date_expected">Estimat</string>
+    <string name="record_date_dispatched">Expediat</string>
+    <string name="record_date_received">Primit</string>
+    <string name="record_date_booked_in">Înregistrat</string>
+    <string name="record_date_started">Început</string>
+    <string name="record_date_created">Creat</string>
+    <string name="filter_and_sort">Filtrați și sortați</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">De la</string>
+    <string name="filter_date_to">Până la</string>
+    <string name="filter_date_any">Orice dată</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">De la %1$s</string>
+    <string name="filter_date_until">Până la %1$s</string>
+    <string name="filter_sort_oldest">Cele mai vechi primele</string>
+    <string name="filter_show_results_unknown">Afișați rezultatele</string>
+    <string name="goodsout_extra_sessions_search">Căutați sesiuni</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtrați sesiunile de cules</string>
+    <string name="goodsout_extra_sort_finished">Terminat</string>
+    <string name="goodsin_sort_supplier">Furnizor</string>
+    <string name="goodsin_sort_expected_date">Data estimată</string>
+    <string name="goodsin_returns_filter_title">Filtrați retururile</string>
+    <string name="goodsin_returns_date_received">Data primirii</string>
+    <string name="goodsin_returns_sort_newest">Cele primite recent primele</string>
+    <string name="goodsin_returns_sort_oldest">Cele primite demult primele</string>
+    <string name="fulfilment_inbound_filter_title">Filtrați livrările</string>
+    <string name="cache_saved_rows_only">Copie salvată: sunt incluse doar rândurile încărcate anterior</string>
+    <string name="filter_online_only">%1$s (doar online)</string>
 </resources>

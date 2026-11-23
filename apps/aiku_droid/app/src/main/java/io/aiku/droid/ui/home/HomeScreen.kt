@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +49,7 @@ import io.aiku.droid.ui.components.AvatarButton
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.CountBadge
 import io.aiku.droid.ui.components.GroupLabel
+import io.aiku.droid.ui.components.LocalOfflineIndicator
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SkeletonBlock
 import io.aiku.droid.ui.components.goodsInEntry
@@ -57,22 +59,24 @@ import io.aiku.droid.ui.components.warehouseKicker
 import io.aiku.droid.ui.mywork.LocalWorkBadges
 import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
 import io.aiku.droid.ui.navigation.ClockingRoute
-import io.aiku.droid.ui.navigation.DeliveryNotesRoute
+import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
+import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
-import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ProfileRoute
-import io.aiku.droid.ui.navigation.SkusRoute
+import io.aiku.droid.ui.navigation.ResolveConflictsRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
+import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 import io.aiku.droid.ui.update.AppUpdateBanner
 import io.aiku.droid.update.AppUpdate
 import java.time.Instant
 import java.time.LocalTime
 
+private const val ATTENTION_BORDER_ALPHA = 0.35f
 private const val MORNING_ENDS_AT = 12
 private const val AFTERNOON_ENDS_AT = 18
 private const val SHORTCUT_COLUMNS = 4
@@ -90,12 +94,13 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
     val now = rememberClockingNow()
     val weekTotal = clockingWeekTotal(clockingState, now)
     val workBadges = LocalWorkBadges.current
+    val needYou by LocalOfflineIndicator.current.needsYouCount.collectAsStateWithLifecycle()
     val badges by workBadges.badges.collectAsStateWithLifecycle()
     val shortcuts = listOfNotNull(
-        Shortcut(R.string.module_goods_out, R.drawable.ic_ui_goods_out, DeliveryNotesRoute(), badges.goodsOutUnassignedBadge).takeIf { can.viewGoodsOut },
-        goodsInEntry(can)?.let { Shortcut(R.string.module_goods_in, R.drawable.ic_ui_goods_in, it) },
-        Shortcut(R.string.module_inventory, R.drawable.ic_ui_pallet, SkusRoute()).takeIf { can.viewInventory },
-        Shortcut(R.string.module_locations, R.drawable.ic_ui_locations, LocationsRoute()).takeIf { can.viewLocations },
+        Shortcut(R.string.module_goods_out, R.drawable.ic_fa_arrow_from_left, GoodsOutBacklogRoute, badges.goodsOutUnassignedBadge).takeIf { can.viewGoodsOut },
+        goodsInEntry(can)?.let { Shortcut(R.string.module_goods_in, R.drawable.ic_fa_arrow_to_bottom, it) },
+        Shortcut(R.string.module_inventory, R.drawable.ic_fa_pallet_alt, InventoryDashboardRoute).takeIf { can.viewInventory },
+        Shortcut(R.string.module_locations, R.drawable.ic_fa_inventory, WarehouseOverviewRoute).takeIf { can.viewLocations },
     )
 
     LaunchedEffect(Unit) {
@@ -118,7 +123,13 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
         if (update != null) {
             AppUpdateBanner(update = update, onDismiss = onDismissUpdate)
         }
-        ClockingCard(summary = clockingSummaryLines(clockingState, now), lastUpdated = clockingState.lastUpdated, onOpen = { navigator.open(ClockingRoute) })
+        ClockingCard(
+            summary = clockingSummaryLines(clockingState, now),
+            weekTotal = weekTotal?.let { stringResource(R.string.clocking_summary_this_week, it) },
+            lastUpdated = clockingState.lastUpdated,
+            onOpen = { navigator.open(ClockingRoute) },
+        )
+        ConflictsRow(needYou = needYou, onOpen = { navigator.open(ResolveConflictsRoute) })
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 GroupLabel(text = stringResource(R.string.home_shortcuts))
@@ -132,28 +143,14 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
         }
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             GroupLabel(text = stringResource(R.string.home_your_modules))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                if (hasWarehouse) {
-                    ModuleTile(
-                        icon = R.drawable.ic_ui_warehouse,
-                        name = stringResource(R.string.home_module_warehouse),
-                        subtitle = warehouseKicker(),
-                        onClick = { navigator.open(WarehouseDashboardRoute) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                ModuleTile(
-                    icon = R.drawable.ic_ui_clock,
-                    name = stringResource(R.string.module_clocking),
-                    subtitle = weekTotal?.let { stringResource(R.string.clocking_summary_this_week, it) } ?: stringResource(R.string.clocking_no_value),
-                    onClick = { navigator.open(ClockingRoute) },
-                    modifier = Modifier.weight(1f),
+            if (hasWarehouse) {
+                ModuleRow(
+                    icon = R.drawable.ic_fa_warehouse,
+                    name = stringResource(R.string.home_module_warehouse),
+                    subtitle = warehouseKicker(),
+                    onClick = { navigator.open(WarehouseDashboardRoute) },
                 )
-                if (!hasWarehouse) {
-                    Box(modifier = Modifier.weight(1f))
-                }
-            }
-            if (!hasWarehouse) {
+            } else {
                 Text(
                     text = stringResource(R.string.home_staff_note),
                     fontSize = 13.sp,
@@ -217,7 +214,7 @@ private fun HomeHeader() {
 }
 
 @Composable
-private fun ClockingCard(summary: ClockingSummaryLines?, lastUpdated: Instant?, onOpen: () -> Unit) {
+private fun ClockingCard(summary: ClockingSummaryLines?, weekTotal: String?, lastUpdated: Instant?, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
     val isClockedIn = summary?.isClockedIn == true
     val (iconBackground, iconTint) = if (isClockedIn) colors.successSoft to colors.success else colors.background to colors.textTertiary
@@ -233,7 +230,7 @@ private fun ClockingCard(summary: ClockingSummaryLines?, lastUpdated: Instant?, 
             .padding(16.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(iconBackground)) {
-            Icon(painter = painterResource(R.drawable.ic_ui_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+            Icon(painter = painterResource(R.drawable.ic_fa_user_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (summary == null) 8.dp else 2.dp)) {
             if (summary == null) {
@@ -242,6 +239,9 @@ private fun ClockingCard(summary: ClockingSummaryLines?, lastUpdated: Instant?, 
             } else {
                 Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
                 Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
+                if (weekTotal != null) {
+                    Text(text = weekTotal, fontSize = 13.sp, color = colors.textTertiary)
+                }
                 if (lastUpdated != null) {
                     Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
                 }
@@ -303,36 +303,76 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
 }
 
 @Composable
-private fun ModuleTile(
+private fun ConflictsRow(needYou: Int, onOpen: () -> Unit) {
+    val colors = LocalAikuColors.current
+    val needsAttention = needYou > 0
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(if (needsAttention) colors.warnSoft else colors.surface)
+            .border(1.dp, if (needsAttention) colors.warnInk.copy(alpha = ATTENTION_BORDER_ALPHA) else colors.border, CardShape)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .padding(14.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(if (needsAttention) colors.surface else colors.soft),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_fa_exclamation_triangle),
+                contentDescription = null,
+                tint = if (needsAttention) colors.warnInk else colors.link,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = stringResource(R.string.sync_conflicts_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (needsAttention) colors.warnInk else colors.text)
+            Text(
+                text = if (needsAttention) {
+                    pluralStringResource(R.plurals.offline_indicator_need_you, needYou, needYou)
+                } else {
+                    stringResource(R.string.offline_stock_conflicts_empty_title)
+                },
+                fontSize = 13.sp,
+                fontWeight = if (needsAttention) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (needsAttention) colors.warnInk else colors.textTertiary,
+            )
+        }
+        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = if (needsAttention) colors.warnInk else colors.faint, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun ModuleRow(
     @DrawableRes icon: Int,
     name: String,
     subtitle: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val colors = LocalAikuColors.current
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier
-            .heightIn(min = 112.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
             .clip(CardShape)
             .background(colors.surface)
             .border(1.dp, colors.border, CardShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(14.dp),
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(colors.soft)) {
-            Icon(painter = painterResource(icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(colors.soft)) {
+            Icon(painter = painterResource(icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(24.dp))
         }
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text)
-            Text(
-                text = subtitle,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = colors.textTertiary,
-            )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
+            Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
         }
+        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = colors.faint, modifier = Modifier.size(20.dp))
     }
 }

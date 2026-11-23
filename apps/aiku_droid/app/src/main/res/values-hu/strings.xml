@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Orvosi igazolás feltöltése</string>
     <string name="clocking_load_failed_title">Nem sikerült betölteni a munkaidő-adatokat</string>
     <string name="clocking_load_more_failed">Nem sikerült többet betölteni</string>
-    <string name="clocking_load_offline_body">Nincs internetkapcsolat. Csatlakozzon az internethez, és próbálja újra.</string>
+    <string name="clocking_load_offline_body">Nincs kapcsolat. Ellenőrizze a Wi-Fit, és próbálja újra.</string>
     <string name="clocking_load_server_body">Az Aiku nem válaszolt. Próbálja újra egy perc múlva.</string>
     <string name="clocking_location_accuracy">%1$s · %2$d m pontosság</string>
     <string name="clocking_location_detect">Helyem meghatározása</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Munkaidő kiválasztása</string>
     <string name="dashboard_abnormal">Rendellenes</string>
     <string name="dashboard_below_minimum">Minimum alatt</string>
-    <string name="dashboard_clocking">Munkaidő-rögzítés</string>
     <string name="dashboard_dispatched">Feladva</string>
     <string name="dashboard_dispatched_compared">Ma: %1$s · tegnap ilyenkor: %2$s</string>
     <string name="dashboard_dispatched_count">Ma: %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Próbálja újra</string>
     <string name="login_username">Felhasználónév</string>
     <string name="login_username_required">Adja meg a felhasználónevét.</string>
-    <string name="menu_all_staff">Minden munkatárs</string>
     <string name="menu_appearance">Megjelenés</string>
     <string name="menu_appearance_subtitle">Témaszín · világos vagy sötét</string>
     <string name="menu_change">Módosítás</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">SKO-k, raktárhelyek vagy szállítólevelek keresése</string>
     <string name="menu_search_placeholder">SKO, raktárhely, szállítólevél keresése</string>
     <string name="menu_timesheets">Munkaidő-nyilvántartások</string>
-    <string name="module_clocking">Munkaidő és HR</string>
+    <string name="module_clocking">Munkaidő-nyilvántartás és jelenlét</string>
     <string name="module_goods_in">Áruátvétel</string>
     <string name="module_goods_out">Árukiadás</string>
     <string name="module_inventory">Készlet</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d kijelölve</item>
         <item quantity="other">%d kijelölve</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">%d találat megjelenítése</item>
+        <item quantity="other">%d találat megjelenítése</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d / %2$d bevételezve</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d művelet</item>
         <item quantity="other">%d művelet</item>
     </plurals>
+    <string name="record_date_expected">Várható</string>
+    <string name="record_date_dispatched">Elküldve</string>
+    <string name="record_date_received">Beérkezett</string>
+    <string name="record_date_booked_in">Bevételezve</string>
+    <string name="record_date_started">Elkezdve</string>
+    <string name="record_date_created">Létrehozva</string>
+    <string name="filter_and_sort">Szűrés és rendezés</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Ettől</string>
+    <string name="filter_date_to">Eddig</string>
+    <string name="filter_date_any">Bármely dátum</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Kezdete: %1$s</string>
+    <string name="filter_date_until">Vége: %1$s</string>
+    <string name="filter_sort_oldest">Legrégebbi elöl</string>
+    <string name="filter_show_results_unknown">Találatok megjelenítése</string>
+    <string name="goodsout_extra_sessions_search">Munkamenetek keresése</string>
+    <string name="goodsout_extra_sessions_filter_title">Komissiózási munkamenetek szűrése</string>
+    <string name="goodsout_extra_sort_finished">Befejezve</string>
+    <string name="goodsin_sort_supplier">Beszállító</string>
+    <string name="goodsin_sort_expected_date">Várható dátum</string>
+    <string name="goodsin_returns_filter_title">Visszaküldések szűrése</string>
+    <string name="goodsin_returns_date_received">Beérkezés dátuma</string>
+    <string name="goodsin_returns_sort_newest">Legutóbb beérkezett elöl</string>
+    <string name="goodsin_returns_sort_oldest">Legkorábban beérkezett elöl</string>
+    <string name="fulfilment_inbound_filter_title">Beszállítások szűrése</string>
+    <string name="cache_saved_rows_only">Mentett másolat: csak a korábban betöltött sorokat tartalmazza</string>
+    <string name="filter_online_only">%1$s (csak online)</string>
 </resources>

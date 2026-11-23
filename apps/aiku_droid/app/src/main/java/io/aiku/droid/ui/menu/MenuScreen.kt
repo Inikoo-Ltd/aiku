@@ -50,12 +50,16 @@ import io.aiku.droid.ui.mywork.LocalWorkBadges
 import io.aiku.droid.ui.mywork.goodsInReceivedBadge
 import io.aiku.droid.ui.mywork.goodsOutUnassignedBadge
 import io.aiku.droid.ui.navigation.AppearanceRoute
+import io.aiku.droid.ui.navigation.ClockingAdjustmentsRoute
+import io.aiku.droid.ui.navigation.ClockingCalendarRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
+import io.aiku.droid.ui.navigation.LeaveRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.navigation.OvertimeRoute
 import io.aiku.droid.ui.navigation.ProfileRoute
 import io.aiku.droid.ui.navigation.SearchRoute
 import io.aiku.droid.ui.navigation.TimesheetsRoute
@@ -65,31 +69,31 @@ import io.aiku.droid.ui.theme.LocalAikuColors
 private data class SectionBadge(val text: String, val isWarn: Boolean)
 
 private val moduleIcons = mapOf(
-    WarehouseModule.Inventory to R.drawable.ic_ui_pallet,
-    WarehouseModule.Locations to R.drawable.ic_ui_locations,
-    WarehouseModule.GoodsIn to R.drawable.ic_ui_goods_in,
-    WarehouseModule.GoodsOut to R.drawable.ic_ui_goods_out,
+    WarehouseModule.Inventory to R.drawable.ic_fa_pallet_alt,
+    WarehouseModule.Locations to R.drawable.ic_fa_inventory,
+    WarehouseModule.GoodsIn to R.drawable.ic_fa_arrow_to_bottom,
+    WarehouseModule.GoodsOut to R.drawable.ic_fa_arrow_from_left,
 )
 
 private val sectionIcons = mapOf(
-    WarehouseSection.InventoryDashboard to R.drawable.ic_ui_dashboard,
-    WarehouseSection.SkuFamilies to R.drawable.ic_ui_families,
-    WarehouseSection.Skus to R.drawable.ic_ui_box,
-    WarehouseSection.StoredPallets to R.drawable.ic_ui_box,
-    WarehouseSection.StoredItems to R.drawable.ic_ui_box,
-    WarehouseSection.WarehouseOverview to R.drawable.ic_ui_warehouse,
-    WarehouseSection.Areas to R.drawable.ic_ui_areas,
-    WarehouseSection.Locations to R.drawable.ic_ui_locations,
-    WarehouseSection.GoodsInBacklog to R.drawable.ic_ui_backlog,
-    WarehouseSection.StockDeliveries to R.drawable.ic_ui_stock_delivery,
-    WarehouseSection.FulfilmentDeliveries to R.drawable.ic_ui_stock_delivery,
-    WarehouseSection.GoodsInReturns to R.drawable.ic_ui_stock_delivery,
-    WarehouseSection.GoodsOutBacklog to R.drawable.ic_ui_backlog,
-    WarehouseSection.DeliveryNotes to R.drawable.ic_ui_delivery_note,
-    WarehouseSection.PickingSessions to R.drawable.ic_ui_delivery_note,
-    WarehouseSection.FulfilmentReturns to R.drawable.ic_ui_delivery_note,
-    WarehouseSection.Trolleys to R.drawable.ic_ui_shipper,
-    WarehouseSection.PickedBays to R.drawable.ic_ui_shipper,
+    WarehouseSection.InventoryDashboard to R.drawable.ic_fa_chart_network,
+    WarehouseSection.SkuFamilies to R.drawable.ic_fa_boxes_alt,
+    WarehouseSection.Skus to R.drawable.ic_fa_box,
+    WarehouseSection.StoredPallets to R.drawable.ic_fa_pallet,
+    WarehouseSection.StoredItems to R.drawable.ic_fa_narwhal,
+    WarehouseSection.WarehouseOverview to R.drawable.ic_fa_warehouse_alt,
+    WarehouseSection.Areas to R.drawable.ic_fa_map_signs,
+    WarehouseSection.Locations to R.drawable.ic_fa_inventory,
+    WarehouseSection.GoodsInBacklog to R.drawable.ic_fa_tasks_alt,
+    WarehouseSection.StockDeliveries to R.drawable.ic_fa_truck_container,
+    WarehouseSection.FulfilmentDeliveries to R.drawable.ic_fa_truck_couch,
+    WarehouseSection.GoodsInReturns to R.drawable.ic_fa_exchange,
+    WarehouseSection.GoodsOutBacklog to R.drawable.ic_fa_tasks_alt,
+    WarehouseSection.DeliveryNotes to R.drawable.ic_fa_truck,
+    WarehouseSection.PickingSessions to R.drawable.ic_fa_brand_stack_overflow,
+    WarehouseSection.FulfilmentReturns to R.drawable.ic_fa_sign_out,
+    WarehouseSection.Trolleys to R.drawable.ic_fa_dolly_flatbed_alt,
+    WarehouseSection.PickedBays to R.drawable.ic_fa_monument,
 )
 
 @Composable
@@ -163,7 +167,7 @@ fun MenuScreen() {
                     .clickable(role = Role.Button) { navigator.showWarehouseSwitcher() }
                     .padding(horizontal = 14.dp, vertical = 8.dp),
             ) {
-                Icon(painter = painterResource(R.drawable.ic_ui_warehouse), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
+                Icon(painter = painterResource(R.drawable.ic_fa_warehouse_alt), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(text = stringResource(R.string.home_module_warehouse), fontSize = 12.sp, color = colors.textTertiary)
                     Text(
@@ -177,7 +181,7 @@ fun MenuScreen() {
             }
             ListGroup {
                 MenuRow(
-                    icon = R.drawable.ic_ui_dashboard,
+                    icon = R.drawable.ic_fa_warehouse,
                     title = stringResource(R.string.home_module_warehouse_dashboard),
                     subtitle = stringResource(R.string.menu_dashboard_subtitle),
                     onClick = { navigator.open(WarehouseDashboardRoute) },
@@ -191,10 +195,10 @@ fun MenuScreen() {
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            GroupHeading(icon = R.drawable.ic_ui_clock, title = stringResource(R.string.module_clocking), note = stringResource(R.string.menu_all_staff))
+            GroupHeading(icon = R.drawable.ic_fa_user_clock, title = stringResource(R.string.module_clocking))
             ListGroup {
                 MenuRow(
-                    icon = R.drawable.ic_ui_clock,
+                    icon = R.drawable.ic_fa_user_clock,
                     title = stringResource(R.string.menu_clocking),
                     subtitle = clockingMenuSubtitle(clockingState),
                     subtitleColor = if (isClockedIn) colors.success else null,
@@ -203,7 +207,15 @@ fun MenuScreen() {
                     onClick = { navigator.open(ClockingRoute) },
                 )
                 RowDivider()
-                MenuRow(icon = R.drawable.ic_ui_backlog, title = stringResource(R.string.menu_timesheets), onClick = { navigator.open(TimesheetsRoute) })
+                MenuRow(icon = R.drawable.ic_fa_stopwatch, title = stringResource(R.string.menu_timesheets), onClick = { navigator.open(TimesheetsRoute) })
+                RowDivider()
+                MenuRow(icon = R.drawable.ic_fa_calendar_minus, title = stringResource(R.string.clocking_tab_leave), onClick = { navigator.open(LeaveRoute) })
+                RowDivider()
+                MenuRow(icon = R.drawable.ic_fa_clock_pencil, title = stringResource(R.string.clocking_tab_adjustment), onClick = { navigator.open(ClockingAdjustmentsRoute) })
+                RowDivider()
+                MenuRow(icon = R.drawable.ic_fa_clock, title = stringResource(R.string.clocking_tab_overtime), onClick = { navigator.open(OvertimeRoute) })
+                RowDivider()
+                MenuRow(icon = R.drawable.ic_fa_calendar, title = stringResource(R.string.clocking_tab_calendar), onClick = { navigator.open(ClockingCalendarRoute) })
             }
         }
         ListGroup {
@@ -273,7 +285,7 @@ private fun ModuleGroup(module: WarehouseModule, sections: List<WarehouseSection
 }
 
 @Composable
-private fun GroupHeading(@DrawableRes icon: Int, title: String, note: String? = null) {
+private fun GroupHeading(@DrawableRes icon: Int, title: String) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -283,9 +295,6 @@ private fun GroupHeading(@DrawableRes icon: Int, title: String, note: String? = 
     ) {
         Icon(painter = painterResource(icon), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(16.dp))
         Text(text = title.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.7.sp, color = colors.textTertiary)
-        if (note != null) {
-            Text(text = note, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.textQuaternary)
-        }
     }
 }
 

@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">診断書をアップロード</string>
     <string name="clocking_load_failed_title">打刻情報を読み込めませんでした</string>
     <string name="clocking_load_more_failed">さらに読み込めませんでした</string>
-    <string name="clocking_load_offline_body">オフラインです。インターネットに接続して、もう一度お試しください。</string>
+    <string name="clocking_load_offline_body">接続がありません。Wi-Fiを確認して、もう一度お試しください。</string>
     <string name="clocking_load_server_body">Aikuから応答がありません。しばらくしてからもう一度お試しください。</string>
     <string name="clocking_location_accuracy">%1$s · 誤差%2$d m</string>
     <string name="clocking_location_detect">現在地を検出</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">勤務時間を選択</string>
     <string name="dashboard_abnormal">異常</string>
     <string name="dashboard_below_minimum">最小在庫を下回る</string>
-    <string name="dashboard_clocking">打刻</string>
     <string name="dashboard_dispatched">出荷済み</string>
     <string name="dashboard_dispatched_compared">本日 %1$s · 昨日の同時刻 %2$s</string>
     <string name="dashboard_dispatched_count">本日 %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">再試行</string>
     <string name="login_username">ユーザー名</string>
     <string name="login_username_required">ユーザー名を入力してください。</string>
-    <string name="menu_all_staff">全スタッフ</string>
     <string name="menu_appearance">表示</string>
     <string name="menu_appearance_subtitle">テーマカラー · ライトまたはダーク</string>
     <string name="menu_change">変更</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">SKO、ロケーション、出荷伝票を検索</string>
     <string name="menu_search_placeholder">SKO、ロケーション、出荷伝票を検索</string>
     <string name="menu_timesheets">勤務表</string>
-    <string name="module_clocking">打刻・人事</string>
+    <string name="module_clocking">打刻・勤怠</string>
     <string name="module_goods_in">入荷</string>
     <string name="module_goods_out">出荷</string>
     <string name="module_inventory">在庫</string>
@@ -2010,6 +2008,9 @@
     </plurals>
     <plurals name="filter_selected">
         <item quantity="other">%d件選択中</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="other">%d件の結果を表示</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="other">%2$d件中%1$d件入庫済み</item>
@@ -2314,4 +2315,32 @@
     <plurals name="states_offline_actions">
         <item quantity="other">%d件の操作</item>
     </plurals>
+    <string name="record_date_expected">予定</string>
+    <string name="record_date_dispatched">発送</string>
+    <string name="record_date_received">受領</string>
+    <string name="record_date_booked_in">入庫</string>
+    <string name="record_date_started">開始</string>
+    <string name="record_date_created">作成</string>
+    <string name="filter_and_sort">絞り込みと並べ替え</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">開始日</string>
+    <string name="filter_date_to">終了日</string>
+    <string name="filter_date_any">指定なし</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">%1$s から</string>
+    <string name="filter_date_until">%1$s まで</string>
+    <string name="filter_sort_oldest">古い順</string>
+    <string name="filter_show_results_unknown">結果を表示</string>
+    <string name="goodsout_extra_sessions_search">セッションを検索</string>
+    <string name="goodsout_extra_sessions_filter_title">ピッキングセッションを絞り込む</string>
+    <string name="goodsout_extra_sort_finished">完了</string>
+    <string name="goodsin_sort_supplier">仕入先</string>
+    <string name="goodsin_sort_expected_date">予定日</string>
+    <string name="goodsin_returns_filter_title">返品を絞り込む</string>
+    <string name="goodsin_returns_date_received">受領日</string>
+    <string name="goodsin_returns_sort_newest">受領が新しい順</string>
+    <string name="goodsin_returns_sort_oldest">受領が古い順</string>
+    <string name="fulfilment_inbound_filter_title">入荷を絞り込む</string>
+    <string name="cache_saved_rows_only">保存済みのコピー：以前に読み込んだ行のみ含まれます</string>
+    <string name="filter_online_only">%1$s（オンラインのみ）</string>
 </resources>

@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">मेडिकल सर्टिफ़िकेट अपलोड करें</string>
     <string name="clocking_load_failed_title">आपकी हाज़िरी लोड नहीं हो सकी</string>
     <string name="clocking_load_more_failed">और लोड नहीं हो सका</string>
-    <string name="clocking_load_offline_body">आप ऑफ़लाइन हैं। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।</string>
+    <string name="clocking_load_offline_body">कोई कनेक्शन नहीं है। Wi-Fi जाँचें और फिर से प्रयास करें।</string>
     <string name="clocking_load_server_body">Aiku ने जवाब नहीं दिया। थोड़ी देर में फिर से प्रयास करें।</string>
     <string name="clocking_location_accuracy">%1$s · %2$d m तक सटीक</string>
     <string name="clocking_location_detect">मेरी लोकेशन पता करें</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">कार्य घंटे चुनें</string>
     <string name="dashboard_abnormal">असामान्य</string>
     <string name="dashboard_below_minimum">न्यूनतम से कम</string>
-    <string name="dashboard_clocking">हाज़िरी</string>
     <string name="dashboard_dispatched">डिस्पैच किया गया</string>
     <string name="dashboard_dispatched_compared">आज %1$s · कल इस समय तक %2$s</string>
     <string name="dashboard_dispatched_count">आज %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">फिर से प्रयास करें</string>
     <string name="login_username">उपयोगकर्ता नाम</string>
     <string name="login_username_required">अपना उपयोगकर्ता नाम दर्ज करें।</string>
-    <string name="menu_all_staff">सभी कर्मचारी</string>
     <string name="menu_appearance">रूप-रंग</string>
     <string name="menu_appearance_subtitle">थीम रंग · लाइट या डार्क</string>
     <string name="menu_change">बदलें</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">SKO, लोकेशन या डिलीवरी नोट्स खोजें</string>
     <string name="menu_search_placeholder">SKO, लोकेशन, डिलीवरी नोट खोजें</string>
     <string name="menu_timesheets">टाइमशीट</string>
-    <string name="module_clocking">हाज़िरी और HR</string>
+    <string name="module_clocking">क्लॉकिंग और उपस्थिति</string>
     <string name="module_goods_in">माल प्राप्ति</string>
     <string name="module_goods_out">माल निकासी</string>
     <string name="module_inventory">इन्वेंटरी</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d चयनित</item>
         <item quantity="other">%d चयनित</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">%d परिणाम दिखाएँ</item>
+        <item quantity="other">%d परिणाम दिखाएँ</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%2$d में से %1$d बुक इन</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d कार्रवाई</item>
         <item quantity="other">%d कार्रवाइयाँ</item>
     </plurals>
+    <string name="record_date_expected">अपेक्षित</string>
+    <string name="record_date_dispatched">भेजा गया</string>
+    <string name="record_date_received">प्राप्त</string>
+    <string name="record_date_booked_in">दर्ज किया गया</string>
+    <string name="record_date_started">शुरू</string>
+    <string name="record_date_created">बनाया गया</string>
+    <string name="filter_and_sort">फ़िल्टर और क्रमबद्ध करें</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">कब से</string>
+    <string name="filter_date_to">कब तक</string>
+    <string name="filter_date_any">कोई भी तारीख</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">%1$s से</string>
+    <string name="filter_date_until">%1$s तक</string>
+    <string name="filter_sort_oldest">सबसे पुराने पहले</string>
+    <string name="filter_show_results_unknown">परिणाम दिखाएँ</string>
+    <string name="goodsout_extra_sessions_search">सत्र खोजें</string>
+    <string name="goodsout_extra_sessions_filter_title">पिकिंग सत्र फ़िल्टर करें</string>
+    <string name="goodsout_extra_sort_finished">समाप्त</string>
+    <string name="goodsin_sort_supplier">आपूर्तिकर्ता</string>
+    <string name="goodsin_sort_expected_date">अपेक्षित तारीख</string>
+    <string name="goodsin_returns_filter_title">वापसी फ़िल्टर करें</string>
+    <string name="goodsin_returns_date_received">प्राप्ति की तारीख</string>
+    <string name="goodsin_returns_sort_newest">हाल में प्राप्त पहले</string>
+    <string name="goodsin_returns_sort_oldest">सबसे पहले प्राप्त पहले</string>
+    <string name="fulfilment_inbound_filter_title">डिलीवरी फ़िल्टर करें</string>
+    <string name="cache_saved_rows_only">सहेजी गई कॉपी: केवल पहले लोड की गई पंक्तियाँ शामिल हैं</string>
+    <string name="filter_online_only">%1$s (केवल ऑनलाइन)</string>
 </resources>

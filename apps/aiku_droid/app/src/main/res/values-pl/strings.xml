@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Prześlij zaświadczenie lekarskie</string>
     <string name="clocking_load_failed_title">Nie udało się wczytać rejestracji czasu pracy</string>
     <string name="clocking_load_more_failed">Nie udało się wczytać więcej</string>
-    <string name="clocking_load_offline_body">Jesteś offline. Połącz się z internetem i spróbuj ponownie.</string>
+    <string name="clocking_load_offline_body">Brak połączenia. Sprawdź Wi-Fi i spróbuj ponownie.</string>
     <string name="clocking_load_server_body">Aiku nie odpowiada. Spróbuj ponownie za chwilę.</string>
     <string name="clocking_location_accuracy">%1$s · dokładność %2$d m</string>
     <string name="clocking_location_detect">Wykryj moją lokalizację</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Wybierz godziny pracy</string>
     <string name="dashboard_abnormal">Nieprawidłowe</string>
     <string name="dashboard_below_minimum">Poniżej minimum</string>
-    <string name="dashboard_clocking">Rejestracja czasu pracy</string>
     <string name="dashboard_dispatched">Wysłano</string>
     <string name="dashboard_dispatched_compared">%1$s dzisiaj · %2$s wczoraj o tej porze</string>
     <string name="dashboard_dispatched_count">%1$s dzisiaj</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Spróbuj ponownie</string>
     <string name="login_username">Nazwa użytkownika</string>
     <string name="login_username_required">Wpisz nazwę użytkownika.</string>
-    <string name="menu_all_staff">Wszyscy pracownicy</string>
     <string name="menu_appearance">Wygląd</string>
     <string name="menu_appearance_subtitle">Kolor motywu · jasny lub ciemny</string>
     <string name="menu_change">Zmień</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Szukaj SKO, lokalizacji lub dowodów dostawy</string>
     <string name="menu_search_placeholder">Szukaj SKO, lokalizacji, dowodu dostawy</string>
     <string name="menu_timesheets">Karty czasu pracy</string>
-    <string name="module_clocking">Rejestracja czasu pracy i HR</string>
+    <string name="module_clocking">Rejestracja czasu pracy i obecności</string>
     <string name="module_goods_in">Przyjęcie towarów</string>
     <string name="module_goods_out">Towary wydawane</string>
     <string name="module_inventory">Zapasy</string>
@@ -2034,6 +2032,12 @@
         <item quantity="few">Zaznaczono: %d</item>
         <item quantity="many">Zaznaczono: %d</item>
         <item quantity="other">Zaznaczono: %d</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Pokaż %d wynik</item>
+        <item quantity="few">Pokaż %d wyniki</item>
+        <item quantity="many">Pokaż %d wyników</item>
+        <item quantity="other">Pokaż %d wyniku</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">Przyjęto na stan %1$d z %2$d</item>
@@ -2641,4 +2645,32 @@
         <item quantity="many">%d czynności</item>
         <item quantity="other">%d czynności</item>
     </plurals>
+    <string name="record_date_expected">Oczekiwane</string>
+    <string name="record_date_dispatched">Wysłane</string>
+    <string name="record_date_received">Przyjęte</string>
+    <string name="record_date_booked_in">Zaksięgowane</string>
+    <string name="record_date_started">Rozpoczęte</string>
+    <string name="record_date_created">Utworzone</string>
+    <string name="filter_and_sort">Filtruj i sortuj</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Od</string>
+    <string name="filter_date_to">Do</string>
+    <string name="filter_date_any">Dowolna data</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Od %1$s</string>
+    <string name="filter_date_until">Do %1$s</string>
+    <string name="filter_sort_oldest">Najstarsze na górze</string>
+    <string name="filter_show_results_unknown">Pokaż wyniki</string>
+    <string name="goodsout_extra_sessions_search">Szukaj sesji</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtruj sesje kompletowania</string>
+    <string name="goodsout_extra_sort_finished">Zakończone</string>
+    <string name="goodsin_sort_supplier">Dostawca</string>
+    <string name="goodsin_sort_expected_date">Oczekiwana data</string>
+    <string name="goodsin_returns_filter_title">Filtruj zwroty</string>
+    <string name="goodsin_returns_date_received">Data przyjęcia</string>
+    <string name="goodsin_returns_sort_newest">Ostatnio przyjęte na górze</string>
+    <string name="goodsin_returns_sort_oldest">Najdawniej przyjęte na górze</string>
+    <string name="fulfilment_inbound_filter_title">Filtruj dostawy</string>
+    <string name="cache_saved_rows_only">Zapisana kopia: zawiera tylko wcześniej wczytane wiersze</string>
+    <string name="filter_online_only">%1$s (tylko online)</string>
 </resources>

@@ -105,7 +105,7 @@ fun MoveSkusSheet(
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                         Text(text = sko.code, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text)
-                        Text(text = stringResource(R.string.locations_in_location, stockText(sko.stock)), fontSize = 13.sp, color = colors.textTertiary)
+                        Text(text = stringResource(R.string.locations_in_location, stockText(sko.stock, sko.stockLabel)), fontSize = 13.sp, color = colors.textTertiary)
                         DecimalStepper(
                             value = quantities[sko.locationOrgStockId] ?: 0.0,
                             onValueChange = { value -> quantities = quantities + (sko.locationOrgStockId to value) },

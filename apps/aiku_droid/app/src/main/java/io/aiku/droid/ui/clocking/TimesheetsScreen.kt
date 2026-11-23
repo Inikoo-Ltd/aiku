@@ -51,6 +51,7 @@ import io.aiku.droid.ui.components.AikuCard
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.EmptyState
+import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
@@ -122,6 +123,7 @@ fun TimesheetsScreen() {
             },
         )
         week?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { clocking.loadWeek(requestedFrom) }) }
+        week?.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
         when {
             period != null -> {
                 TimesheetWeekSummary(period = period, weekStart = weekStart, status = state.status, today = state.today, now = now)

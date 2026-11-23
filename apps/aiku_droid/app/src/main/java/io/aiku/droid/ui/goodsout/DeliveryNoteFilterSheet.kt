@@ -16,6 +16,8 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.DeliveryNoteSort
 import io.aiku.droid.data.api.DispatchChannel
 import io.aiku.droid.data.api.PickerFilter
+import io.aiku.droid.ui.components.DateRange
+import io.aiku.droid.ui.components.DateRangeFields
 import io.aiku.droid.ui.components.DeliveryNoteStage
 import io.aiku.droid.ui.components.FilterSheet
 import io.aiku.droid.ui.components.FilterSheetOption
@@ -57,6 +59,7 @@ internal fun sortLabel(sort: DeliveryNoteSort): Int = when (sort) {
     DeliveryNoteSort.MostItems -> R.string.goodsout_filter_sort_items
     DeliveryNoteSort.Heaviest -> R.string.goodsout_filter_sort_weight
     DeliveryNoteSort.Customer -> R.string.goodsout_filter_sort_customer
+    DeliveryNoteSort.Reference -> R.string.goodsin_sort_reference
 }
 
 private fun stageDot(stage: DeliveryNoteStage, colors: AikuColors): Color = when (stage) {
@@ -77,11 +80,13 @@ private fun DeliveryNoteFilter.selection(): List<Set<Int>> = listOf(
 
 private fun DeliveryNoteFilter.withSelection(selection: List<Set<Int>>): DeliveryNoteFilter {
     val selectedSort = selection[SORT_SECTION].firstOrNull()?.let { sortOptions[it] }
+    val quickDate = selection[DATE_SECTION].firstOrNull()?.let { dateOptions[it] }
     val updated = copy(
         bucket = selection[STATE_SECTION].firstOrNull()?.let { stageBuckets[it].second } ?: bucket,
         picker = selection[PICKER_SECTION].firstOrNull()?.let { pickerOptions[it] },
         channel = selection[CHANNEL_SECTION].firstOrNull()?.let { filterChannels[it] } ?: DispatchChannel.All,
-        date = selection[DATE_SECTION].firstOrNull()?.let { dateOptions[it] },
+        date = quickDate,
+        range = if (quickDate != null) DateRange() else range,
     )
     return when {
         selectedSort != null && selectedSort != shownSort -> updated.withSort(selectedSort)
@@ -125,6 +130,8 @@ fun DeliveryNoteFilterSheet(
                 label = stringResource(R.string.goodsout_filter_date),
                 options = dateOptions.map { FilterSheetOption(stringResource(dateLabel(it))) },
                 isAtMostOne = true,
+                extraCount = if (draft.range.isSet) 1 else 0,
+                extra = { DateRangeFields(range = draft.range, onChange = { draft = draft.withRange(it) }) },
             ),
             FilterSheetSection(
                 label = stringResource(R.string.goodsout_filter_sort),

@@ -11,7 +11,11 @@ import io.aiku.droid.data.api.StockDeliveryRow
 import io.aiku.droid.data.api.StockDeliverySort
 import io.aiku.droid.data.api.StockDeliverySource
 import io.aiku.droid.data.api.StockDeliveryStateFilter
+import io.aiku.droid.data.cache.SavedLists
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.components.DateRange
+import io.aiku.droid.ui.components.OfflineRows
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.PagedList
 import io.aiku.droid.ui.inventory.SEARCH_DEBOUNCE_MILLIS
@@ -27,6 +31,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 private const val PREVIEW_PER_PAGE = 1
 
@@ -35,9 +42,12 @@ data class StockDeliveryFilter(
     val source: StockDeliverySource? = null,
     val search: String = "",
     val dispatched: DispatchedBucket? = null,
+    val dates: DateRange = DateRange(),
     val sort: StockDeliverySort? = null,
 ) {
-    val activeFilterCount: Int get() = listOfNotNull(source, dispatched).size
+    val activeFilterCount: Int get() = listOfNotNull(source, dispatched).size + if (dates.isSet) 1 else 0
+
+    val panelCount: Int get() = activeFilterCount + if (sort != null) 1 else 0
 
     val isFiltered: Boolean get() = activeFilterCount > 0 || sort != null
 
@@ -48,6 +58,8 @@ data class StockDeliveryFilter(
         source = source,
         search = search.trim().takeIf { it.isNotEmpty() },
         dispatched = dispatched,
+        from = dates.from,
+        to = dates.to,
         sort = sort,
         page = page,
         perPage = perPage,
@@ -64,8 +76,12 @@ data class StockDeliveriesUiState(
     val lookingUpCode: String? = null,
     val scanOutcome: StockScanOutcome? = null,
     val isSessionExpired: Boolean = false,
+    val offline: OfflineRows<StockDeliveryRow>? = null,
 ) {
+    val lastUpdated: Instant? get() = offline?.savedAt
+
     fun totalFor(draft: StockDeliveryFilter): Int? = when {
+        offline != null -> offlineStockDeliveries(offline.rows, draft.query(page = 1, perPage = PREVIEW_PER_PAGE), offline.zone, offline.today).size
         draft == filter && list.hasLoaded && list.loadingPage == null -> list.total
         else -> preview?.takeIf { it.filter == draft }?.total
     }
@@ -77,6 +93,8 @@ class StockDeliveriesViewModel(
     private val warehouseId: Long,
     initialFilter: StockDeliveryFilter = StockDeliveryFilter(),
     private val perPage: Int = StockDeliveryQuery.DEFAULT_PER_PAGE,
+    private val cache: ScreenCache? = null,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(StockDeliveriesUiState(filter = initialFilter))
@@ -189,16 +207,32 @@ class StockDeliveriesViewModel(
 
         listJob = viewModelScope.launch {
             when (val result = api.stockDeliveries(token, warehouseId, filter.query(page = page, perPage = perPage))) {
-                is GoodsOutResult.Loaded -> mutableState.update { current ->
-                    current.copy(
-                        list = current.list.loaded(result.value.rows, result.value.meta) { it.id },
-                        counts = result.value.counts ?: current.counts,
-                    )
+                is GoodsOutResult.Loaded -> {
+                    mutableState.update { current ->
+                        current.copy(
+                            list = current.list.loaded(result.value.rows, result.value.meta) { it.id },
+                            counts = result.value.counts ?: current.counts,
+                            offline = null,
+                        )
+                    }
+                    cache?.remember(warehouseId, SavedLists.stockDeliveries, result.value.rows)
                 }
                 GoodsOutResult.SessionExpired -> expireSession()
+                GoodsOutResult.Unreachable -> if (page != 1 || !showSavedRows()) mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
                 else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
             }
         }
+    }
+
+    private suspend fun showSavedRows(): Boolean {
+        val saved = cache?.saved(warehouseId, SavedLists.stockDeliveries) ?: return false
+        val rowsZone = zone()
+        val offline = OfflineRows(rows = saved.value, savedAt = saved.fetchedAt, zone = rowsZone, today = LocalDate.now(rowsZone))
+        mutableState.update {
+            val shown = offlineStockDeliveries(saved.value, it.filter.query(page = 1, perPage = perPage), offline.zone, offline.today)
+            it.copy(offline = offline, list = it.list.savedCopy(shown))
+        }
+        return true
     }
 
     private fun token(): String? = sessions.session.value?.token

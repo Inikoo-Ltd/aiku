@@ -52,7 +52,8 @@ class ShowSupplier extends OrgAction
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request);
+        $this->redirectRetiredDetailsTab()->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }
@@ -60,13 +61,28 @@ class ShowSupplier extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisationFromGroup($supplier->group, $request)->withTab(SupplierTabsEnum::values());
+        $this->initialisationFromGroup($supplier->group, $request);
+        $this->redirectRetiredDetailsTab()->withTab(SupplierTabsEnum::values());
 
         return $this->handle($supplier);
     }
 
+    private function redirectRetiredDetailsTab(): static
+    {
+        if ($this->get('tab') === 'details') {
+            $this->set('tab', SupplierTabsEnum::SHOWCASE->value);
+        }
+
+        return $this;
+    }
+
     public function htmlResponse(Supplier $supplier, ActionRequest $request): Response
     {
+        $editRoute = $this->canEdit ? [
+            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+            'parameters' => $request->route()->originalParameters(),
+        ] : null;
+
         return Inertia::render(
             'SupplyChain/Supplier',
             [
@@ -93,8 +109,8 @@ class ShowSupplier extends OrgAction
                             'style' => 'edit',
                             'label' => __('Edit'),
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name'       => $editRoute['name'],
+                                'parameters' => array_values($editRoute['parameters'])
                             ]
                         ] : false,
                     ],
@@ -106,11 +122,8 @@ class ShowSupplier extends OrgAction
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
-                    fn () => GetSupplierShowcase::run($supplier)
-                    : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
-                SupplierTabsEnum::DETAILS->value => $this->tab == SupplierTabsEnum::DETAILS->value ?
-                    fn () => GetSupplierShowcase::run($supplier)
-                    : Inertia::optional(fn () => GetSupplierShowcase::run($supplier)),
+                    fn () => GetSupplierShowcase::run($supplier, $editRoute)
+                    : Inertia::optional(fn () => GetSupplierShowcase::run($supplier, $editRoute)),
 
                 'productDevelopments' => (new ProductDevelopmentAccess())->canSeeAny($request->user())
 

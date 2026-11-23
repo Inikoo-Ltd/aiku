@@ -11,14 +11,22 @@ final class OfflineNetworkObserver: APIResponseObserving, @unchecked Sendable {
     private let downloads: OfflineDownloads
     private let sessions: OfflineSessionBox
     private let savedLists: SavedLists
+    private let screens: ScreenCache
     private let lock = NSLock()
     private var prefetch: (@Sendable (DownloadPrefetch) -> Void)?
 
-    init(clock: ServerClock = .shared, downloads: OfflineDownloads = .shared, sessions: OfflineSessionBox = .shared, savedLists: SavedLists = .shared) {
+    init(
+        clock: ServerClock = .shared,
+        downloads: OfflineDownloads = .shared,
+        sessions: OfflineSessionBox = .shared,
+        savedLists: SavedLists = .shared,
+        screens: ScreenCache = .shared
+    ) {
         self.clock = clock
         self.downloads = downloads
         self.sessions = sessions
         self.savedLists = savedLists
+        self.screens = screens
     }
 
     func onPrefetch(_ handler: @escaping @Sendable (DownloadPrefetch) -> Void) {
@@ -29,6 +37,11 @@ final class OfflineNetworkObserver: APIResponseObserving, @unchecked Sendable {
         let dateHeader = response.value(forHTTPHeaderField: "Date")
         clock.record(dateHeader: dateHeader)
         guard let url = request.url, let route = OfflineRoutes.mobileRoute(of: url) else { return }
+        if response.statusCode == 401 {
+            screens.clear()
+        } else if request.httpMethod != HTTPMethod.get.rawValue, (200..<300).contains(response.statusCode) {
+            screens.forget(afterWriteTo: route)
+        }
         guard let token = request.value(forHTTPHeaderField: "Authorization")?.replacingOccurrences(of: "Bearer ", with: ""),
               !token.isEmpty,
               let userID = sessions.userID(forToken: token) else { return }

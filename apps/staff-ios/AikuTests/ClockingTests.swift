@@ -209,7 +209,7 @@ struct ClockingTests {
 
         #expect(store.hasLoaded == false)
         #expect(store.loadError == "There is no connection. Check Wi-Fi and try again.")
-        #expect(store.lastUpdatedAt == nil)
+        #expect(store.lastUpdated == nil)
     }
 
     @Test("A QR clocking sends the code with the location and returns the clocking")
@@ -385,5 +385,112 @@ struct ClockingAPITests {
         #expect(request.url?.absoluteString == "http://localhost/app/api/mobile/clocking/qr")
         #expect(body?["qr_code"] as? String == "abc")
         #expect(body?["work_schedule_id"] as? Int == 9)
+    }
+}
+
+private actor StatusAttempts {
+    private var count = 0
+
+    func next() -> Int {
+        count += 1
+        return count
+    }
+}
+
+private final class ClockingProbe: @unchecked Sendable {
+    weak var store: ClockingStore?
+    var sawUnavailable = false
+}
+
+@MainActor
+struct ClockingSavedCopyTests {
+    private func signedInCache() -> ScreenCache {
+        let cache = ScreenCache(fileURL: FileManager.default.temporaryDirectory.appending(path: "screen-cache-\(UUID().uuidString).json"), now: { nowAt1415 })
+        cache.signedIn(userID: 291)
+        return cache
+    }
+
+    @Test func homeShowsTheLastClockingOfflineButNothingCanBeActedOnLikeAndroid() async {
+        let cache = signedInCache()
+        await ClockingStore(service: service(), clock: { nowAt1415 }, cache: cache).load()
+
+        let offline = ClockingStore(service: service(status: .failure(.offline)), clock: { nowAt1415 }, cache: cache)
+        await offline.load()
+
+        #expect(!offline.hasLoaded)
+        #expect(offline.hasStatus)
+        #expect(offline.isClockedIn)
+        #expect(offline.organisationName == "AW UK")
+        #expect(offline.lastUpdated == nowAt1415)
+        #expect(offline.enabledMethods.isEmpty)
+        #expect(offline.pin == nil)
+        #expect(offline.employeeCode == nil)
+        #expect(!offline.canEditNotes)
+        #expect(ShellHomeContent.clockStatus(offline)?.isClockedIn == true)
+        #expect(ShellHomeContent.weekTotal(offline) != nil)
+        #expect(ShellMenuClocking(offline) != nil)
+    }
+
+    @Test func aFreshAnswerReplacesTheSavedCopy() async {
+        let cache = signedInCache()
+        await ClockingStore(service: service(), clock: { nowAt1415 }, cache: cache).load()
+
+        let store = ClockingStore(service: service(), clock: { nowAt1415 }, cache: cache)
+        await store.load()
+
+        #expect(store.hasLoaded)
+        #expect(store.savedAt == nil)
+        #expect(store.lastUpdated == nil)
+        #expect(!store.enabledMethods.isEmpty)
+        #expect(store.pin == "4829")
+    }
+
+    @Test func aCopyFromAnotherDayIsNotShownAsToday() async {
+        let cache = signedInCache()
+        cache.save(ClockingSavedCopy(timezone: "Europe/London", todayDate: "2026-11-10", sessions: todaySessions, employeeName: "Artha", organisationName: "AW UK", thisWeek: []), key: ScreenCacheKey.clocking)
+
+        let store = ClockingStore(service: service(status: .failure(.offline)), clock: { nowAt1415 }, cache: cache)
+        await store.load()
+
+        #expect(store.hasStatus)
+        #expect(store.today.date == "2026-11-11")
+        #expect(!store.isClockedIn)
+    }
+
+    @Test func homeKeepsTheSavedCopyUntilTheFreshAnswerIsComplete() async {
+        let cache = signedInCache()
+        await ClockingStore(service: service(), clock: { nowAt1415 }, cache: cache).load()
+        let probe = ClockingProbe()
+        let attempts = StatusAttempts()
+        var flaky = service()
+        flaky.status = {
+            if await attempts.next() == 1 { throw APIError.offline }
+            return status()
+        }
+        flaky.adjustments = {
+            await MainActor.run {
+                if probe.store?.hasStatus == false { probe.sawUnavailable = true }
+            }
+            return []
+        }
+        let store = ClockingStore(service: flaky, clock: { nowAt1415 }, cache: cache)
+        probe.store = store
+
+        await store.load()
+        #expect(store.lastUpdated == nowAt1415)
+        await store.load()
+
+        #expect(!probe.sawUnavailable)
+        #expect(store.hasLoaded)
+        #expect(store.savedAt == nil)
+        #expect(store.lastUpdated == nil)
+    }
+
+    @Test func theSavedCopyKeepsNoPersonalCodeAndOnlyThisWeek() throws {
+        let copy = ClockingSavedCopy(status: status(), timesheets: pastTimesheets.timesheets, today: "2026-11-11")
+        let json = String(decoding: try JSONEncoder().encode(copy), as: UTF8.self)
+
+        #expect(!json.contains("4829"))
+        #expect(copy.thisWeek.map(\.date) == ["2026-11-11"])
     }
 }

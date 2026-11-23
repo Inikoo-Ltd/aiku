@@ -243,3 +243,129 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
         set { lock.withLock { stored = newValue } }
     }
 }
+
+private final class TestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var current: Date
+
+    init(_ start: Date) {
+        current = start
+    }
+
+    var now: Date {
+        get { lock.withLock { current } }
+        set { lock.withLock { current = newValue } }
+    }
+}
+
+struct ScreenCacheTests {
+    private let badges = MobileWorkBadges(myWork: 4, goodsOutUnassigned: 12, goodsInReceived: 3, inboxUnread: 2)
+
+    private func cacheFile() -> URL {
+        FileManager.default.temporaryDirectory.appending(path: "screen-cache-\(UUID().uuidString).json")
+    }
+
+    private func signedInCache(_ file: URL, now: @escaping @Sendable () -> Date = { .now }) -> ScreenCache {
+        let cache = ScreenCache(fileURL: file, now: now)
+        cache.signedIn(userID: 291)
+        return cache
+    }
+
+    @Test func aSavedScreenComesBackOnlyForTheSameUser() {
+        let file = cacheFile()
+        defer { try? FileManager.default.removeItem(at: file) }
+        let beforeSignIn = ScreenCache(fileURL: file)
+        beforeSignIn.save(badges, key: "early")
+        #expect(beforeSignIn.read(MobileWorkBadges.self, key: "early") == nil)
+
+        signedInCache(file).save(badges, key: ScreenCacheKey.workBadges(warehouseID: 1))
+
+        #expect(signedInCache(file).read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1))?.value == badges)
+        let otherUser = ScreenCache(fileURL: file)
+        otherUser.signedIn(userID: 300)
+        #expect(otherUser.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) == nil)
+    }
+
+    @Test func aScreenNotOpenedForSevenDaysIsDroppedLikeAndroid() {
+        let file = cacheFile()
+        defer { try? FileManager.default.removeItem(at: file) }
+        let clock = TestClock(Date(timeIntervalSince1970: 1_000_000))
+        signedInCache(file, now: { clock.now }).save(badges, key: "opened")
+        signedInCache(file, now: { clock.now }).save(badges, key: "forgotten")
+
+        clock.now = clock.now.addingTimeInterval(6 * 86_400)
+        #expect(signedInCache(file, now: { clock.now }).read(MobileWorkBadges.self, key: "opened") != nil)
+        clock.now = clock.now.addingTimeInterval(2 * 86_400)
+        let later = signedInCache(file, now: { clock.now })
+
+        #expect(later.read(MobileWorkBadges.self, key: "opened") != nil)
+        #expect(later.read(MobileWorkBadges.self, key: "forgotten") == nil)
+    }
+
+    @Test func writesDropTheSavedCopiesTheyChangeLikeAndroid() {
+        #expect(ScreenCacheDrop.after(writeTo: ["clocking", "qr"]) == .clocking)
+        #expect(ScreenCacheDrop.after(writeTo: ["delivery-notes", "5", "lines", "9", "pick"]) == .warehouseWork)
+        #expect(ScreenCacheDrop.after(writeTo: ["warehouses", "1", "offline", "sync"]) == .warehouseWork)
+        #expect(ScreenCacheDrop.after(writeTo: ["inbox", "read-all"]) == .warehouseWork)
+        #expect(ScreenCacheDrop.after(writeTo: ["profile", "language"]) == .nothing)
+        #expect(ScreenCacheDrop.after(writeTo: ["chat", "messages"]) == .nothing)
+
+        let file = cacheFile()
+        defer { try? FileManager.default.removeItem(at: file) }
+        let cache = signedInCache(file)
+        cache.save(badges, key: ScreenCacheKey.workBadges(warehouseID: 1))
+        cache.save(badges, key: ScreenCacheKey.clocking)
+
+        cache.forget(afterWriteTo: ["delivery-notes", "5", "lines", "9", "pick"])
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) == nil)
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.clocking) != nil)
+
+        cache.forget(afterWriteTo: ["clocking", "qr"])
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.clocking) == nil)
+    }
+
+    @Test func theNetworkObserverDropsSavedBadgesAfterASuccessfulWriteAndEverythingAfterA401() {
+        let file = cacheFile()
+        defer { try? FileManager.default.removeItem(at: file) }
+        let cache = signedInCache(file)
+        cache.save(badges, key: ScreenCacheKey.workBadges(warehouseID: 1))
+        let observer = OfflineNetworkObserver(screens: cache)
+        let url = URL(string: "https://app.aiku.test/app/api/mobile/warehouses/1/delivery-notes/5/pick")!
+        let ok = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+
+        observer.observe(request: URLRequest(url: url), response: ok, data: Data())
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) != nil)
+
+        var write = URLRequest(url: url)
+        write.httpMethod = "POST"
+        observer.observe(request: write, response: ok, data: Data())
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) == nil)
+
+        cache.save(badges, key: ScreenCacheKey.clocking)
+        observer.observe(request: URLRequest(url: url), response: HTTPURLResponse(url: url, statusCode: 401, httpVersion: nil, headerFields: nil)!, data: Data())
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.clocking) == nil)
+        #expect(!FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
+    }
+
+    @Test func aWarehouseNoLongerListedLosesItsSavedBadges() {
+        let file = cacheFile()
+        defer { try? FileManager.default.removeItem(at: file) }
+        let cache = signedInCache(file)
+        cache.save(badges, key: ScreenCacheKey.workBadges(warehouseID: 1))
+        cache.save(badges, key: ScreenCacheKey.workBadges(warehouseID: 4))
+
+        cache.keepWorkBadges(forWarehouses: [4])
+
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 1)) == nil)
+        #expect(cache.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: 4)) != nil)
+    }
+
+    @Test func lastUpdatedShowsTheTimeTodayAndTheDateOnOtherDaysLikeAndroid() {
+        let zone = TimeZone(identifier: "Europe/London")!
+        let locale = Locale(identifier: "en_GB")
+        let now = ISO8601DateFormatter().date(from: "2026-11-23T13:00:00Z")!
+
+        #expect(LastUpdatedText.label(for: ISO8601DateFormatter().date(from: "2026-11-23T09:05:00Z")!, now: now, timeZone: zone, locale: locale) == "Last updated 09:05")
+        #expect(LastUpdatedText.label(for: ISO8601DateFormatter().date(from: "2026-11-22T09:05:00Z")!, now: now, timeZone: zone, locale: locale) == "Last updated 22 Nov 09:05")
+    }
+}

@@ -14,7 +14,11 @@ import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.PickerFilter
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.PickingSessionWrite
+import io.aiku.droid.data.cache.SavedLists
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.components.DateRange
+import io.aiku.droid.ui.components.OfflineRows
 import io.aiku.droid.ui.goodsout.extra.PickingSessionHandoff
 import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.scan.ScanDestination
@@ -28,7 +32,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 private const val PREVIEW_DEBOUNCE_MILLIS = 300L
 private const val LAST_WEEK_DAYS = 6L
@@ -54,28 +60,35 @@ data class DeliveryNoteFilter(
     val channel: DispatchChannel = DispatchChannel.All,
     val picker: PickerFilter? = null,
     val date: DateFilter? = null,
+    val range: DateRange = DateRange(),
     val sort: DeliveryNoteSort? = null,
     val search: String = "",
 ) {
     val shownSort: DeliveryNoteSort get() = sort ?: defaultSortOf(bucket)
 
-    val activeFilterCount: Int
-        get() = listOf(channel != DispatchChannel.All, picker != null, date != null, search.isNotBlank()).count { it }
+    private val panelFilterCount: Int
+        get() = listOf(channel != DispatchChannel.All, picker != null, date != null || range.isSet).count { it }
+
+    val activeFilterCount: Int get() = panelFilterCount + if (search.isNotBlank()) 1 else 0
+
+    val panelCount: Int get() = panelFilterCount + if (sort != null) 1 else 0
 
     val isFiltered: Boolean get() = activeFilterCount > 0 || sort != null
 
     fun withSort(chosen: DeliveryNoteSort): DeliveryNoteFilter = copy(sort = chosen.takeIf { it != defaultSortOf(bucket) })
 
+    fun withRange(chosen: DateRange): DeliveryNoteFilter = copy(range = chosen, date = date.takeUnless { chosen.isSet })
+
     fun cleared(): DeliveryNoteFilter = DeliveryNoteFilter(bucket = bucket)
 
     fun query(today: LocalDate, page: Int, perPage: Int): DeliveryNoteQuery {
-        val range = date?.range(today)
+        val quick = date?.range(today)
         return DeliveryNoteQuery(
             bucket = bucket,
             channel = channel,
             search = search.trim().takeIf { it.isNotEmpty() },
-            from = range?.start,
-            to = range?.endInclusive,
+            from = if (range.isSet) range.from else quick?.start,
+            to = if (range.isSet) range.to else quick?.endInclusive,
             picker = picker,
             sort = sort,
             page = page,
@@ -119,6 +132,9 @@ data class DeliveryNoteList(
     }
 
     fun failed(page: Int, problem: GoodsOutProblem): DeliveryNoteList = copy(loadingPage = null, problem = problem, failedPage = page)
+
+    fun savedCopy(savedNotes: List<DeliveryNoteRow>): DeliveryNoteList =
+        DeliveryNoteList(notes = savedNotes, page = 1, lastPage = 1, total = savedNotes.size, problem = GoodsOutProblem.Offline, failedPage = 1)
 }
 
 data class FilterPreview(val filter: DeliveryNoteFilter, val total: Int)
@@ -151,10 +167,17 @@ data class DeliveryNotesUiState(
     val selection: Set<Long>? = if (addToSession != null) emptySet() else null,
     val isSubmittingSelection: Boolean = false,
     val selectionOutcome: SelectionOutcome? = null,
+    val offline: OfflineRows<DeliveryNoteRow>? = null,
 ) {
     val isSelecting: Boolean get() = selection != null
 
+    val lastUpdated: Instant? get() = offline?.savedAt
+
+    fun offlineNotes(shown: DeliveryNoteFilter, saved: OfflineRows<DeliveryNoteRow>): List<DeliveryNoteRow> =
+        offlineDeliveryNotes(saved.rows, shown.query(saved.today, page = 1, perPage = saved.rows.size), saved.zone, saved.userId)
+
     fun totalFor(draft: DeliveryNoteFilter): Int? = when {
+        offline != null -> offlineNotes(draft, offline).size
         draft == filter && list.hasLoaded && list.loadingPage == null -> list.total
         else -> preview?.takeIf { it.filter == draft }?.total
     }
@@ -170,6 +193,8 @@ class DeliveryNotesViewModel(
     addToSession: SessionTarget? = null,
     private val perPage: Int = DeliveryNoteQuery.DEFAULT_PER_PAGE,
     private val sessionHandoff: PickingSessionHandoff = PickingSessionHandoff(),
+    private val cache: ScreenCache? = null,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(DeliveryNotesUiState(filter = initialFilter, addToSession = addToSession))
@@ -178,6 +203,7 @@ class DeliveryNotesViewModel(
     private var listJob: Job? = null
     private var countsJob: Job? = null
     private var previewJob: Job? = null
+    private var searchJob: Job? = null
 
     fun onStart() {
         val list = mutableState.value.list
@@ -201,7 +227,18 @@ class DeliveryNotesViewModel(
         }
     }
 
+    fun search(text: String) {
+        mutableState.update { it.copy(filter = it.filter.copy(search = text)) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(PREVIEW_DEBOUNCE_MILLIS)
+            mutableState.update { it.copy(list = DeliveryNoteList()) }
+            loadPage(1)
+        }
+    }
+
     fun applyFilter(filter: DeliveryNoteFilter) {
+        searchJob?.cancel()
         val previous = mutableState.value.filter
         val isPickerChanged = filter.picker != previous.picker
         mutableState.update { it.copy(filter = filter, list = DeliveryNoteList(), counts = if (isPickerChanged) null else it.counts) }
@@ -355,17 +392,29 @@ class DeliveryNotesViewModel(
 
         listJob = viewModelScope.launch {
             when (val result = api.deliveryNotes(token, warehouseId, filter.query(today(), page, perPage))) {
-                is GoodsOutResult.Loaded -> mutableState.update { current ->
-                    current.copy(
-                        list = current.list.loaded(result.value.notes, result.value.pagination),
-                        isRefreshing = false,
-                        canWorkInWarehouse = result.value.canWorkInWarehouse,
-                    )
+                is GoodsOutResult.Loaded -> {
+                    mutableState.update { current ->
+                        current.copy(
+                            list = current.list.loaded(result.value.notes, result.value.pagination),
+                            isRefreshing = false,
+                            canWorkInWarehouse = result.value.canWorkInWarehouse,
+                            offline = null,
+                        )
+                    }
+                    cache?.remember(warehouseId, SavedLists.deliveryNotes, result.value.notes)
                 }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isRefreshing = false, isSessionExpired = true) }
+                GoodsOutResult.Unreachable -> if (page != 1 || !showSavedRows()) mutableState.update { it.copy(list = it.list.failed(page, result.problem()), isRefreshing = false) }
                 else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem()), isRefreshing = false) }
             }
         }
+    }
+
+    private suspend fun showSavedRows(): Boolean {
+        val saved = cache?.saved(warehouseId, SavedLists.deliveryNotes) ?: return false
+        val offline = OfflineRows(rows = saved.value, savedAt = saved.fetchedAt, zone = zone(), today = today(), userId = sessions.session.value?.userId)
+        mutableState.update { it.copy(offline = offline, list = it.list.savedCopy(it.offlineNotes(it.filter, offline)), isRefreshing = false) }
+        return true
     }
 
     private fun loadCounts() {

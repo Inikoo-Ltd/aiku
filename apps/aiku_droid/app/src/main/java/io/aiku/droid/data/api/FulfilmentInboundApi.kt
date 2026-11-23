@@ -2,6 +2,7 @@ package io.aiku.droid.data.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 
 object PalletDeliveryState {
     const val CONFIRMED = "confirmed"
@@ -56,9 +57,17 @@ enum class PalletDeliveryStateFilter(val key: String) {
     NotReceived(PalletDeliveryState.NOT_RECEIVED),
 }
 
+enum class PalletDeliverySort(val key: String) {
+    Reference("reference"),
+    BookedIn("-booked_in_at"),
+}
+
 data class PalletDeliveryQuery(
     val state: PalletDeliveryStateFilter = PalletDeliveryStateFilter.Active,
     val search: String? = null,
+    val from: LocalDate? = null,
+    val to: LocalDate? = null,
+    val sort: PalletDeliverySort? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
 ) {

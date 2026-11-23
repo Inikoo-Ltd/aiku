@@ -4,6 +4,9 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -12,23 +15,35 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.PickingSessionRow
+import io.aiku.droid.data.api.PickingSessionSort
 import io.aiku.droid.data.api.PickingSessionState
 import io.aiku.droid.data.api.StaffRef
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
+import io.aiku.droid.ui.components.ListFilterPanel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
+import io.aiku.droid.ui.components.SearchField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.SortOption
+import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
+import io.aiku.droid.ui.components.listFilterSummary
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
+import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
@@ -78,6 +93,15 @@ internal fun sessionStateLabel(state: String, label: String): String =
     label.ifBlank { PickingSessionState.ofKey(state)?.let { stringResource(it.label()) } ?: state }
 
 @Composable
+private fun pickingSessionSorts(): List<SortOption<PickingSessionSort>> = listOf(
+    SortOption(null, stringResource(R.string.goodsin_sort_newest)),
+    SortOption(PickingSessionSort.Reference, stringResource(R.string.goodsin_sort_reference)),
+    SortOption(PickingSessionSort.Picker, stringResource(R.string.goodsout_filter_picker)),
+    SortOption(PickingSessionSort.Started, stringResource(R.string.record_date_started)),
+    SortOption(PickingSessionSort.Finished, stringResource(R.string.goodsout_extra_sort_finished)),
+)
+
+@Composable
 fun PickingSessionsScreen(sessions: PickingSessionsViewModel) {
     val state by sessions.state.collectAsStateWithLifecycle()
 
@@ -95,8 +119,11 @@ fun PickingSessionsScreen(sessions: PickingSessionsViewModel) {
 @Composable
 private fun PickingSessionsContent(state: PickingSessionsUiState, sessions: PickingSessionsViewModel) {
     val navigator = LocalAppNavigator.current
+    val zone = organisationZone()
     val scrollState = rememberScrollState()
+    var showFilter by remember { mutableStateOf(false) }
     val list = state.list
+    val sorts = pickingSessionSorts()
     val options = sessionFilters.map { filter ->
         val label = stringResource(filter?.label() ?: R.string.goodsout_extra_sessions_all)
         val count = filter?.let { state.counts[it.key] }
@@ -113,20 +140,36 @@ private fun PickingSessionsContent(state: PickingSessionsUiState, sessions: Pick
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = sessions::refresh),
     ) {
         FilterChips(options = options, selectedIndex = sessionFilters.indexOf(state.state), onSelect = { index -> sessions.selectState(sessionFilters[index]) })
+        SearchWithFilter(filterCount = state.filter.activeCount, onFilter = { showFilter = true }) { modifier ->
+            SearchField(
+                value = state.search,
+                onValueChange = sessions::search,
+                placeholder = stringResource(R.string.goodsout_extra_sessions_search),
+                modifier = modifier,
+            )
+        }
+        if (state.filter.isFiltered) {
+            ActiveFiltersLine(parts = listFilterSummary(state.filter, sorts), onClear = sessions::clearFilters)
+        }
         list.firstPageProblem?.let { problem ->
             GoodsOutLoadProblem(problem = problem, title = stringResource(R.string.goodsout_extra_sessions_failed), onRetry = sessions::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.sessions.isNotEmpty() -> ListGroup {
                 list.sessions.forEachIndexed { index, session ->
                     if (index > 0) {
                         RowDivider()
                     }
-                    ExtraRow(
-                        title = session.reference,
-                        subtitle = sessionSubtitle(session),
-                        chip = sessionStateLabel(session.state, session.stateLabel),
-                        chipTone = sessionTone(session.sessionState),
+                    val started = recordDate(session.startAt, zone)
+                    val date = started ?: recordDate(session.createdAt, zone)
+                    RecordRow(
+                        reference = session.reference,
+                        date = date,
+                        dateCaption = date?.let { stringResource(if (started != null) R.string.record_date_started else R.string.record_date_created) },
+                        party = sessionPersonName(session.picker),
+                        details = sessionDetails(session),
+                        badges = { StatusBadge(text = sessionStateLabel(session.state, session.stateLabel), tone = sessionTone(session.sessionState)) },
                         onClick = { navigator.open(PickingSessionRoute(id = session.id, reference = session.reference)) },
                     )
                 }
@@ -146,11 +189,24 @@ private fun PickingSessionsContent(state: PickingSessionsUiState, sessions: Pick
         }
         HintText(text = stringResource(R.string.goodsout_extra_sessions_hint))
     }
+    if (showFilter) {
+        ListFilterPanel(
+            title = stringResource(R.string.goodsout_extra_sessions_filter_title),
+            filter = state.filter,
+            sorts = sorts,
+            total = list.total?.takeIf { list.hasLoaded && list.loadingPage == null },
+            onApply = { applied ->
+                showFilter = false
+                sessions.applyFilter(applied)
+            },
+            onDismiss = { showFilter = false },
+            totalFor = state::offlineTotalFor,
+        )
+    }
 }
 
 @Composable
-private fun sessionSubtitle(session: PickingSessionRow): String = listOfNotNull(
-    sessionPersonName(session.picker),
+private fun sessionDetails(session: PickingSessionRow): List<String> = listOfNotNull(
     pluralStringResource(R.plurals.goodsout_extra_delivery_notes, session.numberDeliveryNotes, session.numberDeliveryNotes),
     pluralStringResource(R.plurals.goodsout_extra_items, session.numberItems, session.numberItems),
     pluralStringResource(R.plurals.goodsout_extra_trolleys, session.numberTrolleys, session.numberTrolleys),
@@ -159,4 +215,4 @@ private fun sessionSubtitle(session: PickingSessionRow): String = listOfNotNull(
     } else {
         stringResource(R.string.goodsout_extra_percent_picked, percent(session.pickingPercentage))
     },
-).joinToString(KICKER_SEPARATOR)
+)

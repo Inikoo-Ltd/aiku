@@ -53,6 +53,7 @@ object FulfilmentOutboundResponses {
         "state" to query.state.key,
         query.type?.let { "type" to it.key },
         query.search.trimmedOrNull()?.let { "q" to it },
+        query.sort?.let { "sort" to it.key },
         "page" to query.page.toString(),
         "per_page" to query.perPage.toString(),
     )

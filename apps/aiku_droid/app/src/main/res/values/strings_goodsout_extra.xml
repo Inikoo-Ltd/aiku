@@ -217,4 +217,7 @@
     <string name="goodsout_extra_chat_image">Image sent in the conversation</string>
 
     <string name="goodsout_extra_session_now_waiting">Picking stopped: the session is waiting for some lines</string>
+    <string name="goodsout_extra_sessions_search">Search sessions</string>
+    <string name="goodsout_extra_sessions_filter_title">Filter picking sessions</string>
+    <string name="goodsout_extra_sort_finished">Finished</string>
 </resources>

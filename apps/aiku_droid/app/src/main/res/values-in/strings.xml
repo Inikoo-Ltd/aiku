@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Unggah surat keterangan dokter</string>
     <string name="clocking_load_failed_title">Tidak dapat memuat absensi Anda</string>
     <string name="clocking_load_more_failed">Tidak dapat memuat lebih banyak</string>
-    <string name="clocking_load_offline_body">Anda sedang offline. Sambungkan ke internet lalu coba lagi.</string>
+    <string name="clocking_load_offline_body">Tidak ada koneksi. Periksa Wi-Fi lalu coba lagi.</string>
     <string name="clocking_load_server_body">Aiku tidak merespons. Coba lagi sebentar lagi.</string>
     <string name="clocking_location_accuracy">%1$s · akurat hingga %2$d m</string>
     <string name="clocking_location_detect">Deteksi lokasi saya</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Pilih Jam Kerja</string>
     <string name="dashboard_abnormal">Anomali</string>
     <string name="dashboard_below_minimum">Di bawah minimum</string>
-    <string name="dashboard_clocking">Absensi</string>
     <string name="dashboard_dispatched">Terkirim</string>
     <string name="dashboard_dispatched_compared">%1$s hari ini · %2$s kemarin pada jam yang sama</string>
     <string name="dashboard_dispatched_count">%1$s hari ini</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Coba lagi</string>
     <string name="login_username">Nama pengguna</string>
     <string name="login_username_required">Masukkan nama pengguna Anda.</string>
-    <string name="menu_all_staff">Semua staf</string>
     <string name="menu_appearance">Tampilan</string>
     <string name="menu_appearance_subtitle">Warna tema · terang atau gelap</string>
     <string name="menu_change">Ubah</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Cari SKO, lokasi, atau surat jalan</string>
     <string name="menu_search_placeholder">Cari SKO, lokasi, surat jalan</string>
     <string name="menu_timesheets">Lembar Waktu</string>
-    <string name="module_clocking">Absensi &amp; HR</string>
+    <string name="module_clocking">Absensi &amp; Kehadiran</string>
     <string name="module_goods_in">Barang masuk</string>
     <string name="module_goods_out">Barang keluar</string>
     <string name="module_inventory">Inventaris</string>
@@ -2010,6 +2008,9 @@
     </plurals>
     <plurals name="filter_selected">
         <item quantity="other">%d dipilih</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="other">Tampilkan %d hasil</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="other">%1$d dari %2$d sudah masuk stok</item>
@@ -2314,4 +2315,32 @@
     <plurals name="states_offline_actions">
         <item quantity="other">%d tindakan</item>
     </plurals>
+    <string name="record_date_expected">Diharapkan</string>
+    <string name="record_date_dispatched">Dikirim</string>
+    <string name="record_date_received">Diterima</string>
+    <string name="record_date_booked_in">Dicatat masuk</string>
+    <string name="record_date_started">Dimulai</string>
+    <string name="record_date_created">Dibuat</string>
+    <string name="filter_and_sort">Filter dan urutkan</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Dari</string>
+    <string name="filter_date_to">Sampai</string>
+    <string name="filter_date_any">Tanggal apa saja</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Dari %1$s</string>
+    <string name="filter_date_until">Sampai %1$s</string>
+    <string name="filter_sort_oldest">Terlama lebih dulu</string>
+    <string name="filter_show_results_unknown">Tampilkan hasil</string>
+    <string name="goodsout_extra_sessions_search">Cari sesi</string>
+    <string name="goodsout_extra_sessions_filter_title">Filter sesi picking</string>
+    <string name="goodsout_extra_sort_finished">Selesai</string>
+    <string name="goodsin_sort_supplier">Pemasok</string>
+    <string name="goodsin_sort_expected_date">Tanggal yang diharapkan</string>
+    <string name="goodsin_returns_filter_title">Filter pengembalian</string>
+    <string name="goodsin_returns_date_received">Tanggal diterima</string>
+    <string name="goodsin_returns_sort_newest">Terbaru diterima lebih dulu</string>
+    <string name="goodsin_returns_sort_oldest">Terlama diterima lebih dulu</string>
+    <string name="fulfilment_inbound_filter_title">Filter penerimaan</string>
+    <string name="cache_saved_rows_only">Salinan tersimpan: hanya baris yang dimuat sebelumnya yang disertakan</string>
+    <string name="filter_online_only">%1$s (hanya online)</string>
 </resources>

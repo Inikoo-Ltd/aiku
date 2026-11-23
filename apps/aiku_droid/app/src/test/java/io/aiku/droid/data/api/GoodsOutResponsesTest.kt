@@ -234,4 +234,12 @@ class GoodsOutResponsesTest {
         assertEquals(GoodsOutResult.ServerError(500), GoodsOutResponses.parseDeliveryNote(500, "<html>"))
         assertEquals(GoodsOutResult.ServerError(200), GoodsOutResponses.parseDeliveryNote(200, "<html>"))
     }
+
+    @Test
+    fun `delivery notes can be sorted by reference`() {
+        assertEquals(
+            listOf("bucket" to "unassigned", "channel" to "all", "sort" to "reference", "page" to "1", "per_page" to "50"),
+            GoodsOutResponses.deliveryNotesParameters(DeliveryNoteQuery(sort = DeliveryNoteSort.Reference)),
+        )
+    }
 }

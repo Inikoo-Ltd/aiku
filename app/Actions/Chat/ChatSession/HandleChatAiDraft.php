@@ -11,6 +11,7 @@ namespace App\Actions\Chat\ChatSession;
 use App\Actions\Chat\Reports\GetChatAiAcceptance;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatAiMoodEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
@@ -32,8 +33,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * What the inbox does with a draft: read the one waiting, take it into the composer, throw it
- * away, or give it stars. Rating it a wrong fact stops trusting the verified facts it was built on;
- * throwing it away only does once the agent's reply says something else (SettleChatAiDraft), since
+ * away. Throwing it away stops trusting the verified facts it was built on only once the agent's
+ * reply says something else (SettleChatAiDraft), since
  * staff often discard to clear the box and then type the same answer. Staff agents on the conversation only: the draft carries a customer's order details
  * and must never reach the widget, which reads the same session endpoints without logging in.
  */
@@ -41,8 +42,6 @@ class HandleChatAiDraft
 {
     use AsAction;
     use WithChatAgentAuthorisation;
-
-    public const array RATING_REASONS = ['missing_info', 'wrong_fact', 'too_long', 'no_reply_needed'];
 
     public function asController(ChatSession $chatSession): JsonResponse
     {
@@ -79,38 +78,6 @@ class HandleChatAiDraft
         });
     }
 
-    /**
-     * One click from the agent, 1 to 5 stars, at any time while the draft is on screen; a
-     * second click changes it. A low rating may say why, which tells us what to fix next.
-     */
-    public function rate(ChatAiDraft $chatAiDraft, Request $request): JsonResponse
-    {
-        $session = $chatAiDraft->session();
-        $agent   = $session ? $this->getAuthorisedChatAgent($session) : null;
-
-        if (!$agent) {
-            return response()->json(['success' => false], 403);
-        }
-
-        $validated = $request->validate([
-            'rating' => ['required', 'integer', 'between:1,5'],
-            'reason' => ['nullable', 'in:'.implode(',', self::RATING_REASONS)],
-        ]);
-
-        $chatAiDraft->update([
-            'rating'           => $validated['rating'],
-            'rating_reason'    => $validated['rating'] <= 3 ? ($validated['reason'] ?? null) : null,
-            'rated_by_user_id' => $agent->user_id,
-            'rated_at'         => now(),
-        ]);
-
-        if ($chatAiDraft->rating_reason === 'wrong_fact') {
-            RememberVerifiedChatFact::disputeFactsOf($chatAiDraft, 'Staff rated a draft built on it as a wrong fact', $agent->user_id);
-        }
-
-        return response()->json(['success' => true]);
-    }
-
     private function show(ChatSession|MetaChatSession $chatSession): JsonResponse
     {
         $agent = $this->getAuthorisedChatAgent($chatSession);
@@ -130,6 +97,7 @@ class HandleChatAiDraft
             'text'        => $draft->text,
             'topic'       => $draft->topic->value,
             'topic_label' => $draft->topic->label(),
+            'mood'        => $draft->mood ? ['value' => $draft->mood->value, 'label' => $draft->mood->label(), 'tone' => $draft->mood->tone(), 'usual' => self::usualMood($chatSession, $draft)] : null,
             'assistant'   => array_filter([
                 'of'     => User::find(data_get($draft->facts, 'user_id'))?->contact_name,
                 'client' => data_get($draft->facts, 'client'),
@@ -149,8 +117,6 @@ class HandleChatAiDraft
             'questions'        => data_get($draft->facts, 'questions', []),
             'since_last_reply' => data_get($draft->facts, 'since_last_reply'),
             'other_chats'      => $chatSession instanceof ChatSession && data_get($draft->facts, 'questions') ? self::otherOpenChats($chatSession) : [],
-            'rating'      => $draft->rating,
-            'reason'      => $draft->rating_reason,
             'aura_angry'  => GetChatAiAcceptance::make()->isAngryWith($agent->user_id),
             'translate_for_me' => self::isInAnotherLanguage($chatSession, $draft, self::staffLanguageId($agent, request()->user()))
                 && !self::reads(request()->user(), self::replyLanguageId($chatSession, $draft)),
@@ -160,6 +126,46 @@ class HandleChatAiDraft
             'my_language'      => Language::find(self::staffLanguageId($agent, request()->user()) ?? 0)?->name,
             'customer_language' => Language::find(self::replyLanguageId($chatSession, $draft) ?? 0)?->name,
         ] : null]);
+    }
+
+    public const USUAL_MOOD_MIN_DRAFTS = 3;
+
+    /**
+     * The most common mood on this customer's earlier drafts, only once there are enough of them.
+     * Null when the customer is not linked, the history is short or nothing leads.
+     *
+     * @return array{value: string, label: string, same: bool}|null
+     */
+    public static function usualMood(ChatSession|MetaChatSession $chatSession, ChatAiDraft $draft): ?array
+    {
+        $customerId = $chatSession instanceof ChatSession ? $chatSession->webUser?->customer_id : null;
+        if (!$customerId) {
+            return null;
+        }
+
+        $counts = ChatAiDraft::query()
+            ->join('chat_sessions', 'chat_sessions.id', '=', 'chat_ai_drafts.chat_session_id')
+            ->join('web_users', 'web_users.id', '=', 'chat_sessions.web_user_id')
+            ->where('web_users.customer_id', $customerId)
+            ->where('chat_ai_drafts.id', '<', $draft->id)
+            ->whereNotNull('chat_ai_drafts.mood')
+            ->groupBy('chat_ai_drafts.mood')
+            ->selectRaw('chat_ai_drafts.mood, count(*) as total')
+            ->pluck('total', 'mood');
+
+        if ($counts->sum() < self::USUAL_MOOD_MIN_DRAFTS) {
+            return null;
+        }
+
+        $top = $counts->max();
+        $leaders = $counts->filter(fn ($total) => $total === $top);
+        if ($leaders->count() > 1) {
+            return null;
+        }
+
+        $mood = ChatAiMoodEnum::from($leaders->keys()->first());
+
+        return ['value' => $mood->value, 'label' => $mood->label(), 'same' => $mood === $draft->mood];
     }
 
     /**

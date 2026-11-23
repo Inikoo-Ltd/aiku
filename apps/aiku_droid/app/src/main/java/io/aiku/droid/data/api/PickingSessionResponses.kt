@@ -54,8 +54,12 @@ private data class PersonnelResponse(val data: List<DispatchPerson> = emptyList(
 object PickingSessionResponses {
     private val json = ClockingResponses.json
 
-    fun listParameters(state: PickingSessionState?, page: Int): List<Pair<String, String>> =
-        listOfNotNull(state?.let { "state" to it.key }, "page" to page.toString())
+    fun listParameters(query: PickingSessionQuery): List<Pair<String, String>> = listOfNotNull(
+        query.state?.let { "state" to it.key },
+        query.search?.trim()?.takeIf { it.isNotEmpty() }?.let { "q" to it },
+        query.sort?.let { "sort" to it.key },
+        "page" to query.page.toString(),
+    )
 
     fun personnelParameters(role: DispatchRole): List<Pair<String, String>> = listOf("role" to role.key)
 

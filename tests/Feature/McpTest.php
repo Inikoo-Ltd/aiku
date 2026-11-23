@@ -4346,6 +4346,7 @@ describe('customer service tools', function () {
             'message'     => 'Sorry it arrived broken.',
             'intent'      => 'damaged_item',
             'risk'        => 'promise',
+            'mood'        => 'angry',
             'answers_all' => true,
             'would_send'  => false,
         ])->assertOk();
@@ -4354,8 +4355,22 @@ describe('customer service tools', function () {
         expect($draft->intent)->toBe(App\Enums\CRM\Livechat\ChatIntentEnum::DAMAGED_ITEM)
             ->and($draft->intent->topic())->toBe(App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED)
             ->and($draft->risk)->toBe(App\Enums\CRM\Livechat\ChatAiRiskEnum::PROMISE)
+            ->and($draft->mood)->toBe(App\Enums\CRM\Livechat\ChatAiMoodEnum::ANGRY)
             ->and($draft->answers_all)->toBeTrue()
             ->and($draft->would_send)->toBeFalse();
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry.', 'mood' => 'cross'])->assertHasErrors(['mood']);
+
+        $this->chat->update(['web_user_id' => createWebUser(createCustomer($this->shop))->id]);
+        $this->chat->refresh();
+        $usual = fn (App\Models\Chat\ChatAiDraft $current) => App\Actions\Chat\ChatSession\HandleChatAiDraft::usualMood($this->chat, $current);
+        expect($usual($draft))->toBeNull();
+        foreach (['friendly', 'friendly', 'upset'] as $mood) {
+            $this->chat->aiDrafts()->create(['group_id' => $draft->group_id, 'organisation_id' => $draft->organisation_id, 'shop_id' => $draft->shop_id, 'status' => App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED, 'text' => 'x', 'topic' => $draft->topic, 'mood' => $mood, 'facts' => []]);
+        }
+        $latest = $this->chat->aiDrafts()->create(['group_id' => $draft->group_id, 'organisation_id' => $draft->organisation_id, 'shop_id' => $draft->shop_id, 'status' => App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::USED, 'text' => 'x', 'topic' => $draft->topic, 'mood' => 'friendly', 'facts' => []]);
+        expect($usual($latest))->toMatchArray(['value' => 'friendly', 'same' => true])
+            ->and($usual($latest->replicate()->fill(['mood' => 'angry'])->setAttribute('id', $latest->id + 1)))->toMatchArray(['value' => 'friendly', 'same' => false]);
 
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Sorry it arrived broken, we are on it.'])->assertOk();
         $untagged = $this->chat->aiDrafts()->latest('id')->firstOrFail();

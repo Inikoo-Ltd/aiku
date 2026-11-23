@@ -400,6 +400,10 @@ class ShowIrisWebpage
                 'locale'
             ]);
 
+            if ($visitorLocale = WebsiteLanguage::translateTo()) {
+                $queryParameters['locale'] = $visitorLocale;
+            }
+
             $cacheRedirectInVarnish = '1';
             $queryString     = http_build_query($queryParameters);
 

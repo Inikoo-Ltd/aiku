@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Sağlık raporu yükle</string>
     <string name="clocking_load_failed_title">Puantaj bilgileriniz yüklenemedi</string>
     <string name="clocking_load_more_failed">Daha fazlası yüklenemedi</string>
-    <string name="clocking_load_offline_body">Çevrimdışısınız. İnternete bağlanıp tekrar deneyin.</string>
+    <string name="clocking_load_offline_body">Bağlantı yok. Wi-Fi bağlantısını kontrol edip tekrar deneyin.</string>
     <string name="clocking_load_server_body">Aiku yanıt vermedi. Birazdan tekrar deneyin.</string>
     <string name="clocking_location_accuracy">%1$s · %2$d m hassasiyetle</string>
     <string name="clocking_location_detect">Konumumu algıla</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Çalışma saatlerini seç</string>
     <string name="dashboard_abnormal">Anormal</string>
     <string name="dashboard_below_minimum">Minimumun altında</string>
-    <string name="dashboard_clocking">Puantaj</string>
     <string name="dashboard_dispatched">Sevk edildi</string>
     <string name="dashboard_dispatched_compared">Bugün %1$s · dün bu saatte %2$s</string>
     <string name="dashboard_dispatched_count">Bugün %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Tekrar dene</string>
     <string name="login_username">Kullanıcı adı</string>
     <string name="login_username_required">Kullanıcı adınızı girin.</string>
-    <string name="menu_all_staff">Tüm personel</string>
     <string name="menu_appearance">Görünüm</string>
     <string name="menu_appearance_subtitle">Tema rengi · açık veya koyu</string>
     <string name="menu_change">Değiştir</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">SKO, lokasyon veya irsaliye ara</string>
     <string name="menu_search_placeholder">SKO, lokasyon, irsaliye ara</string>
     <string name="menu_timesheets">Puantaj çizelgeleri</string>
-    <string name="module_clocking">Puantaj ve İK</string>
+    <string name="module_clocking">Puantaj ve devam</string>
     <string name="module_goods_in">Mal kabul</string>
     <string name="module_goods_out">Mal çıkışı</string>
     <string name="module_inventory">Envanter</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d seçildi</item>
         <item quantity="other">%d seçildi</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">%d sonucu göster</item>
+        <item quantity="other">%d sonucu göster</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d / %2$d stoğa alındı</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d işlem</item>
         <item quantity="other">%d işlem</item>
     </plurals>
+    <string name="record_date_expected">Beklenen</string>
+    <string name="record_date_dispatched">Gönderildi</string>
+    <string name="record_date_received">Teslim alındı</string>
+    <string name="record_date_booked_in">Kayda alındı</string>
+    <string name="record_date_started">Başladı</string>
+    <string name="record_date_created">Oluşturuldu</string>
+    <string name="filter_and_sort">Filtrele ve sırala</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Başlangıç</string>
+    <string name="filter_date_to">Bitiş</string>
+    <string name="filter_date_any">Herhangi bir tarih</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">%1$s tarihinden itibaren</string>
+    <string name="filter_date_until">%1$s tarihine kadar</string>
+    <string name="filter_sort_oldest">Önce en eski</string>
+    <string name="filter_show_results_unknown">Sonuçları göster</string>
+    <string name="goodsout_extra_sessions_search">Oturum ara</string>
+    <string name="goodsout_extra_sessions_filter_title">Toplama oturumlarını filtrele</string>
+    <string name="goodsout_extra_sort_finished">Bitti</string>
+    <string name="goodsin_sort_supplier">Tedarikçi</string>
+    <string name="goodsin_sort_expected_date">Beklenen tarih</string>
+    <string name="goodsin_returns_filter_title">İadeleri filtrele</string>
+    <string name="goodsin_returns_date_received">Teslim alınma tarihi</string>
+    <string name="goodsin_returns_sort_newest">Önce en son teslim alınan</string>
+    <string name="goodsin_returns_sort_oldest">Önce ilk teslim alınan</string>
+    <string name="fulfilment_inbound_filter_title">Teslimatları filtrele</string>
+    <string name="cache_saved_rows_only">Kayıtlı kopya: yalnızca daha önce yüklenen satırlar dahildir</string>
+    <string name="filter_online_only">%1$s (yalnızca çevrimiçi)</string>
 </resources>

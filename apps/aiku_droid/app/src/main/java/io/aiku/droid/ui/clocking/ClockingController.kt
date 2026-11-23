@@ -49,7 +49,11 @@ data class TimesheetWeekState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val problem: ClockingProblem? = null,
-)
+    val cachedAt: Instant? = null,
+    val fetchedAt: Instant? = null,
+) {
+    val lastUpdated: Instant? get() = (cachedAt ?: fetchedAt)?.takeIf { problem != null && period != null }
+}
 
 data class TimesheetDayState(
     val date: LocalDate,
@@ -72,12 +76,13 @@ data class ClockingUiState(
     val scan: ClockingScanState = ClockingScanState.Waiting,
     val note: ClockingNoteState = ClockingNoteState.Idle,
     val statusCachedAt: Instant? = null,
+    val statusFetchedAt: Instant? = null,
 ) {
     val isStatusCached: Boolean get() = statusCachedAt != null
 
     val actionableStatus: ClockingStatus? get() = status.takeUnless { isStatusCached }
 
-    val lastUpdated: Instant? get() = statusCachedAt?.takeIf { statusProblem != null }
+    val lastUpdated: Instant? get() = (statusCachedAt ?: statusFetchedAt)?.takeIf { statusProblem != null && status != null }
 
     val zone: ZoneId
         get() = listOfNotNull(status?.timezone, thisWeek?.timezone)

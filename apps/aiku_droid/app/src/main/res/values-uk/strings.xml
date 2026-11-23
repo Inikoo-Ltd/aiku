@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Завантажити медичну довідку</string>
     <string name="clocking_load_failed_title">Не вдалося завантажити ваш облік часу</string>
     <string name="clocking_load_more_failed">Не вдалося завантажити більше</string>
-    <string name="clocking_load_offline_body">Ви офлайн. Під\'єднайтеся до інтернету і спробуйте ще раз.</string>
+    <string name="clocking_load_offline_body">Немає з\'єднання. Перевірте Wi-Fi і спробуйте ще раз.</string>
     <string name="clocking_load_server_body">Aiku не відповів. Спробуйте ще раз за мить.</string>
     <string name="clocking_location_accuracy">%1$s · точність до %2$d м</string>
     <string name="clocking_location_detect">Визначити моє місцезнаходження</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Виберіть робочий час</string>
     <string name="dashboard_abnormal">Аномальні</string>
     <string name="dashboard_below_minimum">Нижче мінімуму</string>
-    <string name="dashboard_clocking">Облік часу</string>
     <string name="dashboard_dispatched">Відправлено</string>
     <string name="dashboard_dispatched_compared">%1$s сьогодні · %2$s учора на цей час</string>
     <string name="dashboard_dispatched_count">%1$s сьогодні</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Спробувати ще раз</string>
     <string name="login_username">Ім\'я користувача</string>
     <string name="login_username_required">Введіть ім\'я користувача.</string>
-    <string name="menu_all_staff">Увесь персонал</string>
     <string name="menu_appearance">Вигляд</string>
     <string name="menu_appearance_subtitle">Колір теми · світла або темна</string>
     <string name="menu_change">Змінити</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Пошук SKO, комірок або накладних на доставку</string>
     <string name="menu_search_placeholder">Пошук SKO, комірки, накладної</string>
     <string name="menu_timesheets">Табелі обліку робочого часу</string>
-    <string name="module_clocking">Облік часу та HR</string>
+    <string name="module_clocking">Облік часу та відвідуваність</string>
     <string name="module_goods_in">Приймання товарів</string>
     <string name="module_goods_out">Відвантаження товарів</string>
     <string name="module_inventory">Запаси</string>
@@ -2034,6 +2032,12 @@
         <item quantity="few">Вибрано: %d</item>
         <item quantity="many">Вибрано: %d</item>
         <item quantity="other">Вибрано: %d</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Показати %d результат</item>
+        <item quantity="few">Показати %d результати</item>
+        <item quantity="many">Показати %d результатів</item>
+        <item quantity="other">Показати %d результату</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d з %2$d оприбутковано</item>
@@ -2641,4 +2645,32 @@
         <item quantity="many">%d дій</item>
         <item quantity="other">%d дії</item>
     </plurals>
+    <string name="record_date_expected">Очікується</string>
+    <string name="record_date_dispatched">Відправлено</string>
+    <string name="record_date_received">Отримано</string>
+    <string name="record_date_booked_in">Оприбутковано</string>
+    <string name="record_date_started">Розпочато</string>
+    <string name="record_date_created">Створено</string>
+    <string name="filter_and_sort">Фільтр і сортування</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Від</string>
+    <string name="filter_date_to">До</string>
+    <string name="filter_date_any">Будь-яка дата</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Від %1$s</string>
+    <string name="filter_date_until">До %1$s</string>
+    <string name="filter_sort_oldest">Спочатку старі</string>
+    <string name="filter_show_results_unknown">Показати результати</string>
+    <string name="goodsout_extra_sessions_search">Пошук сесій</string>
+    <string name="goodsout_extra_sessions_filter_title">Фільтр сесій комплектування</string>
+    <string name="goodsout_extra_sort_finished">Завершено</string>
+    <string name="goodsin_sort_supplier">Постачальник</string>
+    <string name="goodsin_sort_expected_date">Очікувана дата</string>
+    <string name="goodsin_returns_filter_title">Фільтр повернень</string>
+    <string name="goodsin_returns_date_received">Дата отримання</string>
+    <string name="goodsin_returns_sort_newest">Спочатку нещодавно отримані</string>
+    <string name="goodsin_returns_sort_oldest">Спочатку давно отримані</string>
+    <string name="fulfilment_inbound_filter_title">Фільтр доставок</string>
+    <string name="cache_saved_rows_only">Збережена копія: містить лише рядки, завантажені раніше</string>
+    <string name="filter_online_only">%1$s (лише онлайн)</string>
 </resources>

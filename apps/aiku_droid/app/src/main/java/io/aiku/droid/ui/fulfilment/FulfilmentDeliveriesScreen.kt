@@ -4,31 +4,44 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.AppContainer
 import io.aiku.droid.R
 import io.aiku.droid.data.api.PalletDeliveryRow
+import io.aiku.droid.data.api.PalletDeliverySort
 import io.aiku.droid.data.api.PalletDeliveryState
 import io.aiku.droid.data.api.PalletDeliveryStateFilter
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.InlineAlert
-import io.aiku.droid.ui.components.ItemRow
+import io.aiku.droid.ui.components.ListFilterPanel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
 import io.aiku.droid.ui.components.SearchScanField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.SortOption
+import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.WarehouseSection
+import io.aiku.droid.ui.components.listFilterSummary
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveriesUiState
 import io.aiku.droid.ui.fulfilment.inbound.PalletDeliveriesViewModel
 import io.aiku.droid.ui.fulfilment.inbound.deliveryFilterLabel
@@ -37,7 +50,6 @@ import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryRoute
 import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryTone
 import io.aiku.droid.ui.fulfilment.inbound.quotedReference
 import io.aiku.droid.ui.fulfilment.inbound.rememberPalletDeliveries
-import io.aiku.droid.ui.goodsin.goodsInDate
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.organisationZone
@@ -50,6 +62,13 @@ import io.aiku.droid.ui.navigation.ScanRoute
 import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.states.SessionExpiredScreen
+
+@Composable
+private fun palletDeliverySorts(): List<SortOption<PalletDeliverySort>> = listOf(
+    SortOption(null, stringResource(R.string.record_date_expected)),
+    SortOption(PalletDeliverySort.Reference, stringResource(R.string.goodsin_sort_reference)),
+    SortOption(PalletDeliverySort.BookedIn, stringResource(R.string.record_date_booked_in)),
+)
 
 @Composable
 fun FulfilmentDeliveriesScreen(container: AppContainer, warehouseId: Long) {
@@ -73,6 +92,8 @@ private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveri
     val toasts = LocalToasts.current
     val scanFeedback = LocalScanController.current.feedback
     val scrollState = rememberScrollState()
+    var showFilter by remember { mutableStateOf(false) }
+    val sorts = palletDeliverySorts()
     val list = state.list
     val search = state.search.trim()
     val filters = PalletDeliveryStateFilter.entries
@@ -107,16 +128,26 @@ private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveri
             selectedIndex = filters.indexOf(state.state),
             onSelect = { index -> deliveries.selectState(filters[index]) },
         )
-        SearchScanField(
-            placeholder = stringResource(R.string.fulfilment_inbound_search_deliveries),
-            value = state.search,
-            onValueChange = deliveries::search,
-            onScan = { navigator.open(ScanRoute) },
-        )
+        SearchWithFilter(filterCount = state.filter.activeCount, onFilter = { showFilter = true }, buttonSize = 46.dp) { modifier ->
+            SearchScanField(
+                placeholder = stringResource(R.string.fulfilment_inbound_search_deliveries),
+                value = state.search,
+                onValueChange = deliveries::search,
+                onScan = { navigator.open(ScanRoute) },
+                modifier = modifier,
+            )
+        }
+        if (state.filter.isFiltered) {
+            ActiveFiltersLine(
+                parts = listFilterSummary(state.filter, sorts, dateLabel = stringResource(R.string.record_date_booked_in)),
+                onClear = deliveries::clearFilters,
+            )
+        }
         state.lookingUpCode?.let { code -> InlineAlert(title = stringResource(R.string.scan_looking_up, code), tone = AlertTone.Info) }
         list.firstPageProblem?.let { problem ->
             StockLoadProblem(problem = problem, title = stringResource(R.string.fulfilment_inbound_deliveries_failed), onRetry = deliveries::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.rows.isNotEmpty() -> ListGroup {
                 list.rows.forEachIndexed { index, row ->
@@ -138,6 +169,21 @@ private fun FulfilmentDeliveriesContent(state: PalletDeliveriesUiState, deliveri
         }
         FulfilmentFootnote(text = stringResource(R.string.fulfilment_deliveries_footnote))
     }
+    if (showFilter) {
+        ListFilterPanel(
+            title = stringResource(R.string.fulfilment_inbound_filter_title),
+            filter = state.filter,
+            sorts = sorts,
+            total = list.total?.takeIf { list.hasLoaded && list.loadingPage == null },
+            onApply = { applied ->
+                showFilter = false
+                deliveries.applyFilter(applied)
+            },
+            onDismiss = { showFilter = false },
+            dateLabel = stringResource(R.string.record_date_booked_in),
+            totalFor = state::offlineTotalFor,
+        )
+    }
 }
 
 @Composable
@@ -151,18 +197,19 @@ private fun PalletDeliveryListRow(row: PalletDeliveryRow, onOpen: () -> Unit) {
         }
         else -> palletCountsText(pallets = counts.pallets, boxes = counts.boxes, oversizes = counts.oversizes)
     }
-    val moment = when (row.state) {
-        PalletDeliveryState.CONFIRMED -> goodsInDate(row.estimatedDeliveryDate, zone)?.let { stringResource(R.string.fulfilment_inbound_expected_on, it) }
-        PalletDeliveryState.BOOKED_IN -> goodsInDate(row.bookedInAt, zone)?.let { stringResource(R.string.fulfilment_inbound_booked_in_on, it) }
-        else -> goodsInDate(row.receivedAt, zone)?.let { stringResource(R.string.fulfilment_inbound_received_on, it) }
+    val (date, caption) = when (row.state) {
+        PalletDeliveryState.CONFIRMED -> recordDate(row.estimatedDeliveryDate, zone) to R.string.record_date_expected
+        PalletDeliveryState.BOOKED_IN -> recordDate(row.bookedInAt, zone) to R.string.record_date_booked_in
+        else -> recordDate(row.receivedAt, zone) to R.string.record_date_received
     }
 
-    ItemRow(
-        code = row.reference,
-        subtitle = dotJoined(row.customer?.name, quotedReference(row.customerReference), progress, moment),
-        chip = row.stateLabel.takeIf { it.isNotBlank() },
-        chipTone = palletDeliveryTone(row.state),
-        showPhoto = false,
+    RecordRow(
+        reference = row.reference,
+        date = date,
+        dateCaption = date?.let { stringResource(caption) }?.takeUnless { it.equals(row.stateLabel.trim(), ignoreCase = true) },
+        party = row.customer?.name,
+        details = listOfNotNull(quotedReference(row.customerReference), progress?.takeIf { it.isNotBlank() }),
+        badges = { row.stateLabel.takeIf { it.isNotBlank() }?.let { StatusBadge(text = it, tone = palletDeliveryTone(row.state)) } },
         onClick = onOpen,
     )
 }

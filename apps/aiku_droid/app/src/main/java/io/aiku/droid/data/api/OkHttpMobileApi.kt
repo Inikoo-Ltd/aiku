@@ -258,8 +258,8 @@ class OkHttpMobileApi(
         }.build()
     }
 
-    override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> =
-        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/picking-sessions", PickingSessionResponses.listParameters(state, page)), token))
+    override suspend fun pickingSessions(token: String, warehouseId: Long, query: PickingSessionQuery): GoodsOutResult<PickingSessionPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/picking-sessions", PickingSessionResponses.listParameters(query)), token))
             ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseList(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 

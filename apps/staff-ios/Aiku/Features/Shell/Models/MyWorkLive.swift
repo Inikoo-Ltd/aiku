@@ -4,15 +4,17 @@ import Observation
 @MainActor
 @Observable
 final class WorkBadgesStore {
-    static let shared = WorkBadgesStore(inbox: ShellInboxStore.shared)
+    static let shared = WorkBadgesStore(inbox: ShellInboxStore.shared, cache: .shared)
 
     private(set) var badges = MobileWorkBadges()
     private(set) var warehouseID: Int?
 
     @ObservationIgnored private let inbox: ShellInboxStore?
+    @ObservationIgnored private let cache: ScreenCache?
 
-    init(inbox: ShellInboxStore? = nil) {
+    init(inbox: ShellInboxStore? = nil, cache: ScreenCache? = nil) {
         self.inbox = inbox
+        self.cache = cache
     }
 
     var myWorkCount: Int { Self.visible(badges.myWork) }
@@ -25,6 +27,9 @@ final class WorkBadgesStore {
         if warehouseID != self.warehouseID {
             badges = MobileWorkBadges()
             self.warehouseID = warehouseID
+            if let warehouseID {
+                showSavedCopy(warehouseID: warehouseID)
+            }
         }
         guard let warehouseID else { return }
         do {
@@ -32,14 +37,22 @@ final class WorkBadgesStore {
             guard warehouseID == self.warehouseID else { return }
             badges = fetched
             inbox?.applyUnread(fetched.inboxUnread)
+            cache?.save(fetched, key: ScreenCacheKey.workBadges(warehouseID: warehouseID))
         } catch where error.isCancellation {
             return
         } catch let error as APIError {
             if Self.keepsBadges(after: error) { return }
             badges = MobileWorkBadges()
+            cache?.remove(ScreenCacheKey.workBadges(warehouseID: warehouseID))
         } catch {
             return
         }
+    }
+
+    private func showSavedCopy(warehouseID: Int) {
+        guard let saved = cache?.read(MobileWorkBadges.self, key: ScreenCacheKey.workBadges(warehouseID: warehouseID)) else { return }
+        badges = saved.value
+        inbox?.applyUnread(saved.value.inboxUnread)
     }
 
     static func keepsBadges(after error: APIError) -> Bool {

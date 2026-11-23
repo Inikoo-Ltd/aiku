@@ -4,7 +4,7 @@ import Observation
 @MainActor
 @Observable
 final class ClockingStore {
-    static let shared = ClockingStore(service: .live(.shared))
+    static let shared = ClockingStore(service: .live(.shared), cache: .shared)
     static let historyDays = 28
 
     private(set) var today: ClockingDay
@@ -34,15 +34,22 @@ final class ClockingStore {
     var openedErrorFromClocking = false
     var isShowingDetails = true
     private(set) var timeZone: TimeZone = .current
+    private(set) var savedAt: Date?
 
     @ObservationIgnored private let service: ClockingService
     @ObservationIgnored private let clock: @Sendable () -> Date
+    @ObservationIgnored private let cache: ScreenCache?
 
-    init(service: ClockingService, clock: @escaping @Sendable () -> Date = { .now }) {
+    init(service: ClockingService, clock: @escaping @Sendable () -> Date = { .now }, cache: ScreenCache? = nil) {
         self.service = service
         self.clock = clock
+        self.cache = cache
         today = ClockingMapper.day(date: ClockingMapper.dayString(clock(), in: .current), sessions: [], in: .current, isToday: true)
     }
+
+    var hasStatus: Bool { hasLoaded || savedAt != nil }
+
+    var lastUpdated: Date? { loadError == nil ? nil : savedAt ?? loadedAt }
 
     var now: Int {
         let seconds = ClockingMapper.secondsSinceMidnight(ISO8601DateFormatter().string(from: clock()), in: timeZone) ?? 0
@@ -111,6 +118,7 @@ final class ClockingStore {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
+        showSavedCopy()
         do {
             let status = try await service.status()
             apply(status)
@@ -118,16 +126,15 @@ final class ClockingStore {
             let from = ClockingMapper.parseDay(to).map { ClockingMapper.dayString($0.addingTimeInterval(-Double(Self.historyDays - 1) * 86_400), in: TimeZone(identifier: "UTC")!) } ?? to
             let history = try await service.timesheets(from, to)
             today.timesheetID = history.timesheets.first { $0.date == today.date }?.id
-            pastDays = history.timesheets
-                .filter { $0.date != today.date }
-                .map { ClockingMapper.day(date: $0.date, sessions: $0.sessions ?? [], in: timeZone, isToday: false, timesheetID: $0.id) }
-                .sorted { $0.date > $1.date }
+            applyPastDays(history.timesheets)
+            cache?.save(ClockingSavedCopy(status: status, timesheets: history.timesheets, today: today.date), key: ScreenCacheKey.clocking)
             adjustmentRequests = (try? await service.adjustments()) ?? adjustmentRequests
             if hasActiveShifts {
                 shifts = ((try? await service.shifts()) ?? [])
                     .filter { $0.isActive ?? true }
                     .map { ClockingShift(name: $0.name, hours: $0.type?.capitalized ?? "", scheduleID: $0.id) }
             }
+            savedAt = nil
             loadError = nil
             hasLoaded = true
             loadedAt = Date()
@@ -138,8 +145,26 @@ final class ClockingStore {
         }
     }
 
-    var lastUpdatedAt: Date? {
-        loadError == nil ? nil : loadedAt
+    private func applyPastDays(_ timesheets: [ClockingTimesheetResponse]) {
+        pastDays = timesheets
+            .filter { $0.date != today.date }
+            .map { ClockingMapper.day(date: $0.date, sessions: $0.sessions ?? [], in: timeZone, isToday: false, timesheetID: $0.id) }
+            .sorted { $0.date > $1.date }
+    }
+
+    func showSavedCopy() {
+        guard !hasLoaded, savedAt == nil, let saved = cache?.read(ClockingSavedCopy.self, key: ScreenCacheKey.clocking) else { return }
+        let copy = saved.value
+        timeZone = ClockingMapper.timeZone(copy.timezone)
+        let currentDate = ClockingMapper.dayString(clock(), in: timeZone)
+        let sessions = copy.todayDate == currentDate ? copy.sessions : []
+        today = ClockingMapper.day(date: currentDate, sessions: sessions, in: timeZone, isToday: true)
+        today.timesheetID = copy.thisWeek.first { $0.date == currentDate }?.id
+        let weekStart = ClockingMapper.weekStart(of: currentDate) ?? currentDate
+        applyPastDays(copy.thisWeek.filter { $0.date >= weekStart && $0.date <= currentDate })
+        employeeName = copy.employeeName
+        organisationName = copy.organisationName
+        savedAt = saved.savedAt
     }
 
     func apply(_ status: ClockingStatusResponse) {
@@ -173,6 +198,7 @@ final class ClockingStore {
         hasLoaded = false
         loadError = nil
         loadedAt = nil
+        savedAt = nil
     }
 
     func setLocation(_ coordinate: ClockingCoordinate?) {
@@ -294,6 +320,36 @@ final class ClockingStore {
 
     func download(_ attachment: ClockingAttachment) async throws -> URL {
         try await service.downloadAttachment(attachment)
+    }
+}
+
+struct ClockingSavedCopy: Codable, Equatable, Sendable {
+    let timezone: String?
+    let todayDate: String
+    let sessions: [ClockingSessionResponse]
+    let employeeName: String?
+    let organisationName: String?
+    let thisWeek: [ClockingTimesheetResponse]
+
+    init(timezone: String?, todayDate: String, sessions: [ClockingSessionResponse], employeeName: String?, organisationName: String?, thisWeek: [ClockingTimesheetResponse]) {
+        self.timezone = timezone
+        self.todayDate = todayDate
+        self.sessions = sessions
+        self.employeeName = employeeName
+        self.organisationName = organisationName
+        self.thisWeek = thisWeek
+    }
+
+    init(status: ClockingStatusResponse, timesheets: [ClockingTimesheetResponse], today: String) {
+        let weekStart = ClockingMapper.weekStart(of: today) ?? today
+        self.init(
+            timezone: status.timezone,
+            todayDate: today,
+            sessions: status.sessions,
+            employeeName: status.employee?.name,
+            organisationName: status.employee?.organisation?.name,
+            thisWeek: timesheets.filter { $0.date >= weekStart && $0.date <= today }
+        )
     }
 }
 

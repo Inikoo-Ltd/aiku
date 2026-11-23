@@ -22,7 +22,7 @@ import io.aiku.droid.data.api.PickerFilter
 import io.aiku.droid.data.api.PickingSession
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.PickingSessionPage
-import io.aiku.droid.data.api.PickingSessionState
+import io.aiku.droid.data.api.PickingSessionQuery
 import io.aiku.droid.data.api.PickingSessionWrite
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
@@ -35,9 +35,14 @@ import io.aiku.droid.data.api.SessionActionOutcome
 import io.aiku.droid.data.api.SessionScanPackOutcome
 import io.aiku.droid.data.api.SessionScanPickOutcome
 import io.aiku.droid.data.api.ShipperList
+import io.aiku.droid.data.api.StaffRef
 import io.aiku.droid.data.api.Trolley
+import io.aiku.droid.data.cache.CACHE_NOW
+import io.aiku.droid.data.cache.SavedLists
+import io.aiku.droid.data.cache.testScreenCache
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
+import io.aiku.droid.ui.components.DateRange
 import io.aiku.droid.ui.goodsout.extra.PickingSessionHandoff
 import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.scan.ScanProblem
@@ -48,6 +53,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -58,6 +64,7 @@ import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.time.LocalDate
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeliveryNotesViewModelTest {
@@ -67,10 +74,11 @@ class DeliveryNotesViewModelTest {
     private val api = FakeGoodsOutApi()
     private val pickingSessions = FakePickingSessions()
     private val handoff = PickingSessionHandoff()
+    private val dispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun useTestMainDispatcher() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatcher)
     }
 
     @After
@@ -339,6 +347,106 @@ class DeliveryNotesViewModelTest {
         assertEquals(emptySet<Long>(), viewModel.state.value.selection)
     }
 
+    @Test
+    fun `a custom date range replaces a quick choice, goes to the server and counts once`() {
+        val range = DateRange(from = LocalDate.of(2026, 11, 2), to = LocalDate.of(2026, 11, 9))
+        val quick = DeliveryNoteFilter(date = DateFilter.LastSevenDays, sort = DeliveryNoteSort.Reference)
+        val custom = quick.withRange(range)
+
+        assertNull(custom.date)
+        assertEquals(range, custom.range)
+        assertEquals(2, custom.panelCount)
+        assertEquals(1, custom.activeFilterCount)
+        assertEquals(DateRange(), custom.withRange(DateRange()).range)
+        assertEquals(LocalDate.of(2026, 11, 6), quick.query(today, page = 1, perPage = PER_PAGE).from)
+
+        val viewModel = viewModel()
+        viewModel.onStart()
+        viewModel.applyFilter(custom)
+
+        val query = api.queries.last()
+        assertEquals(LocalDate.of(2026, 11, 2), query.from)
+        assertEquals(LocalDate.of(2026, 11, 9), query.to)
+        assertEquals(DeliveryNoteSort.Reference, query.sort)
+        assertEquals(1, query.page)
+        assertTrue(viewModel.state.value.filter.isFiltered)
+
+        viewModel.clearFilters()
+
+        assertEquals(DeliveryNoteQuery(bucket = DeliveryNoteBucket.Unassigned, page = 1, perPage = PER_PAGE), api.queries.last())
+    }
+
+    @Test
+    fun `searching from the list row waits for typing to pause, then reloads from page 1`() {
+        val viewModel = viewModel()
+        viewModel.onStart()
+
+        viewModel.search("AR24")
+        viewModel.search("AR248")
+
+        assertEquals("AR248", viewModel.state.value.filter.search)
+        assertEquals(1, api.queries.size)
+
+        dispatcher.scheduler.advanceTimeBy(301)
+
+        assertEquals(2, api.queries.size)
+        assertEquals("AR248", api.queries.last().search)
+        assertEquals(1, api.queries.last().page)
+        assertEquals(0, viewModel.state.value.filter.panelCount)
+    }
+
+    @Test
+    fun `offline the list shows the saved rows of every bucket seen, filtered and sorted on the phone, until the server answers`() = runTest {
+        val cache = testScreenCache()
+        api.pages[DeliveryNoteBucket.Unassigned] = listOf(
+            listOf(
+                DeliveryNoteRow(id = 1, reference = "AR1", state = "unassigned", customerName = "Zoe", date = "2026-11-10T08:00:00+00:00"),
+                DeliveryNoteRow(id = 2, reference = "AR2", state = "unassigned", customerName = "adam", date = "2026-11-12T08:00:00+00:00"),
+            ),
+        )
+        api.pages[DeliveryNoteBucket.Handling] = listOf(listOf(DeliveryNoteRow(id = 3, reference = "AR3", state = "handling", picker = StaffRef(42, "Ana"), date = "2026-11-11T08:00:00+00:00")))
+        val viewModel = DeliveryNotesViewModel(
+            api = api,
+            sessions = sessions,
+            warehouseId = WAREHOUSE_ID,
+            today = { today },
+            pickingSessions = pickingSessions,
+            perPage = PER_PAGE,
+            cache = cache,
+            zone = { ZoneOffset.UTC },
+        )
+        viewModel.onStart()
+        viewModel.selectBucket(DeliveryNoteBucket.Handling)
+        assertEquals(listOf(3L, 1L, 2L), cache.saved(WAREHOUSE_ID, SavedLists.deliveryNotes)?.value?.map { it.id })
+
+        api.failure = GoodsOutResult.Unreachable
+        viewModel.selectBucket(DeliveryNoteBucket.Unassigned)
+
+        val offline = viewModel.state.value
+        assertEquals(listOf(1L, 2L), offline.list.notes.map { it.id })
+        assertEquals(CACHE_NOW, offline.lastUpdated)
+        assertEquals(GoodsOutProblem.Offline, offline.list.firstPageProblem)
+        assertFalse(offline.list.canLoadMore)
+
+        viewModel.applyFilter(offline.filter.copy(sort = DeliveryNoteSort.Customer))
+        assertEquals(listOf(2L, 1L), viewModel.state.value.list.notes.map { it.id })
+
+        val asked = api.queries.size
+        val draft = viewModel.state.value.filter.copy(bucket = DeliveryNoteBucket.All, picker = PickerFilter.Me)
+        viewModel.previewTotal(draft)
+        assertEquals(1, viewModel.state.value.totalFor(draft))
+        assertEquals(asked, api.queries.size)
+
+        viewModel.applyFilter(viewModel.state.value.filter.copy(date = DateFilter.Today))
+        assertEquals(listOf(2L), viewModel.state.value.list.notes.map { it.id })
+
+        api.failure = null
+        viewModel.refresh()
+
+        assertNull(viewModel.state.value.offline)
+        assertNull(viewModel.state.value.list.problem)
+    }
+
     private fun viewModel(): DeliveryNotesViewModel =
         DeliveryNotesViewModel(api = api, sessions = sessions, warehouseId = WAREHOUSE_ID, today = { today }, pickingSessions = pickingSessions, perPage = PER_PAGE, sessionHandoff = handoff)
 
@@ -348,7 +456,7 @@ class DeliveryNotesViewModelTest {
         val creates = mutableListOf<Pair<Long, List<Long>>>()
         val writes = mutableListOf<Pair<Long, PickingSessionWrite>>()
 
-        override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> =
+        override suspend fun pickingSessions(token: String, warehouseId: Long, query: PickingSessionQuery): GoodsOutResult<PickingSessionPage> =
             GoodsOutResult.Unreachable
 
         override suspend fun pickingSession(token: String, sessionId: Long): GoodsOutResult<PickingSession> = GoodsOutResult.Unreachable

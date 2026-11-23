@@ -25,7 +25,7 @@ struct ClockingStatusResponse: Decodable, Sendable {
     let canEditNotes: Bool
 }
 
-struct ClockingSessionResponse: Decodable, Equatable, Sendable {
+struct ClockingSessionResponse: Codable, Equatable, Sendable {
     let id: Int
     let sequence: Int?
     let isOpen: Bool
@@ -36,8 +36,8 @@ struct ClockingSessionResponse: Decodable, Equatable, Sendable {
     let clockOut: ClockingRecordResponse?
 }
 
-struct ClockingRecordResponse: Decodable, Equatable, Sendable {
-    struct Place: Decodable, Equatable, Sendable {
+struct ClockingRecordResponse: Codable, Equatable, Sendable {
+    struct Place: Codable, Equatable, Sendable {
         let id: Int
         let name: String
     }
@@ -51,7 +51,7 @@ struct ClockingRecordResponse: Decodable, Equatable, Sendable {
     var clockingMachine: Place? = nil
 }
 
-struct ClockingTimesheetResponse: Decodable, Equatable, Sendable {
+struct ClockingTimesheetResponse: Codable, Equatable, Sendable {
     var id: Int? = nil
     let date: String
     let firstClockIn: String?

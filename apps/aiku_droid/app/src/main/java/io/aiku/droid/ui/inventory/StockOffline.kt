@@ -130,12 +130,13 @@ fun OrgStockDetail.withQueued(actions: List<QueuedAction>): OrgStockDetail {
         return this
     }
     val levels = queued.fold(locations.associate { it.locationOrgStockId to it.quantity }) { current, action -> current.applied(action) }
-    val changed = locations.map { location -> levels[location.locationOrgStockId]?.takeIf { it != location.quantity }?.let(location::withQuantity) ?: location }
+    val changed = locations.map { location -> levels[location.locationOrgStockId]?.takeIf { it != location.quantity }?.let { location.withQuantity(it, packedIn) } ?: location }
     val delta = changed.sumOf { it.quantity } - locations.sumOf { it.quantity }
     return if (delta == 0.0) {
         copy(locations = changed)
     } else {
-        copy(locations = changed, quantityInLocations = quantityInLocations + delta, quantityInLocationsLabel = null)
+        val total = stockTotal(quantityInLocations + delta)
+        copy(locations = changed, quantityInLocations = total, quantityInLocationsLabel = stockFractionLabel(total, packedIn))
     }
 }
 
@@ -155,9 +156,12 @@ private fun Map<Long, Double>.applied(action: QueuedAction): Map<Long, Double> =
     else -> this + action.countedQuantities().filterKeys { it in this }
 }
 
-private fun LocationOrgStock.withStock(stock: Double): LocationOrgStock = if (quantityValue != null) copy(quantityValue = stock) else copy(quantity = stock)
+private fun LocationOrgStock.withStock(stock: Double): LocationOrgStock {
+    val label = stockFractionLabel(stock, packedIn)
+    return if (quantityValue != null) copy(quantityValue = stock, quantityLabel = label) else copy(quantity = stock, quantityLabel = label)
+}
 
-private fun OrgStockLocation.withQuantity(quantity: Double): OrgStockLocation = copy(quantity = quantity, quantityLabel = null)
+private fun OrgStockLocation.withQuantity(quantity: Double, packedIn: Double?): OrgStockLocation = copy(quantity = quantity, quantityLabel = stockFractionLabel(quantity, packedIn))
 
 class MovementReasonsMemory {
     @Volatile

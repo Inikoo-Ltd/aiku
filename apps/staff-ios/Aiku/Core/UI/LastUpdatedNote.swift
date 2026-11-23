@@ -20,11 +20,7 @@ struct LastUpdatedNote: View {
     }
 
     static func text(_ date: Date) -> String {
-        let time = date.formatted(date: .omitted, time: .shortened)
-        guard Calendar.current.isDateInToday(date) else {
-            return "Last updated \(date.formatted(.dateTime.day().month(.abbreviated))) \(time)"
-        }
-        return "Last updated \(time)"
+        LastUpdatedText.label(for: date)
     }
 
     static let savedRowsOnlyText = "Saved copy: only rows loaded before are included"

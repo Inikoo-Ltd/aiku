@@ -49,6 +49,8 @@ object GoodsInResponses {
         query.source?.let { "source" to it.key },
         query.search.trimmedOrNull()?.let { "q" to it },
         query.dispatched?.let { "dispatched" to it.key },
+        query.from?.let { "from" to it.toString() },
+        query.to?.let { "to" to it.toString() },
         query.sort?.let { "sort" to it.key },
         "page" to query.page.toString(),
         "per_page" to query.perPage.toString(),
@@ -57,6 +59,9 @@ object GoodsInResponses {
     fun returnsParameters(query: ReturnQuery): List<Pair<String, String>> = listOfNotNull(
         "state" to query.state.key,
         query.search.trimmedOrNull()?.let { "q" to it },
+        query.from?.let { "from" to it.toString() },
+        query.to?.let { "to" to it.toString() },
+        query.sort?.let { "sort" to it.key },
         "page" to query.page.toString(),
         "per_page" to query.perPage.toString(),
     )

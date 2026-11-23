@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import { inject, computed, ref } from "vue"
+import { withVisitorLocale } from "@/Composables/Iris/withVisitorLocale"
 
 const layout = inject("layout", {})
 const location = layout?.app?.name || "iris"
@@ -119,7 +120,7 @@ const resolvedHref = computed<string | null>(() => {
     return href.slice(1) // "#section"
   }
 
-  return href
+  return location === "iris" && linkLocation.value === "retina" ? withVisitorLocale(href, layout?.iris) : href
 })
 
 /**

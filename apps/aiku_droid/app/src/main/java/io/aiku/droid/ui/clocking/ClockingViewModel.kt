@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 
 class ClockingViewModel(
@@ -25,6 +26,7 @@ class ClockingViewModel(
     private val sessions: SessionRepository,
     private val cache: ScreenCache,
     private val onClockedOut: () -> Unit = {},
+    private val now: () -> Instant = Instant::now,
 ) : ViewModel(), ClockingController {
 
     private val mutableState = MutableStateFlow(ClockingUiState())
@@ -66,7 +68,7 @@ class ClockingViewModel(
             launch {
                 when (val result = clockingApi.clocking(token)) {
                     is ClockingResult.Loaded -> mutableState.update {
-                        it.copy(status = result.value, isLoadingStatus = false, isRefreshing = false, statusProblem = null, statusCachedAt = null)
+                        it.copy(status = result.value, isLoadingStatus = false, isRefreshing = false, statusProblem = null, statusCachedAt = null, statusFetchedAt = now())
                     }
                     ClockingResult.SessionExpired -> expireSession()
                     else -> mutableState.update { it.copy(isLoadingStatus = false, isRefreshing = false, statusProblem = problemOf(result)) }
@@ -86,20 +88,34 @@ class ClockingViewModel(
         val token = currentToken() ?: return
         weekJob?.cancel()
         mutableState.update { current ->
-            val keptPeriod = current.week.period.takeIf { current.week.requestedFrom == from }
-            current.copy(week = TimesheetWeekState(requestedFrom = from, period = keptPeriod, isLoading = true, isRefreshing = isPull))
+            val kept = current.week.takeIf { it.requestedFrom == from && it.period != null }
+            current.copy(week = TimesheetWeekState(requestedFrom = from, period = kept?.period, isLoading = true, isRefreshing = isPull, cachedAt = kept?.cachedAt, fetchedAt = kept?.fetchedAt))
         }
 
         weekJob = viewModelScope.launch {
             when (val result = clockingApi.timesheets(token, from = from, to = from?.plusDays(DAYS_AFTER_MONDAY))) {
                 is ClockingResult.Loaded -> mutableState.update { current ->
                     current.copy(
-                        week = current.week.copy(period = result.value, isLoading = false, isRefreshing = false, problem = null),
+                        week = current.week.copy(period = result.value, isLoading = false, isRefreshing = false, problem = null, cachedAt = null, fetchedAt = now()),
                         thisWeek = if (from == null) result.value else current.thisWeek,
                     )
                 }
                 ClockingResult.SessionExpired -> expireSession()
-                else -> mutableState.update { it.copy(week = it.week.copy(isLoading = false, isRefreshing = false, problem = problemOf(result))) }
+                else -> {
+                    val cached = if (from == null) cache.read(CachedScreens.USER_SCOPED, CachedScreens.clockingThisWeek) else null
+                    mutableState.update { current ->
+                        val shownFromCache = cached?.takeIf { current.week.period == null }
+                        current.copy(
+                            week = current.week.copy(
+                                period = current.week.period ?: shownFromCache?.value,
+                                cachedAt = shownFromCache?.fetchedAt ?: current.week.cachedAt,
+                                isLoading = false,
+                                isRefreshing = false,
+                                problem = problemOf(result),
+                            ),
+                        )
+                    }
+                }
             }
         }
     }

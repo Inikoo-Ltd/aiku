@@ -18,8 +18,8 @@ import io.aiku.droid.data.api.PickerFilter
 import io.aiku.droid.data.api.PickingSession
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.PickingSessionPage
+import io.aiku.droid.data.api.PickingSessionQuery
 import io.aiku.droid.data.api.PickingSessionRow
-import io.aiku.droid.data.api.PickingSessionState
 import io.aiku.droid.data.api.PickingSessionWrite
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanPackOutcome
@@ -156,9 +156,9 @@ class GoodsOutRefreshTest {
         val pageRequests = mutableListOf<Int>()
         val personnelRequests = mutableListOf<DispatchRole>()
 
-        override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> {
-            pageRequests += page
-            return GoodsOutResult.Loaded(PickingSessionPage(sessions = rows, counts = emptyMap(), pagination = GoodsOutPagination(currentPage = page)))
+        override suspend fun pickingSessions(token: String, warehouseId: Long, query: PickingSessionQuery): GoodsOutResult<PickingSessionPage> {
+            pageRequests += query.page
+            return GoodsOutResult.Loaded(PickingSessionPage(sessions = rows, counts = emptyMap(), pagination = GoodsOutPagination(currentPage = query.page)))
         }
 
         override suspend fun pickingSession(token: String, sessionId: Long): GoodsOutResult<PickingSession> = GoodsOutResult.Unreachable

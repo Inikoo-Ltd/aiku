@@ -1,7 +1,9 @@
 <?php
 
 
+use App\Actions\Chat\ChatSession\AskChatAura;
 use App\Actions\Chat\ChatSession\CloseChatSession;
+use App\Actions\Chat\ChatSession\RedraftChatWithAura;
 use App\Actions\Chat\ChatSession\DownloadChatAttachment;
 use App\Actions\Chat\ChatSession\GetAgentChatNotifications;
 use App\Actions\Chat\ChatSession\GetAgentUnreadMessagesSummary;
@@ -119,10 +121,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ai-drafts/{chatAiDraft}/take', [HandleChatAiDraft::class, 'take'])->name('ai_drafts.take');
     Route::post('/ai-drafts/{chatAiDraft}/copied', [HandleChatAiDraft::class, 'copied'])->name('ai_drafts.copied');
     Route::post('/ai-drafts/{chatAiDraft}/discard', [HandleChatAiDraft::class, 'discard'])->name('ai_drafts.discard');
-    Route::post('/ai-drafts/{chatAiDraft}/rate', [HandleChatAiDraft::class, 'rate'])->name('ai_drafts.rate');
     Route::post('/ai-drafts/{chatAiDraft}/actions/{index}', RunChatAiDraftAction::class)->whereNumber('index')->name('ai_drafts.action');
     Route::post('/ai-drafts/{chatAiDraft}/translate', [HandleChatAiDraft::class, 'translateForStaff'])->name('ai_drafts.translate');
     Route::post('/ai-drafts/{chatAiDraft}/edit-in-my-language', [HandleChatAiDraft::class, 'editInMyLanguage'])->name('ai_drafts.edit_in_my_language');
+    Route::get('/sessions/{chatSession:ulid}/aura-questions', [AskChatAura::class, 'index'])->name('sessions.aura_questions.index');
+    Route::post('/sessions/{chatSession:ulid}/aura-questions', AskChatAura::class)->name('sessions.aura_questions.store');
+    Route::post('/aura-questions/{chatAuraQuestion}/redraft', RedraftChatWithAura::class)->name('aura_questions.redraft');
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-profile', GetMetaChatCustomerProfile::class)->name('meta.sessions.customer_profile')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/customer-timeline', GetMetaChatCustomerTimeline::class)->name('meta.sessions.customer_timeline')->withTrashed();
     Route::get('/meta/sessions/{metaChatSession:ulid}/tickets', [GetChatSessionTickets::class, 'inMetaChatSession'])->name('meta.sessions.tickets')->withTrashed();

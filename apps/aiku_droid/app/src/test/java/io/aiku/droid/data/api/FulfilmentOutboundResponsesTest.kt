@@ -319,4 +319,13 @@ class FulfilmentOutboundResponsesTest {
         assertEquals("deltas/78", remove.path)
         assertEquals("complete", complete.path)
     }
+
+    @Test
+    fun `pallet return list sends the chosen sort and nothing for newest first`() {
+        assertEquals(
+            listOf("state" to "active", "sort" to "customer", "page" to "1", "per_page" to "50"),
+            FulfilmentOutboundResponses.palletReturnsParameters(PalletReturnQuery(sort = PalletReturnSort.Customer)),
+        )
+        assertEquals(listOf("date", "reference", "customer", "-dispatched_at"), PalletReturnSort.entries.map { it.key })
+    }
 }
