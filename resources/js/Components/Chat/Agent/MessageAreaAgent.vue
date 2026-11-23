@@ -1605,6 +1605,11 @@ const auraNoteBeside = computed(() => {
     return note && (!lastMessage || +new Date(note.created_at) >= +new Date(lastMessage.created_at)) ? note : null
 })
 
+const auraOldNote = computed(() => {
+    if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft || auraNoteBeside.value || auraFollowUpNote.value) return null
+    return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note") ?? null
+})
+
 const auraFollowUpNote = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value) return null
     return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note" && event.note_follow_up) ?? null
@@ -2599,7 +2604,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="auraNoteBeside || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="auraNoteBeside || auraOldNote || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
@@ -2611,6 +2616,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
+                <ChatTimelineEvent v-if="auraOldNote" :key="auraOldNote.id" :event="auraOldNote" folded class="!py-0" />
                 <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
                 <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
                 <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"

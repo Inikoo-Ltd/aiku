@@ -3,6 +3,7 @@ import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBan, faCheckCircle, faFlag, faExchangeAlt, faUserCheck, faInfoCircle, faPhone, faShare, faTruck, faExclamationTriangle, faEnvelope, faStore, faLifeRing } from "@far"
 import { ctrans } from "@/Composables/useTrans"
+import { formatChatAge } from "@/Composables/chatTime"
 import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import TicketStatusChip from "@/Components/Tickets/TicketStatusChip.vue"
 
@@ -55,6 +56,7 @@ const isInternalNote = computed(() => props.event.event_type === "internal_note"
 const payload = computed(() => props.event.payload ?? {})
 
 const unfolded = ref(false)
+const age = computed(() => props.event.created_at ? formatChatAge(+new Date(props.event.created_at)) : "")
 
 const isFyi = computed(() => !!(props.event.note_answer_in || props.event.note_follow_up))
 
@@ -130,9 +132,9 @@ const stamp = computed(() => {
     <div v-if="isInternalNote && folded && !unfolded" class="flex justify-center py-0.5">
         <button type="button" class="flex max-w-xl items-center gap-1.5 truncate rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] text-pink-800 hover:bg-pink-100" @click="unfolded = true">
             <AuraAvatar class="h-3.5 w-3.5 shrink-0" />
-            <span class="shrink-0 font-semibold">{{ ctrans("Aura note") }}</span>
+            <span class="shrink-0 font-semibold">{{ ctrans("Old Aura note, :age old", { age: age }) }}</span>
             <span class="truncate text-pink-700">{{ event.note }}</span>
-            <span class="shrink-0 text-[10px] text-pink-700">· {{ stamp }}</span>
+            <span class="shrink-0 font-semibold underline">{{ ctrans("Show here") }}</span>
         </button>
     </div>
     <div v-else-if="isInternalNote" class="flex justify-center py-2">
@@ -140,7 +142,7 @@ const stamp = computed(() => {
             <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold text-pink-800">
                 <FontAwesomeIcon v-if="beside" :icon="isFyi ? faInfoCircle : faExclamationTriangle" class="text-sm text-pink-700" fixed-width aria-hidden="true" />
                 <AuraAvatar v-else class="h-4 w-4" />
-                <span>{{ beside ? (isFyi ? ctrans("FYI") : ctrans("No draft: what to do")) : headline }}</span>
+                <span>{{ beside ? (isFyi ? ctrans("FYI") : ctrans("No draft: what to do")) : folded ? ctrans("Old Aura note, :age old", { age: age }) : headline }}</span>
                 <span class="ml-auto flex flex-wrap justify-end gap-1 text-xs font-normal"><TicketStatusChip v-for="ticket in event.note_tickets ?? []" :key="ticket.reference" :ticket="ticket" /></span>
             </div>
             <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950"><template v-for="(part, index) in noteParts" :key="index"><a v-if="part.link" :href="part.link.url" target="_blank" rel="noopener" class="font-semibold text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the chat in :shop", { shop: part.link.shop ?? "" }) }}</a><template v-else>{{ part.text }}</template></template></div>
