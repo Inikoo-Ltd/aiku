@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\CustomerClaim;
 
+use App\Actions\Comms\Email\SendCustomerClaimEmail;
 use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaim;
 use App\Actions\OrgAction;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
@@ -36,7 +37,12 @@ class ApproveCustomerClaim extends OrgAction
         $this->customerClaim = $customerClaim;
         $this->initialisationFromShop($customerClaim->shop, $request);
 
-        return SettleCustomerClaim::run($customerClaim, $request->user());
+        $claim = SettleCustomerClaim::run($customerClaim, $request->user());
+        if ($claim->wasChanged('state')) {
+            SendCustomerClaimEmail::run($claim);
+        }
+
+        return $claim;
     }
 
     public function htmlResponse(): RedirectResponse

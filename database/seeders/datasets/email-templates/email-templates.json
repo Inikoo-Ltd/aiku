@@ -564,6 +564,17 @@
   },
   {
     "outboxes": [
+      "customer_claim_update"
+    ],
+    "name": "Claim update",
+    "content": "customer_claim_update.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
       "order_payment_reminder"
     ],
     "name": "Order payment reminder",
