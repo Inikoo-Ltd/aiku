@@ -76,7 +76,7 @@ enum class WarehouseSection(
 }
 
 fun goodsInEntry(can: WarehouseAbilities): Any? = when {
-    can.viewGoodsIn -> StockDeliveriesRoute()
+    can.viewGoodsIn -> GoodsInBacklogRoute
     can.viewReturns -> GoodsInReturnsRoute()
     else -> null
 }

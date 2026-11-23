@@ -364,7 +364,7 @@ private fun SkoSummaryCard(sko: LocationOrgStock, onOpen: (() -> Unit)?) {
         ProductPhoto(code = sko.code, size = 64.dp, imageUrl = sko.imageUrl)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(text = sko.code, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
-            Text(text = stringResource(R.string.locations_sko_summary, sko.name, stockText(sko.stock)), fontSize = 13.sp, color = colors.textTertiary)
+            Text(text = stringResource(R.string.locations_sko_summary, sko.name, stockText(sko.stock, sko.stockLabel)), fontSize = 13.sp, color = colors.textTertiary)
         }
     }
 }

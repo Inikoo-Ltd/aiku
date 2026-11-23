@@ -4,20 +4,15 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -37,9 +31,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,12 +39,12 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.DeliveryNoteRow
 import io.aiku.droid.data.api.DispatchChannel
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
-import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.EmptyState
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
@@ -60,18 +52,22 @@ import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ListGroup
-import io.aiku.droid.ui.components.ListRow
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
+import io.aiku.droid.ui.components.SearchField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
-import io.aiku.droid.ui.goodsout.extra.KICKER_SEPARATOR
+import io.aiku.droid.ui.components.dateRangeText
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.scan.LocalScanController
@@ -191,6 +187,14 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
             selectedIndex = selectedStateIndex,
             onSelect = { index -> notes.selectBucket(stageBuckets[index].second) },
         )
+        SearchWithFilter(filterCount = filter.panelCount, onFilter = { showFilter = true }) { modifier ->
+            SearchField(
+                value = filter.search,
+                onValueChange = notes::search,
+                placeholder = stringResource(R.string.goodsout_filter_search),
+                modifier = modifier,
+            )
+        }
         if (filter.isFiltered) {
             ActiveFilters(filter = filter, onClear = notes::clearFilters)
         }
@@ -200,6 +204,7 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
         list.firstPageProblem?.let { problem ->
             GoodsOutLoadProblem(problem = problem, title = stringResource(R.string.goodsout_list_failed_title), onRetry = notes::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.notes.isNotEmpty() -> ListGroup {
                 list.notes.forEachIndexed { index, note ->
@@ -299,17 +304,17 @@ private fun SelectionMark(isSelected: Boolean) {
 @Composable
 private fun DeliveryNoteListRow(note: DeliveryNoteRow, isSelected: Boolean?, onClick: () -> Unit, onLongClick: (() -> Unit)?) {
     val stage = stageOf(note.state)
-    val subtitle = listOfNotNull(
-        note.customerName.takeIf { it.isNotBlank() },
-        channelName(note.channel, note.shop?.name),
-        if (note.isCollection) stringResource(R.string.goodsout_collection) else null,
-        pluralStringResource(R.plurals.goodsout_items_count, note.numberItems, note.numberItems),
-        weightText(note.estimatedWeightKg),
-    ).joinToString(KICKER_SEPARATOR)
 
-    ListRow(
-        title = note.reference,
-        subtitle = subtitle,
+    RecordRow(
+        reference = note.reference,
+        date = recordDate(note.date, organisationZone()),
+        party = note.customerName,
+        details = listOfNotNull(
+            channelName(note.channel, note.shop?.name),
+            if (note.isCollection) stringResource(R.string.goodsout_collection) else null,
+            pluralStringResource(R.plurals.goodsout_items_count, note.numberItems, note.numberItems),
+            weightText(note.estimatedWeightKg),
+        ),
         modifier = Modifier
             .then(if (isSelected != null) Modifier.semantics { selected = isSelected } else Modifier)
             .combinedClickable(role = if (isSelected != null) Role.Checkbox else Role.Button, onLongClick = onLongClick, onClick = onClick),
@@ -326,39 +331,21 @@ private fun DeliveryNoteListRow(note: DeliveryNoteRow, isSelected: Boolean?, onC
                 StatusBadge(text = pluralStringResource(R.plurals.goodsout_badge_waiting, note.waitingCount, note.waitingCount), tone = Tone.Warn)
             }
         },
-        showChevron = false,
     )
 }
 
 @Composable
 private fun ActiveFilters(filter: DeliveryNoteFilter, onClear: () -> Unit) {
-    val colors = LocalAikuColors.current
     val parts = listOfNotNull(
         filter.search.trim().takeIf { it.isNotEmpty() }?.let { stringResource(R.string.goodsout_filter_search_quoted, it) },
         filter.channel.takeIf { it != DispatchChannel.All }?.let { stringResource(channelLabel(it)) },
         filter.picker?.let { stringResource(pickerLabel(it)) },
         filter.date?.let { stringResource(dateLabel(it)) },
+        dateRangeText(filter.range)?.let { stringResource(R.string.filter_labelled, stringResource(R.string.goodsout_filter_date), it) },
         filter.sort?.let { stringResource(R.string.goodsout_sorted_by, stringResource(sortLabel(it)).lowercase()) },
     )
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
-    ) {
-        Text(text = parts.joinToString(" · "), fontSize = 13.sp, color = colors.textSecondary, modifier = Modifier.weight(1f))
-        Text(
-            text = stringResource(R.string.goodsout_filters_clear),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = colors.link,
-            modifier = Modifier
-                .heightIn(min = 44.dp)
-                .clip(ChipShape)
-                .clickable(role = Role.Button, onClick = onClear)
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-        )
-    }
+    ActiveFiltersLine(parts = parts, onClear = onClear)
 }
 
 @Composable

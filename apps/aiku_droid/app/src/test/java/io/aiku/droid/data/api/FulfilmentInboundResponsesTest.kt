@@ -7,6 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class FulfilmentInboundResponsesTest {
 
@@ -275,5 +276,23 @@ class FulfilmentInboundResponsesTest {
         assertEquals(JsonPrimitive("Not at D-04-06"), incident.body?.get("message"))
         assertEquals(JsonNull, silent.body?.get("message"))
         assertEquals("audit", FulfilmentInboundResponses.auditStartRequest().path)
+    }
+
+    @Test
+    fun `pallet delivery list sends the booked-in range and the sort only when chosen`() {
+        assertEquals(
+            listOf("state" to "booked_in", "q" to "acme", "from" to "2026-11-18", "to" to "2026-11-23", "sort" to "-booked_in_at", "page" to "1", "per_page" to "50"),
+            FulfilmentInboundResponses.palletDeliveriesParameters(
+                PalletDeliveryQuery(
+                    state = PalletDeliveryStateFilter.BookedIn,
+                    search = " acme ",
+                    from = LocalDate.of(2026, 11, 18),
+                    to = LocalDate.of(2026, 11, 23),
+                    sort = PalletDeliverySort.BookedIn,
+                ),
+            ),
+        )
+        assertEquals(listOf("state" to "active", "page" to "1", "per_page" to "50"), FulfilmentInboundResponses.palletDeliveriesParameters(PalletDeliveryQuery()))
+        assertEquals(listOf("reference", "-booked_in_at"), PalletDeliverySort.entries.map { it.key })
     }
 }

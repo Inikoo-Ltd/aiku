@@ -67,10 +67,18 @@ enum class PalletReturnTypeFilter(val key: String) {
     Items(PalletReturnTypeGroup.ITEMS),
 }
 
+enum class PalletReturnSort(val key: String) {
+    Oldest("date"),
+    Reference("reference"),
+    Customer("customer"),
+    Dispatched("-dispatched_at"),
+}
+
 data class PalletReturnQuery(
     val state: PalletReturnStateFilter = PalletReturnStateFilter.Active,
     val type: PalletReturnTypeFilter? = null,
     val search: String? = null,
+    val sort: PalletReturnSort? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
 ) {

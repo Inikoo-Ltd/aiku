@@ -231,7 +231,7 @@ private fun LocationBlocks(detail: LocationDetail, actions: List<LocationAction>
                     subtitle = sko.name,
                     chip = stockTypeLabel(type)?.let { stringResource(it) },
                     chipTone = stockTypeTone(type),
-                    done = stockText(sko.stock),
+                    done = stockText(sko.stock, sko.stockLabel),
                     imageUrl = sko.imageUrl,
                     onClick = {
                         navigator.open(

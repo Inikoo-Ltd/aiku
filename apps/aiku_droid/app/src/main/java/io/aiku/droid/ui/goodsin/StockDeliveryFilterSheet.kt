@@ -12,6 +12,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.DispatchedBucket
 import io.aiku.droid.data.api.StockDeliverySort
 import io.aiku.droid.data.api.StockDeliverySource
+import io.aiku.droid.ui.components.DateRangeFields
 import io.aiku.droid.ui.components.FilterSheet
 import io.aiku.droid.ui.components.FilterSheetOption
 import io.aiku.droid.ui.components.FilterSheetSection
@@ -20,16 +21,21 @@ private val sources = StockDeliverySource.entries
 private val buckets = DispatchedBucket.entries
 private val sorts = StockDeliverySort.entries
 
+private const val SOURCE_SECTION = 0
+private const val DISPATCHED_SECTION = 1
+private const val SORT_SECTION = 3
+
 private fun StockDeliveryFilter.selection(): List<Set<Int>> = listOf(
     setOfNotNull(source?.let(sources::indexOf)),
     setOfNotNull(dispatched?.let(buckets::indexOf)),
+    emptySet(),
     setOf(sorts.indexOf(sort ?: StockDeliverySort.Newest)),
 )
 
 private fun StockDeliveryFilter.withSelection(selection: List<Set<Int>>): StockDeliveryFilter = copy(
-    source = selection[0].firstOrNull()?.let(sources::get),
-    dispatched = selection[1].firstOrNull()?.let(buckets::get),
-    sort = selection[2].firstOrNull()?.let(sorts::get)?.takeIf { it != StockDeliverySort.Newest },
+    source = selection[SOURCE_SECTION].firstOrNull()?.let(sources::get),
+    dispatched = selection[DISPATCHED_SECTION].firstOrNull()?.let(buckets::get),
+    sort = selection[SORT_SECTION].firstOrNull()?.let(sorts::get)?.takeIf { it != StockDeliverySort.Newest },
 )
 
 @Composable
@@ -38,6 +44,28 @@ internal fun sourceLabel(source: StockDeliverySource): String = stringResource(
         StockDeliverySource.Suppliers -> R.string.goodsin_source_suppliers
         StockDeliverySource.Agents -> R.string.goodsin_source_agents
         StockDeliverySource.Partners -> R.string.goodsin_source_partners
+    },
+)
+
+@Composable
+internal fun dispatchedLabel(bucket: DispatchedBucket): String = stringResource(
+    when (bucket) {
+        DispatchedBucket.Today -> R.string.goodsin_filter_today
+        DispatchedBucket.Week -> R.string.goodsin_filter_this_week
+        DispatchedBucket.Older -> R.string.goodsin_filter_older
+    },
+)
+
+@Composable
+internal fun stockDeliverySortLabel(sort: StockDeliverySort): String = stringResource(
+    when (sort) {
+        StockDeliverySort.Newest -> R.string.goodsin_sort_newest
+        StockDeliverySort.Oldest -> R.string.filter_sort_oldest
+        StockDeliverySort.Reference -> R.string.goodsin_sort_reference
+        StockDeliverySort.Supplier -> R.string.goodsin_sort_supplier
+        StockDeliverySort.ExpectedDate -> R.string.goodsin_sort_expected_date
+        StockDeliverySort.DispatchedAt -> R.string.goodsin_sort_dispatched_date
+        StockDeliverySort.Items -> R.string.goodsin_sort_items
     },
 )
 
@@ -51,17 +79,6 @@ fun StockDeliveryFilterSheet(
 ) {
     var draft by remember { mutableStateOf(filter) }
     val total = totalFor(draft)
-    val bucketLabels = mapOf(
-        DispatchedBucket.Today to stringResource(R.string.goodsin_filter_today),
-        DispatchedBucket.Week to stringResource(R.string.goodsin_filter_this_week),
-        DispatchedBucket.Older to stringResource(R.string.goodsin_filter_older),
-    )
-    val sortLabels = mapOf(
-        StockDeliverySort.Newest to stringResource(R.string.goodsin_sort_newest),
-        StockDeliverySort.DispatchedAt to stringResource(R.string.goodsin_sort_dispatched_date),
-        StockDeliverySort.Reference to stringResource(R.string.goodsin_sort_reference),
-        StockDeliverySort.Items to stringResource(R.string.goodsin_sort_items),
-    )
 
     LaunchedEffect(draft) { onDraftChange(draft) }
 
@@ -75,12 +92,18 @@ fun StockDeliveryFilterSheet(
             ),
             FilterSheetSection(
                 label = stringResource(R.string.goodsin_filter_dispatched),
-                options = buckets.map { FilterSheetOption(label = bucketLabels.getValue(it)) },
+                options = buckets.map { FilterSheetOption(label = dispatchedLabel(it)) },
                 isAtMostOne = true,
             ),
             FilterSheetSection(
+                label = stringResource(R.string.goodsout_filter_date),
+                options = emptyList(),
+                extraCount = if (draft.dates.isSet) 1 else 0,
+                extra = { DateRangeFields(range = draft.dates, onChange = { draft = draft.copy(dates = it) }) },
+            ),
+            FilterSheetSection(
                 label = stringResource(R.string.goodsin_filter_sort),
-                options = sorts.map { FilterSheetOption(label = sortLabels.getValue(it)) },
+                options = sorts.map { FilterSheetOption(label = stockDeliverySortLabel(it)) },
                 isSingleChoice = true,
                 isSort = true,
             ),

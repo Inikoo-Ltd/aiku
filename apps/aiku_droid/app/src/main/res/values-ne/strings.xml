@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">मेडिकल प्रमाणपत्र अपलोड गर्नुहोस्</string>
     <string name="clocking_load_failed_title">तपाईंको क्लकिङ लोड गर्न सकिएन</string>
     <string name="clocking_load_more_failed">थप लोड गर्न सकिएन</string>
-    <string name="clocking_load_offline_body">तपाईं अफलाइन हुनुहुन्छ। इन्टरनेटमा जडान गरी फेरि प्रयास गर्नुहोस्।</string>
+    <string name="clocking_load_offline_body">जडान छैन। Wi-Fi जाँच गरी फेरि प्रयास गर्नुहोस्।</string>
     <string name="clocking_load_server_body">Aiku ले जवाफ दिएन। केही बेरमा फेरि प्रयास गर्नुहोस्।</string>
     <string name="clocking_location_accuracy">%1$s · %2$d m सम्म सटीक</string>
     <string name="clocking_location_detect">मेरो लोकेसन पत्ता लगाउनुहोस्</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">कार्य समय छान्नुहोस्</string>
     <string name="dashboard_abnormal">असामान्य</string>
     <string name="dashboard_below_minimum">न्यूनतमभन्दा कम</string>
-    <string name="dashboard_clocking">क्लकिङ</string>
     <string name="dashboard_dispatched">पठाइएको</string>
     <string name="dashboard_dispatched_compared">आज %1$s · हिजो यही समयसम्म %2$s</string>
     <string name="dashboard_dispatched_count">आज %1$s</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">फेरि प्रयास गर्नुहोस्</string>
     <string name="login_username">प्रयोगकर्ता नाम</string>
     <string name="login_username_required">आफ्नो प्रयोगकर्ता नाम राख्नुहोस्।</string>
-    <string name="menu_all_staff">सबै कर्मचारी</string>
     <string name="menu_appearance">रूपरंग</string>
     <string name="menu_appearance_subtitle">थिमको रङ · लाइट वा डार्क</string>
     <string name="menu_change">परिवर्तन गर्नुहोस्</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">SKO, लोकेसन वा डेलिभरी नोटहरू खोज्नुहोस्</string>
     <string name="menu_search_placeholder">SKO, लोकेसन, डेलिभरी नोट खोज्नुहोस्</string>
     <string name="menu_timesheets">टाइमसिटहरू</string>
-    <string name="module_clocking">क्लकिङ र HR</string>
+    <string name="module_clocking">क्लकिङ र उपस्थिति</string>
     <string name="module_goods_in">सामान प्राप्ति</string>
     <string name="module_goods_out">सामान बहिर्गमन</string>
     <string name="module_inventory">इन्भेन्टरी</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d छानिएको</item>
         <item quantity="other">%d छानिएका</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">%d नतिजा देखाउनुहोस्</item>
+        <item quantity="other">%d नतिजाहरू देखाउनुहोस्</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%2$d मध्ये %1$d स्टकमा दर्ता</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d कार्य</item>
         <item quantity="other">%d कार्य</item>
     </plurals>
+    <string name="record_date_expected">अपेक्षित</string>
+    <string name="record_date_dispatched">पठाइएको</string>
+    <string name="record_date_received">प्राप्त</string>
+    <string name="record_date_booked_in">दर्ता गरिएको</string>
+    <string name="record_date_started">सुरु</string>
+    <string name="record_date_created">सिर्जना गरिएको</string>
+    <string name="filter_and_sort">फिल्टर र क्रमबद्ध गर्नुहोस्</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">कहिलेदेखि</string>
+    <string name="filter_date_to">कहिलेसम्म</string>
+    <string name="filter_date_any">जुनसुकै मिति</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">%1$s देखि</string>
+    <string name="filter_date_until">%1$s सम्म</string>
+    <string name="filter_sort_oldest">पुरानो पहिले</string>
+    <string name="filter_show_results_unknown">नतिजाहरू देखाउनुहोस्</string>
+    <string name="goodsout_extra_sessions_search">सत्रहरू खोज्नुहोस्</string>
+    <string name="goodsout_extra_sessions_filter_title">पिकिङ सत्रहरू फिल्टर गर्नुहोस्</string>
+    <string name="goodsout_extra_sort_finished">सकियो</string>
+    <string name="goodsin_sort_supplier">आपूर्तिकर्ता</string>
+    <string name="goodsin_sort_expected_date">अपेक्षित मिति</string>
+    <string name="goodsin_returns_filter_title">फिर्ताहरू फिल्टर गर्नुहोस्</string>
+    <string name="goodsin_returns_date_received">प्राप्त मिति</string>
+    <string name="goodsin_returns_sort_newest">भर्खर प्राप्त पहिले</string>
+    <string name="goodsin_returns_sort_oldest">पहिले प्राप्त पहिले</string>
+    <string name="fulfilment_inbound_filter_title">डेलिभरीहरू फिल्टर गर्नुहोस्</string>
+    <string name="cache_saved_rows_only">सुरक्षित प्रति: पहिले लोड गरिएका पङ्क्तिहरू मात्र समावेश छन्</string>
+    <string name="filter_online_only">%1$s (अनलाइन मात्र)</string>
 </resources>

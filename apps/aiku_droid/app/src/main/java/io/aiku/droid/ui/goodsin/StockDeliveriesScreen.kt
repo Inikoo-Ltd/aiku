@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -17,23 +18,29 @@ import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.StockDeliveryRow
 import io.aiku.droid.data.api.StockDeliveryState
 import io.aiku.droid.data.api.StockDeliveryStateFilter
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.InlineAlert
-import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
 import io.aiku.droid.ui.components.SearchScanField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.WarehouseSection
+import io.aiku.droid.ui.components.dateRangeText
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.organisationZone
@@ -41,8 +48,6 @@ import io.aiku.droid.ui.inventory.StockLoadProblem
 import io.aiku.droid.ui.inventory.StockScanOutcome
 import io.aiku.droid.ui.inventory.countLabel
 import io.aiku.droid.ui.inventory.scanProblemText
-import io.aiku.droid.ui.locations.ClearFiltersRow
-import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ScanRoute
@@ -96,7 +101,12 @@ private fun StockDeliveriesContent(state: StockDeliveriesUiState, deliveries: St
     val outcome = state.scanOutcome
     val noMatchText = (outcome as? StockScanOutcome.NoMatch)?.let { stringResource(R.string.goodsin_scan_no_delivery, it.code) }
     val failedText = (outcome as? StockScanOutcome.Failed)?.let { scanProblemText(it.code, it.problem) }
-    val sourceLabel = filter.source?.let { sourceLabel(it) }
+    val summary = listOfNotNull(
+        filter.source?.let { sourceLabel(it) },
+        filter.dispatched?.let { stringResource(R.string.filter_labelled, stringResource(R.string.goodsin_filter_dispatched), dispatchedLabel(it)) },
+        dateRangeText(filter.dates)?.let { stringResource(R.string.filter_labelled, stringResource(R.string.goodsout_filter_date), it) },
+        filter.sort?.let { stringResource(R.string.goodsout_sorted_by, stockDeliverySortLabel(it).lowercase()) },
+    )
 
     ScanEffect { scan -> deliveries.lookUpScan(scan.code) }
     LoadMoreOnScroll(scrollState = scrollState, itemCount = list.rows.size, canLoadMore = list.canLoadMoreOnScroll, onLoadMore = deliveries::loadMore)
@@ -134,19 +144,23 @@ private fun StockDeliveriesContent(state: StockDeliveriesUiState, deliveries: St
         refresh = PullRefresh(isRefreshing = list.isRefreshing, onRefresh = deliveries::refresh),
     ) {
         FilterChips(options = tabs, selectedIndex = filter.state.ordinal, onSelect = { index -> deliveries.selectState(states[index]) })
-        if (filter.isFiltered) {
-            ClearFiltersRow(count = filter.activeFilterCount, isSorted = filter.sort != null, onClear = deliveries::clearFilters, detail = sourceLabel)
+        SearchWithFilter(filterCount = filter.panelCount, onFilter = { showFilter = true }, buttonSize = 46.dp) { modifier ->
+            SearchScanField(
+                placeholder = stringResource(R.string.goodsin_search_deliveries),
+                value = filter.search,
+                onValueChange = deliveries::search,
+                onScan = { navigator.open(ScanRoute) },
+                modifier = modifier,
+            )
         }
-        SearchScanField(
-            placeholder = stringResource(R.string.goodsin_search_deliveries),
-            value = filter.search,
-            onValueChange = deliveries::search,
-            onScan = { navigator.open(ScanRoute) },
-        )
+        if (filter.isFiltered) {
+            ActiveFiltersLine(parts = summary, onClear = deliveries::clearFilters)
+        }
         state.lookingUpCode?.let { code -> InlineAlert(title = stringResource(R.string.scan_looking_up, code), tone = AlertTone.Info) }
         list.firstPageProblem?.let { problem ->
             StockLoadProblem(problem = problem, title = stringResource(R.string.goodsin_deliveries_failed), onRetry = deliveries::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.rows.isNotEmpty() -> ListGroup {
                 list.rows.forEachIndexed { index, row ->
@@ -193,24 +207,20 @@ private fun DeliveryRow(row: StockDeliveryRow, onOpen: () -> Unit) {
             pluralStringResource(R.plurals.goodsin_placed_count, row.numberItems, row.numberPlaced, row.numberItems)
         else -> pluralStringResource(R.plurals.goodsin_item_count, row.numberItems, row.numberItems)
     }
-    val moment = when (row.state) {
-        in StockDeliveryState.beforeReceiving -> goodsInDate(row.dispatchedAt, zone)?.let { stringResource(R.string.goodsin_dispatched_on, it) }
-            ?: goodsInDate(row.estimatedReceivingDate, zone)?.let { stringResource(R.string.goodsin_expected_on, it) }
-        else -> goodsInDate(row.receivedAt, zone)?.let { stringResource(R.string.goodsin_received_on, it) }
+    val dispatched = recordDate(row.dispatchedAt, zone)
+    val (date, caption) = when {
+        row.state !in StockDeliveryState.beforeReceiving -> recordDate(row.receivedAt, zone) to R.string.record_date_received
+        dispatched != null -> dispatched to R.string.record_date_dispatched
+        else -> recordDate(row.estimatedReceivingDate, zone) to R.string.record_date_expected
     }
-    val subtitle = listOfNotNull(
-        row.supplier?.label?.takeIf { it.isNotBlank() },
-        row.agentReference?.takeIf { it.isNotBlank() },
-        progress,
-        moment,
-    ).joinToString(LIST_SEPARATOR)
 
-    ItemRow(
-        code = row.reference,
-        subtitle = subtitle,
-        chip = row.stateLabel.takeIf { it.isNotBlank() },
-        chipTone = deliveryStateTone(row.state),
-        showPhoto = false,
+    RecordRow(
+        reference = row.reference,
+        date = date,
+        dateCaption = date?.let { stringResource(caption) }?.takeUnless { it.equals(row.stateLabel.trim(), ignoreCase = true) },
+        party = row.supplier?.label,
+        details = listOfNotNull(row.agentReference?.takeIf { it.isNotBlank() }, progress),
+        badges = { row.stateLabel.takeIf { it.isNotBlank() }?.let { StatusBadge(text = it, tone = deliveryStateTone(row.state)) } },
         onClick = onOpen,
     )
 }

@@ -2,6 +2,7 @@ package io.aiku.droid.ui.clocking
 
 import io.aiku.droid.data.api.ClockingApi
 import io.aiku.droid.data.api.ClockingNoteResult
+import io.aiku.droid.data.api.ClockingResponses
 import io.aiku.droid.data.api.ClockingResult
 import io.aiku.droid.data.api.ClockingStatus
 import io.aiku.droid.data.api.QrClockingRequest
@@ -27,7 +28,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Instant
 import java.time.LocalDate
+
+private val LOADED_AT: Instant = Instant.parse("2026-11-23T08:15:00Z")
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClockingCacheTest {
@@ -89,22 +93,66 @@ class ClockingCacheTest {
     }
 
     @Test
-    fun `a later refresh never brings the saved status back`() {
+    fun `a later refresh never brings the saved status back and says when the shown status was loaded`() {
         cache.save(CachedScreens.USER_SCOPED, CachedScreens.clockingStatus, CachedBodies.clocking("clocked_in"))
         api.status = ClockingResult.Loaded(fresh)
-        val clocking = ClockingViewModel(api, sessions, cache)
+        val clocking = ClockingViewModel(api, sessions, cache, now = { LOADED_AT })
+        assertNull(clocking.state.value.lastUpdated)
 
         api.status = ClockingResult.Unreachable
         clocking.refresh(isPull = true)
 
         assertEquals(fresh, clocking.state.value.actionableStatus)
-        assertNull(clocking.state.value.lastUpdated)
+        assertEquals(LOADED_AT, clocking.state.value.lastUpdated)
+    }
+
+    @Test
+    fun `a week loaded earlier stays on screen when it can not be loaded again and says when it was loaded`() {
+        api.week = ClockingResponses.parseTimesheets(200, CachedBodies.thisWeek(workingSeconds = 1800))
+        val clocking = ClockingViewModel(api, sessions, cache, now = { LOADED_AT })
+        clocking.loadWeek(from = null, isPull = false)
+        assertNull(clocking.state.value.week.lastUpdated)
+
+        api.week = ClockingResult.Unreachable
+        clocking.loadWeek(from = null, isPull = true)
+
+        assertEquals(1800L, clocking.state.value.week.period?.timesheets?.single()?.workingSeconds)
+        assertEquals(LOADED_AT, clocking.state.value.week.lastUpdated)
+    }
+
+    @Test
+    fun `timesheets of this week fall back to the saved week and say when it was last updated`() {
+        cache.save(CachedScreens.USER_SCOPED, CachedScreens.clockingThisWeek, CachedBodies.thisWeek(workingSeconds = 7200))
+        api.status = ClockingResult.Unreachable
+        val clocking = ClockingViewModel(api, sessions, cache)
+
+        clocking.loadWeek(from = null, isPull = false)
+
+        assertEquals(7200L, clocking.state.value.week.period?.timesheets?.single()?.workingSeconds)
+        assertEquals(ClockingProblem.Offline, clocking.state.value.week.problem)
+        assertEquals(CACHE_NOW, clocking.state.value.week.lastUpdated)
+
+        clocking.loadWeek(from = LocalDate.of(2026, 11, 9), isPull = false)
+
+        assertNull(clocking.state.value.week.period)
+        assertNull(clocking.state.value.week.lastUpdated)
+    }
+
+    @Test
+    fun `timesheets of a person with no employee record load with no statistics`() {
+        val body = """{"data":{"from":"2026-11-16","to":"2026-11-22","statistics":null,"target_seconds":null,"timesheets":[]}}"""
+
+        val result = ClockingResponses.parseTimesheets(200, body)
+
+        assertTrue(result is ClockingResult.Loaded)
+        assertNull((result as ClockingResult.Loaded).value.statistics)
     }
 
     private class GatedClockingApi : ClockingApi {
         var gate: CompletableDeferred<Unit>? = null
         var status: ClockingResult<ClockingStatus> = ClockingResult.Unreachable
         var statusRequests = 0
+        var week: ClockingResult<TimesheetPeriod> = ClockingResult.Unreachable
 
         override suspend fun clocking(token: String): ClockingResult<ClockingStatus> {
             statusRequests++
@@ -114,7 +162,7 @@ class ClockingCacheTest {
 
         override suspend fun timesheets(token: String, from: LocalDate?, to: LocalDate?): ClockingResult<TimesheetPeriod> {
             gate?.await()
-            return ClockingResult.Unreachable
+            return week
         }
 
         override suspend fun shifts(token: String): ClockingResult<List<ShiftSchedule>> = ClockingResult.Loaded(emptyList())

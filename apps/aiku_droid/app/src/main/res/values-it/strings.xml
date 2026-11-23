@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Carica certificato medico</string>
     <string name="clocking_load_failed_title">Impossibile caricare le sue timbrature</string>
     <string name="clocking_load_more_failed">Impossibile caricarne altri</string>
-    <string name="clocking_load_offline_body">È offline. Si connetta a internet e riprovi.</string>
+    <string name="clocking_load_offline_body">Nessuna connessione. Controlli il Wi-Fi e riprovi.</string>
     <string name="clocking_load_server_body">Aiku non ha risposto. Riprovi tra un momento.</string>
     <string name="clocking_location_accuracy">%1$s · precisione %2$d m</string>
     <string name="clocking_location_detect">Rileva la mia posizione</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Seleziona orario di lavoro</string>
     <string name="dashboard_abnormal">Anomalie</string>
     <string name="dashboard_below_minimum">Sotto il minimo</string>
-    <string name="dashboard_clocking">Timbratura</string>
     <string name="dashboard_dispatched">Spedito</string>
     <string name="dashboard_dispatched_compared">%1$s oggi · %2$s ieri alla stessa ora</string>
     <string name="dashboard_dispatched_count">%1$s oggi</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Riprova</string>
     <string name="login_username">Nome utente</string>
     <string name="login_username_required">Inserisca il nome utente.</string>
-    <string name="menu_all_staff">Tutto il personale</string>
     <string name="menu_appearance">Aspetto</string>
     <string name="menu_appearance_subtitle">Colore del tema · chiaro o scuro</string>
     <string name="menu_change">Modifica</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Cerca SKO, ubicazioni o bolle di consegna</string>
     <string name="menu_search_placeholder">Cerca SKO, ubicazione, bolla di consegna</string>
     <string name="menu_timesheets">Fogli presenze</string>
-    <string name="module_clocking">Timbrature e HR</string>
+    <string name="module_clocking">Timbrature e presenze</string>
     <string name="module_goods_in">Ricevimento merci</string>
     <string name="module_goods_out">Merci in uscita</string>
     <string name="module_inventory">Inventario</string>
@@ -2026,6 +2024,11 @@
         <item quantity="one">%d selezionato</item>
         <item quantity="other">%d selezionati</item>
         <item quantity="many">%d selezionati</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Mostra %d risultato</item>
+        <item quantity="many">Mostra %d risultati</item>
+        <item quantity="other">Mostra %d risultati</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d di %2$d registrato</item>
@@ -2532,4 +2535,32 @@
         <item quantity="other">%d azioni</item>
         <item quantity="many">%d azioni</item>
     </plurals>
+    <string name="record_date_expected">Previsto</string>
+    <string name="record_date_dispatched">Spedito</string>
+    <string name="record_date_received">Ricevuto</string>
+    <string name="record_date_booked_in">Registrato</string>
+    <string name="record_date_started">Iniziato</string>
+    <string name="record_date_created">Creato</string>
+    <string name="filter_and_sort">Filtra e ordina</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Dal</string>
+    <string name="filter_date_to">Al</string>
+    <string name="filter_date_any">Qualsiasi data</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Dal %1$s</string>
+    <string name="filter_date_until">Fino al %1$s</string>
+    <string name="filter_sort_oldest">Prima le meno recenti</string>
+    <string name="filter_show_results_unknown">Mostra risultati</string>
+    <string name="goodsout_extra_sessions_search">Cerca sessioni</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtra sessioni di prelievo</string>
+    <string name="goodsout_extra_sort_finished">Terminato</string>
+    <string name="goodsin_sort_supplier">Fornitore</string>
+    <string name="goodsin_sort_expected_date">Data prevista</string>
+    <string name="goodsin_returns_filter_title">Filtra resi</string>
+    <string name="goodsin_returns_date_received">Data di ricezione</string>
+    <string name="goodsin_returns_sort_newest">Prima i ricevuti più di recente</string>
+    <string name="goodsin_returns_sort_oldest">Prima i ricevuti meno di recente</string>
+    <string name="fulfilment_inbound_filter_title">Filtra consegne</string>
+    <string name="cache_saved_rows_only">Copia salvata: include solo le righe caricate in precedenza</string>
+    <string name="filter_online_only">%1$s (solo online)</string>
 </resources>

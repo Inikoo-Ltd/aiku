@@ -14,10 +14,13 @@ import io.aiku.droid.data.api.ListMeta
 import io.aiku.droid.data.api.ReturnOutcome
 import io.aiku.droid.data.api.ReturnPage
 import io.aiku.droid.data.api.ReturnQuery
+import io.aiku.droid.data.api.ReturnSort
 import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.ui.components.DateRange
+import io.aiku.droid.ui.components.ListFilter
 import io.aiku.droid.ui.inventory.FakeSessions
 import io.aiku.droid.ui.sync.FakeOfflineWork
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +34,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReturnsViewModelTest {
@@ -197,5 +201,32 @@ class ReturnsViewModelTest {
         assertEquals(listOf("Only 1 remaining"), detail.state.value.writeErrors["quantity"])
         assertFalse(detail.state.value.isWorking)
         assertEquals(ReturnState.RETURNING, detail.state.value.customerReturn?.state)
+    }
+
+    @Test
+    fun `the received range and the sort reach the query with the state and search kept`() {
+        val returns = ReturnsViewModel(api, FakeSessions(), warehouseId = 1, perPage = 50)
+        returns.onStart()
+        returns.selectState(ReturnStateFilter.Received)
+        val range = DateRange(from = LocalDate.of(2026, 11, 1), to = LocalDate.of(2026, 11, 23))
+
+        returns.applyFilter(ListFilter(dates = range, sort = ReturnSort.OldestReceived))
+
+        assertEquals(
+            ReturnQuery(
+                state = ReturnStateFilter.Received,
+                from = LocalDate.of(2026, 11, 1),
+                to = LocalDate.of(2026, 11, 23),
+                sort = ReturnSort.OldestReceived,
+                page = 1,
+                perPage = 50,
+            ),
+            api.returnQueries.last(),
+        )
+
+        returns.clearFilters()
+
+        assertEquals(ReturnQuery(state = ReturnStateFilter.Received, page = 1, perPage = 50), api.returnQueries.last())
+        assertFalse(returns.state.value.filter.isFiltered)
     }
 }

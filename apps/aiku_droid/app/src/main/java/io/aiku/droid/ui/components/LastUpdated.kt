@@ -1,5 +1,7 @@
 package io.aiku.droid.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +31,22 @@ fun LastUpdatedNote(updatedAt: Instant, modifier: Modifier = Modifier) {
         color = colors.textTertiary,
         modifier = modifier.padding(horizontal = 4.dp),
     )
+}
+
+@Composable
+fun SavedCopyNote(savedAt: Instant, modifier: Modifier = Modifier) {
+    val colors = LocalAikuColors.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier) {
+        LastUpdatedNote(updatedAt = savedAt)
+        Text(
+            text = stringResource(R.string.cache_saved_rows_only),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = colors.textTertiary,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+    }
 }
 
 @Composable

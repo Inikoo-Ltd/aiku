@@ -3,6 +3,9 @@ package io.aiku.droid.ui.fulfilment.outbound
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -10,24 +13,31 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
 import io.aiku.droid.data.api.PalletReturnRow
+import io.aiku.droid.data.api.PalletReturnSort
 import io.aiku.droid.data.api.PalletReturnStateFilter
 import io.aiku.droid.data.api.PalletReturnTypeFilter
 import io.aiku.droid.data.api.PalletReturnTypeGroup
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
-import io.aiku.droid.ui.components.ItemRow
+import io.aiku.droid.ui.components.ListFilterPanel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
 import io.aiku.droid.ui.components.SearchField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.SortOption
+import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.WarehouseSection
-import io.aiku.droid.ui.fulfilment.dotJoined
+import io.aiku.droid.ui.components.listFilterSummary
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.fulfilment.filterChipLabel
 import io.aiku.droid.ui.goodsin.HelperNote
-import io.aiku.droid.ui.goodsin.goodsInDate
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.organisationZone
@@ -60,6 +70,15 @@ private fun typeFilterLabel(filter: PalletReturnTypeFilter?): String = stringRes
 )
 
 @Composable
+private fun palletReturnSorts(): List<SortOption<PalletReturnSort>> = listOf(
+    SortOption(null, stringResource(R.string.goodsin_sort_newest)),
+    SortOption(PalletReturnSort.Oldest, stringResource(R.string.filter_sort_oldest)),
+    SortOption(PalletReturnSort.Reference, stringResource(R.string.goodsin_sort_reference)),
+    SortOption(PalletReturnSort.Customer, stringResource(R.string.goodsout_filter_sort_customer)),
+    SortOption(PalletReturnSort.Dispatched, stringResource(R.string.record_date_dispatched)),
+)
+
+@Composable
 internal fun PalletReturnsContent(returns: PalletReturnsViewModel) {
     val state by returns.state.collectAsStateWithLifecycle()
 
@@ -72,6 +91,8 @@ internal fun PalletReturnsContent(returns: PalletReturnsViewModel) {
 
     val navigator = LocalAppNavigator.current
     val scrollState = rememberScrollState()
+    var showFilter by remember { mutableStateOf(false) }
+    val sorts = palletReturnSorts()
     val list = state.list
     val search = state.search.trim()
     val states = PalletReturnStateFilter.entries
@@ -97,10 +118,19 @@ internal fun PalletReturnsContent(returns: PalletReturnsViewModel) {
             selectedIndex = typeFilters.indexOf(state.type),
             onSelect = { index -> returns.selectType(typeFilters[index]) },
         )
-        SearchField(value = state.search, onValueChange = returns::search, placeholder = stringResource(R.string.fulfilment_out_search_returns))
+        SearchWithFilter(filterCount = state.filter.activeCount, onFilter = { showFilter = true }) { modifier ->
+            SearchField(value = state.search, onValueChange = returns::search, placeholder = stringResource(R.string.fulfilment_out_search_returns), modifier = modifier)
+        }
+        if (state.filter.isFiltered) {
+            ActiveFiltersLine(
+                parts = listFilterSummary(state.filter, sorts, onlineOnlySorts = if (state.offline != null) onlineOnlyPalletReturnSorts else emptySet()),
+                onClear = returns::clearFilters,
+            )
+        }
         list.firstPageProblem?.let { problem ->
             StockLoadProblem(problem = problem, title = stringResource(R.string.fulfilment_out_returns_failed), onRetry = returns::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.rows.isNotEmpty() -> ListGroup {
                 list.rows.forEachIndexed { index, row ->
@@ -122,6 +152,20 @@ internal fun PalletReturnsContent(returns: PalletReturnsViewModel) {
         }
         HelperNote(text = stringResource(R.string.fulfilment_out_returns_note))
     }
+    if (showFilter) {
+        ListFilterPanel(
+            title = stringResource(R.string.goodsin_returns_filter_title),
+            filter = state.filter,
+            sorts = sorts,
+            total = list.total?.takeIf { list.hasLoaded && list.loadingPage == null },
+            onApply = { applied ->
+                showFilter = false
+                returns.applyFilter(applied)
+            },
+            onDismiss = { showFilter = false },
+            totalFor = state::offlineTotalFor,
+        )
+    }
 }
 
 @Composable
@@ -133,18 +177,16 @@ private fun PalletReturnRowItem(row: PalletReturnRow, onOpen: () -> Unit) {
         pluralStringResource(R.plurals.fulfilment_pallet_count, row.numberPallets, row.numberPallets)
     }
 
-    ItemRow(
-        code = row.reference,
-        subtitle = dotJoined(
-            row.customer?.name,
-            row.typeLabel,
+    RecordRow(
+        reference = row.reference,
+        date = recordDate(row.date, zone),
+        party = row.customer?.name,
+        details = listOfNotNull(
+            row.typeLabel.takeIf { it.isNotBlank() },
             row.platform?.label?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.fulfilment_out_from_platform, it) },
             size,
-            goodsInDate(row.date, zone),
         ),
-        chip = row.stateLabel.takeIf { it.isNotBlank() },
-        chipTone = returnStateTone(row.state),
-        showPhoto = false,
+        badges = { row.stateLabel.takeIf { it.isNotBlank() }?.let { StatusBadge(text = it, tone = returnStateTone(row.state)) } },
         onClick = onOpen,
     )
 }

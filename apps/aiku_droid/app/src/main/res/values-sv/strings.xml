@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Ladda upp läkarintyg</string>
     <string name="clocking_load_failed_title">Det gick inte att läsa in din stämpling</string>
     <string name="clocking_load_more_failed">Det gick inte att läsa in fler</string>
-    <string name="clocking_load_offline_body">Du är offline. Anslut till internet och försök igen.</string>
+    <string name="clocking_load_offline_body">Det finns ingen anslutning. Kontrollera wifi och försök igen.</string>
     <string name="clocking_load_server_body">Aiku svarade inte. Försök igen om en stund.</string>
     <string name="clocking_location_accuracy">%1$s · noggrannhet %2$d m</string>
     <string name="clocking_location_detect">Hitta min plats</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Välj arbetstider</string>
     <string name="dashboard_abnormal">Avvikande</string>
     <string name="dashboard_below_minimum">Under minimum</string>
-    <string name="dashboard_clocking">Stämpling</string>
     <string name="dashboard_dispatched">Skickad</string>
     <string name="dashboard_dispatched_compared">%1$s i dag · %2$s i går vid samma tid</string>
     <string name="dashboard_dispatched_count">%1$s i dag</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Försök igen</string>
     <string name="login_username">Användarnamn</string>
     <string name="login_username_required">Ange ditt användarnamn.</string>
-    <string name="menu_all_staff">All personal</string>
     <string name="menu_appearance">Utseende</string>
     <string name="menu_appearance_subtitle">Temafärg · ljust eller mörkt</string>
     <string name="menu_change">Ändra</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Sök SKO:er, lagerplatser eller följesedlar</string>
     <string name="menu_search_placeholder">Sök SKO, lagerplats, följesedel</string>
     <string name="menu_timesheets">Tidrapporter</string>
-    <string name="module_clocking">Stämpling &amp; HR</string>
+    <string name="module_clocking">Stämpling &amp; närvaro</string>
     <string name="module_goods_in">Varor in</string>
     <string name="module_goods_out">Varor ut</string>
     <string name="module_inventory">Lager</string>
@@ -2018,6 +2016,10 @@
     <plurals name="filter_selected">
         <item quantity="one">%d vald</item>
         <item quantity="other">%d valda</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Visa %d resultat</item>
+        <item quantity="other">Visa %d resultat</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">%1$d av %2$d inbokad</item>
@@ -2423,4 +2425,32 @@
         <item quantity="one">%d åtgärd</item>
         <item quantity="other">%d åtgärder</item>
     </plurals>
+    <string name="record_date_expected">Väntas</string>
+    <string name="record_date_dispatched">Skickad</string>
+    <string name="record_date_received">Mottagen</string>
+    <string name="record_date_booked_in">Inbokad</string>
+    <string name="record_date_started">Startad</string>
+    <string name="record_date_created">Skapad</string>
+    <string name="filter_and_sort">Filtrera och sortera</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Från</string>
+    <string name="filter_date_to">Till</string>
+    <string name="filter_date_any">Valfritt datum</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Från %1$s</string>
+    <string name="filter_date_until">Till %1$s</string>
+    <string name="filter_sort_oldest">Äldsta först</string>
+    <string name="filter_show_results_unknown">Visa resultat</string>
+    <string name="goodsout_extra_sessions_search">Sök sessioner</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtrera plockningssessioner</string>
+    <string name="goodsout_extra_sort_finished">Avslutad</string>
+    <string name="goodsin_sort_supplier">Leverantör</string>
+    <string name="goodsin_sort_expected_date">Väntat datum</string>
+    <string name="goodsin_returns_filter_title">Filtrera returer</string>
+    <string name="goodsin_returns_date_received">Mottagningsdatum</string>
+    <string name="goodsin_returns_sort_newest">Senast mottagna först</string>
+    <string name="goodsin_returns_sort_oldest">Först mottagna först</string>
+    <string name="fulfilment_inbound_filter_title">Filtrera leveranser</string>
+    <string name="cache_saved_rows_only">Sparad kopia: bara rader som laddats tidigare ingår</string>
+    <string name="filter_online_only">%1$s (endast online)</string>
 </resources>

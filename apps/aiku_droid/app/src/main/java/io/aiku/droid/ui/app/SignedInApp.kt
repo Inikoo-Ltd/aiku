@@ -299,6 +299,7 @@ import io.aiku.droid.ui.sync.SyncQueueScreen
 import io.aiku.droid.ui.sync.SyncQueueViewModel
 import io.aiku.droid.ui.theme.Appearance
 import java.time.LocalDate
+import java.time.ZoneId
 
 fun warehousesViewModelFactory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
     initializer {
@@ -473,6 +474,7 @@ private fun WarehouseApp(
                 container = container,
                 warehouseId = selected?.id,
                 today = { clockingViewModel.state.value.today },
+                zone = { clockingViewModel.state.value.zone },
             )
             ToastHost(
                 state = toasts,
@@ -513,7 +515,7 @@ private fun WarehouseApp(
 }
 
 @Composable
-private fun AppNavHost(navController: NavHostController, container: AppContainer, warehouseId: Long?, today: () -> LocalDate) {
+private fun AppNavHost(navController: NavHostController, container: AppContainer, warehouseId: Long?, today: () -> LocalDate, zone: () -> ZoneId) {
     val currentWarehouseId = warehouseId ?: NoWarehouseAccess.id
 
     NavHost(
@@ -721,7 +723,18 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             )
             val deliveries: StockDeliveriesViewModel = viewModel(
                 key = "stock-deliveries-$currentWarehouseId-${route.source}-${route.state}",
-                factory = viewModelFactory { initializer { StockDeliveriesViewModel(container.goodsInApi, container.sessions, currentWarehouseId, initialFilter = filter) } },
+                factory = viewModelFactory {
+                    initializer {
+                        StockDeliveriesViewModel(
+                            api = container.goodsInApi,
+                            sessions = container.sessions,
+                            warehouseId = currentWarehouseId,
+                            initialFilter = filter,
+                            cache = container.screenCache,
+                            zone = zone,
+                        )
+                    }
+                },
             )
             StockDeliveriesScreen(deliveries = deliveries)
         }
@@ -738,7 +751,18 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             val state = ReturnStateFilter.ofKey(entry.toRoute<GoodsInReturnsRoute>().state) ?: ReturnStateFilter.All
             val returns: ReturnsViewModel = viewModel(
                 key = "returns-$currentWarehouseId-${state.key}",
-                factory = viewModelFactory { initializer { ReturnsViewModel(container.goodsInApi, container.sessions, currentWarehouseId, initialState = state) } },
+                factory = viewModelFactory {
+                    initializer {
+                        ReturnsViewModel(
+                            api = container.goodsInApi,
+                            sessions = container.sessions,
+                            warehouseId = currentWarehouseId,
+                            initialState = state,
+                            cache = container.screenCache,
+                            zone = zone,
+                        )
+                    }
+                },
             )
             GoodsInReturnsScreen(returns = returns)
         }
@@ -775,6 +799,8 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
                             ),
                             addToSession = route.sessionId?.let { id -> SessionTarget(id = id, reference = route.sessionReference.orEmpty()) },
                             sessionHandoff = container.pickingSessionHandoff,
+                            cache = container.screenCache,
+                            zone = zone,
                         )
                     }
                 },
@@ -823,7 +849,11 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         composable<PickingSessionsRoute> {
             val sessions: PickingSessionsViewModel = viewModel(
                 key = "picking-sessions-$currentWarehouseId",
-                factory = viewModelFactory { initializer { PickingSessionsViewModel(container.pickingSessionApi, container.sessions, currentWarehouseId) } },
+                factory = viewModelFactory {
+                    initializer {
+                        PickingSessionsViewModel(api = container.pickingSessionApi, sessions = container.sessions, warehouseId = currentWarehouseId, cache = container.screenCache)
+                    }
+                },
             )
             OnlineOnlyGate(reference = stringResource(R.string.section_picking_sessions), offlineWork = container.offlineWork) { PickingSessionsScreen(sessions = sessions) }
         }

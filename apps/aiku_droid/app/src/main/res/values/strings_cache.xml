@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="cache_last_updated">Last updated %1$s</string>
+    <string name="cache_saved_rows_only">Saved copy: only rows loaded before are included</string>
 </resources>

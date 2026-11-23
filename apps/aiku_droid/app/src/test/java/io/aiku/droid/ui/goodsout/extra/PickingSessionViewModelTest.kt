@@ -23,6 +23,7 @@ import io.aiku.droid.data.api.PickerFilter
 import io.aiku.droid.data.api.PickingSession
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.PickingSessionPage
+import io.aiku.droid.data.api.PickingSessionQuery
 import io.aiku.droid.data.api.PickingSessionState
 import io.aiku.droid.data.api.PickingSessionWrite
 import io.aiku.droid.data.api.ScanLookup
@@ -267,7 +268,7 @@ class PickingSessionViewModelTest {
         val scans = mutableListOf<ScanPickRequest>()
         var writeGate: CompletableDeferred<Unit>? = null
 
-        override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> =
+        override suspend fun pickingSessions(token: String, warehouseId: Long, query: PickingSessionQuery): GoodsOutResult<PickingSessionPage> =
             GoodsOutResult.Unreachable
 
         override suspend fun pickingSession(token: String, sessionId: Long): GoodsOutResult<PickingSession> =

@@ -9,9 +9,12 @@ import io.aiku.droid.data.api.GoodsInResponses
 import io.aiku.droid.data.api.GoodsInWriteStatus
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.ReturnQuery
+import io.aiku.droid.data.api.ReturnSort
 import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.data.cache.SavedLists
+import io.aiku.droid.data.cache.ScreenCache
 import io.aiku.droid.data.offline.NoOfflineWork
 import io.aiku.droid.data.offline.OfflineRecordKey
 import io.aiku.droid.data.offline.OfflineRecordType
@@ -19,6 +22,8 @@ import io.aiku.droid.data.offline.OfflineWork
 import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.components.ListFilter
+import io.aiku.droid.ui.components.OfflineRows
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.PagedList
@@ -34,16 +39,34 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 private const val HTTP_OK = 200
 
 data class ReturnsUiState(
     val state: ReturnStateFilter = ReturnStateFilter.All,
     val search: String = "",
+    val filter: ListFilter<ReturnSort> = ListFilter(),
     val list: PagedList<CustomerReturnRow> = PagedList(),
     val counts: StateCounts? = null,
     val isSessionExpired: Boolean = false,
-)
+    val offline: OfflineRows<CustomerReturnRow>? = null,
+) {
+    val lastUpdated: Instant? get() = offline?.savedAt
+
+    fun query(page: Int, perPage: Int, filter: ListFilter<ReturnSort> = this.filter): ReturnQuery = ReturnQuery(
+        state = state,
+        search = search.trim().takeIf { it.isNotEmpty() },
+        from = filter.dates.from,
+        to = filter.dates.to,
+        sort = filter.sort,
+        page = page,
+        perPage = perPage,
+    )
+
+    fun offlineTotalFor(draft: ListFilter<ReturnSort>): Int? = offline?.let { offlineReturns(it.rows, query(page = 1, perPage = 1, filter = draft), it.zone).size }
+}
 
 class ReturnsViewModel(
     private val api: GoodsInApi,
@@ -51,6 +74,8 @@ class ReturnsViewModel(
     private val warehouseId: Long,
     initialState: ReturnStateFilter = ReturnStateFilter.All,
     private val perPage: Int = ReturnQuery.DEFAULT_PER_PAGE,
+    private val cache: ScreenCache? = null,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(ReturnsUiState(state = initialState))
@@ -84,6 +109,14 @@ class ReturnsViewModel(
         }
     }
 
+    fun applyFilter(filter: ListFilter<ReturnSort>) {
+        searchJob?.cancel()
+        mutableState.update { it.copy(filter = filter, list = PagedList()) }
+        loadPage(1)
+    }
+
+    fun clearFilters() = applyFilter(ListFilter())
+
     fun loadMore() {
         val list = mutableState.value.list
         if (list.canLoadMore) {
@@ -109,20 +142,31 @@ class ReturnsViewModel(
 
     private fun loadPage(page: Int) {
         val token = sessions.session.value?.token ?: return
-        val current = mutableState.value
-        val query = ReturnQuery(state = current.state, search = current.search.trim().takeIf { it.isNotEmpty() }, page = page, perPage = perPage)
+        val query = mutableState.value.query(page = page, perPage = perPage)
         listJob?.cancel()
         mutableState.update { it.copy(list = it.list.loading(page)) }
 
         listJob = viewModelScope.launch {
             when (val result = api.returns(token, warehouseId, query)) {
-                is GoodsOutResult.Loaded -> mutableState.update {
-                    it.copy(list = it.list.loaded(result.value.rows, result.value.meta) { row -> row.id }, counts = result.value.counts ?: it.counts)
+                is GoodsOutResult.Loaded -> {
+                    mutableState.update {
+                        it.copy(list = it.list.loaded(result.value.rows, result.value.meta) { row -> row.id }, counts = result.value.counts ?: it.counts, offline = null)
+                    }
+                    cache?.remember(warehouseId, SavedLists.returns, result.value.rows)
                 }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isSessionExpired = true) }
+                GoodsOutResult.Unreachable -> if (page != 1 || !showSavedRows()) mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
                 else -> mutableState.update { it.copy(list = it.list.failed(page, result.problem())) }
             }
         }
+    }
+
+    private suspend fun showSavedRows(): Boolean {
+        val saved = cache?.saved(warehouseId, SavedLists.returns) ?: return false
+        val rowsZone = zone()
+        val offline = OfflineRows(rows = saved.value, savedAt = saved.fetchedAt, zone = rowsZone, today = LocalDate.now(rowsZone))
+        mutableState.update { it.copy(offline = offline, list = it.list.savedCopy(offlineReturns(saved.value, it.query(page = 1, perPage = perPage), rowsZone))) }
+        return true
     }
 }
 

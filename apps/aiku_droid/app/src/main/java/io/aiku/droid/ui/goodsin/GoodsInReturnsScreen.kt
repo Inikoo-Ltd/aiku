@@ -4,6 +4,9 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -12,26 +15,34 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.CustomerReturnRow
+import io.aiku.droid.data.api.ReturnSort
 import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.ReturnType
+import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
-import io.aiku.droid.ui.components.ItemRow
+import io.aiku.droid.ui.components.ListFilterPanel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.PullRefresh
+import io.aiku.droid.ui.components.RecordRow
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SavedCopyNote
 import io.aiku.droid.ui.components.SearchField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.SortOption
+import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.WarehouseSection
+import io.aiku.droid.ui.components.listFilterSummary
+import io.aiku.droid.ui.components.recordDate
 import io.aiku.droid.ui.goodsout.LoadMoreOnScroll
 import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.inventory.StockLoadProblem
 import io.aiku.droid.ui.inventory.countLabel
-import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.GoodsInReturnRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
@@ -49,6 +60,14 @@ internal val returnChipStates = listOf(
 @StringRes
 internal fun returnsListTitle(state: ReturnStateFilter): Int =
     if (state == ReturnStateFilter.ToProcess) R.string.goodsin_returns_to_process_title else R.string.section_returns
+
+@Composable
+private fun returnSorts(): List<SortOption<ReturnSort>> = listOf(
+    SortOption(null, stringResource(R.string.goodsin_returns_sort_newest)),
+    SortOption(ReturnSort.OldestReceived, stringResource(R.string.goodsin_returns_sort_oldest)),
+    SortOption(ReturnSort.Reference, stringResource(R.string.goodsin_sort_reference)),
+    SortOption(ReturnSort.Customer, stringResource(R.string.goodsout_filter_sort_customer)),
+)
 
 @Composable
 fun GoodsInReturnsScreen(returns: ReturnsViewModel) {
@@ -69,6 +88,8 @@ fun GoodsInReturnsScreen(returns: ReturnsViewModel) {
 private fun GoodsInReturnsContent(state: ReturnsUiState, returns: ReturnsViewModel) {
     val navigator = LocalAppNavigator.current
     val scrollState = rememberScrollState()
+    var showFilter by remember { mutableStateOf(false) }
+    val sorts = returnSorts()
     val list = state.list
     val search = state.search.trim()
     val tabs = returnChipStates.map { (chipState, label) -> FilterOption(label = countLabel(stringResource(label), state.counts?.count(chipState.key))) }
@@ -87,10 +108,19 @@ private fun GoodsInReturnsContent(state: ReturnsUiState, returns: ReturnsViewMod
             selectedIndex = returnChipStates.indexOfFirst { it.first == state.state },
             onSelect = { index -> returns.selectState(returnChipStates[index].first) },
         )
-        SearchField(placeholder = stringResource(R.string.goodsin_search_returns), value = state.search, onValueChange = returns::search)
+        SearchWithFilter(filterCount = state.filter.activeCount, onFilter = { showFilter = true }) { modifier ->
+            SearchField(placeholder = stringResource(R.string.goodsin_search_returns), value = state.search, onValueChange = returns::search, modifier = modifier)
+        }
+        if (state.filter.isFiltered) {
+            ActiveFiltersLine(
+                parts = listFilterSummary(state.filter, sorts, dateLabel = stringResource(R.string.goodsin_returns_date_received)),
+                onClear = returns::clearFilters,
+            )
+        }
         list.firstPageProblem?.let { problem ->
             StockLoadProblem(problem = problem, title = stringResource(R.string.goodsin_returns_failed), onRetry = returns::retry)
         }
+        state.lastUpdated?.let { savedAt -> SavedCopyNote(savedAt = savedAt) }
         when {
             list.rows.isNotEmpty() -> ListGroup {
                 list.rows.forEachIndexed { index, row ->
@@ -112,6 +142,21 @@ private fun GoodsInReturnsContent(state: ReturnsUiState, returns: ReturnsViewMod
         }
         HelperNote(text = stringResource(R.string.goodsin_returns_note))
     }
+    if (showFilter) {
+        ListFilterPanel(
+            title = stringResource(R.string.goodsin_returns_filter_title),
+            filter = state.filter,
+            sorts = sorts,
+            total = list.total?.takeIf { list.hasLoaded && list.loadingPage == null },
+            onApply = { applied ->
+                showFilter = false
+                returns.applyFilter(applied)
+            },
+            onDismiss = { showFilter = false },
+            dateLabel = stringResource(R.string.goodsin_returns_date_received),
+            totalFor = state::offlineTotalFor,
+        )
+    }
 }
 
 @Composable
@@ -122,20 +167,16 @@ private fun ReturnRow(row: CustomerReturnRow, onOpen: () -> Unit) {
     } else {
         pluralStringResource(R.plurals.goodsin_item_count, row.numberItems, row.numberItems)
     }
-    val subtitle = listOfNotNull(
-        row.typeLabel.takeIf { row.type == ReturnType.CANCELLATION && it.isNotBlank() },
-        row.customer?.name?.takeIf { it.isNotBlank() },
-        progress,
-        row.deliveryNote?.reference?.takeIf { it.isNotBlank() },
-        goodsInDate(row.createdAt, zone),
-    ).joinToString(LIST_SEPARATOR)
-
-    ItemRow(
-        code = row.reference,
-        subtitle = subtitle,
-        chip = row.stateLabel.takeIf { it.isNotBlank() },
-        chipTone = returnStateTone(row.state),
-        showPhoto = false,
+    RecordRow(
+        reference = row.reference,
+        date = recordDate(row.createdAt, zone),
+        party = row.customer?.name,
+        details = listOfNotNull(
+            row.typeLabel.takeIf { row.type == ReturnType.CANCELLATION && it.isNotBlank() },
+            progress,
+            row.deliveryNote?.reference?.takeIf { it.isNotBlank() },
+        ),
+        badges = { row.stateLabel.takeIf { it.isNotBlank() }?.let { StatusBadge(text = it, tone = returnStateTone(row.state)) } },
         onClick = onOpen,
     )
 }

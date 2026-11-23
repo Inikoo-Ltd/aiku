@@ -8,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Duration
 import java.time.Instant
@@ -24,6 +26,8 @@ class ScreenCache(
 
     @Volatile
     private var lastCleanUp: Instant? = null
+
+    private val savingRows = Mutex()
 
     fun start(scope: CoroutineScope) {
         scope.launch(ioDispatcher) {
@@ -53,6 +57,19 @@ class ScreenCache(
         }
         store.markOpened(key, clock().toEpochMilli())
         CachedCopy(value = value, fetchedAt = Instant.ofEpochMilli(stored.fetchedAt))
+    }
+
+    suspend fun <T> saved(warehouseId: Long, list: SavedList<T>): CachedCopy<List<T>>? = read(warehouseId, list.screen)
+
+    suspend fun <T> remember(warehouseId: Long, list: SavedList<T>, rows: List<T>) {
+        val userId = sessions.session.value?.userId ?: return
+        val key = ScreenCacheKey(userId = userId, warehouseId = warehouseId, screen = list.key)
+        withContext(ioDispatcher) {
+            savingRows.withLock {
+                val earlier = store.read(key)?.let(::bodyOf)?.let(list.screen.parse).orEmpty()
+                replace(key, list.encode(list.merged(rows, earlier)))
+            }
+        }
     }
 
     internal fun userIdFor(token: String): Long? = sessions.session.value?.takeIf { it.token == token }?.userId

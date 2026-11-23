@@ -183,7 +183,7 @@
     <string name="clocking_leave_upload_certificate">Nahrát lékařské potvrzení</string>
     <string name="clocking_load_failed_title">Docházku se nepodařilo načíst</string>
     <string name="clocking_load_more_failed">Další se nepodařilo načíst</string>
-    <string name="clocking_load_offline_body">Jste offline. Připojte se k internetu a zkuste to znovu.</string>
+    <string name="clocking_load_offline_body">Nejste připojeni. Zkontrolujte Wi-Fi a zkuste to znovu.</string>
     <string name="clocking_load_server_body">Aiku neodpovídá. Zkuste to znovu za chvíli.</string>
     <string name="clocking_location_accuracy">%1$s · přesnost %2$d m</string>
     <string name="clocking_location_detect">Zjistit mou polohu</string>
@@ -300,7 +300,6 @@
     <string name="clocking_working_hours_title">Vyberte pracovní dobu</string>
     <string name="dashboard_abnormal">Anomálie</string>
     <string name="dashboard_below_minimum">Pod minimem</string>
-    <string name="dashboard_clocking">Docházka</string>
     <string name="dashboard_dispatched">Odesláno</string>
     <string name="dashboard_dispatched_compared">%1$s dnes · %2$s včera do této doby</string>
     <string name="dashboard_dispatched_count">%1$s dnes</string>
@@ -1702,7 +1701,6 @@
     <string name="login_try_again">Zkuste to znovu</string>
     <string name="login_username">Uživatelské jméno</string>
     <string name="login_username_required">Zadejte uživatelské jméno.</string>
-    <string name="menu_all_staff">Všichni zaměstnanci</string>
     <string name="menu_appearance">Vzhled</string>
     <string name="menu_appearance_subtitle">Barva motivu · světlý nebo tmavý</string>
     <string name="menu_change">Změnit</string>
@@ -1714,7 +1712,7 @@
     <string name="menu_search_label">Hledat SKO, lokace nebo dodací listy</string>
     <string name="menu_search_placeholder">Hledat SKO, lokaci, dodací list</string>
     <string name="menu_timesheets">Výkazy hodin</string>
-    <string name="module_clocking">Docházka a HR</string>
+    <string name="module_clocking">Evidence času a docházka</string>
     <string name="module_goods_in">Příjem zboží</string>
     <string name="module_goods_out">Výdej zboží</string>
     <string name="module_inventory">Zásoby</string>
@@ -2034,6 +2032,12 @@
         <item quantity="few">Vybráno: %d</item>
         <item quantity="many">Vybráno: %d</item>
         <item quantity="other">Vybráno: %d</item>
+    </plurals>
+    <plurals name="filter_show_results">
+        <item quantity="one">Zobrazit %d výsledek</item>
+        <item quantity="few">Zobrazit %d výsledky</item>
+        <item quantity="many">Zobrazit %d výsledku</item>
+        <item quantity="other">Zobrazit %d výsledků</item>
     </plurals>
     <plurals name="fulfilment_book_in_progress">
         <item quantity="one">Naskladněno: %1$d z %2$d</item>
@@ -2641,4 +2645,32 @@
         <item quantity="many">%d akce</item>
         <item quantity="other">%d akcí</item>
     </plurals>
+    <string name="record_date_expected">Očekáváno</string>
+    <string name="record_date_dispatched">Odesláno</string>
+    <string name="record_date_received">Přijato</string>
+    <string name="record_date_booked_in">Naskladněno</string>
+    <string name="record_date_started">Zahájeno</string>
+    <string name="record_date_created">Vytvořeno</string>
+    <string name="filter_and_sort">Filtrovat a řadit</string>
+    <string name="filter_labelled">%1$s: %2$s</string>
+    <string name="filter_date_from">Od</string>
+    <string name="filter_date_to">Do</string>
+    <string name="filter_date_any">Jakékoli datum</string>
+    <string name="filter_date_range">%1$s – %2$s</string>
+    <string name="filter_date_since">Od %1$s</string>
+    <string name="filter_date_until">Do %1$s</string>
+    <string name="filter_sort_oldest">Nejstarší jako první</string>
+    <string name="filter_show_results_unknown">Zobrazit výsledky</string>
+    <string name="goodsout_extra_sessions_search">Hledat relace</string>
+    <string name="goodsout_extra_sessions_filter_title">Filtrovat relace vychystávání</string>
+    <string name="goodsout_extra_sort_finished">Dokončeno</string>
+    <string name="goodsin_sort_supplier">Dodavatel</string>
+    <string name="goodsin_sort_expected_date">Očekávané datum</string>
+    <string name="goodsin_returns_filter_title">Filtrovat vrácení zboží</string>
+    <string name="goodsin_returns_date_received">Datum přijetí</string>
+    <string name="goodsin_returns_sort_newest">Naposledy přijaté jako první</string>
+    <string name="goodsin_returns_sort_oldest">Nejdříve přijaté jako první</string>
+    <string name="fulfilment_inbound_filter_title">Filtrovat dodávky</string>
+    <string name="cache_saved_rows_only">Uložená kopie: obsahuje jen dříve načtené řádky</string>
+    <string name="filter_online_only">%1$s (jen online)</string>
 </resources>

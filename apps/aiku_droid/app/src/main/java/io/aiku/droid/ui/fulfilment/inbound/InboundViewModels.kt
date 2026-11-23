@@ -6,12 +6,27 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.aiku.droid.AppContainer
 import io.aiku.droid.data.api.PalletFilter
+import io.aiku.droid.ui.clocking.LocalClocking
 
 @Composable
-internal fun rememberPalletDeliveries(container: AppContainer, warehouseId: Long): PalletDeliveriesViewModel = viewModel(
-    key = "pallet-deliveries-$warehouseId",
-    factory = viewModelFactory { initializer { PalletDeliveriesViewModel(container.fulfilmentInboundApi, container.sessions, warehouseId) } },
-)
+internal fun rememberPalletDeliveries(container: AppContainer, warehouseId: Long): PalletDeliveriesViewModel {
+    val clocking = LocalClocking.current
+
+    return viewModel(
+        key = "pallet-deliveries-$warehouseId",
+        factory = viewModelFactory {
+            initializer {
+                PalletDeliveriesViewModel(
+                    api = container.fulfilmentInboundApi,
+                    sessions = container.sessions,
+                    warehouseId = warehouseId,
+                    cache = container.screenCache,
+                    zone = { clocking.state.value.zone },
+                )
+            }
+        },
+    )
+}
 
 @Composable
 internal fun rememberPalletDelivery(container: AppContainer, warehouseId: Long, deliveryId: Long): PalletDeliveryViewModel = viewModel(

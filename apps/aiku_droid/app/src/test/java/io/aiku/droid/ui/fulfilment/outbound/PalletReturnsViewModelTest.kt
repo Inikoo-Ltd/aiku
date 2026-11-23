@@ -6,9 +6,11 @@ import io.aiku.droid.data.api.PalletReturnCounts
 import io.aiku.droid.data.api.PalletReturnPage
 import io.aiku.droid.data.api.PalletReturnQuery
 import io.aiku.droid.data.api.PalletReturnRow
+import io.aiku.droid.data.api.PalletReturnSort
 import io.aiku.droid.data.api.PalletReturnStateFilter
 import io.aiku.droid.data.api.PalletReturnTypeFilter
 import io.aiku.droid.data.api.StateCounts
+import io.aiku.droid.ui.components.ListFilter
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.inventory.FakeSessions
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -124,5 +127,24 @@ class PalletReturnsViewModelTest {
         returns.onStart()
 
         assertTrue(returns.state.value.isSessionExpired)
+    }
+
+    @Test
+    fun `a chosen sort reloads from page 1 with the search kept, and clearing drops only the sort`() {
+        val returns = PalletReturnsViewModel(api, FakeSessions(), warehouseId = 1)
+        returns.onStart()
+        returns.search("acme")
+        dispatcher.scheduler.advanceTimeBy(301)
+
+        returns.applyFilter(ListFilter(sort = PalletReturnSort.Dispatched))
+
+        assertEquals(PalletReturnQuery(search = "acme", sort = PalletReturnSort.Dispatched), api.returnQueries.last())
+        assertEquals(1, returns.state.value.filter.activeCount)
+        assertTrue(returns.state.value.filter.isFiltered)
+
+        returns.clearFilters()
+
+        assertEquals(PalletReturnQuery(search = "acme"), api.returnQueries.last())
+        assertFalse(returns.state.value.filter.isFiltered)
     }
 }

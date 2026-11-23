@@ -63,17 +63,14 @@ import io.aiku.droid.ui.components.moduleKicker
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.inventory.countText
-import io.aiku.droid.ui.navigation.ClockingRoute
-import io.aiku.droid.ui.navigation.DeliveryNotesRoute
 import io.aiku.droid.ui.navigation.GoodsInBacklogRoute
 import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
 import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.navigation.LocationsRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.SearchRoute
-import io.aiku.droid.ui.navigation.SkusRoute
+import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -104,11 +101,10 @@ private fun WarehouseDashboardContent(state: WarehouseDashboardUiState, onRefres
     val refreshState = rememberPullToRefreshState()
     var headerHeight by remember { mutableIntStateOf(0) }
     val shortcuts = listOfNotNull(
-        ModuleShortcut(R.string.module_inventory, R.drawable.ic_ui_sko, SkusRoute()).takeIf { can.viewInventory },
-        ModuleShortcut(R.string.module_locations, R.drawable.ic_ui_location, LocationsRoute()).takeIf { can.viewLocations },
-        goodsInEntry(can)?.let { ModuleShortcut(R.string.module_goods_in, R.drawable.ic_ui_order, it) },
-        ModuleShortcut(R.string.module_goods_out, R.drawable.ic_ui_truck, DeliveryNotesRoute()).takeIf { can.viewGoodsOut },
-        ModuleShortcut(R.string.dashboard_clocking, R.drawable.ic_ui_clock, ClockingRoute),
+        ModuleShortcut(R.string.module_inventory, R.drawable.ic_fa_pallet_alt, InventoryDashboardRoute).takeIf { can.viewInventory },
+        ModuleShortcut(R.string.module_locations, R.drawable.ic_fa_inventory, WarehouseOverviewRoute).takeIf { can.viewLocations },
+        goodsInEntry(can)?.let { ModuleShortcut(R.string.module_goods_in, R.drawable.ic_fa_arrow_to_bottom, it) },
+        ModuleShortcut(R.string.module_goods_out, R.drawable.ic_fa_arrow_from_left, GoodsOutBacklogRoute).takeIf { can.viewGoodsOut },
     )
     val figures = state.dashboard
 
@@ -137,7 +133,7 @@ private fun WarehouseDashboardContent(state: WarehouseDashboardUiState, onRefres
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(colors.soft)) {
-                        Icon(painter = painterResource(R.drawable.ic_ui_area), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
+                        Icon(painter = painterResource(R.drawable.ic_fa_warehouse_alt), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
                     }
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(

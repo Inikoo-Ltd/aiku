@@ -31,6 +31,7 @@ data class PickingSessionRow(
     @SerialName("is_waiting_ready") val isWaitingReady: Boolean = false,
     @SerialName("start_at") val startAt: String? = null,
     @SerialName("end_at") val endAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
 ) {
     val sessionState: PickingSessionState? get() = PickingSessionState.ofKey(state)
 }
@@ -174,8 +175,22 @@ data class DispatchPerson(
     @SerialName("picking_sessions") val pickingSessions: List<NoteReference> = emptyList(),
 )
 
+enum class PickingSessionSort(val key: String) {
+    Reference("reference"),
+    Picker("user_name"),
+    Started("-start_at"),
+    Finished("-end_at"),
+}
+
+data class PickingSessionQuery(
+    val state: PickingSessionState? = null,
+    val search: String? = null,
+    val sort: PickingSessionSort? = null,
+    val page: Int = 1,
+)
+
 interface PickingSessionApi {
-    suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage>
+    suspend fun pickingSessions(token: String, warehouseId: Long, query: PickingSessionQuery): GoodsOutResult<PickingSessionPage>
 
     suspend fun pickingSession(token: String, sessionId: Long): GoodsOutResult<PickingSession>
 
