@@ -101,11 +101,11 @@ const histogramOptions = computed(() => ({
         const row = active.length ? claimingBands.value[active[0].index] : null
         band.value = row && row.key !== band.value ? row.key : null
     },
-    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item: any) => `${n(item.raw)} ${ctrans("customers")}` } } },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (item: any) => `${n(item.raw)} ${item.raw === 1 ? ctrans("customer") : ctrans("customers")}` } } },
     scales: {
         x: { grid: { display: false }, title: { display: true, text: ctrans("Claimed, as % of what they were invoiced") } },
         y: logScale.value
-            ? { type: "logarithmic", min: 1, ticks: { callback: (value: number) => [1, 10, 100, 1000, 10000, 100000].includes(value) ? n(value) : "" } }
+            ? { type: "logarithmic", min: 0.5, ticks: { callback: (value: number) => [1, 10, 100, 1000, 10000, 100000].includes(value) ? n(value) : "" } }
             : { type: "linear", beginAtZero: true, ticks: { precision: 0, callback: (value: number) => n(value) } },
     },
 }))
@@ -185,9 +185,9 @@ const status = computed(() => {
 
     return [
         settings.self_service ? ctrans("Merlin claims: on") : ctrans("Merlin claims: off"),
-        settings.self_service && settings.auto_approve ? ctrans("Automatic up to :amount", { amount: String(money(settings.max_claim_amount)) }) : ctrans("No automatic approval"),
+        settings.self_service ? (settings.auto_approve ? ctrans("Automatic up to :amount", { amount: String(money(settings.max_claim_amount)) }) : ctrans("No automatic approval")) : null,
         settings.framework ? ctrans("Claims only") : ctrans("Old buttons, recorded as claims"),
-    ]
+    ].filter(Boolean)
 })
 </script>
 
@@ -315,7 +315,7 @@ const status = computed(() => {
             <p v-if="topBy === 'share'" class="mb-2 text-xs text-gray-500">{{ ctrans("Share of their orders dispatched in the period that had a claim; customers with at least 5 orders.") }}</p>
             <p v-if="topBy === 'lost'" class="mb-2 text-xs text-gray-500">{{ ctrans("What they claimed as a share of what they were invoiced in the period; customers with at least 5 orders.") }}</p>
             <p v-if="bandRow" class="mb-2 text-xs text-gray-600">
-                {{ ctrans(":count customers claimed :band of what they were invoiced", { count: n(bandRow.customers), band: bandRow.label }) }}<template v-if="bandRow.customers > bandRow.rows.length"> · {{ ctrans("the :shown highest shown", { shown: String(bandRow.rows.length) }) }}</template>
+                {{ bandRow.customers === 1 ? ctrans("1 customer claimed :band of what they were invoiced", { band: bandRow.label }) : ctrans(":count customers claimed :band of what they were invoiced", { count: n(bandRow.customers), band: bandRow.label }) }}<template v-if="bandRow.customers > bandRow.rows.length"> · {{ ctrans("the :shown highest shown", { shown: String(bandRow.rows.length) }) }}</template>
                 · <button type="button" class="underline hover:text-gray-800" @click="band = null">{{ ctrans("Show the top customers again") }}</button>
             </p>
             <p v-if="!tableRows.length" class="text-xs text-gray-400">{{ ctrans("No claims in this period") }}</p>

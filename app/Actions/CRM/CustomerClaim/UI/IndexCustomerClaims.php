@@ -148,7 +148,7 @@ class IndexCustomerClaims extends OrgAction
                 'source'          => $claim->source->value,
                 'kind'            => $claim->kind->label(),
                 'resolution'      => ShowCustomerClaim::resolutionLabel($claim->resolution),
-                'amount'          => $claim->resolution === 'refund_to_balance' ? (float) $claim->amount : null,
+                'amount'          => in_array($claim->resolution, ['refund_to_balance', 'invoice_refund']) && (float) $claim->amount ? (float) $claim->amount : null,
                 'currency_code'   => $claim->currency_code,
                 'created_at'      => $claim->created_at,
                 'customer_name'   => $claim->customer_name,

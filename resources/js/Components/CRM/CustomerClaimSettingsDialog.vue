@@ -58,7 +58,7 @@ const saveSettings = () => {
             <label class="flex items-start justify-between gap-4">
                 <span>
                     <span class="block font-semibold text-gray-800">{{ ctrans("Approve small claims automatically") }}</span>
-                    <span class="block text-xs text-gray-500">{{ ctrans("Off: every claim waits for a person.") }}</span>
+                    <span class="block text-xs text-gray-500">{{ !form.self_service ? ctrans("Only for claims customers make themselves: switch on Customers can claim themselves first.") : form.auto_approve ? ctrans("On: small claims within the customer's allowance settle with no person.") : ctrans("Off: every claim waits for a person.") }}</span>
                 </span>
                 <ToggleSwitch v-model="form.auto_approve" :disabled="!form.self_service" />
             </label>

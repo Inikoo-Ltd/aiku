@@ -12,6 +12,7 @@ use App\Actions\Chat\ChatSession\PlanChatClaim;
 use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\OrgAction;
+use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimSourceEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -59,7 +60,7 @@ class ShowCustomerClaim extends OrgAction
 
     public function htmlResponse(CustomerClaim $claim, ActionRequest $request): Response
     {
-        $claim->loadMissing(['lines', 'customer', 'order', 'conversation', 'reviewer', 'media']);
+        $claim->loadMissing(['lines', 'customer', 'order', 'conversation', 'reviewer', 'media', 'refund']);
         $photos    = $claim->getMedia(CustomerClaim::PHOTOS);
         $photoUrls = fn (string $scope) => $photos->filter(fn (Media $media) => $media->media_scope === $scope)
             ->map(fn (Media $media) => GetPictureSources::run($media->getImage()->resize(0, 0))['original'])->values()->all();
@@ -88,6 +89,8 @@ class ShowCustomerClaim extends OrgAction
                 'created_at'       => $claim->created_at,
                 'reviewed_at'      => $claim->reviewed_at,
                 'reviewer'         => $claim->reviewer?->contact_name ?? $claim->reviewer?->username,
+                'settled_by'       => $claim->source === CustomerClaimSourceEnum::STAFF || $claim->reviewed_by_user_id ? $this->userName($claim) : __('Approved automatically'),
+                'refund'           => $claim->refund ? ['reference' => $claim->refund->reference, 'in_process' => (bool) $claim->refund->in_process, 'route' => $claim->order ? ['name' => 'grp.org.shops.show.ordering.orders.show.refunds.show', 'parameters' => [$params['organisation'], $params['shop'], $claim->order->slug, $claim->refund->slug]] : null] : null,
                 'rejection_reason' => $claim->rejection_reason,
                 'rejection_note'   => $claim->rejection_note,
                 'result'           => $claim->result,
@@ -115,6 +118,7 @@ class ShowCustomerClaim extends OrgAction
                 ])->all(),
             ],
             'can_review'        => $claim->state === CustomerClaimStateEnum::IN_REVIEW && self::canSettle($claim, $request->user()),
+            'can_approve'       => $claim->resolution !== 'invoice_refund',
             'claims_route'      => ['name' => 'grp.org.shops.show.claims.pending', 'parameters' => [$params['organisation'], $params['shop']]],
             'approve_route'     => ['name' => 'grp.models.customer_claim.approve', 'parameters' => ['customerClaim' => $claim->ulid]],
             'reject_route'      => ['name' => 'grp.models.customer_claim.reject', 'parameters' => ['customerClaim' => $claim->ulid]],
@@ -178,7 +182,7 @@ class ShowCustomerClaim extends OrgAction
         $events = [];
 
         if ($reference = $result['refund'] ?? null) {
-            $events[] = ['at' => $claim->settled_at, 'icon' => 'fal fa-hand-holding-usd', 'tone' => 'green', 'label' => __('Refund :reference credited to the balance', ['reference' => $reference]), 'detail' => null, 'route' => null];
+            $events[] = ['at' => $claim->settled_at, 'icon' => 'fal fa-hand-holding-usd', 'tone' => 'green', 'label' => $claim->kind === CustomerClaimKindEnum::ITEMS && $claim->resolution === 'refund_to_balance' ? __('Refund :reference credited to the balance', ['reference' => $reference]) : __('Refund :reference finalised', ['reference' => $reference]), 'detail' => null, 'route' => null];
         }
 
         if ($reference = $result['replacement'] ?? null) {

@@ -15,6 +15,7 @@ use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimSourceEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
+use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
@@ -40,7 +41,7 @@ class StoreStaffCustomerClaim extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo(["crm.{$this->order->shop_id}.edit", "orders.{$this->order->shop_id}.edit"]);
+        return $request->user()->authTo(ShopPermissionsEnum::getPermissionName(PlanChatClaim::permission((string) $request->input('resolution'))->value, $this->order->shop));
     }
 
     public function rules(): array

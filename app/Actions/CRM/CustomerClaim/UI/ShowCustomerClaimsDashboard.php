@@ -49,13 +49,13 @@ class ShowCustomerClaimsDashboard extends OrgAction
         $claims      = CustomerClaim::where('customer_claims.shop_id', $shop->id);
         [$from, $to] = ShowTicketsReports::make()->range($interval, (clone $claims)->min('created_at'), $timezone);
         $since       = $from;
-        $all         = (clone $claims)->whereBetween('customer_claims.created_at', [$from, $to]);
-        $period      = (clone $all)->where('customer_claims.kind', CustomerClaimKindEnum::ITEMS);
+        $inPeriod    = (clone $claims)->whereBetween('customer_claims.created_at', [$from, $to]);
+        $all         = (clone $inPeriod)->where('customer_claims.kind', '!=', CustomerClaimKindEnum::TAX_CORRECTION);
 
         $waiting       = (clone $claims)->where('state', CustomerClaimStateEnum::IN_REVIEW);
         $oldestWaiting = (clone $waiting)->min('created_at');
-        $settled       = (clone $period)->where('state', CustomerClaimStateEnum::SETTLED);
-        $reviewHours   = (clone $period)->where('source', '!=', CustomerClaimSourceEnum::STAFF)->whereNotNull('reviewed_by_user_id')->whereNotNull('reviewed_at')
+        $settled       = (clone $all)->where('state', CustomerClaimStateEnum::SETTLED);
+        $reviewHours   = (clone $all)->where('source', '!=', CustomerClaimSourceEnum::STAFF)->whereNotNull('reviewed_by_user_id')->whereNotNull('reviewed_at')
             ->selectRaw('avg(extract(epoch from (reviewed_at - created_at)) / 3600) as hours')->value('hours');
 
         $byReason = DB::table('customer_claim_lines')
@@ -77,8 +77,8 @@ class ShowCustomerClaimsDashboard extends OrgAction
         $days   = (int) $from->copy()->setTimezone($timezone)->startOfDay()->diffInDays($to->copy()->setTimezone($timezone)->startOfDay()) + 1;
         $bucket = $days <= 62 ? 'day' : ($days <= 400 ? 'week' : 'month');
         $perBucket = fn ($query, string $column) => $query->selectRaw("to_char(date_trunc('$bucket', $column at time zone $zone), 'YYYY-MM-DD') as day, count(*) as total, coalesce(sum(value), 0) as value")->groupBy('day')->get()->keyBy('day');
-        $madeByDay    = $perBucket((clone $claims)->whereBetween('created_at', [$from, $to]), 'created_at');
-        $settledByDay = $perBucket((clone $claims)->whereNotNull('settled_at')->whereBetween('settled_at', [$from, $to]), 'settled_at');
+        $madeByDay    = $perBucket((clone $all), 'created_at');
+        $settledByDay = $perBucket((clone $claims)->where('kind', '!=', CustomerClaimKindEnum::TAX_CORRECTION)->whereNotNull('settled_at')->whereBetween('settled_at', [$from, $to]), 'settled_at');
         $series       = [];
         $cursor       = $from->copy()->setTimezone($timezone)->startOf($bucket);
         while ($cursor->lte($to)) {
@@ -131,19 +131,19 @@ class ShowCustomerClaimsDashboard extends OrgAction
             'currency_code'  => $shop->currency?->code,
             'waiting'        => (clone $waiting)->count(),
             'oldest_waiting' => $oldestWaiting,
-            'made'           => (clone $period)->count(),
+            'made'           => (clone $all)->count(),
             'settled'        => (clone $settled)->count(),
             'auto_settled'   => (clone $settled)->where('source', '!=', CustomerClaimSourceEnum::STAFF)->whereNull('reviewed_by_user_id')->count(),
-            'rejected'       => (clone $period)->where('state', CustomerClaimStateEnum::REJECTED)->count(),
+            'rejected'       => (clone $all)->where('state', CustomerClaimStateEnum::REJECTED)->count(),
             'settled_value'  => round((float) (clone $settled)->sum('value'), 2),
-            'credited'       => round((float) (clone $settled)->where('resolution', 'refund_to_balance')->sum('amount'), 2),
+            'credited'       => round((float) (clone $settled)->where('kind', CustomerClaimKindEnum::ITEMS)->where('resolution', 'refund_to_balance')->sum('amount'), 2),
             'review_hours'   => $reviewHours !== null ? round((float) $reviewHours, 1) : null,
-            'from_merlin'    => (clone $period)->where('source', CustomerClaimSourceEnum::MERLIN)->count(),
-            'by_customer'    => (clone $period)->where('source', '!=', CustomerClaimSourceEnum::STAFF)->count(),
-            'by_staff'       => (clone $period)->where('source', CustomerClaimSourceEnum::STAFF)->count(),
+            'from_merlin'    => (clone $all)->where('source', CustomerClaimSourceEnum::MERLIN)->count(),
+            'by_customer'    => (clone $all)->where('source', '!=', CustomerClaimSourceEnum::STAFF)->count(),
+            'by_staff'       => (clone $all)->where('source', CustomerClaimSourceEnum::STAFF)->count(),
             'refunds'        => ['claims' => (clone $all)->where('kind', CustomerClaimKindEnum::REFUND)->count(), 'value' => round((float) (clone $all)->where('kind', CustomerClaimKindEnum::REFUND)->sum('value'), 2)],
-            'tax_corrections' => ['claims' => (clone $all)->where('kind', CustomerClaimKindEnum::TAX_CORRECTION)->count(), 'value' => round((float) (clone $all)->where('kind', CustomerClaimKindEnum::TAX_CORRECTION)->sum('value'), 2)],
-            'by_resolution'  => (clone $period)->selectRaw('resolution, count(*) as total')->groupBy('resolution')->pluck('total', 'resolution')
+            'tax_corrections' => ['claims' => (clone $inPeriod)->where('kind', CustomerClaimKindEnum::TAX_CORRECTION)->count(), 'value' => round((float) (clone $inPeriod)->where('kind', CustomerClaimKindEnum::TAX_CORRECTION)->sum('value'), 2)],
+            'by_resolution'  => (clone $all)->selectRaw('resolution, count(*) as total')->groupBy('resolution')->pluck('total', 'resolution')
                 ->map(fn ($total, $resolution) => ['label' => ShowCustomerClaim::resolutionLabel($resolution), 'claims' => (int) $total])->values()->all(),
             'by_reason'      => $byReason,
             'by_product'     => $byProduct,
@@ -166,13 +166,14 @@ class ShowCustomerClaimsDashboard extends OrgAction
             ->where('customer_claims.shop_id', $shop->id)
             ->whereBetween('customer_claims.created_at', [$from, $to])
             ->where('customer_claims.state', '!=', CustomerClaimStateEnum::REJECTED->value)
+            ->where('customer_claims.kind', '!=', CustomerClaimKindEnum::TAX_CORRECTION->value)
             ->groupBy('customers.id', 'customers.name', 'customers.slug', 'customers.reference')
             ->selectRaw('customers.id, customers.name, customers.slug, customers.reference, count(*) as claims, coalesce(sum(customer_claims.value), 0) as value, count(distinct customer_claims.order_id) as claimed_orders')
             ->get();
 
-        $orders = Order::where('shop_id', $shop->id)->whereBetween('dispatched_at', [$from, $to])->whereIn('customer_id', $rows->pluck('id'))
+        $orders = Order::where('shop_id', $shop->id)->whereBetween('dispatched_at', [$from, $to])
             ->selectRaw('customer_id, count(*) as total')->groupBy('customer_id')->pluck('total', 'customer_id');
-        $invoiced = Invoice::where('shop_id', $shop->id)->where('type', InvoiceTypeEnum::INVOICE)->whereBetween('date', [$from, $to])->whereIn('customer_id', $rows->pluck('id'))
+        $invoiced = Invoice::where('shop_id', $shop->id)->where('type', InvoiceTypeEnum::INVOICE)->whereBetween('date', [$from, $to])
             ->selectRaw('customer_id, sum(total_amount) as total')->groupBy('customer_id')->pluck('total', 'customer_id');
 
         $rows = $rows->map(fn ($row) => [
@@ -211,9 +212,9 @@ class ShowCustomerClaimsDashboard extends OrgAction
             return [];
         }
 
-        $invoiced = Invoice::where('shop_id', $shop->id)->where('type', InvoiceTypeEnum::INVOICE)->whereBetween('date', [$from, $to])->whereIn('customer_id', $orders->keys())
+        $invoiced = Invoice::where('shop_id', $shop->id)->where('type', InvoiceTypeEnum::INVOICE)->whereBetween('date', [$from, $to])
             ->selectRaw('customer_id, sum(total_amount) as total')->groupBy('customer_id')->pluck('total', 'customer_id');
-        $claimed  = CustomerClaim::where('shop_id', $shop->id)->whereBetween('created_at', [$from, $to])->where('state', '!=', CustomerClaimStateEnum::REJECTED)->whereIn('customer_id', $orders->keys())
+        $claimed  = CustomerClaim::where('shop_id', $shop->id)->whereBetween('created_at', [$from, $to])->where('state', '!=', CustomerClaimStateEnum::REJECTED)->where('kind', '!=', CustomerClaimKindEnum::TAX_CORRECTION)
             ->selectRaw('customer_id, count(*) as claims, coalesce(sum(value), 0) as value, count(distinct order_id) as claimed_orders')->groupBy('customer_id')->get()->keyBy('customer_id');
 
         $bands = [

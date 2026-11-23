@@ -8184,6 +8184,9 @@ test('a shop switched to claims only gets + Claim instead of + Replacement and C
     expect($refundClaim->kind)->toBe(CustomerClaimKindEnum::REFUND)
         ->and($refundClaim->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
         ->and($refundClaim->refund_id)->not->toBeNull();
+    $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $refundClaim->ulid]))->assertSessionHasErrors('claim');
+    get(route('grp.org.shops.show.claims.show', array_merge($shopRoute, ['customerClaim' => $refundClaim->ulid])))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('can_approve', false)->where('claim.refund.in_process', true));
 
     $refund = $refundClaim->refund;
     CreateFullRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->whereNotNull('transaction_id')->firstOrFail());
@@ -8191,6 +8194,15 @@ test('a shop switched to claims only gets + Claim instead of + Replacement and C
     expect($refundClaim->refresh()->state)->toBe(CustomerClaimStateEnum::SETTLED)
         ->and($refundClaim->result['refund'])->toBe($refund->refresh()->reference)
         ->and(CustomerClaim::where('refund_id', $refund->id)->count())->toBe(1);
+
+    $this->post(route('grp.models.order.customer_claim.store', ['order' => $order->id]), ['resolution' => 'invoice_refund', 'comment' => 'Not needed'])->assertRedirect();
+    $rejected = CustomerClaim::where('customer_id', $customer->id)->latest('id')->firstOrFail();
+    $this->post(route('grp.models.customer_claim.reject', ['customerClaim' => $rejected->ulid]), ['reason' => 'not_confirmed'])->assertSessionHasNoErrors()->assertRedirect();
+    expect($rejected->refresh()->state)->toBe(CustomerClaimStateEnum::REJECTED)
+        ->and(Invoice::find($rejected->refund_id))->toBeNull();
+
+    get(route('grp.org.shops.show.claims.dashboard', array_merge($shopRoute, ['created' => 'all'])))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.interval', 'all')->where('dashboard.made', fn ($made) => $made >= 2));
 
     $this->shop->update(['settings' => $settings]);
 });
@@ -8212,6 +8224,8 @@ test('the backfill records past refunds and replacements as claims, oldest first
     $claims = CustomerClaim::where('customer_id', $customer->id)->orderBy('created_at')->get();
     expect($claims->pluck('reference')->all())->toBe([mb_strtoupper($this->shop->code).'-'.$customer->reference.'-1', mb_strtoupper($this->shop->code).'-'.$customer->reference.'-2'])
         ->and($claims[0]->resolution)->toBe('replacement')
+        ->and($claims[0]->order_id)->toBe($order->id)
+        ->and($claims[1]->resolution)->toBe('invoice_refund')
         ->and($claims[0]->lines()->sole()->reason)->toBe(DeliveryNoteItemReplacementReasonEnum::WRONG_ITEM_SENT)
         ->and($claims[0]->created_at->year)->toBe(now()->subYears(2)->year)
         ->and($claims[1]->kind)->toBe(CustomerClaimKindEnum::TAX_CORRECTION)
