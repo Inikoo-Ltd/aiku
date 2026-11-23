@@ -176,7 +176,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         }
 
         if (!$done) {
-            foreach ($collection->parentSubDepartments as $department) {
+            foreach ($collection->parentDepartments()->orderBy('model_has_collections.id')->get() as $department) {
                 if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
                     $url = $this->getProductCategoryCanonicalUrl($department->webpage);
                     break;

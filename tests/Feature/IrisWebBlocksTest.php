@@ -17,7 +17,9 @@
  * storefront webpage.
  */
 
+use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\Catalogue\Collection\StoreCollection;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesUnderDepartmentPage;
 use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
@@ -1668,4 +1670,29 @@ test('closing a page with an old redirect repoints it and forgets the cached pat
     Cache::put($pathKey, 0, 3600);
     ReopenWebpage::run($webpage->refresh());
     expect(Cache::has($pathKey))->toBeFalse();
+});
+
+test('a collection only under departments gets its canonical url under the department it was attached to first', function () {
+    [, $product]     = createProduct($this->shop);
+    $firstDepartment = $product->department;
+
+    $secondDepartmentData = ProductCategory::factory()->definition();
+    data_set($secondDepartmentData, 'type', ProductCategoryTypeEnum::DEPARTMENT->value);
+    $secondDepartment = StoreProductCategory::make()->action($this->shop, $secondDepartmentData);
+
+    $firstDepartmentWebpage = $firstDepartment->webpage ?? StoreProductCategoryWebpage::make()->action($firstDepartment);
+    $secondDepartment->webpage ?? StoreProductCategoryWebpage::make()->action($secondDepartment);
+
+    $collection = StoreCollection::make()->action($this->shop, [
+        'code' => 'DeptOnly'.uniqid(),
+        'name' => 'Collection under departments only',
+    ]);
+    AttachCollectionToModel::make()->action($firstDepartment, $collection);
+    AttachCollectionToModel::make()->action($secondDepartment, $collection);
+
+    $collectionWebpage = $collection->refresh()->webpage ?? StoreCollectionWebpage::make()->handle($collection);
+
+    $canonicalUrl = UpdateWebpageCanonicalUrl::run($collectionWebpage->refresh(), false);
+
+    expect($canonicalUrl)->toEndWith('/'.strtolower($firstDepartmentWebpage->url.'/'.$collectionWebpage->url));
 });
