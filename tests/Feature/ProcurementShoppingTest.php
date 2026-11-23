@@ -4832,7 +4832,7 @@ test('transfers the client\'s bank sent the agent that add up exactly to what is
 
     $transfers = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $request->id)->orderBy('id')->get();
     expect($transfers->map(fn ($transfer) => [(float) $transfer->amount, $transfer->bank_transaction_id, $transfer->original_amount])->all())->toBe([[100.0, $first->id, null], [200.0, $second->id, null]])
-        ->and($transfers->first()->date->toDateString())->toBe($first->booked_at->toDateString())
+        ->and($transfers->first()->date->toDateString())->toBe($first->booked_at->copy()->setTimezone($orgAgent->organisation->timezone?->name ?? config('app.timezone'))->toDateString())
         ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
 
     $next = $ask(50);

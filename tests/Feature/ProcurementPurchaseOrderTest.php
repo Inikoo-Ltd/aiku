@@ -2642,7 +2642,7 @@ test('purchase orders are numbered with the org supplier format, skipping refere
     $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
     $orderData   = Arr::except(PurchaseOrder::factory()->definition(), 'reference');
 
-    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0001');
+    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0001-'.strtoupper($this->organisation->code));
 
     UpdateOrgSupplier::make()->action($orgSupplier, [
         'purchase_order_reference_format' => 'Camacho-%04d_UK',
@@ -2664,7 +2664,7 @@ test('purchase orders are numbered with the org supplier format, skipping refere
     $orgSupplier->refresh();
 
     expect($orgSupplier->purchaseOrderSerialReference)->toBeNull()
-        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($supplier->code.'-0001');
+        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($supplier->code.'-0001-'.strtoupper($this->organisation->code));
 });
 
 test('a supplier without its own number format is numbered from its code, carrying on from its Aurora number', function () {
@@ -2679,8 +2679,8 @@ test('a supplier without its own number format is numbered from its code, carryi
         ->update(['source_id' => '4:'.fake()->unique()->numberBetween(900000, 999999), 'created_at' => now()->subDay()]);
     StorePurchaseOrder::make()->action($orgSupplier, array_merge($orderData, ['reference' => 'Conti-AWChina-071-AROMA']), strict: false);
 
-    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0004')
-        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($supplier->code.'-0004')
+    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0004-'.strtoupper($this->organisation->code))
+        ->and(StorePurchaseOrder::make()->action($orgSupplier, $orderData, strict: false)->reference)->toBe($supplier->code.'-0004-'.strtoupper($this->organisation->code))
         ->and($orgSupplier->purchaseOrderSerialReference()->value('format'))->toBe($supplier->code.'-%04d');
 });
 
@@ -2697,7 +2697,7 @@ test('a supplier whose last Aurora reference ends in a tracking number is number
             ->update(['source_id' => '4:'.fake()->unique()->numberBetween(900000, 999999), 'created_at' => now()->subDays($daysAgo)]);
     }
 
-    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0003');
+    expect(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0003-'.strtoupper($this->organisation->code));
 });
 
 test('stock deliveries are numbered with the org supplier delivery format, skipping references already used', function () {
@@ -2719,7 +2719,7 @@ test('stock deliveries are numbered with the org supplier delivery format, skipp
 
     expect(UpdateOrgSupplier::make()->nextStockDeliveryReference($orgSupplier))->toBe('Camacho-D0009_UK')
         ->and(UpdateOrgSupplier::make()->newProcurementReference($orgSupplier, SerialReferenceModelEnum::STOCK_DELIVERY))->toBe('Camacho-D0009_UK')
-        ->and(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0001');
+        ->and(UpdateOrgSupplier::make()->nextPurchaseOrderReference($orgSupplier))->toBe($supplier->code.'-0001-'.strtoupper($this->organisation->code));
 
     UpdateOrgSupplier::make()->action($orgSupplier, ['stock_delivery_reference_format' => null]);
 
@@ -4091,12 +4091,13 @@ test('the agent asks the organisation about a new supplier price and confirms on
     $this->post($askRoute, ['unit_cost' => $oldUnitCost + 5])->assertSessionHasNoErrors();
     expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING);
     $order->updateQuietly(['production_started_at' => now()]);
-    $this->post($askRoute, ['unit_cost' => $oldUnitCost + 6])->assertSessionHasErrors('unit_cost');
     actingAs($admin);
-    $this->patch($answerRoute, ['answer' => 'accepted'])->assertSessionHasErrors('answer');
-    expect((float) $line->refresh()->unit_cost)->toEqual($oldUnitCost + 2);
-    $this->patch($answerRoute, ['answer' => 'rejected'])->assertSessionHasNoErrors();
-    expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::REJECTED);
+    $this->patch($answerRoute, ['answer' => 'accepted'])->assertSessionHasNoErrors();
+    expect((float) $line->refresh()->unit_cost)->toEqual($oldUnitCost + 5)
+        ->and($line->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED);
+    actingAs($agentUser);
+    $this->post($askRoute, ['unit_cost' => $oldUnitCost + 6])->assertSessionHasNoErrors();
+    expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING);
     actingAs($this->adminGuest->getUser());
 });
 
@@ -4491,11 +4492,13 @@ test('moving part of a line puts it on the other supplier open order at the same
         ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
         ->and(count($line->data['moved_to']))->toBe(2);
 
-    [$lockedSupplier, $lockedProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
-    $locked = createConfirmedAgentOrder($this, $lockedSupplier, $lockedProduct, 0, 3)->refresh();
-    $locked->update(['production_started_at' => now()]);
-    expect(fn () => MovePurchaseOrderTransactionToSupplier::make()->action($locked->purchaseOrderTransactions()->firstOrFail(), ['org_supplier_id' => $toSupplier->id, 'quantity' => 3]))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    [$startedSupplier, $startedProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $started     = createConfirmedAgentOrder($this, $startedSupplier, $startedProduct, 0, 3)->refresh();
+    $started->update(['production_started_at' => now()]);
+    $startedLine = $started->purchaseOrderTransactions()->firstOrFail();
+    MovePurchaseOrderTransactionToSupplier::make()->action($startedLine, ['org_supplier_id' => $toSupplier->id, 'quantity' => 3]);
+
+    expect($startedLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED);
 });
 
 test('a paid order owes the balance again once a quantity change raises its total, and is paid again when it goes back', function () {

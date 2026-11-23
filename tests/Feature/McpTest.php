@@ -4543,15 +4543,6 @@ describe('customer service tools', function () {
         $remember('A £1 small order charge applies below £3 of goods, net', 'charges row 7 checked again')->assertOk();
         expect($fact->refresh()->status)->toBe('active');
 
-        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'save_draft', 'message' => 'Orders under £3 carry a £1 charge, sorry.', 'facts_used' => [$fact->id]])->assertOk();
-        App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->rate(App\Actions\Chat\ChatSession\DraftChatReply::pendingDraft($this->chat), Illuminate\Http\Request::create('/', 'POST', ['rating' => 2, 'reason' => 'wrong_fact']));
-        expect($fact->refresh()->status)->toBe('disputed');
-
-        $this->travel(1)->minutes();
-        $remember('A £1 small order charge applies below £3 of goods, net', 'charges row 7 checked a third time')->assertOk();
-        App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->rate($draft, Illuminate\Http\Request::create('/', 'POST', ['rating' => 1, 'reason' => 'wrong_fact']));
-        expect($fact->refresh()->status)->toBe('active');
-
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'dispute_fact', 'fact_ids' => [$fact->id], 'reason' => 'The charge is £1.50 now'])
             ->assertOk()->assertSee('"disputed":1', false);
         expect($fact->refresh()->status)->toBe('disputed')

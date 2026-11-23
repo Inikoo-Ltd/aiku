@@ -2066,7 +2066,7 @@ test('agents and suppliers keep documents in an attachments tab', function () {
             ->has('attachments.data', 1));
 
     $this->get(route('grp.supply-chain.suppliers.show', [$supplier->slug, 'tab' => 'details']))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('details.contactCard')->where('tabs.navigation.showcase.title', __('Overview')));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('tabs.current', 'showcase')->has('showcase.contactCard')->has('showcase.leadTimes')->missing('tabs.navigation.details')->where('tabs.navigation.showcase.title', __('Overview')));
 
     $this->get(route('grp.supply-chain.suppliers.share', $supplier->slug))
         ->assertInertia(fn (AssertableInertia $page) => $page->component('SupplyChain/SupplierPortalAccess')

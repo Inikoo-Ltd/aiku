@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Helpers\WebsiteLanguage;
 use Closure;
@@ -25,7 +26,7 @@ class SetWebUserLocale
 
         /** @var WebUser $webUser */
         if ($webUser = auth()->user()) {
-            $locale = $this->addressLocaleFor($request, $webUser) ?? $webUser->language?->code;
+            $locale = $this->addressLocaleFor($request, $shop, $webUser) ?? $webUser->language?->code;
         } elseif ($shop->showsWebsiteIn($request->query('locale'))) {
             $locale = $request->query('locale');
             if ($request->hasSession()) {
@@ -52,13 +53,12 @@ class SetWebUserLocale
      * A signed-in customer who opens /app with ?locale (e.g. from a German page of the website) reads it in that
      * language for the rest of the session, when the shop offers it to them; their profile language is left as it is.
      */
-    private function addressLocaleFor(Request $request, WebUser $webUser): ?string
+    private function addressLocaleFor(Request $request, Shop $shop, WebUser $webUser): ?string
     {
         if (!$request->hasSession()) {
             return null;
         }
 
-        $shop          = $webUser->shop;
         $addressLocale = $request->query('locale');
 
         if (is_string($addressLocale) && $shop->offersLanguageTo($webUser->customer, $addressLocale)) {

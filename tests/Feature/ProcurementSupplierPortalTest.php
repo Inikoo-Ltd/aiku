@@ -328,7 +328,7 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED]);
     $received = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
     $received->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED, 'settled_at' => now()]);
-    $orders = collect($this->get(route('grp.supplier_share.show', $token))->viewData('page')['props']['purchase_orders']['data'])->keyBy('reference');
+    $orders = collect($this->get(route('grp.supplier_share.show', [$token, 'purchase_orders_facets' => ['state' => 'all']]))->viewData('page')['props']['purchase_orders']['data'])->keyBy('reference');
 
     expect(array_keys($orders[$purchaseOrder->reference]['labels']))->toBe(['carton', 'sko', 'unit'])
         ->and($orders[$purchaseOrder->reference]['labels']['sko'])->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko')
