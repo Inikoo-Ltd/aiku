@@ -28,7 +28,6 @@ import {
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
 import SupplierShowcase from '@/Components/Showcases/Grp/SupplierShowcase.vue'
-import ContactInfoStrip from '@/Components/Showcases/Grp/ContactInfoStrip.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
@@ -54,8 +53,7 @@ const props = defineProps<{
         current: string
         navigation: object
     }
-    showcase?: { contactCard: InstanceType<typeof ContactInfoStrip>["$props"]["contactCard"] }
-    details?: object
+    showcase?: InstanceType<typeof SupplierShowcase>["$props"]["data"]
     inbox?: object
     declarations?: object
     agreed_terms?: object
@@ -108,7 +106,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components = {
-        details: SupplierShowcase,
         inbox: TableSupplierMessages,
         declarations: SupplierDeclarations,
         agreed_terms: TableSupplierAgreedTerms,
@@ -141,16 +138,16 @@ const component = computed(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div v-if="currentTab === 'showcase' && showcase?.contactCard" class="px-4 pt-4">
-        <ContactInfoStrip :contactCard="showcase.contactCard" />
-    </div>
-    <div v-if="currentTab === 'showcase'" class="grid items-start gap-4 px-4 pt-4" :class="productDevelopments ? 'xl:grid-cols-[minmax(0,56rem)_minmax(0,1fr)]' : 'max-w-4xl'">
-        <AgreementSummary :agreement="agreement" />
-        <section v-if="productDevelopments" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <h3 class="border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800">{{ ctrans("Open product developments") }}</h3>
-            <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
-        </section>
-    </div>
+    <template v-if="currentTab === 'showcase'">
+        <div class="grid items-start gap-4 px-4 pt-4 md:px-6 lg:px-8" :class="productDevelopments ? 'xl:grid-cols-[minmax(0,56rem)_minmax(0,1fr)]' : 'max-w-4xl'">
+            <AgreementSummary :agreement="agreement" />
+            <section v-if="productDevelopments" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <h3 class="border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800">{{ ctrans("Open product developments") }}</h3>
+                <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
+            </section>
+        </div>
+        <SupplierShowcase v-if="showcase" :data="showcase" />
+    </template>
     <component v-if="component" :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}" />
 
     <UploadAttachment

@@ -105,6 +105,7 @@ trait WithSupplierEditFields
                 ]
             ],
             [
+                'key'    => 'settings',
                 'label'  => __('Settings'),
                 'title'  => __('settings '),
                 'icon'   => 'fa-light fa-cog',
@@ -171,6 +172,7 @@ trait WithSupplierEditFields
                 ]
             ],
             [
+                'key'    => 'factory',
                 'label'  => __('Factory'),
                 'title'  => __('Factory'),
                 'icon'   => 'fal fa-industry',
@@ -189,6 +191,7 @@ trait WithSupplierEditFields
                 'fields' => $this->packingEditFields($supplier, $supplier),
             ],
             [
+                'key'    => 'pre_orders',
                 'label'  => __('Pre-orders'),
                 'title'  => __('Pre-orders'),
                 'icon'   => 'fal fa-hourglass-half',
