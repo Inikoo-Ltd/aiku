@@ -958,7 +958,6 @@ class ShowStockDelivery extends OrgAction
                     'notes'          => $payment->notes,
                     'method'         => $payment->method?->labels()[$payment->method->value],
                     'bank_statement' => $payment->bankStatement?->ulid,
-                'is_scheduled'   => $payment->isScheduled(),
                     'delete_route'   => ['name' => 'grp.models.agent_payment.delete', 'parameters' => ['agentPayment' => $payment->id]],
                 ])->values()->all(),
                 'payment_store_route' => ['name' => 'grp.models.stock-delivery.agent_payment.store', 'parameters' => ['stockDelivery' => $stockDelivery->id]],
