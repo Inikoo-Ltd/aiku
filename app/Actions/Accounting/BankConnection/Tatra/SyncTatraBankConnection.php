@@ -284,9 +284,14 @@ class SyncTatraBankConnection
     /**
      * @param string $path a path under the API, or the absolute "next" link of a previous page
      */
-    private function tatraGet(#[\SensitiveParameter] string $token, string $path, array $query = []): ?array
+    /**
+     * A next link already carries its whole query, and get() with a query array, even an empty one, would replace it.
+     * Tatra puts raw control characters (line breaks) inside remittance texts, which strict JSON rejects, so they are
+     * turned into spaces before decoding; a body that still does not decode fails the sync instead of ending it.
+     */
+    private function tatraGet(#[\SensitiveParameter] string $token, string $path, array $query = []): array
     {
-        return Http::withToken($token)
+        $request = Http::withToken($token)
             ->acceptJson()
             ->withHeaders(['X-Request-ID' => (string)Str::uuid()])
             ->timeout(60)
@@ -296,10 +301,11 @@ class SyncTatraBankConnection
                 fn (\Throwable $exception) => $exception instanceof ConnectionException
                     || ($exception instanceof RequestException && ($exception->response->status() === 429 || $exception->response->serverError())),
                 throw: false
-            )
-            ->get(str_starts_with($path, 'http') ? $path : self::BASE_URL.$path, $query)
-            ->throw()
-            ->json();
+            );
+
+        $response = (str_starts_with($path, 'http') ? $request->get($path) : $request->get(self::BASE_URL.$path, $query))->throw();
+
+        return json_decode(preg_replace('/[\x00-\x1F]/', ' ', $response->body()), true, flags: JSON_THROW_ON_ERROR);
     }
 
     private function text(mixed $value): ?string

@@ -2802,17 +2802,18 @@ test('a tatra account is mirrored once through business banking consent, directi
                     tatraTransaction('t1', 120.5, 'SK8975000000000012345671', $ours, 'Objednavka SK10234'),
                     tatraTransaction('t2', -45.0, $ours, 'CZ6508000000192000145399', 'Invoice 77'),
                 ],
-                '_links' => ['next' => ['href' => 'https://api.tatrabanka.sk/premium/production/v5/accounts/tatra-acc-1/transactions?page=2']],
+                '_links' => ['next' => ['href' => 'https://api.tatrabanka.sk/premium/production/v5/accounts/tatra-acc-1/transactions?dateFrom=2025-08-24&bookingStatus=booked&entryReferenceFrom=abc']],
             ])
-            ->push([
+            ->push(str_replace('LINEBREAK', "\n", json_encode([
                 'transactions' => [
+                    tatraTransaction('t8', 15.0, 'SK8975000000000012345671', $ours, "Objednavka LINEBREAKSK10235"),
                     tatraTransaction('t3', 60.0, $ours, 'DE89370400440532013000', null),
                     tatraTransaction('t4', 10.0, 'AT611904300234573201', 'AT483200000012345864', null),
                     array_merge(tatraTransaction('t5', 75.0, 'SK8975000000000012345671', $ours, null), ['isReversal' => true]),
                     tatraTransaction('t6', 5.0, $ours, $ours, null),
                     array_merge(tatraTransaction('t7', 30.0, 'SK8975000000000012345671', $ours, null), ['transactionState' => 'REJECTED']),
                 ],
-            ])
+            ], JSON_UNESCAPED_UNICODE)))
             ->push(['transactions' => [tatraTransaction('t1', 120.5, 'SK8975000000000012345671', $ours, 'Objednavka SK10234')]]),
     ]);
 
@@ -2822,7 +2823,7 @@ test('a tatra account is mirrored once through business banking consent, directi
         'credentials' => 'tatra-client:tatra-secret',
     ]);
 
-    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 3, 'skipped' => 4, 'skipped_examples' => [
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 4, 'skipped' => 4, 'skipped_examples' => [
         't4: direction not understood',
         't5: reversal with an unsigned amount, direction not certain',
         't6: direction not understood',
@@ -2832,7 +2833,8 @@ test('a tatra account is mirrored once through business banking consent, directi
     $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
     expect($bankConnection->refresh()->external_id)->toBe('tatra-acc-1')
         ->and($bankConnection->sync_data['tatra_iban'])->toBe($ours)
-        ->and($lines)->toHaveCount(3)
+        ->and($lines)->toHaveCount(4)
+        ->and($lines['t8']->reference)->toBe('Objednavka  SK10235')
         ->and($lines['t1']->direction)->toBe(BankTransactionDirectionEnum::IN)
         ->and((float)$lines['t1']->amount)->toBe(120.5)
         ->and($lines['t1']->provider_type)->toBe('TRANSFER')
@@ -2852,6 +2854,7 @@ test('a tatra account is mirrored once through business banking consent, directi
     Http::assertSent(fn ($request) => str_ends_with($request->url(), '/auth/oauth/v2/token')
         && $request['grant_type'] === 'client_credentials' && $request['scope'] === 'PREMIUM_AIS'
         && $request['client_id'] === 'tatra-client' && $request['client_secret'] === 'tatra-secret');
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'entryReferenceFrom=abc') && str_contains($request->url(), 'bookingStatus=booked'));
     Http::assertSent(fn ($request) => str_contains($request->url(), '/v5/accounts/tatra-acc-1/transactions?')
         && str_contains($request->url(), 'bookingStatus=booked')
         && $request->hasHeader('Authorization', 'Bearer tatra-token')
