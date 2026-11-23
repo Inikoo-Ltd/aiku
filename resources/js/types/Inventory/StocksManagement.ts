@@ -79,6 +79,11 @@ export interface StocksManagementTS {
         cost_current_price_per_unit : number
         cost_current_price_outer : number
     }
+    margins?: {
+        min: number
+        max: number
+        shops: { shop: string; min: number; max: number }[]
+    } | null
     cover?: {
         days: number
         out_at: string | null

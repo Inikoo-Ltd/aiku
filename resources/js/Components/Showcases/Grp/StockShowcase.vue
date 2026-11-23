@@ -177,6 +177,7 @@ const hasStockPanel = computed(() => !!props.data.stocks_management)
 
 const stockCostStats = computed(() => {
     const stockCost = props.data.stocks_management?.stock_cost
+    const margins = props.data.stocks_management?.margins
     const format = (value: number | null | undefined) =>
         locale.currencyFormat(props.data.currency_code, value || 0)
 
@@ -189,8 +190,19 @@ const stockCostStats = computed(() => {
         { title: ctrans("Future delivered cost"), value: stockCost?.current_supplier_sku_cost || 0 },
         { title: ctrans("SKO value"), value: stockCost?.sku_value || 0, hint: valuationHint },
         { title: ctrans("Total stock value"), value: stockCost?.total_stock_value || 0, hint: valuationHint },
+        ...(margins ? [{
+            title: ctrans("Margin"),
+            display: marginRange(margins),
+            hint: [
+                ctrans("Price against replacement cost, per shop"),
+                ...margins.shops.map((shopMargin: { shop: string; min: number; max: number }) => `${shopMargin.shop}: ${marginRange(shopMargin)}`),
+            ].join("\n"),
+        }] : []),
     ]
 })
+
+const marginRange = ({ min, max }: { min: number; max: number }) =>
+    min === max ? `${min}%` : `${min}% – ${max}%`
 
 // watch(images, (newVal) => {
 //     if (!newVal?.length || selectedImage.value > newVal.length - 1) {
@@ -402,7 +414,7 @@ const saveBarcode = (value: string | null) => {
                                     v-tooltip="{ content: stat.hint.replace(/\n/g, '<br>'), html: true }" />
                             </div>
                             <div class="mt-1.5 text-2xl font-bold text-gray-800 whitespace-nowrap">
-                                {{ locale.currencyFormat(data.currency_code, stat.value) }}
+                                {{ stat.display ?? locale.currencyFormat(data.currency_code, stat.value) }}
                             </div>
                         </div>
                     </div>

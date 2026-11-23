@@ -853,3 +853,30 @@ describe('nightly stock value check', function () {
         expect($finding->refresh()->state)->toBe(\App\Models\Inventory\StockValueFinding::STATE_RESOLVED);
     });
 });
+
+test('SKO showcase shows the margin range of its products per shop', function () {
+    [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'MRG');
+    $orgStock->update(['lpp_per_sku' => 60]);
+
+    $products = collect(['margin-a' => 100, 'margin-b' => 150])->map(function (int $price, string $key) use ($orgStock) {
+        [, , $shop] = createOwnShop($key);
+        $shop->update(['currency_id' => $this->organisation->currency_id]);
+        [, $product] = createProduct($shop);
+        $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+        $product->update(['price' => $price, 'state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE]);
+
+        return $product;
+    });
+
+    $margins = fn () => \Pest\Laravel\get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show', [$this->organisation->slug, $location->warehouse->slug, $orgStock->slug]))
+        ->assertOk()->inertiaProps('showcase.stocks_management.margins');
+
+    expect($margins())->toMatchArray(['min' => 40.0, 'max' => 60.0])
+        ->and(collect($margins()['shops'])->pluck('min')->sort()->values()->all())->toEqual([40, 60]);
+
+    $products['margin-b']->update(['price' => 0.01]);
+    expect($margins())->toMatchArray(['min' => 40.0, 'max' => 40.0]);
+
+    $orgStock->update(['lpp_per_sku' => 0, 'sku_value' => 0]);
+    expect($margins())->toBeNull();
+});
