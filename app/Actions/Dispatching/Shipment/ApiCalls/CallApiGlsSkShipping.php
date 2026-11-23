@@ -67,21 +67,9 @@ class CallApiGlsSkShipping extends OrgAction
         data_set($parentResource, 'reference', $parent->reference);
         data_set($parentResource, 'shipping_notes', $parent->shipping_notes ?? '');
 
-        $printLabelsRequest = array(
-            'Username'   => $username,
-            'Password'   => hex2bin($password),
-            'ParcelList' => $this->prepareParcelList($parentResource, $clientNumber, $parcels),
-        );
-
-        $printLabelsRequest = array("printLabelsRequest" => $printLabelsRequest);
-
-        $soapOptions = array(
-            'soap_version' => SOAP_1_1,
-        );
-
         try {
-            $client      = new SoapClient($url, $soapOptions);
-            $apiResponse = $client->PrintLabels($printLabelsRequest)->PrintLabelsResult;
+            $client = new SoapClient($url, ['soap_version' => SOAP_1_1]);
+            [$apiResponse, $withFlexDelivery] = $this->printLabelsWithFlexDelivery($client, $username, $password, $parentResource, $clientNumber, $parcels);
         } catch (SoapFault $e) {
             $errorData = [
                 'message' => 'Connection Error '.$e->getMessage(),
@@ -99,7 +87,8 @@ class CallApiGlsSkShipping extends OrgAction
             // Store the fact that labels exist, but not the actual binary content to save memory
             Arr::set($apiResponseData, 'Labels', 'Labels are present');
         }
-        $modelData = [
+        $apiResponseData['flex_delivery'] = $withFlexDelivery;
+        $modelData                        = [
             'api_response' => $apiResponseData,
         ];
 
@@ -159,24 +148,57 @@ class CallApiGlsSkShipping extends OrgAction
     }
 
     /**
+     * FlexDelivery (FDS) is what makes GLS email the recipient. A label GLS refuses with it is
+     * printed again without it, so the service can never stop a parcel from shipping.
+     *
+     * @return array{0: object, 1: bool}
+     * @throws SoapFault
+     */
+    protected function printLabelsWithFlexDelivery(SoapClient $client, ?string $username, ?string $password, array $parentResource, mixed $clientNumber, ?array $parcels): array
+    {
+        if (Arr::get($parentResource, 'to_email')) {
+            $apiResponse = $this->printLabels($client, $username, $password, $parentResource, $clientNumber, $parcels, true);
+            if ($apiResponse->Labels ?? null) {
+                return [$apiResponse, true];
+            }
+        }
+
+        return [$this->printLabels($client, $username, $password, $parentResource, $clientNumber, $parcels, false), false];
+    }
+
+    /**
+     * @throws SoapFault
+     */
+    protected function printLabels(SoapClient $client, ?string $username, ?string $password, array $parentResource, mixed $clientNumber, ?array $parcels, bool $withFlexDelivery): object
+    {
+        return $client->PrintLabels([
+            'printLabelsRequest' => [
+                'Username'   => $username,
+                'Password'   => hex2bin($password),
+                'ParcelList' => $this->prepareParcelList($parentResource, $clientNumber, $parcels, $withFlexDelivery),
+            ],
+        ])->PrintLabelsResult;
+    }
+
+    /**
      * A cash on delivery amount is held per parcel. Count offers no way to vary it, so a
      *  multi-parcel COD shipment is sent as one entry per parcel with the whole amount on the
      * first and nothing on the rest. Everything else keeps using a single Count entry.
      *
      * @return array<int, object>
      */
-    protected function prepareParcelList(array $parentResource, mixed $clientNumber, ?array $parcels): array
+    protected function prepareParcelList(array $parentResource, mixed $clientNumber, ?array $parcels, bool $withFlexDelivery = false): array
     {
         $numberParcels = $parcels ? count($parcels) : 1;
         $codAmount     = (float)Arr::get($parentResource, 'cash_on_delivery.amount');
 
         if ($codAmount <= 0 || $numberParcels === 1) {
-            return [$this->prepareParcelParams($parentResource, $clientNumber, $parcels)];
+            return [$this->prepareParcelParams($parentResource, $clientNumber, $parcels, false, $withFlexDelivery)];
         }
 
         $parcelList = [];
         foreach (range(1, $numberParcels) as $parcelNumber) {
-            $parcel        = $this->prepareParcelParams($parentResource, $clientNumber, $parcels, $parcelNumber > 1);
+            $parcel        = $this->prepareParcelParams($parentResource, $clientNumber, $parcels, $parcelNumber > 1, $withFlexDelivery);
             $parcel->Count = 1;
 
             if ($parcelNumber > 1) {
@@ -189,7 +211,7 @@ class CallApiGlsSkShipping extends OrgAction
         return $parcelList;
     }
 
-    protected function prepareParcelParams(array $parentResource, mixed $clientNumber, ?array $parcels, bool $withoutCashOnDelivery = false): object
+    protected function prepareParcelParams(array $parentResource, mixed $clientNumber, ?array $parcels, bool $withoutCashOnDelivery = false, bool $withFlexDelivery = false): object
     {
         $shippingNotes = strip_tags(Arr::get($parentResource, 'shipping_notes') ?? '');
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', $shippingNotes), 60, '');
@@ -237,6 +259,13 @@ class CallApiGlsSkShipping extends OrgAction
             $prepareParams->CODAmount    = $codAmount;
             $prepareParams->CODCurrency  = Arr::get($parentResource, 'cash_on_delivery.currency');
             $prepareParams->CODReference = Str::limit($reference, 30);
+        }
+
+        $email = Arr::get($parentResource, 'to_email');
+        if ($withFlexDelivery && $email) {
+            $prepareParams->ServiceList = [
+                (object)['Code' => 'FDS', 'FDSParameter' => (object)['Value' => $email]],
+            ];
         }
 
         return $prepareParams;

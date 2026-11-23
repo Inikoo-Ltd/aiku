@@ -113,3 +113,48 @@ it('addresses the parcel to the company and keeps the person as contact', functi
     'no company'    => [[], 'Jan Novak', 'Jan Novak'],
     'long company'  => [['to_company_name' => str_repeat('K', 70)], str_repeat('K', 60), 'Jan Novak'],
 ]);
+
+it('orders FlexDelivery to the recipient email on every parcel only when asked and there is an email', function () {
+    $reflection = new ReflectionMethod(CallApiGlsSkShipping::class, 'prepareParcelList');
+    $parentResource = [
+        'reference'        => 'DN-1234',
+        'to_email'         => 'maria@example.de',
+        'to_address'       => ['country_code' => 'DE'],
+        'cash_on_delivery' => ['amount' => 20.0, 'currency' => 'EUR'],
+    ];
+    $parcels = array_fill(0, 2, ['weight' => 1]);
+
+    foreach ($reflection->invoke(new CallApiGlsSkShipping(), $parentResource, 1234, $parcels, true) as $parcel) {
+        expect($parcel->ServiceList)->toEqual([(object)['Code' => 'FDS', 'FDSParameter' => (object)['Value' => 'maria@example.de']]]);
+    }
+
+    expect($reflection->invoke(new CallApiGlsSkShipping(), $parentResource, 1234, null, false)[0])->not->toHaveProperty('ServiceList')
+        ->and($reflection->invoke(new CallApiGlsSkShipping(), array_merge($parentResource, ['to_email' => '']), 1234, null, true)[0])->not->toHaveProperty('ServiceList');
+});
+
+it('prints the label again without FlexDelivery when GLS refuses it', function (?string $email, array $firstResponse, array $expectedCalls, bool $expectedFlexDelivery) {
+    $calls  = [];
+    $action = new class ($calls, $firstResponse) extends CallApiGlsSkShipping {
+        public function __construct(public array &$calls, public array $firstResponse)
+        {
+        }
+
+        protected function printLabels(SoapClient $client, ?string $username, ?string $password, array $parentResource, mixed $clientNumber, ?array $parcels, bool $withFlexDelivery): object
+        {
+            $this->calls[] = $withFlexDelivery;
+
+            return count($this->calls) === 1 ? (object)$this->firstResponse : (object)['Labels' => 'pdf'];
+        }
+    };
+
+    $reflection = new ReflectionMethod($action, 'printLabelsWithFlexDelivery');
+    [$response, $withFlexDelivery] = $reflection->invoke($action, new SoapClient(null, ['location' => 'http://localhost', 'uri' => 'urn:test']), 'u', 'p', ['to_email' => $email], 1234, null);
+
+    expect($calls)->toBe($expectedCalls)
+        ->and($withFlexDelivery)->toBe($expectedFlexDelivery)
+        ->and($response->Labels)->toBe('pdf');
+})->with([
+    'accepted'      => ['maria@example.de', ['Labels' => 'pdf'], [true], true],
+    'refused'       => ['maria@example.de', ['Labels' => null], [true, false], false],
+    'without email' => [null, ['Labels' => 'pdf'], [false], false],
+]);
