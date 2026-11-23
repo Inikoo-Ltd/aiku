@@ -166,6 +166,7 @@ use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Ordering\TransactionsResource;
 use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Accounting\CreditTransaction;
+use App\Actions\Iris\CustomerClaim\ShowIrisCustomerClaim;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -7947,12 +7948,16 @@ test('a customer claims a damaged item from Merlin: the form opens on their orde
     $tool = $tools->execute($conversation, 'report_order_problem', ['reference' => strtolower($order->reference)]);
     expect(collect($tools->definitions(claimsEnabled: true))->pluck('function.name'))->toContain('report_order_problem')
         ->and($tool['claim_order_id'] ?? null)->toBe($order->id)
-        ->and($tool['content']['claimable'])->toBeTrue();
+        ->and($tool['content']['claimable'])->toBeTrue()
+        ->and($tool['content']['order'])->toBe($order->reference)
+        ->and($tool['content']['items_on_order'])->toContain($this->product->name)
+        ->and($tool['content']['outcomes'])->toContain('next_order');
 
     $form = GetCustomerClaimForm::run($customer, $order->refresh());
     $line = collect($form['lines'])->firstWhere('transaction_id', $item->transaction_id);
     expect($line['claimable'])->toBe(2)
-        ->and(collect($form['reasons'])->pluck('value'))->not->toContain('customer_error')
+        ->and(collect($form['reasons'])->pluck('value'))->not->toContain('customer_error', 'lost_in_transit', 'poor_packaging')
+        ->and($line['unit_value'])->toBeGreaterThan(0.0)
         ->and($form['outcomes'])->toContain('refund_to_balance', 'next_order');
 
     $damaged = ['transaction_id' => $item->transaction_id, 'quantity' => 1, 'reason' => 'damaged_in_transit'];
@@ -7995,7 +8000,8 @@ test('a customer claims a damaged item from Merlin: the form opens on their orde
 
     $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $claim->ulid]))->assertRedirect();
     $settled = $claim->refresh();
-    expect($settled->reviewed_by_user_id)->toBe($this->user->id);
+    expect($settled->reviewed_by_user_id)->toBe($this->user->id)
+        ->and(StaffTask::where('data->customer_claim_id', $claim->id)->whereIn('status', ['todo', 'in_progress'])->exists())->toBeFalse();
     get(route('grp.org.shops.show.claims.pending', $claimRoute))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', []));
     get(route('grp.org.shops.show.claims.done', $claimRoute).'?elements[state]=settled')
@@ -8022,6 +8028,8 @@ test('a customer claims a damaged item from Merlin: the form opens on their orde
     $this->post(route('grp.models.customer_claim.reject', ['customerClaim' => $missing->ulid]), ['reason' => 'not_confirmed'])->assertRedirect();
     expect($missing->refresh()->state)->toBe(CustomerClaimStateEnum::REJECTED)
         ->and($missing->reference)->toBe(mb_strtoupper($this->shop->code).'-'.$customer->reference.'-2')
+        ->and(ShowIrisCustomerClaim::make()->summary($missing)['rejection']['reason'])->toBe('We could not confirm the problem')
+        ->and(ShowIrisCustomerClaim::make()->summary($missing)['lines'][0]['reason'])->toBe('Missing from the parcel')
         ->and(collect(GetCustomerClaimForm::run($customer, $order->refresh())['lines'])->firstWhere('transaction_id', $item->transaction_id)['claimable'])->toBe(1);
 
     $this->shop->update(['settings' => $settings]);

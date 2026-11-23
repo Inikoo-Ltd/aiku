@@ -268,7 +268,7 @@ onBeforeUnmount(stopPolling)
 
                         <CustomerClaimForm v-if="message.claim" :order-id="message.claim.order_id" source="merlin" :conversation="conversation" :made="message.claim.made" />
 
-                        <div v-if="message.id === latestAssistantId && message.follow_ups?.length && !isPending" class="mt-2 flex flex-wrap gap-1.5">
+                        <div v-if="message.id === latestAssistantId && message.follow_ups?.length && !isPending && !message.claim" class="mt-2 flex flex-wrap gap-1.5">
                             <button v-for="followUp in message.follow_ups" :key="followUp" type="button"
                                 class="rounded-full border px-2.5 py-1 text-left text-xs text-gray-700 hover:bg-gray-50"
                                 @click="send(followUp)">

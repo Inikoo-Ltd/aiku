@@ -84,6 +84,7 @@ class ShowCustomerClaim extends OrgAction
                 'resolution'       => $claim->resolution,
                 'resolution_label' => self::resolutionLabel($claim->resolution),
                 'amount'           => (float) $claim->amount,
+                'value'            => (float) $claim->value,
                 'currency_code'    => $claim->currency_code,
                 'comment'          => $claim->comment,
                 'created_at'       => $claim->created_at,
@@ -191,7 +192,7 @@ class ShowCustomerClaim extends OrgAction
             if ($note?->dispatched_at) {
                 $events[] = ['at' => $note->dispatched_at, 'icon' => 'fal fa-shipping-fast', 'tone' => 'green', 'label' => __('Replacement :reference dispatched', ['reference' => $reference]), 'detail' => null, 'route' => null];
             } elseif ($note) {
-                $events[] = ['at' => now(), 'icon' => 'fal fa-warehouse', 'tone' => 'amber', 'label' => __('Replacement :reference now', ['reference' => $reference]), 'detail' => DeliveryNoteStateEnum::labels()[$note->state->value] ?? $note->state->value, 'route' => null];
+                $events[] = ['at' => now(), 'icon' => 'fal fa-warehouse', 'tone' => 'amber', 'label' => __('Replacement :reference in the warehouse: :state', ['reference' => $reference, 'state' => DeliveryNoteStateEnum::labels()[$note->state->value] ?? $note->state->value]), 'detail' => null, 'route' => null];
             }
         }
 
