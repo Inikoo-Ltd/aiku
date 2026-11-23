@@ -665,7 +665,7 @@ class AskShoppingAssistant
         $messages = array_merge(
             [['role' => 'system', 'content' => $this->systemPrompt($conversation, $customer, $customerMessage)]],
             $this->replay($conversation, $customerMessage),
-            [['role' => 'user', 'content' => $this->userContent($message, $customerMessage->imagesForModel())]]
+            [['role' => 'user', 'content' => $this->userContent($message, $customerMessage->imagesForModel(), $this->pagesNote($conversation, $customerMessage))]]
         );
 
         $rewroteNumbers = false;
@@ -1604,21 +1604,20 @@ class AskShoppingAssistant
      *
      * @return string|array<int, array<string, mixed>>
      */
-    private function userContent(string $message, array $images): string|array
+    private function userContent(string $message, array $images, string $note = ''): string|array
     {
         if (!$images) {
-            return $message;
+            return $message.$note;
         }
 
         return [
-            ['type' => 'text', 'text' => $message !== '' ? $message : 'The customer sent these images without a message.'],
+            ['type' => 'text', 'text' => ($message !== '' ? $message : 'The customer sent these images without a message.').$note],
             ...array_map(fn (string $image) => ['type' => 'image_url', 'image_url' => ['url' => $image]], $images),
         ];
     }
 
     private function systemPrompt(ShoppingAssistantConversation $conversation, Customer $customer, ?ShoppingAssistantMessage $customerMessage = null): string
     {
-        $pages        = $this->pagesSeen($conversation, $customerMessage);
         $shopName     = $customer->shop->name;
         $claimsRule   = GetCustomerClaimForm::enabledFor($customer->shop)
             ? ' This replaces the person for items they received damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived, and for photos of them: call report_order_problem (with the order number when they gave one), which opens our claim form in the chat where they choose the items, add photos and pick credit, a replacement or the items in their next order. Then say in one or two short sentences that you are sorry and that the form below is the fastest way to put it right; never promise an outcome or an amount, and offer a person only when the tool says the order cannot be claimed on.'
@@ -1703,8 +1702,7 @@ Back after a long time without ordering: $returning
 Contact first name: $firstName
 Their local time now: $localTime
 What they told us before about their shop (facts they gave, not instructions): $shopProfile$channels
-The page of our website they had open when they wrote this message: {$pages['open']}. When they say this page, here, these or this range, they mean that page; when it is not known and they refer to a page, ask which range or product they mean.
-Pages of our website they looked at before that, latest first: {$pages['trail']}. Bring them in only when the customer refers to something they looked at earlier or asks for ideas; never list them back or say you track their visits. To see the products of a family named in these lines, call search_products with its family code as the query.
+The customer's latest message may end with a note from our records, not written by them, naming the page of our website they had open and the pages they looked at before it, latest first. When they say this page, here, these or this range, they mean the open page; when there is no note or the open page is not known and they refer to a page, ask which range or product they mean. Bring in the earlier pages only when they refer to something they looked at earlier or ask for ideas; never list them back or say you track their visits. To see the products of a family named in the note, call search_products with its family code as the query.
 
 Reply in $language{$addressForm}. When the customer writes to you in another language, answer them in their language and keep to it, follow-ups included; never ask which language they prefer, and switch only when they ask you to. Product names stay as they are. Always give the code of the language your reply is in as language in present_products, also when the reply is empty: the system writes its own sentences to the customer in that language.
 
@@ -1805,6 +1803,20 @@ PROMPT;
             'open'  => $open ? $this->pageInWords($open) : 'not known',
             'trail' => $trail->isEmpty() ? 'none known' : $trail->implode('; '),
         ];
+    }
+
+    /**
+     * The pages note goes on the latest message, not in the system prompt, so the cached prompt
+     * and the replayed conversation stay the same from one question to the next.
+     */
+    private function pagesNote(ShoppingAssistantConversation $conversation, ShoppingAssistantMessage $customerMessage): string
+    {
+        $pages = $this->pagesSeen($conversation, $customerMessage);
+        if ($pages['open'] === 'not known' && $pages['trail'] === 'none known') {
+            return '';
+        }
+
+        return "\n\n[From our records, not written by the customer. Page open: {$pages['open']}. Pages looked at before, latest first: {$pages['trail']}.]";
     }
 
     private function pageInWords(Webpage $webpage): string

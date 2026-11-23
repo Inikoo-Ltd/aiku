@@ -4962,24 +4962,24 @@ test('the page the customer asks from reaches the prompt only when it is a live 
 
     Http::fake(['*chat/completions' => Http::response(shoppingAssistantModelReply(['content' => 'Here you go.'], 'stop'))]);
     AskShoppingAssistant::make()->answer($onPage->conversation, $onPage);
-    $prompt = collect(Http::recorded())->first(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'][0]['content'];
-    expect($prompt)->toContain('The page of our website they had open when they wrote this message: the product "'.$product->name.'" (code '.$product->code)
-        ->and($prompt)->toContain('Pages of our website they looked at before that, latest first: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').');
+    $messages = collect(Http::recorded())->first(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'];
+    $prompt   = last($messages)['content'];
+    expect($messages[0]['content'])->toContain('call search_products with its family code as the query')->not->toContain($product->name);
+    expect($prompt)->toContain('Page open: the product "'.$product->name.'" (code '.$product->code)
+        ->and($prompt)->toContain('Pages looked at before, latest first: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').');
 
     $onPage->conversation->update(['entry_point' => ShoppingAssistantEntryPointEnum::SEARCH]);
     $onPage->update(['webpage_id' => $familyPage->id]);
     $followUp = $onPage->conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::CUSTOMER, 'body' => 'And the retail value?']);
     AskShoppingAssistant::make()->answer($onPage->conversation->refresh(), $followUp);
-    $prompt = collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'][0]['content'];
-    expect($prompt)->toContain('they had open when they wrote this message: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').')
-        ->and($prompt)->toContain('call search_products with its family code as the query');
+    $prompt = last(collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'])['content'];
+    expect($prompt)->toContain('Page open: the product family "'.$family->name.'" (family code '.$family->code.', family_id '.$family->id.').');
 
     $onPage->conversation->update(['entry_point' => ShoppingAssistantEntryPointEnum::CHAT]);
     $elsewhere = $onPage->conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::CUSTOMER, 'body' => 'And from this one?']);
     AskShoppingAssistant::make()->answer($onPage->conversation->refresh(), $elsewhere);
-    $prompt = collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'][0]['content'];
-    expect($prompt)->toContain('they had open when they wrote this message: not known.')
-        ->and($prompt)->toContain('looked at before that, latest first: none known.');
+    $prompt = last(collect(Http::recorded())->last(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))[0]['messages'])['content'];
+    expect($prompt)->toBe('And from this one?');
 
     WipeShoppingAssistantConversations::run([$onPage->shopping_assistant_conversation_id]);
     expect($onPage->refresh()->webpage_id)->toBeNull()
