@@ -56,7 +56,7 @@ type MoveItem = {
 	unit_cost: number | string | null
 	net_currency: string | null
 	units_per_carton: number | string | null
-	moveRoute: routeType
+	moveRoute: routeType & { quantity?: number }
 }
 
 type LineForm = {
@@ -128,7 +128,8 @@ const supplierOptions = computed(() =>
 		}))
 )
 
-const ordered = (item: MoveItem) => Number(item.quantity_ordered)
+const ordered = (item: MoveItem) => Number(item.moveRoute?.quantity ?? item.quantity_ordered)
+const leftOnOrder = (item: MoveItem, moving: number) => Math.round((Number(item.quantity_ordered) - moving) * 1000) / 1000
 const agreedCost = (item: MoveItem) => Number(item.unit_cost ?? 0)
 const productOf = (item: MoveItem) => isSameSupplier.value ? null : supplier.value?.products[item.id] ?? null
 const needsProduct = (item: MoveItem) => !isSameSupplier.value && !!supplier.value && !productOf(item)
@@ -410,8 +411,8 @@ function submit() {
 						<span class="block text-xs text-gray-500">{{ ctrans("Units to move") }} <span class="text-red-500">*</span></span>
 						<InputNumber v-model="lines[item.id].quantity" :min="0" :max="ordered(item)" :maxFractionDigits="3" :suffix="` ${ctrans('units')}`" :class="fieldFocusClass" fluid />
 						<span class="block text-xs text-gray-500">
-							{{ lines[item.id].quantity !== null && lines[item.id].quantity! < ordered(item)
-								? ctrans(":left units stay on this order", { left: locale.number(Math.round((ordered(item) - lines[item.id].quantity!) * 1000) / 1000) })
+							{{ lines[item.id].quantity !== null && leftOnOrder(item, lines[item.id].quantity!) > 0
+								? ctrans(":left units stay on this order", { left: locale.number(leftOnOrder(item, lines[item.id].quantity!)) })
 								: ctrans("The whole line moves, it is cancelled here") }}
 						</span>
 						<p v-if="lineError(item, 'quantity')" class="text-xs text-red-600">{{ lineError(item, "quantity") }}</p>

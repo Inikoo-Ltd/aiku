@@ -20,6 +20,7 @@ use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\Inventory\OrgStock\GetOrgStocksStockDeliveries;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
@@ -156,6 +157,10 @@ class IndexPurchaseOrderTransactions extends OrgAction
 
         if ($parent->isAgentOrder()) {
             self::selectAgentWarehouseQuantities($query);
+            $query->selectSub(
+                MovePurchaseOrderTransactionToSupplier::lockedDeliveryItemsOfTransaction(DB::query())->selectRaw('count(*) > 0'),
+                'is_on_locked_delivery'
+            );
         }
 
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {

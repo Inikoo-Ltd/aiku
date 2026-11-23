@@ -484,7 +484,7 @@ const selectedRows = ref<Record<string, boolean>>({})
 const tableRows = computed<any[]>(() => (props.data as any)?.data ?? [])
 const canAddToContainer = (item: any) => !!item.agent_warehouse?.containers_route
 const canPack = (item: any) => !!item.agent_warehouse?.pack_route && !isAllInContainers(item)
-const canMove = (item: any) => canCancelItems.value && !!item.moveRoute
+const canMove = (item: any) => !!item.moveRoute
 const isSelectable = (item: any) => canAddToContainer(item) || canPack(item) || canMove(item)
 const hasSelectableRows = computed(() => tableRows.value.some(isSelectable))
 const rowsSelectedForContainer = computed(() => tableRows.value.filter((item) => selectedRows.value[item.id] && canAddToContainer(item)))
@@ -1220,7 +1220,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <Button
-                    v-if="canCancelItems && item.moveRoute"
+                    v-if="item.moveRoute"
                     :label="ctrans('Move')"
                     :tooltip="ctrans('Move it to another purchase order, of this supplier or another supplier of the agent')"
                     :icon="faExchange"

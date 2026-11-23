@@ -8,10 +8,13 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
+use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreSupplierProductForOrgStock;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
@@ -19,10 +22,12 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\Procurement\OrgSupplier;
@@ -45,6 +50,7 @@ use Lorisleiva\Actions\ActionRequest;
  * on a new one named after the source order with the new supplier's code, at the
  * price the buyer agreed; a different supplier price is asked to the buyer with the usual price question.
  * The agent can also move the line to another order of the same supplier: it keeps its product and price.
+ * Like pulling, a move works even once production started, for the units the agent has not received yet.
  * Pulling ($into) is the same move started from the order that takes the line: any live order of the agent in the same
  * currency, from any open order of the agent, even once production started, for the units the agent has not received yet.
  */
@@ -148,9 +154,13 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                 ], $user);
             }
 
+            if (!$into) {
+                $this->carryContainerUnits($purchaseOrderTransaction, $moved->refresh(), $quantity, $sourcePurchaseOrder, $targetPurchaseOrder);
+            }
+
             $isWholeLine = $quantity >= (float) $purchaseOrderTransaction->quantity_ordered;
             $source      = $isWholeLine
-                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction, cancelEmptyOrder: false, evenInProduction: $into !== null)
+                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction, cancelEmptyOrder: false, evenInProduction: true)
                 : UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, ['quantity_ordered' => round((float) $purchaseOrderTransaction->quantity_ordered - $quantity, 3)]);
 
             $movedAt = now()->toIso8601String();
@@ -237,13 +247,158 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     {
         $purchaseOrderTransaction->setRelation('purchaseOrder', $purchaseOrder);
 
-        if (!self::isMovable($purchaseOrderTransaction)) {
-            throw ValidationException::withMessages(['purchase_order_transaction' => __('Only items not yet in production nor on a stock delivery can be moved')]);
+        $lineAtAgent = PurchaseOrderTransaction::whereKey($purchaseOrderTransaction->id)
+            ->select('purchase_order_transactions.id')
+            ->selectSub(self::looseAtAgentQuantity(), 'loose_at_agent')
+            ->selectSub(fn (Builder $items) => self::lockedDeliveryItemsOfTransaction($items)->selectRaw('count(*) > 0'), 'is_on_locked_delivery')
+            ->first();
+
+        $movableQuantity = self::movableQuantity($purchaseOrderTransaction, (float) $lineAtAgent->loose_at_agent, (bool) $lineAtAgent->is_on_locked_delivery);
+
+        if ($movableQuantity <= 0) {
+            throw ValidationException::withMessages(['purchase_order_transaction' => __('Only items of an open agent order, not received loose at the agent nor in a container already shipped, can be moved')]);
         }
 
-        if ($quantity <= 0 || $quantity > (float) $purchaseOrderTransaction->quantity_ordered) {
-            throw ValidationException::withMessages(['quantity' => __('Move between 1 and :quantity units', ['quantity' => trimDecimalZeros($purchaseOrderTransaction->quantity_ordered)])]);
+        if ($quantity <= 0 || $quantity > $movableQuantity) {
+            throw ValidationException::withMessages(['quantity' => __('Move between 1 and :quantity units', ['quantity' => trimDecimalZeros($movableQuantity)])]);
         }
+    }
+
+    /**
+     * The units a line of an open agent order can move from its own order, even once production started: all of it but
+     * what the agent holds loose in its warehouse. Units in a container in process move with the line and stay in that
+     * container; a line in a container past in process does not move. Zero when it can not move.
+     */
+    public static function movableQuantity(PurchaseOrderTransaction $purchaseOrderTransaction, float $looseAtAgent, bool $isOnLockedDelivery): float
+    {
+        $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
+
+        if ($purchaseOrder === null
+            || !$purchaseOrder->isAgentOrder()
+            || !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
+            || !in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
+            || $purchaseOrderTransaction->org_stock_id === null
+            || $isOnLockedDelivery) {
+            return 0.0;
+        }
+
+        return max(0.0, round((float) $purchaseOrderTransaction->quantity_ordered - $looseAtAgent, 3));
+    }
+
+    /**
+     * Units of the line received at the agent and not in a container, correlated to purchase_order_transactions.
+     */
+    public static function looseAtAgentQuantity(): Builder
+    {
+        return PackPurchaseOrderTransaction::receivedStocks()
+            ->whereColumn('agent_warehouse_stocks.purchase_order_transaction_id', 'purchase_order_transactions.id')
+            ->selectRaw('coalesce(sum('.AgentWarehouseStock::heldQuantitySql().'), 0)');
+    }
+
+    /**
+     * Live container items of the line in a container no longer in process, or run by a partner.
+     */
+    public static function lockedDeliveryItemsOfTransaction(Builder $items): Builder
+    {
+        return StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items)
+            ->join('stock_deliveries as locked_containers', 'locked_containers.id', 'stock_delivery_items.stock_delivery_id')
+            ->where(fn (Builder $containers) => $containers
+                ->where('locked_containers.state', '!=', StockDeliveryStateEnum::IN_PROCESS->value)
+                ->orWhereNotNull('locked_containers.delivery_note_id'));
+    }
+
+    /**
+     * The moved units stay in the containers in process they were packed in: those container items now belong to the
+     * moved line, split when only part of an item moves, and the order taking the line joins the container.
+     */
+    private function carryContainerUnits(PurchaseOrderTransaction $source, PurchaseOrderTransaction $moved, float $quantity, PurchaseOrder $sourcePurchaseOrder, PurchaseOrder $targetPurchaseOrder): void
+    {
+        $containerItems = StockDeliveryItem::query()
+            ->whereRaw("(stock_delivery_items.data->>'purchase_order_transaction_id')::bigint = ?", [$source->id])
+            ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
+            ->whereHas('stockDelivery', fn (EloquentBuilder $containers) => $containers
+                ->where('state', StockDeliveryStateEnum::IN_PROCESS)
+                ->whereNull('delivery_note_id'))
+            ->orderBy('stock_delivery_items.id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($containerItems->isEmpty()) {
+            return;
+        }
+
+        $movedUnitNet = (float) $moved->quantity_ordered > 0 ? (float) $moved->net_amount / (float) $moved->quantity_ordered : 0.0;
+        $unitsToCarry = $quantity;
+        $containers   = collect();
+
+        foreach ($containerItems as $containerItem) {
+            if ($unitsToCarry <= StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE) {
+                break;
+            }
+
+            $itemUnits    = (float) $containerItem->unit_quantity;
+            $carriedUnits = min($itemUnits, $unitsToCarry);
+            $carriedItem  = $carriedUnits >= $itemUnits - StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
+                ? $containerItem
+                : $this->splitContainerItem($containerItem, $carriedUnits);
+            $netAmount    = round($movedUnitNet * $carriedUnits, 2);
+
+            $carriedItem->update([
+                'supplier_product_id'          => $moved->supplier_product_id,
+                'historic_supplier_product_id' => $moved->historic_supplier_product_id,
+                'org_supplier_product_id'      => $moved->org_supplier_product_id,
+                'net_amount'                   => $netAmount,
+                'org_net_amount'               => $netAmount * (float) ($carriedItem->org_exchange ?? 1),
+                'grp_net_amount'               => $netAmount * (float) ($carriedItem->grp_exchange ?? 1),
+                'data'                         => array_merge($carriedItem->data ?? [], ['purchase_order_transaction_id' => $moved->id]),
+            ]);
+
+            $unitsToCarry -= $carriedUnits;
+            $containers->put($containerItem->stock_delivery_id, $containerItem->stockDelivery);
+        }
+
+        $containers->each(function (StockDelivery $container) use ($sourcePurchaseOrder, $targetPurchaseOrder) {
+            $container->purchaseOrders()->syncWithoutDetaching([$targetPurchaseOrder->id]);
+
+            if (RemovePurchaseOrderFromStockDelivery::itemsOfPurchaseOrder($container, $sourcePurchaseOrder)
+                ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
+                ->doesntExist()) {
+                $container->purchaseOrders()->detach($sourcePurchaseOrder->id);
+            }
+
+            $container->update(['number_purchase_orders' => $container->purchaseOrders()->count()]);
+            StockDeliveriesHydrateItems::run($container);
+        });
+
+        PurchaseOrderHydrateDeliveryState::run($sourcePurchaseOrder);
+        PurchaseOrderHydrateDeliveryState::run($targetPurchaseOrder);
+    }
+
+    private function splitContainerItem(StockDeliveryItem $containerItem, float $carriedUnits): StockDeliveryItem
+    {
+        $itemUnits = (float) $containerItem->unit_quantity;
+        $share     = $carriedUnits / $itemUnits;
+        $scaled    = fn (string $column, float $part) => $containerItem->{$column} === null ? null : round((float) $containerItem->{$column} * $part, 2);
+
+        $carriedItem                   = $containerItem->replicate();
+        $carriedItem->unit_quantity    = $carriedUnits;
+        $carriedItem->gross_amount     = $scaled('gross_amount', $share);
+        $carriedItem->grp_gross_amount = $scaled('grp_gross_amount', $share);
+        $carriedItem->org_gross_amount = $scaled('org_gross_amount', $share);
+        $carriedItem->save();
+
+        $keptNetAmount = round((float) $containerItem->net_amount * (1 - $share), 2);
+        $containerItem->update([
+            'unit_quantity'    => round($itemUnits - $carriedUnits, 3),
+            'net_amount'       => $keptNetAmount,
+            'org_net_amount'   => $keptNetAmount * (float) ($containerItem->org_exchange ?? 1),
+            'grp_net_amount'   => $keptNetAmount * (float) ($containerItem->grp_exchange ?? 1),
+            'gross_amount'     => $scaled('gross_amount', 1 - $share),
+            'grp_gross_amount' => $scaled('grp_gross_amount', 1 - $share),
+            'org_gross_amount' => $scaled('org_gross_amount', 1 - $share),
+        ]);
+
+        return $carriedItem;
     }
 
     /**
@@ -463,7 +618,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
     /**
      * Supplier orders that can still take lines: in process, submitted or agreed whatever the source order's state, same
-     * agent and currency, not in production, nothing on a delivery, never the source order. Any of them takes the line
+     * agent and currency, not in production, on no container past in process nor run by a partner, never the source order. Any of them takes the line
      * when the user types its reference, and the line takes that order's state.
      *
      * @return EloquentBuilder<PurchaseOrder>
@@ -480,7 +635,11 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->whereNull('production_started_at')
             ->whereNull('sample_approved_at')
             ->whereNull('produced_at')
-            ->whereDoesntHave('stockDeliveries', fn (EloquentBuilder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED))
+            ->whereDoesntHave('stockDeliveries', fn (EloquentBuilder $deliveries) => $deliveries
+                ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)
+                ->where(fn (EloquentBuilder $lockedDeliveries) => $lockedDeliveries
+                    ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::IN_PROCESS)
+                    ->orWhereNotNull('stock_deliveries.delivery_note_id')))
             ->orderBy('id');
     }
 

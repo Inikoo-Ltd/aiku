@@ -12,6 +12,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoCancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
@@ -173,13 +174,14 @@ class PurchaseOrderTransactionResource extends JsonResource
             'agent_warehouse'      => $this->agentWarehouse($transaction, $request),
             'moved_from'           => $transaction->move_trail ? $transaction->move_trail['from'] : Arr::get($transaction->data, 'moved_from'),
             'moved_to'             => $transaction->move_trail ? $transaction->move_trail['to'] : Arr::get($transaction->data, 'moved_to', []),
-            'moveRoute'            => $this->isCancellable($transaction) && $transaction->purchaseOrder?->isAgentOrder() && $transaction->org_stock_id ? [
+            'moveRoute'            => ($movableQuantity = $this->movableQuantity($transaction)) > 0 ? [
                 'name'       => 'grp.models.purchase-order.transaction.move',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
                     'purchaseOrderTransaction' => $transaction->id,
                 ],
                 'method'     => 'post',
+                'quantity'   => $movableQuantity,
             ] : null,
             'undoMove'             => $this->undoMove($transaction),
             'undoCancel'           => $this->undoCancel($transaction, $request),
@@ -432,6 +434,15 @@ class PurchaseOrderTransactionResource extends JsonResource
             ],
             'blocked_reason' => UndoCancelPurchaseOrderTransaction::blockedReason($transaction),
         ];
+    }
+
+    private function movableQuantity(PurchaseOrderTransaction $transaction): float
+    {
+        return MovePurchaseOrderTransactionToSupplier::movableQuantity(
+            $transaction,
+            (float) $transaction->getAttribute('quantity_packable'),
+            (bool) $transaction->getAttribute('is_on_locked_delivery')
+        );
     }
 
     private function isCancellable(PurchaseOrderTransaction $transaction): bool
