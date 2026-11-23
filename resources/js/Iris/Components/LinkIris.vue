@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import { inject, computed, ref } from "vue"
+import { withVisitorLocale } from "@/Composables/Iris/withVisitorLocale"
 
 const layout = inject("layout", {})
 const location = layout?.app?.name || "iris"
@@ -119,20 +120,8 @@ const resolvedHref = computed<string | null>(() => {
     return href.slice(1) // "#section"
   }
 
-  return location === "iris" && linkLocation.value === "retina" ? withVisitorLocale(href) : href
+  return location === "iris" && linkLocation.value === "retina" ? withVisitorLocale(href, layout?.iris) : href
 })
-
-const withVisitorLocale = (href: string): string => {
-  const visitorLocale = layout?.iris?.locale
-  if (!visitorLocale || visitorLocale === layout?.iris?.website_i18n?.shop_language?.code || /[?&]locale=/.test(href)) {
-    return href
-  }
-
-  const [pathAndQuery, hash] = href.split("#", 2)
-  const separator = pathAndQuery.includes("?") ? "&" : "?"
-
-  return `${pathAndQuery}${separator}locale=${encodeURIComponent(visitorLocale)}${hash !== undefined ? `#${hash}` : ""}`
-}
 
 /**
  * Routing decision only (never for anchors)
