@@ -95,7 +95,7 @@ class ShowSupplier extends OrgAction
                     'previous' => $this->getPrevious($supplier, $request),
                     'next'     => $this->getNext($supplier, $request),
                 ],
-                'title'       => __('Supplier'),
+                'title'       => __('Supplier').': '.$supplier->name,
                 'pageHead'    => [
                     'title'         => $supplier->name,
                     'icon'          => [
