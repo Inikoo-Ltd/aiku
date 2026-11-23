@@ -85,6 +85,7 @@ interface PurchaseOrderDetail {
 	deposit: {
 		choosable: boolean
 		not_needed: boolean
+		not_needed_by: "supplier" | "buyer" | null
 		request: { percentage: number; amount: number; requested_at: string } | null
 		request_percentage: number
 		request_amount: number
@@ -534,7 +535,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<span class="whitespace-nowrap font-medium tabular-nums">{{ money(detail.deposit.request.amount) }}</span>
 								</div>
 							</div>
-							<div v-else-if="detail.deposit.not_needed" class="mt-2 flex items-center gap-1 text-green-700">
+							<div v-else-if="detail.deposit.not_needed" class="mt-2 flex items-center gap-1 text-green-700" v-tooltip="detail.deposit.not_needed_by === 'supplier' ? ctrans('Set by supplier') : detail.deposit.not_needed_by === 'buyer' ? ctrans('Set by buyer') : undefined">
 								<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
 								{{ ctrans("No deposit needed") }}
 							</div>

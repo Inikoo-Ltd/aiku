@@ -39,6 +39,9 @@ class GetPurchaseOrderJourney
      *     is_npo?: bool,
      *     has_deposit?: bool,
      *     no_deposit?: bool,
+     *     shows_waived_deposit?: bool,
+     *     deposit_not_required_at?: ?string,
+     *     deposit_not_required_by?: ?string,
      *     deposit_paid_at?: ?string,
      *     production_started_at?: ?string,
      *     produced_at?: ?string,
@@ -163,6 +166,7 @@ class GetPurchaseOrderJourney
                 'days_overdue' => $overdue,
                 'mark_column'  => Stage::from($key)->markColumn(),
                 ...($key === 'ready' && isset($facts['ready_checks']) ? ['checks' => $this->readyChecks($facts)] : []),
+                ...(($stage['waived'] ?? false) ? ['no_deposit' => true, 'set_by' => $facts['deposit_not_required_by'] ?? null] : []),
             ];
             $anchorKey  = $key;
         }
@@ -196,6 +200,8 @@ class GetPurchaseOrderJourney
 
         if (($isAgent && !($facts['no_deposit'] ?? false)) || ($facts['has_deposit'] ?? false) || !empty($facts['deposit_paid_at'])) {
             $stages['deposit_paid'] = $this->stage(false, $facts['deposit_paid_at'] ?? null);
+        } elseif (($facts['shows_waived_deposit'] ?? false) && ($facts['no_deposit'] ?? false)) {
+            $stages['deposit_paid'] = [...$this->stage(true, $facts['deposit_not_required_at'] ?? null), 'waived' => true];
         }
         if ($isAgent || !empty($facts['production_started_at']) || ($journey === 'supplier' && ($facts['production_waiting_time'] ?? 0) > 0)) {
             $stages['in_production'] = $this->stage(false, $facts['production_started_at'] ?? null);

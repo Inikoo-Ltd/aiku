@@ -105,9 +105,15 @@ class UpdatePurchaseOrder extends OrgAction
 
         if (array_key_exists('deposit_amount', $modelData)) {
             $isDepositNotRequired = $modelData['deposit_amount'] !== null && (float) $modelData['deposit_amount'] == 0;
+            $wasDepositNotRequired = Arr::get($purchaseOrder->data, 'deposit_not_required_at') !== null;
             $modelData['data']['deposit_not_required_at'] = $isDepositNotRequired
                 ? (Arr::get($purchaseOrder->data, 'deposit_not_required_at') ?? now()->toIso8601String())
                 : null;
+            $modelData['data']['deposit_not_required_by'] = match (true) {
+                !$isDepositNotRequired => null,
+                $wasDepositNotRequired => Arr::get($purchaseOrder->data, 'deposit_not_required_by'),
+                default                => 'buyer',
+            };
         }
 
         if ($this->keepsStateReached($purchaseOrder, $modelData)) {

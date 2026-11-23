@@ -48,6 +48,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     /** @var array<string, float> units of each currency per pivot currency */
     private array $rates = [];
 
+    private bool $showsWaivedDeposit = false;
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo('supply-chain.edit');
@@ -162,8 +164,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
      */
     public function ribbons(Group $group, ?int $purchaseOrderId = null, ?Supplier $supplier = null, ?Agent $agent = null): Collection
     {
-        $this->group = $group;
-        $this->rates = $purchaseOrderId || $supplier ? [] : $this->latestRates();
+        $this->group              = $group;
+        $this->rates              = $purchaseOrderId || $supplier ? [] : $this->latestRates();
+        $this->showsWaivedDeposit = $supplier !== null;
         $today       = now()->startOfDay();
 
         return collect($this->rows($purchaseOrderId, $supplier, $agent))->map(fn (object $row) => $this->toRibbon($row, $today));
@@ -447,6 +450,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'is_npo'                  => (bool) $row->is_npo,
             'has_deposit'             => (float) $row->deposit_amount > 0,
             'no_deposit'              => $row->deposit_amount !== null && (float) $row->deposit_amount == 0,
+            'shows_waived_deposit'    => $this->showsWaivedDeposit,
+            'deposit_not_required_at' => Arr::get($data, 'deposit_not_required_at'),
+            'deposit_not_required_by' => Arr::get($data, 'deposit_not_required_by'),
             'deposit_paid_at'         => $row->deposit_paid_at,
             'production_started_at'   => $row->production_started_at,
             'produced_at'             => $row->produced_at,

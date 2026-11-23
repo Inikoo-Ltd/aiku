@@ -24,6 +24,8 @@ export interface JourneySegment {
     days_overdue: number
     mark_column: string | null
     checks?: { key: string; label: string; done: boolean; date: string | null }[]
+    no_deposit?: boolean
+    set_by?: "supplier" | "buyer" | null
 }
 
 export type DeleteBlocker = "state" | "items" | "deposit" | "goods" | "delivery"
@@ -229,7 +231,20 @@ function amount(value: number | null, currency: string, digits = 0): string {
     return new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: digits }).format(value)
 }
 
+function setByLabel(segment: JourneySegment): string | null {
+    if (segment.set_by === "supplier") {
+        return ctrans("Set by supplier")
+    }
+    if (segment.set_by === "buyer") {
+        return ctrans("Set by buyer")
+    }
+    return null
+}
+
 function cellTitle(segment: JourneySegment): string {
+    if (segment.no_deposit) {
+        return [ctrans("No deposit needed"), setByLabel(segment), segment.done_at ? useFormatTime(segment.done_at) : null].filter(Boolean).join("\n")
+    }
     const parts = [segment.label, segment.description]
     if (segment.done_at) {
         parts.push(`${ctrans("Done")}: ${useFormatTime(segment.done_at)}`)
@@ -374,7 +389,11 @@ function isMarkable(segment: JourneySegment): boolean {
                     class="relative z-[1] flex mx-auto h-11 w-[6.25rem] flex-col items-center justify-center rounded-md border px-1.5 text-[11px] leading-tight focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700"
                     :class="[cellClass[segmentsByKey[key].state], isCurrent(segmentsByKey[key]) && `journey-current journey-current-${segmentsByKey[key].state}`, isMarkable(segmentsByKey[key]) ? 'cursor-pointer hover:brightness-95' : 'cursor-default']"
                     @click="isMarkable(segmentsByKey[key]) && emit('mark', ribbon, segmentsByKey[key], $event)">
-                    <template v-if="segmentsByKey[key].state === 'done'">
+                    <template v-if="segmentsByKey[key].no_deposit">
+                        <span class="font-semibold"><FontAwesomeIcon icon="fal fa-check" aria-hidden="true" /></span>
+                        <span class="line-clamp-2">{{ ctrans("No deposit needed") }}</span>
+                    </template>
+                    <template v-else-if="segmentsByKey[key].state === 'done'">
                         <span class="font-semibold">
                             <FontAwesomeIcon icon="fal fa-check" aria-hidden="true" />
                             {{ segmentsByKey[key].done_at ? zDay(segmentsByKey[key].done_at) : "" }}

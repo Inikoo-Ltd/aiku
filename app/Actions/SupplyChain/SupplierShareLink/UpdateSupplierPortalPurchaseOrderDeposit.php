@@ -63,7 +63,10 @@ class UpdateSupplierPortalPurchaseOrderDeposit
             }
 
             if ($choice === self::NOT_NEEDED) {
-                return UpdatePurchaseOrder::make()->action($purchaseOrder, ['deposit_amount' => 0]);
+                $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, ['deposit_amount' => 0]);
+                $purchaseOrder->update(['data' => [...($purchaseOrder->data ?? []), 'deposit_not_required_by' => 'supplier']]);
+
+                return $purchaseOrder;
             }
 
             if (self::isAgreementMissing($supplier)) {

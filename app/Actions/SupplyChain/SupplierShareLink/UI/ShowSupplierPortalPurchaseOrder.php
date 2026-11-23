@@ -297,6 +297,7 @@ class ShowSupplierPortalPurchaseOrder
         return [
             'choosable'          => $choosable,
             'not_needed'         => $notNeeded,
+            'not_needed_by'      => $notNeeded ? Arr::get($purchaseOrder->data ?? [], 'deposit_not_required_by') : null,
             'request'            => $request ? Arr::only($request, ['percentage', 'amount', 'requested_at']) : null,
             'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::REQUEST_PERCENTAGE,
             'request_amount'     => UpdateSupplierPortalPurchaseOrderDeposit::requestAmount($purchaseOrder),
