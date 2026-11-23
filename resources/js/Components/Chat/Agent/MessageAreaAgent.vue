@@ -2570,7 +2570,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
-                <ChatTimelineEvent v-if="auraNoteBeside" :event="auraNoteBeside" class="!py-0" />
+                <ChatTimelineEvent v-if="auraNoteBeside" :event="auraNoteBeside" info class="!py-0" />
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
