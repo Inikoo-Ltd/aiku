@@ -15,8 +15,9 @@ use Throwable;
 
 /**
  * The provider tells only FAILED and REJECTED by webhook, so delivery is polled. Rows not accepted yet are sent
- * again with their own key; accepted ones are asked for their status. One still not final STUCK_AFTER_DAYS after it was
- * accepted (SENT_WITHOUT_RESPONSE may never move) is reported once, and polling stops STOP_POLLING_AFTER_DAYS after acceptance.
+ * again with their own key; accepted ones are asked for their status. One the provider has not accepted UNSENT_AFTER_HOURS
+ * after it was queued (key missing or refused, provider down), or still not final STUCK_AFTER_DAYS after it was accepted
+ * (SENT_WITHOUT_RESPONSE may never move), is reported once, and polling stops STOP_POLLING_AFTER_DAYS after acceptance.
  * A row that throws is reported and skipped so it cannot hold up the others.
  */
 class PollEInvoiceTransmissions
@@ -24,6 +25,8 @@ class PollEInvoiceTransmissions
     use AsAction;
 
     public const int STUCK_AFTER_DAYS = 3;
+
+    public const int UNSENT_AFTER_HOURS = 24;
 
     public const int STOP_POLLING_AFTER_DAYS = 30;
 
@@ -35,10 +38,6 @@ class PollEInvoiceTransmissions
 
     public function handle(): int
     {
-        if (!$this->provider->isConfigured()) {
-            return 0;
-        }
-
         $sender = SendEInvoice::make();
         $polled = 0;
 
@@ -77,8 +76,11 @@ class PollEInvoiceTransmissions
         }
 
         $transmission->refresh();
-        if (!$transmission->isFinal() && $transmission->accepted_at?->lt(now()->subDays(self::STUCK_AFTER_DAYS))) {
-            $sender->alert($transmission, 'STUCK');
+        $isStuck = $transmission->accepted_at
+            ? $transmission->accepted_at->lt(now()->subDays(self::STUCK_AFTER_DAYS))
+            : $transmission->created_at->lt(now()->subHours(self::UNSENT_AFTER_HOURS));
+        if (!$transmission->isFinal() && $isStuck) {
+            $sender->alert($transmission, $transmission->accepted_at ? 'STUCK' : 'UNSENT');
         }
     }
 

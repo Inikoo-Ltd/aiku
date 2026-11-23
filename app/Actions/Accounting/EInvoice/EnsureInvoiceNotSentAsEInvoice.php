@@ -25,7 +25,8 @@ class EnsureInvoiceNotSentAsEInvoice
     public const array CONTENT_FIELDS = [
         'reference', 'date', 'tax_liability_at', 'currency_id', 'net_amount', 'tax_amount', 'total_amount',
         'customer_name', 'fiscal_name', 'tax_number', 'formatted_tax_number', 'identity_document_number',
-        'billing_address', 'invoice_billing_address', 'billing_country_id', 'is_re', 'tax_category_id',
+        'billing_address', 'invoice_billing_address', 'billing_country_id', 'is_re', 'tax_category_id', 'tax_number_valid',
+        'original_invoice_id', 'address_id',
     ];
 
     private const array AMOUNT_FIELDS = ['net_amount', 'tax_amount', 'total_amount'];

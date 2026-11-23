@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
 use App\Actions\Traits\Authorisations\WithInvoiceEditAuthorisation;
@@ -26,6 +27,10 @@ class DeleteInProcessInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        if (!$invoice->in_process) {
+            throw ValidationException::withMessages(['invoice' => __('Only an invoice still in process can be deleted here.')]);
+        }
+
         try {
             DB::transaction(function () use ($invoice, $modelData) {
                 $this->update($invoice, $modelData);

@@ -16,7 +16,6 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoi
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
-use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
@@ -76,21 +75,7 @@ class UpdateInvoice extends OrgAction
 
         // TODO: Refactor invoice_billing_address logic after done migrating completely from Aurora
         if ($newBillAddressData) {
-            $parent = $invoice->order ?? $invoice;
-            if ($parent->address_id != $parent->delivery_address_id) {
-                $newAddress = UpdateAddress::run($invoice->address, $newBillAddressData, null, 'contact address');
-            } else {
-                $newBillAddressData = array_merge(
-                    $newBillAddressData,
-                    Arr::only($invoice->address->toArray(), ['group_id', 'multiplicity', 'is_fixed', 'fixed_scope'])
-                );
-                data_set($newBillAddressData, 'usage', 0);
-                data_set($newBillAddressData, 'fixed_usage', 0);
-
-                $newAddress = Address::create($newBillAddressData);
-            }
-
-            data_set($modelData, 'billing_address', $newAddress);
+            data_set($modelData, 'billing_address', (new Address())->forceFill($newBillAddressData));
         }
 
         $billingAddressData = Arr::pull($modelData, 'billing_address');

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
@@ -37,6 +38,8 @@ class StoreRefundInvoiceTransaction extends OrgAction
      */
     public function handle(Invoice $refund, InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        EnsureInvoiceNotSentAsEInvoice::run($refund);
+
         $isRefundAll = Arr::pull($modelData, 'refund_all', false);
 
         $netAmount = round((float) Arr::get($modelData, 'net_amount', 0), 2) * -1;

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
 
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
@@ -60,6 +61,8 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
         }
+
+        SendEInvoice::dispatchIfEnabled($invoice);
 
         return $invoice;
     }

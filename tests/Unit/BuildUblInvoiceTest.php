@@ -151,7 +151,7 @@ test('a refund becomes a credit note with positive amounts that points to the or
         ->and(ublValue($document, '//cac:CreditNoteLine/cbc:CreditedQuantity'))->toBe('2')
         ->and(ublValue($document, '//cac:CreditNoteLine/cbc:LineExtensionAmount'))->toBe('20.00')
         ->and(ublValue($document, '//cac:LegalMonetaryTotal/cbc:PayableAmount'))->toBe('24.60')
-        ->and($document->xpath('//cac:PaymentTerms/cbc:Note'))->toHaveCount(1);
+        ->and($document->xpath('//cac:PaymentTerms'))->toBeEmpty();
 });
 
 test('an invoice whose stored totals differ from its lines is refused', function () {
@@ -197,7 +197,7 @@ test('tax category types map to EN 16931 VAT categories', function () {
         ->and(BuildUblInvoice::participantId('CZ12345678'))->toBeNull();
 });
 
-test('a Peppol ID stored on the customer wins over the tax number', function () {
+test('a Peppol ID stored on the customer addresses a buyer without a validated VAT number', function () {
     $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
     $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
     $invoice->tax_number = null;
@@ -246,6 +246,32 @@ test('a Slovak DIČ has 10 digits and is divisible by 11', function () {
         ->and(BuildUblInvoice::isSlovakDic('2120525441'))->toBeFalse()
         ->and(BuildUblInvoice::isSlovakDic('0120525440'))->toBeFalse()
         ->and(BuildUblInvoice::isSlovakDic('212052544'))->toBeFalse();
+});
+
+test('a validated VAT number wins over a different Peppol ID typed on the customer', function () {
+    $sk23    = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
+    $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
+    $invoice->customer->peppol_id = '0245:2121551498';
+
+    expect(ublValue(ublParse(BuildUblInvoice::run($invoice)), '//cac:AccountingCustomerParty//cbc:EndpointID'))->toBe('2120643690');
+});
+
+test('dates are the days printed on the PDF, in the shop timezone, and Pastpay invoices are due after the Pastpay term', function () {
+    $sk23     = ublTaxCategory(TaxCategoryTypeEnum::STANDARD, 0.23);
+    $timezone = new \App\Models\Helpers\Timezone();
+    $timezone->forceFill(['name' => 'Europe/Bratislava']);
+    $invoice = ublInvoice([ublLine(1, 10.00, 'AWB-01', $sk23)], 10.00, 2.30);
+    $invoice->shop->setRelation('timezone', $timezone);
+    $invoice->date             = Carbon::parse('2027-01-03 23:30:00', 'UTC');
+    $invoice->tax_liability_at = Carbon::parse('2027-01-03 23:30:00', 'UTC');
+    $invoice->is_pastpay       = true;
+    $invoice->setRelation('order', null);
+
+    $document = ublParse(BuildUblInvoice::run($invoice));
+
+    expect(ublValue($document, '/*/cbc:IssueDate'))->toBe('2027-01-04')
+        ->and(ublValue($document, '/*/cbc:TaxPointDate'))->toBe('2027-01-04')
+        ->and(ublValue($document, '/*/cbc:DueDate'))->toBe('2027-02-03');
 });
 
 test('the due date follows the customer payment terms', function () {

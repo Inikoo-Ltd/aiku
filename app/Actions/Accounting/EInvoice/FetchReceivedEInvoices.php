@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\EInvoice;
 use App\Models\Accounting\ReceivedEInvoice;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -34,7 +35,7 @@ class FetchReceivedEInvoices
     public function handle(Organisation $organisation): ?array
     {
         $inbox = app(SoftipInbox::class);
-        if (!$inbox->isConfigured()) {
+        if (!$inbox->isConfigured() || !Arr::get($organisation->settings, 'e_invoicing.countries')) {
             return null;
         }
 
@@ -96,11 +97,20 @@ class FetchReceivedEInvoices
             $receivedEInvoice->update(['match_data' => ['suggestion' => SuggestReceivedEInvoiceMatch::run($receivedEInvoice)]]);
         }
         if (!$receivedEInvoice->hasPdf()) {
-            $pdf = $inbox->downloadPdf($transactionId);
-            if (!str_starts_with(ltrim(substr($pdf, 0, 1024)), '%PDF-')) {
+            $keepTrying = $receivedEInvoice->created_at->gt(now()->subDay());
+            try {
+                $pdf = $inbox->downloadPdf($transactionId);
+            } catch (EInvoiceProviderException $exception) {
+                if ($keepTrying) {
+                    throw $exception;
+                }
+                $pdf = '';
+            }
+            if (str_starts_with(ltrim(substr($pdf, 0, 1024)), '%PDF-')) {
+                $receivedEInvoice->storePdf($pdf);
+            } elseif ($keepTrying) {
                 throw new EInvoiceProviderException("SOFTIP transaction $transactionId: the PDF download is not a PDF; not acknowledged");
             }
-            $receivedEInvoice->storePdf($pdf);
         }
 
         if (!$receivedEInvoice->acknowledged_at) {
@@ -112,17 +122,22 @@ class FetchReceivedEInvoices
     }
 
     /**
-     * An empty, truncated or non-XML answer is never stored: stored documents cannot be replaced, and storing it would
-     * acknowledge a document we never got. A well-formed document that is not an invoice is stored and read as an error.
+     * An empty, truncated, non-XML or non-UBL answer (an error page) is never stored: stored documents cannot be replaced,
+     * and storing it would acknowledge a document we never got. A document without its PDF is acknowledged after a day of
+     * retries, as the XML is the invoice.
      */
     private function wellFormedXml(string $xml, string $transactionId): string
     {
         $previous = libxml_use_internal_errors(true);
-        $wellFormed = trim($xml) !== '' && (new \DOMDocument())->loadXML($xml, LIBXML_NONET);
+        $document   = new \DOMDocument();
+        $wellFormed = trim($xml) !== '' && $document->loadXML($xml, LIBXML_NONET);
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
         if (!$wellFormed) {
             throw new EInvoiceProviderException("SOFTIP transaction $transactionId: the document download is not well-formed XML; not acknowledged");
+        }
+        if (!in_array($document->documentElement->localName, ['Invoice', 'CreditNote', 'StandardBusinessDocument'], true)) {
+            throw new EInvoiceProviderException("SOFTIP transaction $transactionId: the document download is <{$document->documentElement->localName}>, not an invoice or credit note; not acknowledged");
         }
 
         return $xml;
@@ -138,7 +153,7 @@ class FetchReceivedEInvoices
             return;
         }
 
-        $date   = fn (?string $value) => $value && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) && strtotime($value) ? $value : null;
+        $date   = fn (?string $value) => $value && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts) && checkdate((int)$parts[2], (int)$parts[3], (int)$parts[1]) ? $value : null;
         $amount = fn (?string $value) => $value !== null && is_numeric($value) && abs((float)$value) < 1e15 ? $value : null;
 
         $receivedEInvoice->update([

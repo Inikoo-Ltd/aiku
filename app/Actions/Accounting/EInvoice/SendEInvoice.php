@@ -16,12 +16,16 @@ use App\Models\SysAdmin\User;
 use App\Notifications\EInvoiceProblemNotification;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
+use Throwable;
 
 /**
  * Sends a finalised invoice or refund in e-invoicing scope to the Peppol access point. Each attempt is a
@@ -100,12 +104,16 @@ class SendEInvoice
             throw $exception;
         } catch (RuntimeException $exception) {
             return [null, ['message' => $exception->getMessage()]];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [null, ['message' => 'Aiku could not write the e-invoice: '.$exception->getMessage()]];
         }
     }
 
     /**
-     * Sends a QUEUED row. Nothing is sent, and nobody is alerted, while the API key is missing or refused: that is the
-     * configuration, not the invoice. Before its key is first used the XML is written again, so an invoice queued for
+     * Sends a QUEUED row. Nothing is sent while the API key is missing or refused; PollEInvoiceTransmissions reports the
+     * row once it has waited UNSENT_AFTER_HOURS. Before its key is first used the XML is written again, so an invoice queued for
      * weeks goes out as it is now. After that the same key always carries the same stored XML, which the provider answers
      * with its original response; as keys expire after 24 hours, a retry first looks for the transaction under the tag.
      */
@@ -134,13 +142,14 @@ class SendEInvoice
     {
 
         if (!$transmission->first_attempted_at) {
-            [$xml, $error] = $this->build($transmission->invoice);
+            $transmission->update(['first_attempted_at' => now()]);
+            [$xml, $error] = $this->build($transmission->invoice->refresh());
             if ($xml === null) {
                 $this->applyStatus($transmission, InvoiceEInvoiceTransmission::NOT_BUILT, $error);
 
                 return;
             }
-            $transmission->update(['xml' => $xml, 'first_attempted_at' => now()]);
+            $transmission->update(['xml' => $xml]);
         } elseif ($this->recover($transmission, notFoundIsError: false)) {
             return;
         }
@@ -177,6 +186,7 @@ class SendEInvoice
         try {
             $taken = InvoiceEInvoiceTransmission::where('tag', $transmission->tag)->whereNotNull('transaction_id')->pluck('transaction_id')->all();
             $found = collect($this->provider->findByTag($transmission->tag))
+                ->reject(fn (array $candidate) => $candidate['tag'] !== null && $candidate['tag'] !== $transmission->tag)
                 ->reject(fn (array $candidate) => in_array($candidate['transaction_id'], $taken, true))
                 ->sortByDesc(fn (array $candidate) => (int)$candidate['transaction_id'])
                 ->first();
@@ -239,6 +249,9 @@ class SendEInvoice
 
         setPermissionsTeamId($transmission->invoice->group_id);
         $users = User::permission(["accounting.$transmission->organisation_id.edit"])->where('status', true)->get();
+        if ($users->isEmpty()) {
+            report(new RuntimeException("E-invoice problem $reason on invoice $transmission->invoice_id and no active user edits the accounts of organisation $transmission->organisation_id"));
+        }
         foreach ($users as $user) {
             $notification = new EInvoiceProblemNotification($transmission);
             NotifyUserOnChosenChannels::run(
@@ -252,6 +265,25 @@ class SendEInvoice
         }
 
         return $users->count();
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $request->user()->authTo('accounting.'.$request->route('invoice')->organisation_id.'.edit');
+    }
+
+    /**
+     * Send again after staff fixed what the last attempt was refused for.
+     *
+     * @throws ValidationException
+     */
+    public function asController(Invoice $invoice): RedirectResponse
+    {
+        if (!$this->handle($invoice)) {
+            throw ValidationException::withMessages(['e_invoice' => __('This invoice is not for e-invoicing, or it is already sent or on its way.')]);
+        }
+
+        return back();
     }
 
     public function asCommand(Command $command): int

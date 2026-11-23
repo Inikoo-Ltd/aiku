@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
@@ -31,6 +32,8 @@ class InvoiceRecurringBillTransactions extends OrgAction
 
             StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $data);
         }
+
+        SendEInvoice::dispatchIfEnabled($invoice);
 
         return $invoice;
     }

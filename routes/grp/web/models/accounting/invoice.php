@@ -18,6 +18,7 @@ use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilm
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\DeleteStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\StoreStandaloneFulfilmentInvoiceTransaction;
 use App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction\UpdateStandaloneFulfilmentInvoiceTransaction;
+use App\Actions\Accounting\EInvoice\SendEInvoice;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
@@ -32,6 +33,7 @@ Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 
     Route::post('send-invoice', SendInvoiceToFulfilmentCustomerEmail::class)->name('send_invoice');
+    Route::post('e-invoice/send', SendEInvoice::class)->name('e_invoice.send');
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attach', [AttachAttachmentToModel::class, 'inInvoice'])->name('attach');

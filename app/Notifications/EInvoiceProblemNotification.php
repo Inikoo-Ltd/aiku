@@ -49,6 +49,7 @@ class EInvoiceProblemNotification extends Notification
             'REJECTED'                             => __('The customer refused e-invoice :reference', ['reference' => $reference]),
             'INVALID'                              => __('E-invoice :reference was refused as invalid', ['reference' => $reference]),
             'FAILED'                               => __('E-invoice :reference could not be delivered', ['reference' => $reference]),
+            InvoiceEInvoiceTransmission::QUEUED    => __('E-invoice :reference could not be sent yet', ['reference' => $reference]),
             default                                => __('E-invoice :reference is not delivered yet', ['reference' => $reference]),
         };
     }

@@ -158,7 +158,7 @@ test('a 409 after a lost answer recovers the transaction by the invoice tag, ski
     softipFake([
         '/api/v1/document/send'                => Http::response(['errors' => [['message' => 'Idempotency key already used']]], 409),
         '/api/v1/organization/logged-user'     => Http::response(['organizations' => [['id' => 55]], 'nextPageToken' => '']),
-        '/api/v1/out-transaction/by-state/55'  => Http::response(['transactions' => [['id' => 7000, 'status' => 'REJECTED'], ['id' => 7001, 'status' => 'SENT']], 'nextPageToken' => '']),
+        '/api/v1/out-transaction/by-state/55'  => Http::response(['transactions' => [['id' => 7000, 'status' => 'REJECTED', 'tag' => $tag], ['id' => 7001, 'status' => 'SENT', 'tag' => $tag], ['id' => 7002, 'status' => 'SENT', 'tag' => 'another-invoice']], 'nextPageToken' => '']),
     ]);
 
     $transmission = SendEInvoice::make()->handle($this->invoice);
@@ -274,7 +274,7 @@ test('a retry after a lost answer adopts the transaction found under the tag ins
             return Http::response(['transactionId' => '9999', 'status' => 'NEW', 'checksum' => 'x']);
         },
         '/api/v1/organization/logged-user'    => Http::response(['organizations' => [['id' => 57]], 'nextPageToken' => '']),
-        '/api/v1/out-transaction/by-state/57' => Http::response(['transactions' => [['id' => 8800, 'status' => 'SENT']], 'nextPageToken' => '']),
+        '/api/v1/out-transaction/by-state/57' => Http::response(['transactions' => [['id' => 8800, 'status' => 'SENT', 'tag' => $transmission->tag]], 'nextPageToken' => '']),
     ]);
     SendEInvoice::make()->transmit($transmission->refresh());
 
@@ -333,4 +333,140 @@ test('Slovak business customers without a Peppol ID or a validated VAT number ar
 
     expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_id' => '0245:2121551499']))
         ->toThrow(Illuminate\Validation\ValidationException::class);
+});
+
+test('a transaction listed under another tag is never adopted as this invoice\'s', function () {
+    softipFake(['/api/v1/document/send' => Http::failedConnection()]);
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+
+    softipFake([
+        '/api/v1/document/send'               => Http::response(['transactionId' => '9998', 'status' => 'NEW', 'checksum' => 'x']),
+        '/api/v1/organization/logged-user'    => Http::response(['organizations' => [['id' => 58]], 'nextPageToken' => '']),
+        '/api/v1/out-transaction/by-state/58' => Http::response(['transactions' => [['id' => 8801, 'status' => 'DELIVERED', 'tag' => 'another-invoice']], 'nextPageToken' => '']),
+    ]);
+    SendEInvoice::make()->transmit($transmission->refresh());
+
+    expect($transmission->refresh()->transaction_id)->toBe('9998');
+});
+
+test('a send the provider has not accepted a day after it was queued is reported once, even without the API key', function () {
+    config(['services.softip.api_key' => null]);
+    softipFake([]);
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+    $transmission->forceFill(['created_at' => now()->subHours(25)])->save();
+
+    PollEInvoiceTransmissions::make()->handle();
+    PollEInvoiceTransmissions::make()->handle();
+
+    expect($transmission->refresh()->status)->toBe(InvoiceEInvoiceTransmission::QUEUED)
+        ->and($transmission->alerted_status)->toBe('UNSENT');
+    Notification::assertSentToTimes($this->accountsUser, EInvoiceProblemNotification::class, 1);
+});
+
+test('an unexpected error while writing the e-invoice is kept as not built and the accounts team is told', function () {
+    app()->instance(BuildUblInvoice::class, new class () extends BuildUblInvoice {
+        public function handle(Invoice $invoice): string
+        {
+            throw new TypeError('unexpected');
+        }
+    });
+    softipFake([]);
+
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+
+    expect($transmission->status)->toBe(InvoiceEInvoiceTransmission::NOT_BUILT)
+        ->and($transmission->errorMessage())->toContain('unexpected');
+    Http::assertNothingSent();
+    Notification::assertSentToTimes($this->accountsUser, EInvoiceProblemNotification::class, 1);
+});
+
+test('staff send a refused e-invoice again from the invoice page once it is fixed', function () {
+    app()->instance(BuildUblInvoice::class, new class () extends BuildUblInvoice {
+        public function handle(Invoice $invoice): string
+        {
+            throw new RuntimeException('Buyer has no Slovak VAT number');
+        }
+    });
+    softipFake([]);
+    SendEInvoice::make()->handle($this->invoice);
+    $summary = InvoiceEInvoiceTransmission::summaryFor($this->invoice);
+    expect($summary['send_route']['name'])->toBe('grp.models.invoice.e_invoice.send');
+
+    app()->instance(BuildUblInvoice::class, new class () extends BuildUblInvoice {
+        public function handle(Invoice $invoice): string
+        {
+            return '<Invoice>fixed</Invoice>';
+        }
+    });
+    softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9200', 'status' => 'NEW', 'checksum' => 'e'])]);
+
+    $this->actingAs($this->accountsUser)
+        ->post(route($summary['send_route']['name'], $summary['send_route']['parameters']))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    expect(InvoiceEInvoiceTransmission::summaryFor($this->invoice))->toMatchArray(['status' => 'NEW', 'attempts' => 2, 'send_route' => null]);
+
+    $this->actingAs($this->accountsUser)
+        ->post(route($summary['send_route']['name'], $summary['send_route']['parameters']))
+        ->assertSessionHasErrors('e_invoice');
+});
+
+test('a sent invoice cannot be deleted as in process, nor its lines or refund lines changed', function () {
+    softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9300', 'status' => 'NEW', 'checksum' => 'f'])]);
+    SendEInvoice::make()->handle($this->invoice);
+    $invoice = $this->invoice->fresh();
+    $line    = \App\Models\Accounting\InvoiceTransaction::forceCreate([
+        'group_id' => $invoice->group_id, 'organisation_id' => $invoice->organisation_id, 'shop_id' => $invoice->shop_id,
+        'customer_id' => $invoice->customer_id, 'invoice_id' => $invoice->id, 'tax_category_id' => $invoice->tax_category_id,
+        'date' => $invoice->date, 'quantity' => 1, 'net_amount' => 100, 'gross_amount' => 100, 'in_process' => false,
+    ]);
+
+    expect(fn () => \App\Actions\Accounting\Invoice\DeleteInProcessInvoice::make()->action($invoice, ['deleted_note' => 'test']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction::run($line))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction::run($line, ['net_amount' => 1]))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction::make()->handle($invoice, $line, ['net_amount' => 1]))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($invoice->fresh()->deleted_at)->toBeNull()
+        ->and($line->fresh()->net_amount)->toBe($line->net_amount);
+
+    \App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction::run($line, ['data' => ['note' => 'ok']]);
+});
+
+test('changing one invoice\'s billing address leaves the address other invoices share untouched', function () {
+    $shared = $this->customer->address;
+    createInvoiceFor($this->customer, $this->shop, now()->toDateString(), 50);
+    $other = Invoice::where('customer_id', $this->customer->id)->latest('id')->firstOrFail();
+    $this->invoice->update(['address_id' => $shared->id]);
+    $other->update(['address_id' => $shared->id]);
+    $before = $shared->only(['address_line_1', 'locality', 'postal_code']);
+
+    \App\Actions\Accounting\Invoice\UpdateInvoice::make()->action($this->invoice->fresh(), [
+        'invoice_billing_address' => array_merge(\Illuminate\Support\Arr::only($shared->toArray(), ['address_line_2', 'postal_code', 'locality', 'administrative_area', 'dependent_locality', 'sorting_code', 'country_id', 'country_code']), ['address_line_1' => 'Hlavná 99']),
+    ]);
+
+    expect($this->invoice->fresh()->address->address_line_1)->toBe('Hlavná 99')
+        ->and($this->invoice->fresh()->address_id)->not->toBe($shared->id)
+        ->and($other->fresh()->address_id)->toBe($shared->id)
+        ->and($shared->fresh()->only(['address_line_1', 'locality', 'postal_code']))->toBe($before);
+});
+
+test('fulfilment invoices, completed standalone or consolidated from a recurring bill, are sent too', function () {
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => ['SK']]])]);
+    $isSendJob = fn ($job) => $job->getAction() instanceof SendEInvoice;
+
+    Queue::fake();
+    $recurringBill = new \App\Models\Fulfilment\RecurringBill();
+    $recurringBill->setRelation('transactions', new \Illuminate\Database\Eloquent\Collection());
+    \App\Actions\Accounting\Invoice\InvoiceRecurringBillTransactions::run($this->invoice->refresh(), $recurringBill);
+    Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, $isSendJob);
+
+    Queue::fake();
+    createInvoiceFor($this->customer, $this->shop, now()->toDateString(), 20, inProcess: true);
+    $standalone = Invoice::where('customer_id', $this->customer->id)->latest('id')->firstOrFail();
+    \App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice::run($standalone);
+    Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, $isSendJob);
 });

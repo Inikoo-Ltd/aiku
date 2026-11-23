@@ -32,6 +32,7 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => ['SK']]])]);
 
     config([
         'inertia.pages.paths'             => [resource_path('js/Pages/Grp')],
@@ -171,7 +172,7 @@ test('a pdf that fails is not acknowledged, and the next run resumes the same ro
 });
 
 test('a document that cannot be read is kept and acknowledged with the reason', function () {
-    $this->xml = '<?xml version="1.0"?><Something/>';
+    $this->xml = '<?xml version="1.0"?><Invoice xmlns="urn:not-ubl"/>';
 
     FetchReceivedEInvoices::run($this->organisation);
 
@@ -213,4 +214,32 @@ test('the accounts team lists received e-invoices and downloads them as received
     expect($xml->getContent())->toBe($this->xml);
     $pdf = get(route('grp.org.accounting.received_e_invoices.pdf', [$this->organisation->slug, $received->id]))->assertOk();
     expect($pdf->getContent())->toBe($this->pdf)->and($pdf->headers->get('Content-Type'))->toBe('application/pdf');
+});
+
+test('only an organisation that e-invoices fetches, and an answer that is not an invoice or credit note is never stored or acknowledged', function () {
+    $settings = $this->organisation->settings;
+    $this->organisation->update(['settings' => array_merge($settings, ['e_invoicing' => ['countries' => []]])]);
+    expect(FetchReceivedEInvoices::run($this->organisation))->toBeNull()
+        ->and(ReceivedEInvoice::where('provider_transaction_id', $this->transactionId)->exists())->toBeFalse();
+    $this->organisation->update(['settings' => $settings]);
+
+    $this->xml = '<?xml version="1.0"?><error><message>Service unavailable</message></error>';
+    expect(FetchReceivedEInvoices::run($this->organisation))->toMatchArray(['failed' => 1, 'acknowledged' => 0]);
+
+    expect(ReceivedEInvoice::where('provider_transaction_id', $this->transactionId)->firstOrFail()->hasXml())->toBeFalse()
+        ->and($this->acknowledged)->toBe([]);
+});
+
+test('a document whose PDF never comes is acknowledged a day later without it', function () {
+    $this->pdfStatus = 404;
+    FetchReceivedEInvoices::run($this->organisation);
+    $received = ReceivedEInvoice::where('provider_transaction_id', $this->transactionId)->firstOrFail();
+    expect($received->acknowledged_at)->toBeNull();
+
+    $received->forceFill(['created_at' => now()->subDays(2)])->save();
+    FetchReceivedEInvoices::run($this->organisation);
+
+    expect($received->refresh()->acknowledged_at)->not->toBeNull()
+        ->and($received->hasPdf())->toBeFalse()
+        ->and($this->acknowledged)->toBe([$this->transactionId]);
 });

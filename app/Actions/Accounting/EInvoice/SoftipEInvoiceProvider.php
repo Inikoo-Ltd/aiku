@@ -70,7 +70,7 @@ class SoftipEInvoiceProvider implements EInvoiceProvider
             $body  = $this->call('GET', $path, fn (PendingRequest $request) => $request->get($path, $query), $query);
 
             foreach ($body['transactions'] ?? [] as $transaction) {
-                $transactions[] = ['transaction_id' => (string)$transaction['id'], 'status' => strtoupper((string)$transaction['status'])];
+                $transactions[] = ['transaction_id' => (string)$transaction['id'], 'status' => strtoupper((string)$transaction['status']), 'tag' => $transaction['tag'] ?? null];
             }
             $pageToken = $body['nextPageToken'] ?? null;
         } while ($pageToken);

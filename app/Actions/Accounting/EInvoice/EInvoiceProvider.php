@@ -32,7 +32,7 @@ interface EInvoiceProvider
     public function status(string $transactionId): array;
 
     /**
-     * @return array<int, array{transaction_id: string, status: string}>
+     * @return array<int, array{transaction_id: string, status: string, tag: string|null}>
      */
     public function findByTag(string $tag): array;
 

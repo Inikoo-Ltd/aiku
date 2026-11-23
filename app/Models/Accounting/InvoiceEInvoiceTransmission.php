@@ -81,7 +81,7 @@ class InvoiceEInvoiceTransmission extends Model
     }
 
     /**
-     * @return array{status: string, label: string, tone: string, error: string|null, transaction_id: string|null, updated_at: string|null, attempts: int}|null
+     * @return array{status: string, label: string, tone: string, error: string|null, transaction_id: string|null, updated_at: string|null, attempts: int, send_route: array{name: string, parameters: array<string, int>, method: string}|null}|null
      */
     public static function summaryFor(Invoice $invoice): ?array
     {
@@ -98,6 +98,7 @@ class InvoiceEInvoiceTransmission extends Model
             'INVALID'       => [__('Refused as invalid'), 'danger'],
             'FAILED'        => [__('Delivery failed'), 'danger'],
             'REJECTED'      => [__('Refused by the customer'), 'danger'],
+            'TEMPORARY_FAILURE' => [__('Delivery being retried'), 'waiting'],
             default         => [__('Sent, waiting for delivery'), 'waiting'],
         };
 
@@ -109,6 +110,7 @@ class InvoiceEInvoiceTransmission extends Model
             'transaction_id' => $latest->transaction_id,
             'updated_at'     => $latest->updated_at?->toIso8601String(),
             'attempts'       => $transmissions->count(),
+            'send_route'     => $latest->isProblem() ? ['name' => 'grp.models.invoice.e_invoice.send', 'parameters' => ['invoice' => $invoice->id], 'method' => 'post'] : null,
         ];
     }
 }

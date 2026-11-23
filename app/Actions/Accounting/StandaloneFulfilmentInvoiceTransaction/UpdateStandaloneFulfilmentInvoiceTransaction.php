@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
@@ -26,6 +27,8 @@ class UpdateStandaloneFulfilmentInvoiceTransaction extends OrgAction
 
     public function handle(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoiceTransaction->invoice);
+
         if (Arr::exists($modelData, 'net_amount')) {
             $netAmount = Arr::get($modelData, 'net_amount');
             $quantity  = $netAmount / $invoiceTransaction->historicAsset->price;

@@ -34,7 +34,7 @@ class SuggestReceivedEInvoiceMatch
         $byReference = fn (Builder $query) => $receivedEInvoice->order_reference
             ? $query->where('organisation_id', $receivedEInvoice->organisation_id)
                 ->where('reference', $receivedEInvoice->order_reference)
-                ->when($supplierId, fn (Builder $query) => $query->where(fn (Builder $query) => $query->where('supplier_id', $supplierId)->orWhereNull('supplier_id')))
+                ->when($supplierId, fn (Builder $query) => $query->where('supplier_id', $supplierId))
                 ->limit(2)->pluck('id')
             : collect();
 
@@ -71,7 +71,8 @@ class SuggestReceivedEInvoiceMatch
         $rules = [
             'peppol_id'  => fn (Supplier $supplier) => $peppolId && $supplier->peppol_id && strcasecmp(trim($supplier->peppol_id), $peppolId) === 0,
             'tax_number' => fn (Supplier $supplier) => in_array($this->normalisedNumber($supplier->identity_document_number), $numbers, true),
-            'name'       => fn (Supplier $supplier) => array_intersect(array_filter([$this->normalisedName($supplier->name), $this->normalisedName($supplier->company_name)]), $names) !== [],
+            'name'       => fn (Supplier $supplier) => array_intersect(array_filter([$this->normalisedName($supplier->name), $this->normalisedName($supplier->company_name)]), $names) !== []
+                && !($numbers && $this->normalisedNumber($supplier->identity_document_number) && !in_array($this->normalisedNumber($supplier->identity_document_number), $numbers, true)),
         ];
 
         foreach ($rules as $reason => $rule) {

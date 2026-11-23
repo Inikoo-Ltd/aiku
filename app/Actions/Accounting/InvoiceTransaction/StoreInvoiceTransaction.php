@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithOrderExchanges;
@@ -31,6 +32,8 @@ class StoreInvoiceTransaction extends OrgAction
 
     public function handle(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData): InvoiceTransaction
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice);
+
         // was: data_set($modelData, 'date', now(), overwrite: false);
         // defaulting to now() stamped historical transactions with the fetch time instead of the
         // invoice date, which piled years of sales into the fetch window, HELP-2959

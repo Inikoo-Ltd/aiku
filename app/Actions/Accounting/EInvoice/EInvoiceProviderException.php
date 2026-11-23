@@ -30,9 +30,4 @@ class EInvoiceProviderException extends RuntimeException
     {
         return $this->httpStatus === 409;
     }
-
-    public function isConfigurationProblem(): bool
-    {
-        return in_array($this->httpStatus, [401, 403], true);
-    }
 }

@@ -78,7 +78,7 @@ class MatchReceivedEInvoice extends OrgAction
 
         $ids = $model::where('organisation_id', $organisationId)
             ->where('reference', $reference)
-            ->where(fn ($query) => $query->where('supplier_id', $supplierId)->orWhereNull('supplier_id'))
+            ->where('supplier_id', $supplierId)
             ->limit(2)
             ->pluck('id');
         if ($ids->count() !== 1) {

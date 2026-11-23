@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\OrgAction;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Accounting\InvoiceTransactionHasOrgStock;
@@ -18,6 +19,8 @@ class DeleteInvoiceTransaction extends OrgAction
 {
     public function handle(InvoiceTransaction $invoiceTransaction): InvoiceTransaction
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoiceTransaction->invoice);
+
         ProcessInvoiceTransactionTimeSeries::make()->dispatchStockBridgeTimeSeries($invoiceTransaction, $invoiceTransaction->date->toDateString());
 
         InvoiceTransactionHasTradeUnit::where('invoice_transaction_id', $invoiceTransaction->id)->delete();

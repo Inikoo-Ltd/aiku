@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\InvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,6 +24,10 @@ class UpdateInvoiceTransaction extends OrgAction
 
     public function handle(InvoiceTransaction $invoiceTransaction, array $modelData): InvoiceTransaction
     {
+        if (Arr::hasAny($modelData, ['quantity', 'net_amount', 'gross_amount', 'tax_category_id', 'historic_asset_id', 'asset_id', 'invoice_id'])) {
+            EnsureInvoiceNotSentAsEInvoice::run($invoiceTransaction->invoice);
+        }
+
         $oldDate = $invoiceTransaction->date;
 
         $invoiceTransaction = $this->update($invoiceTransaction, $modelData, ['data']);

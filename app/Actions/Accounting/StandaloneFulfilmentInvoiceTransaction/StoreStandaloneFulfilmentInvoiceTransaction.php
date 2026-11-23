@@ -9,6 +9,7 @@
 
 namespace App\Actions\Accounting\StandaloneFulfilmentInvoiceTransaction;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
@@ -27,6 +28,8 @@ class StoreStandaloneFulfilmentInvoiceTransaction extends OrgAction
 
     public function handle(Invoice $invoice, HistoricAsset $historicAsset, array $modelData): InvoiceTransaction
     {
+        EnsureInvoiceNotSentAsEInvoice::run($invoice);
+
         $grossAmount = $historicAsset->price * Arr::get($modelData, 'quantity');
         data_set($modelData, 'tax_category_id', $invoice->tax_category_id);
         data_set($modelData, 'gross_amount', $grossAmount);

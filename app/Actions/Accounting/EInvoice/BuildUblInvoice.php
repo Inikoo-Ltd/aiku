@@ -14,6 +14,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\TaxCategory;
+use Carbon\CarbonInterface;
 use Closure;
 use Lorisleiva\Actions\Concerns\AsObject;
 use RuntimeException;
@@ -32,9 +33,11 @@ class BuildUblInvoice
     private XMLWriter $xml;
     private string $currency;
     private bool $isCreditNote;
+    private string $timezone;
 
     public function handle(Invoice $invoice): string
     {
+        $this->timezone = $invoice->shop->timezoneName();
         $invoice->loadMissing(['invoiceTransactions.historicAsset', 'invoiceTransactions.taxCategory', 'currency', 'organisation', 'shop.taxNumber', 'shop.address', 'address', 'customer', 'originalInvoice']);
 
         if ($invoice->in_process) {
@@ -73,9 +76,10 @@ class BuildUblInvoice
         $this->xml->writeElement('cbc:CustomizationID', self::CUSTOMIZATION_ID);
         $this->xml->writeElement('cbc:ProfileID', self::PROFILE_ID);
         $this->xml->writeElement('cbc:ID', $invoice->reference);
-        $this->xml->writeElement('cbc:IssueDate', $invoice->date->toDateString());
+        $this->xml->writeElement('cbc:IssueDate', $this->day($invoice->date));
         if (!$this->isCreditNote) {
-            $this->xml->writeElement('cbc:DueDate', $invoice->date->copy()->addDays(max((int)$invoice->customer?->payment_terms_days, 0))->toDateString());
+            $dueInDays = $invoice->is_pastpay ? (int)data_get($invoice->order?->data, 'pastpay.termDays', 30) : max((int)$invoice->customer?->payment_terms_days, 0);
+            $this->xml->writeElement('cbc:DueDate', $this->day($invoice->date->copy()->addDays($dueInDays)));
         }
         if ($this->isCreditNote) {
             $this->taxPointDate($invoice);
@@ -95,7 +99,7 @@ class BuildUblInvoice
             $this->xml->startElement('cac:BillingReference');
             $this->xml->startElement('cac:InvoiceDocumentReference');
             $this->xml->writeElement('cbc:ID', $invoice->originalInvoice->reference);
-            $this->xml->writeElement('cbc:IssueDate', $invoice->originalInvoice->date->toDateString());
+            $this->xml->writeElement('cbc:IssueDate', $this->day($invoice->originalInvoice->date));
             $this->xml->endElement();
             $this->xml->endElement();
         }
@@ -119,12 +123,6 @@ class BuildUblInvoice
             isVatRegistered: $invoice->tax_number_valid === true,
             companyNumber: $invoice->identity_document_number
         );
-
-        if ($this->isCreditNote && $totalAmount - $prepaidAmount > 0) {
-            $this->xml->startElement('cac:PaymentTerms');
-            $this->xml->writeElement('cbc:Note', 'Refund to be paid to the customer');
-            $this->xml->endElement();
-        }
 
         $this->xml->startElement('cac:TaxTotal');
         $this->amount('cbc:TaxAmount', $taxAmount);
@@ -213,8 +211,8 @@ class BuildUblInvoice
      */
     public static function buyerParticipantId(Invoice $invoice): ?array
     {
-        return self::parsePeppolId($invoice->customer?->peppol_id)
-            ?? ($invoice->tax_number_valid === true ? self::participantId($invoice->tax_number) : null);
+        return ($invoice->tax_number_valid === true ? self::participantId($invoice->tax_number) : null)
+            ?? self::parsePeppolId($invoice->customer?->peppol_id);
     }
 
     /**
@@ -387,8 +385,16 @@ class BuildUblInvoice
     private function taxPointDate(Invoice $invoice): void
     {
         if ($invoice->tax_liability_at) {
-            $this->xml->writeElement('cbc:TaxPointDate', $invoice->tax_liability_at->toDateString());
+            $this->xml->writeElement('cbc:TaxPointDate', $this->day($invoice->tax_liability_at));
         }
+    }
+
+    /**
+     * The day as printed on the PDF invoice, in the shop's timezone.
+     */
+    private function day(CarbonInterface $date): string
+    {
+        return $date->copy()->setTimezone($this->timezone)->toDateString();
     }
 
     private function amount(string $element, float $amount): void
