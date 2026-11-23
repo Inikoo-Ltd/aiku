@@ -485,6 +485,7 @@ const reopenChat = async () => {
 }
 
 const eventsLocal = ref<any[]>([])
+const auraNotesAll = ref<any[]>([])
 const newMessage = ref("")
 
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
@@ -1520,6 +1521,7 @@ const fetchMessages = async (loadMore: boolean) => {
     const events = data?.data?.events ?? []
 
     if (!loadMore) {
+        auraNotesAll.value = data?.data?.aura_notes ?? []
         messagesLocal.value = messages.map((m: ChatMessage) => ({
             ...m,
             _status: "sent",
@@ -1573,16 +1575,52 @@ const goToReply = async () => {
     await scrollBottom()
 }
 const translatesFor = (message: any) => chatAutoTranslate.value && !!message.original?.language_code && !readsLanguage(message.original.language_code)
+const bareSubject = (subject: string) => subject.replace(/^((re|fw|fwd|aw|odp|sv)\s*:\s*)+/i, "").trim().toLowerCase()
+const mailSubjects = computed(() => {
+    const shown = new Map<number, string>()
+    let previous: string | null = null
+    messagesLocal.value.forEach((message: any) => {
+        if (message.sender_type === "system") return
+        const subject = (message.metadata?.email_subject || "").trim()
+        const bare = bareSubject(subject)
+        if (message.id === firstMessageId.value) {
+            shown.set(message.id, emailSubject.value || subject)
+        } else if (bare && previous !== null && bare !== previous) {
+            shown.set(message.id, subject)
+        }
+        if (bare) previous = bare
+    })
+    return shown
+})
 const lastMailId = computed(() => messagesLocal.value.findLast((message) => message.sender_type !== "system")?.id)
 const openAutoReplyIds = reactive(new Set<number>())
 const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
 
+const lastMessageAt = computed(() => {
+    const last = messagesLocal.value[messagesLocal.value.length - 1]
+    return last ? +new Date(last.created_at) : 0
+})
 const auraNoteBeside = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft) return null
     const note = eventsLocal.value.findLast((event: any) => event.event_type === "internal_note")
     const lastMessage = messagesLocal.value[messagesLocal.value.length - 1]
     return note && (!lastMessage || +new Date(note.created_at) >= +new Date(lastMessage.created_at)) ? note : null
 })
+
+const auraOldNote = computed(() => {
+    if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft || auraNoteBeside.value || auraFollowUpNote.value) return null
+    return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note") ?? null
+})
+
+const auraNotes = computed(() => {
+    const byId = new Map<number, any>(auraNotesAll.value.map((note: any) => [note.id, note]))
+    eventsLocal.value.filter((event: any) => event.event_type === "internal_note").forEach((note: any) => byId.set(note.id, note))
+    return [...byId.values()].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)).slice(-10)
+})
+const pickedAuraNoteId = ref<number | null>(null)
+watch(() => props.session?.ulid, () => (pickedAuraNoteId.value = null))
+const pickedAuraNote = computed(() => auraNotes.value.find((note: any) => note.id === pickedAuraNoteId.value) ?? null)
+const noteAge = (note: any) => formatChatAge(+new Date(note.created_at))
 
 const auraFollowUpNote = computed(() => {
     if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value) return null
@@ -2237,7 +2275,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <template v-for="(entries, date) in groupedTimeline" :key="date">
                 <div v-if="!isEmailChat && (entries[0]?.kind !== 'event' || entries[0].event?.event_type === 'internal_note')" class="text-center text-xs text-gray-400">{{ date }}</div>
                 <template v-for="(entry, position) in entries" :key="entry.key">
-                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" :date="position === 0 && entry.event?.event_type !== 'internal_note' && !(emailSubject && date === firstTimelineDate) ? String(date) : undefined" />
+                    <ChatTimelineEvent v-if="entry.kind === 'event'" :event="entry.event" :folded="isEmailChat && entry.event?.event_type === 'internal_note' && entry.at < lastMessageAt" :date="position === 0 && entry.event?.event_type !== 'internal_note' && !(emailSubject && date === firstTimelineDate) ? String(date) : undefined" />
                     <button v-else-if="isFoldedAutoReply(entry.message)" type="button" :data-message-id="entry.message.id"
                         class="!mt-1 ml-auto flex max-w-full items-center gap-1.5 pr-1 text-[11px] text-gray-500 hover:text-gray-700"
                         v-tooltip="ctrans('Show the automatic reply')" @click="openAutoReplyIds.add(entry.message.id)">
@@ -2250,7 +2288,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         :data-message-id="entry.message.id"
                         :class="isEmailChat ? '' : entry.message.sender_type === 'agent' ? 'justify-end' : 'justify-start'">
                         <BubbleChat :message="entry.message" viewerType="agent" format-markup
-                            :mail="isEmailChat" :mail-subject="isEmailChat && entry.message.id === firstMessageId ? emailSubject : ''" :thread-subject="emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)" :mail-fold-all="mailFoldAll"
+                            :mail="isEmailChat" :mail-subject="isEmailChat ? mailSubjects.get(entry.message.id) ?? '' : ''" :thread-subject="isEmailChat ? '' : emailSubject" :forwardable="isEmailChat && entry.message.id === lastMailId" :translate-all="translatesFor(entry.message)" @forward="canForwardByEmail ? openForwardByEmail() : openForwardModal()" :mail-collapsed="!openMailIds.has(entry.message.id)" :mail-fold-all="mailFoldAll"
                             :mail-recipient="isEmailChat ? chatEmailRecipient((session as any)?.metadata) : null"
                             :contactName="session?.contact_name || session?.guest_identifier"
                             :agentName="session?.assigned_agent?.name"
@@ -2578,7 +2616,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="auraNoteBeside || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="auraNoteBeside || auraOldNote || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
@@ -2590,10 +2628,25 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
+                <div v-if="auraNotes.length > 1 && (auraNoteBeside || auraOldNote)" class="flex items-center gap-0.5 px-1 text-[10px] text-pink-700" :aria-label="ctrans('Aura notes in this chat')">
+                    <template v-for="(note, position) in auraNotes" :key="note.id">
+                        <span v-if="position" class="h-px w-3 bg-pink-300" aria-hidden="true" />
+                        <button type="button" class="flex items-center gap-1 rounded-full px-1 py-0.5 hover:bg-pink-100"
+                            :class="(pickedAuraNoteId ?? auraNotes[auraNotes.length - 1].id) === note.id ? 'font-semibold text-pink-800' : ''"
+                            v-tooltip="note.note" @click="pickedAuraNoteId = position === auraNotes.length - 1 ? null : note.id">
+                            <span class="h-2 w-2 rounded-full border border-pink-500" :class="position === auraNotes.length - 1 ? 'bg-pink-500' : 'bg-white'" aria-hidden="true" />
+                            {{ position === auraNotes.length - 1 && auraNoteBeside ? ctrans("now") : noteAge(note) }}
+                        </button>
+                    </template>
+                </div>
+                <ChatTimelineEvent v-if="pickedAuraNote" :key="`picked-${pickedAuraNote.id}`" :event="pickedAuraNote" folded open class="!py-0" />
+                <template v-else>
+                <ChatTimelineEvent v-if="auraOldNote" :key="auraOldNote.id" :event="auraOldNote" folded class="!py-0" />
                 <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
                 <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
                 <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
                     :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
+                </template>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
