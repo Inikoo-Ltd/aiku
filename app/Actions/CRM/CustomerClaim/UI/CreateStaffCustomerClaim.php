@@ -60,6 +60,12 @@ class CreateStaffCustomerClaim extends OrgAction
             'outcomes'    => collect($outcomes)->map(fn (string $outcome) => ['value' => $outcome, 'label' => ShowCustomerClaim::resolutionLabel($outcome)])->all(),
             'currency_code' => $order->currency?->code,
             'store_route' => ['name' => 'grp.models.order.customer_claim.store', 'parameters' => ['order' => $order->id]],
+            'prefill'     => [
+                'resolution' => in_array($request->query('resolution'), $outcomes, true) ? $request->query('resolution') : null,
+                'reason'     => DeliveryNoteItemReplacementReasonEnum::tryFrom((string) $request->query('reason'))?->value,
+                'percentage' => is_numeric($request->query('percentage')) ? (float) $request->query('percentage') : null,
+                'items'      => collect((array) $request->query('items'))->filter(fn ($quantity) => is_numeric($quantity))->mapWithKeys(fn ($quantity, $code) => [strtolower(trim((string) $code)) => (float) $quantity])->all(),
+            ],
         ]);
     }
 

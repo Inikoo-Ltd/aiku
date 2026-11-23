@@ -818,10 +818,10 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
     $query             = ['from' => '2021-04-01', 'to' => '2021-04-30', 'tab' => 'conversations'];
 
     $this->withoutVite();
-    $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', $query))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Web/ShoppingAssistantPerformance', false)->where('filters.website_locked', false)->where('title', 'Merlin')->where('pageHead.icon.icon', ['fal', 'fa-hat-wizard']));
 
-    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'ordered']))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', [...$query, 'outcome' => 'ordered']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$ordered->ulid])
             ->where('conversations.data.0.ordered', true)
@@ -829,11 +829,11 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
             ->where('conversations.data.0.status', 'open')
             ->where('conversations.data.0.entry_point', fn ($entryPoint) => is_string($entryPoint)));
 
-    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'clicked']))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', [...$query, 'outcome' => 'clicked']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$clicked->ulid]));
 
     DB::table('products')->where('id', $product->id)->update(['web_images' => json_encode(['main' => ['thumbnail' => ['original' => 'rug.jpg']]])]);
-    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$ordered->ulid]))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.conversations.show', [$ordered->ulid]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Web/ShoppingAssistantConversation', false)
             ->where('messages.1.products.0.ordered', true)
@@ -843,8 +843,8 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
     $webmaster = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
     actingAsUserWithOnlyPermissions($webmaster, ["web.{$this->shop->id}.view"]);
 
-    $this->get(route('grp.websites.shopping_assistant.show'))->assertForbidden();
-    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$ordered->ulid]))->assertForbidden();
+    $this->get(route('grp.ai.shopping_assistant.show'))->assertForbidden();
+    $this->get(route('grp.ai.shopping_assistant.conversations.show', [$ordered->ulid]))->assertForbidden();
 
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.show', [...$websiteParameters, ...$query]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -1012,7 +1012,7 @@ test('the group AI assistant report counts the period\'s conversations on its ta
     $query = ['from' => '2018-02-01', 'to' => '2018-02-30', 'tab' => 'shops'];
     $this->withoutVite();
     $website    = createWebsite($this->shop);
-    $beforePage = $this->get(route('grp.websites.shopping_assistant.show', $query))->viewData('page')['props'];
+    $beforePage = $this->get(route('grp.ai.shopping_assistant.show', $query))->viewData('page')['props'];
     $before     = $beforePage['tabs']['navigation']['conversations']['number'] ?? 0;
     $beforeRow  = collect($beforePage['shops']['data'] ?? [])->firstWhere('domain', $website->domain) ?? ['conversations' => 0, 'customers' => 0, 'orders' => 0, 'revenue' => 0];
 
@@ -1022,7 +1022,7 @@ test('the group AI assistant report counts the period\'s conversations on its ta
     shoppingAssistantOrderLine($customer, $product, '2018-02-03 10:00:00', 30);
     shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2018-02-03 10:00:00');
 
-    $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', $query))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('tabs.navigation.conversations.number', $before + 2)
             ->where('tabs.navigation.shops.title', 'Shops / Budget')
@@ -2051,7 +2051,7 @@ test('the sales leads manager, threshold and Slack channel are organisation sett
     $task = App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead::run($conversation, 2600, 'EUR', false)['task'];
 
     $this->withoutVite();
-    $this->get(route('grp.websites.shopping_assistant.show', ['from' => now()->subDay()->toDateString(), 'to' => now()->toDateString()]))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', ['from' => now()->subDay()->toDateString(), 'to' => now()->toDateString()]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('sales_leads', fn ($leads) => collect($leads)->contains(fn ($lead) => $lead['reference'] === $task->reference && $lead['agreed_to_call'] === false && $lead['assignee'] === null)));
 
@@ -2800,13 +2800,13 @@ test('every general drill-down keeps only the conversations behind its figure, a
     $query = ['from' => $scenario['base']->toDateString(), 'to' => CarbonImmutable::now()->toDateString(), 'tab' => 'conversations'];
 
     foreach ($expected as $value => $ulids) {
-        $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'general' => $value]))->assertOk()
+        $this->get(route('grp.ai.shopping_assistant.show', [...$query, 'general' => $value]))->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('filters.general', $value)
                 ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === $ulids));
     }
 
-    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'general' => 'nonsense']))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.show', [...$query, 'general' => 'nonsense']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('filters.general', null)
             ->where('conversations.data', fn ($rows) => count($rows) === 6)
@@ -2832,7 +2832,7 @@ test('the transcript shows the answer kind, the cited sources, the offer, the ha
     shoppingAssistantGeneralTurn($conversation->customer, $at->addMinutes(2), 'Yes please', [['model' => 'hand-over', 'flags' => ['handed_over'], 'body' => 'Passed on.']], conversation: $conversation);
 
     $this->withoutVite();
-    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('conversation.handed_over', true)
             ->where('messages.1.answer_kind_label', 'Shop knowledge')
@@ -2862,14 +2862,14 @@ test('a conversation in another language shows each message translated into the 
 
     $this->withoutVite();
     config(['inertia.testing.ensure_pages_exist' => false]);
-    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('translation_language', 'English')
             ->missing('translations')
             ->loadDeferredProps(fn (AssertableInertia $reload) => $reload->where('translations', [$customerMessageId => 'Do you send samples?'])));
 
     $conversation->update(['language_code' => 'en']);
-    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+    $this->get(route('grp.ai.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('translation_language', null)->where('translations', []));
 });
 

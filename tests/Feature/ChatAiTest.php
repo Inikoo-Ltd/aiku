@@ -2148,9 +2148,18 @@ test('an agent asks Aura about the chat: she looks it up read only as that agent
     $this->postJson(route('grp.api.chats.aura_questions.redraft', [$question->id]), ['text' => '', 'draft_id' => $draft->id + 1000])
         ->assertStatus(422)
         ->assertJsonValidationErrors('redraft');
+
+    $listed = collect(get(route('grp.ai.aura.questions', ['filter' => ['shop' => $this->shop->slug, 'redrafted' => 'yes']]))->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->component('Ai/AuraQuestions'))
+        ->viewData('page')['props']['data']['data']);
+    expect($listed->pluck('question')->all())->toBe(['Is NOPE-404 in stock to send a replacement?'])
+        ->and($listed->first()['lookups'])->toBe(['check_products'])
+        ->and($listed->first()['redrafted'])->toBeTrue();
+    $this->getJson(route('grp.ai.aura.questions'))->assertNotFound();
+    actingAs($colleague)->get(route('grp.ai.aura.questions'))->assertForbidden();
 });
 
-test('the Re: line signals are counted for a linked customer: complaints this week, emails today, first order', function () {
+test('the Re: line signals are counted for a linked customer: frequent claims, complaints this week from the second, emails today, first order', function () {
     $customer = createOwnCustomer($this->shop, 'signals-case');
     $webUser  = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, WebUser::factory()->definition());
     $customer->stats()->update(['number_orders' => 1, 'sales_all' => 0]);
@@ -2173,8 +2182,30 @@ test('the Re: line signals are counted for a linked customer: complaints this we
     }
 
     $signals = collect(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run($first->fresh()))->keyBy('key');
+    expect($signals->keys()->take(3)->all())->toBe(['complaints', 'emails_today', 'first_order']);
 
-    expect($signals->keys()->take(3)->all())->toBe(['complaints', 'emails_today', 'first_order'])
+    \App\Models\Chat\ChatAiDraft::where('chat_session_id', $second->id)->delete();
+    expect(collect(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run($first->fresh()))->pluck('key'))->not->toContain('complaints');
+
+    foreach (['settled', 'settled', 'settled', 'settled', 'rejected'] as $position => $state) {
+        $claim = \App\Models\CRM\CustomerClaim\CustomerClaim::create([
+            'ulid' => (string) Str::ulid(), 'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+            'customer_id' => $customer->id, 'reference' => 'SIG-'.$customer->id.'-'.$position, 'source' => 'staff', 'state' => $state, 'resolution' => 'replacement',
+        ]);
+        $claim->forceFill(['created_at' => now()->subDays(30)])->saveQuietly();
+    }
+    $signals = collect(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run($first->fresh()))->keyBy('key');
+    expect($signals->keys()->first())->toBe('frequent_claims')
+        ->and($signals['frequent_claims']['label'])->toBe('4 claims in 90 days');
+
+    \App\Models\Chat\ChatAiDraft::create([
+        'group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id,
+        'chat_session_id' => $second->id, 'topic' => \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED, 'intent' => \App\Enums\CRM\Livechat\ChatIntentEnum::DAMAGED_ITEM,
+        'facts' => [], 'text' => 'Sorry', 'status' => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::SUPERSEDED,
+    ]);
+    $signals = collect(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run($first->fresh()))->keyBy('key');
+
+    expect($signals->keys()->take(4)->all())->toBe(['frequent_claims', 'complaints', 'emails_today', 'first_order'])
         ->and($signals['complaints']['label'])->toBe('2nd complaint this week')
         ->and($signals['emails_today']['count'])->toBe(2)
         ->and($signals['first_order']['tone'])->toBe('green')

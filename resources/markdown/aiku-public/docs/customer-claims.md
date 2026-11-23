@@ -52,6 +52,8 @@ Credit, replacement and next-order claims are settled as soon as you save, with 
 
 <b>Create tax refund</b> stays in the invoice's menu for accountants. When it is finalised it is recorded as a <b>Tax correction</b> claim, which is not counted in the product figures or the customer's allowance.
 
+When Aura proposes a refund or replacement on her draft in a chat, her button is <b>Create claim</b>, in every shop: it opens this form in a new tab with the order, items, reason and outcome she proposed filled in, for you to check and change before saving.
+
 In shops not yet on claims only, the usual buttons stay, and every replacement, credit, next-order item and refund you make is still recorded as a claim.
 
 ## Settings

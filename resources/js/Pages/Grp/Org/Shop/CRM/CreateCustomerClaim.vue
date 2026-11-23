@@ -32,14 +32,20 @@ const props = defineProps<{
     outcomes: Option[]
     currency_code: string | null
     store_route: { name: string, parameters: any }
+    prefill?: { resolution: string | null, reason: string | null, percentage: number | null, items: Record<string, number> }
 }>()
 
 const locale = useLocaleStore()
 const picked = ref<Record<number, { checked: boolean, quantity: number, reason: string | null }>>(
-    Object.fromEntries(props.lines.map((line) => [line.transaction_id, { checked: false, quantity: line.claimable, reason: null }]))
+    Object.fromEntries(props.lines.map((line) => {
+        const proposed = props.prefill?.items?.[line.code.toLowerCase()]
+        return [line.transaction_id, proposed
+            ? { checked: true, quantity: Math.min(Math.max(1, Math.round(proposed)), line.claimable), reason: props.prefill?.reason ?? null }
+            : { checked: false, quantity: line.claimable, reason: null }]
+    }))
 )
-const resolution = ref<string | null>(null)
-const percentage = ref<number>(100)
+const resolution = ref<string | null>(props.prefill?.resolution ?? null)
+const percentage = ref<number>(props.prefill?.percentage ?? 100)
 const comment = ref("")
 const errors = ref<Record<string, string>>({})
 const saving = ref(false)

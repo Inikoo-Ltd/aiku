@@ -195,7 +195,7 @@ class TicketResource extends JsonResource
     private function sourceUrl(mixed $session): ?string
     {
         if ($session instanceof ShoppingAssistantConversation) {
-            return route('grp.websites.shopping_assistant.conversations.show', $session->ulid);
+            return route('grp.ai.shopping_assistant.conversations.show', $session->ulid);
         }
 
         $organisationSlug = $this->organisation?->slug ?? $session?->shop?->organisation?->slug;

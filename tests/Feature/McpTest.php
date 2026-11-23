@@ -3424,7 +3424,7 @@ describe('customer service tools', function () {
             ->assertHasErrors(['was not delivered on']);
     });
 
-    test('a draft carries one-click claim and task buttons, the facts checked and its PRE tickets, and each button runs once', function () {
+    test('a draft carries a Create claim button that opens the claim form filled in, one-click task buttons, the facts checked and its PRE tickets', function () {
         App\Actions\Helpers\Translations\DetectLanguageWithJev::shouldRun()->andReturn(App\Models\Helpers\Language::firstWhere('code', 'en'));
         $order = StoreOrder::make()->action($this->csCustomer, []);
         App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 2]);
@@ -3471,9 +3471,17 @@ describe('customer service tools', function () {
         expect($shown['checked'])->toBe([$order->reference.' dispatched yesterday', 'No refund given yet'])
             ->and($shown['premonitions'])->toHaveCount(1)
             ->and($shown['premonitions'][0])->toMatchArray(['reference' => $premonition->reference, 'fixed' => false])
-            ->and($shown['actions'][0])->toMatchArray(['index' => 0, 'type' => 'claim', 'done' => false, 'available' => true])
-            ->and($shown['actions'][0]['label'])->toStartWith('Refund ')
+            ->and($shown['premonitions'][0]['status_icon'])->toHaveKeys(['icon', 'class', 'tooltip'])
+            ->and($shown['actions'][0])->toMatchArray(['index' => 0, 'type' => 'claim', 'done' => false, 'available' => true, 'label' => 'Create claim: 1 × '.$this->product->code])
+            ->and($shown['actions'][0]['url'])->toContain('/claims/orders/'.$order->slug.'/create?resolution=refund_to_balance&reason=damaged_in_transit')
             ->and($shown['actions'][1])->toMatchArray(['index' => 1, 'type' => 'task', 'label' => 'Ask the warehouse to check the box']);
+
+        $balance = (float) $this->csCustomer->refresh()->balance;
+        postJson(route('grp.api.chats.ai_drafts.action', [$draft->id, 0]))->assertStatus(422);
+        expect((float) $this->csCustomer->refresh()->balance)->toBe($balance);
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+        $this->withoutVite()->get($shown['actions'][0]['url'])->assertOk()->assertInertia(fn ($page) => $page->component('Org/Shop/CRM/CreateCustomerClaim')
+            ->where('prefill.resolution', 'refund_to_balance')->where('prefill.reason', 'damaged_in_transit')->where('prefill.items.'.strtolower($this->product->code), 1));
 
         App\Actions\Helpers\Translations\Translate::shouldRun()->andReturnUsing(fn (?string $text) => '[sk] '.$text);
         $chatAgent = App\Models\Chat\ChatAgent::where('user_id', $this->user->id)->firstOrFail();
@@ -3492,12 +3500,6 @@ describe('customer service tools', function () {
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['kind'] === 'draft' && $row['text'] === 'Sorry it arrived broken, we have refunded it.' && $row['staff_note'] === 'Before sending: refund the broken one.' && $row['checked'] === 2 && count($row['actions']) === 2)
                 && collect($rows)->contains(fn ($row) => $row['kind'] === 'note' && $row['text'] === 'Checked the order: nothing to confirm yet.')));
         $pageNote->delete();
-
-        $balance = (float) $this->csCustomer->refresh()->balance;
-        postJson(route('grp.api.chats.ai_drafts.action', [$draft->id, 0]))->assertOk()->assertJsonPath('data.done', true);
-        postJson(route('grp.api.chats.ai_drafts.action', [$draft->id, 0]))->assertStatus(409);
-        expect((float) $this->csCustomer->refresh()->balance)->toBeGreaterThan($balance)
-            ->and($order->invoices()->where('type', App\Enums\Accounting\Invoice\InvoiceTypeEnum::REFUND)->count())->toBe(1);
 
         $facts = $draft->refresh()->facts;
         $draft->update(['facts' => array_replace_recursive($facts, ['actions' => [1 => ['assignee' => 'nobody-'.uniqid()]]])]);
@@ -3521,7 +3523,7 @@ describe('customer service tools', function () {
         Illuminate\Support\Facades\Auth::setUser($this->user);
         $listed = collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 50, 'premonition_fixed_only' => true]))->content(), true)['waiting'] ?? []);
 
-        expect(App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->asController($this->chat)->getData(true)['data']['premonitions'][0]['fixed'])->toBeTrue()
+        expect(App\Actions\Chat\ChatSession\HandleChatAiDraft::make()->asController($this->chat)->getData(true)['data']['premonitions'][0])->toMatchArray(['fixed' => true, 'progress' => 'fixed'])
             ->and($listed->firstWhere('chat_id', $this->chat->ulid))->toMatchArray(['premonition_fixed' => true]);
     });
 

@@ -9,10 +9,10 @@ import { chatAutoTranslate } from "@/Composables/useChatTranslation"
 import { ref, computed, watch, onBeforeUnmount } from "vue"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronDown, faChevronUp, faChevronRight, faExclamationTriangle, faCheck, faBowlingBall, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faTrashAlt, faCommentsAlt } from "@fal"
+import { faChevronDown, faChevronUp, faChevronRight, faExclamationTriangle, faCheck, faClipboardCheck, faLanguage, faTimes, faArrowDown, faArrowUp, faTrashAlt, faCommentsAlt, faLink, faBoxFragile } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
-import { formatChatTime } from "@/Composables/chatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import TicketStatusChip from "@/Components/Tickets/TicketStatusChip.vue"
 import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 
@@ -34,6 +34,7 @@ interface DraftAction {
     done: boolean
     available: boolean
     why: string | null
+    url?: string | null
 }
 
 interface Draft {
@@ -43,7 +44,7 @@ interface Draft {
     assistant: { of?: string, client?: string } | null
     staff_note?: string | null
     checked?: string[]
-    premonitions?: { reference: string, subject: string, fixed: boolean, url: string }[]
+    premonitions?: { reference: string, subject: string, fixed: boolean, status_icon: { icon: string, class: string, tooltip: string }, url: string }[]
     actions?: DraftAction[]
     questions?: { text: string, status: "answered" | "usual_decision" | "gap" }[]
     since_last_reply?: { count: number, first_at: string, last_at: string, after_reply: boolean } | null
@@ -59,8 +60,6 @@ interface Draft {
 }
 
 const draft = ref<Draft | null>(null)
-const checkedOpen = ref(false)
-const questionsOpen = ref(!!props.inline)
 const noteOpen = ref(false)
 const staffTranslation = ref<{ language: string, language_id?: number, editable?: boolean, text?: string | null, staff_note: string | null, checked: string[], labels: Record<number, string>, questions?: string[] } | null>(null)
 const showTranslation = ref(false)
@@ -100,8 +99,6 @@ const clear = () => {
     draft.value = null
     confirming.value = null
     actionBusy.value = false
-    checkedOpen.value = false
-    questionsOpen.value = !!props.inline
     noteOpen.value = false
     staffTranslation.value = null
     showTranslation.value = false
@@ -194,6 +191,10 @@ watch(() => draft.value?.id, () => offerToEditor())
 
 const runAction = async (action: DraftAction) => {
     if (!draft.value || actionBusy.value) return
+    if (action.url) {
+        window.open(action.url, "_blank", "noopener")
+        return
+    }
 
     const draftId = draft.value.id
     const key = `${draftId}:${action.index}`
@@ -314,23 +315,19 @@ const translateForMe = () => {
 
 const draftText = computed(() => showTranslation.value && staffTranslation.value?.text ? staffTranslation.value.text : draft.value?.text)
 const staffNote = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.staff_note : draft.value?.staff_note)
-const checkedLines = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.checked : (draft.value?.checked ?? []))
-const questionText = (position: number) => (showTranslation.value && staffTranslation.value?.questions?.[position]) || draft.value?.questions?.[position]?.text
 const sinceLine = computed(() => {
     const since = draft.value?.since_last_reply
-    if (!since) return null
-    const replacements = { count: since.count, first: formatChatTime(Date.parse(since.first_at)), last: formatChatTime(Date.parse(since.last_at)) }
-    if (since.count === 1) return since.after_reply ? ctrans("Customer wrote once since our last reply (at :first).", replacements) : ctrans("Customer wrote once (at :first).", replacements)
+    if (!since || since.count < 2) return null
     return since.after_reply
-        ? ctrans("Customer wrote :count times since our last reply (first at :first, last at :last).", replacements)
-        : ctrans("Customer wrote :count times (first at :first, last at :last).", replacements)
+        ? ctrans("Customer wrote :count times since our reply", { count: since.count })
+        : ctrans("Customer wrote :count times", { count: since.count })
 })
 const actionLabel = (action: DraftAction) => !action.done && showTranslation.value && staffTranslation.value?.labels?.[action.index] ? staffTranslation.value.labels[action.index] : action.label
-const questionsToCheck = computed(() => draft.value?.questions?.filter((question) => question.status !== "answered").length ?? 0)
 const isQuestion = (action: DraftAction) => action.type === "spam" || action.type === "close"
+const actionIcon = (action: DraftAction) => ({ link: faLink, claim: faBoxFragile }[action.type as string] ?? faClipboardCheck)
 const questionActions = computed(() => draft.value?.actions?.filter(isQuestion) ?? [])
 const staffActions = computed(() => draft.value?.actions?.filter((action) => !isQuestion(action)) ?? [])
-const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.checked?.length || draft.value?.questions?.length || draft.value?.actions?.some((action) => action.type === "task")))
+const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.actions?.some((action) => action.type === "task")))
 
 const listen = () => {
     if (!props.sessionUlid || !(window as any).Echo) return
@@ -374,7 +371,7 @@ defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => dec
     <div v-if="shown || failure" class="text-xs" :class="inline ? '' : 'mb-1.5'">
         <p v-if="failure" class="mb-1 px-1 text-[11px] text-red-600">{{ failure }}</p>
         <template v-if="!hidden">
-            <div v-if="shown && draft" class="relative rounded-xl border border-pink-300 bg-pink-50 py-2 pr-3" :class="inline ? 'pl-5' : 'pl-3'">
+            <div v-if="shown && draft" class="relative rounded-xl border border-pink-300 bg-pink-50" :class="inline ? 'py-3.5 pl-6 pr-4' : 'py-2 pl-3 pr-3'">
                 <button v-if="!inline && (hasStaffText || draft.text)" type="button" :disabled="translating" @click="toggleTranslation"
                     class="absolute right-7 top-1.5 rounded px-1 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
                     :aria-pressed="showTranslation"
@@ -400,61 +397,35 @@ defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => dec
                         </template>
                     </Button>
                 </div>
-                <div v-if="staffNote || staffActions.length" :class="inline ? 'flex-col items-start' : 'mr-12 flex-wrap items-center'" class="flex gap-x-2 gap-y-1 rounded-md border border-pink-200 bg-pink-100 px-2 py-1 text-[11px] text-pink-950">
-                    <div class="flex min-w-0 flex-1 items-start gap-1.5 self-stretch">
-                        <FontAwesomeIcon :icon="faExclamationTriangle" class="mt-px shrink-0 text-pink-600" fixed-width aria-hidden="true" />
-                        <span v-if="staffNote" role="button" tabindex="0" class="min-w-0 flex-1 cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
+                <div v-if="staffNote || staffActions.length || draft.premonitions?.length" :class="inline ? 'flex-col items-start gap-y-2.5 px-3.5 py-3 text-xs' : 'mr-12 flex-wrap items-center gap-y-1 px-2 py-1 text-[11px]'" class="flex gap-x-2 rounded-md border border-pink-200 bg-pink-100 text-pink-950">
+                    <div v-if="staffNote || draft.premonitions?.length" class="flex min-w-0 flex-1 items-start gap-1.5 self-stretch">
+                        <FontAwesomeIcon v-if="!draft.premonitions?.length" :icon="faExclamationTriangle" class="mt-px shrink-0 text-pink-600" fixed-width aria-hidden="true" />
+                        <div class="min-w-0 flex-1">
+                            <span v-if="staffNote" role="button" tabindex="0" class="block cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
+                            <span v-if="draft.premonitions?.length" class="mt-1.5 flex flex-wrap gap-2 text-xs"><TicketStatusChip v-for="premonition in draft.premonitions" :key="premonition.reference" :ticket="premonition" /></span>
+                        </div>
                     </div>
                     <template v-for="action in staffActions" :key="action.index">
                         <span v-if="action.done" class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 ring-1 ring-inset ring-emerald-200">
                             <FontAwesomeIcon :icon="faCheck" fixed-width />{{ action.label }}
                         </span>
-                        <Button v-else type="tertiary" size="xs" class="bg-white" :disabled="preview || actionBusy || !action.available" @click="runAction(action)"
+                        <Button v-else type="tertiary" :size="inline ? 'm' : 'xs'" class="!border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50" :disabled="preview || actionBusy || !action.available" @click="runAction(action)"
                             :tooltip="action.why ?? undefined"
                             :label="confirming === `${draft.id}:${action.index}` ? ctrans('Confirm: :label', { label: actionLabel(action) }) : actionLabel(action)">
                             <template #icon>
-                                <FontAwesomeIcon :icon="faClipboardCheck" class="text-pink-600" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon :icon="actionIcon(action)" class="text-white" fixed-width aria-hidden="true" />
                             </template>
                         </Button>
+                        <span v-if="!action.done && !action.available && action.why" class="text-gray-500">{{ action.why }}</span>
                     </template>
                 </div>
-                <div v-if="draft.premonitions?.length" class="mt-1 flex flex-wrap gap-1.5 text-[11px]">
-                    <a v-for="premonition in draft.premonitions" :key="premonition.reference" :href="premonition.url" target="_blank" rel="noopener" :title="premonition.subject"
-                        class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 ring-1 ring-inset hover:underline"
-                        :class="premonition.fixed ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-white text-gray-700 ring-gray-200'">
-                        <FontAwesomeIcon :icon="faBowlingBall" fixed-width />
-                        {{ premonition.reference }} · {{ premonition.fixed ? ctrans("fixed") : ctrans("engineers are on it") }}
+                <p v-if="sinceLine" class="mt-1 text-[11px] text-gray-500">{{ sinceLine }}</p>
+                <div v-if="draft.other_chats?.length" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-500">
+                    <FontAwesomeIcon :icon="faCommentsAlt" fixed-width aria-hidden="true" />
+                    <span>{{ ctrans("Also open for this customer:") }}</span>
+                    <a v-for="other in draft.other_chats" :key="other.ulid" :href="other.url" target="_blank" rel="noopener" class="whitespace-nowrap text-gray-700 underline hover:text-gray-900">
+                        {{ [other.shop, other.channel].filter(Boolean).join(" · ") }}
                     </a>
-                </div>
-                <div v-if="draft.questions?.length" class="mt-1 rounded-md border border-pink-200 bg-white/50 px-2 py-1 text-[11px] text-gray-700">
-                    <button type="button" class="flex w-full items-center gap-1.5 rounded text-left focus:outline-none focus-visible:ring-1 focus-visible:ring-pink-300" :aria-expanded="questionsOpen" @click="questionsOpen = !questionsOpen">
-                        <FontAwesomeIcon :icon="questionsToCheck ? faExclamationTriangle : faCheck" :class="questionsToCheck ? 'text-amber-500' : 'text-green-600'" fixed-width aria-hidden="true" />
-                        <span class="min-w-0 flex-1 font-medium" :class="questionsToCheck ? 'text-amber-700' : 'text-gray-700'">
-                            {{ questionsToCheck
-                                ? draft.questions.length === 1 ? ctrans("1 question, to check") : ctrans(":count questions, :check to check", { count: draft.questions.length, check: questionsToCheck })
-                                : draft.questions.length === 1 ? ctrans("1 question, answered") : ctrans(":count questions, all answered", { count: draft.questions.length }) }}
-                        </span>
-                    </button>
-                    <template v-if="questionsOpen">
-                    <p v-if="sinceLine" class="mt-0.5 text-gray-500">{{ sinceLine }}</p>
-                    <ol class="mt-0.5 space-y-0.5">
-                        <li v-for="(question, position) in draft.questions" :key="position" class="flex items-start gap-1.5">
-                            <span class="w-4 shrink-0 text-right tabular-nums text-gray-400">{{ position + 1 }}.</span>
-                            <FontAwesomeIcon :icon="question.status === 'answered' ? faCheck : faExclamationTriangle" :class="question.status === 'answered' ? 'text-green-600' : 'text-amber-500'" class="mt-0.5" fixed-width aria-hidden="true" />
-                            <span class="min-w-0 flex-1">{{ questionText(position) }}</span>
-                            <span class="whitespace-nowrap" :class="question.status === 'answered' ? 'text-green-700' : 'font-medium text-amber-700'">
-                                {{ question.status === "answered" ? ctrans("answered") : question.status === "usual_decision" ? ctrans("our usual decision, check") : ctrans("gap for staff") }}
-                            </span>
-                        </li>
-                    </ol>
-                    <div v-if="draft.other_chats?.length" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-gray-100 pt-1 text-gray-500">
-                        <FontAwesomeIcon :icon="faCommentsAlt" fixed-width aria-hidden="true" />
-                        <span>{{ ctrans("Also open for this customer:") }}</span>
-                        <a v-for="other in draft.other_chats" :key="other.ulid" :href="other.url" target="_blank" rel="noopener" class="whitespace-nowrap text-gray-700 underline hover:text-gray-900">
-                            {{ [other.shop, other.channel].filter(Boolean).join(" · ") }}
-                        </a>
-                    </div>
-                    </template>
                 </div>
                 <template v-if="inline && editsInMyLanguage && staffTranslation?.editable">
                     <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aura's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
@@ -471,15 +442,6 @@ defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => dec
                 <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draftText }}</p>
                 <p v-else-if="inline && draft.text && showTranslation && staffTranslation?.text && !(editsInMyLanguage && staffTranslation.editable)" class="mt-1 max-h-48 overflow-y-auto whitespace-pre-line text-gray-800" @copy="copied">{{ staffTranslation.text }}</p>
                 <p v-if="draft.text.includes('[[')" class="mt-1 text-[11px] text-amber-700">{{ ctrans("Fill in or delete the parts marked [[ ]] before sending.") }}</p>
-                <div v-if="draft.checked?.length" class="mt-1 text-[11px] text-gray-500">
-                    <button type="button" class="inline-flex items-center gap-1 hover:text-gray-700" :aria-expanded="checkedOpen" @click="checkedOpen = !checkedOpen">
-                        <FontAwesomeIcon :icon="faClipboardCheck" fixed-width />
-                        {{ ctrans("Checked in aiku (:count)", { count: draft.checked.length }) }}
-                    </button>
-                    <ul v-if="checkedOpen" class="mt-0.5 list-disc pl-5 text-gray-600">
-                        <li v-for="(line, position) in checkedLines" :key="position">{{ line }}</li>
-                    </ul>
-                </div>
                 <div v-if="!preview && !inline" class="mt-2 flex flex-wrap items-center gap-2">
                     <Button v-if="!inline && draft.text" type="tertiary" size="xs" class="bg-white" :disabled="busy" :label="ctrans('Use')" @click="decide('take')">
                         <template #icon>

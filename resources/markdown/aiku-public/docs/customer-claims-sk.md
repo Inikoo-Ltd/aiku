@@ -53,6 +53,8 @@ Reklamácie na kredit, náhradu a ďalšiu objednávku sa vybavia hneď po ulož
 
 <b>Create tax refund</b> zostáva v menu faktúry pre účtovníkov. Po dokončení sa zaznamená ako reklamácia typu <b>Tax correction</b> (daňová oprava), ktorá sa nezapočítava do údajov o produktoch ani do limitu zákazníka.
 
+Keď Aura v koncepte odpovede v chate navrhne vrátenie peňazí alebo náhradu, jej tlačidlo je <b>Create claim</b> (Založiť reklamáciu), v každom obchode: otvorí tento formulár na novej karte s objednávkou, položkami, dôvodom a výsledkom, ktoré navrhla, aby ste ich pred uložením skontrolovali a upravili.
+
 V obchodoch, ktoré ešte nepracujú len cez reklamácie, zostávajú obvyklé tlačidlá a každá náhrada, kredit, položka v ďalšej objednávke a vrátenie peňazí, ktoré urobíte, sa aj tak zaznamená ako reklamácia.
 
 ## Nastavenia

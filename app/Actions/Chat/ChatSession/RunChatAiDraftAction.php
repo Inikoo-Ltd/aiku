@@ -10,7 +10,6 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
-use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatAiDraft;
 use App\Models\Chat\ChatSession;
@@ -20,15 +19,14 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Number;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
- * The buttons an assistant puts on its draft: settle a claim the way the Claim panel does, ask a
- * department to do something as a staff task, put a chat that is probably spam in spam, never
+ * The buttons an assistant puts on its draft: open the staff claim form prefilled with the claim
+ * she proposes (staff check it and create the claim there), ask a department to do something as a staff task, put a chat that is probably spam in spam, never
  * blocking the sender, close as done an email that only thanks us, or link the chat to its customer. The assistant only proposes them; each runs once,
  * when a staff member who may do it clicks, as that staff member, and the draft keeps what came of it.
  */
@@ -122,30 +120,14 @@ class RunChatAiDraftAction
             return ['label' => __(':reference sent', ['reference' => $task->reference]), 'reference' => $task->reference];
         }
 
-        $permission = PlanChatClaim::permission($action['resolution']);
-        abort_unless($user->authTo(ShopPermissionsEnum::getPermissionName($permission->value, $session->shop)), 403, __('You are not allowed to do this in :shop', ['shop' => $session->shop->name]));
-
-        $order = self::order($session, $action['order']);
-        abort_unless($order, 422, __(':order is not an order of this customer', ['order' => $action['order']]));
-        $order = Order::lockForUpdate()->find($order->id);
-
-        $plan = PlanChatClaim::run($session, $order, $action['resolution'], $action['items'], $action['reason'] ?? null, $action['percentage'] ?? null);
-        abort_if((bool) $plan['error'], 422, $plan['error'] ?? '');
-
-        $result = PlanChatClaim::make()->settleAsStaff($order, $action['resolution'], $plan['claimed'], $plan['reason'], $plan['percentage'], null, $user);
-
-        return match ($action['resolution']) {
-            'refund_to_balance' => ['label' => __('Refunded :amount (:reference)', ['amount' => self::money($result['credited'], $plan['currency']), 'reference' => $result['refund']]), 'reference' => $result['refund']],
-            'replacement'       => ['label' => __('Replacement :reference created', ['reference' => $result['replacement']]), 'reference' => $result['replacement']],
-            default             => ['label' => __('Added free to the next order'), 'reference' => null],
-        };
+        abort(422, __('Claims are made with Create claim, on the claim form'));
     }
 
     /**
-     * What the draft card shows for each proposed action, worked out now: a refund shows the
-     * amount it comes to today, and an action that can no longer be done says why.
+     * What the draft card shows for each proposed action, worked out now: an action that can no
+     * longer be done says why, and a claim links to the claim form.
      *
-     * @return array<int, array{index: int, type: string, label: string, done: bool, available: bool, why: string|null}>
+     * @return array<int, array{index: int, type: string, label: string, done: bool, available: bool, why: string|null, url?: string|null}>
      */
     public static function views(ChatSession $session, ChatAiDraft $draft): array
     {
@@ -157,7 +139,7 @@ class RunChatAiDraftAction
 
     /**
      * @param  array<string, mixed>  $action
-     * @return array{index: int, type: string, label: string, done: bool, available: bool, why: string|null}
+     * @return array{index: int, type: string, label: string, done: bool, available: bool, why: string|null, url?: string|null}
      */
     public static function view(ChatSession $session, array $action, int $index): array
     {
@@ -195,17 +177,20 @@ class RunChatAiDraftAction
         }
 
         $order = self::order($session, $action['order']);
-        $plan  = $order ? PlanChatClaim::run($session, $order, $action['resolution'], $action['items'], $action['reason'] ?? null, $action['percentage'] ?? null) : ['error' => __('Order not found')];
         $items = collect($action['items'])->map(fn (array $item) => (float) $item['quantity'].' × '.$item['code'])->implode(', ');
+
+        $plan  = $order ? PlanChatClaim::run($session, $order, $action['resolution'], $action['items'], $action['reason'] ?? null, $action['percentage'] ?? null) : ['error' => __('Order not found'), 'reason' => null];
 
         return array_replace($view, [
             'available' => !$plan['error'],
             'why'       => $plan['error'],
-            'label'     => match ($action['resolution']) {
-                'refund_to_balance' => $plan['error'] ? __('Refund :items', ['items' => $items]) : __('Refund :amount', ['amount' => self::money($plan['amount'], $plan['currency'])]),
-                'replacement'       => __('Send replacement: :items', ['items' => $items]),
-                default             => __('Add free to next order: :items', ['items' => $items]),
-            },
+            'label'     => __('Create claim: :items', ['items' => $items]),
+            'url'       => !$plan['error'] ? route('grp.org.shops.show.claims.create', [$session->shop->organisation->slug, $session->shop->slug, $order->slug]).'?'.http_build_query(array_filter([
+                'resolution' => $action['resolution'],
+                'reason'     => $action['reason'] ?? $plan['reason'],
+                'percentage' => $action['percentage'] ?? null,
+                'items'      => collect($action['items'])->mapWithKeys(fn (array $item) => [trim($item['code']) => (float) $item['quantity']])->all(),
+            ])) : null,
         ]);
     }
 
@@ -235,10 +220,5 @@ class RunChatAiDraftAction
     public static function order(ChatSession $session, string $reference): ?Order
     {
         return $session->webUser?->customer?->orders()->whereRaw('lower(reference) = ?', [strtolower(trim($reference))])->first();
-    }
-
-    private static function money(float $amount, ?string $currency): string
-    {
-        return $currency ? (string) Number::currency($amount, $currency) : number_format($amount, 2);
     }
 }

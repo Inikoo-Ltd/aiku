@@ -64,7 +64,7 @@ class SendShoppingAssistantWeeklySummary
             'hand_overs'    => $report['general']['hand_overs'] ?? ['value' => 0, 'previous' => 0],
             'challenges'    => $report['challenges']['top'],
             'zero_searches' => array_slice($report['search']['top_zero_queries'], 0, 10),
-            'url'           => route('grp.websites.shopping_assistant.show', ['from' => $from->toDateString(), 'to' => $to->toDateString()]),
+            'url'           => route('grp.ai.shopping_assistant.show', ['from' => $from->toDateString(), 'to' => $to->toDateString()]),
         ];
     }
 

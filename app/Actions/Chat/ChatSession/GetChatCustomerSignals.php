@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
+use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatIntentEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -21,7 +23,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * What an agent should know about a linked customer before answering, counted from our own
- * tables, most important first (INI-520). Complaints are the greater of two counts over 7 days:
+ * tables, most important first (INI-520). Each signal must be rare enough to mean something (Raul,
+ * 23 Nov 2026: a first complaint is no insight): measured on a week of prod email chats, 4+ claims
+ * in 90 days marks 1.6% of customers and customer since 10+ years 2%. Complaints, shown from the
+ * second one, are the greater of two counts over 7 days:
  * conversations with a draft whose intent is damaged, missing, wrong, delivery failed or a
  * service complaint, and claims raised, so a problem that is both a chat and a claim is not
  * counted twice.
@@ -32,7 +37,9 @@ class GetChatCustomerSignals
 
     public const COMPLAINT_DAYS = 7;
     public const TOP_CUSTOMER_PERCENT = 2;
-    public const LONG_STANDING_YEARS = 3;
+    public const LONG_STANDING_YEARS = 10;
+    public const FREQUENT_CLAIMS = 4;
+    public const FREQUENT_CLAIMS_DAYS = 90;
 
     public const COMPLAINT_INTENTS = [
         ChatIntentEnum::DAMAGED_ITEM,
@@ -54,8 +61,13 @@ class GetChatCustomerSignals
 
         $signals = [];
 
+        $claims = $this->recentClaims($customer);
+        if ($claims >= self::FREQUENT_CLAIMS) {
+            $signals[] = ['key' => 'frequent_claims', 'label' => __(':count claims in :days days', ['count' => $claims, 'days' => self::FREQUENT_CLAIMS_DAYS]), 'count' => $claims, 'tone' => 'red'];
+        }
+
         $complaints = $this->complaintsThisWeek($customer);
-        if ($complaints > 0) {
+        if ($complaints > 1) {
             $signals[] = ['key' => 'complaints', 'label' => __(':ordinal complaint this week', ['ordinal' => $this->ordinal($complaints)]), 'count' => $complaints, 'tone' => 'red'];
         }
 
@@ -72,7 +84,7 @@ class GetChatCustomerSignals
         if ($stats && $this->isTopCustomer($customer, (float) $stats->sales_all)) {
             $signals[] = ['key' => 'top_customer', 'label' => __('Top customer'), 'count' => null, 'tone' => 'green'];
         } elseif ($customer->registered_at && ($years = (int) Carbon::parse($customer->registered_at)->diffInYears(now())) >= self::LONG_STANDING_YEARS) {
-            $signals[] = ['key' => 'long_standing', 'label' => __('Customer for :years years', ['years' => $years]), 'count' => $years, 'tone' => 'gray'];
+            $signals[] = ['key' => 'long_standing', 'label' => __('Customer since :year', ['year' => Carbon::parse($customer->registered_at)->year]), 'count' => $years, 'tone' => 'gray'];
         }
 
         return $signals;
@@ -97,6 +109,16 @@ class GetChatCustomerSignals
         $claims = CustomerClaim::query()->where('customer_id', $customer->id)->where('created_at', '>=', $since)->count();
 
         return max($chats, $claims);
+    }
+
+    private function recentClaims(Customer $customer): int
+    {
+        return CustomerClaim::query()
+            ->where('customer_id', $customer->id)
+            ->whereIn('kind', [CustomerClaimKindEnum::ITEMS->value, CustomerClaimKindEnum::REFUND->value])
+            ->where('state', '!=', CustomerClaimStateEnum::REJECTED->value)
+            ->where('created_at', '>=', now()->subDays(self::FREQUENT_CLAIMS_DAYS))
+            ->count();
     }
 
     private function emailsToday(Customer $customer): int

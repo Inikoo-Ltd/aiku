@@ -16,7 +16,7 @@ use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\UI\Websites\WebsitesDashboard;
+use App\Actions\Helpers\AI\UI\ShowAiDashboard;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
@@ -544,7 +544,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
         $routePrefix   = match (true) {
             $this->inShopMenu       => 'grp.org.shops.show.ai_salesman.',
             (bool) $this->website   => 'grp.org.shops.show.web.analytics.shopping_assistant.',
-            default                 => 'grp.websites.shopping_assistant.',
+            default                 => 'grp.ai.shopping_assistant.',
         };
 
         return Inertia::render(
@@ -654,11 +654,11 @@ class ShowShoppingAssistantPerformance extends OrgAction
         }
 
         return [
-            ...WebsitesDashboard::make()->getBreadcrumbs(),
+            ...ShowAiDashboard::make()->getBreadcrumbs(),
             [
                 'type'   => 'simple',
                 'simple' => [
-                    'route' => ['name' => 'grp.websites.shopping_assistant.show', 'parameters' => []],
+                    'route' => ['name' => 'grp.ai.shopping_assistant.show', 'parameters' => []],
                     'label' => $label,
                 ],
             ],

@@ -109,7 +109,7 @@ class ShowAiFeature extends OrgAction
                             'icon'  => ['fal', 'fa-hat-wizard'],
                             'label' => __(':name report', ['name' => GetShoppingAssistantSettings::nameInGroup($this->group->id)]),
                             'route' => [
-                                'name'       => 'grp.websites.shopping_assistant.show',
+                                'name'       => 'grp.ai.shopping_assistant.show',
                                 'parameters' => [],
                             ],
                         ],

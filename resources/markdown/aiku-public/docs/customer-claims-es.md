@@ -53,6 +53,8 @@ Las reclamaciones de crédito, reposición y próximo pedido se resuelven en cua
 
 <b>Create tax refund</b> sigue en el menú de la factura para los contables. Cuando se finaliza, queda registrado como una reclamación de <b>Tax correction</b> (Corrección de impuestos), que no cuenta en las cifras de productos ni en el límite del cliente.
 
+Cuando Aura propone un reembolso o una reposición en su borrador de un chat, su botón es <b>Create claim</b> (Crear reclamación), en todas las tiendas: abre este formulario en una pestaña nueva con el pedido, los artículos, el motivo y el resultado que ella propuso ya rellenados, para que los revises y cambies antes de guardar.
+
 En las tiendas que aún no trabajan solo con reclamaciones, los botones habituales siguen ahí, y cada reposición, crédito, artículo de próximo pedido y reembolso que hagas queda igualmente registrado como una reclamación.
 
 ## Ajustes
