@@ -23,6 +23,8 @@ class GetGroupNavigation
     use AsAction;
     use WithShopPpcPermissions;
 
+    public const string SHOPPING_ASSISTANT_MOVED_NOTICE_UNTIL = '2026-11-30 23:59:59';
+
     public function handle(User $user): array
     {
         $groupNavigation = [];
@@ -109,7 +111,7 @@ class GetGroupNavigation
         }
 
         if ($user->hasGroupAccess()) {
-            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user));
+            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user), $this->canViewGroupShoppingAssistant($user) ? GetShoppingAssistantSettings::nameInGroup($user->group_id) : null);
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -729,7 +731,7 @@ class GetGroupNavigation
         ];
     }
 
-    private function getWebsiteNavs(bool $canViewGroupSeo): array
+    private function getWebsiteNavs(bool $canViewGroupSeo, ?string $shoppingAssistantName): array
     {
         return [
             'label'   => __('WebOps'),
@@ -788,6 +790,18 @@ class GetGroupNavigation
                         'root'    => 'grp.websites.google_tag_manager',
                         'route'   => [
                             'name'       => 'grp.websites.google_tag_manager.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    ]),
+                    ...(!$shoppingAssistantName || now()->gt(self::SHOPPING_ASSISTANT_MOVED_NOTICE_UNTIL) ? [] : [
+                    [
+                        'label'   => $shoppingAssistantName.' → '.__('AI'),
+                        'tooltip' => __(':name has moved to the AI section', ['name' => $shoppingAssistantName]),
+                        'icon'    => ['fal', 'fa-hat-wizard'],
+                        'root'    => 'grp.websites.shopping_assistant_moved',
+                        'route'   => [
+                            'name'       => 'grp.ai.shopping_assistant.show',
                             'parameters' => []
                         ]
                     ],
