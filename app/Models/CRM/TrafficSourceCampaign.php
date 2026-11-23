@@ -26,6 +26,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $channel_type
  * @property array|null $data
+ * @property int|null $merged_into_id
  * @property-read \App\Models\CRM\TrafficSourceCampaignStat|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaignMetric> $metrics
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaignConversion> $conversions
@@ -79,6 +80,11 @@ class TrafficSourceCampaign extends Model implements Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function mergedInto(): BelongsTo
+    {
+        return $this->belongsTo(TrafficSourceCampaign::class, 'merged_into_id');
     }
 
     public function trafficSource(): BelongsTo
