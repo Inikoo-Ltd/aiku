@@ -481,10 +481,10 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 						class="min-w-0 p-3"
 						:class="isStageComplete(stage.key) ? 'bg-green-50' : 'bg-white'">
 						<div class="flex items-center gap-2 font-medium" :class="isStageComplete(stage.key) || isStageCurrent(stage.key) ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
-							<FontAwesomeIcon v-if="isStageComplete(stage.key)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-							<span v-else class="w-4 text-center tabular-nums">{{ index + 1 }}</span>
+							<span class="w-4 shrink-0 text-center tabular-nums">{{ index + 1 }}</span>
 							<FontAwesomeIcon :icon="stageIcons[stage.key]" class="text-gray-400" fixed-width aria-hidden="true" />
 							<span class="truncate">{{ stage.label }}</span>
+							<FontAwesomeIcon v-if="isStageComplete(stage.key)" icon="fas fa-check-circle" class="shrink-0 text-green-600" fixed-width aria-hidden="true" />
 						</div>
 						<div class="text-xs italic text-gray-400">{{ stage.description }}</div>
 						<p v-if="stage.note" class="mt-1 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-1 text-xs text-[var(--app-accent-deep)]">{{ stage.note }}</p>
