@@ -2150,13 +2150,8 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
     $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
 
     $stages = fn () => collect(App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::make()->forUi($purchaseOrder->refresh(), ['handed_over_at']))->keyBy('key');
-    expect($stages())->not->toHaveKey('in_warehouse')
+    expect($agent->refresh()->settings['payment_terms'])->toBe('30 days')
         ->and($stages())->not->toHaveKey('shipped')
-        ->and(collect($stages()['handed_over']['marks'])->pluck('field')->all())->toBe(['handed_over_at']);
-
-    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
-    expect($agent->refresh()->receivesGoodsInOwnWarehouse())->toBeTrue()
-        ->and($agent->settings['payment_terms'])->toBe('30 days')
         ->and($stages())->toHaveKey('in_warehouse')
         ->and($agent->poJourney()['cho_mode'])->toBe('next_container')
         ->and($stages()['handed_over']['marks'])->toBe([])
@@ -2205,7 +2200,6 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
 test('goods put in a container leave the agent warehouse, staged or dispatched, and a later receipt for the rest stays held', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
-    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
 
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -2273,8 +2267,7 @@ test('agent switched to goods receipts still ships every line of orders created 
     [$newOrder]           = $confirmedLine(now());
 
     App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, [
-        'receives_goods_in_own_warehouse' => true,
-        'goods_receipts_required_from'    => now()->subDay()->toDateString(),
+        'goods_receipts_required_from' => now()->subDay()->toDateString(),
     ]);
     expect($agent->refresh()->settings['goods_receipts_required_from'])->toBe(now()->subDay()->toDateString());
 

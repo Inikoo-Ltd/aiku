@@ -231,14 +231,12 @@ it('lists the agent ready checks with what is done', function () {
 });
 
 it('reads the agent PO journey settings with defaults', function () {
-    $warehouse = App\Models\SupplyChain\Agent::poJourneyFromSettings(['receives_goods_in_own_warehouse' => true]);
-    $forwarder = App\Models\SupplyChain\Agent::poJourneyFromSettings([]);
+    $default   = App\Models\SupplyChain\Agent::poJourneyFromSettings([]);
     $custom    = App\Models\SupplyChain\Agent::poJourneyFromSettings(['po_journey' => ['cho_mode' => 'forwarder', 'ready_checks' => ['qc', 'nonsense'], 'stages' => ['ready' => ['label' => 'Mine', 'days' => 12]]]], true);
 
-    expect($warehouse['cho_mode'])->toBe('next_container')
-        ->and($forwarder['cho_mode'])->toBe('forwarder')
-        ->and($forwarder['ready_checks'])->toBe(['balance', 'qc', 'packing', 'compliance'])
-        ->and($forwarder['stages']['ready'])->toBe(['label' => 'Ready to Roll', 'description' => 'Final checks', 'days' => null])
+    expect($default['cho_mode'])->toBe('next_container')
+        ->and($default['ready_checks'])->toBe(['balance', 'qc', 'packing', 'compliance'])
+        ->and($default['stages']['ready'])->toBe(['label' => 'Ready to Roll', 'description' => 'Final checks', 'days' => null])
         ->and($custom['cho_mode'])->toBe('forwarder')
         ->and($custom['ready_checks'])->toBe(['qc'])
         ->and($custom['stages']['ready'])->toBe(['label' => 'Mine', 'description' => null, 'days' => 12]);

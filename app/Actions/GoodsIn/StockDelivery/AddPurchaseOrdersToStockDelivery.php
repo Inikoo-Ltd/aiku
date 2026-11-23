@@ -65,7 +65,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
      */
     public static function shipsFromAgentWarehouse(StockDelivery $stockDelivery): bool
     {
-        return (bool) $stockDelivery->agent?->receivesGoodsInOwnWarehouse();
+        return $stockDelivery->agent_id !== null;
     }
 
     public static function addablePurchaseOrders(StockDelivery $stockDelivery): Builder

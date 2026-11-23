@@ -174,6 +174,7 @@ beforeEach(function () {
             modelData: $modelData
         );
     }
+    keepAgentOnLegacyJourney($agent);
     $this->agent = $agent;
 
     $orgAgent = OrgAgent::orderBy('id')->first();

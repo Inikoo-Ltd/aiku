@@ -236,7 +236,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
      */
     public static function shipsFromAgentWarehouse(PurchaseOrder $purchaseOrder): bool
     {
-        return $purchaseOrder->isAgentOrder() && (bool) $purchaseOrder->agent?->receivesGoodsInOwnWarehouse();
+        return $purchaseOrder->isAgentOrder();
     }
 
     /**

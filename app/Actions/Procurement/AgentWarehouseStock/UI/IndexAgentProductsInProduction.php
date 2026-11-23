@@ -64,7 +64,7 @@ class IndexAgentProductsInProduction extends OrgAction
     }
 
     /**
-     * An agent receiving goods in its own warehouse ships only what it received there, so every open line can be
+     * An agent ships only what it received at its warehouse, so every open line can be
      * received whatever stage the order is marked at: production never marked, quality check passed first, or the
      * first lot already shipped (HELP-4292). Orders created before the agent's goods_receipts_required_from ship in
      * full without receipts (INI-174), so they keep the stage rule: only those marked in production are being made.
@@ -76,7 +76,7 @@ class IndexAgentProductsInProduction extends OrgAction
             and production_orders.qc_passed_at is null
             and production_orders.delivery_state in ('in_process', 'confirmed'))";
 
-        if (!$agent?->receivesGoodsInOwnWarehouse()) {
+        if (!$agent) {
             return $stageSql;
         }
 

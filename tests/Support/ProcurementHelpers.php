@@ -106,9 +106,22 @@ function writeChinaContainerList(string $name, array $lines): string
     return $file;
 }
 
+/**
+ * An agent set up as the ones that used to ship straight from purchase orders were left by HELP-4890: clean hand over
+ * marked by hand (forwarder), and orders created before tomorrow ship without goods receipts.
+ */
+function keepAgentOnLegacyJourney(Agent $agent): void
+{
+    \App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, [
+        'po_journey_cho_mode'          => 'forwarder',
+        'goods_receipts_required_from' => now()->addDay()->toDateString(),
+    ]);
+}
+
 function createFreshOrgAgent(object $test): OrgAgent
 {
     $agent = StoreAgent::make()->action($test->group, Agent::factory()->definition());
+    keepAgentOnLegacyJourney($agent);
 
     return StoreOrgAgent::make()->action($test->orgAgent->organisation, $agent, []);
 }

@@ -174,23 +174,14 @@ class Agent extends Model implements HasMedia, Auditable
         return 'slug';
     }
 
-    /**
-     * The agent's suppliers deliver to the agent's own warehouse, where each delivery is recorded as a goods receipt
-     * before anything goes in a container.
-     */
-    public function receivesGoodsInOwnWarehouse(): bool
-    {
-        return (bool) Arr::get($this->settings, 'receives_goods_in_own_warehouse', false);
-    }
-
     public const array CHO_MODES = ['next_container', 'forwarder'];
 
     public const array READY_CHECKS = ['balance', 'qc', 'packing', 'compliance'];
 
     /**
      * How this agent's purchase orders move through the PO journey, from settings.po_journey with defaults applied.
-     * Clean Hand Over (cho_mode) is done once every item is in a container (next_container, the default for an agent
-     * that receives goods in its own warehouse) or once the agent hands the goods to the shipping agent (forwarder).
+     * Clean Hand Over (cho_mode) is done once every item is in a container (next_container, the default) or once the
+     * agent hands the goods to the shipping agent (forwarder).
      * Per stage, a null label or description falls back to the default wording and null days to the standard length
      * of the stage; raw keeps the nulls so a form can tell what was set.
      *
@@ -229,7 +220,7 @@ class Agent extends Model implements HasMedia, Auditable
         return [
             'cho_mode'     => in_array($mode, self::CHO_MODES, true)
                 ? $mode
-                : ((bool) Arr::get($settings ?? [], 'receives_goods_in_own_warehouse', false) ? 'next_container' : 'forwarder'),
+                : 'next_container',
             'stages'       => $stages,
             'ready_checks' => is_array($checks) ? array_values(array_intersect(self::READY_CHECKS, $checks)) : self::READY_CHECKS,
         ];

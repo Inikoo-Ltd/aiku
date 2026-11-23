@@ -563,15 +563,20 @@ class GetPurchaseOrderStages
     }
 
     /**
-     * Set on the agent, or seen from the goods receipts of an agent that records them without the setting.
+     * Every agent order goes through the agent warehouse, except one created before the agent's
+     * goods_receipts_required_from by an agent that never recorded a goods receipt: it keeps the stages it had.
      */
     public function usesAgentWarehouse(PurchaseOrder $purchaseOrder): bool
     {
-        return $this->usesAgentWarehouse[$purchaseOrder->id]
-            ??= $purchaseOrder->isAgentOrder() && (
-                (bool) $purchaseOrder->agent?->receivesGoodsInOwnWarehouse()
-                || AgentGoodsReceipt::where('agent_id', $purchaseOrder->agent_id)->where('state', AgentGoodsReceiptStateEnum::RECEIVED)->exists()
-            );
+        if (!$purchaseOrder->isAgentOrder()) {
+            return false;
+        }
+
+        $requiredFrom = Arr::get($purchaseOrder->agent?->settings ?? [], 'goods_receipts_required_from');
+
+        return $this->usesAgentWarehouse[$purchaseOrder->id] ??= !$requiredFrom
+            || $purchaseOrder->created_at >= Carbon::parse($requiredFrom)
+            || AgentGoodsReceipt::where('agent_id', $purchaseOrder->agent_id)->where('state', AgentGoodsReceiptStateEnum::RECEIVED)->exists();
     }
 
     /**

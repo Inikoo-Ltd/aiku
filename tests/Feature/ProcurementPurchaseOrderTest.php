@@ -172,6 +172,7 @@ beforeEach(function () {
             modelData: $modelData
         );
     }
+    keepAgentOnLegacyJourney($agent);
     $this->agent = $agent;
 
     $orgAgent = OrgAgent::orderBy('id')->first();
@@ -4807,7 +4808,6 @@ test('automatic paths still record stages on a submitted order, and a skip is ke
 test('the state follows an agreed order through production, the agent warehouse and its container, and steps back when the container is undone', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
-    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
 
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
@@ -4870,7 +4870,6 @@ test('the state follows an agreed order through production, the agent warehouse 
 test('the state steps back when a line is added to an order whose lines are all in a container, and a deleted order keeps its state', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
-    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
 
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
     $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());

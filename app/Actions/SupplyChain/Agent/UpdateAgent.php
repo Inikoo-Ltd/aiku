@@ -57,9 +57,6 @@ class UpdateAgent extends OrgAction
         if (array_key_exists('buyers_manage_stock_deliveries', $modelData)) {
             $modelData['settings']['buyers_manage_stock_deliveries'] = (bool) Arr::pull($modelData, 'buyers_manage_stock_deliveries');
         }
-        if (array_key_exists('receives_goods_in_own_warehouse', $modelData)) {
-            $modelData['settings']['receives_goods_in_own_warehouse'] = (bool) Arr::pull($modelData, 'receives_goods_in_own_warehouse');
-        }
         if (array_key_exists('goods_receipts_required_from', $modelData)) {
             $modelData['settings']['goods_receipts_required_from'] = Arr::pull($modelData, 'goods_receipts_required_from');
         }
@@ -187,7 +184,6 @@ class UpdateAgent extends OrgAction
             'language_id'  => ['sometimes', 'required', 'exists:languages,id'],
             'status'       => ['sometimes', 'required', 'boolean'],
             'buyers_manage_stock_deliveries' => ['sometimes', 'boolean'],
-            'receives_goods_in_own_warehouse' => ['sometimes', 'boolean'],
             'goods_receipts_required_from' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'image'        => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
         ];
