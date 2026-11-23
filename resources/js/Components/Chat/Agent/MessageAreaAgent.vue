@@ -42,6 +42,7 @@ import MoveToShopDialog from "@/Components/Chat/Agent/MoveToShopDialog.vue"
 import SavedRepliesPicker from "@/Components/Chat/Agent/SavedRepliesPicker.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { Link } from "@inertiajs/vue3"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import ToggleSwitch from "primevue/toggleswitch"
 import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
@@ -1027,6 +1028,23 @@ const openMailIds = computed(() => {
 })
 
 const isFromCustomer = (message: { sender_type?: string }) => message.sender_type === "user" || message.sender_type === "guest"
+
+const customerWaitingSince = computed(() => {
+    const messages = messagesLocal.value
+    let firstAfterOurReply = messages.length
+    while (firstAfterOurReply > 0 && messages[firstAfterOurReply - 1].sender_type !== "agent") firstAfterOurReply--
+    const waitingFrom = messages.slice(firstAfterOurReply).find(isFromCustomer)
+    return waitingFrom ? new Date(waitingFrom.created_at).getTime() : null
+})
+const customerLink = computed(() => {
+    const webUser = (props.session as any)?.web_user
+    if (!webUser?.slug || !webUser.shop_slug || !webUser.organisation_slug) return null
+    return {
+        url: route("grp.org.shops.show.crm.customers.show", [webUser.organisation_slug, webUser.shop_slug, webUser.slug]),
+        name: (props.session as any)?.contact_name || webUser.email || webUser.slug,
+    }
+})
+const customerWaitingHours = computed(() => customerWaitingSince.value ? (Date.now() - customerWaitingSince.value) / 3600000 : 0)
 
 const mailFoldAll = ref<{ open: boolean, at: number } | null>(null)
 const foldAllMails = (open: boolean) => {
@@ -2328,6 +2346,15 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <div v-if="emailRecipientLabel" class="-mx-3 -mt-2 mb-2 flex items-baseline gap-3 border-b border-gray-200 px-4 py-3 text-sm">
                 <span v-if="replySubject" class="min-w-0 truncate font-semibold text-gray-900">{{ replySubject }}</span>
+                <span class="ml-auto flex shrink-0 items-baseline gap-2 text-xs text-gray-500">
+                    <Link v-if="customerLink" :href="customerLink.url" class="max-w-48 truncate text-gray-600 hover:text-gray-900 hover:underline">{{ customerLink.name }}</Link>
+                    <span v-if="customerLanguage?.name || aiDraftBox?.draft?.customer_language">{{ customerLanguage?.name || aiDraftBox?.draft?.customer_language }}</span>
+                    <span v-if="customerWaitingSince" class="font-medium"
+                        :class="customerWaitingHours >= 24 ? 'text-red-600' : customerWaitingHours >= 4 ? 'text-amber-600' : 'text-gray-500'"
+                        v-tooltip="ctrans('Since :time', { time: formatChatTime(customerWaitingSince) })">
+                        {{ ctrans("Waiting :age", { age: formatChatAge(customerWaitingSince) }) }}
+                    </span>
+                </span>
 
             </div>
 
