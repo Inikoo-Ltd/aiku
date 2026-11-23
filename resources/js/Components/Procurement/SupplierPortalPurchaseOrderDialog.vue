@@ -392,6 +392,12 @@ const dropDocuments = (event: DragEvent) => {
 	}
 }
 const documentsError = ref<string | null>(null)
+const isUploadingDocumentsOpen = ref(false)
+
+const openDocumentsUpload = () => {
+	documentsError.value = null
+	isUploadingDocumentsOpen.value = true
+}
 
 const uploadDocuments = async () => {
 	const id = purchaseOrderId.value
@@ -417,6 +423,7 @@ const uploadDocuments = async () => {
 		documentType.value = null
 		documentFiles.value = []
 		documentFileKey.value++
+		isUploadingDocumentsOpen.value = false
 	} catch (error: any) {
 		const errors = error?.response?.data?.errors as Record<string, string[]> | undefined
 		documentsError.value = (errors && Object.values(errors)[0]?.[0]) ?? ctrans("The documents could not be uploaded. Try again.")
@@ -672,7 +679,29 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 							</dl>
 						</div>
 
-						<div v-else-if="stage.key === 'handed_over' && detail.completion.available" class="mt-2 text-xs">
+						<div v-else-if="stage.key === 'handed_over'" class="mt-2 space-y-2 text-xs">
+							<div>
+								<div class="mb-1 font-semibold text-gray-500">{{ ctrans("Shipping documents") }}</div>
+								<ul v-if="detail.documents.files.length" class="space-y-1">
+									<li v-for="(document, documentIndex) in detail.documents.files" :key="documentIndex">
+										<div class="font-medium text-gray-500">{{ document.type }}</div>
+										<div class="flex items-center gap-2">
+											<a :href="document.view_url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" v-tooltip="document.file_name">
+												<FontAwesomeIcon icon="fal fa-file-alt" fixed-width aria-hidden="true" />
+												<span class="truncate">{{ document.file_name }}</span>
+											</a>
+											<a :href="document.download_url" class="ml-auto shrink-0 text-gray-500 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Download')" :aria-label="ctrans('Download')">
+												<FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
+											</a>
+										</div>
+									</li>
+								</ul>
+								<p v-else class="text-gray-400">{{ ctrans("No documents uploaded yet") }}</p>
+								<Button v-if="documentsRoute && detail.documents.open" type="tertiary" size="xs" full class="mt-1.5" :label="ctrans('Upload documents')" @click="openDocumentsUpload">
+									<template #icon><FontAwesomeIcon icon="fal fa-upload" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+								</Button>
+							</div>
+							<template v-if="detail.completion.available">
 							<div v-if="detail.completion.completed_at" class="flex items-center gap-1 text-green-700">
 								<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
 								{{ detail.completion.by_supplier ? ctrans("Order complete") : ctrans("Handed over") }}
@@ -691,6 +720,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<span>{{ detail.completion.blocked }}</span>
 								</p>
 							</div>
+							</template>
 						</div>
 					</li>
 				</ol>
@@ -773,38 +803,9 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 					</ul>
 					<p v-else class="text-xs text-gray-400">{{ ctrans("No documents uploaded yet") }}</p>
 
-					<div
-						v-if="documentsRoute && detail.documents.open"
-						class="space-y-2 rounded-lg border-2 border-dashed p-3 transition-colors"
-						:class="isDraggingDocuments ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)]' : 'border-gray-200'"
-						@dragenter.prevent="isDraggingDocuments = true"
-						@dragover.prevent="isDraggingDocuments = true"
-						@dragleave.self="isDraggingDocuments = false"
-						@drop.prevent="dropDocuments">
-						<div class="flex items-center gap-2 text-xs text-gray-500">
-							<FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" />
-							{{ ctrans("Drag and drop files here, or choose them") }}
-						</div>
-						<div class="flex flex-wrap items-center gap-2">
-							<Select v-model="documentType" :options="detail.documents.types" optionLabel="label" optionValue="value" :placeholder="ctrans('Document type')" class="w-56" size="small" />
-							<FileUpload :key="documentFileKey" mode="basic" :auto="false" customUpload multiple :chooseLabel="ctrans('Choose files')" @select="chooseDocuments">
-								<template #filelabel><span /></template>
-							</FileUpload>
-							<Button type="primary" size="xs" :label="ctrans('Upload')" :loading="isUploadingDocuments" @click="uploadDocuments">
-								<template #icon><FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" /></template>
-							</Button>
-						</div>
-						<ul v-if="documentFiles.length" class="flex flex-wrap gap-1.5 text-xs">
-							<li v-for="(file, fileIndex) in documentFiles" :key="fileIndex" class="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-gray-700">
-								<span class="max-w-[16rem] truncate">{{ file.name }}</span>
-								<button type="button" class="text-gray-400 hover:text-red-600" :aria-label="ctrans('Remove')" @click="documentFiles = documentFiles.filter((_, index) => index !== fileIndex)">
-									<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
-								</button>
-							</li>
-						</ul>
-						<span class="block text-xs text-gray-400">{{ ctrans("Up to 10 files, 15 MB each. PDF, JPG, PNG, Excel or Word.") }}</span>
-						<p v-if="documentsError" class="text-xs text-red-600">{{ documentsError }}</p>
-					</div>
+					<Button v-if="documentsRoute && detail.documents.open" type="tertiary" size="xs" :label="ctrans('Upload documents')" @click="openDocumentsUpload">
+						<template #icon><FontAwesomeIcon icon="fal fa-upload" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+					</Button>
 				</div>
 			</section>
 
@@ -847,6 +848,43 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				</Button>
 			</div>
 		</template>
+	</Dialog>
+
+	<Dialog v-model:visible="isUploadingDocumentsOpen" modal :header="ctrans('Upload documents')" :style="{ width: '36rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div v-if="detail" class="space-y-2 text-sm">
+			<p class="text-xs text-gray-500">{{ ctrans("Upload the documents of this order: proforma, invoice, packing list, bill of lading, certificate of origin.") }}</p>
+			<div
+				class="space-y-2 rounded-lg border-2 border-dashed p-3 transition-colors"
+				:class="isDraggingDocuments ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)]' : 'border-gray-200'"
+				@dragenter.prevent="isDraggingDocuments = true"
+				@dragover.prevent="isDraggingDocuments = true"
+				@dragleave.self="isDraggingDocuments = false"
+				@drop.prevent="dropDocuments">
+				<div class="flex items-center gap-2 text-xs text-gray-500">
+					<FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" />
+					{{ ctrans("Drag and drop files here, or choose them") }}
+				</div>
+				<div class="flex flex-wrap items-center gap-2">
+					<Select v-model="documentType" :options="detail.documents.types" optionLabel="label" optionValue="value" :placeholder="ctrans('Document type')" class="w-56" size="small" />
+					<FileUpload :key="documentFileKey" mode="basic" :auto="false" customUpload multiple :chooseLabel="ctrans('Choose files')" @select="chooseDocuments">
+						<template #filelabel><span /></template>
+					</FileUpload>
+					<Button type="primary" size="xs" :label="ctrans('Upload')" :loading="isUploadingDocuments" @click="uploadDocuments">
+						<template #icon><FontAwesomeIcon icon="fal fa-upload" fixed-width aria-hidden="true" /></template>
+					</Button>
+				</div>
+				<ul v-if="documentFiles.length" class="flex flex-wrap gap-1.5 text-xs">
+					<li v-for="(file, fileIndex) in documentFiles" :key="fileIndex" class="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-gray-700">
+						<span class="max-w-[16rem] truncate">{{ file.name }}</span>
+						<button type="button" class="text-gray-400 hover:text-red-600" :aria-label="ctrans('Remove')" @click="documentFiles = documentFiles.filter((_, index) => index !== fileIndex)">
+							<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+						</button>
+					</li>
+				</ul>
+				<span class="block text-xs text-gray-400">{{ ctrans("Up to 10 files, 15 MB each. PDF, JPG, PNG, Excel or Word.") }}</span>
+				<p v-if="documentsError" class="text-xs text-red-600">{{ documentsError }}</p>
+			</div>
+		</div>
 	</Dialog>
 
 	<Dialog v-model:visible="isConfirmingCompletion" modal :header="ctrans('Order complete')" :style="{ width: '26rem', maxWidth: 'calc(100vw - 2rem)' }">
