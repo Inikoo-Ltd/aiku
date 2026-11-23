@@ -94,6 +94,7 @@ interface PurchaseOrderDetail {
 	production: {
 		started_at: string | null
 		expected_finish_at: string | null
+		production_days: number | null
 		editable: boolean
 		blocked: string | null
 	}
@@ -208,12 +209,40 @@ const productionFinishAt = ref<Date | null>(null)
 const isSavingProduction = ref(false)
 const productionError = ref<string | null>(null)
 
+const isFinishFollowingStart = ref(false)
+
+const finishAfterStart = (startedAt: Date | null): Date | null => {
+	const productionDays = detail.value?.production.production_days
+	if (!startedAt || !productionDays) {
+		return null
+	}
+
+	const finishAt = new Date(startedAt)
+	finishAt.setDate(finishAt.getDate() + productionDays)
+
+	return finishAt
+}
+
 const openProductionEditor = () => {
 	const production = detail.value?.production
-	productionStartedAt.value = production?.started_at ? fromIsoDate(production.started_at) : null
-	productionFinishAt.value = production?.expected_finish_at ? fromIsoDate(production.expected_finish_at) : null
+	const startedAt = production?.started_at ? fromIsoDate(production.started_at) : new Date(new Date().setHours(0, 0, 0, 0))
+	productionStartedAt.value = startedAt
+	isFinishFollowingStart.value = !production?.expected_finish_at
+	productionFinishAt.value = production?.expected_finish_at ? fromIsoDate(production.expected_finish_at) : finishAfterStart(startedAt)
 	productionError.value = null
 	isEditingProduction.value = true
+}
+
+const changeProductionStartedAt = (startedAt: Date | null) => {
+	productionStartedAt.value = startedAt
+	if (isFinishFollowingStart.value) {
+		productionFinishAt.value = finishAfterStart(startedAt)
+	}
+}
+
+const changeProductionFinishAt = (finishAt: Date | null) => {
+	productionFinishAt.value = finishAt
+	isFinishFollowingStart.value = false
 }
 
 const saveProduction = async () => {
@@ -540,12 +569,12 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 							</dl>
 							<div v-if="productionRoute && (detail.production.editable || detail.production.blocked)" class="mt-2">
 								<span v-if="!detail.production.editable" class="block" v-tooltip="detail.production.blocked">
-									<Button type="tertiary" size="xs" full disabled :label="ctrans('Set production dates')">
+									<Button type="tertiary" size="xs" full disabled :label="ctrans('Start production')">
 										<template #icon><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></template>
 									</Button>
 								</span>
 								<span v-else class="relative block">
-									<Button type="tertiary" size="xs" full :label="detail.production.started_at ? ctrans('Change production dates') : ctrans('Set production dates')" @click="openProductionEditor">
+									<Button type="tertiary" size="xs" full :label="detail.production.started_at ? ctrans('Change production dates') : ctrans('Start production')" @click="openProductionEditor">
 										<template #icon>
 											<FontAwesomeIcon :icon="detail.production.started_at ? 'fal fa-pencil' : 'fal fa-check'" :class="detail.production.started_at ? 'text-gray-500' : 'text-green-600'" fixed-width aria-hidden="true" />
 										</template>
@@ -770,15 +799,16 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 		</template>
 	</Dialog>
 
-	<Dialog v-model:visible="isEditingProduction" modal :header="ctrans('Production dates')" :style="{ width: '24rem', maxWidth: 'calc(100vw - 2rem)' }">
+	<Dialog v-model:visible="isEditingProduction" modal :header="detail?.production.started_at ? ctrans('Production dates') : ctrans('Start production')" :style="{ width: '24rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div class="space-y-3 text-sm">
 			<label class="block">
 				<span class="mb-1 block text-xs font-semibold text-gray-600">{{ ctrans("Production started") }}</span>
-				<DatePicker v-model="productionStartedAt" :maxDate="tomorrow" dateFormat="d M yy" showIcon iconDisplay="input" showButtonBar fluid class="[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]" />
+				<DatePicker :modelValue="productionStartedAt" @update:modelValue="changeProductionStartedAt" :maxDate="tomorrow" dateFormat="d M yy" showIcon iconDisplay="input" showButtonBar fluid class="[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]" />
 			</label>
 			<label class="block">
 				<span class="mb-1 block text-xs font-semibold text-gray-600">{{ ctrans("Expected finish") }}</span>
-				<DatePicker v-model="productionFinishAt" :minDate="productionStartedAt ?? undefined" dateFormat="d M yy" showIcon iconDisplay="input" showButtonBar fluid class="[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]" />
+				<DatePicker :modelValue="productionFinishAt" @update:modelValue="changeProductionFinishAt" :minDate="productionStartedAt ?? undefined" dateFormat="d M yy" showIcon iconDisplay="input" showButtonBar fluid class="[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]" />
+				<span v-if="isFinishFollowingStart && productionFinishAt && detail?.production.production_days" class="mt-1 block text-xs text-gray-500">{{ ctrans(":days days after production starts", { days: String(detail.production.production_days) }) }}</span>
 			</label>
 			<p v-if="productionError" class="text-xs text-red-600">{{ productionError }}</p>
 		</div>
@@ -787,7 +817,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isEditingProduction = false">
 					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="primary" full :label="ctrans('Save')" :loading="isSavingProduction" @click="saveProduction">
+				<Button type="primary" full :label="detail?.production.started_at ? ctrans('Save') : ctrans('Start production')" :loading="isSavingProduction" @click="saveProduction">
 					<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>

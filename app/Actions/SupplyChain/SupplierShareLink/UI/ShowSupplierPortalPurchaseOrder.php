@@ -68,7 +68,8 @@ class ShowSupplierPortalPurchaseOrder
 
         $open  = in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true);
         $lines = PdfPurchaseOrder::make()->lines($purchaseOrder);
-        $data  = $purchaseOrder->data ?? [];
+        $data    = $purchaseOrder->data ?? [];
+        $journey = IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id);
 
         return [
             'order'   => [
@@ -97,10 +98,10 @@ class ShowSupplierPortalPurchaseOrder
                     ? collect(PdfPurchaseOrderLabels::LEVELS)->mapWithKeys(fn (string $level) => [$level => PdfPurchaseOrderLabels::make()->url($purchaseOrder, [$level])])->all()
                     : null,
             ],
-            'journey'    => IndexSupplierPortalPurchaseOrderStages::make()->forPurchaseOrder($supplier, $purchaseOrder->id),
+            'journey'    => $journey,
             'payments'   => $this->payments($purchaseOrder, $token),
             'deposit'    => $this->deposit($purchaseOrder, $supplier),
-            'production' => $this->production($purchaseOrder),
+            'production' => [...$this->production($purchaseOrder), 'production_days' => $this->productionDays($journey, $supplier)],
             'documents'  => $this->documents($purchaseOrder, $token),
             'notes'      => GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_SUPPLIER, true),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),
@@ -328,6 +329,25 @@ class ShowSupplierPortalPurchaseOrder
             'editable'           => $open && $blocked === null,
             'blocked'            => $blocked,
         ];
+    }
+
+    /**
+     * How long the supplier takes to produce this order: the days the order's journey gives the production stage
+     * (the supplier's production days, or its share of the lead time), else the supplier's own production days.
+     *
+     * @param array{ribbon: array{segments: list<array<string, mixed>>}}|null $journey
+     */
+    public function productionDays(?array $journey, Supplier $supplier): ?int
+    {
+        $ready = collect($journey['ribbon']['segments'] ?? [])->firstWhere('key', 'ready');
+        $days  = (int) Arr::get($ready ?? [], 'planned_from.days', 0);
+        if ($days > 0 && Arr::get($ready, 'planned_from.basis') !== 'before_arrival') {
+            return $days;
+        }
+
+        $supplierDays = (int) Arr::get($supplier->data ?? [], 'production_waiting_time', 0);
+
+        return $supplierDays > 0 ? $supplierDays : null;
     }
 
     /**
