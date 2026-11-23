@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\ChatSession;
 
+use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Actions\Chat\Reports\GetChatAiAcceptance;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
@@ -106,13 +107,10 @@ class HandleChatAiDraft
             'checked'     => data_get($draft->facts, 'checked', []),
             'premonitions' => Ticket::whereIn('reference', data_get($draft->facts, 'premonitions', []))
                 ->where('type', TicketTypeEnum::PREMONITION)
-                ->get(['reference', 'subject', 'status'])
-                ->map(fn (Ticket $ticket) => [
-                    'reference' => $ticket->reference,
-                    'subject'   => $ticket->subject,
-                    'fixed'     => $ticket->status === TicketStatusEnum::RESOLVED,
-                    'url'       => route('grp.tickets.show', $ticket->reference),
-                ])->all(),
+                ->with('assignee.image')
+                ->get()
+                ->map(fn (Ticket $ticket) => [...ChatTimelineEventResource::ticketChip($ticket), 'fixed' => $ticket->status === TicketStatusEnum::RESOLVED])
+                ->all(),
             'actions'     => $chatSession instanceof ChatSession ? RunChatAiDraftAction::views($chatSession, $draft) : [],
             'questions'        => data_get($draft->facts, 'questions', []),
             'since_last_reply' => data_get($draft->facts, 'since_last_reply'),

@@ -3125,6 +3125,20 @@ describe('customer service tools', function () {
             'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
             'message_text'    => str_repeat('a', 100),
         ]);
+        $emailChat = App\Models\Chat\ChatSession::create([
+            'ulid'             => (string) Illuminate\Support\Str::ulid(),
+            'status'           => App\Enums\CRM\Livechat\ChatSessionStatusEnum::CLOSED->value,
+            'channel'          => App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+            'shop_id'          => $this->shop->id,
+            'language_id'      => 68,
+            'ai_model_version' => 'default',
+        ]);
+        App\Models\Chat\ChatMessage::create([
+            'chat_session_id' => $emailChat->id,
+            'message_type'    => App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT,
+            'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT,
+            'message_text'    => str_repeat('e', 400),
+        ]);
         App\Actions\Chat\ChatSession\GetChatShopFacts::mock()->shouldReceive('shopFacts')->andReturn([['title' => 'Currency', 'body' => 'Prices are in GBP']]);
         App\Actions\Chat\ChatSession\FindChatReplyExamples::mock()->shouldReceive('handle')
             ->withArgs(fn (App\Models\Catalogue\Shop $shop, string $customerWrote) => $shop->is($this->shop) && str_contains($customerWrote, 'candle holders arrived broken'))

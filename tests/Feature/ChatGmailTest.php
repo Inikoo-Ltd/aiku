@@ -1187,7 +1187,7 @@ test('an Aiku note naming a ticket shows it with its live status', function () {
     actingAs($this->user);
     $chat   = noiseTestEmailSession($this->shop, 'buyer@example.com', 'New user?', 'Who is the new user?');
     $ticket = \App\Actions\Helpers\Ticket\StoreTicket::make()->action($this->user->group, ['subject' => 'Sign-up sends the new user email']);
-    $ticket->update(['status' => \App\Enums\Helpers\Ticket\TicketStatusEnum::PENDING_DEPLOY]);
+    $ticket->update(['status' => \App\Enums\Helpers\Ticket\TicketStatusEnum::PENDING_DEPLOY, 'assignee_id' => $this->user->id]);
 
     $note = $chat->chatEvents()->create([
         'event_type' => \App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE,
@@ -1195,12 +1195,29 @@ test('an Aiku note naming a ticket shows it with its live status', function () {
         'payload'    => ['text' => "{$ticket->reference} HELP-999999999"],
     ]);
 
-    expect((new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($note))->resolve()['note_tickets'])->toBe([[
-        'reference'   => $ticket->reference,
-        'subject'     => 'Sign-up sends the new user email',
-        'status_icon' => \App\Enums\Helpers\Ticket\TicketStatusEnum::stateIcon()['pending_deploy'],
-        'url'         => route('grp.tickets.show', $ticket->reference),
-    ]]);
+    $chips = (new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($note))->resolve()['note_tickets'];
+
+    expect($chips)->toHaveCount(1)
+        ->and($chips[0])->toMatchArray([
+            'reference'   => $ticket->reference,
+            'subject'     => 'Sign-up sends the new user email',
+            'status_icon' => \App\Enums\Helpers\Ticket\TicketStatusEnum::stateIcon()['pending_deploy'],
+            'progress'    => 'fixing',
+            'assignee'    => $this->user->contact_name ?: $this->user->username,
+            'url'         => route('grp.tickets.show', $ticket->reference),
+        ])
+        ->and($chips[0])->toHaveKeys(['type_icon', 'kind_label', 'priority_label', 'assignee_avatar', 'resolved_at']);
+
+    $raised = $chat->chatEvents()->create([
+        'event_type' => \App\Enums\CRM\Livechat\ChatEventTypeEnum::TICKET,
+        'actor_type' => 'agent',
+        'payload'    => ['key' => $ticket->reference, 'created_by_agent_name' => 'Daniella'],
+    ]);
+    $shown = (new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($raised))->resolve();
+
+    expect($shown['description'])->toBe('Daniella raised a ticket')
+        ->and($shown['note_tickets'][0])->toMatchArray(['reference' => $ticket->reference, 'progress' => 'fixing'])
+        ->and(\App\Enums\CRM\Livechat\ChatEventTypeEnum::timelineTypes())->toContain('ticket');
 });
 
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {

@@ -7,7 +7,11 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Helpers\Ticket;
@@ -34,7 +38,11 @@ class ChatTimelineEventResource extends JsonResource
             'description' => $this->describe($eventType),
             'note'        => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->payload('text') : null,
             'note_links'  => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->noteLinks((string) $this->payload('text'), auth()->user()?->group_id) : [],
-            'note_tickets' => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->noteTickets((string) $this->payload('text'), auth()->user()?->group_id) : [],
+            'note_tickets' => match ($eventType) {
+                ChatEventTypeEnum::INTERNAL_NOTE => $this->noteTickets((string) $this->payload('text'), auth()->user()?->group_id),
+                ChatEventTypeEnum::TICKET => $this->noteTickets((string) $this->payload('key'), auth()->user()?->group_id),
+                default => [],
+            },
             'created_at'  => $this->created_at,
             'timestamp'   => $this->created_at?->timestamp,
         ];
@@ -81,13 +89,39 @@ class ChatTimelineEventResource extends JsonResource
 
         return Ticket::where('group_id', $groupId)
             ->whereIn('reference', array_unique($matches[0]))
-            ->get(['reference', 'subject', 'status'])
-            ->map(fn (Ticket $ticket) => [
-                'reference'   => $ticket->reference,
-                'subject'     => $ticket->subject,
-                'status_icon' => $ticket->status->stateIcon()[$ticket->status->value],
-                'url'         => route('grp.tickets.show', $ticket->reference),
-            ])->values()->all();
+            ->with('assignee.image')
+            ->get()
+            ->map(fn (Ticket $ticket) => self::ticketChip($ticket))
+            ->values()->all();
+    }
+
+    /**
+     * What a ticket chip in the chat shows: its live status, who has it and what kind of ticket it is.
+     *
+     * @return array{reference: string, subject: string, status_icon: array, progress: string, type_icon: array|null, kind_label: string|null, priority_label: string, assignee: string|null, assignee_avatar: array|null, resolved_at: string|null, url: string}
+     */
+    public static function ticketChip(Ticket $ticket): array
+    {
+        $assignee = $ticket->assignee;
+
+        return [
+            'reference'       => $ticket->reference,
+            'subject'         => $ticket->subject,
+            'status_icon'     => TicketStatusEnum::stateIcon()[$ticket->status->value],
+            'progress'        => match ($ticket->status) {
+                TicketStatusEnum::RESOLVED => 'fixed',
+                TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::PENDING_DEPLOY => 'fixing',
+                TicketStatusEnum::CANCELLED => 'closed',
+                default => 'not_fixed',
+            },
+            'type_icon'       => $ticket->type?->icon(),
+            'kind_label'      => $ticket->kind ? TicketKindEnum::labels()[$ticket->kind->value] : null,
+            'priority_label'  => ChatPriorityEnum::labels()[$ticket->priority->value],
+            'assignee'        => $assignee ? ($assignee->contact_name ?: $assignee->username) : null,
+            'assignee_avatar' => $assignee?->image ? ['original' => GetImgProxyUrl::run($assignee->image->getImage()->resize(48, 48))] : null,
+            'resolved_at'     => $ticket->resolved_at?->toIso8601String(),
+            'url'             => route('grp.tickets.show', $ticket->reference),
+        ];
     }
 
     protected function payload(string $key, $default = null)
@@ -136,6 +170,7 @@ class ChatTimelineEventResource extends JsonResource
             ChatEventTypeEnum::FORWARDED_BY_EMAIL => __(':actor forwarded the chat by email to :recipients', ['actor' => $actor, 'recipients' => implode(', ', (array) $this->payload('recipients', []))]),
             ChatEventTypeEnum::MOVED_TO_SHOP => __(':actor moved the chat from :from to :to', ['actor' => $actor, 'from' => $this->payload('from_shop_name'), 'to' => $this->payload('to_shop_name')]),
             ChatEventTypeEnum::INTERNAL_NOTE => __('Internal note by Aura, not visible to the customer'),
+            ChatEventTypeEnum::TICKET => __(':actor raised a ticket', ['actor' => $this->payload('created_by_agent_name') ?? $actor]),
             default => __(':actor updated the chat', ['actor' => $actor]),
         };
     }

@@ -194,7 +194,9 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
 
     /**
      * How long this shop's staff write when they answer without a draft: the median of their own
-     * replies over the last month, so a draft can match it (INI-400: drafts ran 2 to 10 times longer).
+     * replies on this channel over the last month, so a draft can match it (INI-400: drafts ran 2 to
+     * 10 times longer). Email and website chat share chat_sessions but not length: AROMA staff write
+     * about 340 characters by email and 60 in the website chat.
      */
     private function typicalStaffReplyChars(ChatSession|MetaChatSession $chatSession): ?int
     {
@@ -203,11 +205,13 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
         $messages = $whatsapp ? 'meta_chat_messages' : 'chat_messages';
         $sessions = $whatsapp ? 'meta_chat_sessions' : 'chat_sessions';
         $link     = $whatsapp ? 'meta_chat_session_id' : 'chat_session_id';
+        $channel  = $whatsapp ? null : $chatSession->channel?->value;
 
-        return Cache::remember('cs-typical-reply-chars:'.($whatsapp ? 'whatsapp:' : '').$shopId, self::TYPICAL_REPLY_CACHE_SECONDS, function () use ($shopId, $messages, $sessions, $link, $whatsapp) {
+        return Cache::remember('cs-typical-reply-chars:'.($whatsapp ? 'whatsapp' : ($channel ?? 'none')).':'.$shopId, self::TYPICAL_REPLY_CACHE_SECONDS, function () use ($shopId, $messages, $sessions, $link, $whatsapp, $channel) {
             $median = DB::table($messages)
                 ->join($sessions, "{$sessions}.id", '=', "{$messages}.{$link}")
                 ->where("{$sessions}.shop_id", $shopId)
+                ->when(!$whatsapp, fn ($query) => $channel ? $query->where("{$sessions}.channel", $channel) : $query->whereNull("{$sessions}.channel"))
                 ->where("{$messages}.sender_type", ChatSenderTypeEnum::AGENT->value)
                 ->where("{$messages}.created_at", '>=', now()->subDays(self::TYPICAL_REPLY_DAYS))
                 ->whereNotExists(fn ($fromDraft) => $fromDraft->from('chat_ai_drafts')
