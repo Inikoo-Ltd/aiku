@@ -327,7 +327,7 @@ class IndexStockDeliveries extends OrgAction
             $query->where('stock_deliveries.organisation_id', $this->parent->organisation_id)
                 ->where('stock_deliveries.agent_id', $this->parent->agent_id);
         } elseif ($this->parent instanceof OrgPartner) {
-            $query->where('stock_deliveries.organisation_id', $this->parent->partner->id);
+            $query->where('stock_deliveries.parent_type', 'OrgPartner')->where('stock_deliveries.parent_id', $this->parent->id);
         } elseif ($this->parent instanceof OrgSupplierProduct && $agent = $this->agentViewingSupplier()) {
             $query->where(fn ($query) => $this->whereAgentSupplierDelivery($query, $agent, $this->parent->supplierProduct->supplier_id))
                 ->whereExists(fn ($query) => $query->selectRaw('1')->from('stock_delivery_items')

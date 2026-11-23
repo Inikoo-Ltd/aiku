@@ -201,6 +201,7 @@ class ShowStockDelivery extends OrgAction
      */
     public function inOrgPartner(Organisation $organisation, OrgPartner $orgPartner, StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
+        abort_unless($stockDelivery->parent_type === 'OrgPartner' && $stockDelivery->parent_id === $orgPartner->id && $orgPartner->organisation_id === $organisation->id, 404);
         $this->stockDelivery = $stockDelivery;
         $this->initialisation($organisation, $request)->withTab($this->getTabs($stockDelivery));
         $this->authorizeProcurementRecord($stockDelivery);

@@ -260,6 +260,21 @@ test('UI partner rescue items for a sister company', function () {
     }
 });
 
+test('partner stock deliveries list only what the partner sends to this organisation', function () {
+    $fromPartner = StoreStockDelivery::make()->action($this->orgPartner, ['reference' => 'PSD-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+    $partnerOwn  = StoreStockDelivery::make()->action($this->orgSupplier, ['reference' => 'POWN-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+    $partnerOwn->update(['organisation_id' => $this->orgPartner->partner_id]);
+
+    $this->get(route('grp.org.procurement.org_partners.show.stock-deliveries.index', [$this->organisation->slug, $this->orgPartner->id]).'?perPage=1000')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('reference')->contains($fromPartner->reference)
+                && !collect($rows)->pluck('reference')->contains($partnerOwn->reference))
+            ->etc());
+
+    $this->get(route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$this->organisation->slug, $this->orgPartner->id, $fromPartner->slug]))->assertOk();
+    $this->get(route('grp.org.procurement.org_partners.show.stock-deliveries.show', [$this->organisation->slug, $this->orgPartner->id, $partnerOwn->slug]))->assertNotFound();
+});
+
 test('new purchase order to a sister company opens it, or the one already being prepared', function () {
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;
