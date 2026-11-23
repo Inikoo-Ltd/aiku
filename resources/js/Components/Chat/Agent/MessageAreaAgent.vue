@@ -837,7 +837,6 @@ const heldAiDraft = ref<{ text: string, draftId?: number, translated?: { mine: s
 // HELP-4534: the reply box holds Aiku's draft translated into the agent's language; the server
 // sends Aiku's original when it goes out unchanged, and translates it back when it was changed.
 const aiDraftTranslationOf = ref<number | null>(null)
-const aiDraftLanguages = ref<{ mine: string, theirs: string } | null>(null)
 
 const { colleagueDraft, isLoaded: isReplyDraftLoaded, saveFailed: replyDraftSaveFailed, carriedOnBy, takeOverColleagueDraft, refreshColleagueDraft } = useChatReplyDraft(
     () => props.session?.ulid,
@@ -891,7 +890,6 @@ const offerAiDraft = (text: string, draftId?: number, translated: { mine: string
     newMessage.value = text
     aiDraftText.value = text
     aiDraftTranslationOf.value = translated && draftId ? draftId : null
-    aiDraftLanguages.value = translated && draftId ? translated : null
 }
 
 watch(isReplyDraftLoaded, (loaded) => {
@@ -979,13 +977,27 @@ const useAuraDraft = () => {
 const clearReplyBox = () => {
     const editorElement = (messageEditor.value as any)?.$el as HTMLElement | undefined
     if (editorElement) lockedEditorHeight.value = editorElement.offsetHeight
-    aiDraftBox.value?.dismiss()
     newMessage.value = ""
     onEditorInput("")
 }
 
 const aiDraftInEditor = computed(() => aiDraftText.value !== null && !!newMessage.value.trim())
 const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== aiDraftText.value)
+
+const wordsOf = (text: string) => new Set(text.replace(/<[^>]+>/g, " ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean))
+const auraShare = computed(() => {
+    if (aiDraftText.value === null || !newMessage.value.trim()) return 0
+    const draftWords = wordsOf(aiDraftText.value)
+    const replyWords = wordsOf(newMessage.value)
+    return draftWords.size ? [...draftWords].filter((word) => replyWords.has(word)).length / draftWords.size : 0
+})
+const sendButtonStyle = computed(() => auraShare.value
+    ? {
+        backgroundColor: `color-mix(in srgb, #db2777 ${Math.round(auraShare.value * 100)}%, var(--app-accent)) !important`,
+        borderColor: "transparent",
+        color: `${auraShare.value >= 0.5 ? "#ffffff" : "var(--app-accent-text)"} !important`,
+    }
+    : null)
 
 watch(newMessage, (value) => {
     if (aiDraftText.value !== null && value.trim() && value !== aiDraftText.value) aiDraftBox.value?.take()
@@ -1003,6 +1015,7 @@ const emailRecipient = computed(() => chatEmailRecipient((props.session as any)?
 const emailRecipientLabel = computed(() => isEmailChat.value ? chatEmailRecipientLabel((props.session as any)?.metadata) : "")
 
 const emailSubject = computed(() => isEmailChat.value ? String((props.session as any)?.metadata?.email_subject ?? "").trim() : "")
+const replySubject = computed(() => emailSubject.value ? `Re: ${emailSubject.value.replace(/^(re|fw|fwd|aw|odp|sv)\s*:\s*/i, "")}` : "")
 
 // As in Gmail: the newest mail is open, and so is everything the customer sent since we last answered.
 const openMailIds = computed(() => {
@@ -1089,8 +1102,6 @@ const isInlinePicture = (attachment: SelectedAttachment) =>
 
 const onEditorInput = (text: string) => {
     if (!text.trim() && aiDraftText.value !== null && aiDraftId) {
-        const editorElement = (messageEditor.value as any)?.$el as HTMLElement | undefined
-        if (editorElement?.contains(document.activeElement)) aiDraftBox.value?.dismiss()
         markCleared(aiDraftId)
         aiDraftText.value = null
     }
@@ -2315,7 +2326,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <input ref="fileInput" type="file" :accept="FILE_EXTENSIONS.map((extension) => `.${extension}`).join(',')" multiple class="hidden" @change="handleDocSelect" />
 
             <div v-if="emailRecipientLabel" class="-mx-3 -mt-2 mb-2 flex items-baseline gap-3 border-b border-gray-200 px-4 py-3 text-sm">
-                <span v-if="emailSubject" class="min-w-0 truncate font-semibold text-gray-900">Re: {{ emailSubject.replace(/^(re|fw|fwd|aw|odp|sv)\s*:\s*/i, "") }}</span>
+                <span v-if="replySubject" class="min-w-0 truncate font-semibold text-gray-900">{{ replySubject }}</span>
 
             </div>
 
@@ -2339,39 +2350,44 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-2' : ''">
             <div class="relative flex min-w-0 flex-1 basis-[28rem] flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
-                :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-soft)]' : aiDraftInEditor ? 'border-[--app-accent-muted]' : 'border-gray-200'">
+                :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
                 <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
                     v-tooltip="ctrans('Drag to resize, double-click to reset')"
                     class="group/resize absolute inset-x-0 -top-1.5 z-10 flex h-3 cursor-row-resize justify-center"
                     @pointerdown="startComposerResize" @dblclick="resetComposerHeight">
                     <span class="mt-1 h-1 w-10 rounded-full bg-gray-300 transition-colors group-hover/resize:bg-[--app-accent]" />
                 </div>
-                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium" :class="aiDraftTranslationOf ? 'text-[var(--app-accent)]' : 'text-gray-500'">
-                    <span class="shrink-0" :title="aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
-                        <AuraAvatar class="h-4 w-4" :angry="aiDraftBox?.draft?.aura_angry" :label="ctrans('Draft by Aura')" />
+                <div v-if="aiDraftInEditor" class="flex items-center gap-1.5 border-b border-pink-200 px-4 py-1.5 text-[11px] font-medium text-pink-700">
+                    <span class="aura-tag inline-flex shrink-0 items-center gap-1 rounded-full py-0.5 pl-0.5 pr-2 text-[11px] font-semibold text-white shadow-sm"
+                        :class="{ 'aura-tag-angry': aiDraftBox?.draft?.aura_angry }"
+                        :title="aiDraftBox?.draft?.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : ctrans('Draft by Aura')">
+                        <AuraAvatar class="h-4 w-4" :angry="aiDraftBox?.draft?.aura_angry" />
+                        Aura
                     </span>
-                    <template v-if="aiDraftTranslationOf && aiDraftLanguages">{{ ctrans("Draft by Aura in :mine: change what you need, it is sent in :theirs", aiDraftLanguages) }}</template>
-                    <template v-else-if="aiDraftEdited">{{ ctrans("Your reply, based on Aura's draft") }}</template>
-                    <template v-else>{{ ctrans("Draft by Aura: read it, change what you need, then send") }}</template>
-                    <label v-if="aiDraftBox?.draft?.translate_for_me && aiDraftBox.draft.text" class="ml-auto flex shrink-0 cursor-pointer items-center gap-1.5 font-normal"
-                        :class="aiDraftBox.draft.edit_in_my_language ? 'text-[var(--app-accent)]' : 'text-gray-600'"
+                    <div class="flex items-center gap-1.5">
+                        <PolishMessageButton v-model="newMessage"
+                            :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
+                        <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
+                    </div>
+                    <label v-if="aiDraftBox?.draft?.translate_for_me && aiDraftBox.draft.text" class="ml-auto flex shrink-0 items-center gap-1.5 font-normal"
+                        :class="[aiDraftBox.draft.edit_in_my_language ? 'text-pink-700' : 'text-pink-500', aiDraftBox.savingEditLanguage || aiDraftBox.translating ? 'cursor-wait opacity-50' : 'cursor-pointer']"
                         :title="aiDraftBox.draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: aiDraftBox.draft.customer_language }) : undefined">
                         <ToggleSwitch :model-value="!!aiDraftBox.draft.edit_in_my_language" :disabled="aiDraftBox.savingEditLanguage || aiDraftBox.translating"
-                            class="scale-75" :pt="aiDraftBox.editSwitchPt" @update:model-value="aiDraftBox.setEditInMyLanguage" />
+                            class="[--p-toggleswitch-gap:0.1875rem] [--p-toggleswitch-handle-size:0.625rem] [--p-toggleswitch-height:1rem] [--p-toggleswitch-width:1.75rem]" :pt="aiDraftBox.editSwitchPt" @update:model-value="aiDraftBox.setEditInMyLanguage" />
                         {{ aiDraftBox.draft.my_language && aiDraftBox.draft.customer_language ? ctrans("Edit in :mine, send in :theirs", { mine: aiDraftBox.draft.my_language, theirs: aiDraftBox.draft.customer_language }) : ctrans("Edit in my language") }}
                     </label>
                     <button v-if="aiDraftBox?.draft" type="button" :disabled="aiDraftBox.translating" :aria-pressed="aiDraftBox.showTranslation"
-                        class="shrink-0 rounded px-1 text-gray-400 hover:text-gray-700 disabled:opacity-50"
+                        class="shrink-0 rounded px-1 text-pink-400 hover:text-pink-700 disabled:opacity-50"
                         :class="aiDraftBox.draft.translate_for_me && aiDraftBox.draft.text ? '' : 'ml-auto'"
                         v-tooltip="aiDraftBox.showTranslation ? ctrans('Show the original') : ctrans('Translate the draft and the notes into my language')"
                         @click="aiDraftBox.toggleTranslation()">
                         <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                     </button>
                     <button v-if="!aiDraftEdited" type="button"
-                        class="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-100"
+                        class="inline-flex shrink-0 items-center gap-1 rounded-md border border-pink-300 bg-white px-1.5 py-0.5 text-[11px] font-medium text-pink-800 hover:bg-pink-50"
                         v-tooltip="ctrans('Empties the reply box so you can write your own; Aura\'s notes stay')"
                         @click="clearReplyBox">
-                        <FontAwesomeIcon :icon="faTimesLight" class="text-red-500" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faTimesLight" class="text-pink-500" fixed-width aria-hidden="true" />
                         {{ ctrans("Dismiss Aura draft") }}
                     </button>
                 </div>
@@ -2423,10 +2439,12 @@ const handleClickOutside = (e: MouseEvent) => {
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <ChatFormattingToolbar :editor="messageEditor?.editor"
                             :allow-underline="(session as any)?.channel !== 'whatsapp'" :allow-link="isEmailChat" />
-                        <div class="mx-1 h-5 w-px bg-gray-200" />
-                        <PolishMessageButton v-model="newMessage"
-                            :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
-                        <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
+                        <template v-if="!aiDraftInEditor">
+                            <div class="mx-1 h-5 w-px bg-gray-200" />
+                            <PolishMessageButton v-model="newMessage"
+                                :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
+                            <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
+                        </template>
                         <template v-if="isEmailChat">
                             <div class="mx-1 h-5 w-px bg-gray-200" />
                             <button type="button" @click="toggleComposerExpanded" :aria-pressed="isComposerExpanded"
@@ -2437,8 +2455,12 @@ const handleClickOutside = (e: MouseEvent) => {
                             </button>
                         </template>
                     </div>
-                    <Button @click="sendMessage" :icon="faPaperPlane" :tooltip="ctrans('Send message')"></Button>
+                    <Button @click="sendMessage" :icon="faPaperPlane" :inject-style="sendButtonStyle"
+                        :tooltip="auraShare ? ctrans('Send message: :percent% of it is Aura\'s draft', { percent: Math.round(auraShare * 100) }) : ctrans('Send message')"></Button>
                 </div>
+                <p v-if="aiDraftInEditor" class="-mt-1 px-4 pb-1.5 text-[11px] text-pink-700">
+                    {{ aiDraftEdited ? ctrans("Your reply, based on her draft") : ctrans("Her draft: read it, change what you need, then send") }}
+                </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
                 :class="!aiDraftBox?.draft ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
@@ -2448,7 +2470,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <AuraAvatar class="h-4 w-4" :angry="aiDraftBox.draft.aura_angry" />
                     <FontAwesomeIcon :icon="faAngleLeft" class="text-[11px] text-pink-500" fixed-width aria-hidden="true" />
                 </button>
-                <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid"
+                <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
                     @collapse="setAuraCollapsed(true)" />
@@ -2537,6 +2559,29 @@ const handleClickOutside = (e: MouseEvent) => {
     </div>
 </template>
 <style scoped>
+.aura-tag {
+    background: linear-gradient(110deg, #db2777, #c026d3, #a855f7, #ec4899, #db2777);
+    background-size: 300% 100%;
+    animation: aura-tag-flow 6s linear infinite;
+}
+
+.aura-tag-angry {
+    background-image: linear-gradient(110deg, #dc2626, #f97316, #ef4444, #e11d48, #dc2626);
+    animation-duration: 2s;
+}
+
+@keyframes aura-tag-flow {
+    to {
+        background-position: 300% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aura-tag {
+        animation: none;
+    }
+}
+
 .menu-item {
     display: flex;
     align-items: center;

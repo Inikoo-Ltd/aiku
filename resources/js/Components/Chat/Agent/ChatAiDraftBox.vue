@@ -22,6 +22,7 @@ const props = defineProps<{
     readOnly?: boolean
     preview?: boolean
     inline?: boolean
+    replySubject?: string
 }>()
 
 const emit = defineEmits<{ (e: "use", text: string, draftId?: number, translated?: { mine: string, theirs: string } | null): void, (e: "discarded"): void, (e: "disposed"): void, (e: "loaded"): void, (e: "jump-to-message"): void, (e: "collapse"): void }>()
@@ -180,15 +181,6 @@ const take = () => {
     axios.post(route("grp.api.chats.ai_drafts.take", [draft.value.id])).catch(() => null)
 }
 
-// Inline, dismissing only empties the reply box: the draft is recorded as discarded for the
-// suggestions report, while her notes and buttons stay beside it.
-const dismissedId = ref<number | null>(null)
-const dismiss = () => {
-    if (!draft.value || dismissedId.value === draft.value.id) return
-    dismissedId.value = draft.value.id
-    axios.post(route("grp.api.chats.ai_drafts.discard", [draft.value.id])).catch(() => null)
-}
-
 // Copying the text instead of pressing Use is recorded once per draft, quietly.
 const copiedId = ref<number | null>(null)
 const copied = () => {
@@ -291,7 +283,7 @@ const offerToEditor = async () => {
 
 const editSwitchPt = {
     slider: ({ props }: { props: { modelValue: boolean } }) => ({
-        style: props.modelValue ? { background: "var(--app-accent)" } : undefined,
+        style: props.modelValue ? { background: "#db2777" } : undefined,
     }),
 }
 
@@ -368,7 +360,7 @@ watch(() => props.sessionUlid, () => {
 
 onBeforeUnmount(stopListening)
 
-defineExpose({ take, draft, busy, offerToEditor, dismiss, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
+defineExpose({ take, draft, busy, offerToEditor, discard: () => decide("discard"), translating, showTranslation, toggleTranslation, savingEditLanguage, setEditInMyLanguage, editSwitchPt })
 </script>
 
 <template>
@@ -387,12 +379,9 @@ defineExpose({ take, draft, busy, offerToEditor, dismiss, discard: () => decide(
                     :title="draft.aura_angry ? ctrans('Aura is cross: she had suggestions right that you wrote again by hand') : draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) + (draft.assistant.client ? ` · ${draft.assistant.client}` : '') : ctrans('Draft by Aura')">
                     <AuraAvatar class="h-5 w-5" :angry="draft.aura_angry" :label="draft.assistant?.of ? ctrans('Draft by Aura, asked by :name', { name: draft.assistant.of }) : ctrans('Draft by Aura')" />
                 </span>
-                <div v-if="inline" class="mb-1 flex items-center gap-2">
-                    <p class="min-w-0 flex-1 font-semibold text-gray-800">{{ ctrans("Draft by Aura") }}</p>
-                    <button type="button" class="rounded p-0.5 text-pink-400 hover:bg-pink-100 hover:text-pink-700" v-tooltip="ctrans('Make it a thin bar')" :aria-label="ctrans('Make it a thin bar')" @click="emit('collapse')">
-                        <FontAwesomeIcon :icon="faChevronRight" fixed-width aria-hidden="true" />
-                    </button>
-                </div>
+                <button v-if="inline" type="button" class="absolute left-0 top-1/2 z-10 flex w-8 lg:w-5 aspect-square -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-pink-300 bg-pink-50 text-pink-500 hover:bg-pink-100 hover:text-pink-700" v-tooltip="ctrans('Make it a thin bar')" :aria-label="ctrans('Make it a thin bar')" @click="emit('collapse')">
+                    <FontAwesomeIcon :icon="faChevronRight" class="h-[10px] leading-none" fixed-width aria-hidden="true" />
+                </button>
                 <div v-for="action in questionActions" :key="action.index" class="mr-12 flex flex-wrap items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
                     :class="action.type === 'spam' ? 'border-red-200 bg-red-50 text-red-900' : 'border-green-200 bg-green-50 text-green-900'">
                     <FontAwesomeIcon :icon="action.type === 'spam' ? faTrashAlt : faCheck" :class="action.type === 'spam' ? 'text-red-500' : 'text-green-600'" fixed-width aria-hidden="true" />
@@ -433,7 +422,7 @@ defineExpose({ take, draft, busy, offerToEditor, dismiss, discard: () => decide(
                         <FontAwesomeIcon :icon="questionsToCheck ? faExclamationTriangle : faCheck" :class="questionsToCheck ? 'text-amber-500' : 'text-green-600'" fixed-width aria-hidden="true" />
                         <span class="min-w-0 flex-1 font-medium" :class="questionsToCheck ? 'text-amber-700' : 'text-gray-700'">
                             {{ questionsToCheck
-                                ? ctrans(":count questions, :check to check", { count: draft.questions.length, check: questionsToCheck })
+                                ? draft.questions.length === 1 ? ctrans("1 question, to check") : ctrans(":count questions, :check to check", { count: draft.questions.length, check: questionsToCheck })
                                 : draft.questions.length === 1 ? ctrans("1 question, answered") : ctrans(":count questions, all answered", { count: draft.questions.length }) }}
                         </span>
                     </button>
@@ -461,8 +450,13 @@ defineExpose({ take, draft, busy, offerToEditor, dismiss, discard: () => decide(
                 <template v-if="inline && editsInMyLanguage && staffTranslation?.editable">
                     <p class="mt-1 text-[11px] text-gray-500">{{ ctrans("You edit it in :language below. Sent unchanged, the customer gets Aura's original; changed, your reply is translated into their language before it is sent.", { language: staffTranslation.language }) }}</p>
                     <p class="mt-1.5 text-[11px] font-medium text-gray-500">{{ ctrans("What the customer gets if you send it unchanged") }}</p>
-                    <p role="button" tabindex="0" :aria-expanded="draftOpen" class="cursor-pointer whitespace-pre-line text-gray-700" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'"
-                        @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draft.text }}</p>
+                    <div class="mt-0.5 overflow-hidden rounded-md border border-gray-200 bg-white">
+                        <p v-if="replySubject" class="truncate border-b border-gray-100 bg-gray-50 px-2 py-1 text-[11px] font-semibold text-gray-800">{{ replySubject }}</p>
+                        <div class="px-2 py-1.5">
+                            <p role="button" tabindex="0" :aria-expanded="draftOpen" class="cursor-pointer whitespace-pre-line text-[11px] text-gray-700" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'"
+                                @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draft.text }}</p>
+                        </div>
+                    </div>
                 </template>
                 <p v-else-if="draft.text && showTranslation && staffTranslation?.text" class="mt-1 text-[11px] text-gray-500">{{ ctrans("Translated into :language for you to read: the customer gets the original.", { language: staffTranslation.language }) }}</p>
                 <p v-if="!inline && draft.text" role="button" tabindex="0" :aria-expanded="draftOpen" :title="draftOpen ? undefined : draftText" class="mt-1 cursor-pointer whitespace-pre-line text-gray-800" :class="draftOpen ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'" @click="toggleDraft" @keydown.enter.prevent="toggleDraft" @copy="copied">{{ draftText }}</p>
