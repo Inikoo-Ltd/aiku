@@ -3554,7 +3554,7 @@ describe('customer service tools', function () {
         $discarded->delete();
 
         $premonition->update(['status' => App\Enums\Helpers\Ticket\TicketStatusEnum::RESOLVED, 'resolved_at' => now()->addMinute()]);
-        $this->chat->update(['last_visitor_message_at' => now(), 'last_agent_message_at' => null]);
+        $this->chat->update(['last_visitor_message_at' => $draft->refresh()->created_at, 'last_agent_message_at' => null]);
         Illuminate\Support\Facades\Auth::setUser($this->user);
         $listed = collect(json_decode((string) app(App\Mcp\Tools\CustomerServiceInboxTool::class)->handle(new Laravel\Mcp\Request(['limit' => 50, 'premonition_fixed_only' => true]))->content(), true)['waiting'] ?? []);
 

@@ -35,13 +35,19 @@ class EnsureInvoiceNotSentAsEInvoice
      * Once SOFTIP has accepted an e-invoice it is the legal invoice: it is corrected with a credit note, never edited or deleted.
      * A document SOFTIP refused as INVALID never left, so it can still be fixed and sent again. A send that got no answer
      * (QUEUED after an attempt) may already be at SOFTIP and is retried with the same XML, so it counts as sent.
+     * An invoice created in this request is only sent after its transaction commits, and a line without an invoice has
+     * nothing sent, so neither is looked up.
      *
      * @param array<string, mixed>|null $modelData null for a delete, otherwise the fields about to change
      *
      * @throws ValidationException
      */
-    public function handle(Invoice $invoice, ?array $modelData = null): void
+    public function handle(?Invoice $invoice, ?array $modelData = null): void
     {
+        if (!$invoice || $invoice->wasRecentlyCreated) {
+            return;
+        }
+
         if ($modelData !== null && !$this->changesContent($invoice, $modelData)) {
             return;
         }
