@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Catalogue\Product\GetProductIncomingStock;
+use App\Actions\UI\Incoming\ShowIncomingHub;
 use App\Actions\Production\Artefact\GetOrgStockArtefact;
 use App\Actions\Production\Artefact\UI\GetArtefactShowcase;
 use App\Actions\Inventory\OrgStock\Stock\Concerns\CalculatesOrgStockHistories;
@@ -91,7 +92,7 @@ class GetOrgStockShowcase
                     ],
                 ],
                 'label_options'      => GetOrgStockLabelOptions::run($orgStock),
-                'future_orders'      => $this->getFutureOrders($orgStock),
+                'future_orders'      => $this->getFutureOrders($orgStock, $warehouse),
                 'production'         => $this->getProduction($orgStock),
                 'is_quantity_excess' => in_array(GetOrganisationStockCoverBuckets::make()->bucketOf($orgStock), ['excess', 'dead'], true),
                 'has_no_products'    => $this->hasNoProducts($orgStock),
@@ -218,9 +219,17 @@ class GetOrgStockShowcase
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function getFutureOrders(OrgStock $orgStock): array
+    private function getFutureOrders(OrgStock $orgStock, Warehouse $warehouse): array
     {
+        $canViewGoodsIn = ShowIncomingHub::canViewGoodsIn(request()->user(), $warehouse);
+
         return collect(GetProductIncomingStock::make()->forOrgStocks([$orgStock->id]))
+            ->map(fn (array $line) => [
+                ...$line,
+                'quantity' => in_array($line['type'], ['stock_delivery', 'purchase_order'], true)
+                    ? $line['quantity'] / ($orgStock->packed_in ?: 1)
+                    : $line['quantity'],
+            ])
             ->map(fn (array $line, int $index) => [
                 'id'                    => $line['type'].':'.$line['reference'].':'.$index,
                 'reference'             => $line['reference'],
@@ -228,14 +237,17 @@ class GetOrgStockShowcase
                 'delivery_state_label'  => $line['state_label'],
                 'estimated_received_at' => $line['eta'],
                 'is_estimate'           => $line['is_estimate'],
-                'quantity'              => trimDecimalZeros($line['quantity']),
+                'quantity'              => trimDecimalZeros(round($line['quantity'], 3)),
                 'quantity_fractional'   => $this->getFractionalQuantity($line['quantity'], $orgStock->packed_in),
                 'route'                 => match ($line['type']) {
                     'purchase_order' => [
                         'name'       => 'grp.org.procurement.purchase_orders.show',
                         'parameters' => ['organisation' => $line['organisation_slug'], 'purchaseOrder' => $line['slug']],
                     ],
-                    'stock_delivery' => [
+                    'stock_delivery' => $canViewGoodsIn ? [
+                        'name'       => 'grp.org.warehouses.show.incoming.stock_deliveries.show',
+                        'parameters' => ['organisation' => $line['organisation_slug'], 'warehouse' => $warehouse->slug, 'stockDelivery' => $line['slug']],
+                    ] : [
                         'name'       => 'grp.org.procurement.stock_deliveries.show',
                         'parameters' => ['organisation' => $line['organisation_slug'], 'stockDelivery' => $line['slug']],
                     ],

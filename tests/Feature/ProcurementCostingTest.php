@@ -605,6 +605,7 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
     $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
     $warehouse->update(['address_id' => Address::factory()->create(['group_id' => $this->group->id])->id]);
     $orgStock = $this->orgStocks[0];
+    $orgStock->update(['packed_in' => 10]);
 
     $orgStock->stats->update([
         'days_of_cover'             => 12.4,
@@ -642,7 +643,7 @@ test('sko showcase shows days of cover and the purchase orders still to arrive',
     expect($showcase['stocks_management']['cover']['days'])->toBe(12)
         ->and($showcase['stocks_management']['cover']['daily_usage'])->toBe(3.5)
         ->and(collect($showcase['future_orders'])->pluck('reference'))->toContain($purchaseOrder->reference)
-        ->and((float) collect($showcase['future_orders'])->firstWhere('reference', $purchaseOrder->reference)['quantity'])->toBe(40.0);
+        ->and((float) collect($showcase['future_orders'])->firstWhere('reference', $purchaseOrder->reference)['quantity'])->toBe(4.0);
 });
 
 test('purchase order products and items tabs show stock and quarterly usage of each product', function () {
