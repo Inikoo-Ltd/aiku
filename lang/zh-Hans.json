@@ -25997,5 +25997,10 @@
     "Your claim :reference is approved": "您的索赔 :reference 已获批准",
     "Report a problem": "报告问题",
     "Report a problem with this order": "报告此订单的问题",
-    "Something broken, missing or wrong?": "有破损、缺少或发错的商品吗？"
+    "Something broken, missing or wrong?": "有破损、缺少或发错的商品吗？",
+    "Not approved automatically: the photo check found a problem": "未自动批准：照片检查发现问题",
+    "Problem with an order": "订单有问题",
+    "Which order?": "哪个订单？",
+    "Dispatched :date": "发货于 :date",
+    "I reported a problem with order :order (claim :reference).": "我已报告订单 :order 的问题（索赔 :reference）。"
 }

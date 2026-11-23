@@ -27150,5 +27150,10 @@
     "Your claim :reference is approved": "Vaše reklamace :reference byla schválena",
     "Report a problem": "Nahlásit problém",
     "Report a problem with this order": "Nahlásit problém s touto objednávkou",
-    "Something broken, missing or wrong?": "Něco rozbitého, chybí nebo je špatně?"
+    "Something broken, missing or wrong?": "Něco rozbitého, chybí nebo je špatně?",
+    "Not approved automatically: the photo check found a problem": "Neschváleno automaticky: kontrola fotografií našla problém",
+    "Problem with an order": "Problém s objednávkou",
+    "Which order?": "Která objednávka?",
+    "Dispatched :date": "Odesláno :date",
+    "I reported a problem with order :order (claim :reference).": "Nahlásil(a) jsem problém s objednávkou :order (reklamace :reference)."
 }

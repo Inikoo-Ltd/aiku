@@ -10037,5 +10037,10 @@
     "Your claim :reference is approved": "Uw claim :reference is goedgekeurd",
     "Report a problem": "Probleem melden",
     "Report a problem with this order": "Probleem met deze bestelling melden",
-    "Something broken, missing or wrong?": "Iets kapot, ontbrekend of verkeerd?"
+    "Something broken, missing or wrong?": "Iets kapot, ontbrekend of verkeerd?",
+    "Not approved automatically: the photo check found a problem": "Niet automatisch goedgekeurd: de fotocontrole vond een probleem",
+    "Problem with an order": "Probleem met een bestelling",
+    "Which order?": "Welke bestelling?",
+    "Dispatched :date": "Verzonden op :date",
+    "I reported a problem with order :order (claim :reference).": "Ik heb een probleem gemeld met bestelling :order (claim :reference)."
 }

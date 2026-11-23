@@ -9629,5 +9629,10 @@
     "Your claim :reference is approved": "Вашата рекламация :reference е одобрена",
     "Report a problem": "Съобщете за проблем",
     "Report a problem with this order": "Съобщете за проблем с тази поръчка",
-    "Something broken, missing or wrong?": "Нещо счупено, липсващо или грешно?"
+    "Something broken, missing or wrong?": "Нещо счупено, липсващо или грешно?",
+    "Not approved automatically: the photo check found a problem": "Не е одобрена автоматично: проверката на снимките откри проблем",
+    "Problem with an order": "Проблем с поръчка",
+    "Which order?": "Коя поръчка?",
+    "Dispatched :date": "Изпратена на :date",
+    "I reported a problem with order :order (claim :reference).": "Съобщих за проблем с поръчка :order (рекламация :reference)."
 }

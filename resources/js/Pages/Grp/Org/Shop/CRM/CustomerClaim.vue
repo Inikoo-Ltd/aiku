@@ -154,6 +154,12 @@ const stateClass: Record<string, string> = {
                 {{ ctrans("Settles when refund :reference is finalised. Rejecting the claim deletes the draft refund.", { reference: claim.refund.reference }) }}
                 <Link v-if="claim.refund.route" :href="route(claim.refund.route.name, claim.refund.route.parameters)" class="secondaryLink whitespace-nowrap">{{ ctrans("Open refund") }}</Link>
             </div>
+            <div v-if="claim.result?.photo_check && !claim.result.photo_check.passed" class="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                <p class="font-semibold">{{ ctrans("Not approved automatically: the photo check found a problem") }}</p>
+                <ul class="mt-1 list-disc pl-5">
+                    <li v-for="problem in claim.result.photo_check.problems" :key="problem">{{ problem }}</li>
+                </ul>
+            </div>
             <div v-if="claim.state === 'settled'" class="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                 <span v-if="claim.result?.refund">{{ ctrans("Refund :reference", { reference: claim.result.refund }) }} · {{ money(claim.amount) }}</span>
                 <span v-else-if="claim.result?.replacement">{{ ctrans("Replacement :reference", { reference: claim.result.replacement }) }}</span>

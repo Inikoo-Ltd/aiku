@@ -22732,5 +22732,10 @@
     "Your claim :reference is approved": "आपका दावा :reference स्वीकृत हो गया है",
     "Report a problem": "समस्या की रिपोर्ट करें",
     "Report a problem with this order": "इस ऑर्डर की समस्या की रिपोर्ट करें",
-    "Something broken, missing or wrong?": "कुछ टूटा हुआ, कम या गलत है?"
+    "Something broken, missing or wrong?": "कुछ टूटा हुआ, कम या गलत है?",
+    "Not approved automatically: the photo check found a problem": "स्वतः स्वीकृत नहीं: फ़ोटो जाँच में समस्या मिली",
+    "Problem with an order": "किसी ऑर्डर में समस्या",
+    "Which order?": "कौन-सा ऑर्डर?",
+    "Dispatched :date": "भेजा गया :date",
+    "I reported a problem with order :order (claim :reference).": "मैंने ऑर्डर :order की समस्या की रिपोर्ट की है (दावा :reference)।"
 }

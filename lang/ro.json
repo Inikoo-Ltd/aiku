@@ -26170,5 +26170,10 @@
     "Your claim :reference is approved": "Reclamația dumneavoastră :reference a fost aprobată",
     "Report a problem": "Raportați o problemă",
     "Report a problem with this order": "Raportați o problemă cu această comandă",
-    "Something broken, missing or wrong?": "Ceva spart, lipsă sau greșit?"
+    "Something broken, missing or wrong?": "Ceva spart, lipsă sau greșit?",
+    "Not approved automatically: the photo check found a problem": "Neaprobată automat: verificarea fotografiilor a găsit o problemă",
+    "Problem with an order": "Problemă cu o comandă",
+    "Which order?": "Care comandă?",
+    "Dispatched :date": "Expediată pe :date",
+    "I reported a problem with order :order (claim :reference).": "Am raportat o problemă cu comanda :order (reclamația :reference)."
 }

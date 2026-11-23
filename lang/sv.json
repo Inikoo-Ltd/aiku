@@ -10072,5 +10072,10 @@
     "Your claim :reference is approved": "Din reklamation :reference är godkänd",
     "Report a problem": "Rapportera ett problem",
     "Report a problem with this order": "Rapportera ett problem med den här beställningen",
-    "Something broken, missing or wrong?": "Något trasigt, saknas eller fel?"
+    "Something broken, missing or wrong?": "Något trasigt, saknas eller fel?",
+    "Not approved automatically: the photo check found a problem": "Inte godkänd automatiskt: fotokontrollen hittade ett problem",
+    "Problem with an order": "Problem med en beställning",
+    "Which order?": "Vilken beställning?",
+    "Dispatched :date": "Skickad :date",
+    "I reported a problem with order :order (claim :reference).": "Jag har rapporterat ett problem med beställning :order (reklamation :reference)."
 }

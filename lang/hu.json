@@ -9238,5 +9238,10 @@
     "Your claim :reference is approved": "A(z) :reference reklamációját elfogadtuk",
     "Report a problem": "Probléma bejelentése",
     "Report a problem with this order": "Probléma bejelentése ezzel a rendeléssel",
-    "Something broken, missing or wrong?": "Valami törött, hiányzik vagy rossz?"
+    "Something broken, missing or wrong?": "Valami törött, hiányzik vagy rossz?",
+    "Not approved automatically: the photo check found a problem": "Nem lett automatikusan elfogadva: a fotóellenőrzés problémát talált",
+    "Problem with an order": "Probléma egy rendeléssel",
+    "Which order?": "Melyik rendelés?",
+    "Dispatched :date": "Feladva: :date",
+    "I reported a problem with order :order (claim :reference).": "Problémát jelentettem a(z) :order rendeléssel kapcsolatban (reklamáció: :reference)."
 }

@@ -118,7 +118,7 @@ class StoreCustomerClaim
             $lock->release();
         }
 
-        if ($this->autoApproves($claim)) {
+        if ($this->autoApproves($claim) && CheckCustomerClaimPhotos::run($claim)) {
             $settled = null;
             try {
                 $settled = SettleCustomerClaim::run($claim);

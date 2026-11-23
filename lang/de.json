@@ -26958,5 +26958,10 @@
     "Your claim :reference is approved": "Ihre Reklamation :reference wurde genehmigt",
     "Report a problem": "Problem melden",
     "Report a problem with this order": "Problem mit dieser Bestellung melden",
-    "Something broken, missing or wrong?": "Etwas kaputt, fehlt oder falsch?"
+    "Something broken, missing or wrong?": "Etwas kaputt, fehlt oder falsch?",
+    "Not approved automatically: the photo check found a problem": "Nicht automatisch genehmigt: Die Fotoprüfung hat ein Problem gefunden",
+    "Problem with an order": "Problem mit einer Bestellung",
+    "Which order?": "Welche Bestellung?",
+    "Dispatched :date": "Versandt am :date",
+    "I reported a problem with order :order (claim :reference).": "Ich habe ein Problem mit der Bestellung :order gemeldet (Reklamation :reference)."
 }

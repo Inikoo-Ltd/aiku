@@ -17,6 +17,7 @@ use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Comms\Email\SendCustomerClaimEmail;
+use App\Actions\Iris\CustomerClaim\IndexIrisCustomerClaimOrders;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\SysAdmin\Group\Seeders\SeedEmailTemplates;
 use App\Actions\Comms\Ses\SendSesEmail;
@@ -8149,12 +8150,46 @@ test('customers are emailed when their claim is received, approved or rejected, 
         ->and($email->generateBodyHtml($approved->refresh()))->toContain('The items will be added free to your next order.', 'Missing from the parcel')
         ->and($email->generateBodyHtml($rejected->refresh()))->toContain('Photos missing or unclear', 'The photo shows a different item', 'reply to this email')
         ->and(GetCustomerClaimForm::accountButton($order->refresh(), true))->toBe(['order_id' => $order->id, 'open' => true])
+        ->and(collect(IndexIrisCustomerClaimOrders::make()->handle($customer))->pluck('id'))->toContain($order->id)
         ->and(SendDispatchedOrderEmailToCustomer::make()->reportProblemRow($order, 'https://shop.test/app/orders/'.$order->slug))->toContain('https://shop.test/app/orders/'.$order->slug.'?claim=1', 'Report a problem');
 
     $this->shop->update(['settings' => array_merge($this->shop->settings, ['claims' => ['self_service' => false]])]);
     $order->unsetRelation('shop');
     expect(GetCustomerClaimForm::accountButton($order->refresh()))->toBeNull()
         ->and(SendDispatchedOrderEmailToCustomer::make()->reportProblemRow($order, 'https://shop.test/app/orders/'.$order->slug))->toBe('');
+
+    UpcomingTransaction::where('customer_id', $customer->id)->delete();
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('a claim that would be approved automatically has its photos checked first, and goes to a person when a photo is reused or the model finds a problem', function () {
+    $settings = $this->shop->settings;
+    $this->shop->update(['settings' => array_merge($settings ?? [], ['claims' => array_merge(GetCustomerClaimSettings::DEFAULTS, ['self_service' => true, 'auto_approve' => true, 'max_claim_amount' => 100000, 'allowance_floor' => 100000, 'max_claims_in_window' => 50])])]);
+    $order    = dispatchedOrderToClaim($this, 6);
+    $customer = $order->customer;
+    $line     = GetCustomerClaimForm::run($customer->refresh(), $order)['lines'][0];
+    $photo    = UploadedFile::fake()->image('broken.jpg', 40, 40);
+    $store    = fn (UploadedFile $photo) => StoreCustomerClaim::run($customer->refresh(), $order->refresh(), [
+        'resolution' => 'next_order',
+        'lines'      => [['transaction_id' => $line['transaction_id'], 'quantity' => 1, 'reason' => 'damaged_in_transit', 'photos' => [$photo]]],
+        'box_photo'  => UploadedFile::fake()->image('box-'.uniqid().'.jpg', 30 + mt_rand(1, 50), 30),
+    ], CustomerClaimSourceEnum::ACCOUNT);
+    $answer = fn (array $problems) => ['choices' => [['message' => ['content' => json_encode(['problems' => $problems])]]]];
+    Http::fake(['*' => Http::sequence()->push($answer([]))->push($answer(['Photo 1, for the candle: shows a different product']))->push('down', 500)]);
+
+    $passed = $store($photo);
+    expect($passed->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($passed->result['photo_check'])->toBe(['passed' => true, 'problems' => []]);
+
+    $flagged = $store(UploadedFile::fake()->image('other.jpg', 41, 41));
+    expect($flagged->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($flagged->result['photo_check']['problems'])->toBe(['Photo 1, for the candle: shows a different product']);
+
+    $reused = $store($photo);
+    expect($reused->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($reused->result['photo_check']['problems'][0])->toContain($passed->reference);
+
+    expect($store(UploadedFile::fake()->image('again.jpg', 42, 42))->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
 
     UpcomingTransaction::where('customer_id', $customer->id)->delete();
     $this->shop->update(['settings' => $settings]);

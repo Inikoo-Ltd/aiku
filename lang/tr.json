@@ -16480,5 +16480,10 @@
     "Your claim :reference is approved": ":reference numaralı talebiniz onaylandı",
     "Report a problem": "Sorun bildir",
     "Report a problem with this order": "Bu siparişle ilgili bir sorun bildir",
-    "Something broken, missing or wrong?": "Kırık, eksik veya yanlış bir şey mi var?"
+    "Something broken, missing or wrong?": "Kırık, eksik veya yanlış bir şey mi var?",
+    "Not approved automatically: the photo check found a problem": "Otomatik onaylanmadı: fotoğraf kontrolü bir sorun buldu",
+    "Problem with an order": "Bir siparişle ilgili sorun",
+    "Which order?": "Hangi sipariş?",
+    "Dispatched :date": "Gönderildi: :date",
+    "I reported a problem with order :order (claim :reference).": ":order numaralı siparişle ilgili bir sorun bildirdim (talep :reference)."
 }

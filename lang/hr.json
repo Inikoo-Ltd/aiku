@@ -9235,5 +9235,10 @@
     "Your claim :reference is approved": "Vaša reklamacija :reference je odobrena",
     "Report a problem": "Prijavite problem",
     "Report a problem with this order": "Prijavite problem s ovom narudžbom",
-    "Something broken, missing or wrong?": "Nešto slomljeno, nedostaje ili je pogrešno?"
+    "Something broken, missing or wrong?": "Nešto slomljeno, nedostaje ili je pogrešno?",
+    "Not approved automatically: the photo check found a problem": "Nije automatski odobreno: provjera fotografija pronašla je problem",
+    "Problem with an order": "Problem s narudžbom",
+    "Which order?": "Koja narudžba?",
+    "Dispatched :date": "Poslano :date",
+    "I reported a problem with order :order (claim :reference).": "Prijavio/la sam problem s narudžbom :order (reklamacija :reference)."
 }

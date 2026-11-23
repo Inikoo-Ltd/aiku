@@ -23681,5 +23681,10 @@
     "Your claim :reference is approved": "Klaim Anda :reference telah disetujui",
     "Report a problem": "Laporkan masalah",
     "Report a problem with this order": "Laporkan masalah dengan pesanan ini",
-    "Something broken, missing or wrong?": "Ada yang rusak, kurang, atau salah?"
+    "Something broken, missing or wrong?": "Ada yang rusak, kurang, atau salah?",
+    "Not approved automatically: the photo check found a problem": "Tidak disetujui otomatis: pemeriksaan foto menemukan masalah",
+    "Problem with an order": "Masalah dengan pesanan",
+    "Which order?": "Pesanan yang mana?",
+    "Dispatched :date": "Dikirim :date",
+    "I reported a problem with order :order (claim :reference).": "Saya melaporkan masalah dengan pesanan :order (klaim :reference)."
 }

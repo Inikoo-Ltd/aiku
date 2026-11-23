@@ -4,10 +4,11 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf, faFaceSmile } from "@fortawesome/free-solid-svg-icons"
+import { faStar, faPlus, faSpinner, faPaperPlane, faImage, faPaperclip, faXmark, faFilePdf, faFaceSmile, faBoxOpen } from "@fortawesome/free-solid-svg-icons"
 
 const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
 import GuestProfileForm from "@/Components/Chat/Customer/GuestProfileForm.vue"
+import ChatClaimPanel from "@/Components/Chat/Customer/ChatClaimPanel.vue"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import { notify } from "@kyvg/vue3-notification"
 
@@ -470,7 +471,25 @@ watch(
 )
 
 
+const claimOrders = ref<{ id: number, reference: string, dispatched_at: string | null }[]>([])
+const showClaim = ref(false)
+
+const loadClaimOrders = async () => {
+    if (!props.isLoggedIn) {
+        return
+    }
+    try {
+        const { data } = await axios.get(route().has("iris.json.customer_claims.orders") ? route("iris.json.customer_claims.orders") : "/json/claims/orders")
+        claimOrders.value = Array.isArray(data) ? data : []
+    } catch {
+        claimOrders.value = []
+    }
+}
+
+const onClaimMade = (text: string) => emit("send-message", { text, type: "text" })
+
 onMounted(async () => {
+    loadClaimOrders()
     if (chatSession.value?.ulid) {
         initSocket()
         await getMediaUrl(chatSession.value.ulid)
@@ -575,6 +594,8 @@ defineExpose({
             </div>
         </div>
 
+        <ChatClaimPanel v-if="showClaim && claimOrders.length" :orders="claimOrders" @close="showClaim = false" @made="onClaimMade" />
+
         <!-- Input -->
         <div v-if="!isRating" class="border-t p-2 shrink-0">
             <GuestProfileForm v-if="!isLoggedIn && !guestProfileSubmitted && !isUser" :sessionUlid="session?.ulid"
@@ -600,6 +621,13 @@ defineExpose({
                                 class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                                 v-tooltip="ctrans('Upload file')" :aria-label="ctrans('Upload file')">
                                 <FontAwesomeIcon :icon="faPaperclip" class="text-sm" fixed-width />
+                            </button>
+
+                            <button v-if="claimOrders.length" @click="showClaim = !showClaim"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                                :class="showClaim ? 'bg-gray-100 text-gray-700' : 'text-gray-500'"
+                                v-tooltip="ctrans('Problem with an order')" :aria-label="ctrans('Problem with an order')">
+                                <FontAwesomeIcon :icon="faBoxOpen" class="text-sm" fixed-width />
                             </button>
 
                             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"

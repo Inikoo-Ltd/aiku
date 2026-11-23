@@ -27101,5 +27101,10 @@
     "Your claim :reference is approved": "Votre réclamation :reference est acceptée",
     "Report a problem": "Signaler un problème",
     "Report a problem with this order": "Signaler un problème avec cette commande",
-    "Something broken, missing or wrong?": "Un article cassé, manquant ou erroné ?"
+    "Something broken, missing or wrong?": "Un article cassé, manquant ou erroné ?",
+    "Not approved automatically: the photo check found a problem": "Non acceptée automatiquement : la vérification des photos a trouvé un problème",
+    "Problem with an order": "Problème avec une commande",
+    "Which order?": "Quelle commande ?",
+    "Dispatched :date": "Expédiée le :date",
+    "I reported a problem with order :order (claim :reference).": "J’ai signalé un problème avec la commande :order (réclamation :reference)."
 }

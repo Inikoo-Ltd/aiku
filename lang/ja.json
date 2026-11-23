@@ -1692,5 +1692,10 @@
     "Your claim :reference is approved": "クレーム :reference は承認されました",
     "Report a problem": "問題を報告",
     "Report a problem with this order": "このご注文の問題を報告",
-    "Something broken, missing or wrong?": "破損、不足、誤りがありましたか？"
+    "Something broken, missing or wrong?": "破損、不足、誤りがありましたか？",
+    "Not approved automatically: the photo check found a problem": "自動承認されませんでした: 写真チェックで問題が見つかりました",
+    "Problem with an order": "注文の問題",
+    "Which order?": "どのご注文ですか？",
+    "Dispatched :date": "発送日 :date",
+    "I reported a problem with order :order (claim :reference).": "ご注文 :order の問題を報告しました（クレーム :reference）。"
 }

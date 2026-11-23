@@ -7304,5 +7304,10 @@
     "Your claim :reference is approved": "Вашу рекламацію :reference схвалено",
     "Report a problem": "Повідомити про проблему",
     "Report a problem with this order": "Повідомити про проблему з цим замовленням",
-    "Something broken, missing or wrong?": "Щось розбите, бракує або не те?"
+    "Something broken, missing or wrong?": "Щось розбите, бракує або не те?",
+    "Not approved automatically: the photo check found a problem": "Не схвалено автоматично: перевірка фото виявила проблему",
+    "Problem with an order": "Проблема із замовленням",
+    "Which order?": "Яке замовлення?",
+    "Dispatched :date": "Відправлено :date",
+    "I reported a problem with order :order (claim :reference).": "Я повідомив(ла) про проблему із замовленням :order (рекламація :reference)."
 }

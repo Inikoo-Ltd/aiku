@@ -2158,5 +2158,10 @@
     "Your claim :reference is approved": "Jūsu pretenzija :reference ir apstiprināta",
     "Report a problem": "Ziņot par problēmu",
     "Report a problem with this order": "Ziņot par problēmu ar šo pasūtījumu",
-    "Something broken, missing or wrong?": "Kaut kas saplīsis, trūkst vai nav pareizi?"
+    "Something broken, missing or wrong?": "Kaut kas saplīsis, trūkst vai nav pareizi?",
+    "Not approved automatically: the photo check found a problem": "Nav apstiprināta automātiski: fotoattēlu pārbaudē atrasta problēma",
+    "Problem with an order": "Problēma ar pasūtījumu",
+    "Which order?": "Kurš pasūtījums?",
+    "Dispatched :date": "Nosūtīts :date",
+    "I reported a problem with order :order (claim :reference).": "Es ziņoju par problēmu ar pasūtījumu :order (pretenzija :reference)."
 }
