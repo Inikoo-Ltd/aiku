@@ -792,6 +792,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<template v-if="segmentsByKey[stage.key]?.state === 'done' && segmentsByKey[stage.key].done_at">
 										{{ day(segmentsByKey[stage.key].done_at) }} {{ zDay(segmentsByKey[stage.key].done_at) }}
 									</template>
+									<span v-else-if="segmentsByKey[stage.key]?.state === 'skipped'" class="text-xs font-normal text-gray-400">{{ ctrans("Skipped") }}</span>
 								</div>
 							</div>
 						</div>
