@@ -756,7 +756,18 @@ describe('partner shopping list', function () {
 
         expect($line['reference'])->toBe($result['orders'][0]->reference)
             ->and($line['state_label'])->toStartWith('Picked by')
-            ->and($line['quantity'])->toBe(3.0);
+            ->and($line['quantity'])->toBe(3.0)
+            ->and($line['is_overdue'])->toBeFalse();
+
+        $this->travel(1)->days();
+        expect(collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request')['eta'])->toBe($line['eta']);
+        $this->travelBack();
+
+        $item->refresh()->transaction->updateQuietly(['created_at' => now()->subDays(60)]);
+        $late = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($late['is_overdue'])->toBeTrue()
+            ->and($late['eta'])->toBe(now()->addDay()->toDateString());
     });
 
     test('a finalised partner order not yet dispatched stays on its way until its stock delivery exists', function () {
