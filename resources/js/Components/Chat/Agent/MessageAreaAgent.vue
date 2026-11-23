@@ -1057,6 +1057,15 @@ const unansweredMessageId = computed(() =>
 )
 
 const emailCopyCandidates = computed<{ address: string; name: string | null }[]>(() => {
+const signalTone: Record<string, string> = {
+    red: "bg-red-50 text-red-700 ring-red-200",
+    amber: "bg-amber-50 text-amber-700 ring-amber-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    gray: "bg-gray-100 text-gray-600 ring-gray-200",
+}
+const customerSignals = computed<{ key: string, label: string, tone: string }[]>(() => (props.session as any)?.customer_signals ?? [])
+const shownSignals = computed(() => customerSignals.value.slice(0, 2))
+const hiddenSignals = computed(() => customerSignals.value.slice(2))
     if (!isEmailChat.value) return []
 
     return Object.values((props.session as any)?.metadata?.email_participants ?? {})
@@ -2360,6 +2369,9 @@ const handleClickOutside = (e: MouseEvent) => {
 
             <div v-if="emailCopyCandidates.length" class="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-gray-500">
                 <span class="font-medium">{{ ctrans("Cc") }}</span>
+                    <span v-for="signal in shownSignals" :key="signal.key" class="rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset" :class="signalTone[signal.tone]">{{ signal.label }}</span>
+                    <span v-if="hiddenSignals.length" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 ring-1 ring-inset ring-gray-200"
+                        v-tooltip="hiddenSignals.map((signal) => signal.label).join(' · ')">+{{ hiddenSignals.length }}</span>
                 <label v-for="person in emailCopyCandidates" :key="person.address"
                     class="inline-flex cursor-pointer items-center gap-1.5" :title="person.address">
                     <input type="checkbox" class="h-3.5 w-3.5 rounded border-gray-300"
