@@ -991,9 +991,10 @@ const auraShare = computed(() => {
     const replyWords = wordsOf(newMessage.value)
     return draftWords.size ? [...draftWords].filter((word) => replyWords.has(word)).length / draftWords.size : 0
 })
+const auraColour = computed(() => `color-mix(in srgb, #db2777 ${Math.round(auraShare.value * 100)}%, var(--app-accent))`)
 const sendButtonStyle = computed(() => auraShare.value
     ? {
-        backgroundColor: `color-mix(in srgb, #db2777 ${Math.round(auraShare.value * 100)}%, var(--app-accent)) !important`,
+        backgroundColor: `${auraColour.value} !important`,
         borderColor: "transparent",
         color: `${auraShare.value >= 0.5 ? "#ffffff" : "var(--app-accent-text)"} !important`,
     }
@@ -2320,7 +2321,7 @@ const handleClickOutside = (e: MouseEvent) => {
 
         <!-- Footer: Normal message input -->
         <footer v-else class="px-3 py-2 bg-white" :class="isEmailChat ? 'rounded-r-xl border border-gray-200 shadow-sm' : ''"
-            :style="isEmailChat ? { borderLeft: `3px dashed ${layout?.app?.theme?.[4] ?? 'var(--app-accent)'}` } : undefined">
+            :style="isEmailChat ? { borderLeft: `3px dashed ${auraShare ? auraColour : layout?.app?.theme?.[4] ?? 'var(--app-accent)'}` } : undefined">
             <input ref="imageInput" type="file" accept=".webp,.jpg,.jpeg,.png,.avif" multiple class="hidden"
                 @change="handleImageSelect" />
             <input ref="fileInput" type="file" :accept="FILE_EXTENSIONS.map((extension) => `.${extension}`).join(',')" multiple class="hidden" @change="handleDocSelect" />
