@@ -53,7 +53,7 @@ class GetPurchaseOrderGoodsReceipts
             ->whereNotNull('supplier_product_id')
             ->select('purchase_order_transactions.*')
             ->tap(fn ($query) => IndexPurchaseOrderTransactions::selectAgentWarehouseQuantities($query))
-            ->with(['supplierProduct:id,code,name,units_per_pack', 'orgStock.tradeUnits.image'])
+            ->with(['supplierProduct:id,code,name,units_per_pack,image_id', 'supplierProduct.image', 'orgStock.tradeUnits.image'])
             ->get()
             ->sortBy(fn (PurchaseOrderTransaction $transaction) => $transaction->supplierProduct?->code)
             ->map(fn (PurchaseOrderTransaction $transaction) => $this->line($transaction, $items->get($transaction->id, collect()), $agentOrganisation->slug, $canEdit, $this->isPastProduction($purchaseOrder)))
@@ -101,14 +101,15 @@ class GetPurchaseOrderGoodsReceipts
         $accepted  = $received - $rejected;
         $owed      = max($ordered - $accepted, 0);
         $tradeUnit = $transaction->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $imageOwner = $tradeUnit ?? ($transaction->supplierProduct?->image_id ? $transaction->supplierProduct : null);
         $isLive    = in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true);
 
         return [
             'id'              => $transaction->id,
             'code'            => $transaction->supplierProduct?->code,
             'name'            => $transaction->supplierProduct?->name,
-            'image_thumbnail' => $tradeUnit?->imageSources(80, 80),
-            'image_full'      => $tradeUnit?->image?->fullResolutionUrls(),
+            'image_thumbnail' => $imageOwner?->imageSources(80, 80),
+            'image_full'      => $imageOwner?->image?->fullResolutionUrls(),
             'state'           => $transaction->state->value,
             'units_per_pack'  => (float) ($transaction->orgStock?->packed_in ?: $transaction->supplierProduct?->units_per_pack ?: 1),
             'ordered'         => $ordered,
