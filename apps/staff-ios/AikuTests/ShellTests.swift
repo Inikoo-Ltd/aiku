@@ -58,3 +58,43 @@ struct ShellTests {
         #expect(AppLanguages.language(id: "sk").nativeName == "Slovenčina")
     }
 }
+
+@MainActor
+struct ShellProfileLoadingTests {
+    @Test func noSampleNameOrWarehouseShowsBeforeTheProfileLoads() {
+        let session = Session()
+
+        #expect(!session.hasProfile)
+        #expect(session.profile.name.isEmpty)
+        #expect(session.warehouseLabel.isEmpty)
+        #expect(session.fullContextLabel.isEmpty)
+        #expect(ShellHomeContent.context(hasWarehouseAccess: true, organisation: session.profile.organisation, warehouseName: session.profile.warehouseName) == nil)
+        #expect(ShellHomeContent.context(hasWarehouseAccess: false, organisation: session.profile.organisation, warehouseName: session.profile.warehouseName) == nil)
+    }
+
+    @Test func theHeaderFillsInAsTheProfileAndWarehouseArrive() {
+        let session = Session()
+
+        session.apply(MobileProfileResponse(id: 1, username: "andi", name: "Andi Ferdiawan", position: nil, jobTitle: nil, jobPositions: [], organisation: .init(id: 2, code: nil, name: "Ancient Wisdom Ltd")))
+        #expect(session.hasProfile)
+        #expect(session.profile.firstName == "Andi")
+        #expect(ShellHomeContent.context(hasWarehouseAccess: false, organisation: session.profile.organisation, warehouseName: session.profile.warehouseName) == "Ancient Wisdom Ltd · Customer services")
+        #expect(ShellHomeContent.context(hasWarehouseAccess: true, organisation: session.profile.organisation, warehouseName: session.profile.warehouseName) == nil)
+
+        session.apply(warehouse: "Europa Drive", code: "ED", organisation: "Ancient Wisdom Ltd")
+        #expect(ShellHomeContent.context(hasWarehouseAccess: true, organisation: session.profile.organisation, warehouseName: session.profile.warehouseName) == "Ancient Wisdom Ltd · Europa Drive")
+        #expect(session.warehouseLabel == "Europa Drive · ED")
+    }
+
+    @Test func signingOutForgetsTheLastUser() {
+        let session = Session()
+        session.apply(MobileProfileResponse(id: 1, username: "sandra", name: "Sandra Sadowska", position: nil, jobTitle: nil, jobPositions: [], organisation: nil))
+        session.apply(warehouse: "Europa Drive", code: "ED", organisation: "Ancient Wisdom Ltd")
+
+        session.forgetProfile()
+
+        #expect(!session.hasProfile)
+        #expect(session.fullContextLabel.isEmpty)
+        #expect(!session.hasWarehouseContext)
+    }
+}

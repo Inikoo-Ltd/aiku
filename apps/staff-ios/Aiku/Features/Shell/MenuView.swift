@@ -42,7 +42,7 @@ struct MenuView: View {
                     }
                 }
             }
-            ForEach(ShellMenuCatalog.groups(for: session.visibleModules, goodsOutUnassigned: workBadges.goodsOutUnassignedCount, clocking: ShellMenuClocking(clocking))) { group in
+            ForEach(ShellMenuCatalog.groups(for: session.visibleModules, goodsOutUnassigned: workBadges.goodsOutUnassignedCount, goodsInReceived: workBadges.goodsInReceivedCount, clocking: ShellMenuClocking(clocking))) { group in
                 VStack(alignment: .leading, spacing: 8) {
                     ShellGroupHeading(title: group.title, icon: group.icon, note: group.note)
                     CardList(group.items) { item in
@@ -111,11 +111,20 @@ struct MenuView: View {
             router.open(ShellRoute.profile)
         } label: {
             HStack(spacing: 12) {
-                Avatar(session.profile.initials, size: 44)
+                if session.hasProfile {
+                    Avatar(session.profile.initials, size: 44)
+                } else {
+                    SkeletonBlock(width: 44, height: 44, radius: 22)
+                }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.profile.name)
-                        .font(.aiku(16, .bold))
-                        .foregroundStyle(AikuColor.text)
+                    if session.hasProfile {
+                        Text(session.profile.name)
+                            .font(.aiku(16, .bold))
+                            .foregroundStyle(AikuColor.text)
+                    } else {
+                        SkeletonBlock(width: 160, height: 16)
+                            .padding(.vertical, 2)
+                    }
                     Text("Profile & settings")
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)

@@ -268,8 +268,11 @@ struct GoodsOutPackingTests {
             return response(status: "not_found", message: "Not on this delivery note")
         }
         #expect(await store.scanToPack("AR700", barcode: " 5001 ") == .packed(code: "SKO-1", message: "SKO-1 +1", lineDone: true))
+        #expect(store.scanMisses == 0)
         #expect(await store.scanToPack("AR700", barcode: "999") == .refused(message: "Not on this delivery note"))
+        #expect(store.scanMisses == 1)
         #expect(await store.scanToPack("AR700", barcode: "  ") == .refused(message: "Scan a barcode first."))
+        #expect(store.scanMisses == 1)
         #expect(await calls.writes.first == .scanPack(barcode: "5001"))
     }
 

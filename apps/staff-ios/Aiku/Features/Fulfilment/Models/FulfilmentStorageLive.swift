@@ -526,6 +526,11 @@ final class StoredItemAuditLive {
 
     var isWorking: Bool { working != nil || isDraining }
 
+    private func scanMissed() {
+        scanMisses += 1
+        ScanFeedback.shared.rejected()
+    }
+
     var isSavingCount: Bool {
         switch working {
         case .count(let body): body.add == nil
@@ -665,7 +670,7 @@ final class StoredItemAuditLive {
                 return .unsure
             }
             if write.scannedCode != nil, case .validation = error as? APIError {
-                scanMisses += 1
+                scanMissed()
             }
             done = FulfilmentDone(message: text, tone: .danger)
             return .refused

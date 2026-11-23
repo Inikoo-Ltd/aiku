@@ -110,7 +110,6 @@ private struct PalletReturnScreen: View {
             .hardwareScanner(isEnabled: listens && sheet == nil && confirm == nil && !isScanning) { code in
                 Task { await live.scan(code) }
             }
-            .scanMissFeedback(live.scanMisses)
             .fullScreenCover(isPresented: $isScanning) {
                 FulfilmentCodeCamera(title: "Scan to pick", onClose: { isScanning = false }) { code in
                     isScanning = false

@@ -308,6 +308,7 @@ private struct GoodsInCheckScanContent: View {
         case let .choose(code, itemIDs):
             open(.chooseLine(code: code, itemIDs: itemIDs))
         case .notOnDelivery(let code):
+            ScanFeedback.shared.rejected()
             feedback = .problem("\(code) is not on \(delivery.reference)")
         case .failed(_, let message):
             feedback = .problem(message)

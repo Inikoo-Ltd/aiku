@@ -134,15 +134,17 @@ struct MobileMyWorkPage: Decodable, Sendable, Equatable {
 struct MobileWorkBadges: Decodable, Sendable, Equatable {
     var myWork: Int?
     var goodsOutUnassigned: Int?
+    var goodsInReceived: Int?
     var inboxUnread: Int?
 
     private enum CodingKeys: String, CodingKey {
-        case myWork, goodsOutUnassigned, inboxUnread
+        case myWork, goodsOutUnassigned, goodsInReceived, inboxUnread
     }
 
-    init(myWork: Int? = nil, goodsOutUnassigned: Int? = nil, inboxUnread: Int? = nil) {
+    init(myWork: Int? = nil, goodsOutUnassigned: Int? = nil, goodsInReceived: Int? = nil, inboxUnread: Int? = nil) {
         self.myWork = myWork
         self.goodsOutUnassigned = goodsOutUnassigned
+        self.goodsInReceived = goodsInReceived
         self.inboxUnread = inboxUnread
     }
 
@@ -150,6 +152,7 @@ struct MobileWorkBadges: Decodable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         myWork = container.lenientInt(.myWork)
         goodsOutUnassigned = container.lenientInt(.goodsOutUnassigned)
+        goodsInReceived = container.lenientInt(.goodsInReceived)
         inboxUnread = container.lenientInt(.inboxUnread)
     }
 }

@@ -27,6 +27,8 @@ struct StaffProfile: Equatable, Sendable {
         warehouseName: "Main Warehouse",
         warehouseCode: "WH1"
     )
+
+    static let notLoaded = StaffProfile(name: "", username: "", role: "", organisation: "", warehouseName: "", warehouseCode: "")
 }
 
 enum AccessLevel: String, Sendable {
@@ -42,9 +44,16 @@ final class Session {
     var hasWarehouseContext = false
     var modules: ModuleAccess = .everything
 
-    init(profile: StaffProfile = .sample, access: AccessLevel = .all) {
+    init(profile: StaffProfile = .notLoaded, access: AccessLevel = .all) {
         self.profile = profile
         self.access = access
+    }
+
+    var hasProfile: Bool { !profile.name.isEmpty }
+
+    func forgetProfile() {
+        profile = .notLoaded
+        hasWarehouseContext = false
     }
 
     var visibleModules: ModuleAccess { access == .all ? modules : .nothing }
@@ -93,7 +102,11 @@ final class Session {
         hasWarehouseContext = true
     }
 
-    var warehouseLabel: String { "\(profile.warehouseName) · \(profile.warehouseCode)" }
-    var contextLabel: String { "\(profile.organisation) · \(profile.warehouseName)" }
-    var fullContextLabel: String { "\(profile.organisation) · \(warehouseLabel)" }
+    var warehouseLabel: String { Self.joined([profile.warehouseName, profile.warehouseCode]) }
+    var contextLabel: String { Self.joined([profile.organisation, profile.warehouseName]) }
+    var fullContextLabel: String { Self.joined([profile.organisation, profile.warehouseName, profile.warehouseCode]) }
+
+    private static func joined(_ parts: [String]) -> String {
+        parts.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 }

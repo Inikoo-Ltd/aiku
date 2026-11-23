@@ -185,6 +185,7 @@ struct GoodsInDeliveriesScreen: View {
             case let .open(id, reference):
                 router.open(GoodsInRoute.stockDelivery(id: id, reference: reference))
             case .noMatch(let code):
+                ScanFeedback.shared.rejected()
                 toasts.show("\(code) is not a stock delivery", tone: .info)
             case .failed(_, let message):
                 toasts.show(message, tone: .danger)

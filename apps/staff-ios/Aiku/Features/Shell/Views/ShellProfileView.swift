@@ -111,14 +111,25 @@ struct ShellProfileView: View {
 
     private var userCard: some View {
         HStack(spacing: 14) {
-            Avatar(session.profile.initials, size: 56)
+            if session.hasProfile {
+                Avatar(session.profile.initials, size: 56)
+            } else {
+                SkeletonBlock(width: 56, height: 56, radius: 28)
+            }
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.profile.name)
-                    .font(.aiku(17, .bold))
-                    .foregroundStyle(AikuColor.text)
-                Text("\(session.profile.username) · \(session.profile.role)")
-                    .font(.aiku(13))
-                    .foregroundStyle(AikuColor.text3)
+                if session.hasProfile {
+                    Text(session.profile.name)
+                        .font(.aiku(17, .bold))
+                        .foregroundStyle(AikuColor.text)
+                    Text("\(session.profile.username) · \(session.profile.role)")
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                } else {
+                    SkeletonBlock(width: 170, height: 16)
+                        .padding(.vertical, 2)
+                    SkeletonBlock(width: 120, height: 11)
+                        .padding(.vertical, 2)
+                }
                 if let error = authStore.lastProfileError {
                     Text("Couldn’t refresh: \(error)")
                         .font(.aiku(12))

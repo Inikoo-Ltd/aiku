@@ -304,6 +304,7 @@ struct PickingSessionTests {
 
         #expect(store.event == .feedback("9999 is not in this picking session.", .danger))
         #expect(store.scanLog.first?.result == .refused)
+        #expect(store.scanMisses == 1)
     }
 
     @Test("Waiting and finished picking end the pick screen")
@@ -339,6 +340,7 @@ struct PickingSessionTests {
         #expect(await calls.packs == [MobileSessionScanBody(barcode: "5050", quantity: 1)])
         #expect(store.event == .allPacked)
         #expect(store.scanTarget == nil)
+        #expect(store.scanMisses == 0)
     }
 
     @Test("An offline scan is logged as failed with the internet message")
@@ -351,6 +353,7 @@ struct PickingSessionTests {
 
         #expect(store.scanLog.first?.result == .failed)
         #expect(store.event == .feedback("This needs internet. Check Wi-Fi and try again.", .danger))
+        #expect(store.scanMisses == 0)
     }
 
     @Test("Footer actions follow the Android order and only what the API allows")

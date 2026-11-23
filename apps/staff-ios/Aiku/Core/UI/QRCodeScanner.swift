@@ -57,6 +57,7 @@ struct QRCodeScanner: UIViewControllerRepresentable {
                 if case .barcode(let barcode) = item, let value = barcode.payloadStringValue, !value.isEmpty {
                     hasDelivered = true
                     dataScanner.stopScanning()
+                    ScanFeedback.shared.accepted()
                     onCode(value)
                     return
                 }

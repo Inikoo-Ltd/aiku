@@ -898,6 +898,7 @@ final class GoodsInLocationFinder {
     private(set) var results: [MobileLocation] = []
     private(set) var isSearching = false
     private(set) var problem: String?
+    private(set) var scanMisses = 0
     private(set) var picked: GoodsInPickedLocation?
     private(set) var lookingUp: String?
     private(set) var notALocation: String?
@@ -952,7 +953,7 @@ final class GoodsInLocationFinder {
             let result = try await service.scan(warehouseID, scanned)
             lookingUp = nil
             guard result.scanType == .location, let location = result.location else {
-                notALocation = scanned
+                notALocationScanned(scanned)
                 return
             }
             query = location.code
@@ -960,11 +961,17 @@ final class GoodsInLocationFinder {
             await runSearch(location.code)
         } catch APIError.http(404) {
             lookingUp = nil
-            notALocation = scanned
+            notALocationScanned(scanned)
         } catch {
             lookingUp = nil
             problem = GoodsInText.problem(error)
         }
+    }
+
+    private func notALocationScanned(_ code: String) {
+        notALocation = code
+        scanMisses += 1
+        ScanFeedback.shared.rejected()
     }
 
     private func runSearch(_ needle: String) async {

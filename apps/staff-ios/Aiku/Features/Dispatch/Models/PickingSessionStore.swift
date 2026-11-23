@@ -13,6 +13,7 @@ final class PickingSessionStore {
     private(set) var scanTarget: PickingSessionScanTarget?
     private(set) var scanLog: [PickingSessionScanLogEntry] = []
     private(set) var queuedScans = 0
+    private(set) var scanMisses = 0
     private(set) var trolleyChoices: [MobileSessionTrolley] = []
     private(set) var isLoadingTrolleys = false
     private(set) var trolleysError: String?
@@ -192,6 +193,7 @@ final class PickingSessionStore {
         log(body.barcode, isPicked ? .done : .refused, outcome.result.message)
 
         if !isPicked {
+            scanMissed()
             if let message = outcome.result.message, !message.isEmpty {
                 event = .feedback(message, status == PickingSessionScanStatus.nothingChanged ? .info : .danger)
             }
@@ -204,6 +206,11 @@ final class PickingSessionStore {
         } else if let item, toPick <= 0 {
             event = .lineDone(item.code ?? body.barcode)
         }
+    }
+
+    private func scanMissed() {
+        scanMisses += 1
+        ScanFeedback.shared.rejected()
     }
 
     private func onPacked(_ body: MobileSessionScanBody, _ outcome: MobilePickingSessionOutcome) {
@@ -237,6 +244,7 @@ final class PickingSessionStore {
         log(body.barcode, isPacked ? .done : .refused, outcome.result.message)
 
         if !isPacked {
+            scanMissed()
             if let message = outcome.result.message, !message.isEmpty {
                 event = .feedback(message, status == PickingSessionScanStatus.nothingChanged ? .info : .danger)
             }

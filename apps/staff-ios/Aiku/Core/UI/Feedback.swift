@@ -236,17 +236,19 @@ struct SkeletonBlock: View {
     var width: CGFloat?
     var height: CGFloat = 12
     var radius: CGFloat = 6
+    var color: Color = AikuColor.border
     @State private var isDimmed = false
 
-    init(width: CGFloat? = nil, height: CGFloat = 12, radius: CGFloat = 6) {
+    init(width: CGFloat? = nil, height: CGFloat = 12, radius: CGFloat = 6, color: Color = AikuColor.border) {
         self.width = width
         self.height = height
         self.radius = radius
+        self.color = color
     }
 
     var body: some View {
         RoundedRectangle(cornerRadius: radius)
-            .fill(AikuColor.border)
+            .fill(color)
             .frame(width: width, height: height)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
             .opacity(isDimmed ? 0.45 : 1)

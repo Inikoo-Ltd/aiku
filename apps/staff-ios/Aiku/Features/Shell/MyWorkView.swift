@@ -13,7 +13,7 @@ struct MyWorkView: View {
         let now = Date()
         AppScreen(
             title: "My work",
-            kicker: "\(session.profile.name) · assigned to you",
+            kicker: session.hasProfile ? "\(session.profile.name) · assigned to you" : "Assigned to you",
             back: .none,
             actions: session.hasWarehouseAccess ? [HeaderAction(.search, label: "Search") { router.open(ShellRoute.search) }] : [],
             spacing: 10

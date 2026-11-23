@@ -8,7 +8,6 @@ struct FulfilmentDeliveriesView: View {
     @State private var feed = PalletDeliveriesFeed.shared
     @State private var warehouseStore = WarehouseStore.shared
     @State private var lookingUpCode: String?
-    @State private var scanMisses = 0
 
     @State private var appearance = 0
 
@@ -53,7 +52,6 @@ struct FulfilmentDeliveriesView: View {
         .hardwareScanner { code in
             Task { await openScanned(code) }
         }
-        .scanMissFeedback(scanMisses)
     }
 
     @ViewBuilder
@@ -105,7 +103,7 @@ struct FulfilmentDeliveriesView: View {
             if result.scanType == .palletDelivery, let delivery = result.palletDelivery {
                 open(delivery.id, delivery.reference)
             } else {
-                scanMisses += 1
+                ScanFeedback.shared.rejected()
                 toasts.show("\(scanned) is not a fulfilment delivery in this warehouse", tone: .info)
             }
         } catch {

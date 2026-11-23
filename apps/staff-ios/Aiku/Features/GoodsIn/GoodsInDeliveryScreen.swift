@@ -310,6 +310,7 @@ private struct GoodsInDeliveryContent: View {
         case let .choose(code, itemIDs):
             open(.chooseLine(code: code, itemIDs: itemIDs))
         case .notOnDelivery(let code):
+            ScanFeedback.shared.rejected()
             toasts.show("\(code) is not on \(delivery.reference)", tone: .info)
         case .failed(_, let message):
             toasts.show(message, tone: .danger)
