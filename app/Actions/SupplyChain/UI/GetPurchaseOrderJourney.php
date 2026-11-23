@@ -40,6 +40,7 @@ class GetPurchaseOrderJourney
      *     has_deposit?: bool,
      *     no_deposit?: bool,
      *     shows_waived_deposit?: bool,
+     *     shows_production?: bool,
      *     deposit_not_required_at?: ?string,
      *     deposit_not_required_by?: ?string,
      *     deposit_paid_at?: ?string,
@@ -203,7 +204,7 @@ class GetPurchaseOrderJourney
         } elseif (($facts['shows_waived_deposit'] ?? false) && ($facts['no_deposit'] ?? false)) {
             $stages['deposit_paid'] = [...$this->stage(true, $facts['deposit_not_required_at'] ?? null), 'waived' => true];
         }
-        if ($isAgent || !empty($facts['production_started_at']) || ($journey === 'supplier' && ($facts['production_waiting_time'] ?? 0) > 0)) {
+        if ($isAgent || !empty($facts['production_started_at']) || ($journey === 'supplier' && (($facts['production_waiting_time'] ?? 0) > 0 || ($facts['shows_production'] ?? false)))) {
             $stages['in_production'] = $this->stage(false, $facts['production_started_at'] ?? null);
         }
         if ($isAgent || !empty($facts['qc_passed_at']) || !empty($facts['produced_at']) || !empty($facts['estimated_production_at'])) {
