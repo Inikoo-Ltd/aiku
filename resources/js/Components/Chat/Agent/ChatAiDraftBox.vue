@@ -402,7 +402,7 @@ defineExpose({ take, draft, busy, offerToEditor, replaceText, discard: () => dec
                         <FontAwesomeIcon v-if="!draft.premonitions?.length" :icon="faExclamationTriangle" class="mt-px shrink-0 text-pink-600" fixed-width aria-hidden="true" />
                         <div class="min-w-0 flex-1">
                             <span v-if="staffNote" role="button" tabindex="0" class="block cursor-pointer whitespace-pre-line" :class="noteOpen ? '' : 'line-clamp-3'" @click="noteOpen = !noteOpen" @keydown.enter.prevent="noteOpen = !noteOpen">{{ staffNote }}</span>
-                            <span v-if="draft.premonitions?.length" class="mt-1.5 flex flex-wrap gap-2 text-xs"><TicketStatusChip v-for="premonition in draft.premonitions" :key="premonition.reference" :ticket="premonition" /></span>
+                            <span v-if="draft.premonitions?.length" :class="staffNote ? 'mt-1.5' : ''" class="flex flex-wrap gap-2 text-xs"><TicketStatusChip v-for="premonition in draft.premonitions" :key="premonition.reference" :ticket="premonition" /></span>
                         </div>
                     </div>
                     <template v-for="action in staffActions" :key="action.index">
