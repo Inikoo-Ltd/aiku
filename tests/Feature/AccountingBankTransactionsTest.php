@@ -2907,9 +2907,10 @@ test('a tatra sync fails loudly instead of losing lines when a full page comes w
     Http::assertNotSent(fn ($request) => str_contains($request->url(), 'evil.example'));
 });
 
-test('a tatra payment whose variable symbol is the order number without its prefix is matched to that order', function () {
+test('a tatra payment whose variable symbol is the order number without its prefix is matched to that order, the one owing the amount when other shops have that number', function () {
     $order          = bankMatchingOrder(createCustomer($this->shop), 212.4);
     $bankConnection = bankMatchingConnection($this->organisation);
+    bankMatchingOrder(createCustomer($this->shop), 71.46)->update(['reference' => 'AWS'.preg_replace('/^[A-Z]+/', '', $order->reference)]);
 
     $line = BankTransaction::create([
         'group_id'                => $bankConnection->group_id,

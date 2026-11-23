@@ -1169,7 +1169,8 @@ class MatchBankTransactions
     /**
      * Czech and Slovak payers (and DPD CZ cash on delivery) put the order number without its shop prefix in the
      * variable symbol (VS 20921 for CZ20921), which Fio keeps in column 5 and Tatra in variableSymbol. It names the orders of this organisation
-     * in the line's currency whose number is a prefix and those digits.
+     * in the line's currency whose number is a prefix and those digits; when several shops have that number, the one order owing exactly the
+     * amount received (DPD SK pays SK29284 as VS 29284 while AWS29284 and FR29284 exist too).
      *
      * @return list<string>
      */
@@ -1180,11 +1181,14 @@ class MatchBankTransactions
             return [];
         }
 
-        return Order::where('organisation_id', $bankTransaction->organisation_id)
+        $orders = Order::where('organisation_id', $bankTransaction->organisation_id)
             ->where('currency_id', $bankTransaction->currency_id)
             ->whereRaw('reference ~ ?', ['^[A-Z]{2,5}'.$variableSymbol.'$'])
-            ->pluck('reference')
-            ->all();
+            ->get(['reference', 'total_amount', 'payment_amount']);
+
+        $owingThisAmount = $orders->filter(fn (Order $order) => abs((float)$order->total_amount - (float)$order->payment_amount - (float)$bankTransaction->amount) <= 0.01);
+
+        return ($owingThisAmount->count() === 1 ? $owingThisAmount : $orders)->pluck('reference')->values()->all();
     }
 
     /**
