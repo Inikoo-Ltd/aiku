@@ -45,6 +45,8 @@ use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePack
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\ApplyNewCompositionToDeliveryNoteItem;
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
@@ -5329,7 +5331,81 @@ test('composition change flags items with picks dirty even in a synced state', f
 
     expect(fn () => ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem))
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+
+    return $deliveryNoteItem;
 })->depends('composition change flags packed items dirty instead of rewriting them');
+
+test('a dirty line takes the new composition once its picks are undone or its waiting is cleared', function () {
+    $stock    = StoreStock::make()->action($this->group, Stock::factory()->definition());
+    $stock    = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+
+    $transaction = $this->order->transactions()->where('model_type', 'Product')->first();
+    $transaction->updateQuietly(['quantity_ordered' => 1, 'quantity_bonus' => 0]);
+    $link = fn (float $quantity) => DB::table('product_has_org_stocks')->updateOrInsert(
+        ['product_id' => $transaction->model_id, 'org_stock_id' => $orgStock->id],
+        ['quantity' => $quantity]
+    );
+    $link(0.333333);
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'H4882-'.$orgStock->id,
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'email'            => 'test@email.com',
+        'phone'            => '+62081353890000',
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id
+    ]);
+    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $transaction->id,
+        'quantity_required' => 0.333333
+    ]);
+    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
+    StartHandlingDeliveryNote::make()->action($deliveryNote, $this->user);
+
+    $location         = StoreLocation::make()->action($this->warehouse, Location::factory()->definition());
+    $locationOrgStock = StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $location,
+        modelData: ['quantity' => 100, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+        strict: false
+    );
+    $picking = StorePicking::make()->action($deliveryNoteItem->refresh(), $this->user, [
+        'picker_user_id'        => $this->user->id,
+        'location_org_stock_id' => $locationOrgStock->id,
+        'quantity'              => 0.333333,
+    ]);
+
+    $link(1);
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(0.333333)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull();
+
+    DeletePicking::make()->action($picking, $this->user);
+    $deliveryNoteItem->refresh();
+
+    expect((float) $deliveryNoteItem->quantity_required)->toBe(1.0)
+        ->and((float) $deliveryNoteItem->quantity_picked)->toBe(0.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->toBeNull();
+
+    $deliveryNoteItem->updateQuietly(['state' => DeliveryNoteItemStateEnum::HANDLING_BLOCKED, 'quantity_waiting_warehouse' => 1]);
+    $link(2);
+    SyncDeliveryNoteItemsRequiredPickQuantity::run($orgStock);
+
+    expect((float) $deliveryNoteItem->refresh()->quantity_required)->toBe(1.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->not->toBeNull();
+
+    $deliveryNoteItem->updateQuietly(['quantity_waiting_warehouse' => 0]);
+    CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem->refresh());
+    $deliveryNoteItem->refresh();
+
+    expect($deliveryNoteItem->state)->toBe(DeliveryNoteItemStateEnum::HANDLING)
+        ->and((float) $deliveryNoteItem->quantity_required)->toBe(2.0)
+        ->and($deliveryNoteItem->composition_dirty_at)->toBeNull();
+});
 
 test('picking an item auto ignores zero quantity items and hides them from the index', function () {
     $deliveryNote = StoreDeliveryNote::make()->action($this->order, [

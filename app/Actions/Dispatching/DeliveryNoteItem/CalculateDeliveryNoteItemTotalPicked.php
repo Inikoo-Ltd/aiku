@@ -40,7 +40,6 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
     {
         $pickings = $deliveryNoteItem->pickings()->get();
 
-
         $totalPicked = $pickings->whereIn('type', [
             PickingTypeEnum::PICK,
             PickingTypeEnum::MAGIC_PICK
@@ -117,6 +116,19 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         $deliveryNoteItem = $this->update($deliveryNoteItem, $dataToUpdate);
         $deliveryNoteItem->refresh();
+
+        /*
+         * HELP-4882. A line flagged dirty by a composition change takes the new quantity as soon as
+         * its picks are undone and nothing waits; left to a button, the picker picked 1/3 of a box
+         * again. Applying it changes quantity_required, which runs this calculation again.
+         */
+        if ($deliveryNoteItem->composition_dirty_at
+            && $pickings->isEmpty()
+            && $totalWaiting == 0
+            && in_array($deliveryNoteItem->state, SyncDeliveryNoteItemsRequiredPickQuantity::SYNCED_STATES)) {
+            ApplyNewCompositionToDeliveryNoteItem::make()->handle($deliveryNoteItem);
+            $deliveryNoteItem->refresh();
+        }
 
         /*
          * Inside a picking session nobody sets the note as picked, so this is where it learns it is
