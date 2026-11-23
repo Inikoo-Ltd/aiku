@@ -56,7 +56,7 @@ class StoreOrder extends OrgAction
     public int $hydratorsDelay = 0;
 
     private CustomerClient|Customer $parent;
-    private bool $isBackOfficeOrder = false;
+    public bool $isBackOfficeOrder = false;
 
     /**
      * @throws \Throwable

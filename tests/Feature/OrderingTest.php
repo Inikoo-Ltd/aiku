@@ -84,7 +84,6 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\Ordering\Order\PayOrder;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderProductionReview;
-use App\Actions\Ordering\Order\StoreSubmittedOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayRetinaOrderWithBalance;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
@@ -5765,10 +5764,11 @@ test('a partner organisation orders goods from a manufacturing hub only through 
         $directOrder = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), Order::factory()->definition());
         expect($directOrder->exists)->toBeTrue();
 
-        expect(fn () => StoreSubmittedOrder::make()->handle($partnerCustomer, ['sales_channel_id' => $intercompany->id]))
-            ->toThrow(ValidationException::class);
-
         actingAs(createAdminGuest($this->group)->getUser());
+
+        $submittedBefore = $partnerCustomer->orders()->count();
+        post(route('grp.models.customer.submitted_order.store', $partnerCustomer->id), ['sales_channel_id' => $intercompany->id])->assertSessionHasNoErrors();
+        expect($partnerCustomer->orders()->count())->toBe($submittedBefore + 1);
         get(route('grp.org.shops.show.crm.customers.show', [$this->organisation->slug, $this->shop->slug, $partnerCustomer->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page->where('can_add_order', true));
 

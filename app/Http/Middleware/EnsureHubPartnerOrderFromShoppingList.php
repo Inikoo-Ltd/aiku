@@ -29,7 +29,6 @@ use Illuminate\Validation\ValidationException;
 class EnsureHubPartnerOrderFromShoppingList
 {
     private const ALWAYS_BLOCKED_ROUTES = [
-        'customer.submitted_order.store',
         'order.transaction.store',
         'order.transaction.upload',
         'order.follow_up.store',

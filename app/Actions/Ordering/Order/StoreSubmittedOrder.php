@@ -29,11 +29,10 @@ class StoreSubmittedOrder extends OrgAction
      */
     public function handle(Customer $customer, array $modelData): Order
     {
-        if (StoreOrder::isPartnerBuyingFromHub($customer, $customer->shop)) {
-            throw StoreOrder::partnerBuyingFromHubError($customer, $customer->shop);
-        }
+        $storeOrder                    = StoreOrder::make();
+        $storeOrder->isBackOfficeOrder = true;
 
-        $order = StoreOrder::make()->action($customer, $modelData);
+        $order = $storeOrder->action($customer, $modelData);
         SubmitOrder::make()->action($order);
         $order->refresh();
 
