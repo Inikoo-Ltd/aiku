@@ -29,9 +29,17 @@ final class LocationsStore {
     @ObservationIgnored private var loadedKey: LocationsLoadKey?
     @ObservationIgnored private var remoteUserID: Int?
     @ObservationIgnored private var remoteLoad: (key: LocationsLoadKey, task: Task<Void, Never>)?
+    @ObservationIgnored private var offlineBases: [String: MobileLocation] = [:]
+    private(set) var copyDates: [String: Date] = [:]
 
     init(warehouse: LocationsWarehouse = LocationsSampleData.warehouse) {
         self.warehouse = warehouse
+        OfflineWork.shared.onQueueChanged { [weak self] in
+            self?.reapplyOfflineWork()
+        }
+        OfflineWork.shared.onRecordsChanged { [weak self] records in
+            self?.reloadChanged(records)
+        }
     }
 
     var listedLocations: [LocationsLocation] {
@@ -295,6 +303,10 @@ final class LocationsStore {
         } catch where error.isCancellation {
             return
         } catch {
+            if error as? APIError == .offline, let copy = offlineQueue(locationID: id)?.copy(MobileLocation.self) {
+                applyDetail(copy.value, copyAt: copy.downloadedAt)
+                return
+            }
             detailLoadedCodes.insert(code)
             loadError = error.localizedDescription
         }
@@ -334,6 +346,8 @@ final class LocationsStore {
         listCodes = []
         detailLoadedCodes = []
         abilities = [:]
+        offlineBases = [:]
+        copyDates = [:]
         currentPage = 0
         lastPage = 0
         loadError = nil
@@ -412,8 +426,26 @@ final class LocationsStore {
         source == .sample || abilities[code]?.editLocations == true
     }
 
+    func offlineQueue(locationID: Int) -> OfflineRecordQueue? {
+        guard let warehouseID = remoteWarehouse?.id ?? selectedWarehouseID() else { return nil }
+        return OfflineRecordQueue(warehouseID: warehouseID, record: .location(locationID))
+    }
+
+    func offlineQueue(code: String) -> OfflineRecordQueue? {
+        warehouse.location(code: code)?.remote.flatMap { offlineQueue(locationID: $0.id) }
+    }
+
+    func offlineNames(code: String) -> StockOfflineText.Names {
+        let slots = warehouse.location(code: code)?.slots ?? []
+        let known = warehouse.locations
+        return StockOfflineText.Names(
+            sko: { linkID in slots.first { $0.remoteLinkID == linkID }?.skoReference },
+            location: { locationID in known.first { $0.remote?.id == locationID }?.code }
+        )
+    }
+
     @discardableResult
-    func auditRemotely(location code: String, counts: [LocationsAuditCount], apiClient: APIClient) async throws -> Int {
+    func auditRemotely(location code: String, counts: [LocationsAuditCount], apiClient: APIClient) async throws -> LocationsWriteOutcome {
         guard let location = warehouse.location(code: code), let id = location.remote?.id else { throw LocationsActionError.notLoaded }
         let changes = counts.compactMap { count -> MobileLocationAuditCount? in
             guard let slot = location.slot(count.skoReference), let linkID = slot.remoteLinkID else { return nil }
@@ -425,33 +457,63 @@ final class LocationsStore {
                 note: count.note.isEmpty ? nil : count.note
             )
         }
-        guard !changes.isEmpty else { throw LocationsActionError.notLoaded }
+        guard !changes.isEmpty, let queue = offlineQueue(locationID: id) else { throw LocationsActionError.notLoaded }
         let differences = counts.filter { count in
             location.slot(count.skoReference).map { count.counted != max($0.quantity, 0) } ?? false
         }.count
-        applyDetail(try await apiClient.auditLocation(id: id, counts: changes))
-        return differences
+        let requestID = queue.newClientRequestID()
+        let payload = offlineBases[code].flatMap { StockOfflinePayloads.auditLocation(locationID: id, counts: changes, versions: $0.versions, clientRequestID: requestID) }
+        let queued = payload.map { [OfflineQueuedStockWrite(operation: .auditLocation, payload: $0)] } ?? []
+        if try await queueFirst(queued, on: queue) { return .queued }
+        do {
+            applyDetail(try await apiClient.auditLocation(id: id, counts: changes, clientRequestID: requestID))
+        } catch APIError.offline {
+            guard queueAfterLostConnection(queued, on: queue) else { throw APIError.offline }
+            return .queued
+        }
+        return .saved(differences)
     }
 
     @discardableResult
-    func moveRemotely(from sourceCode: String, to targetCode: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool, apiClient: APIClient) async throws -> Int {
-        guard let source = warehouse.location(code: sourceCode), let sourceID = source.remote?.id else { throw LocationsActionError.notLoaded }
+    func moveRemotely(from sourceCode: String, to targetCode: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool, apiClient: APIClient) async throws -> LocationsWriteOutcome {
+        guard let source = warehouse.location(code: sourceCode), let sourceID = source.remote?.id, let queue = offlineQueue(locationID: sourceID) else {
+            throw LocationsActionError.notLoaded
+        }
         guard let target = await locationMatching(scannedCode: targetCode, apiClient: apiClient), let targetID = target.remote?.id else {
             throw LocationsActionError.targetNotFound(targetCode)
         }
         let moved = quantities.values.reduce(0, +)
-        if movesEverything {
-            applyDetail(try await apiClient.moveAllFromLocation(id: sourceID, targetID: targetID, removeAfterMove: removeFromSource))
-        } else {
-            let orgStocks = quantities.compactMap { reference, quantity -> MobileMovedOrgStock? in
-                guard quantity > 0, let orgStockID = source.slot(reference)?.remoteOrgStockID else { return nil }
-                return MobileMovedOrgStock(orgStockId: orgStockID, quantity: quantity, removeAfterMove: removeFromSource)
+        let requestID = queue.newClientRequestID()
+        let moves = offlineMoves(from: source, quantities: quantities, movesEverything: movesEverything, queue: queue)
+        let queued = moves.enumerated().map { index, move in
+            OfflineQueuedStockWrite(
+                operation: .moveStock,
+                payload: StockOfflinePayloads.moveToLocation(
+                    sourceLinkID: move.linkID,
+                    targetLocationID: targetID,
+                    quantity: move.quantity,
+                    clientRequestID: index == 0 ? requestID : queue.newClientRequestID()
+                )
+            )
+        }
+        if try await queueFirst(queued, on: queue) { return .queued }
+        do {
+            if movesEverything {
+                applyDetail(try await apiClient.moveAllFromLocation(id: sourceID, targetID: targetID, removeAfterMove: removeFromSource, clientRequestID: requestID))
+            } else {
+                let orgStocks = quantities.compactMap { reference, quantity -> MobileMovedOrgStock? in
+                    guard quantity > 0, let orgStockID = source.slot(reference)?.remoteOrgStockID else { return nil }
+                    return MobileMovedOrgStock(orgStockId: orgStockID, quantity: quantity, removeAfterMove: removeFromSource)
+                }
+                guard !orgStocks.isEmpty else { return .saved(0) }
+                applyDetail(try await apiClient.moveSomeFromLocation(id: sourceID, targetID: targetID, orgStocks: orgStocks, clientRequestID: requestID))
             }
-            guard !orgStocks.isEmpty else { return 0 }
-            applyDetail(try await apiClient.moveSomeFromLocation(id: sourceID, targetID: targetID, orgStocks: orgStocks))
+        } catch APIError.offline {
+            guard queueAfterLostConnection(queued, on: queue) else { throw APIError.offline }
+            return .queued
         }
         detailLoadedCodes.remove(target.code)
-        return moved
+        return .saved(moved)
     }
 
     @discardableResult
@@ -459,13 +521,17 @@ final class LocationsStore {
         guard let location = warehouse.location(code: code), let id = location.remote?.id else { throw LocationsActionError.notLoaded }
         let orgStockIDs = references.compactMap { location.slot($0)?.remoteOrgStockID }
         guard !orgStockIDs.isEmpty else { return 0 }
+        try await waitForOfflineWork(locationID: id)
         let result = try await apiClient.removeOrgStocks(fromLocation: id, orgStockIDs: orgStockIDs)
         applyDetail(result.data)
         return result.removed
     }
 
     func updateRemotely(sko reference: String, in code: String, settings: LocationsSlotSettings, apiClient: APIClient) async throws {
-        guard let slot = warehouse.location(code: code)?.slot(reference), let linkID = slot.remoteLinkID else { throw LocationsActionError.notLoaded }
+        guard let location = warehouse.location(code: code), let slot = location.slot(reference), let linkID = slot.remoteLinkID else { throw LocationsActionError.notLoaded }
+        if let id = location.remote?.id {
+            try await waitForOfflineWork(locationID: id)
+        }
         applyDetail(try await apiClient.updateLocationOrgStock(linkID: linkID, update: LocationsRemoteUpdate.body(from: slot, to: settings)))
     }
 
@@ -479,8 +545,50 @@ final class LocationsStore {
         merge(page.data.map(LocationsLocation.init(remote:)), replacingAll: false)
     }
 
-    private func applyDetail(_ detail: MobileLocation) {
-        let location = LocationsLocation(remote: detail)
+    private func offlineMoves(from source: LocationsLocation, quantities: [String: Int], movesEverything: Bool, queue: OfflineRecordQueue) -> [StockOfflineMove] {
+        if movesEverything {
+            guard let base = offlineBases[source.code] else { return [] }
+            let shown = StockOfflineOverlay.apply(queue.unsent, to: base)
+            return (shown.orgStocks ?? [])
+                .filter { $0.quantity.value > 0 }
+                .map { StockOfflineMove(linkID: $0.locationOrgStockId, quantity: $0.quantity.value) }
+        }
+        return quantities.keys.sorted().compactMap { reference -> StockOfflineMove? in
+            guard let quantity = quantities[reference], quantity > 0, let linkID = source.slot(reference)?.remoteLinkID else { return nil }
+            return StockOfflineMove(linkID: linkID, quantity: Double(quantity))
+        }
+    }
+
+    private func queueAfterLostConnection(_ writes: [OfflineQueuedStockWrite], on queue: OfflineRecordQueue) -> Bool {
+        guard writes.count == 1, let write = writes.first else { return false }
+        return queue.enqueue(write.operation, payload: write.payload) != nil
+    }
+
+    private func queueFirst(_ writes: [OfflineQueuedStockWrite], on queue: OfflineRecordQueue) async throws -> Bool {
+        guard !writes.isEmpty else {
+            if let reason = await queue.blockingReason() {
+                throw LocationsActionError.waitingForOfflineWork(reason)
+            }
+            return false
+        }
+        guard queue.shouldQueue else { return false }
+        for write in writes {
+            guard queue.enqueue(write.operation, payload: write.payload) != nil else { return false }
+        }
+        return true
+    }
+
+    private func waitForOfflineWork(locationID: Int) async throws {
+        if let reason = await offlineQueue(locationID: locationID)?.blockingReason() {
+            throw LocationsActionError.waitingForOfflineWork(reason)
+        }
+    }
+
+    private func applyDetail(_ detail: MobileLocation, copyAt: Date? = nil) {
+        offlineBases[detail.code] = detail
+        copyDates[detail.code] = copyAt
+        let shown = offlineQueue(locationID: detail.id).map { StockOfflineOverlay.apply($0.unsent, to: detail) } ?? detail
+        let location = LocationsLocation(remote: shown)
         if let index = warehouse.locations.firstIndex(where: { $0.code == location.code }) {
             warehouse.locations[index] = location
         } else {
@@ -489,6 +597,25 @@ final class LocationsStore {
         detailLoadedCodes.insert(location.code)
         if let can = detail.can {
             abilities[location.code] = can
+        }
+    }
+
+    private func reapplyOfflineWork() {
+        for (code, base) in offlineBases {
+            guard let index = warehouse.locations.firstIndex(where: { $0.code == code }),
+                  let queue = offlineQueue(locationID: base.id) else { continue }
+            let location = LocationsLocation(remote: StockOfflineOverlay.apply(queue.unsent, to: base))
+            if warehouse.locations[index] != location {
+                warehouse.locations[index] = location
+            }
+        }
+    }
+
+    private func reloadChanged(_ records: [OfflineRecordKey]) {
+        let changed = Set(records.filter { $0.type == .location }.map(\.id))
+        let codes = offlineBases.values.filter { changed.contains($0.id) }.map(\.code)
+        for code in codes {
+            Task { await loadLocation(code: code, apiClient: .shared) }
         }
     }
 
@@ -567,13 +694,25 @@ extension LocationsListTab {
 enum LocationsActionError: LocalizedError, Equatable {
     case notLoaded
     case targetNotFound(String)
+    case waitingForOfflineWork(String)
 
     var errorDescription: String? {
         switch self {
         case .notLoaded: "This location is still loading. Try again in a moment."
         case let .targetNotFound(code): "No location \(code) in this warehouse."
+        case let .waitingForOfflineWork(reason): reason
         }
     }
+}
+
+enum LocationsWriteOutcome: Equatable, Sendable {
+    case saved(Int)
+    case queued
+}
+
+struct OfflineQueuedStockWrite: Sendable {
+    let operation: OfflineOperation
+    let payload: OfflinePayload
 }
 
 enum LocationsRemoteUpdate {

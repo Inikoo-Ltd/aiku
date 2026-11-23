@@ -157,6 +157,9 @@ private struct GoodsInReturnContent: View {
                 Task { await feed.load() }
             }
         }
+        OfflineRecordNotices(queue: feed.offlineQueue, operations: OfflineOperation.returnPuts, copyAt: feed.copyAt) { entry in
+            GoodsInOfflineText.summary(entry, goodsReturn: goodsReturn)
+        }
         if goodsReturn.state == GoodsInReturnStateKey.cancelled {
             InlineAlert(tone: .danger, title: goodsReturn.stateLabel, message: "This return was cancelled.")
         } else {

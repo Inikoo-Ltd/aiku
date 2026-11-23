@@ -15,6 +15,8 @@ enum OfflineOperation: String, Codable, CaseIterable, Sendable {
     case auditOrgStock = "audit_org_stock"
 
     static let goodsOut: Set<OfflineOperation> = [.pick, .notPicked, .setWaitingWarehouse, .setWaitingCRM, .pack]
+    static let returnPuts: Set<OfflineOperation> = [.returnPutBack, .returnDamaged, .returnNotReturned]
+    static let stock: Set<OfflineOperation> = [.moveStock, .auditLocation, .auditOrgStock]
 
     var label: String {
         switch self {
@@ -68,6 +70,17 @@ struct OfflineRecordKey: Hashable, Codable, Sendable {
     let id: Int
 
     static func deliveryNote(_ id: Int) -> OfflineRecordKey { OfflineRecordKey(type: .deliveryNote, id: id) }
+    static func stockDelivery(_ id: Int) -> OfflineRecordKey { OfflineRecordKey(type: .stockDelivery, id: id) }
+    static func customerReturn(_ id: Int) -> OfflineRecordKey { OfflineRecordKey(type: .customerReturn, id: id) }
+    static func location(_ id: Int) -> OfflineRecordKey { OfflineRecordKey(type: .location, id: id) }
+    static func orgStock(_ id: Int) -> OfflineRecordKey { OfflineRecordKey(type: .orgStock, id: id) }
+}
+
+enum OfflinePayloadKey {
+    static let clientRequestID = "client_request_id"
+    static let quantity = "quantity"
+    static let locationOrgStockID = "location_org_stock_id"
+    static let locationID = "location_id"
 }
 
 enum QueuedActionState: String, Codable, Sendable {
@@ -138,6 +151,21 @@ enum OfflineJSON: Codable, Hashable, Sendable {
     }
 
     var intValue: Int? { numberValue.map { Int($0) } }
+
+    var stringValue: String? {
+        if case .string(let value) = self { return value }
+        return nil
+    }
+
+    var arrayValue: [OfflineJSON] {
+        if case .array(let value) = self { return value }
+        return []
+    }
+
+    var objectValue: [String: OfflineJSON]? {
+        if case .object(let value) = self { return value }
+        return nil
+    }
 }
 
 typealias OfflinePayload = [String: OfflineJSON]

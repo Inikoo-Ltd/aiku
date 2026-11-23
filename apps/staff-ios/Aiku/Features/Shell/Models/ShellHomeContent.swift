@@ -34,10 +34,10 @@ enum ShellHomeContent {
     static let staffWorkplace = "Customer services"
 
     static let shortcuts: [ShellShortcut] = [
-        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .goodsOut, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
-        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .goodsIn, requirement: .goodsInModule, link: .goodsIn(.stockDeliveries)),
-        ShellShortcut(id: "inventory", title: "Inventory", icon: .inventory, requirement: .inventory, link: .inventory(.skos)),
-        ShellShortcut(id: "locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
+        ShellShortcut(id: "goodsOut", title: "Goods out", icon: .faArrowFromLeft, requirement: .goodsOut, link: .goodsOut(.backlog)),
+        ShellShortcut(id: "goodsIn", title: "Goods in", icon: .faArrowToBottom, requirement: .goodsInModule, link: .goodsIn(.backlog)),
+        ShellShortcut(id: "inventory", title: "Inventory", icon: .faPalletAlt, requirement: .inventory, link: .inventory(.dashboard)),
+        ShellShortcut(id: "locations", title: "Locations", icon: .faInventory, requirement: .locations, link: .locations(.warehouse))
     ]
 
     static func shortcuts(for modules: ModuleAccess, goodsOutUnassigned: Int = 0) -> [ShellShortcut] {
@@ -59,19 +59,13 @@ enum ShellHomeContent {
         return "\(part), \(firstName)"
     }
 
-    static func modules(hasWarehouseAccess: Bool, warehouseLabel: String, weekTotal: String?) -> [ShellHomeModule] {
-        var modules: [ShellHomeModule] = []
-        if hasWarehouseAccess {
-            modules.append(ShellHomeModule(id: "warehouse", title: "Warehouse dashboard", subtitle: warehouseLabel, icon: .warehouse, link: .shell(.warehouseDashboard)))
-        }
-        modules.append(ShellHomeModule(
-            id: "hr",
-            title: "Clocking & HR",
-            subtitle: weekTotal.map { "This week \($0)" } ?? "—",
-            icon: .clock,
-            link: .clocking(.clocking)
-        ))
-        return modules
+    static func modules(hasWarehouseAccess: Bool, warehouseLabel: String) -> [ShellHomeModule] {
+        guard hasWarehouseAccess else { return [] }
+        return [ShellHomeModule(id: "warehouse", title: "Warehouse dashboard", subtitle: warehouseLabel, icon: .faWarehouse, link: .shell(.warehouseDashboard))]
+    }
+
+    static func conflictsText(needsYou: Int) -> String {
+        needsYou > 0 ? OfflineTexts.count(needsYou, "needs you", "need you") : "Nothing needs you"
     }
 
     @MainActor

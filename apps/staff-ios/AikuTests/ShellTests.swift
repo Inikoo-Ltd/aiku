@@ -16,7 +16,9 @@ struct ShellTests {
         let groups = ShellMenuCatalog.groups(for: .nothing)
 
         #expect(groups.map(\.id) == ["clocking"])
-        #expect(groups.first?.items.map(\.id) == ["clocking.clocking", "clocking.timesheets"])
+        #expect(groups.first?.items.map(\.id) == ["clocking.clocking", "clocking.timesheets", "clocking.leave", "clocking.adjustments", "clocking.overtime", "clocking.calendar"])
+        #expect(groups.first?.title == "Clocking & Attendance")
+        #expect(groups.first?.note == nil)
     }
 
     @Test func menuWithWarehouseButNoFulfilmentHidesFulfilmentRows() {
@@ -28,14 +30,25 @@ struct ShellTests {
         #expect(items.contains { $0.id == "goodsOut.deliveryNotes" })
     }
 
-    @Test func homeModulesForStaffOnlyShowClockingAndHr() {
-        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1", weekTotal: "29h 05m")
-        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1", weekTotal: nil)
+    @Test func homeShowsTheWarehouseAsOneRowAndNoClockingTile() {
+        let staff = ShellHomeContent.modules(hasWarehouseAccess: false, warehouseLabel: "Main Warehouse · WH1")
+        let warehouse = ShellHomeContent.modules(hasWarehouseAccess: true, warehouseLabel: "Main Warehouse · WH1")
 
-        #expect(staff.map(\.id) == ["hr"])
-        #expect(staff.first?.subtitle == "This week 29h 05m")
-        #expect(warehouse.map(\.id) == ["warehouse", "hr"])
-        #expect(warehouse.last?.subtitle == "—")
+        #expect(staff.isEmpty)
+        #expect(warehouse.map(\.id) == ["warehouse"])
+        #expect(warehouse.first?.icon == .faWarehouse)
+        #expect(ShellHomeContent.conflictsText(needsYou: 0) == "Nothing needs you")
+        #expect(ShellHomeContent.conflictsText(needsYou: 2) == "2 need you")
+    }
+
+    @Test func homeShortcutsOpenTheBacklogsTheDashboardAndTheWarehouse() {
+        let links = Dictionary(uniqueKeysWithValues: ShellHomeContent.shortcuts(for: .everything).map { ($0.id, $0.link) })
+
+        #expect(links["goodsOut"] == .goodsOut(.backlog))
+        #expect(links["goodsIn"] == .goodsIn(.backlog))
+        #expect(links["inventory"] == .inventory(.dashboard))
+        #expect(links["locations"] == .locations(.warehouse))
+        #expect(ShellDashboardContent.tiles(for: .everything).map(\.link) == [.inventory(.dashboard), .locations(.warehouse), .goodsIn(.backlog), .goodsOut(.backlog)])
     }
 
     @Test func greetingFollowsTheTimeOfDay() {

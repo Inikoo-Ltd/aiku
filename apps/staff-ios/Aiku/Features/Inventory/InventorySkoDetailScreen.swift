@@ -67,7 +67,12 @@ private struct InventoryLiveSkoDetail: View {
                     openLocation: canViewLocations ? { location in
                         router.open(LocationsRoute.location(code: location.code))
                     } : nil,
-                    actions: actions
+                    actions: actions,
+                    offlineNotices: OfflineRecordNotices(queue: feed.offlineQueue, operations: OfflineOperation.stock, copyAt: feed.copyAt) { entry in
+                        StockOfflineText.summary(entry, names: StockOfflineText.Names(linkLocation: { linkID in
+                            sko.locations.first { $0.link?.linkID == linkID }?.code
+                        }))
+                    }
                 )
             } else {
                 AppScreen(title: feed.title, kicker: "SKO") {
@@ -163,6 +168,7 @@ private struct InventorySkoDetailView: View {
     let openHistory: () -> Void
     let openLocation: ((InventorySkoLocation) -> Void)?
     let actions: InventorySkoActions
+    var offlineNotices: OfflineRecordNotices? = nil
     @State private var activeSheet: InventorySkoSheet?
 
     var body: some View {
@@ -172,6 +178,9 @@ private struct InventorySkoDetailView: View {
             actions: [HeaderAction(.history, label: "Stock history") { openHistory() }]
         ) {
             header
+            if let offlineNotices {
+                offlineNotices
+            }
             if !infoLines.isEmpty {
                 InventoryInfoCard(title: "SKO", lines: infoLines)
             }

@@ -40,14 +40,38 @@ extension GoodsInDispatchedBucket {
 }
 
 extension GoodsInDeliverySort {
-    var title: String {
-        switch self {
-        case .newest: "Newest first"
-        case .dispatchedDate: "Dispatched date"
-        case .reference: "Reference"
-        case .items: "Items"
-        }
+    static let options: [ListSortOption<GoodsInDeliverySort>] = [
+        ListSortOption(sort: nil, label: "Newest first"),
+        ListSortOption(sort: .oldest, label: "Oldest first"),
+        ListSortOption(sort: .reference, label: "Reference"),
+        ListSortOption(sort: .supplier, label: "Supplier"),
+        ListSortOption(sort: .expectedDate, label: "Expected date"),
+        ListSortOption(sort: .dispatchedDate, label: "Dispatched date"),
+        ListSortOption(sort: .items, label: "Items"),
+    ]
+}
+
+extension GoodsInDeliveryFilter {
+    static let dateLabel = "Date"
+
+    @MainActor
+    func summary() -> [String] {
+        let picked = [
+            source.map { L10n.text($0.title) },
+            dispatched.map { "\(L10n.text("Dispatched")): \(L10n.text($0.title))" },
+        ]
+        return picked.compactMap { $0 } + datesAndSort.summary(sorts: GoodsInDeliverySort.options, dateLabel: Self.dateLabel)
     }
+}
+
+extension GoodsInReturnSort {
+    static let dateLabel = "Date received"
+    static let options: [ListSortOption<GoodsInReturnSort>] = [
+        ListSortOption(sort: nil, label: "Newest received"),
+        ListSortOption(sort: .oldestReceived, label: "Oldest received"),
+        ListSortOption(sort: .reference, label: "Reference"),
+        ListSortOption(sort: .customer, label: "Customer"),
+    ]
 }
 
 extension GoodsInReturnStateFilter {
@@ -63,43 +87,6 @@ extension GoodsInReturnStateFilter {
         case .done: "Done"
         case .cancelled: "Cancelled"
         }
-    }
-}
-
-enum GoodsInRowText {
-    static func delivery(_ row: MobileStockDeliveryRow) -> String {
-        let progress: String
-        switch row.state {
-        case GoodsInDeliveryStateKey.received, GoodsInDeliveryStateKey.checked:
-            progress = "\(row.numberChecked) of \(row.numberItems) checked"
-        case GoodsInDeliveryStateKey.bookingIn, GoodsInDeliveryStateKey.bookedIn:
-            progress = "\(row.numberPlaced) of \(row.numberItems) placed"
-        default:
-            progress = "\(row.numberItems) \(GoodsInText.plural(row.numberItems, "item", "items"))"
-        }
-        let moment: String? = GoodsInDeliveryStateKey.beforeReceiving.contains(row.state)
-            ? GoodsInText.date(row.dispatchedAt).map { "Dispatched \($0)" } ?? GoodsInText.date(row.estimatedReceivingDate).map { "Expected \($0)" }
-            : GoodsInText.date(row.receivedAt).map { "Received \($0)" }
-        return [row.supplier?.label, row.agentReference, progress, moment]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-            .joined(separator: GoodsInText.separator)
-    }
-
-    static func goodsReturn(_ row: MobileReturnRow) -> String {
-        let progress = row.numberHandled > 0
-            ? "\(row.numberHandled) of \(row.numberItems) handled"
-            : "\(row.numberItems) \(GoodsInText.plural(row.numberItems, "item", "items"))"
-        return [
-            row.type == GoodsInReturnStateKey.cancellation ? row.typeLabel : nil,
-            row.customer?.name,
-            progress,
-            row.deliveryNote?.reference,
-            GoodsInText.date(row.createdAt),
-        ]
-        .compactMap { $0 }
-        .filter { !$0.isEmpty }
-        .joined(separator: GoodsInText.separator)
     }
 }
 
@@ -158,6 +145,25 @@ extension GoodsInPagedList {
     var showsEmpty: Bool { hasLoaded && (loadingPage == nil || isRefreshing) && rows.isEmpty }
 }
 
+private struct GoodsInRecordRow: View {
+    let row: GoodsInListRow
+    let identifier: String
+    let action: () -> Void
+
+    var body: some View {
+        RecordRow(
+            row.reference,
+            date: row.date,
+            dateCaption: row.dateCaption,
+            party: row.party,
+            badges: row.badges,
+            details: row.details,
+            action: action
+        )
+        .accessibilityIdentifier(identifier)
+    }
+}
+
 struct GoodsInDeliveriesScreen: View {
     @State var feed: GoodsInDeliveriesFeed
     @Environment(AppRouter.self) private var router
@@ -168,7 +174,7 @@ struct GoodsInDeliveriesScreen: View {
 
     var body: some View {
         GoodsInAccessGate(isAllowed: \.viewGoodsIn) {
-            AppScreen(title: "Stock deliveries", kicker: "Goods in · \(session.warehouseLabel)", actions: actions) {
+            AppScreen(title: "Stock deliveries", kicker: "Goods in · \(session.warehouseLabel)") {
                 ModuleTabs(.goodsIn, current: .stockDeliveries)
             } content: {
                 content
@@ -192,8 +198,8 @@ struct GoodsInDeliveriesScreen: View {
             }
             feed.scanOutcome = nil
         }
-        .aikuSheet(isPresented: $isFiltering) {
-            GoodsInDeliveryFilterSheet(feed: feed, initial: feed.filter) { applied in
+        .sidePanel(isPresented: $isFiltering) {
+            GoodsInDeliveryFilterPanel(feed: feed, initial: feed.filter) { applied in
                 isFiltering = false
                 Task { await feed.apply(applied) }
             } onClose: {
@@ -201,11 +207,6 @@ struct GoodsInDeliveriesScreen: View {
             }
         }
         .onAppear { search = feed.filter.search }
-    }
-
-    private var actions: [HeaderAction] {
-        let count = feed.filter.activeFilterCount
-        return [HeaderAction(.search, label: "Search and filter", badge: count > 0 ? count : nil) { isFiltering = true }]
     }
 
     @ViewBuilder
@@ -220,14 +221,16 @@ struct GoodsInDeliveriesScreen: View {
         ) { state in
             Task { await feed.select(state) }
         }
-        if feed.filter.isFiltered {
-            clearFiltersRow
+        SearchWithFilter(filterCount: feed.filter.panelCount, onFilter: { isFiltering = true }) {
+            SearchField(text: $search, placeholder: "Search stock deliveries", onScan: { router.select(.scan) })
+                .onChange(of: search) { _, text in
+                    if text != feed.filter.search { feed.search(text) }
+                }
+                .accessibilityIdentifier("goodsIn.deliveries.search")
         }
-        SearchField(text: $search, placeholder: "Search stock deliveries", onScan: { router.select(.scan) })
-            .onChange(of: search) { _, text in
-                if text != feed.filter.search { feed.search(text) }
-            }
-            .accessibilityIdentifier("goodsIn.deliveries.search")
+        ActiveFiltersLine(parts: feed.filter.summary()) {
+            Task { await feed.clearFilters() }
+        }
         if let code = feed.lookingUpCode {
             InlineAlert(tone: .info, title: "Looking up \(code)…")
         }
@@ -236,15 +239,12 @@ struct GoodsInDeliveriesScreen: View {
                 Task { await feed.retry() }
             }
         }
+        if let savedAt = feed.savedAt {
+            SavedCopyNote(savedAt: savedAt)
+        }
         if !list.rows.isEmpty {
             GoodsInCardList(items: list.rows) { row in
-                GoodsInItemRow(
-                    code: row.reference,
-                    subtitle: GoodsInRowText.delivery(row),
-                    chip: row.stateLabel.isEmpty ? nil : Chip(row.stateLabel, GoodsInText.deliveryTone(row.state)),
-                    showsPhoto: false,
-                    identifier: "goodsIn.delivery.\(row.reference)"
-                ) {
+                GoodsInRecordRow(row: GoodsInListRow.delivery(row), identifier: "goodsIn.delivery.\(row.reference)") {
                     router.open(GoodsInRoute.stockDelivery(id: row.id, reference: row.reference))
                 }
             }
@@ -264,29 +264,9 @@ struct GoodsInDeliveriesScreen: View {
         )
         GoodsInHelper("Scan a stock delivery reference to open it.")
     }
-
-    private var clearFiltersRow: some View {
-        let filter = feed.filter
-        let count = filter.activeFilterCount
-        let parts = [
-            count > 0 ? "\(count) \(GoodsInText.plural(count, "filter", "filters"))" : nil,
-            filter.sort != nil ? "sorted" : nil,
-            filter.source?.title,
-        ].compactMap { $0 }
-        return HStack(spacing: 8) {
-            Text(parts.joined(separator: GoodsInText.separator))
-                .font(.aiku(13))
-                .foregroundStyle(AikuColor.text3)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            LinkButton("Clear filters", size: 13) {
-                Task { await feed.clearFilters() }
-            }
-            .accessibilityIdentifier("goodsIn.deliveries.clearFilters")
-        }
-    }
 }
 
-struct GoodsInDeliveryFilterSheet: View {
+struct GoodsInDeliveryFilterPanel: View {
     let feed: GoodsInDeliveriesFeed
     let onApply: (GoodsInDeliveryFilter) -> Void
     let onClose: () -> Void
@@ -300,8 +280,14 @@ struct GoodsInDeliveryFilterSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Filter stock deliveries") {
-            section("Source") {
+        SidePanelScaffold(title: "Filter stock deliveries", onClose: onClose) {
+            HStack {
+                Spacer()
+                LinkButton("Reset", size: 14) { draft = draft.cleared() }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("list.filter.reset")
+            }
+            chipSection("Source") {
                 ForEach(GoodsInDeliverySource.allCases, id: \.self) { source in
                     FilterChip(source.title, isSelected: draft.source == source) {
                         draft.source = draft.source == source ? nil : source
@@ -309,7 +295,7 @@ struct GoodsInDeliveryFilterSheet: View {
                     .accessibilityIdentifier("goodsIn.filter.source.\(source.rawValue)")
                 }
             }
-            section("Dispatched") {
+            chipSection("Dispatched") {
                 ForEach(GoodsInDispatchedBucket.allCases, id: \.self) { bucket in
                     FilterChip(bucket.title, isSelected: draft.dispatched == bucket) {
                         draft.dispatched = draft.dispatched == bucket ? nil : bucket
@@ -317,33 +303,40 @@ struct GoodsInDeliveryFilterSheet: View {
                     .accessibilityIdentifier("goodsIn.filter.dispatched.\(bucket.rawValue)")
                 }
             }
-            section("Sort by") {
-                ForEach(GoodsInDeliverySort.allCases, id: \.self) { sort in
-                    FilterChip(sort.title, isSelected: (draft.sort ?? .newest) == sort) {
-                        draft.sort = sort == .newest ? nil : sort
+            VStack(alignment: .leading, spacing: 10) {
+                SheetSectionLabel(GoodsInDeliveryFilter.dateLabel)
+                DateRangeFields(range: $draft.dates)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                SheetSectionLabel("Sort by")
+                Picker(L10n.text("Sort by"), selection: $draft.sort) {
+                    ForEach(GoodsInDeliverySort.options, id: \.self) { option in
+                        Text(L10n.text(option.label)).tag(option.sort)
                     }
-                    .accessibilityIdentifier("goodsIn.filter.sort.\(sort.title)")
                 }
+                .pickerStyle(.menu)
+                .tint(AikuColor.link)
+                .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                .padding(.horizontal, 8)
+                .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(AikuColor.borderStrong))
+                .accessibilityIdentifier("list.filter.sort")
             }
         } footer: {
-            AikuButton(showTitle, icon: .check) { onApply(draft) }
-                .accessibilityIdentifier("goodsIn.filter.show")
-            AikuButton(draft.activeFilterCount > 0 ? "Reset (\(draft.activeFilterCount))" : "Reset", kind: .tertiary) {
-                draft = draft.cleared()
-            }
-            .accessibilityIdentifier("goodsIn.filter.reset")
+            AikuButton(showTitle) { onApply(draft) }
+                .accessibilityIdentifier("list.filter.apply")
         }
         .onAppear { feed.previewTotal(draft) }
         .onChange(of: draft) { _, changed in feed.previewTotal(changed) }
     }
 
     private var showTitle: String {
-        guard let total = feed.total(for: draft) else { return "Show stock deliveries" }
-        return "Show \(total) \(GoodsInText.plural(total, "stock delivery", "stock deliveries"))"
+        guard let total = feed.total(for: draft) else { return "Show results" }
+        return total == 1 ? "Show 1 result" : "Show \(total) results"
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func chipSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             SheetSectionLabel(title)
             FlowLayout(spacing: 8, lineSpacing: 8) {
                 content()
@@ -356,6 +349,7 @@ struct GoodsInReturnsScreen: View {
     @State var feed: GoodsInReturnsFeed
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
+    @State private var isFiltering = false
     @State private var search = ""
 
     var body: some View {
@@ -368,6 +362,20 @@ struct GoodsInReturnsScreen: View {
         }
         .task { await feed.start() }
         .screenRefreshable { await feed.refresh() }
+        .sidePanel(isPresented: $isFiltering) {
+            ListFilterPanel(
+                title: "Filter returns",
+                filter: feed.filter,
+                sorts: GoodsInReturnSort.options,
+                dateLabel: GoodsInReturnSort.dateLabel,
+                total: { feed.total(for: $0) },
+                onApply: { applied in
+                    isFiltering = false
+                    Task { await feed.apply(applied) }
+                },
+                onClose: { isFiltering = false }
+            )
+        }
         .onAppear { search = feed.search }
     }
 
@@ -383,25 +391,27 @@ struct GoodsInReturnsScreen: View {
         ) { state in
             Task { await feed.select(state) }
         }
-        SearchField(text: $search, placeholder: "Search returns")
-            .onChange(of: search) { _, text in
-                if text != feed.search { feed.search(text) }
-            }
-            .accessibilityIdentifier("goodsIn.returns.search")
+        SearchWithFilter(filterCount: feed.filter.activeCount, onFilter: { isFiltering = true }) {
+            SearchField(text: $search, placeholder: "Search returns")
+                .onChange(of: search) { _, text in
+                    if text != feed.search { feed.search(text) }
+                }
+                .accessibilityIdentifier("goodsIn.returns.search")
+        }
+        ActiveFiltersLine(parts: feed.filter.summary(sorts: GoodsInReturnSort.options, dateLabel: GoodsInReturnSort.dateLabel)) {
+            Task { await feed.clearFilters() }
+        }
         if let problem = list.firstPageProblem {
             GoodsOutLoadProblem(title: "Returns could not be loaded", message: problem) {
                 Task { await feed.retry() }
             }
         }
+        if let savedAt = feed.savedAt {
+            SavedCopyNote(savedAt: savedAt)
+        }
         if !list.rows.isEmpty {
             GoodsInCardList(items: list.rows) { row in
-                GoodsInItemRow(
-                    code: row.reference,
-                    subtitle: GoodsInRowText.goodsReturn(row),
-                    chip: row.stateLabel.isEmpty ? nil : Chip(row.stateLabel, GoodsInText.returnTone(row.state)),
-                    showsPhoto: false,
-                    identifier: "goodsIn.return.\(row.reference)"
-                ) {
+                GoodsInRecordRow(row: GoodsInListRow.goodsReturn(row), identifier: "goodsIn.return.\(row.reference)") {
                     router.open(GoodsInRoute.returnDetail(id: row.id, reference: row.reference))
                 }
             }

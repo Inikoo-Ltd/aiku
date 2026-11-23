@@ -141,7 +141,7 @@ struct LocationsMoveSheet: View {
         return VStack(alignment: .leading, spacing: 8) {
             CheckboxRow(
                 slot.skoReference,
-                subtitle: "\(slot.name) · \(slot.quantity.locationsGrouped) in location",
+                subtitle: "\(slot.name) · \(slot.quantityText) in location",
                 isOn: Binding(
                     get: { isPicked },
                     set: { isOn in

@@ -92,7 +92,7 @@ private struct LocationsStockEditForm: View {
                         Text(slot.skoReference)
                             .font(.aiku(16, .bold))
                             .foregroundStyle(AikuColor.text)
-                        Text("\(slot.name) · \(slot.quantity.locationsGrouped) in location")
+                        Text("\(slot.name) · \(slot.quantityText) in location")
                             .font(.aiku(13))
                             .foregroundStyle(AikuColor.text3)
                             .multilineTextAlignment(.leading)
@@ -233,8 +233,12 @@ private struct LocationsStockEditForm: View {
         }
         Task {
             do {
-                let differences = try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient)
-                toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                switch try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient) {
+                case .saved(let differences):
+                    toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                case .queued:
+                    toasts.show(OfflineRecordText.queued, tone: .info)
+                }
             } catch {
                 toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
             }
@@ -249,8 +253,8 @@ private struct LocationsStockEditForm: View {
         }
         Task {
             do {
-                let moved = try await store.moveRemotely(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: false, apiClient: apiClient)
-                toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+                let outcome = try await store.moveRemotely(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: false, apiClient: apiClient)
+                LocationsToastText.showMove(outcome, target: target, toasts: toasts)
             } catch {
                 toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
             }

@@ -19,6 +19,11 @@ struct MainView: View {
         }
         .environment(router)
         .environment(toasts)
+        .onChange(of: OfflineWork.shared.opensConflicts, initial: true) { _, opens in
+            guard opens else { return }
+            OfflineWork.shared.opensConflicts = false
+            router.open(SystemRoute.conflicts)
+        }
     }
 
     @ViewBuilder

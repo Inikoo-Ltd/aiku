@@ -300,6 +300,7 @@ struct MobilePalletReturnsQuery: Equatable, Sendable {
     var state = "active"
     var type: String?
     var search = ""
+    var sort: String?
     var page = 1
     var perPage = 50
 
@@ -312,6 +313,7 @@ struct MobilePalletReturnsQuery: Equatable, Sendable {
         if let type { items.append(URLQueryItem(name: "type", value: type)) }
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { items.append(URLQueryItem(name: "q", value: trimmed)) }
+        if let sort { items.append(URLQueryItem(name: "sort", value: sort)) }
         return items
     }
 }

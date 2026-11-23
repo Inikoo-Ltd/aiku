@@ -11,14 +11,22 @@ private func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
 private actor Calls {
     var audits: [[MobileOrgStockAuditCount]] = []
     var moves: [(Int, [MobileOrgStockMoveTarget])] = []
+    var requestIDs: [String] = []
     var consumes: [(Int, MobileOrgStockConsumeBody)] = []
     var added: [MobileOrgStockAddLocationBody] = []
     var removed: [[Int]] = []
     var queries: [MobileOrgStocksQuery] = []
     var flows: [String?] = []
 
-    func audit(_ counts: [MobileOrgStockAuditCount]) { audits.append(counts) }
-    func move(_ link: Int, _ targets: [MobileOrgStockMoveTarget]) { moves.append((link, targets)) }
+    func audit(_ counts: [MobileOrgStockAuditCount], _ requestID: String) {
+        audits.append(counts)
+        requestIDs.append(requestID)
+    }
+
+    func move(_ link: Int, _ targets: [MobileOrgStockMoveTarget], _ requestID: String) {
+        moves.append((link, targets))
+        requestIDs.append(requestID)
+    }
     func consume(_ link: Int, _ body: MobileOrgStockConsumeBody) { consumes.append((link, body)) }
     func add(_ body: MobileOrgStockAddLocationBody) { added.append(body) }
     func remove(_ ids: [Int]) { removed.append(ids) }
@@ -225,8 +233,8 @@ struct InventoryLiveTests {
         let calls = Calls()
         let feed = InventorySkoFeed(warehouseID: 4, target: .id(74495), canEditStocks: true, service: InventoryService(
             orgStock: { _, _ in detail },
-            audit: { _, _, counts in
-                await calls.audit(counts)
+            audit: { _, _, counts, requestID in
+                await calls.audit(counts, requestID)
                 return result
             }
         ))
@@ -239,6 +247,7 @@ struct InventoryLiveTests {
             MobileOrgStockAuditCount(locationOrgStockId: 43286, quantity: 40.5),
             MobileOrgStockAuditCount(locationOrgStockId: 157741, quantity: 58, reason: "damaged"),
         ])
+        #expect(UUID(uuidString: await calls.requestIDs.first ?? "") != nil)
     }
 
     @Test func stockEditsUseTheLocationLinks() async throws {
@@ -246,8 +255,8 @@ struct InventoryLiveTests {
         let calls = Calls()
         let feed = InventorySkoFeed(warehouseID: 4, target: .id(74495), canEditStocks: true, service: InventoryService(
             orgStock: { _, _ in detail },
-            move: { link, targets in
-                await calls.move(link, targets)
+            move: { link, targets, requestID in
+                await calls.move(link, targets, requestID)
                 return try Self.written("Moved 5 from 8v5.")
             },
             consume: { link, body in
@@ -272,6 +281,7 @@ struct InventoryLiveTests {
         #expect(try await feed.removeLocations(["C-01", "8v5"]) == "2 locations removed")
 
         #expect(await calls.moves.first?.0 == 43286)
+        #expect(UUID(uuidString: await calls.requestIDs.first ?? "") != nil)
         #expect(await calls.moves.first?.1 == [MobileOrgStockMoveTarget(locationOrgStockId: 157741, quantity: 5)])
         #expect(await calls.consumes.first?.0 == 157741)
         #expect(await calls.consumes.first?.1 == MobileOrgStockConsumeBody(quantity: 2, note: nil))

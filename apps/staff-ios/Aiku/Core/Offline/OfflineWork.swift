@@ -16,6 +16,7 @@ final class OfflineWork {
     private(set) var lastSyncAt: Date?
     private(set) var lastRunNeedingYou = 0
     private(set) var queueRevision = 0
+    var opensConflicts = false
 
     @ObservationIgnored private let actions: OfflineQueue
     @ObservationIgnored private let downloads: OfflineDownloads
@@ -27,6 +28,7 @@ final class OfflineWork {
     @ObservationIgnored private let monitor = NWPathMonitor()
     @ObservationIgnored private var started = false
     @ObservationIgnored private var runTask: Task<Void, Never>?
+    @ObservationIgnored private var backgroundRun: Task<SyncRunOutcome, Never>?
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var periodicTask: Task<Void, Never>?
     @ObservationIgnored private var prefetchTask: Task<Void, Never>?
@@ -92,6 +94,7 @@ final class OfflineWork {
         sessions.set(nil)
         UserDefaults.standard.removeObject(forKey: Self.lastUserKey)
         downloads.clear()
+        SavedLists.shared.clear()
         runTask?.cancel()
         retryTask?.cancel()
         prefetchTask?.cancel()
@@ -122,6 +125,7 @@ final class OfflineWork {
         seenAt: Date?
     ) -> QueueEntry? {
         guard let userID else { return nil }
+        OfflineNotifications.shared.askQuietly()
         let performed = clock.now()
         let added = actions.add(QueueEntry(
             localID: 0,
@@ -216,6 +220,50 @@ final class OfflineWork {
 
     func newClientRequestID() -> String {
         UUID().uuidString.lowercased()
+    }
+
+    var hasWaitingWork: Bool {
+        guard let userID else { return false }
+        return actions.entries().contains { $0.userID == userID && $0.isPendingSend }
+    }
+
+    func syncInBackground(token: String?) async -> SyncRunOutcome {
+        if sessions.current == nil, let token {
+            adoptSavedSession(token: token)
+        }
+        if let runTask {
+            await runTask.value
+        }
+        guard isOnline, userID != nil, runTask == nil, hasWorkToSettle else { return SyncRunOutcome(status: .complete) }
+        let needingYouBefore = needsYouCount
+        isSyncing = true
+        let run = Task { [engine] in await engine.run(maxBatches: Self.backgroundBatches) }
+        backgroundRun = run
+        runTask = Task { _ = await run.value }
+        let outcome = await run.value
+        backgroundRun = nil
+        runTask = nil
+        isSyncing = false
+        finish(outcome)
+        if needsYouCount > needingYouBefore {
+            OfflineNotifications.shared.announceNeedsYou(count: needsYouCount)
+        }
+        return outcome
+    }
+
+    func stopBackgroundSync() {
+        backgroundRun?.cancel()
+    }
+
+    func openConflictsFromNotification() {
+        opensConflicts = true
+    }
+
+    private func adoptSavedSession(token: String) {
+        let userID = UserDefaults.standard.integer(forKey: Self.lastUserKey)
+        guard userID > 0 else { return }
+        sessions.set(OfflineSessionBox.Current(userID: userID, token: token))
+        publish()
     }
 
     private var hasWorkToSettle: Bool {
@@ -335,6 +383,7 @@ final class OfflineWork {
 
     private static let lastUserKey = "aiku.offline.lastUserID"
     private static let foregroundBatches = 20
+    private static let backgroundBatches = 4
     private static let flushBatches = 20
     private static let retryDelay: Duration = .seconds(30)
     private static let periodicInterval: Duration = .seconds(120)

@@ -142,6 +142,8 @@ struct MobilePalletBookInBody: Encodable, Sendable, Equatable {
 struct MobilePalletDeliveriesQuery: Equatable, Sendable {
     var state = "active"
     var search = ""
+    var dates = ListDateRange()
+    var sort: String?
     var page = 1
     var perPage = 50
 
@@ -153,6 +155,8 @@ struct MobilePalletDeliveriesQuery: Equatable, Sendable {
         ]
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty { items.append(URLQueryItem(name: "q", value: trimmed)) }
+        items.append(contentsOf: dates.queryItems)
+        if let sort { items.append(URLQueryItem(name: "sort", value: sort)) }
         return items
     }
 }

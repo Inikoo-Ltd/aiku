@@ -146,7 +146,11 @@ struct FulfilmentReturnsAPITests {
         #expect(items.contains(URLQueryItem(name: "q", value: "acme")))
         #expect(PalletReturnStateFilter.active.count(in: feed.counts) == 45)
         #expect(PalletReturnTypeFilter.all.count(in: feed.counts) == 45)
-        #expect(PalletReturnText.rowSubtitle(try #require(feed.rows.first)).hasPrefix("Acme · Stored items · from Shopify · 3 item lines · "))
+        let row = try #require(feed.rows.first)
+        #expect(row.customer?.name == "Acme")
+        #expect(PalletReturnText.rowDetails(row) == ["Stored items", "from Shopify", "3 item lines"])
+        #expect(PalletReturnText.rowDate(row, in: TimeZone(identifier: "UTC")!) == "17 Nov 2026")
+        #expect(PalletReturnText.rowChip(row) == Chip("Confirmed", .neutral))
         #expect(feed.hasMorePages)
     }
 

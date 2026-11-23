@@ -6,6 +6,8 @@ struct DispatchPickingSessionsView: View {
     @Environment(AuthStore.self) private var authStore
     @State private var warehouseStore = WarehouseStore.shared
     @State private var isChoosingNotes = false
+    @State private var isFiltering = false
+    @State private var search = ""
     private let store = PickingSessionsStore.shared
 
     var body: some View {
@@ -25,10 +27,21 @@ struct DispatchPickingSessionsView: View {
                     title: \.title,
                     count: { store.count(for: $0) }
                 )
+                SearchWithFilter(filterCount: store.listFilter.activeCount, onFilter: { isFiltering = true }) {
+                    SearchField(text: $search, placeholder: "Search sessions")
+                        .onChange(of: search) { _, text in
+                            if text != store.searchText { store.search(text) }
+                        }
+                        .accessibilityIdentifier("dispatch.sessions.search")
+                }
+                ActiveFiltersLine(parts: store.listFilter.summary(sorts: PickingSessionSort.options)) {
+                    Task { await store.clearListFilter() }
+                }
                 list
             }
             DispatchNote("A picking session groups many delivery notes for one picker. Fulfilment returns have their own sessions.")
         }
+        .onAppear { search = store.searchText }
         .screenRefreshable { await reload() }
         .task(id: warehouseStore.selectedID) { await reload() }
         .aikuSheet(isPresented: $isChoosingNotes) {
@@ -39,6 +52,19 @@ struct DispatchPickingSessionsView: View {
                 }
             }
         }
+        .sidePanel(isPresented: $isFiltering) {
+            ListFilterPanel(
+                title: "Filter picking sessions",
+                filter: store.listFilter,
+                sorts: PickingSessionSort.options,
+                total: { _ in store.shownTotal },
+                onApply: { applied in
+                    isFiltering = false
+                    Task { await store.apply(applied) }
+                },
+                onClose: { isFiltering = false }
+            )
+        }
     }
 
     @ViewBuilder
@@ -46,12 +72,18 @@ struct DispatchPickingSessionsView: View {
         if let problem = store.loadError {
             DispatchLoadProblem(title: "Couldn’t load the picking sessions", message: problem) { await reload() }
         }
+        if let savedAt = store.savedCopyAt {
+            SavedCopyNote(savedAt: savedAt)
+        }
         if !store.rows.isEmpty {
             CardList(store.rows) { item in
-                ListRow(
+                RecordRow(
                     item.reference,
-                    subtitle: item.subtitle(currentUserID: authStore.userID),
-                    chips: [Chip(item.stateTitle, item.tone)],
+                    date: item.recordDate(),
+                    dateCaption: item.recordDateCaption(),
+                    party: PickingSessionFormat.personName(item.picker, currentUserID: authStore.userID),
+                    badges: [Chip(item.stateTitle, item.tone)],
+                    details: item.details,
                     action: { router.open(DispatchRoute.pickingSessionID(id: item.id)) }
                 )
                 .accessibilityIdentifier("dispatch.session.\(item.reference)")
@@ -66,7 +98,9 @@ struct DispatchPickingSessionsView: View {
             EmptyState(
                 icon: .trolley,
                 title: "No picking sessions",
-                message: "Start one with + and choose delivery notes that are waiting to be picked."
+                message: store.isSearching
+                    ? "Nothing matches this state, search or filter."
+                    : "Start one with + and choose delivery notes that are waiting to be picked."
             )
         } else if store.loadError == nil {
             DispatchSkeletonList()

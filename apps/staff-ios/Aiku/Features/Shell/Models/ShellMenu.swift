@@ -58,6 +58,14 @@ struct ShellMenuClocking: Hashable, Sendable {
     }
 }
 
+enum ShellClockingText {
+    static let module = "Clocking & Attendance"
+
+    static func kicker(_ organisation: String) -> String {
+        organisation.isEmpty ? module : "\(module) · \(organisation)"
+    }
+}
+
 struct ShellMenuGroup: Identifiable, Hashable, Sendable {
     let id: String
     let title: String
@@ -68,35 +76,39 @@ struct ShellMenuGroup: Identifiable, Hashable, Sendable {
 
 enum ShellMenuCatalog {
     static let allGroups: [ShellMenuGroup] = [
-        ShellMenuGroup(id: "inventory", title: "Inventory", icon: .inventory, items: [
-            ShellMenuItem(id: "inventory.dashboard", title: "Dashboard", icon: .dashboard, requirement: .inventory, link: .inventory(.dashboard)),
-            ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .skoFamilies, requirement: .inventory, link: .inventory(.families)),
-            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .sko, requirement: .inventory, link: .inventory(.skos)),
-            ShellMenuItem(id: "inventory.pallets", title: "Stored pallets", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.pallets)),
-            ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .sko, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems))
+        ShellMenuGroup(id: "inventory", title: "Inventory", icon: .faPalletAlt, items: [
+            ShellMenuItem(id: "inventory.dashboard", title: "Dashboard", icon: .faChartNetwork, requirement: .inventory, link: .inventory(.dashboard)),
+            ShellMenuItem(id: "inventory.families", title: "SKO families", icon: .faBoxesAlt, requirement: .inventory, link: .inventory(.families)),
+            ShellMenuItem(id: "inventory.skos", title: "SKOs", icon: .faBox, requirement: .inventory, link: .inventory(.skos)),
+            ShellMenuItem(id: "inventory.pallets", title: "Stored pallets", icon: .faPallet, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.pallets)),
+            ShellMenuItem(id: "inventory.storedItems", title: "Stored items", icon: .faNarwhal, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.storedItems))
         ]),
-        ShellMenuGroup(id: "locations", title: "Locations", icon: .locations, items: [
-            ShellMenuItem(id: "locations.warehouse", title: "Warehouse", icon: .warehouse, requirement: .locations, link: .locations(.warehouse)),
-            ShellMenuItem(id: "locations.areas", title: "Areas", icon: .areas, requirement: .locations, link: .locations(.areas)),
-            ShellMenuItem(id: "locations.locations", title: "Locations", icon: .locations, requirement: .locations, link: .locations(.locations))
+        ShellMenuGroup(id: "locations", title: "Locations", icon: .faInventory, items: [
+            ShellMenuItem(id: "locations.warehouse", title: "Warehouse", icon: .faWarehouseAlt, requirement: .locations, link: .locations(.warehouse)),
+            ShellMenuItem(id: "locations.areas", title: "Areas", icon: .faMapSigns, requirement: .locations, link: .locations(.areas)),
+            ShellMenuItem(id: "locations.locations", title: "Locations", icon: .faInventory, requirement: .locations, link: .locations(.locations))
         ]),
-        ShellMenuGroup(id: "goodsIn", title: "Goods in", icon: .goodsIn, items: [
-            ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .backlog, requirement: .goodsIn, link: .goodsIn(.backlog)),
-            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .stockDelivery, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
-            ShellMenuItem(id: "goodsIn.fulfilmentDeliveries", title: "Fulfilment deliveries", icon: .stockDelivery, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.deliveries)),
-            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .stockDelivery, requirement: .returns, link: .goodsIn(.returns))
+        ShellMenuGroup(id: "goodsIn", title: "Goods in", icon: .faArrowToBottom, items: [
+            ShellMenuItem(id: "goodsIn.backlog", title: "Backlog", icon: .faTasksAlt, requirement: .goodsIn, link: .goodsIn(.backlog)),
+            ShellMenuItem(id: "goodsIn.stockDeliveries", title: "Stock deliveries", icon: .faTruckContainer, requirement: .goodsIn, link: .goodsIn(.stockDeliveries)),
+            ShellMenuItem(id: "goodsIn.fulfilmentDeliveries", title: "Fulfilment deliveries", icon: .faTruckCouch, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.deliveries)),
+            ShellMenuItem(id: "goodsIn.returns", title: "Returns", icon: .faExchange, requirement: .returns, link: .goodsIn(.returns))
         ]),
-        ShellMenuGroup(id: "goodsOut", title: "Goods out", icon: .goodsOut, items: [
-            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .backlog, requirement: .goodsOut, link: .goodsOut(.backlog)),
-            ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .deliveryNote, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
-            ShellMenuItem(id: "goodsOut.fulfilmentReturns", title: "Fulfilment returns", icon: .deliveryNote, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.returns)),
-            ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .deliveryNote, requirement: .goodsOut, link: .dispatch(.pickingSessions)),
-            ShellMenuItem(id: "goodsOut.trolleys", title: "Trolleys", icon: .shipment, requirement: .goodsOut, link: .dispatch(.trolleys)),
-            ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .shipment, requirement: .goodsOut, link: .dispatch(.pickedBays))
+        ShellMenuGroup(id: "goodsOut", title: "Goods out", icon: .faArrowFromLeft, items: [
+            ShellMenuItem(id: "goodsOut.backlog", title: "Backlog", icon: .faTasksAlt, requirement: .goodsOut, link: .goodsOut(.backlog)),
+            ShellMenuItem(id: "goodsOut.deliveryNotes", title: "Delivery notes", icon: .faTruck, requirement: .goodsOut, link: .goodsOut(.deliveryNotes)),
+            ShellMenuItem(id: "goodsOut.fulfilmentReturns", title: "Fulfilment returns", icon: .faSignOut, badge: .fulfilmentTag, requirement: .fulfilment, link: .fulfilment(.returns)),
+            ShellMenuItem(id: "goodsOut.pickingSessions", title: "Picking sessions", icon: .faStackOverflow, requirement: .goodsOut, link: .dispatch(.pickingSessions)),
+            ShellMenuItem(id: "goodsOut.trolleys", title: "Trolleys", icon: .faDollyFlatbedAlt, requirement: .goodsOut, link: .dispatch(.trolleys)),
+            ShellMenuItem(id: "goodsOut.pickedBays", title: "Picked bays", icon: .faMonument, requirement: .goodsOut, link: .dispatch(.pickedBays))
         ]),
-        ShellMenuGroup(id: "clocking", title: "Clocking & HR", icon: .clock, note: "All staff", items: [
-            ShellMenuItem(id: "clocking.clocking", title: "Clocking", icon: .clock, requirement: .allStaff, link: .clocking(.clocking)),
-            ShellMenuItem(id: "clocking.timesheets", title: "Timesheets", icon: .backlog, requirement: .allStaff, link: .clocking(.timesheets))
+        ShellMenuGroup(id: "clocking", title: ShellClockingText.module, icon: .faUserClock, items: [
+            ShellMenuItem(id: "clocking.clocking", title: "Clocking", icon: .faUserClock, requirement: .allStaff, link: .clocking(.clocking)),
+            ShellMenuItem(id: "clocking.timesheets", title: "Timesheets", icon: .faStopwatch, requirement: .allStaff, link: .clocking(.timesheets)),
+            ShellMenuItem(id: "clocking.leave", title: "Leave", icon: .faCalendarMinus, requirement: .allStaff, link: .clocking(.leave)),
+            ShellMenuItem(id: "clocking.adjustments", title: "Clocking adjustment", icon: .faClockPencil, requirement: .allStaff, link: .clocking(.adjustments)),
+            ShellMenuItem(id: "clocking.overtime", title: "Overtime", icon: .faClock, requirement: .allStaff, link: .clocking(.overtime)),
+            ShellMenuItem(id: "clocking.calendar", title: "Calendar", icon: .faCalendar, requirement: .allStaff, link: .clocking(.calendar))
         ])
     ]
 

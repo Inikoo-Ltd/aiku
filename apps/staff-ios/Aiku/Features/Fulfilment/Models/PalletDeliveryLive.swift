@@ -33,6 +33,70 @@ enum PalletDeliveryFilter: String, CaseIterable, Hashable, Sendable {
     }
 }
 
+enum PalletDeliverySort: String, CaseIterable, Hashable, Sendable {
+    case reference
+    case bookedIn = "-booked_in_at"
+
+    static let options: [ListSortOption<PalletDeliverySort>] = [
+        ListSortOption(sort: nil, label: "Expected"),
+        ListSortOption(sort: .reference, label: "Reference"),
+        ListSortOption(sort: .bookedIn, label: "Booked in")
+    ]
+
+    static let dateLabel = "Booked in"
+}
+
+enum PalletDeliveriesOffline {
+    private static let activeStates: Set<String> = ["confirmed", "received", "booking_in"]
+
+    static func rows(
+        _ rows: [MobilePalletDeliveryRow],
+        state: PalletDeliveryFilter,
+        search: String,
+        dates: ListDateRange,
+        sort: PalletDeliverySort?,
+        in timeZone: TimeZone = .current
+    ) -> [MobilePalletDeliveryRow] {
+        let kept = rows.filter { row in
+            isIn(row, state)
+                && SavedListFilter.matches(search, row.reference, row.customerReference, row.customer?.name)
+                && SavedListFilter.within(row.bookedInAt, range: dates, in: timeZone)
+        }
+        switch sort {
+        case nil:
+            return ascendingThenNewest(kept, key: { SavedListFilter.day($0.estimatedDeliveryDate, in: timeZone) })
+        case .reference?:
+            return ascendingThenNewest(kept, key: { PalletDeliveryText.sortKey($0.reference) })
+        case .bookedIn?:
+            return SavedListFilter.sorted(kept, descending: true, id: \.id, key: { bookedIn($0) })
+        }
+    }
+
+    private static func isIn(_ row: MobilePalletDeliveryRow, _ state: PalletDeliveryFilter) -> Bool {
+        state == .active ? activeStates.contains(row.state) : row.state == state.rawValue
+    }
+
+    private static func bookedIn(_ row: MobilePalletDeliveryRow) -> Date? {
+        guard let bookedInAt = row.bookedInAt else { return nil }
+        return ListDates.instant(bookedInAt)
+    }
+
+    private static func ascendingThenNewest<Key: Comparable>(_ rows: [MobilePalletDeliveryRow], key: (MobilePalletDeliveryRow) -> Key?) -> [MobilePalletDeliveryRow] {
+        rows.sorted { lhs, rhs in
+            switch (key(lhs), key(rhs)) {
+            case let (left?, right?) where left != right:
+                return left < right
+            case (.some, nil):
+                return true
+            case (nil, .some):
+                return false
+            default:
+                return lhs.id > rhs.id
+            }
+        }
+    }
+}
+
 enum PalletDeliveryText {
     static func deliveryTone(_ state: String) -> Tone {
         switch state {
@@ -110,21 +174,31 @@ enum PalletDeliveryText {
         return formatter.date(from: iso).map(GoodsInDates.dayMonth)
     }
 
-    static func rowSubtitle(_ row: MobilePalletDeliveryRow) -> String {
-        let progress: String? = {
-            if row.state == "booking_in" {
-                return bookInProgress(booked: row.counts.bookedIn, of: max(row.counts.total - row.counts.notReceived, 0))
-            }
-            return countsText(row.counts)
-        }()
-        let moment: String? = {
-            switch row.state {
-            case "confirmed": return day(row.estimatedDeliveryDate).map { "Expected \($0)" }
-            case "booked_in": return day(row.bookedInAt).map { "Booked in \($0)" }
-            default: return day(row.receivedAt).map { "Received \($0)" }
-            }
-        }()
-        return joined([row.customer?.name, quoted(row.customerReference), progress, moment])
+    static func rowMoment(_ row: MobilePalletDeliveryRow, in timeZone: TimeZone = .current) -> (date: String?, caption: String?) {
+        let moment: (value: String?, caption: String)
+        switch row.state {
+        case "confirmed": moment = (row.estimatedDeliveryDate, RecordDateCaption.expected)
+        case "booked_in": moment = (row.bookedInAt, RecordDateCaption.bookedIn)
+        default: moment = (row.receivedAt, RecordDateCaption.received)
+        }
+        guard let date = ListDates.recordDate(moment.value, in: timeZone) else { return (nil, nil) }
+        return (date, RecordDateCaption.unlessRepeating(moment.caption, status: row.stateLabel))
+    }
+
+    static func rowChip(_ row: MobilePalletDeliveryRow) -> Chip {
+        Chip(row.stateLabel?.nilIfEmpty ?? row.state, deliveryTone(row.state))
+    }
+
+    static func rowDetails(_ row: MobilePalletDeliveryRow) -> [String] {
+        let progress: String? = row.state == "booking_in"
+            ? bookInProgress(booked: row.counts.bookedIn, of: max(row.counts.total - row.counts.notReceived, 0))
+            : countsText(row.counts)
+        return [quoted(row.customerReference), progress].compactMap { $0 }
+    }
+
+    static func sortKey(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+        return trimmed.lowercased()
     }
 
     static func joined(_ parts: [String?]) -> String {
@@ -222,36 +296,68 @@ final class PalletDeliveriesFeed {
 
     var filter: PalletDeliveryFilter = .active
     var search = ""
+    var listFilter = ListFilter<PalletDeliverySort>()
     private(set) var rows: [MobilePalletDeliveryRow] = []
     private(set) var counts: MobilePalletDeliveriesPage.Counts?
+    private(set) var total: Int?
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var loadError: String?
     private(set) var currentPage = 0
     private(set) var lastPage = 0
     private(set) var loadedRequest: Request?
+    private(set) var saved: SavedRows<MobilePalletDeliveryRow>?
+    private let savedLists: SavedLists
+    private let currentUserID: @MainActor () -> Int?
+
+    init(savedLists: SavedLists = .shared, currentUserID: @escaping @MainActor () -> Int? = { OfflineWork.shared.userID }) {
+        self.savedLists = savedLists
+        self.currentUserID = currentUserID
+    }
 
     struct Request: Hashable, Sendable {
         let warehouseID: Int
         let filter: PalletDeliveryFilter
         let search: String
+        let dates: ListDateRange
+        let sort: PalletDeliverySort?
     }
 
     func request(warehouseID: Int) -> Request {
-        Request(warehouseID: warehouseID, filter: filter, search: search.trimmingCharacters(in: .whitespacesAndNewlines))
+        Request(
+            warehouseID: warehouseID,
+            filter: filter,
+            search: search.trimmingCharacters(in: .whitespacesAndNewlines),
+            dates: listFilter.dates,
+            sort: listFilter.sort
+        )
     }
 
     var hasMorePages: Bool { currentPage > 0 && currentPage < lastPage }
+    var isShowingSavedRows: Bool { saved != nil }
+    var savedAt: Date? { saved?.savedAt }
+
+    func previewTotal(for draft: ListFilter<PalletDeliverySort>, warehouseID: Int) -> Int? {
+        let current = request(warehouseID: warehouseID)
+        if let saved {
+            return PalletDeliveriesOffline.rows(saved.rows, state: current.filter, search: current.search, dates: draft.dates, sort: nil).count
+        }
+        guard draft.dates == listFilter.dates, loadedRequest == current, loadError == nil else { return nil }
+        return total
+    }
 
     func reset() {
         rows = []
         counts = nil
+        total = nil
         loadError = nil
         currentPage = 0
         lastPage = 0
         loadedRequest = nil
+        saved = nil
         filter = .active
         search = ""
+        listFilter = ListFilter()
     }
 
     func reload(warehouseID: Int, apiClient: APIClient) async {
@@ -263,16 +369,35 @@ final class PalletDeliveriesFeed {
             guard request == self.request(warehouseID: warehouseID) else { return }
             rows = page.data
             counts = page.counts
+            total = page.meta.total
             currentPage = page.meta.currentPage
             lastPage = page.meta.lastPage
+            saved = nil
             loadedRequest = request
             loadError = nil
         } catch where error.isCancellation {
             return
+        } catch APIError.offline {
+            guard request == self.request(warehouseID: warehouseID) else { return }
+            guard !showSavedRows(request) else { return }
+            loadError = PalletDeliveryText.message(for: APIError.offline)
+            loadedRequest = request
         } catch {
             loadError = PalletDeliveryText.message(for: error)
             loadedRequest = request
         }
+    }
+
+    private func showSavedRows(_ request: Request) -> Bool {
+        guard let userID = currentUserID(),
+              let found = savedLists.rows(MobilePalletDeliveryRow.self, userID: userID, warehouseID: request.warehouseID, kind: .palletDeliveries) else { return false }
+        saved = found
+        rows = PalletDeliveriesOffline.rows(found.rows, state: request.filter, search: request.search, dates: request.dates, sort: request.sort)
+        currentPage = 1
+        lastPage = 1
+        loadedRequest = request
+        loadError = nil
+        return true
     }
 
     func loadNextPage(apiClient: APIClient) async {
@@ -285,6 +410,7 @@ final class PalletDeliveriesFeed {
             let known = Set(rows.map(\.id))
             rows.append(contentsOf: page.data.filter { !known.contains($0.id) })
             counts = page.counts
+            total = page.meta.total
             currentPage = page.meta.currentPage
             lastPage = page.meta.lastPage
         } catch where error.isCancellation {
@@ -295,7 +421,13 @@ final class PalletDeliveriesFeed {
     }
 
     private func query(_ request: Request, page: Int) -> MobilePalletDeliveriesQuery {
-        MobilePalletDeliveriesQuery(state: request.filter.rawValue, search: request.search, page: page)
+        MobilePalletDeliveriesQuery(
+            state: request.filter.rawValue,
+            search: request.search,
+            dates: request.dates,
+            sort: request.sort?.rawValue,
+            page: page
+        )
     }
 }
 

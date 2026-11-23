@@ -50,6 +50,9 @@ struct LocationsDetailView: View {
             kicker: location.kicker,
             actions: hasSkos ? [HeaderAction(.check, label: "Audit location") { sheet = .audit }] : []
         ) {
+            OfflineRecordNotices(queue: store.offlineQueue(code: location.code), operations: OfflineOperation.stock, copyAt: store.copyDates[location.code]) { entry in
+                StockOfflineText.summary(entry, names: store.offlineNames(code: location.code))
+            }
             overview(location)
             if hasSkos {
                 SectionHeading("SKOs", detail: "\(location.slots.count)")
@@ -62,7 +65,7 @@ struct LocationsDetailView: View {
                     ) {
                         LocationsSlotThumb(reference: slot.skoReference)
                     } trailing: {
-                        Text(slot.quantity.locationsGrouped)
+                        Text(slot.quantityText)
                             .font(.aiku(15, .bold))
                             .foregroundStyle(slot.isEmpty ? AikuColor.warn : AikuColor.text)
                             .monospacedDigit()
@@ -198,8 +201,12 @@ struct LocationsDetailView: View {
         }
         Task {
             do {
-                let differences = try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient)
-                toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                switch try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient) {
+                case .saved(let differences):
+                    toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                case .queued:
+                    toasts.show(OfflineRecordText.queued, tone: .info)
+                }
             } catch {
                 toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
             }
@@ -215,8 +222,8 @@ struct LocationsDetailView: View {
         }
         Task {
             do {
-                let moved = try await store.moveRemotely(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything, apiClient: apiClient)
-                toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+                let outcome = try await store.moveRemotely(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything, apiClient: apiClient)
+                LocationsToastText.showMove(outcome, target: target, toasts: toasts)
             } catch {
                 toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
             }
@@ -259,6 +266,16 @@ enum LocationsToastText {
         case 0: "Audit saved · \(location) · no differences"
         case 1: "Audit saved · \(location) · 1 difference"
         default: "Audit saved · \(location) · \(differences) differences"
+        }
+    }
+
+    @MainActor
+    static func showMove(_ outcome: LocationsWriteOutcome, target: String, toasts: ToastCenter) {
+        switch outcome {
+        case .saved(let moved):
+            toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+        case .queued:
+            toasts.show(OfflineRecordText.queued, tone: .info)
         }
     }
 
