@@ -131,7 +131,7 @@ struct MobileMyWorkPage: Decodable, Sendable, Equatable {
     }
 }
 
-struct MobileWorkBadges: Decodable, Sendable, Equatable {
+struct MobileWorkBadges: Codable, Sendable, Equatable {
     var myWork: Int?
     var goodsOutUnassigned: Int?
     var goodsInReceived: Int?
@@ -154,6 +154,14 @@ struct MobileWorkBadges: Decodable, Sendable, Equatable {
         goodsOutUnassigned = container.lenientInt(.goodsOutUnassigned)
         goodsInReceived = container.lenientInt(.goodsInReceived)
         inboxUnread = container.lenientInt(.inboxUnread)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(myWork, forKey: .myWork)
+        try container.encodeIfPresent(goodsOutUnassigned, forKey: .goodsOutUnassigned)
+        try container.encodeIfPresent(goodsInReceived, forKey: .goodsInReceived)
+        try container.encodeIfPresent(inboxUnread, forKey: .inboxUnread)
     }
 }
 

@@ -63,6 +63,17 @@ struct RootView: View {
             if !isSignedIn {
                 OfflineWork.shared.signedOut()
                 session.forgetProfile()
+                ScreenCache.shared.clear()
+            }
+        }
+        .onChange(of: authStore.userID, initial: true) { _, userID in
+            if let userID, userID > 0 {
+                ScreenCache.shared.signedIn(userID: userID)
+            }
+        }
+        .onChange(of: warehouseStore.warehouses) { _, warehouses in
+            if !warehouses.isEmpty {
+                ScreenCache.shared.keepWorkBadges(forWarehouses: Set(warehouses.map(\.id)))
             }
         }
         .onChange(of: warehouseStore.selected, initial: true) { _, _ in

@@ -122,6 +122,11 @@ struct HomeView: View {
                     Text(status.detail)
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
+                    if let lastUpdated = clocking.lastUpdated {
+                        Text(LastUpdatedText.label(for: lastUpdated))
+                            .font(.aiku(12))
+                            .foregroundStyle(AikuColor.text3)
+                    }
                 } else {
                     SkeletonBlock(width: 150, height: 14)
                     SkeletonBlock(width: 110, height: 11)

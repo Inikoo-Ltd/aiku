@@ -47,7 +47,7 @@ struct ShellMenuClocking: Hashable, Sendable {
 
     @MainActor
     init?(_ clocking: ClockingStore) {
-        guard clocking.hasLoaded else { return nil }
+        guard clocking.hasStatus else { return nil }
         let today = clocking.today
         isClockedIn = today.isClockedIn
         if today.isClockedIn {

@@ -329,6 +329,22 @@ struct LocationsAPITests {
         #expect(otherUser.loadError != nil)
     }
 
+    @Test func warehouseStoreShowsTheSavedListAtLaunchAndStillAsksAiku() async {
+        let defaults = isolatedDefaults()
+        let cache = isolatedCache()
+        let online = WarehouseStore(defaults: defaults, cache: cache)
+        await online.load(for: 291, apiClient: client())
+
+        let relaunched = WarehouseStore(defaults: defaults, cache: cache)
+        relaunched.restoreCached(for: 291)
+        #expect(relaunched.warehouses.map(\.code) == ["ED", "PAR"])
+
+        var changed = Self.responses
+        changed["mobile/warehouses"] = #"{"data":[{"id":4,"slug":"par","code":"PAR","name":"Paris","organisation":{"id":2,"slug":"es","name":"AW Europe"},"can":{"view_locations":true,"edit_locations":true}}]}"#
+        await relaunched.load(for: 291, apiClient: client(changed))
+        #expect(relaunched.warehouses.map(\.code) == ["PAR"])
+    }
+
     @Test func warehouseStoreForgetsTheOfflineListOnSignOut() async {
         let defaults = isolatedDefaults()
         let cache = isolatedCache()
