@@ -2367,7 +2367,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         <AuraAvatar class="h-4 w-4" :angry="aiDraftBox?.draft?.aura_angry" />
                         Aura
                     </span>
-                    <div class="flex items-center gap-1.5">
+                    <div v-if="newMessage.trim()" class="flex items-center gap-1">
                         <PolishMessageButton v-model="newMessage"
                             :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />
                         <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
