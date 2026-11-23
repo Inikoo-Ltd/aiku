@@ -1577,6 +1577,13 @@ const lastMailId = computed(() => messagesLocal.value.findLast((message) => mess
 const openAutoReplyIds = reactive(new Set<number>())
 const isFoldedAutoReply = (message: any) => isEmailChat.value && message.sender_type === "system" && !!message.metadata?.gmail_message_id && !openAutoReplyIds.has(message.id)
 
+const auraNoteBeside = computed(() => {
+    if (!isEmailChat.value || props.readOnly || isTrashed.value || isClosed.value || aiDraftBox.value?.draft) return null
+    const note = eventsLocal.value.findLast((event: any) => event.event_type === "internal_note")
+    const lastMessage = messagesLocal.value[messagesLocal.value.length - 1]
+    return note && (!lastMessage || +new Date(note.created_at) >= +new Date(lastMessage.created_at)) ? note : null
+})
+
 const groupedTimeline = computed(() => {
     const entries: TimelineEntry[] = [
         ...messagesLocal.value.map((message) => ({
@@ -1585,7 +1592,7 @@ const groupedTimeline = computed(() => {
             key: `m-${message.id}`,
             message,
         })),
-        ...eventsLocal.value.map((event: any) => ({
+        ...eventsLocal.value.filter((event: any) => event.id !== auraNoteBeside.value?.id).map((event: any) => ({
             kind: "event" as const,
             at: +new Date(event.created_at),
             key: `e-${event.id}`,
@@ -2551,7 +2558,7 @@ const handleClickOutside = (e: MouseEvent) => {
             </p>
             </div>
             <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
-                :class="!aiDraftBox?.draft || !aiDraftBox?.hasNotes ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
+                :class="auraNoteBeside ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !aiDraftBox?.hasNotes ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
                     v-tooltip="ctrans('Show Aura\'s notes')" :aria-label="ctrans('Show Aura\'s notes')" @click="setAuraCollapsed(false)">
@@ -2563,6 +2570,7 @@ const handleClickOutside = (e: MouseEvent) => {
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note && !aiDraftBox.draft.premonitions?.length" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
                 </button>
+                <ChatTimelineEvent v-if="auraNoteBeside" :event="auraNoteBeside" class="!py-0" />
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
