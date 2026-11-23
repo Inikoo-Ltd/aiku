@@ -995,7 +995,6 @@ const clearReplyBox = () => {
 
 const aiDraftInEditor = computed(() => aiDraftText.value !== null && !!newMessage.value.trim())
 const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== aiDraftText.value)
-const auraQuestionsToCheck = computed(() => ((aiDraftBox.value as any)?.draft?.questions ?? []).filter((question: { status?: string }) => question.status !== "answered").length)
 const showAuraRow = computed(() => aiDraftInEditor.value || isEmailChat.value)
 
 const wordsOf = (text: string) => new Set(text.replace(/<[^>]+>/g, " ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean))
@@ -2248,7 +2247,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <ChatAiDraftBox v-else-if="!isTrashed && !isClosed" :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text"
                 @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest v-if="!isEmailChat" :target="messagesContainer" />
-            <button v-if="isEmailChat && !isReplySlotVisible && !readOnly && !isClosed && !isTrashed" type="button"
+            <button v-if="isEmailChat && !isReplySlotVisible && !readOnly && !isClosed && !isTrashed && !(isLoadingThread && !messagesLocal.length)" type="button"
                 class="sticky bottom-0 z-10 !mt-2 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-xs text-gray-600 shadow-md hover:bg-gray-50"
                 @click="goToReply">
                 <FontAwesomeIcon :icon="faReply" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -2256,7 +2255,11 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span v-if="newMessage.trim()" class="truncate text-gray-500">· {{ aiDraftInEditor ? ctrans("Aura's draft is ready") : ctrans("Your draft, not sent") }}</span>
                 <span class="ml-auto text-gray-400">↓</span>
             </button>
-            <div v-if="isEmailChat" :id="replySlotId" ref="replySlot" class="!mt-2" />
+            <div v-if="isEmailChat && isLoadingThread && !messagesLocal.length" aria-hidden="true" class="!mt-2 flex gap-3">
+                <div class="skeleton h-56 flex-1 rounded-lg" />
+                <div class="skeleton h-28 w-2/5 rounded-xl" />
+            </div>
+            <div v-if="isEmailChat" v-show="!(isLoadingThread && !messagesLocal.length)" :id="replySlotId" ref="replySlot" class="!mt-2" />
         </div>
         <Teleport defer :to="`#${replySlotId}`" :disabled="!isEmailChat">
         <div v-if="chatSession?.ulid && chatDrafters[chatSession.ulid]"
@@ -2557,8 +2560,6 @@ const handleClickOutside = (e: MouseEvent) => {
                     <span class="rotate-180 text-[11px] font-semibold text-pink-700 [writing-mode:vertical-rl]">Aura</span>
                     <FontAwesomeIcon v-if="aiDraftBox.draft.staff_note" :icon="faExclamationTriangleLight" class="text-[11px] text-pink-600" fixed-width
                         v-tooltip="ctrans('Aura has a note for you before sending')" />
-                    <span v-if="auraQuestionsToCheck" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white tabular-nums"
-                        v-tooltip="ctrans(':count questions to check', { count: auraQuestionsToCheck })">{{ auraQuestionsToCheck }}</span>
                 </button>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
