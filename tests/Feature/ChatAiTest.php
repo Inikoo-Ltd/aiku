@@ -37,6 +37,7 @@ use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\postJson;
 
 require_once __DIR__.'/../Support/ChatHelpers.php';
 
@@ -2210,4 +2211,25 @@ test('the Re: line signals are counted for a linked customer: frequent claims, c
         ->and($signals['emails_today']['count'])->toBe(2)
         ->and($signals['first_order']['tone'])->toBe('green')
         ->and(\App\Actions\Chat\ChatSession\GetChatCustomerSignals::run(ChatSession::create(['ulid' => (string) Str::ulid(), 'status' => ChatSessionStatusEnum::WAITING, 'channel' => ChatChannelEnum::EMAIL, 'shop_id' => $this->shop->id])))->toBe([]);
+});
+
+test('clicks on the Aura box buttons are counted per day, user, shop and button and shown on the AI dashboard', function () {
+    $clicks = fn () => (int) \Illuminate\Support\Facades\DB::table('aura_button_usage')
+        ->whereRaw('date = CURRENT_DATE')->where(['user_id' => $this->user->id, 'shop_id' => $this->shop->id, 'button' => 'close_answer_in'])->value('clicks');
+    $before = $clicks();
+
+    actingAs($this->user);
+    postJson(route('grp.models.chat.aura-button-click'), ['button' => 'close_answer_in', 'shop_id' => $this->shop->id])->assertNoContent();
+    postJson(route('grp.models.chat.aura-button-click'), ['button' => 'close_answer_in', 'shop_id' => $this->shop->id])->assertNoContent();
+    postJson(route('grp.models.chat.aura-button-click'), ['button' => 'not_a_button', 'shop_id' => $this->shop->id])->assertUnprocessable();
+    postJson(route('grp.models.chat.aura-button-click'), ['button' => 'ticket_chip', 'shop_id' => 0])->assertUnprocessable();
+
+    expect($clicks())->toBe($before + 2);
+
+    $aura = get(route('grp.chat.ai.dashboard'))->assertOk()->viewData('page')['props']['auraButtons'];
+    $shop = collect($aura['shops'])->firstWhere('code', $this->shop->code);
+
+    expect($aura['buttons'])->toContain('close_answer_in', 'old_note_beside', 'notes_timeline', 'ticket_chip')
+        ->and($shop['clicks']['close_answer_in'])->toBeGreaterThanOrEqual($before + 2)
+        ->and(collect($aura['users'])->firstWhere('name', $this->user->contact_name)['clicks']['close_answer_in'] ?? null)->toBeGreaterThanOrEqual($before + 2);
 });

@@ -1627,6 +1627,15 @@ const auraFollowUpNote = computed(() => {
     return eventsLocal.value.findLast((event: any) => event.event_type === "internal_note" && event.note_follow_up) ?? null
 })
 
+// ponytail: temporary Aura button tracking (INI-524), remove with the aura_button_usage table once decided
+const recordAuraClick = (event: MouseEvent) => {
+    const target = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-aura]")
+    const shopId = (props.session as any)?.shop?.id ?? (props.session as any)?.shop_id
+    if (!target || !shopId) return
+    const button = target.dataset.aura === "old_note" && target.closest("[data-aura-box]") ? "old_note_beside" : target.dataset.aura
+    axios.post(route("grp.models.chat.aura-button-click"), { button, shop_id: shopId }).catch(() => {})
+}
+
 const closingToAnswerIn = ref(false)
 const closeAndAnswerIn = async (target: { url: string }) => {
     if (!props.session || closingToAnswerIn.value) return
@@ -1951,7 +1960,7 @@ const handleClickOutside = (e: MouseEvent) => {
 </script>
 
 <template>
-    <div class="relative flex flex-col h-full bg-white overflow-hidden"
+    <div class="relative flex flex-col h-full bg-white overflow-hidden" @click.capture="recordAuraClick"
         @dragenter="onDragEnterAttachment" @dragover="onDragOverAttachment"
         @dragleave="onDragLeaveAttachment" @drop="onDropAttachment">
         <!-- Header -->
@@ -2615,7 +2624,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ aiDraftEdited ? ctrans("Your reply, based on the Aura AI draft") : ctrans("Aura AI draft: read it, change what you need, then send") }}
             </p>
             </div>
-            <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" class="flex min-w-0 flex-col gap-1.5"
+            <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" data-aura-box class="flex min-w-0 flex-col gap-1.5"
                 :class="auraNoteBeside || auraOldNote || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
@@ -2631,7 +2640,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <div v-if="auraNotes.length > 1 && (auraNoteBeside || auraOldNote)" class="flex items-center gap-0.5 px-1 text-[10px] text-pink-700" :aria-label="ctrans('Aura notes in this chat')">
                     <template v-for="(note, position) in auraNotes" :key="note.id">
                         <span v-if="position" class="h-px w-3 bg-pink-300" aria-hidden="true" />
-                        <button type="button" class="flex items-center gap-1 rounded-full px-1 py-0.5 hover:bg-pink-100"
+                        <button type="button" data-aura="notes_timeline" class="flex items-center gap-1 rounded-full px-1 py-0.5 hover:bg-pink-100"
                             :class="(pickedAuraNoteId ?? auraNotes[auraNotes.length - 1].id) === note.id ? 'font-semibold text-pink-800' : ''"
                             v-tooltip="note.note" @click="pickedAuraNoteId = position === auraNotes.length - 1 ? null : note.id">
                             <span class="h-2 w-2 rounded-full border border-pink-500" :class="position === auraNotes.length - 1 ? 'bg-pink-500' : 'bg-white'" aria-hidden="true" />
@@ -2644,7 +2653,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <ChatTimelineEvent v-if="auraOldNote" :key="auraOldNote.id" :event="auraOldNote" folded class="!py-0" />
                 <ChatTimelineEvent v-if="auraFollowUpNote && !(auraCollapsed && aiDraftBox?.draft)" :event="auraFollowUpNote" beside class="!py-0" />
                 <ChatTimelineEvent v-if="auraNoteBeside && auraNoteBeside.id !== auraFollowUpNote?.id" :event="auraNoteBeside" beside class="!py-0" />
-                <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
+                <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" data-aura="close_answer_in" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
                     :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
                 </template>
                 <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"

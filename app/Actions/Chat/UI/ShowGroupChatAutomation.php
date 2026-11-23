@@ -10,6 +10,7 @@ namespace App\Actions\Chat\UI;
 
 use App\Actions\Chat\ChatSession\GetChatClaimDetails;
 use App\Actions\Chat\ChatSession\SendChatAiAnswer;
+use App\Actions\Chat\Reports\GetAuraButtonUsage;
 use App\Actions\Chat\Reports\GetChatAiConfidenceMap;
 use App\Actions\Chat\Reports\GetChatAiCoverage;
 use App\Actions\Chat\Reports\IsWithinWorkingHours;
@@ -388,6 +389,7 @@ class ShowGroupChatAutomation extends OrgAction
                 'dashboard'  => $this->dashboard($this->group),
                 'draftStats' => $this->draftStats($this->group),
                 'confidence' => GetChatAiConfidenceMap::run($this->group),
+                'auraButtons' => GetAuraButtonUsage::run($this->group, IndexChatAiAcceptance::make()->supervisedShopIds($request->user())),
             ]);
         }
 

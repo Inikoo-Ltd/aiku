@@ -956,10 +956,12 @@ use App\Actions\SupplyChain\PackingSpec\UpdateSupplierProductPackingInstructions
 use App\Actions\SupplyChain\PackingSpec\VerifyPackingSpec;
 use App\Actions\GoodsIn\StockDeliveryPackingCheck\CreateStockDeliveryPackingChecks;
 use App\Actions\GoodsIn\StockDeliveryPackingCheck\RecordStockDeliveryPackingCheck;
+use App\Actions\Chat\ChatSession\RecordAuraButtonClick;
 use Illuminate\Support\Facades\Route;
 
 Route::patch('/profile', UpdateProfile::class)->name('profile.update');
 Route::post('/profile/rail-click', RecordRailClick::class)->name('profile.rail-click');
+Route::post('/chat/aura-button-click', RecordAuraButtonClick::class)->name('chat.aura-button-click');
 
 Route::post('dashboard/break-cache', BreakDashboardTimeSeriesCache::class)->name('dashboard.break_cache');
 

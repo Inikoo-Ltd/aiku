@@ -131,7 +131,7 @@ const stamp = computed(() => {
 
 <template>
     <div v-if="isInternalNote && folded && !unfolded" class="flex justify-center py-0.5">
-        <button type="button" class="flex max-w-xl items-center gap-1.5 truncate rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] text-pink-800 hover:bg-pink-100" @click="unfolded = true">
+        <button type="button" data-aura="old_note" class="flex max-w-xl items-center gap-1.5 truncate rounded-full border border-pink-200 bg-pink-50 px-2.5 py-0.5 text-[11px] text-pink-800 hover:bg-pink-100" @click="unfolded = true">
             <AuraAvatar class="h-3.5 w-3.5 shrink-0" />
             <span class="shrink-0 font-semibold">{{ ctrans("Old Aura note, :age old", { age: age }) }}</span>
             <span class="truncate text-pink-700">{{ event.note }}</span>

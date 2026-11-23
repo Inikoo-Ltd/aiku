@@ -12,7 +12,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import ChatAiCoverage from "@/Components/Chat/ChatAiCoverage.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt, faClock, faHandsHelping } from "@fal"
+import { faChartLine, faChartPie, faPaperPlane, faRobot, faFilter, faBolt, faClock, faHandsHelping, faMousePointer } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 
@@ -58,7 +58,21 @@ const props = defineProps<{
         lower_bound: number | null
         best: { shop: string, intent: string, risk: string, decided: number, alone_clean: number, lower_bound: number }[]
     }
+    auraButtons: {
+        days: number
+        buttons: string[]
+        shops: { code: string, name: string, rate: number | null, people: number, clicks: Record<string, number> }[]
+        users: { name: string, shops: string, clicks: Record<string, number> }[]
+    }
 }>()
+
+const AURA_BUTTON_LABELS: Record<string, () => string> = {
+    close_answer_in: () => ctrans("Close, answer in the other chat"),
+    old_note: () => ctrans("Show here, in the thread"),
+    old_note_beside: () => ctrans("Show here, beside the reply"),
+    notes_timeline: () => ctrans("Notes timeline dots"),
+    ticket_chip: () => ctrans("Ticket chips"),
+}
 
 const kindTotal = (kind: string) => props.dashboard.by_kind.find((row) => row.kind === kind)?.total ?? 0
 const sentTotal = computed(() => props.dashboard.by_kind.filter((row) => row.kind !== "ai_draft").reduce((sum, row) => sum + row.total, 0))
@@ -150,6 +164,53 @@ const colorOf = (index: number) => donutChart.value.datasets[0].backgroundColor[
                 <div class="text-xs text-gray-500">{{ card.note }}</div>
             </div>
         </div>
+
+        <DashboardWidgetBox storageKey="chat_ai_dashboard_aura_buttons_collapsed">
+            <template #header>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
+                    <FontAwesomeIcon :icon="faMousePointer" class="text-pink-600" fixed-width />
+                    {{ ctrans("Aura box buttons in email chats, last :days days", { days: auraButtons.days }) }}
+                </span>
+                <Link :href="route('grp.chat.ai.acceptance')" class="text-xs text-gray-700 underline hover:text-gray-900">{{ ctrans("Suggestions taken") }}</Link>
+            </template>
+            <p v-if="!auraButtons.shops.length" class="text-sm text-gray-500">{{ ctrans("No clicks yet") }}</p>
+            <div v-else class="overflow-x-auto">
+                <table class="w-full text-sm tabular-nums">
+                    <thead>
+                        <tr class="text-left text-xs text-gray-500">
+                            <th class="whitespace-nowrap py-1 font-normal">{{ ctrans("Shop") }}</th>
+                            <th class="whitespace-nowrap py-1 text-right font-normal" v-tooltip="ctrans('Share of Aura\'s drafts staff took, same days')">{{ ctrans("Taken") }}</th>
+                            <th v-for="button in auraButtons.buttons" :key="button" class="whitespace-nowrap py-1 pl-3 text-right font-normal">{{ AURA_BUTTON_LABELS[button]?.() ?? button }}</th>
+                            <th class="whitespace-nowrap py-1 pl-3 text-right font-normal">{{ ctrans("People") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="shop in auraButtons.shops" :key="shop.code" class="border-b border-gray-100 last:border-0">
+                            <td class="py-1.5 text-gray-700" :title="shop.name">{{ shop.code }}</td>
+                            <td class="py-1.5 text-right">{{ shop.rate === null ? "—" : `${shop.rate}%` }}</td>
+                            <td v-for="button in auraButtons.buttons" :key="button" class="py-1.5 pl-3 text-right" :class="shop.clicks[button] ? 'text-gray-900' : 'text-gray-300'">{{ shop.clicks[button] ?? 0 }}</td>
+                            <td class="py-1.5 pl-3 text-right text-gray-500">{{ shop.people }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table v-if="auraButtons.users.length" class="mt-4 w-full text-sm tabular-nums">
+                    <thead>
+                        <tr class="text-left text-xs text-gray-500">
+                            <th class="whitespace-nowrap py-1 font-normal">{{ ctrans("Person") }}</th>
+                            <th class="whitespace-nowrap py-1 font-normal">{{ ctrans("Shops") }}</th>
+                            <th v-for="button in auraButtons.buttons" :key="button" class="whitespace-nowrap py-1 pl-3 text-right font-normal">{{ AURA_BUTTON_LABELS[button]?.() ?? button }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="user in auraButtons.users" :key="user.name" class="border-b border-gray-100 last:border-0">
+                            <td class="py-1.5 text-gray-700">{{ user.name }}</td>
+                            <td class="py-1.5 text-xs text-gray-500">{{ user.shops }}</td>
+                            <td v-for="button in auraButtons.buttons" :key="button" class="py-1.5 pl-3 text-right" :class="user.clicks[button] ? 'text-gray-900' : 'text-gray-300'">{{ user.clicks[button] ?? 0 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </DashboardWidgetBox>
 
         <DashboardWidgetBox storageKey="chat_ai_dashboard_daily_collapsed">
             <template #header>
