@@ -111,6 +111,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
         }
 
+        if (Arr::has($modelData, "own_cookie_banner")) {
+            data_set($modelData, "settings.own_cookie_banner", (bool) Arr::pull($modelData, "own_cookie_banner"));
+        }
+
         if (Arr::has($modelData, "google_tag_gateway_path")) {
             data_set($modelData, "settings.google_tag_gateway_path", Arr::pull($modelData, "google_tag_gateway_path"));
         }
@@ -308,6 +312,7 @@ class UpdateWebsite extends OrgAction
             'script_website'                             => ['sometimes', 'nullable', 'string'],
             'llms_txt'                                   => ['sometimes', 'nullable', File::types(['txt'])->max(50)], // 50KB max
             'enable_chat'                                => ['sometimes', 'boolean'],
+            'own_cookie_banner'                          => ['sometimes', 'boolean'],
             'view_contact_options_panel'                 => ['sometimes', 'boolean'],
             'data_contact_options_panel'                 => ['sometimes', 'nullable', 'array'],
             'data_contact_options_panel.*.icon'          => ['sometimes', 'nullable'],
