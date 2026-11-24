@@ -168,6 +168,7 @@ class ShowFulfilmentInvoice extends OrgAction
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => $invoice->reference
                     ],
+                    'iconRight'       => $this->getEInvoiceSentIcon($invoice),
                     'wrapped_actions' => $actions
                 ],
                 'tabs'        => [

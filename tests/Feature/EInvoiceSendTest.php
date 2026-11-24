@@ -470,3 +470,23 @@ test('fulfilment invoices, completed standalone or consolidated from a recurring
     \App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice::run($standalone);
     Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, $isSendJob);
 });
+
+test('the invoice page of a sent e-invoice has no Edit or Delete and shows the sent icon; a refused one keeps them', function () {
+    config(['inertia.pages.paths' => [resource_path('js/Pages/Grp')]]);
+    $this->withoutVite();
+    softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9301', 'status' => 'NEW', 'checksum' => 'abc'])]);
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+    $admin        = createAdminGuest($this->organisation->group)->getUser();
+    $url          = route('grp.org.accounting.invoices.show', [$this->organisation->slug, $this->invoice->slug]);
+    $labels       = fn ($page) => collect($page['props']['pageHead']['wrapped_actions'])->pluck('label')->all();
+
+    $page = $this->actingAs($admin)->get($url)->assertOk()->viewData('page');
+    expect($labels($page))->not->toContain('Delete')->not->toContain('Edit')
+        ->and($page['props']['pageHead']['iconRight']['icon'])->toBe('fal fa-paper-plane')
+        ->and($page['props']['can'])->toMatchArray(['editInvoiceDate' => false, 'editInvoiceAddress' => false, 'editTaxNumber' => false]);
+
+    $transmission->update(['status' => 'INVALID']);
+    $page = $this->actingAs($admin)->get($url)->assertOk()->viewData('page');
+    expect($labels($page))->toContain('Delete')
+        ->and($page['props']['pageHead']['iconRight'])->toBeNull();
+});

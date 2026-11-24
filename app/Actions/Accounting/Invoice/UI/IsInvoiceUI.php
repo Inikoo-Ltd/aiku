@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
@@ -210,13 +211,31 @@ trait IsInvoiceUI
         return $this->canEdit || $request->user()->authTo("crm.$invoice->shop_id.edit");
     }
 
+    /**
+     * @return array{icon: string, class: string, tooltip: string}|null
+     */
+    public function getEInvoiceSentIcon(Invoice $invoice): ?array
+    {
+        if (!EnsureInvoiceNotSentAsEInvoice::isSent($invoice)) {
+            return null;
+        }
+
+        return [
+            'icon'    => 'fal fa-paper-plane',
+            'class'   => 'text-green-600',
+            'tooltip' => __('Sent as a Peppol e-invoice by Aiku: it can no longer be edited or deleted, correct it with a credit note'),
+        ];
+    }
+
     public function getInvoiceActions(Invoice $invoice, ActionRequest $request, array $payBoxData, bool $isWithSendInvoice = false): array
     {
         $wrappedActions = [];
 
         $trashIcon = 'fal fa-trash-alt';
 
-        if ($this->parent instanceof Fulfilment) {
+        $isSentAsEInvoice = EnsureInvoiceNotSentAsEInvoice::isSent($invoice);
+
+        if (!$isSentAsEInvoice && $this->parent instanceof Fulfilment) {
             $wrappedActions[] =
                 $this->isSupervisor
                     ? [
@@ -259,7 +278,7 @@ trait IsInvoiceUI
                         ]
                     ]
                 ];
-        } elseif ($request->user()->authTo("accounting.{$invoice->shop->organisation_id}.edit")) {
+        } elseif (!$isSentAsEInvoice && $request->user()->authTo("accounting.{$invoice->shop->organisation_id}.edit")) {
             $wrappedActions[] =
                 [
                     'supervisor' => true,
@@ -281,7 +300,7 @@ trait IsInvoiceUI
                 ];
         }
 
-        if ($this->canEdit && $this->parent instanceof Organisation) {
+        if (!$isSentAsEInvoice && $this->canEdit && $this->parent instanceof Organisation) {
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -292,7 +311,7 @@ trait IsInvoiceUI
                     'parameters' => $request->route()->originalParameters()
                 ],
             ];
-        } elseif ($this->canEdit && $this->parent instanceof FulfilmentCustomer) {
+        } elseif (!$isSentAsEInvoice && $this->canEdit && $this->parent instanceof FulfilmentCustomer) {
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',

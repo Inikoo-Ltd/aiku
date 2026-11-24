@@ -42,7 +42,7 @@ import {
     faEnvelope,
     faArrowCircleLeft,
     faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes, faExclamationTriangle,
-    faIdCard, faTimes
+    faIdCard, faTimes, faPaperPlane
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faIdCard as farIdCard} from "@far";
@@ -72,7 +72,7 @@ import { cloneDeep, pick } from "lodash-es"
 import InputText from "primevue/inputtext"
 import EInvoiceStatus, { type EInvoiceSummary } from "@/Components/Accounting/EInvoiceStatus.vue"
 
-library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle);
+library.add(farIdCard,faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird, faExclamationTriangle, faPaperPlane);
 
 const props = defineProps<{
     title: string,

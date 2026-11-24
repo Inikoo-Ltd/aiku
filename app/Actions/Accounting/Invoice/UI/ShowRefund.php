@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexRefundInProcessTransactions;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexRefundTransactions;
@@ -201,8 +202,9 @@ class ShowRefund extends OrgAction
         }
 
 
-        $actions = [];
-        if ($this->canEdit) {
+        $actions          = [];
+        $isSentAsEInvoice = EnsureInvoiceNotSentAsEInvoice::isSent($refund);
+        if (!$isSentAsEInvoice && $this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
@@ -218,7 +220,7 @@ class ShowRefund extends OrgAction
             ];
         }
 
-        if (DeleteRefund::userCanDeleteInvoicesIn($request->user(), $refund->shop)) {
+        if (!$isSentAsEInvoice && DeleteRefund::userCanDeleteInvoicesIn($request->user(), $refund->shop)) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'delete',
@@ -291,7 +293,7 @@ class ShowRefund extends OrgAction
                     'icon'    => 'fal fa-seedling',
                     'class'   => 'text-green-500',
                     'tooltip' => __('In process')
-                ] : null,
+                ] : $this->getEInvoiceSentIcon($refund),
                 'actions'       => $actions,
             ],
             'can_edit'    => $canRefund,

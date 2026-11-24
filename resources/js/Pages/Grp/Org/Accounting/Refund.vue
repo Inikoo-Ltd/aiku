@@ -43,7 +43,8 @@ import {
   faArrowCircleLeft,
   faFileInvoiceDollar, 
   faShoppingCart,
-  faAddressCard
+  faAddressCard,
+  faPaperPlane
 } from "@fal";
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faTrashAlt } from "@far";
@@ -61,7 +62,7 @@ import EInvoiceStatus, { type EInvoiceSummary } from "@/Components/Accounting/EI
 library.add(
   faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,faExclamationCircle, faCheckCircle, faSpinnerThird,
   faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt, faOmega,
-  faHockeyPuck
+  faHockeyPuck, faPaperPlane
 );
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));

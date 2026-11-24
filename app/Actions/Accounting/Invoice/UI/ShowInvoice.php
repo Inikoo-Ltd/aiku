@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\GetInvoicePdfColumns;
+use App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice;
 use App\Actions\Accounting\Invoice\WithInvoicePayBox;
 use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -389,6 +390,7 @@ class ShowInvoice extends OrgAction
 
         $payBoxData           = $this->getPayBoxData($invoice);
         $actions              = $this->getInvoiceActions($invoice, $request, $payBoxData);
+        $isSentAsEInvoice     = EnsureInvoiceNotSentAsEInvoice::isSent($invoice);
         $exportInvoiceOptions = $this->getExportOptions($invoice);
 
 
@@ -439,6 +441,7 @@ class ShowInvoice extends OrgAction
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],
                         'title' => $invoice->reference
                     ],
+                    'iconRight'       => $this->getEInvoiceSentIcon($invoice),
                     'wrapped_actions' => $actions
                 ],
                 'tabs'        => [
@@ -467,9 +470,9 @@ class ShowInvoice extends OrgAction
                     ],
                 ],
                 'can'                           => [
-                    'editInvoiceDate'    => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
-                    'editInvoiceAddress' => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
-                    'editTaxNumber'      => UpdateInvoiceTaxNumber::canEditTaxNumber($request->user(), $invoice),
+                    'editInvoiceDate'    => !$isSentAsEInvoice && $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editInvoiceAddress' => !$isSentAsEInvoice && $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting"),
+                    'editTaxNumber'      => !$isSentAsEInvoice && UpdateInvoiceTaxNumber::canEditTaxNumber($request->user(), $invoice),
                 ],
                 'billing_address_form'          => $request->user()->authTo("org-supervisor.{$this->organisation->id}.accounting") ? [
                     'value'   => AddressFormFieldsResource::make($invoice->address)->getArray(),
