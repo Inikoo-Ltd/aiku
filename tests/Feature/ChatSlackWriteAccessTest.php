@@ -8,11 +8,14 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Chat\Staff\Slack\LinkSlackUsers;
+use App\Actions\Chat\Staff\Slack\StoreSlackUser;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteClient;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteException;
 use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
 use App\Actions\SysAdmin\User\UpdateUser;
+use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
@@ -387,4 +390,65 @@ test('the connect routes have their own small limit', function () {
     }
     actingAs($engineer)->get(route('grp.chat.staff.slack.connect.start'))->assertStatus(429);
     actingAs($engineer)->delete(route('grp.chat.staff.slack.connect.delete'))->assertStatus(429);
+});
+
+test('a Slack person linked by hand counts although the emails differ, and the nightly people sync keeps the link', function () {
+    $user  = ($this->makeUser)(linked: false);
+    $by    = ($this->makeUser)(linked: false);
+    $slack = SlackUser::create(['slack_id' => 'UH'.Str::upper(Str::random(9)), 'name' => 'hand.'.$user->id, 'email' => 'other.'.$user->id.'@example.com']);
+
+    expect(SlackChannel::linkedSlackPerson($user))->toBeNull();
+
+    LinkSlackUsers::make()->link($slack, $user, $by);
+
+    expect(SlackChannel::linkedSlackPerson($user)?->is($slack))->toBeTrue()
+        ->and($slack->fresh()->link_confirmed_by_user_id)->toBe($by->id)
+        ->and($user->fresh()->slack_user_id)->toBe($slack->slack_id);
+
+    StoreSlackUser::run(['id' => $slack->slack_id, 'name' => $slack->name, 'profile' => ['email' => $slack->email]]);
+
+    expect($slack->fresh()->user_id)->toBe($user->id)
+        ->and(SlackChannel::linkedSlackPerson($user)?->is($slack))->toBeTrue();
+});
+
+test('slack:link-users writes nothing without --confirm, refuses ambiguous pairs and can undo a link', function () {
+    $user    = ($this->makeUser)(linked: false);
+    $taken   = ($this->makeUser)();
+    $by      = ($this->makeUser)(linked: false);
+    $handle  = 'hand.'.$user->id;
+    $slack   = SlackUser::create(['slack_id' => 'UH'.Str::upper(Str::random(9)), 'name' => $handle, 'email' => 'other.'.$user->id.'@example.com']);
+    $twin    = 'twin.'.$user->id;
+    SlackUser::create(['slack_id' => 'UT'.Str::upper(Str::random(9)), 'name' => $twin]);
+    SlackUser::create(['slack_id' => 'UT'.Str::upper(Str::random(9)), 'name' => $twin]);
+    $guest   = SlackUser::create(['slack_id' => 'UG'.Str::upper(Str::random(9)), 'name' => 'guest.'.$user->id, 'data' => ['is_restricted' => true]]);
+    $other   = SlackUser::create(['slack_id' => 'UO'.Str::upper(Str::random(9)), 'name' => 'other.'.$user->id]);
+
+    $this->artisan('slack:link-users', ['pairs' => ["$handle={$user->username}"]])->assertSuccessful();
+    expect($slack->fresh()->link_confirmed_at)->toBeNull();
+
+    $plan = collect(LinkSlackUsers::make()->plan([
+        "$twin={$user->username}",
+        "{$guest->name}={$user->username}",
+        "{$other->name}={$taken->username}",
+        "$handle=nobody-".$user->id,
+        "$handle={$user->username}",
+    ], false))->pluck('action');
+
+    expect($plan[0])->toStartWith('refused: several')
+        ->and($plan[1])->toStartWith('refused: Slack person is a bot')
+        ->and($plan[2])->toStartWith('refused: '.$taken->username.' is already linked')
+        ->and($plan[3])->toStartWith('refused: no active aiku user')
+        ->and($plan[4])->toBe('link');
+
+    $this->artisan('slack:link-users', ['pairs' => ["$handle={$user->username}"], '--confirm' => true])->assertFailed();
+    expect($slack->fresh()->link_confirmed_at)->toBeNull();
+
+    $this->artisan('slack:link-users', ['pairs' => ["$handle={$user->username}"], '--confirm' => true, '--by' => $by->username])->assertSuccessful();
+    expect($slack->fresh()->user_id)->toBe($user->id);
+
+    $this->artisan('slack:link-users', ['pairs' => [$handle], '--undo' => true, '--confirm' => true])->assertSuccessful();
+    expect($slack->fresh()->user_id)->toBeNull()
+        ->and($slack->fresh()->link_confirmed_at)->toBeNull()
+        ->and($user->fresh()->slack_user_id)->toBeNull()
+        ->and(SlackChannel::linkedSlackPerson($user))->toBeNull();
 });
