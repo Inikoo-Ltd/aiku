@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Retina\Dropshipping\CreateRetinaDropshippingCustomerSalesChannel;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -3395,6 +3396,31 @@ test('a preview language is offered for channels of staff customers only, and th
 
     $customer->updateQuietly(['is_staff' => false]);
     UpdateShop::make()->action($this->shop, ['preview_languages' => [], 'channel_languages' => false]);
+});
+
+test('a new channel gets the product language picked on the create channel page, not the customer interface language', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+
+    $customer = StoreCustomer::make()->action($this->shop, [...Customer::factory()->definition(), 'email' => Str::lower(Str::random(12)).'@shopify-test.com']);
+    retinaLanguageWebUser($this, $customer)->update(['language_id' => $this->shop->language_id]);
+
+    $this->postJson(route('retina.models.customer_sales_channel.new_language'), ['language_id' => 999999])->assertUnprocessable();
+    $this->postJson(route('retina.models.customer_sales_channel.new_language'), ['language_id' => $language->id])->assertSuccessful();
+
+    expect(CreateRetinaDropshippingCustomerSalesChannel::make()->channelLanguage($customer)['value'])->toBe($language->id);
+
+    $this->postJson(route('retina.models.customer_sales_channel.manual.store'), ['name' => 'Picked language'])->assertSuccessful();
+    $this->postJson(route('retina.models.customer_sales_channel.new_language'), ['language_id' => $this->shop->language_id])->assertSuccessful();
+    $this->postJson(route('retina.models.customer_sales_channel.manual.store'), ['name' => 'Back to shop language'])->assertSuccessful();
+
+    $channels = $customer->customerSalesChannels()->pluck('language_id', 'name');
+    expect($channels['Picked language'])->toBe($language->id)
+        ->and($channels['Back to shop language'])->toBe($this->shop->language_id);
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
+    expect(CreateRetinaDropshippingCustomerSalesChannel::make()->channelLanguage($customer->fresh()))->toBeNull();
 });
 
 test('re-translate replaces the texts of a live shopify product only when its owner presses it, and keeps its handle', function () {

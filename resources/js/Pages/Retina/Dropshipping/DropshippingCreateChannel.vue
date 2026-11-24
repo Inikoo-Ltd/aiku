@@ -12,6 +12,7 @@ import { routeType } from "@/types/route"
 import Modal from "@/Components/Utils/Modal.vue"
 import Dialog from "primevue/dialog"
 import ConfirmDialog from "primevue/confirmdialog"
+import Select from "primevue/select"
 import { useConfirm } from "primevue/useconfirm"
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
@@ -46,6 +47,11 @@ library.add(faGlobe, faExternalLinkAlt, faUnlink, faUsers)
 
 const props = defineProps<{
 	title: string
+	channelLanguage: {
+		options: { value: number; label: string }[]
+		value: number
+		route: routeType
+	} | null
 	pageHead: PageHeadingTypes
 	tabs: TSTabs
 	shopify_url: string
@@ -129,6 +135,17 @@ const confirmCancel = (onAccept: () => void) => {
 }
 
 const isModalOpen = ref<string | boolean>(false)
+
+const channelLanguageId = ref<number | undefined>(props.channelLanguage?.value)
+const channelLanguageError = ref(false)
+const saveChannelLanguage = async (languageId: number) => {
+	channelLanguageError.value = false
+	try {
+		await axios.post(route(props.channelLanguage!.route.name), { language_id: languageId })
+	} catch {
+		channelLanguageError.value = true
+	}
+}
 const isPlatformCreateLoading = ref<string | boolean>(false)
 const websiteInput = ref<string | null>(null)
 const isLoading = ref<string | boolean>(false)
@@ -506,6 +523,19 @@ provide("goNext", goNext)
 	</ConfirmDialog>
 	<PageHeading :data="pageHead" />
 	<div class="mt-4 px-4 md:px-6">
+		<div v-if="channelLanguage" class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+			<label for="channel-language" class="text-base">{{ ctrans("Language of product texts") }}:</label>
+			<Select
+				v-model="channelLanguageId"
+				inputId="channel-language"
+				:options="channelLanguage.options"
+				optionLabel="label"
+				optionValue="value"
+				class="w-48"
+				@update:modelValue="saveChannelLanguage" />
+			<span class="text-sm text-gray-500">{{ ctrans("Products you add to the new channel get their name and description in this language. You can change it later in the channel settings.") }}</span>
+			<span v-if="channelLanguageError" class="w-full text-sm text-red-600">{{ ctrans("The language could not be saved, please try again.") }}</span>
+		</div>
 		<div class="text-base py-2 w-fit">{{ ctrans("Select channel you want to create") }}:</div>
 		<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
 			<!-- Section: Manual -->
