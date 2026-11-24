@@ -331,7 +331,7 @@ const showsPartnersNote = computed(() => !!props.settings.partners_type && props
 
 			<div class="mt-1 text-right text-[10px] text-gray-500">
 				<template v-if="showsPartnersNote">
-					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Sales to our own companies are included') : ctrans('Sales to our own companies are not included') }}
+					{{ settings.partners_type.value === settings.partners_type.options[1]?.value ? ctrans('Sales to our own companies are included, services recharged to them are not') : ctrans('Sales to our own companies are not included') }}
 					(<button type="button" class="underline hover:text-gray-700" @click="openDashboardSettings">{{ ctrans('change') }}</button>) ·
 				</template>
 				{{ ctrans('Periods run from midnight UTC') }}<template v-if="utcDayStartInUserTime">

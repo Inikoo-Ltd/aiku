@@ -107,6 +107,7 @@ class GetInvoiceCategoryTimeSeriesStats
                 'slug'                       => $invoiceCategory->slug,
                 'name'                       => $invoiceCategory->name,
                 'state'                      => $invoiceCategory->state?->value,
+                'type'                       => $invoiceCategory->type?->value,
                 'colour'                     => $invoiceCategory->colour,
                 'organisation_slug'          => $invoiceCategory->organisation?->slug,
                 'organisation_code'          => $invoiceCategory->organisation?->code,

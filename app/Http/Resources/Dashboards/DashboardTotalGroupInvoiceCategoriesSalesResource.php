@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValuesFromArray;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
@@ -17,7 +18,10 @@ class DashboardTotalGroupInvoiceCategoriesSalesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $models = $this->resource;
+        $models = array_values(array_filter(
+            (array) $this->resource,
+            fn ($model) => ($model['type'] ?? null) !== InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER->value
+        ));
 
         if (empty($models)) {
             return [

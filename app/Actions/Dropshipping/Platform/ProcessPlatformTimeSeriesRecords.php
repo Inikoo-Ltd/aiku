@@ -77,7 +77,7 @@ class ProcessPlatformTimeSeriesRecords implements ShouldBeUnique
             ->where('invoices.date', '<=', $to)
             ->whereNull('invoices.deleted_at');
 
-        $results = $this->applyFrequencyGrouping($query, $timeSeries->frequency, customSelects: [...$this->platformInvoiceSelects(), ...$this->partnerInvoiceSelects()])->get();
+        $results = $this->applyFrequencyGrouping($this->withoutServicesToPartnerInvoices($query), $timeSeries->frequency, customSelects: [...$this->platformInvoiceSelects(), ...$this->partnerInvoiceSelects()])->get();
 
         foreach ($results as $result) {
             ['period' => $period, 'periodFrom' => $periodFrom, 'periodTo' => $periodTo] = TimeSeriesPeriodCalculator::resolvePeriod($result, $timeSeries->frequency);

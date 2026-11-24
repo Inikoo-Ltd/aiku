@@ -7,6 +7,7 @@
 
 namespace App\Traits;
 
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\TimeSeriesPeriodCalculator;
 use Illuminate\Database\Query\Builder;
@@ -78,6 +79,18 @@ trait BuildsInvoiceTimeSeriesQuery
             DB::raw('COUNT(DISTINCT CASE WHEN type = \'invoice\' AND invoices.as_organisation_id IS NOT NULL THEN id END) as invoices_internal'),
             DB::raw('COUNT(DISTINCT CASE WHEN type = \'refund\' AND invoices.as_organisation_id IS NOT NULL THEN id END) as refunds_internal'),
         ];
+    }
+
+    /**
+     * Services recharged to our own companies are not trade, so they stay out of sales and growth.
+     */
+    protected function withoutServicesToPartnerInvoices(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->whereNull('invoices.invoice_category_id')
+            ->orWhereNotIn('invoices.invoice_category_id', DB::table('invoice_categories')
+                ->where('type', InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER->value)
+                ->select('id')));
     }
 
     protected function customerInvoiceSelects(): array

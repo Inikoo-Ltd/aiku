@@ -34,6 +34,7 @@ use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Catalogue\SalesAnalysis\GetShopSalesAnalysis;
 use App\Actions\Catalogue\Shop\ProcessShopTimeSeriesRecords;
+use App\Actions\SysAdmin\Organisation\ProcessOrganisationTimeSeriesRecords;
 use App\Actions\Catalogue\Shop\UI\GetFormatedShopTimeSeriesStats;
 use App\Actions\UI\Dashboards\GetGroupDashboardTimeSeriesData;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
@@ -89,6 +90,8 @@ use Illuminate\Support\Carbon;
 use App\Actions\Accounting\InvoiceCategory\GetInvoiceCategoryOverview;
 use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalGroupInvoiceCategoriesSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalInvoiceCategoriesSalesResource;
 use App\Enums\Dashboards\ShopDashboardSectionsEnum;
 use Illuminate\Support\Facades\Event;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -4205,6 +4208,83 @@ test('dashboards show the backlog of orders not invoiced yet', function () {
     expect($categoryRow['columns']['backlog_org_currency_external']['all']['raw_value'])->toEqual(640);
 
     $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+});
+
+test('shop and organisation time series leave out services recharged to partners', function () {
+    $servicesCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Services to partners test',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 2
+    ]);
+
+    $date      = now()->startOfDay()->addHour();
+    $dayRecord = function (string $table, string $parentColumn, int $parentId) use ($date) {
+        $seriesTable = str_replace('_records', '', $table);
+
+        return DB::table($table)
+            ->join($seriesTable, "$seriesTable.id", '=', "$table.{$seriesTable}_id")
+            ->where("$seriesTable.$parentColumn", $parentId)
+            ->where("$seriesTable.frequency", TimeSeriesFrequencyEnum::DAILY->value)
+            ->where("$table.from", '>=', $date->copy()->startOfDay())
+            ->first();
+    };
+    $process = function () use ($date) {
+        ProcessShopTimeSeriesRecords::run($this->shop->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+        ProcessOrganisationTimeSeriesRecords::run($this->organisation->id, TimeSeriesFrequencyEnum::DAILY, $date->toDateString(), $date->toDateString());
+    };
+
+    $process();
+    $shopBefore         = (float)($dayRecord('shop_time_series_records', 'shop_id', $this->shop->id)->sales_org_currency_internal ?? 0);
+    $organisationBefore = (float)($dayRecord('organisation_time_series_records', 'organisation_id', $this->organisation->id)->sales_org_currency_internal ?? 0);
+
+    $invoice = StoreInvoice::make()->action(createCustomer($this->shop), Invoice::factory()->definition());
+    DB::table('invoices')->where('id', $invoice->id)->update([
+        'invoice_category_id' => $servicesCategory->id,
+        'type'                => InvoiceTypeEnum::INVOICE->value,
+        'in_process'          => false,
+        'date'                => $date,
+        'net_amount'          => 20000,
+        'org_net_amount'      => 20000,
+        'grp_net_amount'      => 20000,
+        'as_organisation_id'  => $this->organisation->id,
+    ]);
+
+    $process();
+
+    expect((float)$dayRecord('shop_time_series_records', 'shop_id', $this->shop->id)->sales_org_currency_internal)->toEqual($shopBefore)
+        ->and((float)$dayRecord('organisation_time_series_records', 'organisation_id', $this->organisation->id)->sales_org_currency_internal)->toEqual($organisationBefore);
+
+    $servicesCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
+});
+
+test('invoice categories total leaves out services to partners so recharges do not show as growth', function () {
+    $row = fn (string $type, float $sales, float $salesLastYear) => [
+        'type'                               => $type,
+        'parent_type'                        => 'Organisation',
+        'organisation_slug'                  => $this->organisation->slug,
+        'organisation_currency_code'         => 'EUR',
+        'invoices_tdy'                       => 1,
+        'invoices_tdy_ly'                    => 1,
+        'sales_org_currency_external_tdy'    => $sales,
+        'sales_org_currency_external_tdy_ly' => $salesLastYear,
+        'sales_grp_currency_external_tdy'    => $sales,
+        'sales_grp_currency_external_tdy_ly' => $salesLastYear,
+    ];
+
+    $rows = [
+        $row(InvoiceCategoryTypeEnum::SHOP_FALLBACK->value, 100, 200),
+        $row(InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER->value, 20000, 0),
+    ];
+
+    $organisationTotals = DashboardTotalInvoiceCategoriesSalesResource::make($rows)->toArray(request())['columns'];
+    $groupTotals        = DashboardTotalGroupInvoiceCategoriesSalesResource::make($rows)->toArray(request())['columns'];
+
+    expect($organisationTotals['sales_org_currency_external']['tdy']['raw_value'])->toEqual(100)
+        ->and($organisationTotals['sales_org_currency_external_delta']['tdy']['raw_value'])->toEqual(0.5)
+        ->and($organisationTotals['invoices']['tdy']['raw_value'])->toEqual(1)
+        ->and($groupTotals['sales_grp_currency_external']['tdy']['raw_value'])->toEqual(100);
 });
 
 test('sales analysis follows the saved include partners setting unless the page asks otherwise', function () {
