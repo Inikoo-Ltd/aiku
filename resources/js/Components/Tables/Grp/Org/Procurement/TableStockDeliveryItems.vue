@@ -365,6 +365,24 @@ function unitPrice(item: any) {
     return `${net} (${locale.currencyFormatUnitCost(item.org_currency ?? 'EUR', Number(item.org_net_amount) / units)})`
 }
 
+function currentPriceDifference(item: any) {
+    const units = Number(item.unit_quantity)
+    const currentUnitCost = item.current_unit_cost === null || item.current_unit_cost === undefined ? null : Number(item.current_unit_cost)
+
+    if (!units || currentUnitCost === null) {
+        return null
+    }
+
+    const unitCost = Number(item.net_amount ?? 0) / units
+    const difference = Math.round((unitCost - currentUnitCost) * 10000) / 10000
+
+    return {
+        current: locale.currencyFormatUnitCost(item.net_currency ?? 'EUR', currentUnitCost),
+        difference: difference,
+        percentage: currentUnitCost ? `${difference > 0 ? '+' : ''}${locale.number(Math.round(difference / currentUnitCost * 1000) / 10)}%` : null,
+    }
+}
+
 function supplierProductRoute(item: { slug?: string }) {
     if (!item.slug) {
         return ''
@@ -999,7 +1017,17 @@ async function savePackedInside(item: any, outerItemId: number | null) {
         </template>
 
         <template #cell(unit_price)="{ item }">
-            <span v-if="unitPrice(item) !== null" class="whitespace-nowrap tabular-nums">{{ unitPrice(item) }}</span>
+            <div v-if="unitPrice(item) !== null" class="flex flex-col items-end">
+                <span class="whitespace-nowrap tabular-nums">{{ unitPrice(item) }}</span>
+                <template v-for="priceDifference in [currentPriceDifference(item)]" :key="item.id">
+                    <span
+                        v-if="priceDifference && priceDifference.difference !== 0"
+                        class="whitespace-nowrap text-xs tabular-nums text-amber-600"
+                    >
+                        {{ ctrans('Current :price', { price: priceDifference.current }) }}<template v-if="priceDifference.percentage"> ({{ priceDifference.percentage }})</template>
+                    </span>
+                </template>
+            </div>
         </template>
 
         <template #cell(amount)="{ item }">

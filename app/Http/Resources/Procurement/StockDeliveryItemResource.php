@@ -171,6 +171,7 @@ class StockDeliveryItemResource extends JsonResource
             'sko_quantity_placed'   => round($placed / $unitsPerSko, 4),
             'net_amount'            => $item->net_amount,
             'net_currency'          => $supplierProduct?->currency?->code,
+            'current_unit_cost'     => $supplierProduct?->cost === null ? null : (float) $supplierProduct->cost,
             'org_net_amount'        => $item->org_net_amount,
             'org_currency'          => $item->organisation?->currency?->code,
             'org_exchange'          => $item->org_exchange,
