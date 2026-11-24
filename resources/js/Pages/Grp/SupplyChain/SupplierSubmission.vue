@@ -39,6 +39,7 @@ const props = defineProps<{
 		decided_by: string | null
 		applied: Record<string, any> | null
 		applied_at: string | null
+		applied_to?: { label: string; url: string }[]
 		sent_by: string | null
 		supplier: { code: string; name: string; url: string }
 		product: { code: string; name: string; cost: number; currency: string | null } | null
@@ -200,6 +201,10 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 				<h2 class="text-xs font-semibold text-gray-600">{{ ctrans("Decision") }}</h2>
 				<p v-if="submission.decided_at" class="text-xs text-gray-500">{{ ctrans("Last change :date by :user", { date: useFormatTime(submission.decided_at), user: submission.decided_by ?? "" }) }}</p>
 				<p v-if="submission.applied_at" class="text-xs text-green-700">{{ ctrans("Applied in aiku :date", { date: useFormatTime(submission.applied_at) }) }}</p>
+				<p v-if="submission.applied_to?.length" class="flex flex-wrap items-center gap-x-2 text-xs text-gray-600">
+					<span>{{ ctrans("Added to the attachments of") }}</span>
+					<Link v-for="target in submission.applied_to" :key="target.url" :href="target.url" class="primaryLink whitespace-nowrap">{{ target.label }}</Link>
+				</p>
 
 				<template v-if="decide.can">
 					<label class="flex flex-col gap-1">

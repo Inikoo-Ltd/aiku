@@ -18,6 +18,7 @@ use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Support\Arr;
@@ -101,6 +102,26 @@ class ShowSupplierSubmission extends OrgAction
             ->all();
     }
 
+    /**
+     * Where an accepted compliance document went: the attachments of each trade unit it was put on.
+     *
+     * @return array<int, array{label: string, url: string}>
+     */
+    private function appliedTo(SupplierSubmission $submission): array
+    {
+        $tradeUnitIds = Arr::get($submission->applied ?? [], 'trade_unit_ids', []);
+        if ($submission->type !== SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT || !$tradeUnitIds) {
+            return [];
+        }
+
+        return TradeUnit::whereIn('id', $tradeUnitIds)->orderBy('code')->get(['id', 'code', 'slug'])
+            ->map(fn (TradeUnit $tradeUnit) => [
+                'label' => $tradeUnit->code,
+                'url'   => route('grp.trade_units.units.show', [$tradeUnit->slug, 'tab' => 'attachments']),
+            ])
+            ->all();
+    }
+
     public function htmlResponse(SupplierSubmission $supplierSubmission, ActionRequest $request): Response
     {
         $supplier = $supplierSubmission->supplier;
@@ -136,6 +157,7 @@ class ShowSupplierSubmission extends OrgAction
                 'decided_by'   => $supplierSubmission->decidedBy?->contact_name,
                 'applied'      => $supplierSubmission->applied,
                 'applied_at'   => $supplierSubmission->applied_at,
+                'applied_to'   => $this->appliedTo($supplierSubmission),
                 'sent_by'      => $supplierSubmission->portalContact?->email,
                 'supplier'     => ['code' => $supplier->code, 'name' => $supplier->name, 'url' => route('grp.majordomo.redirect_supplier', [$supplier->id])],
                 'product'      => $supplierSubmission->supplierProduct ? ['code' => $supplierSubmission->supplierProduct->code, 'name' => $supplierSubmission->supplierProduct->name, 'cost' => $supplierSubmission->supplierProduct->cost, 'currency' => $supplier->currency?->code] : null,
