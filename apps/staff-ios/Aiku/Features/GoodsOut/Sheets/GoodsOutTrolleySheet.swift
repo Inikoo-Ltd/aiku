@@ -22,7 +22,7 @@ struct GoodsOutTrolleySheet: View {
         let choices = store.trolleyChoices(for: note.reference)
         let available = choices.filter(\.isAvailable)
         let unavailable = choices.filter { !$0.isAvailable }
-        SheetScaffold(title: startsPicking ? "Select trolley to start picking" : "Change trolley", subtitle: "Delivery note \(note.reference)") {
+        SheetScaffold(title: startsPicking ? "Select trolley to start picking" : "Change trolley", subtitle: L10n.format("Delivery note %@", note.reference)) {
             SheetSectionLabel("Available trolleys")
             if let error = store.resourcesError, choices.isEmpty {
                 GoodsOutLoadProblem(title: "Couldn’t load trolleys", message: error) {
@@ -61,11 +61,11 @@ struct GoodsOutTrolleySheet: View {
                 if startsPicking {
                     let previous = store.startPicking(note.reference, trolley: selected)
                     close()
-                    GoodsOutFeedback.done("Picking \(note.reference)\(selected.map { " with \($0)" } ?? "")", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(doneMessage(trolley: selected), previous: previous, toasts: toasts)
                 } else {
                     let previous = store.changeTrolley(note.reference, to: selected)
                     close()
-                    GoodsOutFeedback.done("Picking into \(selected ?? "no trolley")", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(doneMessage(trolley: selected), previous: previous, toasts: toasts)
                 }
             }
             .accessibilityIdentifier("goodsOut.confirmTrolley")
@@ -86,7 +86,7 @@ struct GoodsOutTrolleySheet: View {
     private func remoteButtons(hasAvailable: Bool) -> some View {
         let working = store.isWorking(on: note.reference)
         if hasAvailable, let selected {
-            AikuButton(startsPicking ? "Start picking with \(selected)" : "Use \(selected)", isLoading: working) {
+            AikuButton(startsPicking ? L10n.format("Start picking with %@", selected) : L10n.format("Use %@", selected), isLoading: working) {
                 send(store.trolleyID(named: selected), label: selected)
             }
             .accessibilityIdentifier("goodsOut.confirmTrolley")
@@ -100,14 +100,20 @@ struct GoodsOutTrolleySheet: View {
 
     private func send(_ trolleyID: Int?, label: String?) {
         let action: GoodsOutNoteAction = startsPicking ? .startPicking(trolleyID: trolleyID) : .changeTrolley(trolleyID: trolleyID)
-        let fallback = startsPicking ? "Picking \(note.reference)\(label.map { " with \($0)" } ?? "")" : "Picking into \(label ?? "no trolley")"
-        GoodsOutRun.action(action, on: note.reference, fallback: fallback, toasts: toasts, onDone: { close() })
+        GoodsOutRun.action(action, on: note.reference, fallback: doneMessage(trolley: label), toasts: toasts, onDone: { close() })
+    }
+
+    private func doneMessage(trolley: String?) -> String {
+        if startsPicking {
+            return trolley.map { L10n.format("Picking %@ with %@", note.reference, $0) } ?? L10n.format("Picking %@", note.reference)
+        }
+        return trolley.map { L10n.format("Picking into %@", $0) } ?? L10n.text("Picking into no trolley")
     }
 
     private var primaryTitle: String {
         if startsPicking {
-            return selected.map { "Start picking with \($0)" } ?? "Start picking"
+            return selected.map { L10n.format("Start picking with %@", $0) } ?? "Start picking"
         }
-        return selected.map { "Use \($0)" } ?? "Pick without a trolley"
+        return selected.map { L10n.format("Use %@", $0) } ?? "Pick without a trolley"
     }
 }

@@ -151,7 +151,7 @@ struct InboxView: View {
 
     private func accessibilityText(_ notification: MobileInboxNotification, detail: String?) -> String {
         let text = [InboxFormat.headline(notification), detail].compactMap { $0 }.joined(separator: ". ")
-        return notification.isUnread ? "Unread, \(text)" : text
+        return notification.isUnread ? L10n.format("Unread, %@", text) : text
     }
 
     private func open(_ notification: MobileInboxNotification) {

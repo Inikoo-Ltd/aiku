@@ -8,7 +8,7 @@ struct DispatchTrolleysView: View {
     @State private var appearance = 0
 
     var body: some View {
-        AppScreen(title: "Trolleys", kicker: "Goods out · \(session.warehouseLabel)") {
+        AppScreen(title: "Trolleys", kicker: L10n.format("Goods out · %@", session.warehouseLabel)) {
             ModuleTabs(.goodsOut, current: .trolleys)
         } content: {
             if warehouseStore.selectedID == nil {

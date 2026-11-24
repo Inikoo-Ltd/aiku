@@ -17,7 +17,7 @@ struct ClockingQrPanel: View {
                         .background(AikuColor.surface, in: Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(title)
+                        Text(L10n.text(title))
                             .font(.aiku(15, .bold))
                             .foregroundStyle(AikuColor.text)
                         Text(isFound ? "\(coordinates) — view on map" : "Detect your location before you scan")
@@ -78,7 +78,7 @@ struct ClockingCodePanel<Code: View>: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text(instruction)
+            Text(L10n.text(instruction))
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.text3)
                 .multilineTextAlignment(.center)
@@ -177,8 +177,8 @@ struct ClockingNoCodeMessage: View {
     var body: some View {
         SystemStateBody(
             icon: SystemStateIcon(icon: method == .pin ? .hash : (method == .barcode ? .barcode : .qrCode), foreground: AikuColor.text3, background: AikuColor.surface, size: 72, glyph: 34),
-            title: title,
-            message: Text(message),
+            title: L10n.text(title),
+            message: Text(L10n.text(message)),
             spacing: 14
         )
         .padding(.vertical, 16)

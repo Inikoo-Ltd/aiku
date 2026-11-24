@@ -19,14 +19,14 @@ struct SystemStatusBanner: View {
                 .fill(tone.foreground)
                 .frame(width: 8, height: 8)
                 .accessibilityHidden(true)
-            Text(text)
+            Text(L10n.text(text))
                 .font(.aiku(13, .semibold))
                 .foregroundStyle(tone.foreground)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             if let actionTitle, let action {
                 Button(action: action) {
-                    Text(actionTitle)
+                    Text(L10n.text(actionTitle))
                         .font(.aiku(13, .bold))
                         .foregroundStyle(tone.foreground)
                         .frame(minWidth: 44, minHeight: 44)
@@ -91,7 +91,7 @@ struct SystemStateBody<Extra: View>: View {
     var body: some View {
         VStack(spacing: spacing) {
             icon
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(titleSize, .bold))
                 .foregroundStyle(AikuColor.text)
                 .accessibilityAddTraits(.isHeader)

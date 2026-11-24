@@ -53,9 +53,9 @@ enum OvertimeCalculator {
         guard let minutes, minutes > 0 else { return "—" }
         let hours = minutes / 60
         let rest = minutes % 60
-        if hours > 0 && rest > 0 { return "\(hours)h \(rest)m" }
-        if hours > 0 { return "\(hours)h" }
-        return "\(rest)m"
+        if hours > 0 && rest > 0 { return L10n.formatInSavedLanguage("%1$lldh %2$lldm", hours, rest) }
+        if hours > 0 { return L10n.formatInSavedLanguage("%lldh", hours) }
+        return L10n.formatInSavedLanguage("%lldm", rest)
     }
 
     static func timeLabel(_ minutes: Int) -> String {
@@ -80,12 +80,15 @@ enum OvertimeCalculator {
         return formatter.string(from: moment)
     }
 
+    @MainActor
     static func timeRange(start: String?, end: String?, duration: Int?, in timeZone: TimeZone) -> String? {
         guard let startMinutes = minutesOfDay(start, in: timeZone) else { return nil }
         let endMinutes = minutesOfDay(end, in: timeZone) ?? duration.map { startMinutes + $0 }
         guard let endMinutes else { return timeLabel(startMinutes) }
         let nextDay = endMinutes >= minutesPerDay || endsNextDay(start: startMinutes, end: endMinutes)
-        return "\(timeLabel(startMinutes)) – \(timeLabel(endMinutes))\(nextDay ? " (next day)" : "")"
+        let from = timeLabel(startMinutes)
+        let to = timeLabel(endMinutes)
+        return nextDay ? L10n.format("%@ – %@ (next day)", from, to) : "\(from) – \(to)"
     }
 }
 

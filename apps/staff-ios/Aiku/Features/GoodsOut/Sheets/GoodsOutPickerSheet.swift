@@ -31,11 +31,12 @@ struct GoodsOutPickerSheet: View {
     var body: some View {
         SheetScaffold(
             title: note.picker == nil ? "Assign picker" : "Change picker",
-            subtitle: "Delivery note \(note.reference) · picker now: \(note.picker ?? "nobody")"
+            subtitle: note.picker.map { L10n.format("Delivery note %@ · picker now: %@", note.reference, $0) }
+                ?? L10n.format("Delivery note %@ · picker now: nobody", note.reference)
         ) {
-            SearchField(text: $search, placeholder: "Search pickers")
+            SearchField(text: $search, placeholder: L10n.text("Search pickers"))
             if choices.isEmpty {
-                HelperText("No picker matches “\(search)”.")
+                HelperText(L10n.format("No picker matches “%@”.", search))
             }
             ForEach(choices) { choice in
                 RadioCard(choice.title, subtitle: choice.subtitle, isSelected: selected == choice.id) {
@@ -52,17 +53,17 @@ struct GoodsOutPickerSheet: View {
             if store.isRemote {
                 remoteFooter
             } else {
-            AikuButton("Assign \(selected)") {
+            AikuButton(L10n.format("Assign %@", selected)) {
                 let previous = store.assignPicker(note.reference, picker: selected, packerSameAsPicker: packerSameAsPicker)
                 close()
-                GoodsOutFeedback.done("\(selected) is picking \(note.reference)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ is picking %@", selected, note.reference), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.assignPicker")
             if note.picker != nil {
                 AikuButton("Remove picker", look: GoodsOutActionKey.removePicker.look) {
                     let previous = store.removePicker(note.reference)
                     close()
-                    GoodsOutFeedback.done("Picker removed · \(note.reference) is back to To do", tone: .info, previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("Picker removed · %@ is back to To do", note.reference), tone: .info, previous: previous, toasts: toasts)
                 }
             }
             }
@@ -76,8 +77,16 @@ struct GoodsOutPickerSheet: View {
         }
     }
 
-    private var selectedTitle: String {
-        store.pickerChoices().first { $0.id == selected }?.title ?? "picker"
+    private var selectedName: String? {
+        store.pickerChoices().first { $0.id == selected }?.title
+    }
+
+    private var assignTitle: String {
+        selectedName.map { L10n.format("Assign %@", $0) } ?? L10n.text("Assign picker")
+    }
+
+    private var assignedMessage: String {
+        selectedName.map { L10n.format("%@ is picking %@", $0, note.reference) } ?? L10n.format("picker is picking %@", note.reference)
     }
 
     @ViewBuilder
@@ -92,14 +101,14 @@ struct GoodsOutPickerSheet: View {
             }
         }
         if let userID = Int(selected) {
-            AikuButton("Assign \(selectedTitle)", isLoading: working) {
-                GoodsOutRun.action(.setPicker(userID: userID), on: note.reference, fallback: "\(selectedTitle) is picking \(note.reference)", toasts: toasts, onDone: { close() })
+            AikuButton(assignTitle, isLoading: working) {
+                GoodsOutRun.action(.setPicker(userID: userID), on: note.reference, fallback: assignedMessage, toasts: toasts, onDone: { close() })
             }
             .accessibilityIdentifier("goodsOut.assignPicker")
         }
         if note.action(.removePicker) != nil {
             AikuButton("Remove picker", look: GoodsOutActionKey.removePicker.look) {
-                GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: "Picker removed · \(note.reference) is back to To do", toasts: toasts, onDone: { close() })
+                GoodsOutRun.action(.setPicker(userID: nil), on: note.reference, fallback: L10n.format("Picker removed · %@ is back to To do", note.reference), toasts: toasts, onDone: { close() })
             }
         }
     }

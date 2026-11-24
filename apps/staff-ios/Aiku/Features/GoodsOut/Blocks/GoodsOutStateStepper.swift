@@ -7,7 +7,7 @@ struct GoodsOutStateStepper: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
                 ForEach(GoodsOutStepper.steps(for: state)) { step in
-                    Text(step.title)
+                    Text(L10n.text(step.title))
                         .font(.aiku(11, .bold))
                         .foregroundStyle(foreground(step.status))
                         .lineLimit(1)
@@ -45,9 +45,9 @@ struct GoodsOutStateStepper: View {
 
     private func accessibilityText(_ step: GoodsOutStep) -> String {
         switch step.status {
-        case .done: "\(step.title), done"
-        case .current, .waiting: "\(step.title), current step"
-        case .upcoming: step.title
+        case .done: L10n.format("%@, done", L10n.text(step.title))
+        case .current, .waiting: L10n.format("%@, current step", L10n.text(step.title))
+        case .upcoming: L10n.text(step.title)
         }
     }
 }

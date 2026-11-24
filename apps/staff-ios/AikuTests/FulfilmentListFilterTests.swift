@@ -58,7 +58,7 @@ struct FulfilmentListFilterTests {
     private static let deliveriesPage = #"{"data":["# + deliveryRows[0] + #"],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":1},"counts":{"confirmed":1,"received":0,"booking_in":0,"booked_in":0,"not_received":0,"active":1}}"#
 
     private static func savedPage(_ rows: [String]) -> Data {
-        Data(#"{"data":["# + rows.joined(separator: ",") + #"],"meta":{}}"#.utf8)
+        Data((#"{"data":["# + rows.joined(separator: ",") + #"],"meta":{}}"#).utf8)
     }
 
     private static func decoded<Row: Decodable>(_ type: Row.Type, _ rows: [String]) throws -> [Row] {

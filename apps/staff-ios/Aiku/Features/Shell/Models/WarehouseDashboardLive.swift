@@ -66,6 +66,7 @@ struct WarehouseDashboardFigure: Hashable, Sendable {
     var link: ShellLink?
 }
 
+@MainActor
 enum WarehouseDashboardText {
     static let maxTilesPerRow = 4
 
@@ -76,20 +77,20 @@ enum WarehouseDashboardText {
     }
 
     static func goodsOutSubtitle(_ goodsOut: MobileWarehouseDashboard.GoodsOut) -> String {
-        "Dispatching backlog · \(goodsOut.inWarehouse.grouped) in the warehouse"
+        L10n.format("Dispatching backlog · %@ in the warehouse", goodsOut.inWarehouse.grouped)
     }
 
     static let goodsInSubtitle = "Incoming hub"
 
     static func inventorySubtitle(_ inventory: MobileWarehouseDashboard.Inventory) -> String {
         let count = inventory.numberCurrentOrgStocks
-        return "\(count.grouped) current \(count == 1 ? "SKO" : "SKOs")"
+        return L10n.format("%lld current SKOs", count)
     }
 
     static func dispatched(_ goodsOut: MobileWarehouseDashboard.GoodsOut) -> WarehouseDashboardFigure? {
         guard let dispatched = goodsOut.dispatchedToday else { return nil }
-        let today = "\(dispatched.count.grouped) today"
-        let value = dispatched.yesterdayByNow.map { "\(today) · \($0.grouped) yesterday by now" } ?? today
+        let today = L10n.format("%@ today", dispatched.count.grouped)
+        let value = dispatched.yesterdayByNow.map { "\(today) · \(L10n.format("%@ yesterday by now", $0.grouped))" } ?? today
         return WarehouseDashboardFigure(label: "Dispatched", value: value)
     }
 

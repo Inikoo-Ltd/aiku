@@ -51,9 +51,9 @@ struct ShellMenuClocking: Hashable, Sendable {
         let today = clocking.today
         isClockedIn = today.isClockedIn
         if today.isClockedIn {
-            subtitle = today.trackers.last.map { "Clocked in since \(ClockingFormat.shortTime($0.inAt))" } ?? "Clocked in"
+            subtitle = today.trackers.last.map { L10n.format("Clocked in since %@", ClockingFormat.shortTime($0.inAt)) } ?? L10n.text("Clocked in")
         } else {
-            subtitle = "Clocked out"
+            subtitle = L10n.text("Clocked out")
         }
     }
 }
@@ -61,8 +61,9 @@ struct ShellMenuClocking: Hashable, Sendable {
 enum ShellClockingText {
     static let module = "Clocking & Attendance"
 
+    @MainActor
     static func kicker(_ organisation: String) -> String {
-        organisation.isEmpty ? module : "\(module) · \(organisation)"
+        organisation.isEmpty ? L10n.text(module) : L10n.format("%@ · %@", L10n.text(module), organisation)
     }
 }
 
@@ -74,6 +75,7 @@ struct ShellMenuGroup: Identifiable, Hashable, Sendable {
     let items: [ShellMenuItem]
 }
 
+@MainActor
 enum ShellMenuCatalog {
     static let allGroups: [ShellMenuGroup] = [
         ShellMenuGroup(id: "inventory", title: "Inventory", icon: .faPalletAlt, items: [
@@ -117,10 +119,10 @@ enum ShellMenuCatalog {
             let visible = group.items.filter { $0.requirement.isMet(by: modules) }.map { item in
                 var item = item
                 if item.id == "goodsOut.backlog", goodsOutUnassigned > 0 {
-                    item.badge = .pill(Chip("\(goodsOutUnassigned) unassigned", .warn))
+                    item.badge = .pill(Chip(L10n.format("%lld unassigned", goodsOutUnassigned), .warn))
                 }
                 if item.id == "goodsIn.stockDeliveries", goodsInReceived > 0 {
-                    item.badge = .pill(Chip("\(goodsInReceived) received", .success))
+                    item.badge = .pill(Chip(L10n.format("%lld received", goodsInReceived), .success))
                 }
                 if item.id == "clocking.clocking", let clocking {
                     item.subtitle = clocking.subtitle

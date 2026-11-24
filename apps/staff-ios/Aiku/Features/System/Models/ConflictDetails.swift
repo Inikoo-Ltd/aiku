@@ -109,7 +109,7 @@ enum ConflictDetails {
             notes.append(ConflictFact(label: "Stock check", value: task))
         }
         if let blockedBy = entry.blockedBySequence {
-            notes.append(ConflictFact(label: "Waits for", value: "Your earlier action \(blockedBy)"))
+            notes.append(ConflictFact(label: "Waits for", value: L10n.formatInSavedLanguage("Your earlier action %lld", blockedBy)))
         }
         return notes
     }

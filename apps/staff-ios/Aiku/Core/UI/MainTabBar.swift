@@ -7,7 +7,7 @@ struct MainTabBar: View {
     private let inbox = ShellInboxStore.shared
 
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             item(.home, icon: .home, title: "Home")
             item(.work, icon: .work, title: "My work", badge: workBadges.myWorkCount)
             if session.canScan {
@@ -39,7 +39,9 @@ struct MainTabBar: View {
                     }
                 Text(L10n.text(title))
                     .font(.aiku(11, .semibold))
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(isSelected ? AikuColor.navAccent : AikuColor.onNav2)
             .frame(maxWidth: .infinity, minHeight: 52)
@@ -50,7 +52,8 @@ struct MainTabBar: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
-        .accessibilityLabel(badge > 0 ? "\(title), \(badge)" : title)
+        .padding(.top, 4)
+        .accessibilityLabel(badge > 0 ? "\(L10n.text(title)), \(badge)" : L10n.text(title))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier("tab.\(title)")
     }

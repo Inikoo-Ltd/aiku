@@ -49,15 +49,16 @@ enum LeaveCalculator {
         (type?.value ?? 1) < 1
     }
 
+    @MainActor
     static func daysLabel(_ days: Double) -> String {
-        let text = days.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(days)) : String(format: "%.1f", days)
-        return days == 1 ? "1 day" : "\(text) days"
+        if days.truncatingRemainder(dividingBy: 1) == 0 { return L10n.format("%lld days", Int(days)) }
+        return L10n.format("%@ days", String(format: "%.1f", days))
     }
 
     static func rangeLabel(start: String?, end: String?) -> String {
         guard let start, let first = ClockingMapper.parseDay(start) else { return "—" }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = L10n.dateLocale
         formatter.timeZone = TimeZone(identifier: "UTC")!
         formatter.dateFormat = "EEE dd MMM yyyy"
         let startText = formatter.string(from: first)

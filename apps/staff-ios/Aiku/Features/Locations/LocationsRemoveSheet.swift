@@ -7,11 +7,11 @@ struct LocationsRemoveSheet: View {
     @State private var selected: Set<String> = []
 
     var body: some View {
-        SheetScaffold(title: "Remove SKOs from \(location.code)", subtitle: "Choose the SKOs to remove") {
+        SheetScaffold(title: L10n.format("Remove SKOs from %@", location.code), subtitle: "Choose the SKOs to remove") {
             ForEach(location.slots) { slot in
                 RadioCard(
                     slot.skoReference,
-                    subtitle: "\(slot.type.title) · \(slot.quantityText) in location",
+                    subtitle: L10n.format("%@ · %@ in location", L10n.text(slot.type.title), slot.quantityText),
                     isSelected: selected.contains(slot.skoReference)
                 ) {
                     selected.formSymmetricDifference([slot.skoReference])
@@ -27,7 +27,7 @@ struct LocationsRemoveSheet: View {
                 .background(AikuColor.dangerSoft, in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityAddTraits(.isStaticText)
         } footer: {
-            AikuButton(selected.isEmpty ? "Remove SKOs" : "Remove \(LocationsFormat.skos(selected.count))", look: AikuButtonLook(.dangerStrong, icon: .trash)) {
+            AikuButton(selected.isEmpty ? "Remove SKOs" : L10n.format("Remove %lld SKOs", selected.count), look: AikuButtonLook(.dangerStrong, icon: .trash)) {
                 onRemove(selected)
             }
             .disabled(selected.isEmpty)

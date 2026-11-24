@@ -9,7 +9,7 @@ struct LocationsMovementsView: View {
         if let id = store.warehouse.location(code: code)?.remote?.id {
             LocationsMovementsList(code: code, feed: LocationsMovementsFeed(locationID: id))
         } else {
-            AppScreen(title: "Stock movements", kicker: "Location \(code)") {
+            AppScreen(title: "Stock movements", kicker: L10n.format("Location %@", code)) {
                 EmptyState(icon: .history, title: "Location not loaded", message: "Open the location again to see its stock movements.")
             }
         }
@@ -22,7 +22,7 @@ private struct LocationsMovementsList: View {
     @Environment(\.apiClient) private var apiClient
 
     var body: some View {
-        AppScreen(title: "Stock movements", kicker: feed.total.map { "Location \(code) · \($0.locationsGrouped)" } ?? "Location \(code)") {
+        AppScreen(title: "Stock movements", kicker: feed.total.map { L10n.format("Location %@ · %@", code, $0.locationsGrouped) } ?? L10n.format("Location %@", code)) {
             if let message = feed.loadError {
                 InlineAlert(title: "Couldn’t load stock movements", message: message)
             }

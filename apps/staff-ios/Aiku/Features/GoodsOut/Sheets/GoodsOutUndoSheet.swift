@@ -9,7 +9,7 @@ struct GoodsOutUndoSheet: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        SheetScaffold(title: step.question, subtitle: "Delivery note \(note.reference) goes back to \(step.target.title.lowercased())") {
+        SheetScaffold(title: step.question, subtitle: goesBackText) {
             if note.isRemote, step != .setAsPicked {
                 HelperText(remoteHint)
             } else {
@@ -23,12 +23,30 @@ struct GoodsOutUndoSheet: View {
                 }
                 let previous = store.undo(note.reference, step: step)
                 close()
-                GoodsOutFeedback.done("\(note.reference) is back to \(step.target.title.lowercased())", tone: .info, previous: previous, toasts: toasts, offersUndo: false)
+                GoodsOutFeedback.done(isBackText, tone: .info, previous: previous, toasts: toasts, offersUndo: false)
             }
             .accessibilityIdentifier("goodsOut.confirmUndo")
             AikuButton("Cancel", kind: .tertiary) {
                 present(.moreActions)
             }
+        }
+    }
+
+    private var goesBackText: String {
+        switch step {
+        case .setAsPicked: L10n.format("Delivery note %@ goes back to picking", note.reference)
+        case .packing: L10n.format("Delivery note %@ goes back to picked", note.reference)
+        case .unpack: L10n.format("Delivery note %@ goes back to packing", note.reference)
+        case .dispatch: L10n.format("Delivery note %@ goes back to finalised", note.reference)
+        }
+    }
+
+    private var isBackText: String {
+        switch step {
+        case .setAsPicked: L10n.format("%@ is back to picking", note.reference)
+        case .packing: L10n.format("%@ is back to picked", note.reference)
+        case .unpack: L10n.format("%@ is back to packing", note.reference)
+        case .dispatch: L10n.format("%@ is back to finalised", note.reference)
         }
     }
 
@@ -44,7 +62,7 @@ struct GoodsOutUndoSheet: View {
         let reference = note.reference
         switch step {
         case .setAsPicked:
-            GoodsOutRun.action(.undoSetAsPicked, on: reference, fallback: "\(reference) is back to picking", toasts: toasts) { close() }
+            GoodsOutRun.action(.undoSetAsPicked, on: reference, fallback: L10n.format("%@ is back to picking", reference), toasts: toasts) { close() }
         case .packing:
             GoodsOutRun.action(.undoPacking, on: reference, fallback: "Packing undone. The delivery note is picked again.", toasts: toasts) { close() }
         case .unpack:

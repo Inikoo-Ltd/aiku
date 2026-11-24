@@ -29,7 +29,7 @@ struct InventorySkoListScreen: View {
     var body: some View {
         AppScreen(
             title: scope.listTitle,
-            kicker: isAbnormalities ? "SKOs · Abnormalities" : "Inventory · \(session.warehouseLabel)",
+            kicker: isAbnormalities ? "SKOs · Abnormalities" : L10n.format("Inventory · %@", session.warehouseLabel),
             actions: isAbnormalities ? [] : [
                 HeaderAction(.filter, label: "Filter", badge: warehouse == nil ? store.filter.activeCount : feed.filter.activeCount) { isFiltering = true }
             ]
@@ -119,7 +119,7 @@ struct InventorySkoListScreen: View {
         }
         .fullScreenCover(isPresented: $isScanning, onDismiss: focusSearchIfNeeded) {
             InventoryScanCover(
-                kicker: "SKOs · \(session.warehouseLabel)",
+                kicker: L10n.format("SKOs · %@", session.warehouseLabel),
                 onClose: { isScanning = false },
                 onScan: {
                     isScanning = false
@@ -198,7 +198,7 @@ struct InventorySkoListScreen: View {
     @ViewBuilder
     private func emptyState(filterCount: Int, reset: @escaping () -> Void) -> some View {
         if !search.isEmpty, !isAbnormalities {
-            EmptyState(icon: .search, title: "No SKOs match “\(search)”", message: "Try a code, name or supplier product code.")
+            EmptyState(icon: .search, title: L10n.format("No SKOs match “%@”", search), message: "Try a code, name or supplier product code.")
         } else if filterCount > 0 {
             EmptyState(icon: .filter, title: "No SKOs match the filters", actionTitle: "Reset filters", action: reset)
         } else {
@@ -224,7 +224,7 @@ struct InventorySkoListScreen: View {
             } else if feed.items.count == 1, let only = feed.items.first {
                 router.open(InventoryRoute.skoID(id: only.skoID))
             } else if feed.items.isEmpty {
-                lookupMessage = "No SKO for \(code)"
+                lookupMessage = L10n.format("No SKO for %@", code)
             }
         }
     }

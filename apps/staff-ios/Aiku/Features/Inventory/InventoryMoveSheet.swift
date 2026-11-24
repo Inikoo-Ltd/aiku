@@ -34,23 +34,23 @@ struct InventoryMoveSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Move stock · \(sko.reference)", subtitle: "Between two of its locations") {
+        SheetScaffold(title: L10n.format("Move stock · %@", sko.reference), subtitle: "Between two of its locations") {
             SheetSectionLabel("From")
             ForEach(sko.locations.filter { $0.quantity > 0 }) { location in
-                RadioCard("From \(location.code)", subtitle: "\(location.quantityText) in location", isSelected: location.code == source) {
+                RadioCard(L10n.format("From %@", location.code), subtitle: L10n.format("%@ in location", location.quantityText), isSelected: location.code == source) {
                     selectSource(location)
                 }
             }
             SheetSectionLabel("To")
             ForEach(sko.locations.filter { $0.code != source }) { location in
-                RadioCard("To \(location.code)", subtitle: "\(location.quantityText) in location", isSelected: location.code == destination) {
+                RadioCard(L10n.format("To %@", location.code), subtitle: L10n.format("%@ in location", location.quantityText), isSelected: location.code == destination) {
                     destination = location.code
                     error = nil
                 }
             }
             InventoryQuantityField(title: "Quantity", value: $quantity, range: 1...max(1, available))
             if available > 0, quantity != available {
-                LinkButton("Move all \(available)") {
+                LinkButton(L10n.format("Move all %@", String(available))) {
                     quantity = available
                 }
                 .frame(minHeight: 44)
@@ -67,7 +67,7 @@ struct InventoryMoveSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Moving…" : "Move \(quantity)", icon: .next) {
+            AikuButton(isSaving ? "Moving…" : L10n.format("Move %@", String(quantity)), icon: .next) {
                 save()
             }
             .disabled(!canSave || isSaving)

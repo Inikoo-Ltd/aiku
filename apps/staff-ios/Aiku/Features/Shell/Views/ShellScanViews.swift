@@ -10,7 +10,7 @@ struct ShellScanResultContent: View {
                 AppIcon.check.image
                     .font(.system(size: 18, weight: .semibold))
                     .accessibilityHidden(true)
-                (Text("Scanned ") + Text(target.code).bold() + Text(" · it’s \(target.kind.article)"))
+                Text.emphasising(target.code, in: target.kind.scanned(target.code))
                     .font(.aiku(14))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -41,7 +41,7 @@ struct ShellScanResultContent: View {
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(target.kind.fallbackDetail) found")
+            .accessibilityLabel(target.kind.found)
             if target.kind == .sko {
                 SectionHeading("Locations", detail: "\(target.rows.count)")
                 if target.rows.isEmpty {
@@ -76,7 +76,7 @@ struct ShellScanCapabilities: View {
                             .font(.system(size: 17))
                             .foregroundStyle(AikuColor.text2)
                             .accessibilityHidden(true)
-                        Text(capability.text)
+                        Text(L10n.text(capability.text))
                             .font(.aiku(14))
                             .foregroundStyle(AikuColor.text)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,7 +145,7 @@ struct ShellScanOutcomeContent: View {
             case .notFound(let code):
                 ShellScanNotFoundCard(code: code, onTypeCode: onTypeCode)
             case .failed(let code, let message):
-                InlineAlert(title: "Couldn’t look up \(code)", message: message) {
+                InlineAlert(title: L10n.format("Couldn’t look up %@", code), message: message) {
                     LinkButton("Try again", action: onRetry)
                 }
             case .needsWarehouse:
@@ -173,7 +173,7 @@ struct ShellScanNeedsWarehouse: View {
 
     private var message: String {
         if let loadError = warehouseStore.loadError {
-            return "A scan looks the code up in your warehouse, and the warehouses didn’t load: \(loadError)"
+            return L10n.format("A scan looks the code up in your warehouse, and the warehouses didn’t load: %@", loadError)
         }
         return "A scan looks the code up in the warehouse you work in."
     }

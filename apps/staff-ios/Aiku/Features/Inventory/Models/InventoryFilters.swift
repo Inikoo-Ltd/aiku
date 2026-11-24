@@ -35,7 +35,9 @@ enum InventorySkoScope: String, CaseIterable, Hashable, Sendable {
         case .abnormalities: "No abnormalities"
         case .belowMinimum: "No SKOs below minimum"
         case .negative: "No SKOs with negative stock"
-        case .current, .discontinued, .all: "No \(title.lowercased()) SKOs"
+        case .current: "No current SKOs"
+        case .discontinued: "No discontinued SKOs"
+        case .all: "No all SKOs"
         }
     }
 
@@ -90,6 +92,23 @@ enum InventorySkoSort: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    @MainActor
+    private var sortedByText: String {
+        switch self {
+        case .reference: L10n.text("sorted by reference")
+        case .name: L10n.text("sorted by name")
+        case .stockLowFirst: L10n.text("sorted by stock (low first)")
+        case .stockValue: L10n.text("sorted by stock value")
+        case .family: L10n.text("sorted by family")
+        }
+    }
+
+    @MainActor
+    func summary(activeFilters: Int) -> String {
+        let filters = activeFilters == 0 ? L10n.text("No filters") : L10n.format("%lld filters", activeFilters)
+        return [filters, sortedByText].joined(separator: " · ")
+    }
+
     var remoteValue: String? {
         switch self {
         case .reference: nil
@@ -108,9 +127,9 @@ struct InventoryLiveSkoFilter: Hashable, Sendable {
 
     var activeCount: Int { familyID == nil ? 0 : 1 }
 
+    @MainActor
     var summary: String {
-        let filters = activeCount == 0 ? "No filters" : "1 filter"
-        return "\(filters) · sorted by \(sort.title.lowercased())"
+        sort.summary(activeFilters: activeCount)
     }
 
     func query(scope: InventorySkoScope, search: String, page: Int = 1, perPage: Int = 50) -> MobileOrgStocksQuery {
@@ -137,10 +156,9 @@ struct InventorySkoFilter: Hashable, Sendable {
         states.count + statuses.count + familyCodes.count + areas.count + locationTypes.count
     }
 
+    @MainActor
     var summary: String {
-        let count = activeCount
-        let filters = count == 0 ? "No filters" : count == 1 ? "1 filter" : "\(count) filters"
-        return "\(filters) · sorted by \(sort.title.lowercased())"
+        sort.summary(activeFilters: activeCount)
     }
 
     func matches(_ sko: InventorySko) -> Bool {

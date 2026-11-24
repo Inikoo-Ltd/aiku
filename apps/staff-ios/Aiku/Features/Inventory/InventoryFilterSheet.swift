@@ -27,14 +27,14 @@ struct InventoryFilterSheet: View {
         ) {
             InventoryFilterSection("SKO state", hint: InventoryFilterText.hint(filter.states.count)) {
                 ForEach(InventorySkoState.allCases, id: \.self) { state in
-                    InventoryFilterOption(state.title, dot: state.dotHex, isOn: filter.states.contains(state)) {
+                    InventoryFilterOption(L10n.text(state.title), dot: state.dotHex, isOn: filter.states.contains(state)) {
                         filter.states = InventorySkoFilter.toggled(filter.states, state)
                     }
                 }
             }
             InventoryFilterSection("Stock status", hint: InventoryFilterText.hint(filter.statuses.count)) {
                 ForEach(InventoryStockStatus.allCases, id: \.self) { status in
-                    InventoryFilterOption(status.title, dot: status.dotHex, isOn: filter.statuses.contains(status)) {
+                    InventoryFilterOption(L10n.text(status.title), dot: status.dotHex, isOn: filter.statuses.contains(status)) {
                         filter.statuses = InventorySkoFilter.toggled(filter.statuses, status)
                     }
                 }
@@ -55,7 +55,7 @@ struct InventoryFilterSheet: View {
             }
             InventoryFilterSection("Location type", hint: InventoryFilterText.hint(filter.locationTypes.count)) {
                 ForEach(InventoryLocationType.allCases, id: \.self) { type in
-                    InventoryFilterOption(type.title, isOn: filter.locationTypes.contains(type)) {
+                    InventoryFilterOption(L10n.text(type.title), isOn: filter.locationTypes.contains(type)) {
                         filter.locationTypes = InventorySkoFilter.toggled(filter.locationTypes, type)
                     }
                 }
@@ -87,11 +87,11 @@ struct InventoryLiveFilterSheet: View {
     var body: some View {
         InventoryFilterSheetLayout(
             summary: filter.summary,
-            showTitle: count.map(InventoryFilterText.showTitle) ?? "Show SKOs",
+            showTitle: count.map { InventoryFilterText.showTitle($0) } ?? "Show SKOs",
             onReset: { filter = InventoryLiveSkoFilter() },
             onShow: { onApply(filter) }
         ) {
-            InventoryFilterSection("SKO family", hint: filter.familyID == nil ? "Any" : "1 selected") {
+            InventoryFilterSection("SKO family", hint: InventoryFilterText.hint(filter.familyID == nil ? 0 : 1)) {
                 if let families {
                     ForEach(families) { family in
                         InventoryFilterOption(family.title, isOn: filter.familyID == family.id) {
@@ -121,13 +121,14 @@ struct InventoryLiveFilterSheet: View {
     }
 }
 
+@MainActor
 private enum InventoryFilterText {
     static func showTitle(_ count: Int) -> String {
-        count == 1 ? "Show 1 SKO" : "Show \(count.grouped) SKOs"
+        L10n.format("Show %lld SKOs", count)
     }
 
     static func hint(_ count: Int) -> String {
-        count == 0 ? "Any" : "\(count) selected"
+        count == 0 ? L10n.text("Any") : L10n.format("%lld selected", count)
     }
 }
 
@@ -135,9 +136,9 @@ private struct InventorySortSection: View {
     @Binding var sort: InventorySkoSort
 
     var body: some View {
-        InventoryFilterSection("Sort by", hint: "Choose one") {
+        InventoryFilterSection("Sort by", hint: L10n.text("Choose one")) {
             ForEach(InventorySkoSort.allCases, id: \.self) { option in
-                InventoryFilterOption(option.title, isOn: sort == option) {
+                InventoryFilterOption(L10n.text(option.title), isOn: sort == option) {
                     sort = option
                 }
             }
@@ -207,7 +208,7 @@ private struct InventoryFilterSection<Options: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(label.uppercased())
+                Text(L10n.text(label).uppercased(with: LanguageStore.shared.locale))
                     .font(.aiku(13, .bold))
                     .tracking(0.5)
                     .foregroundStyle(AikuColor.text3)

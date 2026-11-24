@@ -15,7 +15,7 @@ struct FulfilmentDeliveriesView: View {
 
     var body: some View {
         @Bindable var feed = feed
-        AppScreen(title: "Fulfilment deliveries", kicker: "Goods in · \(session.warehouseLabel)") {
+        AppScreen(title: "Fulfilment deliveries", kicker: L10n.format("Goods in · %@", session.warehouseLabel)) {
             ModuleTabs(.goodsIn, current: .fulfilmentDeliveries)
         } content: {
             FilterChipBar(options: PalletDeliveryFilter.allCases, selection: $feed.filter, title: \.title) { filter in
@@ -29,7 +29,7 @@ struct FulfilmentDeliveriesView: View {
                 onClear: { feed.listFilter = ListFilter() }
             )
             if let lookingUpCode {
-                InlineAlert(tone: .info, title: "Looking up \(lookingUpCode)…")
+                InlineAlert(tone: .info, title: L10n.format("Looking up %@…", lookingUpCode))
             }
             if let message = feed.loadError {
                 GoodsOutLoadProblem(title: "Couldn’t load the fulfilment deliveries", message: message) {
@@ -103,7 +103,7 @@ struct FulfilmentDeliveriesView: View {
         } else if isCurrent, feed.loadError == nil {
             EmptyState(
                 icon: .stockDelivery,
-                title: search.isEmpty ? "No fulfilment deliveries in this state." : "No delivery matches “\(search)”"
+                title: search.isEmpty ? "No fulfilment deliveries in this state." : L10n.format("No delivery matches “%@”", search)
             )
         } else if feed.loadError == nil {
             ProgressView()
@@ -131,7 +131,7 @@ struct FulfilmentDeliveriesView: View {
                 open(delivery.id, delivery.reference)
             } else {
                 ScanFeedback.shared.rejected()
-                toasts.show("\(scanned) is not a fulfilment delivery in this warehouse", tone: .info)
+                toasts.show(L10n.format("%@ is not a fulfilment delivery in this warehouse", scanned), tone: .info)
             }
         } catch {
             toasts.show(ShellScanCatalog.problem(error), tone: .danger)

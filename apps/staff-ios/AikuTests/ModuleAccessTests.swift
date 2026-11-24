@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct ModuleAccessTests {
     private func warehouse(_ json: String) throws -> MobileWarehouse {
         let body = #"{"id":3,"code":"WH1","name":"Main","organisation":{"id":1,"name":"AW UK"},"can":\#(json)}"#

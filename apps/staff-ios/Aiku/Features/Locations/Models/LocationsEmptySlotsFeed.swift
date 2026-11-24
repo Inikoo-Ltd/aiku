@@ -12,6 +12,14 @@ enum LocationsEmptySlotsKind: Hashable, Sendable {
         }
     }
 
+    @MainActor
+    func screenTitle(total: String) -> String {
+        switch self {
+        case .toRemove: L10n.format("To remove now · %@", total)
+        case .removedLastWeek: L10n.format("Removed automatically · %@", total)
+        }
+    }
+
     var remoteKind: MobileEmptyLocationSlotsKind {
         switch self {
         case .toRemove: .toRemove

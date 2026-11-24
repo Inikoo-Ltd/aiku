@@ -140,13 +140,13 @@ final class ScreenCache: @unchecked Sendable {
 }
 
 enum LastUpdatedText {
-    static func label(for updatedAt: Date, now: Date = .now, timeZone: TimeZone = .current, locale: Locale = .current) -> String {
+    static func label(for updatedAt: Date, now: Date = .now, timeZone: TimeZone = .current, locale: Locale = L10n.dateLocale) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.timeZone = timeZone
         formatter.dateFormat = calendar.isDate(updatedAt, inSameDayAs: now) ? "HH:mm" : "d MMM HH:mm"
-        return "Last updated \(formatter.string(from: updatedAt))"
+        return L10n.formatInSavedLanguage("Last updated %@", formatter.string(from: updatedAt))
     }
 }

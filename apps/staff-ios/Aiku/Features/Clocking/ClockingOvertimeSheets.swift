@@ -18,9 +18,12 @@ struct ClockingOvertimeRequestSheet: View {
     private var duration: Int { OvertimeCalculator.durationMinutes(start: draft.startMinutes, end: draft.endMinutes) }
 
     private var durationText: String {
-        guard duration > 0 else { return "Pick when you started and finished" }
-        let nextDay = OvertimeCalculator.endsNextDay(start: draft.startMinutes, end: draft.endMinutes) ? " · ends the next day" : ""
-        return "Duration \(OvertimeCalculator.durationLabel(duration))\(nextDay)"
+        guard duration > 0 else { return L10n.text("Pick when you started and finished") }
+        let length = OvertimeCalculator.durationLabel(duration)
+        if OvertimeCalculator.endsNextDay(start: draft.startMinutes, end: draft.endMinutes) {
+            return L10n.format("Duration %@ · ends the next day", length)
+        }
+        return L10n.format("Duration %@", length)
     }
 
     private var dateBinding: Binding<Date> {
@@ -58,22 +61,22 @@ struct ClockingOvertimeRequestSheet: View {
                 }
             }
             VStack(spacing: 0) {
-                DatePicker("Date worked", selection: dateBinding, displayedComponents: .date)
+                DatePicker(L10n.text("Date worked"), selection: dateBinding, displayedComponents: .date)
                     .padding(.horizontal, 14)
                     .frame(minHeight: 52)
                 RowDivider()
-                DatePicker("Start time", selection: timeBinding(\.startMinutes), displayedComponents: .hourAndMinute)
+                DatePicker(L10n.text("Start time"), selection: timeBinding(\.startMinutes), displayedComponents: .hourAndMinute)
                     .padding(.horizontal, 14)
                     .frame(minHeight: 52)
                 RowDivider()
-                DatePicker("End time", selection: timeBinding(\.endMinutes), displayedComponents: .hourAndMinute)
+                DatePicker(L10n.text("End time"), selection: timeBinding(\.endMinutes), displayedComponents: .hourAndMinute)
                     .padding(.horizontal, 14)
                     .frame(minHeight: 52)
             }
             .font(.aiku(15))
             .foregroundStyle(AikuColor.text)
             .tint(AikuColor.primary)
-            .environment(\.locale, Locale(identifier: "en_GB"))
+            .environment(\.locale, L10n.dateLocale)
             .cardSurface()
             Text(durationText)
                 .font(.aiku(13))

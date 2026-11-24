@@ -13,6 +13,7 @@ struct LanguageStoreTests {
 
     private func bundle(with translations: [String: [String: String]]) throws -> Bundle {
         let root = FileManager.default.temporaryDirectory.appending(path: "aiku-language-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         for (language, strings) in translations {
             let folder = root.appending(path: "\(language).lproj")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -139,6 +140,20 @@ struct LanguageStoreTests {
         await store.sendPending { _ in throw FormValidationError(message: "The selected language is invalid.", fields: ["language": "The selected language is invalid."]) }
 
         #expect(store.pendingID == nil)
+        #expect(store.languageID == "de")
+    }
+
+    @Test func aProfileAskedBeforeTheChoiceWasSavedCannotUndoIt() async throws {
+        let store = LanguageStore(defaults: isolatedDefaults(), bundle: try bundle(with: [:]), preferredLanguages: ["en"])
+        store.applyAccountLanguage("bg")
+        let askedBeforeSaving = Date.now.addingTimeInterval(-1)
+
+        store.select("en")
+        await store.sendPending { _ in "en" }
+        store.applyAccountLanguage("bg", askedAt: askedBeforeSaving)
+        #expect(store.languageID == "en")
+
+        store.applyAccountLanguage("de", askedAt: .now.addingTimeInterval(1))
         #expect(store.languageID == "de")
     }
 

@@ -25,7 +25,7 @@ struct GoodsOutAskCRMView: View {
     @ViewBuilder
     private var sampleConversation: some View {
         if let note = store.note(reference) {
-            AppScreen(title: "Ask CRM", kicker: "Delivery note \(note.reference) · \(note.state.title)") {
+            AppScreen(title: "Ask CRM", kicker: L10n.format("Delivery note %@ · %@", note.reference, note.state.title)) {
                 if note.messages.isEmpty, note.tasks.isEmpty {
                     EmptyState(icon: .chat, title: "No messages yet", message: "Ask customer services about this delivery note.")
                 }
@@ -124,8 +124,8 @@ private struct GoodsOutAddTaskSheet: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        SheetScaffold(title: "Add task", subtitle: "A staff task linked to delivery note \(note.reference)") {
-            AikuTextField("Task", text: $title, placeholder: "Recount B-01-04", error: showsError ? "Describe the task" : nil)
+        SheetScaffold(title: "Add task", subtitle: L10n.format("A staff task linked to delivery note %@", note.reference)) {
+            AikuTextField("Task", text: $title, placeholder: L10n.text("Recount B-01-04"), error: showsError ? "Describe the task" : nil)
             HelperText("The task is assigned to you. Customer services and supervisors see it on the delivery note.")
         } footer: {
             AikuButton("Add task") {
@@ -135,7 +135,7 @@ private struct GoodsOutAddTaskSheet: View {
                     return
                 }
                 close()
-                GoodsOutFeedback.done("Task added to \(note.reference)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("Task added to %@", note.reference), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.confirmAddTask")
             AikuButton("Cancel", kind: .tertiary, action: close)

@@ -13,8 +13,9 @@ struct ShellOrganisation: Identifiable, Hashable, Sendable {
     let name: String
     let warehouses: [ShellWarehouse]
 
+    @MainActor
     var warehouseCountText: String {
-        warehouses.count == 1 ? "1 warehouse" : "\(warehouses.count) warehouses"
+        L10n.format("%lld warehouses", warehouses.count)
     }
 }
 
@@ -25,6 +26,7 @@ struct ShellWarehouseChoice: Hashable, Sendable {
     var warehouseID: Int? = nil
 }
 
+@MainActor
 enum ShellWarehouseDirectory {
     static let organisations: [ShellOrganisation] = [
         ShellOrganisation(id: "uk", initials: "UK", name: "AW UK", warehouses: [
@@ -69,7 +71,7 @@ enum ShellWarehouseDirectory {
 
     static func confirmTitle(selected: ShellWarehouseChoice, current: ShellWarehouseChoice) -> String {
         selected == current
-            ? "Keep \(current.organisation) · \(current.warehouseName)"
-            : "Switch to \(selected.organisation) · \(selected.warehouseName)"
+            ? L10n.format("Keep %@ · %@", current.organisation, current.warehouseName)
+            : L10n.format("Switch to %@ · %@", selected.organisation, selected.warehouseName)
     }
 }

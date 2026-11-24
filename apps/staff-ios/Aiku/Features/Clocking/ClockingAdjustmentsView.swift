@@ -44,7 +44,7 @@ struct ClockingAdjustmentsView: View {
         .aikuConfirm(
             "Cancel this request?",
             isPresented: Binding(get: { cancelling != nil }, set: { if !$0 { cancelling = nil } }),
-            message: "Your clocking adjustment for \(cancelling.flatMap { LeaveCalculator.rangeLabel(start: $0.date, end: nil) } ?? "this day") will be withdrawn.",
+            message: cancelling.flatMap { LeaveCalculator.rangeLabel(start: $0.date, end: nil) }.map { L10n.format("Your clocking adjustment for %@ will be withdrawn.", $0) } ?? L10n.text("Your clocking adjustment for this day will be withdrawn."),
             confirmTitle: "Cancel request",
             cancelTitle: "Keep request",
             isDestructive: true
@@ -68,7 +68,7 @@ struct ClockingAdjustmentsView: View {
                 Spacer(minLength: 8)
                 StatusChip(request.statusLabel ?? request.status?.capitalized ?? "", tone: request.tone)
             }
-            Text("Recorded: \(range(request.originalStartTimeLocal, request.originalEndTimeLocal) ?? "No clockings")")
+            Text("Recorded: \(range(request.originalStartTimeLocal, request.originalEndTimeLocal) ?? L10n.text("No clockings"))")
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
             Text("Requested: \(range(request.requestedStartTimeLocal, request.requestedEndTimeLocal) ?? "—")")

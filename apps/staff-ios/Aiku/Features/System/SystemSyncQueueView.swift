@@ -13,7 +13,7 @@ struct SystemSyncQueueView: View {
                 InlineAlert(
                     tone: .warn,
                     icon: .warning,
-                    title: OfflineTexts.count(offline.needsYouCount, "action needs you", "actions need you"),
+                    title: L10n.format("%lld actions need you", offline.needsYouCount),
                     message: "Aiku could not record these exactly as you did them. Open each one to see what to do."
                 ) {
                     AikuButton("Resolve", icon: .next, kind: .caution, size: .regular, fullWidth: false) {
@@ -73,23 +73,22 @@ struct SystemSyncQueueView: View {
         if !offline.isOnline {
             SystemStatusBanner(offlineText, tone: .warn)
         } else if offline.isSyncing {
-            SystemStatusBanner("Sending \(OfflineTexts.count(offline.waitingCount, "action", "actions"))", tone: .info)
+            SystemStatusBanner(L10n.format("Sending %lld actions", offline.waitingCount), tone: .info)
         } else if offline.waitingCount > 0 {
-            SystemStatusBanner("Online · \(OfflineTexts.count(offline.waitingCount, "action", "actions")) waiting", tone: .info)
+            SystemStatusBanner(L10n.format("Online · %lld actions waiting", offline.waitingCount), tone: .info)
         } else {
             SystemStatusBanner("Online · everything is synced", tone: .success)
         }
     }
 
     private var offlineText: String {
-        let waiting = OfflineTexts.count(offline.waitingCount, "action", "actions")
-        guard let since = offline.offlineSince else { return "Offline · \(waiting) waiting" }
-        return "Offline since \(since.formatted(date: .omitted, time: .shortened)) · \(waiting) waiting"
+        guard let since = offline.offlineSince else { return L10n.format("Offline · %lld waiting", offline.waitingCount) }
+        return L10n.format("Offline since %@ · %lld waiting", since.formatted(date: .omitted, time: .shortened), offline.waitingCount)
     }
 
     private func row(_ entry: QueueEntry) -> String {
         let quantity = entry.payload?["quantity"] == nil ? nil : OfflineTexts.quantity(entry.quantity)
-        let label = entry.operation?.label ?? "Offline work"
+        let label = entry.operation?.label ?? L10n.text("Offline work")
         return quantity.map { "\(label) · \($0)" } ?? label
     }
 

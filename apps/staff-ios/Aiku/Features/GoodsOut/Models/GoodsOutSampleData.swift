@@ -436,6 +436,7 @@ enum GoodsOutSampleData {
         GoodsOutPickerProfile(name: "Jo K.")
     ]
 
+    @MainActor
     static func stockLocations(for line: GoodsOutLine, channel: GoodsOutChannel) -> [GoodsOutStockLocation] {
         var locations = [GoodsOutStockLocation(code: line.location, kind: "Picking location · \(channel.title)", stock: line.locationStock ?? 30)]
         if line.location != "C-04-02" {

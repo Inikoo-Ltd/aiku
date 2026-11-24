@@ -1,6 +1,7 @@
 import Foundation
 
 extension LocationsArea {
+    @MainActor
     init(remote: MobileWarehouseArea) {
         self.init(
             remoteID: remote.id,
@@ -9,7 +10,7 @@ extension LocationsArea {
             pickingOrder: remote.pickingPosition.map { Int($0.rounded()) },
             locationCount: remote.numberLocations,
             emptyCount: remote.numberEmptyLocations,
-            valueLabel: remote.stockValue > 0 ? "stock value \(LocationsFormat.money(remote.stockValue))" : ""
+            valueLabel: remote.stockValue > 0 ? L10n.format("stock value %@", LocationsFormat.money(remote.stockValue)) : ""
         )
     }
 }

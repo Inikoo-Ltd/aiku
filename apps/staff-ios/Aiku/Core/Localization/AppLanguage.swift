@@ -7,6 +7,11 @@ struct AppLanguage: Identifiable, Hashable, Sendable {
     let englishName: String
 
     var locale: Locale { Locale(identifier: id) }
+
+    func name(in appLocale: Locale) -> String {
+        guard let name = appLocale.localizedString(forIdentifier: id), let first = name.first else { return englishName }
+        return String(first).uppercased(with: appLocale) + name.dropFirst()
+    }
 }
 
 enum AppLanguages {
@@ -67,6 +72,7 @@ final class LanguageStore {
     private(set) var pendingID: String?
     private var translations: Bundle?
     @ObservationIgnored private var accountLanguageID: String?
+    @ObservationIgnored private var accountConfirmedAt: Date?
     @ObservationIgnored private var isSendingPending = false
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let bundle: Bundle
@@ -112,6 +118,7 @@ final class LanguageStore {
                 let accountCode = try await update(pending)
                 guard pendingID == pending else { continue }
                 setPending(nil)
+                accountConfirmedAt = .now
                 applyAccountLanguage(accountCode)
             } catch is FormValidationError {
                 guard pendingID == pending else { continue }
@@ -125,8 +132,14 @@ final class LanguageStore {
         }
     }
 
+    func applyAccountLanguage(_ code: String?, askedAt: Date) {
+        if let accountConfirmedAt, askedAt < accountConfirmedAt { return }
+        applyAccountLanguage(code)
+    }
+
     func forgetAccount() {
         accountLanguageID = nil
+        accountConfirmedAt = nil
         setPending(nil)
     }
 
@@ -150,6 +163,16 @@ final class LanguageStore {
         return translations.localizedString(forKey: key, value: key, table: nil)
     }
 
+    func format(_ key: String, _ arguments: [any CVarArg]) -> String {
+        let catalogue = translations ?? Self.sourceTexts(in: bundle)
+        let template = catalogue?.localizedString(forKey: key, value: key, table: nil) ?? key
+        return String(format: template, locale: locale, arguments: arguments)
+    }
+
+    private static func sourceTexts(in bundle: Bundle) -> Bundle? {
+        bundle.path(forResource: AppLanguages.defaultID, ofType: "lproj").flatMap(Bundle.init(path:))
+    }
+
     private static func translations(for id: String, in bundle: Bundle) -> Bundle? {
         guard id != AppLanguages.defaultID, let path = bundle.path(forResource: id, ofType: "lproj") else { return nil }
         return Bundle(path: path)
@@ -160,5 +183,22 @@ enum L10n {
     @MainActor
     static func text(_ key: String) -> String {
         LanguageStore.shared.text(key)
+    }
+
+    @MainActor
+    static func format(_ key: String, _ arguments: any CVarArg...) -> String {
+        LanguageStore.shared.format(key, arguments)
+    }
+
+    static func formatInSavedLanguage(_ key: String, _ arguments: any CVarArg...) -> String {
+        let language = AppLanguages.language(id: LanguageStore.savedLanguageID() ?? AppLanguages.defaultID)
+        let texts = Bundle.main.path(forResource: language.id, ofType: "lproj").flatMap(Bundle.init(path:))
+        let template = texts?.localizedString(forKey: key, value: key, table: nil) ?? key
+        return String(format: template, locale: language.locale, arguments: arguments)
+    }
+
+    static var dateLocale: Locale {
+        let id = LanguageStore.savedLanguageID() ?? AppLanguages.defaultID
+        return id == AppLanguages.defaultID ? Locale(identifier: "en_GB") : AppLanguages.language(id: id).locale
     }
 }

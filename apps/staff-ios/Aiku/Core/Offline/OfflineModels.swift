@@ -54,13 +54,14 @@ enum OfflineRecordType: String, Codable, Sendable {
     case location
     case orgStock = "org_stock"
 
+    @MainActor
     func title(_ reference: String) -> String {
         switch self {
-        case .deliveryNote: "Delivery note \(reference)"
-        case .customerReturn: "Return \(reference)"
-        case .stockDelivery: "Stock delivery \(reference)"
-        case .location: "Location \(reference)"
-        case .orgStock: "SKO \(reference)"
+        case .deliveryNote: L10n.format("Delivery note %@", reference)
+        case .customerReturn: L10n.format("Return %@", reference)
+        case .stockDelivery: L10n.format("Stock delivery %@", reference)
+        case .location: L10n.format("Location %@", reference)
+        case .orgStock: L10n.format("SKO %@", reference)
         }
     }
 }

@@ -20,7 +20,7 @@ struct GoodsOutPickedBaySheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Select picked bay", subtitle: "Delivery note \(note.reference) · leave the picked goods here for packing") {
+        SheetScaffold(title: "Select picked bay", subtitle: L10n.format("Delivery note %@ · leave the picked goods here for packing", note.reference)) {
             let choices = store.bayChoices(for: note.reference)
             if let error = store.resourcesError, choices.isEmpty {
                 GoodsOutLoadProblem(title: "Couldn’t load picked bays", message: error) {
@@ -55,9 +55,9 @@ struct GoodsOutPickedBaySheet: View {
                     close()
                     let updated = store.note(note.reference)
                     if updated?.state == .waiting {
-                        GoodsOutFeedback.done("\(note.reference) is waiting · goods stay in \(bay)", tone: .warn, previous: previous, toasts: toasts)
+                        GoodsOutFeedback.done(L10n.format("%@ is waiting · goods stay in %@", note.reference, bay), tone: .warn, previous: previous, toasts: toasts)
                     } else {
-                        GoodsOutFeedback.done("\(note.reference) set as picked · \(bay)", previous: previous, toasts: toasts)
+                        GoodsOutFeedback.done(L10n.format("%@ set as picked · %@", note.reference, bay), previous: previous, toasts: toasts)
                     }
                     if let updated, previous != nil {
                         onDone?(updated)
@@ -65,7 +65,7 @@ struct GoodsOutPickedBaySheet: View {
                 } else {
                     let previous = store.changePickedBay(note.reference, to: bay)
                     close()
-                    GoodsOutFeedback.done("Picked goods moved to \(bay)", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("Picked goods moved to %@", bay), previous: previous, toasts: toasts)
                 }
             }
             .disabled(selected == nil)
@@ -87,7 +87,9 @@ struct GoodsOutPickedBaySheet: View {
         let bayID = store.pickedBayID(named: selected)
         let reference = note.reference
         let action: GoodsOutNoteAction = setsPicked ? .setAsPicked(pickedBayID: bayID) : .changePickedBay(pickedBayID: bayID)
-        let fallback = setsPicked ? "\(reference) set as picked" : "Picked goods moved to \(selected ?? "no bay")"
+        let fallback = setsPicked
+            ? L10n.format("%@ set as picked", reference)
+            : selected.map { L10n.format("Picked goods moved to %@", $0) } ?? L10n.text("Picked goods moved to no bay")
         GoodsOutRun.action(action, on: reference, fallback: fallback, toasts: toasts) {
             close()
             if setsPicked, let updated = store.note(reference) {
@@ -100,6 +102,6 @@ struct GoodsOutPickedBaySheet: View {
         guard let bay = selected else {
             return setsPicked ? "Set as picked" : "No picked bay"
         }
-        return setsPicked ? "Set as picked · \(bay)" : "Move to \(bay)"
+        return setsPicked ? L10n.format("Set as picked · %@", bay) : L10n.format("Move to %@", bay)
     }
 }

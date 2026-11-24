@@ -9,7 +9,7 @@ struct ShellHighlightSegment: Hashable, Sendable {
 struct ShellSearchQuantity: Hashable, Sendable {
     let number: String
 
-    var text: String { "\(number) in locations" }
+    @MainActor var text: String { L10n.format("%@ in locations", number) }
 }
 
 enum ShellSearchFormat {

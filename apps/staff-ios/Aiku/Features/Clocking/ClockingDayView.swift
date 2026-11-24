@@ -10,14 +10,14 @@ struct ClockingDayView: View {
 
     var body: some View {
         let day = store.day(for: date)
-        AppScreen(title: day.title, kicker: "Timesheet · \(session.profile.name)", spacing: 16) {
+        AppScreen(title: day.title, kicker: L10n.format("Timesheet · %@", session.profile.name), spacing: 16) {
             HStack(spacing: 8) {
                 stat(ClockingFormat.duration(day.working(now: store.now)), label: "Working")
                 stat(day.breaks > 0 ? ClockingFormat.duration(day.breaks) : "—", label: "Breaks")
                 stat("\(day.clockingCount)", label: "Clockings")
             }
             ForEach(store.adjustments(for: day.date)) { request in
-                InlineAlert(tone: request.tone, icon: .bell, title: "Clocking adjustment · \(request.statusLabel ?? request.status ?? "")", message: request.summary)
+                InlineAlert(tone: request.tone, icon: .bell, title: L10n.format("Clocking adjustment · %@", request.statusLabel ?? request.status ?? ""), message: request.summary)
             }
             SheetSectionLabel("Time trackers")
             Card {
@@ -63,7 +63,7 @@ struct ClockingDayView: View {
                 .foregroundStyle(AikuColor.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
         }

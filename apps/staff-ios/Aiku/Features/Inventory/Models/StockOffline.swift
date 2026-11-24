@@ -185,20 +185,21 @@ enum StockOfflineText {
         var location: (Int) -> String? = { _ in nil }
     }
 
+    @MainActor
     static func summary(_ entry: QueueEntry, names: Names) -> String {
         let quantity = OfflineTexts.quantity(entry.quantity)
         guard entry.operation == .moveStock else {
             let counted = StockOfflineOverlay.counted(entry).keys.sorted().compactMap { names.sko($0) ?? names.linkLocation($0) }
-            return "Count · \(counted.isEmpty ? (entry.operation?.label ?? "") : counted.joined(separator: ", "))"
+            return L10n.format("Count · %@", counted.isEmpty ? L10n.text(entry.operation?.label ?? "") : counted.joined(separator: ", "))
         }
         let source = entry.payloadInt(OfflinePayloadKey.locationOrgStockID)
         if let target = StockOfflineOverlay.moves(entry).first {
             let from = source.flatMap(names.linkLocation) ?? ""
             let to = names.linkLocation(target.linkID) ?? ""
-            return "Move · \(quantity) from \(from) to \(to)"
+            return L10n.format("Move · %@ from %@ to %@", quantity, from, to)
         }
         let sko = source.flatMap(names.sko) ?? ""
         let to = entry.payloadInt(OfflinePayloadKey.locationID).flatMap(names.location) ?? ""
-        return "Move · \(quantity) × \(sko) to \(to)"
+        return L10n.format("Move · %@ × %@ to %@", quantity, sko, to)
     }
 }

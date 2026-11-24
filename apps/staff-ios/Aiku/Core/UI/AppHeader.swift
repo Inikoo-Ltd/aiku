@@ -83,7 +83,7 @@ struct HeaderTitleRow: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(item.label)
+                .accessibilityLabel(L10n.text(item.label))
             }
         }
         .frame(minHeight: 44)
@@ -150,7 +150,7 @@ struct PillTabs: View {
                             onSelect(tab)
                         } label: {
                             HStack(spacing: 6) {
-                                Text(tab.title)
+                                Text(L10n.text(tab.title))
                                     .font(.aiku(13, .semibold))
                                 if let badge = tab.badge, badge > 0 {
                                     CountBadge(count: badge)

@@ -1,13 +1,14 @@
 import Foundation
 
 extension GoodsOutLine {
+    @MainActor
     func detailText(showsLocationStock: Bool = false) -> String {
         var parts = [pickLocation, name]
         if pickedFrom != nil {
-            parts.append("from another location")
+            parts.append(L10n.text("from another location"))
         }
         if showsLocationStock, !isHandled, let stock = locationStock {
-            parts.append("\(stock) in location")
+            parts.append(L10n.format("%lld in location", stock))
         }
         return parts.joined(separator: " · ")
     }

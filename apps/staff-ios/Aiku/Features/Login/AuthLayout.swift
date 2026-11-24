@@ -20,7 +20,7 @@ struct AuthLayout<Card: View>: View {
         ScrollView {
                 VStack(spacing: 0) {
                     brand
-                    Text(quote)
+                    Text(L10n.text(quote))
                         .font(.aiku(22))
                         .foregroundStyle(ThemeStore.shared.isDark ? AikuColor.text3 : Color(hex: 0x4B4458))
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -112,7 +112,7 @@ struct AuthLayout<Card: View>: View {
     @ViewBuilder
     private func footerLink(_ title: String, url: URL?) -> some View {
         if let url {
-            Link(title, destination: url)
+            Link(L10n.text(title), destination: url)
                 .underline()
                 .foregroundStyle(AikuColor.text3)
         }
@@ -198,7 +198,7 @@ struct AuthTextLink: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(13))
                 .italic()
                 .foregroundStyle(AikuColor.text3)

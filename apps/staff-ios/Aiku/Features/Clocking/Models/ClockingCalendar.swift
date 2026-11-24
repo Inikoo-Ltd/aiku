@@ -56,7 +56,25 @@ struct CalendarGridDay: Identifiable, Hashable, Sendable {
 }
 
 enum CalendarGrid {
-    static let weekdayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+    static let englishWeekdayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+
+    static var weekdayLabels: [String] {
+        let locale = L10n.dateLocale
+        guard locale.language.languageCode?.identifier != "en" else { return englishWeekdayLabels }
+        return mondayFirst(CalendarText.formatter(locale).shortStandaloneWeekdaySymbols) ?? englishWeekdayLabels
+    }
+
+    static func narrowWeekday(_ englishShort: String) -> String {
+        let fallback = String(englishShort.prefix(1))
+        guard let index = ClockingWeek.weekdays.firstIndex(of: englishShort),
+              let symbols = mondayFirst(CalendarText.formatter(L10n.dateLocale).veryShortStandaloneWeekdaySymbols) else { return fallback }
+        return symbols[index]
+    }
+
+    private static func mondayFirst(_ symbols: [String]?) -> [String]? {
+        guard let symbols, symbols.count == 7 else { return nil }
+        return Array(symbols[1...]) + [symbols[0]]
+    }
 
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -150,13 +168,14 @@ struct CalendarDaySummary: Equatable, Sendable {
         return CalendarText.format("EEEE d MMMM yyyy", parsed)
     }
 
+    @MainActor
     var workedLabel: String? {
         guard let timesheet else { return nil }
         let start = timesheet.startTimeLocal ?? "—"
         if isStillWorking {
-            return "Clocked in at \(start) · still working"
+            return L10n.format("Clocked in at %@ · still working", start)
         }
-        return "Worked \(ClockingFormat.duration(timesheet.workingSeconds ?? 0)) · \(start) – \(timesheet.endTimeLocal ?? "—")"
+        return L10n.format("Worked %@ · %@ – %@", ClockingFormat.duration(timesheet.workingSeconds ?? 0), start, timesheet.endTimeLocal ?? "—")
     }
 }
 
@@ -172,12 +191,17 @@ struct CalendarHolidaySummary: Hashable, Sendable {
 
 enum CalendarText {
     static func format(_ pattern: String, _ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
-        formatter.calendar = CalendarGrid.calendar
-        formatter.timeZone = TimeZone(identifier: "UTC")!
+        let formatter = formatter(L10n.dateLocale)
         formatter.dateFormat = pattern
         return formatter.string(from: date)
+    }
+
+    static func formatter(_ locale: Locale) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = CalendarGrid.calendar
+        formatter.timeZone = TimeZone(identifier: "UTC")!
+        return formatter
     }
 
     static func isPending(_ leave: CalendarResponse.Leave) -> Bool {
@@ -188,8 +212,9 @@ enum CalendarText {
         leave.isHalfDay == true || (leave.leaveTypeValue ?? 1) < 1
     }
 
+    @MainActor
     static func leaveDetail(_ leave: CalendarResponse.Leave) -> String {
-        let length = isHalfDay(leave) ? "Half day" : LeaveCalculator.daysLabel(leave.durationDays ?? 1)
+        let length = isHalfDay(leave) ? L10n.text("Half day") : LeaveCalculator.daysLabel(leave.durationDays ?? 1)
         return "\(length) · \(LeaveCalculator.rangeLabel(start: leave.startDate, end: leave.endDate))"
     }
 
@@ -275,17 +300,17 @@ final class CalendarStore {
     var monthHolidays: [CalendarHolidaySummary] {
         let ranges = holidayRanges.filter { $0.from <= month.lastDay && $0.to >= month.firstDay }
         if !ranges.isEmpty {
-            return ranges.sorted { $0.from < $1.from }.map { CalendarHolidaySummary(dates: CalendarText.rangeLabel(from: $0.from, to: $0.to), label: $0.label ?? "Holiday") }
+            return ranges.sorted { $0.from < $1.from }.map { CalendarHolidaySummary(dates: CalendarText.rangeLabel(from: $0.from, to: $0.to), label: $0.label ?? L10n.text("Holiday")) }
         }
         return holidays.filter { month.contains($0.date) }.sorted { $0.date < $1.date }.map {
-            CalendarHolidaySummary(dates: CalendarText.rangeLabel(from: $0.date, to: $0.date), label: $0.label ?? "Holiday")
+            CalendarHolidaySummary(dates: CalendarText.rangeLabel(from: $0.date, to: $0.date), label: $0.label ?? L10n.text("Holiday"))
         }
     }
 
     var legendLeaves: [CalendarLegendLeave] {
         var seen = Set<String>()
         return monthLeaves.compactMap { leave in
-            let label = leave.typeLabel ?? leave.type ?? "Leave"
+            let label = leave.typeLabel ?? leave.type ?? L10n.text("Leave")
             guard seen.insert(label).inserted else { return nil }
             return CalendarLegendLeave(label: label, colorHex: leave.typeColorHex)
         }
@@ -294,14 +319,14 @@ final class CalendarStore {
     var holidayYearLabel: String? {
         guard let holidayYear else { return nil }
         let range = [CalendarText.shortDate(holidayYear.startDate), CalendarText.shortDate(holidayYear.endDate)].compactMap { $0 }.joined(separator: " – ")
-        let label = holidayYear.label ?? "Holiday year"
+        let label = holidayYear.label ?? L10n.text("Holiday year")
         return range.isEmpty ? label : "\(label) · \(range)"
     }
 
     func summary(for date: String) -> CalendarDaySummary {
         let isWeekend = CalendarGrid.isWeekend(date)
         let holidayLabels = holidays.filter { $0.date == date }.map { $0.label ?? "" }
-        let holiday: String? = holidayLabels.isEmpty ? nil : holidayLabels.first { !$0.isEmpty } ?? "Public holiday"
+        let holiday: String? = holidayLabels.isEmpty ? nil : holidayLabels.first { !$0.isEmpty } ?? L10n.text("Public holiday")
         let isWorkingDay = !isWeekend && holiday == nil
         let dayLeaves = isWorkingDay ? leaves.filter { ($0.startDate ?? "") <= date && ($0.endDate ?? $0.startDate ?? "") >= date } : []
         return CalendarDaySummary(

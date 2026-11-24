@@ -19,7 +19,7 @@ private struct GoodsOutPickingLocationIntro: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            ProductThumb(size: 56, label: "Product photo of \(sko)")
+            ProductThumb(size: 56, label: L10n.format("Product photo of %@", sko))
             Text("Pickers are sent to the active picking location of the order’s channel.")
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
@@ -40,7 +40,7 @@ private struct GoodsOutRemotePickingLocationSheet: View {
     @State private var isSaving = false
 
     var body: some View {
-        SheetScaffold(title: "Picking location · \(locations?.code ?? line.sko)", subtitle: "\(locations?.name ?? line.name) · one per channel") {
+        SheetScaffold(title: L10n.format("Picking location · %@", locations?.code ?? line.sko), subtitle: L10n.format("%@ · one per channel", locations?.name ?? line.name)) {
             GoodsOutPickingLocationIntro(sko: locations?.code ?? line.sko)
             if let saveProblem {
                 InlineAlert(tone: .danger, title: "Picking locations not saved", message: saveProblem)
@@ -123,7 +123,7 @@ private struct GoodsOutRemotePickingLocationSheet: View {
             case .unchanged:
                 present(.pickLocation(line: line.id))
             case .saved:
-                toasts.show("Picking locations saved for \(locations.code)")
+                toasts.show(L10n.format("Picking locations saved for %@", locations.code))
                 present(.pickLocation(line: line.id))
             case .failed(let message):
                 if !message.isEmpty {
@@ -150,7 +150,7 @@ private struct GoodsOutSamplePickingLocationSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Picking location · \(line.sko)", subtitle: "\(line.name) · one per channel") {
+        SheetScaffold(title: L10n.format("Picking location · %@", line.sko), subtitle: L10n.format("%@ · one per channel", line.name)) {
             GoodsOutPickingLocationIntro(sko: line.sko)
             ForEach($sections) { $section in
                 SheetSectionLabel(section.channel.title)
@@ -166,7 +166,7 @@ private struct GoodsOutSamplePickingLocationSheet: View {
                 if let own = sections.first(where: { $0.channel == note.channel }) {
                     store.setPickingLocation(note.reference, line: line.id, location: own.selected)
                 }
-                toasts.show("Picking locations saved for \(line.sko)")
+                toasts.show(L10n.format("Picking locations saved for %@", line.sko))
                 present(.pickLocation(line: line.id))
             }
             .disabled(!store.rights.canEditStock)

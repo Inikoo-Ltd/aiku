@@ -8,14 +8,15 @@ enum ClockingSection: String, CaseIterable {
     case overtime
     case calendar
 
+    @MainActor
     var title: String {
         switch self {
-        case .clock: "Clock in / out"
-        case .timesheets: "Timesheets"
-        case .leave: "Leave"
-        case .adjustment: "Clocking adjustment"
-        case .overtime: "Overtime"
-        case .calendar: "Calendar"
+        case .clock: L10n.text("Clock in / out")
+        case .timesheets: L10n.text("Timesheets")
+        case .leave: L10n.text("Leave")
+        case .adjustment: L10n.text("Clocking adjustment")
+        case .overtime: L10n.text("Overtime")
+        case .calendar: L10n.text("Calendar")
         }
     }
 }

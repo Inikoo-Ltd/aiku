@@ -15,7 +15,7 @@ struct FulfilmentPalletsView: View {
 
     var body: some View {
         @Bindable var feed = feed
-        AppScreen(title: "Stored pallets", kicker: "Inventory · \(session.warehouseLabel)") {
+        AppScreen(title: "Stored pallets", kicker: L10n.format("Inventory · %@", session.warehouseLabel)) {
             ModuleTabs(.inventory, current: .storedPallets)
         } content: {
             FilterChipBar(options: StoredPalletFilter.allCases, selection: $feed.filter, title: \.title) { filter in
@@ -31,7 +31,7 @@ struct FulfilmentPalletsView: View {
                 }
             }
             if let lookingUpCode {
-                InlineAlert(tone: .info, title: "Looking up \(lookingUpCode)…")
+                InlineAlert(tone: .info, title: L10n.format("Looking up %@…", lookingUpCode))
             }
             if let message = feed.loadError {
                 GoodsOutLoadProblem(title: "Couldn’t load the pallets", message: message) {
@@ -79,7 +79,7 @@ struct FulfilmentPalletsView: View {
                 router.open(FulfilmentRoute.pallet(id: pallet.id, reference: pallet.reference))
             } else {
                 ScanFeedback.shared.rejected()
-                toasts.show("\(scanned) is not a pallet in this warehouse", tone: .info)
+                toasts.show(L10n.format("%@ is not a pallet in this warehouse", scanned), tone: .info)
             }
         } catch {
             toasts.show(ShellScanCatalog.problem(error), tone: .danger)
@@ -114,7 +114,7 @@ struct StoredPalletRows: View {
                 }
             }
         } else if isCurrent, feed.loadError == nil {
-            EmptyState(icon: .pallet, title: search.isEmpty ? emptyTitle : "No pallet matches “\(search)”")
+            EmptyState(icon: .pallet, title: search.isEmpty ? emptyTitle : L10n.format("No pallet matches “%@”", search))
         } else if feed.loadError == nil {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 88)

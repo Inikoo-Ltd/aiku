@@ -10,7 +10,7 @@ struct LocationsWarehouseView: View {
 
     var body: some View {
         let summary = store.warehouse.summary
-        AppScreen(title: session.profile.warehouseName, kicker: "Locations · \(session.warehouseLabel)") {
+        AppScreen(title: session.profile.warehouseName, kicker: L10n.format("Locations · %@", session.warehouseLabel)) {
             ModuleTabs(.locations, current: .warehouse)
         } content: {
             LocationsLoadErrorBanner(store: store)
@@ -79,7 +79,7 @@ struct LocationsWarehouseView: View {
                 try await store.setRemoteAutoRemoval(isOn, by: session.profile.name, apiClient: apiClient)
                 toasts.show(confirmation)
             } catch {
-                toasts.show("Couldn’t change automatic removal: \(error.localizedDescription)", tone: .danger)
+                toasts.show(L10n.format("Couldn’t change automatic removal: %@", error.localizedDescription), tone: .danger)
             }
         }
     }

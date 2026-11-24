@@ -133,7 +133,7 @@ extension GoodsOutStore {
 
     @discardableResult
     func sendMessage(_ reference: String, text: String) -> GoodsOutDeliveryNote? {
-        let byline = "\(currentUser) (you)", date = now()
+        let byline = L10n.format("%@ (you)", currentUser), date = now()
         return update(reference) { $0.sendMessage(text, by: byline, at: date) }
     }
 
@@ -217,7 +217,7 @@ extension GoodsOutStore {
 
     func scanToPack(_ reference: String, barcode: String, quantity: Double? = 1, lineID: Int? = nil) async -> GoodsOutPackScanResult {
         let code = barcode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !code.isEmpty else { return .refused(message: "Scan a barcode first.") }
+        guard !code.isEmpty else { return .refused(message: L10n.text("Scan a barcode first.")) }
         let result = await write(.scanPack(barcode: code, quantity: quantity, lineID: lineID), on: reference)
         if let message = result.failureMessage { return .refused(message: message) }
         let message = {
@@ -233,13 +233,13 @@ extension GoodsOutStore {
         case "packed":
             return .packed(code: sko, message: message, lineDone: (result.item?.quantityToPack ?? 1) <= 0)
         case "already_packed":
-            return .refused(message: message ?? "\(sko) is already packed")
+            return .refused(message: message ?? L10n.format("%@ is already packed", sko))
         case "nothing_to_pack":
-            return .refused(message: message ?? "Nothing is left to pack on this delivery note")
+            return .refused(message: message ?? L10n.text("Nothing is left to pack on this delivery note"))
         case "wrong_state":
-            return .refused(message: message ?? "\(reference) is not being packed")
+            return .refused(message: message ?? L10n.format("%@ is not being packed", reference))
         default:
-            return .refused(message: message ?? "\(code) is not on this delivery note")
+            return .refused(message: message ?? L10n.format("%@ is not on this delivery note", code))
         }
     }
 

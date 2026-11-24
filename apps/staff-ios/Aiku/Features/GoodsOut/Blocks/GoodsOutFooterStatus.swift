@@ -6,11 +6,11 @@ struct GoodsOutFooterStatus: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(15, .bold))
                 .foregroundStyle(AikuColor.text)
             if let detail {
-                Text(detail)
+                Text(L10n.text(detail))
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -29,7 +29,7 @@ struct GoodsOutFooterCaption: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(12))
             .foregroundStyle(AikuColor.text4)
             .multilineTextAlignment(.center)
@@ -43,14 +43,14 @@ struct GoodsOutSectionTitle: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
+            Text(L10n.text(title).uppercased(with: LanguageStore.shared.locale))
                 .font(.aiku(13, .bold))
                 .tracking(0.8)
                 .foregroundStyle(AikuColor.text3)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
             if let detail {
-                Text(detail)
+                Text(L10n.text(detail))
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
             }

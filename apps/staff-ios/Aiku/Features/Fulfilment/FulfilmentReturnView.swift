@@ -72,7 +72,7 @@ private struct PalletReturnScreen: View {
             } else {
                 AppScreen(title: reference, kicker: "Fulfilment return") {
                     if let message = live.loadError {
-                        InlineAlert(title: "Couldn’t load \(reference)", message: message)
+                        InlineAlert(title: L10n.format("Couldn’t load %@", reference), message: message)
                         AikuButton("Try again", kind: .secondary) {
                             Task { await live.load() }
                         }
@@ -217,7 +217,7 @@ private struct PalletReturnScreen: View {
             }
         }
         if !detail.pallets.isEmpty {
-            SectionHeading("Pallets", detail: "\(pickedPallets(detail)) of \(detail.pallets.count) picked")
+            SectionHeading("Pallets", detail: L10n.format("%lld of %lld picked", pickedPallets(detail), detail.pallets.count))
             CardList(detail.pallets) { line in
                 ListRow(
                     line.pallet?.reference ?? "#\(line.lineId)",
@@ -243,14 +243,14 @@ private struct PalletReturnScreen: View {
                 title: "Scan to pick",
                 detail: "Scan the pallet, then each item",
                 highlight: PalletDeliveryText.joined([scanGroup.pallet?.reference, scanGroup.locationCode]),
-                footnote: live.queuedScans > 0 ? "\(live.queuedScans) scan\(live.queuedScans == 1 ? "" : "s") waiting" : nil,
+                footnote: live.queuedScans > 0 ? L10n.format("%lld scans waiting", live.queuedScans) : nil,
                 identifier: "fulfilment.return.scan"
             ) {
                 isScanning = true
             }
         }
         ForEach(groups) { group in
-            SectionHeading("From \(PalletDeliveryText.joined([group.pallet?.reference, group.locationCode ?? "no location"]))")
+            SectionHeading(L10n.format("From %@", PalletDeliveryText.joined([group.pallet?.reference, group.locationCode ?? L10n.text("no location")])))
             CardList(group.lines.map { ItemLineEntry(item: $0.item, line: $0.line) }) { entry in
                 itemLineRow(entry.item, entry.line)
             }
@@ -263,9 +263,9 @@ private struct PalletReturnScreen: View {
         let tone = PalletReturnText.itemLineTone(line)
         let subtitle = PalletDeliveryText.joined([
             item.storedItem.name,
-            line.quantityToPick > 0 ? "To pick \(line.quantityToPick) · on pallet \(line.quantityOnPallet)" : nil,
-            line.quantityNotPicked > 0 ? "\(line.quantityNotPicked) not picked" : nil,
-            line.waitingCustomerService ? "Waiting for customer service" : nil
+            line.quantityToPick > 0 ? L10n.format("To pick %lld · on pallet %lld", line.quantityToPick, line.quantityOnPallet) : nil,
+            line.quantityNotPicked > 0 ? L10n.format("%lld not picked", line.quantityNotPicked) : nil,
+            line.waitingCustomerService ? L10n.text("Waiting for customer service") : nil
         ])
         let openable = line.hasActions || item.canPickFromOtherPallet
         return ListRow(
@@ -287,7 +287,7 @@ private struct PalletReturnScreen: View {
             Card {
                 ListRow(
                     "Customer inserts",
-                    subtitle: detail.inserts.unprinted > 0 ? "\(detail.inserts.unprinted) not printed" : "All printed",
+                    subtitle: detail.inserts.unprinted > 0 ? L10n.format("%lld not printed", detail.inserts.unprinted) : "All printed",
                     icon: .printer,
                     iconTone: detail.inserts.unprinted > 0 ? .warn : .success,
                     trailing: {
@@ -319,16 +319,17 @@ private struct PalletReturnScreen: View {
         if detail.isItems {
             let picked = detail.storedItems.reduce(0) { $0 + $1.quantityPicked }
             let notPicked = detail.storedItems.reduce(0) { $0 + $1.quantityNotPicked }
-            lines = [PalletDeliveryText.plural(picked, "item picked", "items picked"), notPicked > 0 ? "\(notPicked) not picked" : nil].compactMap { $0 }
+            lines = [L10n.format("%lld items picked", picked), notPicked > 0 ? L10n.format("%lld not picked", notPicked) : nil].compactMap { $0 }
             isComplete = detail.storedItems.allSatisfy { $0.quantityNotPicked == 0 }
         } else {
             let picked = detail.pallets.filter { $0.lineState == "picked" }.compactMap { $0.pallet?.reference }
             let notPicked = detail.pallets.filter { $0.lineState == "not_picked" || $0.waitingCustomerService }.count
-            lines = ["\(PalletDeliveryText.plural(picked.count, "pallet", "pallets")) picked\(picked.isEmpty ? "" : ": \(picked.joined(separator: ", "))")", notPicked > 0 ? "\(notPicked) not picked" : nil].compactMap { $0 }
+            let pickedLine = picked.isEmpty ? L10n.format("%lld pallets picked", picked.count) : L10n.format("%lld pallets picked: %@", picked.count, picked.joined(separator: ", "))
+            lines = [pickedLine, notPicked > 0 ? L10n.format("%lld not picked", notPicked) : nil].compactMap { $0 }
             isComplete = notPicked == 0
         }
         return VStack(alignment: .leading, spacing: 4) {
-            Text(isComplete ? "All picked" : (detail.stateLabel ?? detail.state))
+            Text(isComplete ? L10n.text("All picked") : (detail.stateLabel ?? detail.state))
                 .font(.aiku(16, .bold))
                 .foregroundStyle(AikuColor.text)
             ForEach(lines, id: \.self) { line in
@@ -349,14 +350,14 @@ private struct PalletReturnScreen: View {
             let body: String = {
                 if detail.isItems {
                     let items = detail.storedItems.reduce(0) { $0 + $1.quantityPicked }
-                    return "\(PalletDeliveryText.plural(items, "item", "items")) left the warehouse."
+                    return L10n.format("%lld items left the warehouse.", items)
                 }
                 let pallets = detail.pallets.filter { $0.lineState != "not_picked" && $0.lineState != "cancel" }.count
-                return "\(PalletDeliveryText.plural(pallets, "pallet is", "pallets are")) now returned."
+                return L10n.format("%lld pallets are now returned.", pallets)
             }()
             FulfilmentDoneHero(
-                title: "\(detail.reference) dispatched",
-                message: PalletDeliveryText.joined([body, PalletDeliveryText.day(detail.at("dispatched")).map { "Dispatched \($0)" }])
+                title: L10n.format("%@ dispatched", detail.reference),
+                message: PalletDeliveryText.joined([body, PalletDeliveryText.day(detail.at("dispatched")).map { L10n.format("Dispatched %@", $0) }])
             )
         }
         parcels(detail)
@@ -377,7 +378,7 @@ private struct PalletReturnScreen: View {
             SectionHeading("Parcels", detail: detail.parcels.count.grouped)
             CardList(detail.parcels.enumerated().map { ParcelEntry(index: $0.offset, parcel: $0.element) }) { entry in
                 ListRow(
-                    "Parcel \(entry.index + 1)",
+                    L10n.format("Parcel %lld", entry.index + 1),
                     subtitle: PalletDeliveryText.joined([
                         "\(GoodsInQuantity.decimal(entry.parcel.weight)) kg",
                         entry.parcel.dimensions.isEmpty ? nil : entry.parcel.dimensions.map(GoodsInQuantity.decimal).joined(separator: " × ") + " cm"
@@ -397,7 +398,7 @@ private struct PalletReturnScreen: View {
                     ForEach(Array(shipment.trackingNumbers.enumerated()), id: \.offset) { index, tracking in
                         Group {
                             if let url = shipment.trackingURL(index) {
-                                LinkButton("Tracking \(tracking)") { openURL(url) }
+                                LinkButton(L10n.format("Tracking %@", tracking)) { openURL(url) }
                             } else {
                                 Text("Tracking \(tracking)")
                                     .font(.aiku(14))
@@ -441,10 +442,10 @@ private struct PalletReturnScreen: View {
     private func details(_ detail: MobilePalletReturnDetail) -> some View {
         let lines: [(AppIcon, String)] = [
             detail.customer?.name.map { (.person, $0) },
-            PalletDeliveryText.quoted(detail.customerReference).map { (.document, "Customer ref \($0)") },
-            detail.platform?.label.map { (.deliveryNote, "Platform \($0)") },
-            detail.picker?.name.map { (.person, "Picker \($0)") },
-            PalletDeliveryText.day(detail.estimatedDeliveryDate).map { (.history, "Expected \($0)") }
+            PalletDeliveryText.quoted(detail.customerReference).map { (.document, L10n.format("Customer ref %@", $0)) },
+            detail.platform?.label.map { (.deliveryNote, L10n.format("Platform %@", $0)) },
+            detail.picker?.name.map { (.person, L10n.format("Picker %@", $0)) },
+            PalletDeliveryText.day(detail.estimatedDeliveryDate).map { (.history, L10n.format("Expected %@", $0)) }
         ].compactMap { $0 }
         if !lines.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -495,13 +496,13 @@ private struct PalletReturnScreen: View {
             }
             if detail.isItems {
                 if let short = detail.storedItems.first(where: { $0.canPickFromOtherPallet }) {
-                    return AnyView(AikuButton("Pick \(short.storedItem.reference ?? "") from another pallet", icon: .pallet, kind: .secondary) {
+                    return AnyView(AikuButton(L10n.format("Pick %@ from another pallet", short.storedItem.reference ?? ""), icon: .pallet, kind: .secondary) {
                         sheet = .otherPallet(short.id)
                     })
                 }
                 let ordered = detail.storedItems.reduce(0) { $0 + $1.quantityOrdered }
                 let picked = detail.storedItems.reduce(0) { $0 + $1.quantityPicked }
-                return AnyView(status(detail.stateLabel ?? detail.state, "\(picked) of \(ordered) picked"))
+                return AnyView(status(detail.stateLabel ?? detail.state, L10n.format("%lld of %lld picked", picked, ordered)))
             }
             if let next = nextPalletLine(detail), next.can("pick") || next.can("not_picked") {
                 return AnyView(HStack(spacing: 8) {
@@ -511,7 +512,7 @@ private struct PalletReturnScreen: View {
                         }
                     }
                     if next.can("pick") {
-                        AikuButton("Pick \(next.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking && sheet == nil) {
+                        AikuButton(L10n.format("Pick %@", next.pallet?.reference ?? ""), look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking && sheet == nil) {
                             Task { await live.pickPallet(next.lineId) }
                         }
                         .disabled(live.isWorking)
@@ -519,7 +520,7 @@ private struct PalletReturnScreen: View {
                     }
                 })
             }
-            return AnyView(status(detail.stateLabel ?? detail.state, "\(pickedPallets(detail)) of \(detail.pallets.count) picked"))
+            return AnyView(status(detail.stateLabel ?? detail.state, L10n.format("%lld of %lld picked", pickedPallets(detail), detail.pallets.count)))
         case "picked":
             return AnyView(VStack(spacing: 8) {
                 if let addShipment, detail.shipments.isEmpty {
@@ -635,11 +636,11 @@ private struct PalletReturnScreen: View {
 
     private func confirmTitle(_ detail: MobilePalletReturnDetail) -> String {
         switch confirm {
-        case .start: "Start picking \(detail.reference)?"
-        case .finish: "Set \(detail.reference) as picked?"
-        case .dispatch: "Dispatch \(detail.reference)?"
-        case .notPickedPallet(_, let reference): "Set \(reference) as not picked?"
-        case .deleteShipment(let shipment): "Delete \(shipment.shipper ?? "this shipment")?"
+        case .start: L10n.format("Start picking %@?", detail.reference)
+        case .finish: L10n.format("Set %@ as picked?", detail.reference)
+        case .dispatch: L10n.format("Dispatch %@?", detail.reference)
+        case .notPickedPallet(_, let reference): L10n.format("Set %@ as not picked?", reference)
+        case .deleteShipment(let shipment): shipment.shipper.map { L10n.format("Delete %@?", $0) } ?? L10n.text("Delete this shipment?")
         case nil: ""
         }
     }
@@ -650,8 +651,8 @@ private struct PalletReturnScreen: View {
         case .finish: "The return moves to Picked and is ready for its shipment and dispatch."
         case .dispatch:
             PalletDeliveryText.joined([
-                detail.isItems ? "Its stored items leave the warehouse." : "Its pallets are set as returned and leave the warehouse.",
-                detail.platform?.label.map { "The fulfilment is also sent to the customer’s \($0) shop." }
+                detail.isItems ? L10n.text("Its stored items leave the warehouse.") : L10n.text("Its pallets are set as returned and leave the warehouse."),
+                detail.platform?.label.map { L10n.format("The fulfilment is also sent to the customer’s %@ shop.", $0) }
             ])
         case .notPickedPallet: "The pallet waits for customer service. They must resolve it before the return can be set as picked."
         case .deleteShipment: "The carrier is not told: cancel the label with them if it was already booked."
@@ -661,12 +662,12 @@ private struct PalletReturnScreen: View {
 
     private func confirmButton(_ detail: MobilePalletReturnDetail) -> String {
         switch confirm {
-        case .start: detail.action("start_picking")?.label.nilIfEmpty ?? "Start picking"
-        case .finish: detail.action("finish_picking")?.label.nilIfEmpty ?? "Set as picked"
-        case .dispatch: detail.action("dispatch")?.label.nilIfEmpty ?? "Dispatch"
-        case .notPickedPallet: "Not picked"
-        case .deleteShipment: "Delete"
-        case nil: "OK"
+        case .start: detail.action("start_picking")?.label.nilIfEmpty ?? L10n.text("Start picking")
+        case .finish: detail.action("finish_picking")?.label.nilIfEmpty ?? L10n.text("Set as picked")
+        case .dispatch: detail.action("dispatch")?.label.nilIfEmpty ?? L10n.text("Dispatch")
+        case .notPickedPallet: L10n.text("Not picked")
+        case .deleteShipment: L10n.text("Delete")
+        case nil: L10n.text("OK")
         }
     }
 
@@ -705,7 +706,7 @@ private struct PalletLineSheet: View {
 
     var body: some View {
         SheetScaffold(title: line.pallet?.reference ?? "Pallet", subtitle: PalletDeliveryText.joined([line.pallet?.typeLabel, PalletReturnText.locationText(line.location)])) {
-            Text(line.waitingCustomerService ? "Set as not picked. Customer service must resolve it before the return can be set as picked." : (line.lineStateLabel ?? line.lineState))
+            Text(line.waitingCustomerService ? L10n.text("Set as not picked. Customer service must resolve it before the return can be set as picked.") : (line.lineStateLabel ?? line.lineState))
                 .font(.aiku(14))
                 .foregroundStyle(AikuColor.text2)
             if !line.storedItems.isEmpty {
@@ -722,7 +723,7 @@ private struct PalletLineSheet: View {
             }
         } footer: {
             if line.can("pick") {
-                AikuButton(line.label("pick") ?? "Pick \(line.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
+                AikuButton(line.label("pick") ?? L10n.format("Pick %@", line.pallet?.reference ?? ""), look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task { if await live.pickPallet(line.lineId) { onClose() } }
                 }
                 .disabled(live.isWorking)
@@ -781,13 +782,13 @@ private struct ItemLineSheet: View {
             }
         } footer: {
             if canPick {
-                AikuButton("Pick \(amount)", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
+                AikuButton(L10n.format("Pick %lld", amount), look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task { if await live.pickItem(line.lineId, quantity: amount) { onClose() } }
                 }
                 .disabled(live.isWorking)
                 .accessibilityIdentifier("fulfilment.return.item.pick")
                 if line.maxPick > 1 {
-                    AikuButton("Pick all \(line.maxPick)", icon: .checkDouble, kind: .secondary) {
+                    AikuButton(L10n.format("Pick all %lld", line.maxPick), icon: .checkDouble, kind: .secondary) {
                         Task { if await live.pickItem(line.lineId, quantity: nil) { onClose() } }
                     }
                     .disabled(live.isWorking)
@@ -831,14 +832,14 @@ private struct NotPickedItemSheet: View {
 
     var body: some View {
         let most = max(line.quantityToPick, 1)
-        SheetScaffold(title: "Set \(item.storedItem.reference ?? "") as not picked?", subtitle: "From \(PalletDeliveryText.joined([line.pallet?.reference, line.location?.code]))") {
+        SheetScaffold(title: L10n.format("Set %@ as not picked?", item.storedItem.reference ?? ""), subtitle: L10n.format("From %@", PalletDeliveryText.joined([line.pallet?.reference, line.location?.code]))) {
             QuantityStepper(value: $amount, range: 1...most)
             HelperText("How many can’t be picked from this pallet.")
             if let message = live.sheetError {
                 FieldError(message)
             }
         } footer: {
-            AikuButton("Set \(amount) as not picked", look: PalletReturnActionLooks.look(for: "not_picked").forConfirm, isLoading: live.isWorking) {
+            AikuButton(L10n.format("Set %lld as not picked", amount), look: PalletReturnActionLooks.look(for: "not_picked").forConfirm, isLoading: live.isWorking) {
                 Task { if await live.notPicked(line.lineId, quantity: amount) { onClose() } }
             }
             .disabled(live.isWorking)
@@ -861,13 +862,13 @@ private struct OtherPalletSheet: View {
         let chosen = others.first { $0.palletStoredItemId == (chosenID ?? others.first?.palletStoredItemId) }
         let most = max(min(chosen?.quantityAvailable ?? 1, item.quantityToPick), 1)
         SheetScaffold(
-            title: "Pick \(item.storedItem.reference ?? "") from another pallet",
-            subtitle: shortLine.map { "\($0.shortfall) short on \($0.pallet?.reference ?? "")" }
+            title: L10n.format("Pick %@ from another pallet", item.storedItem.reference ?? ""),
+            subtitle: shortLine.map { L10n.format("%lld short on %@", $0.shortfall, $0.pallet?.reference ?? "") }
         ) {
             ForEach(others) { other in
                 RadioCard(
                     other.pallet?.reference ?? "",
-                    subtitle: PalletDeliveryText.joined([PalletReturnText.locationText(other.location), "\(other.quantityAvailable) available"]),
+                    subtitle: PalletDeliveryText.joined([PalletReturnText.locationText(other.location), L10n.format("%lld available", other.quantityAvailable)]),
                     isSelected: other.palletStoredItemId == chosen?.palletStoredItemId
                 ) {
                     chosenID = other.palletStoredItemId
@@ -876,7 +877,7 @@ private struct OtherPalletSheet: View {
             if chosen != nil {
                 QuantityStepper(value: $amount, range: 1...most)
                 if let shortLine {
-                    HelperText("The same amount is set as not picked on \(shortLine.pallet?.reference ?? ""), so the total ordered stays the same.")
+                    HelperText(L10n.format("The same amount is set as not picked on %@, so the total ordered stays the same.", shortLine.pallet?.reference ?? ""))
                 }
             }
             if let message = live.sheetError {
@@ -884,7 +885,7 @@ private struct OtherPalletSheet: View {
             }
         } footer: {
             if let chosen {
-                AikuButton("Pick \(amount) from \(chosen.pallet?.reference ?? "")", look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
+                AikuButton(L10n.format("Pick %lld from %@", amount, chosen.pallet?.reference ?? ""), look: PalletReturnActionLooks.look(for: "pick"), isLoading: live.isWorking) {
                     Task {
                         if await live.pickFromOtherPallet(chosen.palletStoredItemId, quantity: min(amount, most), fromLineID: shortLine?.lineId) { onClose() }
                     }

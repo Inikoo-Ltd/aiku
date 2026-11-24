@@ -46,28 +46,28 @@ struct LocationsFilterSheet: View {
             }
             section("Status", hint: hint(draft.statuses.count)) {
                 ForEach(LocationsStatus.allCases, id: \.self) { status in
-                    option(status.title, dot: status.tone, isOn: draft.statuses.contains(status)) {
+                    option(L10n.text(status.title), dot: status.tone, isOn: draft.statuses.contains(status)) {
                         draft.statuses.formSymmetricDifference([status])
                     }
                 }
             }
             section("Scope", hint: hint(draft.scopes.count)) {
                 ForEach(LocationsScope.allCases, id: \.self) { scope in
-                    option(scope.title, isOn: draft.scopes.contains(scope)) {
+                    option(L10n.text(scope.title), isOn: draft.scopes.contains(scope)) {
                         draft.scopes.formSymmetricDifference([scope])
                     }
                 }
             }
             section("Occupancy", hint: hint(draft.occupancies.count)) {
                 ForEach(LocationsOccupancyFilter.allCases, id: \.self) { occupancy in
-                    option(occupancy.title, isOn: draft.occupancies.contains(occupancy)) {
+                    option(L10n.text(occupancy.title), isOn: draft.occupancies.contains(occupancy)) {
                         draft.occupancies.formSymmetricDifference([occupancy])
                     }
                 }
             }
-            section("Sort by", hint: "Choose one") {
+            section("Sort by", hint: L10n.text("Choose one")) {
                 ForEach(LocationsSort.allCases, id: \.self) { sort in
-                    option(sort.title, isOn: draft.sort == sort) {
+                    option(L10n.text(sort.title), isOn: draft.sort == sort) {
                         draft.sort = sort
                     }
                 }
@@ -101,17 +101,17 @@ struct LocationsFilterSheet: View {
 
     private var applyTitle: String {
         guard let count, !isCounting else { return "Show locations" }
-        return "Show \(count.locationsGrouped) \(count == 1 ? "location" : "locations")"
+        return L10n.format("Show %lld locations", count)
     }
 
     private func hint(_ count: Int) -> String {
-        count == 0 ? "Any" : "\(count) selected"
+        count == 0 ? L10n.text("Any") : L10n.format("%lld selected", count)
     }
 
     private func section<Options: View>(_ label: String, hint: String, @ViewBuilder options: () -> Options) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(label.uppercased())
+                Text(L10n.text(label).uppercased(with: LanguageStore.shared.locale))
                     .font(.aiku(13, .bold))
                     .tracking(0.5)
                     .foregroundStyle(AikuColor.text3)

@@ -248,7 +248,7 @@ struct IconButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 }
 
@@ -272,6 +272,6 @@ struct ScanButton: View {
                 .background(AikuColor.scan, in: RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 }

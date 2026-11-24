@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct OfflineLineWorkTests {
     private static func decode<T: Decodable>(_ type: T.Type, _ json: String) throws -> T {
         let decoder = JSONDecoder()
@@ -238,9 +239,12 @@ struct OfflineLineWorkTests {
         ]
 
         let sent = try requests.map { request in
-            try #require(try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: Any])["client_request_id"] as? String
+            let body = try #require(request.httpBody)
+            let object = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+            return object["client_request_id"] as? String
         }
-        let withoutID = try #require(try JSONSerialization.jsonObject(with: try #require(client.makeRequest(for: .mobileLocationAudit(id: 7, counts: [])).httpBody)) as? [String: Any])
+        let auditBody = try #require(client.makeRequest(for: .mobileLocationAudit(id: 7, counts: [])).httpBody)
+        let withoutID = try #require(try JSONSerialization.jsonObject(with: auditBody) as? [String: Any])
 
         #expect(sent == ["a1", "a2", "a3", "a4", "a5"])
         #expect(withoutID["client_request_id"] == nil)

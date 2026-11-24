@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Aiku
 
+@MainActor
 struct GoodsOutDispatchTests {
     private let now = GoodsOutDateFormat.date(day: 10, hour: 12, minute: 0)
 

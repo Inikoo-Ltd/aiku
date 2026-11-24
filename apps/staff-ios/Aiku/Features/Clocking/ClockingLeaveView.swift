@@ -35,7 +35,7 @@ struct ClockingLeaveView: View {
                     Card {
                         ForEach(Array(store.upcomingHolidays.prefix(6).enumerated()), id: \.offset) { index, holiday in
                             if index > 0 { RowDivider() }
-                            KeyValueRow(LeaveCalculator.rangeLabel(start: holiday.date, end: nil), holiday.label ?? "Holiday")
+                            KeyValueRow(LeaveCalculator.rangeLabel(start: holiday.date, end: nil), holiday.label ?? L10n.text("Holiday"))
                         }
                     }
                 }
@@ -105,7 +105,7 @@ struct ClockingLeaveView: View {
     private func stat(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value).font(.aiku(15, .bold)).foregroundStyle(AikuColor.text)
-            Text(label).font(.aiku(12)).foregroundStyle(AikuColor.text3)
+            Text(L10n.text(label)).font(.aiku(12)).foregroundStyle(AikuColor.text3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -124,7 +124,7 @@ struct ClockingLeaveView: View {
         let status = leave.status.flatMap(LeaveStatus.init(rawValue:))
         return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(leave.typeLabel ?? leave.type ?? "Leave")
+                Text(leave.typeLabel ?? leave.type ?? L10n.text("Leave"))
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
                 Spacer(minLength: 8)
@@ -208,7 +208,7 @@ struct ClockingLeaveRequestSheet: View {
             .foregroundStyle(AikuColor.text)
             .tint(AikuColor.primary)
             .cardSurface()
-            Text(LeaveCalculator.daysLabel(LeaveCalculator.days(type: option, start: startText, end: endText, holidays: store.holidayDates)) + " · weekends and public holidays are not counted")
+            Text(L10n.format("%@ · weekends and public holidays are not counted", LeaveCalculator.daysLabel(LeaveCalculator.days(type: option, start: startText, end: endText, holidays: store.holidayDates))))
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
             AikuTextArea("Reason", text: $reason, placeholder: "Family event")

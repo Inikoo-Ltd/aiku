@@ -28,7 +28,7 @@ struct GoodsInDeliveryScreen: View {
                 GoodsInLoadingScreen(
                     title: reference,
                     kicker: "Stock delivery",
-                    failedTitle: "\(reference) could not be loaded",
+                    failedTitle: L10n.format("%@ could not be loaded", reference),
                     problem: feed.loadError,
                     retry: { Task { await feed.load() } }
                 )
@@ -82,7 +82,7 @@ private struct GoodsInDeliveryContent: View {
                 Task { await feed.checkAll() }
             }
             .aikuConfirm(
-                "Unmark \(delivery.reference) as received?",
+                L10n.format("Unmark %@ as received?", delivery.reference),
                 isPresented: Binding(get: { confirmingUnreceive != nil }, set: { if !$0 { confirmingUnreceive = nil } }),
                 message: "It goes back to dispatched. Only goods-in supervisors can do this.",
                 confirmTitle: confirmingUnreceive.map { $0.label.isEmpty ? "Unmark as received" : $0.label } ?? "Unmark as received",
@@ -94,7 +94,7 @@ private struct GoodsInDeliveryContent: View {
 
     private var kicker: String {
         let supplier = delivery.supplier?.label ?? ""
-        return "Stock delivery · \(supplier.isEmpty ? delivery.stateLabel : supplier)"
+        return L10n.format("Stock delivery · %@", supplier.isEmpty ? delivery.stateLabel : supplier)
     }
 
     private var headerActions: [HeaderAction] {
@@ -133,7 +133,7 @@ private struct GoodsInDeliveryContent: View {
         GoodsInSummaryCard(delivery: delivery)
         GoodsInViewTabs(options: delivery.views.map { ($0, label(for: $0)) }, active: view) { feed.chosenView = $0 }
         if let code = feed.lookingUpCode {
-            InlineAlert(tone: .info, title: "Looking up \(code)…")
+            InlineAlert(tone: .info, title: L10n.format("Looking up %@…", code))
         }
         switch view {
         case .items:
@@ -164,8 +164,8 @@ private struct GoodsInDeliveryContent: View {
     private func label(for view: GoodsInDeliveryView) -> String {
         switch view {
         case .items: "Items"
-        case .check: "To check \(delivery.items.filter(\.needsCheck).count)"
-        case .place: "To place \(delivery.items.filter(\.canBePlaced).count)"
+        case .check: L10n.format("To check %lld", delivery.items.filter(\.needsCheck).count)
+        case .place: L10n.format("To place %lld", delivery.items.filter(\.canBePlaced).count)
         case .done: "Done"
         case .checklist: "Checklist"
         }
@@ -214,7 +214,7 @@ private struct GoodsInDeliveryContent: View {
             }
             .accessibilityIdentifier("goodsIn.checkAll")
         case let .place(action, next):
-            AikuButton("Place \(next.code)", look: GoodsInActionKey.look(for: action.key)) {
+            AikuButton(L10n.format("Place %@", next.code), look: GoodsInActionKey.look(for: action.key)) {
                 openPlace(next)
             }
             .accessibilityIdentifier("goodsIn.placeNext")
@@ -259,7 +259,7 @@ private struct GoodsInDeliveryContent: View {
             }
         case .more:
             if let unreceive {
-                SheetScaffold(title: "\(delivery.reference) · more") {
+                SheetScaffold(title: L10n.format("%@ · more", delivery.reference)) {
                     Card {
                         GoodsInActionLinkRow(
                             icon: .undo,
@@ -314,7 +314,7 @@ private struct GoodsInDeliveryContent: View {
             open(.chooseLine(code: code, itemIDs: itemIDs))
         case .notOnDelivery(let code):
             ScanFeedback.shared.rejected()
-            toasts.show("\(code) is not on \(delivery.reference)", tone: .info)
+            toasts.show(L10n.format("%@ is not on %@", code, delivery.reference), tone: .info)
         case .failed(_, let message):
             toasts.show(message, tone: .danger)
         }
@@ -326,18 +326,18 @@ private struct GoodsInDeliveryContent: View {
         let current = feed.delivery ?? delivery
         switch write {
         case .receive:
-            return "\(current.reference) marked as received"
+            return L10n.format("%@ marked as received", current.reference)
         case .unreceive:
-            return "\(current.reference) is back to dispatched"
+            return L10n.format("%@ is back to dispatched", current.reference)
         case .checkAll:
-            return "Every item of \(current.reference) checked"
+            return L10n.format("Every item of %@ checked", current.reference)
         case let .check(itemID, sent):
             let item = current.item(itemID)
             let code = item?.code ?? ""
             if item?.wasRaised(above: sent) == true {
-                return "\(code) raised to \(GoodsInText.quantity(item?.skoChecked ?? 0, label: item?.skoCheckedLabel)): that much is already placed"
+                return L10n.format("%@ raised to %@: that much is already placed", code, GoodsInText.quantity(item?.skoChecked ?? 0, label: item?.skoCheckedLabel))
             }
-            return sent == 0 ? "\(code) set as not received" : "\(code) · \(GoodsInText.number(sent)) checked"
+            return sent == 0 ? L10n.format("%@ set as not received", code) : L10n.format("%@ · %@ checked", code, GoodsInText.number(sent))
         case .recordCheck(_, let result, _, _, _):
             return result == .passed ? "Check passed" : "Check recorded as failed"
         case .place, .placeAll:
@@ -376,20 +376,20 @@ private struct GoodsInOrdererCard: View {
             if !text.isEmpty { rows.append(GoodsOutDetailRow(icon: .person, text: text)) }
         }
         if let agent = delivery.agentReference?.trimmingCharacters(in: .whitespaces), !agent.isEmpty {
-            rows.append(GoodsOutDetailRow(icon: .document, text: "Agent reference \(agent)"))
+            rows.append(GoodsOutDetailRow(icon: .document, text: L10n.format("Agent reference %@", agent)))
         }
         let orders = delivery.purchaseOrders.map(\.reference).filter { !$0.isEmpty }
         if !orders.isEmpty {
-            rows.append(GoodsOutDetailRow(icon: .document, text: "Purchase orders \(orders.joined(separator: ", "))"))
+            rows.append(GoodsOutDetailRow(icon: .document, text: L10n.format("Purchase orders %@", orders.joined(separator: ", "))))
         }
         if let dispatched = GoodsInText.date(delivery.dispatchedAt) {
-            rows.append(GoodsOutDetailRow(icon: .shipment, text: "Dispatched \(dispatched)"))
+            rows.append(GoodsOutDetailRow(icon: .shipment, text: L10n.format("Dispatched %@", dispatched)))
         }
         if let expected = GoodsInText.date(delivery.estimatedReceivingDate) {
-            rows.append(GoodsOutDetailRow(icon: .history, text: "Estimated receiving \(expected)"))
+            rows.append(GoodsOutDetailRow(icon: .history, text: L10n.format("Estimated receiving %@", expected)))
         }
         if let received = GoodsInText.date(delivery.receivedAt) {
-            rows.append(GoodsOutDetailRow(icon: .check, text: "Received \(received)"))
+            rows.append(GoodsOutDetailRow(icon: .check, text: L10n.format("Received %@", received)))
         }
         return rows
     }
@@ -426,7 +426,7 @@ private struct GoodsInSummaryCard: View {
         let isInGoodsIn = !delivery.isBeforeReceiving
         var fields = [GoodsInField("Items", summary.numberItems.grouped)]
         if isInGoodsIn {
-            fields.append(GoodsInField("Received / checked", "\(summary.numberChecked.grouped) of \(summary.numberItems.grouped)"))
+            fields.append(GoodsInField("Received / checked", L10n.format("%lld of %lld", summary.numberChecked, summary.numberItems)))
             fields.append(GoodsInField("Placed", summary.numberPlaced.grouped))
         }
         fields.append(GoodsInField("New SKOs", summary.numberNewOrgStocks.grouped))
@@ -445,7 +445,7 @@ private struct GoodsInArrivingItems: View {
     let delivery: MobileStockDelivery
 
     var body: some View {
-        GoodsOutSectionTitle(title: "Items", detail: "\(delivery.items.count) \(GoodsInText.plural(delivery.items.count, "item", "items"))")
+        GoodsOutSectionTitle(title: "Items", detail: L10n.format("%lld items", delivery.items.count))
         GoodsInCardList(items: delivery.items) { item in
             GoodsInItemRow(
                 code: item.code,
@@ -470,7 +470,7 @@ private struct GoodsInCheckItems: View {
         if delivery.canCheck, items.contains(where: \.needsCheck) {
             GoodsInScanPrompt(title: "Scan to check", message: "Scan an SKO barcode to open its line", identifier: "goodsIn.scanToCheck", action: onScan)
         }
-        GoodsOutSectionTitle(title: "To check", detail: "\(checkedCount) of \(items.count) checked")
+        GoodsOutSectionTitle(title: "To check", detail: L10n.format("%lld of %lld checked", checkedCount, items.count))
         if items.isEmpty {
             GoodsInHelper("Nothing left to check.")
         }
@@ -498,7 +498,7 @@ private struct GoodsInPlaceItems: View {
     var body: some View {
         let items = delivery.items(for: .place)
         let placedCount = items.filter { !$0.canBePlaced }.count
-        GoodsOutSectionTitle(title: "Place checked items", detail: "\(placedCount) of \(items.count) placed")
+        GoodsOutSectionTitle(title: "Place checked items", detail: L10n.format("%lld of %lld placed", placedCount, items.count))
         if items.isEmpty {
             GoodsInHelper("Nothing has been checked yet, so there is nothing to place.")
         }
@@ -525,8 +525,8 @@ private struct GoodsInPlaceItems: View {
 
     private func subtitle(_ item: MobileStockDeliveryItem) -> String {
         let placedIn = Array(NSOrderedSet(array: item.placements.compactMap { $0.location?.code }.filter { !$0.isEmpty })).compactMap { $0 as? String }.joined(separator: ", ")
-        if !item.canBePlaced, !placedIn.isEmpty { return "\(item.name) · in \(placedIn)" }
-        if let picking = item.pickingLocationCode { return "\(item.name) · picking location \(picking)" }
+        if !item.canBePlaced, !placedIn.isEmpty { return L10n.format("%@ · in %@", item.name, placedIn) }
+        if let picking = item.pickingLocationCode { return L10n.format("%@ · picking location %@", item.name, picking) }
         return item.name
     }
 }
@@ -540,7 +540,7 @@ private struct GoodsInDoneItems: View {
             GoodsInHelper("Nothing is done yet.")
         }
         GoodsInCardList(items: items) { item in
-            let placements = item.placements.map { "\(GoodsInText.quantity($0.quantity, label: $0.quantityLabel)) in \($0.location?.code ?? "")" }.joined(separator: GoodsInText.separator)
+            let placements = item.placements.map { L10n.format("%@ in %@", GoodsInText.quantity($0.quantity, label: $0.quantityLabel), $0.location?.code ?? "") }.joined(separator: GoodsInText.separator)
             GoodsInItemRow(
                 code: item.code,
                 subtitle: placements.isEmpty ? item.name : placements,
@@ -565,14 +565,14 @@ struct GoodsInChooseLineSheet: View {
     let onChoose: (MobileStockDeliveryItem) -> Void
 
     var body: some View {
-        SheetScaffold(title: "Choose the line", subtitle: "\(code) is on \(items.count) \(GoodsInText.plural(items.count, "line", "lines"))") {
+        SheetScaffold(title: "Choose the line", subtitle: L10n.format("%@ is on %lld lines", code, items.count)) {
             ForEach(items) { item in
                 GoodsInChoiceRow(
                     title: item.code,
                     subtitle: [
                         item.purchaseOrderReference.flatMap { $0.isEmpty ? nil : $0 },
                         item.expectedLine,
-                        item.skoChecked.map { "\(GoodsInText.quantity($0, label: item.skoCheckedLabel)) checked" },
+                        item.skoChecked.map { L10n.format("%@ checked", GoodsInText.quantity($0, label: item.skoCheckedLabel)) },
                     ].compactMap { $0 }.joined(separator: GoodsInText.separator),
                     isSelected: false,
                     identifier: "goodsIn.chooseLine.\(item.id)"
@@ -612,7 +612,7 @@ struct GoodsInCheckedQuantitySheet: View {
 
     var body: some View {
         let difference = GoodsInDifference.of(checked: checked, expected: item.skoExpected)
-        SheetScaffold(title: "\(item.code) · checked quantity", subtitle: item.expectedLine) {
+        SheetScaffold(title: L10n.format("%@ · checked quantity", item.code), subtitle: item.expectedLine) {
             SheetSectionLabel("Checked (SKOs)")
             GoodsInQuantityStepper(value: checked, minimum: 0) { checked = $0 }
             Card {
@@ -624,11 +624,11 @@ struct GoodsInCheckedQuantitySheet: View {
             GoodsInHelper("Count in SKOs (outers). Purchasing resolves differences: recount, unit error, supplier claim or surplus accepted.")
         } footer: {
             GoodsInSheetProblem(problem: problem)
-            AikuButton("Save \(GoodsInText.number(checked)) checked", icon: .check, isLoading: isWorking) {
+            AikuButton(L10n.format("Save %@ checked", GoodsInText.number(checked)), icon: .check, isLoading: isWorking) {
                 onSave(checked)
             }
             .accessibilityIdentifier("goodsIn.check.save")
-            AikuButton("Check all \(GoodsInText.quantity(item.skoExpected, label: item.skoExpectedLabel))", icon: .checkDouble, kind: .secondary) {
+            AikuButton(L10n.format("Check all %@", GoodsInText.quantity(item.skoExpected, label: item.skoExpectedLabel)), icon: .checkDouble, kind: .secondary) {
                 onSave(item.skoExpected)
             }
             .disabled(isWorking)

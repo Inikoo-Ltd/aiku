@@ -174,7 +174,7 @@ struct GoodsInDeliveriesScreen: View {
 
     var body: some View {
         GoodsInAccessGate(isAllowed: \.viewGoodsIn) {
-            AppScreen(title: "Stock deliveries", kicker: "Goods in · \(session.warehouseLabel)") {
+            AppScreen(title: "Stock deliveries", kicker: L10n.format("Goods in · %@", session.warehouseLabel)) {
                 ModuleTabs(.goodsIn, current: .stockDeliveries)
             } content: {
                 content
@@ -192,7 +192,7 @@ struct GoodsInDeliveriesScreen: View {
                 router.open(GoodsInRoute.stockDelivery(id: id, reference: reference))
             case .noMatch(let code):
                 ScanFeedback.shared.rejected()
-                toasts.show("\(code) is not a stock delivery", tone: .info)
+                toasts.show(L10n.format("%@ is not a stock delivery", code), tone: .info)
             case .failed(_, let message):
                 toasts.show(message, tone: .danger)
             }
@@ -232,7 +232,7 @@ struct GoodsInDeliveriesScreen: View {
             Task { await feed.clearFilters() }
         }
         if let code = feed.lookingUpCode {
-            InlineAlert(tone: .info, title: "Looking up \(code)…")
+            InlineAlert(tone: .info, title: L10n.format("Looking up %@…", code))
         }
         if let problem = list.firstPageProblem {
             GoodsOutLoadProblem(title: "Stock deliveries could not be loaded", message: problem) {
@@ -249,7 +249,7 @@ struct GoodsInDeliveriesScreen: View {
                 }
             }
         } else if list.showsEmpty, !trimmed.isEmpty {
-            GoodsInHelper("No stock delivery matches “\(trimmed)”.")
+            GoodsInHelper(L10n.format("No stock delivery matches “%@”.", trimmed))
         } else if list.showsEmpty {
             GoodsInHelper("No stock deliveries here.")
         } else if list.problem == nil {
@@ -331,8 +331,8 @@ struct GoodsInDeliveryFilterPanel: View {
     }
 
     private var showTitle: String {
-        guard let total = feed.total(for: draft) else { return "Show results" }
-        return total == 1 ? "Show 1 result" : "Show \(total) results"
+        guard let total = feed.total(for: draft) else { return L10n.text("Show results") }
+        return L10n.format("Show %lld results", total)
     }
 
     private func chipSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -354,7 +354,7 @@ struct GoodsInReturnsScreen: View {
 
     var body: some View {
         GoodsInAccessGate(isAllowed: \.viewReturns, permission: "returns.view") {
-            AppScreen(title: feed.state == .toProcess ? "Returns to process" : "Returns", kicker: "Goods in · \(session.warehouseLabel)") {
+            AppScreen(title: feed.state == .toProcess ? "Returns to process" : "Returns", kicker: L10n.format("Goods in · %@", session.warehouseLabel)) {
                 ModuleTabs(.goodsIn, current: .goodsInReturns)
             } content: {
                 content
@@ -416,7 +416,7 @@ struct GoodsInReturnsScreen: View {
                 }
             }
         } else if list.showsEmpty, !trimmed.isEmpty {
-            GoodsInHelper("No return matches “\(trimmed)”.")
+            GoodsInHelper(L10n.format("No return matches “%@”.", trimmed))
         } else if list.showsEmpty {
             GoodsInHelper("No returns here.")
         } else if list.problem == nil {
@@ -441,7 +441,7 @@ struct GoodsInBacklogScreen: View {
 
     var body: some View {
         GoodsInAccessGate(isAllowed: \.viewGoodsIn) {
-            AppScreen(title: "Incoming hub", kicker: "Goods in · \(session.warehouseLabel)") {
+            AppScreen(title: "Incoming hub", kicker: L10n.format("Goods in · %@", session.warehouseLabel)) {
                 ModuleTabs(.goodsIn, current: .goodsInBacklog)
             } content: {
                 content
@@ -497,7 +497,7 @@ private struct GoodsInSourceCard: View {
         VStack(alignment: .leading, spacing: 4) {
             Button { onOpen(nil) } label: {
                 HStack {
-                    Text(row.label.isEmpty ? "Goods in" : row.label)
+                    Text(row.label.isEmpty ? L10n.text("Goods in") : row.label)
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -549,12 +549,12 @@ private struct GoodsInSourceCard: View {
 
     private func label(_ figure: GoodsInHubFigure) -> String {
         switch figure {
-        case .arriving: "Arriving"
-        case .received: "Received"
-        case .checked: "Checked"
-        case .bookingIn: row.key == GoodsInHubKey.returns ? "Returning" : "Booking in"
-        case .bookedInWeek: "Booked in 7d"
-        case .placedWeek: "Placed 7d"
+        case .arriving: L10n.text("Arriving")
+        case .received: L10n.text("Received")
+        case .checked: L10n.text("Checked")
+        case .bookingIn: row.key == GoodsInHubKey.returns ? L10n.text("Returning") : L10n.text("Booking in")
+        case .bookedInWeek: L10n.text("Booked in 7d")
+        case .placedWeek: L10n.text("Placed 7d")
         }
     }
 

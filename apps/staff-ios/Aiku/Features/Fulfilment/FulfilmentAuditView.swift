@@ -50,7 +50,7 @@ private struct StoredItemAuditScreen: View {
             } else {
                 AppScreen(title: reference, kicker: "Stored item audit") {
                     if let message = live.loadError {
-                        InlineAlert(title: "Couldn’t load the audit of \(reference)", message: message)
+                        InlineAlert(title: L10n.format("Couldn’t load the audit of %@", reference), message: message)
                         AikuButton("Try again", kind: .secondary) {
                             Task { await live.load() }
                         }
@@ -79,10 +79,10 @@ private struct StoredItemAuditScreen: View {
         let canCount = audit.can("count")
         let canAdd = audit.can("add_item")
         let complete = audit.action("complete")
-        let countedText = "\(audit.counts.counted.grouped) of \(audit.counts.lines.grouped) counted"
+        let countedText = L10n.format("%lld of %lld counted", audit.counts.counted, audit.counts.lines)
         AppScreen(
             title: (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference,
-            kicker: PalletDeliveryText.joined(["Stored item audit", "Pallet \(palletReference)", audit.stateLabel])
+            kicker: PalletDeliveryText.joined([L10n.text("Stored item audit"), L10n.format("Pallet %@", palletReference), audit.stateLabel])
         ) {
             if let message = live.loadError {
                 GoodsOutLoadProblem(title: "Couldn’t refresh this screen", message: message) {
@@ -103,9 +103,9 @@ private struct StoredItemAuditScreen: View {
             if canCount {
                 FulfilmentScanCard(
                     title: "Scan to count",
-                    detail: "Scan each item on pallet \(palletReference)",
-                    highlight: live.lastScanned ?? "Nothing scanned yet",
-                    footnote: live.queuedScans > 0 ? "\(live.queuedScans) scan\(live.queuedScans == 1 ? "" : "s") waiting" : (live.lastScanned == nil ? nil : "Last scanned"),
+                    detail: L10n.format("Scan each item on pallet %@", palletReference),
+                    highlight: live.lastScanned ?? L10n.text("Nothing scanned yet"),
+                    footnote: live.queuedScans > 0 ? L10n.format("%lld scans waiting", live.queuedScans) : (live.lastScanned == nil ? nil : "Last scanned"),
                     identifier: "fulfilment.audit.scan"
                 ) {
                     isScanning = true
@@ -170,9 +170,9 @@ private struct StoredItemAuditScreen: View {
             }
         }
         .aikuConfirm(
-            "Complete \((audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference)?",
+            L10n.format("Complete %@?", (audit.reference?.isEmpty == false ? audit.reference : nil) ?? palletReference),
             isPresented: $isConfirmingComplete,
-            message: "The counted quantities are applied to pallet \(palletReference). Items not counted stay as they are.",
+            message: L10n.format("The counted quantities are applied to pallet %@. Items not counted stay as they are.", palletReference),
             confirmTitle: complete?.label ?? "Complete audit"
         ) {
             Task { await live.complete() }
@@ -184,7 +184,7 @@ private struct StoredItemAuditScreen: View {
         if let pallet = audit.pallet {
             facts.append(GoodsInField("Pallet", PalletDeliveryText.joined([pallet.reference, pallet.customerReference])))
         }
-        facts.append(GoodsInField("Location", audit.pallet?.location?.code ?? "no location"))
+        facts.append(GoodsInField("Location", audit.pallet?.location?.code ?? L10n.text("no location")))
         if let customer = audit.customer?.name {
             facts.append(GoodsInField("Customer", customer))
         }
@@ -195,7 +195,7 @@ private struct StoredItemAuditScreen: View {
         let tone = FulfilmentStorageText.auditTone(type: line.auditType, difference: line.difference)
         return ListRow(
             line.storedItem.reference ?? "#\(line.storedItem.id)",
-            subtitle: PalletDeliveryText.joined([line.storedItem.name, line.isCounted ? "Expected \(line.quantity)" : "Expected \(line.quantity) · not counted yet"]),
+            subtitle: PalletDeliveryText.joined([line.storedItem.name, line.isCounted ? L10n.format("Expected %lld", line.quantity) : L10n.format("Expected %lld · not counted yet", line.quantity)]),
             chips: FulfilmentStorageText.auditChip(line).map { [Chip($0, tone)] } ?? [],
             action: canCount ? {
                 live.clearSheetError()

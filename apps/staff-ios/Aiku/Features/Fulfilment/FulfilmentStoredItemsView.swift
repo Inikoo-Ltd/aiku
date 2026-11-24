@@ -14,7 +14,7 @@ struct FulfilmentStoredItemsView: View {
 
     var body: some View {
         @Bindable var feed = feed
-        AppScreen(title: "Stored items", kicker: "Inventory · \(session.warehouseLabel)") {
+        AppScreen(title: "Stored items", kicker: L10n.format("Inventory · %@", session.warehouseLabel)) {
             ModuleTabs(.inventory, current: .storedItems)
         } content: {
             FilterChipBar(options: StoredItemStateFilter.allCases, selection: $feed.state, title: \.title) { state in
@@ -65,7 +65,7 @@ struct FulfilmentStoredItemsView: View {
             CardList(feed.rows) { row in
                 ListRow(
                     row.reference,
-                    subtitle: PalletDeliveryText.joined([row.customer?.name, row.name, PalletDeliveryText.plural(row.numberPallets, "pallet", "pallets")]),
+                    subtitle: PalletDeliveryText.joined([row.customer?.name, row.name, L10n.format("%lld pallets", row.numberPallets)]),
                     chips: row.stateLabel.map { [Chip($0, FulfilmentStorageText.storedItemTone(row.state))] } ?? [],
                     action: { opened = row }
                 ) {
@@ -84,7 +84,7 @@ struct FulfilmentStoredItemsView: View {
                 }
             }
         } else if isCurrent, feed.loadError == nil {
-            EmptyState(icon: .sko, title: search.isEmpty ? "No stored items here." : "No stored item matches “\(search)”.")
+            EmptyState(icon: .sko, title: search.isEmpty ? "No stored items here." : L10n.format("No stored item matches “%@”.", search))
         } else if feed.loadError == nil {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 88)
@@ -117,14 +117,14 @@ private struct StoredItemSheet: View {
             }
             if let detail {
                 let pallets = detail.pallets ?? []
-                SheetSectionLabel("Pallets · \(PalletDeliveryText.plural(pallets.count, "pallet", "pallets"))")
+                SheetSectionLabel([L10n.text("Pallets"), L10n.format("%lld pallets", pallets.count)].joined(separator: " · "))
                 if pallets.isEmpty {
                     HelperText("No pallet in this warehouse holds it now.")
                 } else {
                     CardList(pallets.map(StoredItemPalletItem.init)) { item in
                         ListRow(
                             item.line.pallet.reference,
-                            subtitle: PalletDeliveryText.joined([item.line.location?.code ?? "no location", item.line.pallet.customerReference]),
+                            subtitle: PalletDeliveryText.joined([item.line.location?.code ?? L10n.text("no location"), item.line.pallet.customerReference]),
                             chips: item.line.pallet.stateLabel.map { [Chip($0, FulfilmentStorageText.palletStateTone(item.line.pallet.state))] } ?? [],
                             action: { onOpenPallet(item.line.pallet) }
                         ) {
@@ -138,7 +138,7 @@ private struct StoredItemSheet: View {
                     }
                 }
             } else if let problem {
-                InlineAlert(title: "Couldn’t load \(row.reference)", message: problem)
+                InlineAlert(title: L10n.format("Couldn’t load %@", row.reference), message: problem)
             } else {
                 SkeletonRow()
                 SkeletonRow()

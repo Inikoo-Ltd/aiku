@@ -13,7 +13,7 @@ struct LocationsListView: View {
         let locations = store.listedLocations
         AppScreen(
             title: "Locations",
-            kicker: "Locations · \(session.warehouseLabel)",
+            kicker: L10n.format("Locations · %@", session.warehouseLabel),
             actions: [
                 HeaderAction(.filter, label: "Filter", badge: store.listFilter.activeCount > 0 ? store.listFilter.activeCount : nil) {
                     isFiltering = true

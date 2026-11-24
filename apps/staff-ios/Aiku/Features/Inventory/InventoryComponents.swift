@@ -32,7 +32,7 @@ struct InventorySkoRow: View {
 
     var body: some View {
         ListRow(reference, subtitle: subtitle.isEmpty ? nil : subtitle, detail: locationLine, chips: chip.map { [$0] } ?? [], action: action) {
-            ProductThumb(size: 48, label: "Product photo of \(reference)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", reference))
         } trailing: {
             if let quantityText {
                 Text(quantityText)
@@ -58,7 +58,7 @@ struct InventoryMovementRow: View {
             chips: [movement.chip],
             action: action
         ) {
-            ProductThumb(size: 48, label: "Product photo of \(movement.title)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", movement.title))
         } trailing: {
             EmptyView()
         }
@@ -117,7 +117,7 @@ struct InventorySearchField: View {
                 .foregroundStyle(AikuColor.text4)
                 .padding(.leading, 14)
                 .accessibilityHidden(true)
-            TextField(placeholder, text: $text)
+            TextField(L10n.text(placeholder), text: $text)
                 .font(.aiku(15))
                 .foregroundStyle(AikuColor.text)
                 .textInputAutocapitalization(.never)
@@ -126,7 +126,7 @@ struct InventorySearchField: View {
                 .focused(isFocused)
                 .onSubmit { onSubmit?() }
                 .padding(.horizontal, 10)
-                .accessibilityLabel(placeholder)
+                .accessibilityLabel(L10n.text(placeholder))
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -194,7 +194,7 @@ struct InventoryDangerNote: View {
     let text: String
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(14))
             .foregroundStyle(AikuColor.dangerInk)
             .padding(.horizontal, 14)

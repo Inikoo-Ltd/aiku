@@ -13,7 +13,7 @@ enum ClockingFormat {
         let totalMinutes = max(seconds, 0) / 60
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
-        return hours > 0 ? String(format: "%dh %02dm", hours, minutes) : "\(minutes)m"
+        return hours > 0 ? L10n.formatInSavedLanguage("%1$lldh %2$02lldm", hours, minutes) : L10n.formatInSavedLanguage("%lldm", minutes)
     }
 
     static func seconds(_ hours: Int, _ minutes: Int, _ seconds: Int = 0) -> Int {

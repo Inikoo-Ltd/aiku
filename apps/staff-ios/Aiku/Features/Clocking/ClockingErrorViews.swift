@@ -14,7 +14,7 @@ struct ClockingErrorScreen<Extra: View, Actions: View>: View {
         SystemStateScreen(showsTabBar: true) {
             SystemStateHeader(title: "Clocking", kicker: kicker, back: .custom { backToClocking(nil) })
         } body: {
-            SystemStateBody(icon: icon, title: title, message: Text(message), spacing: 14) {
+            SystemStateBody(icon: icon, title: L10n.text(title), message: Text(L10n.text(message)), spacing: 14) {
                 extra
             }
         } actions: {
@@ -57,7 +57,7 @@ struct ClockingQrInvalidView: View {
 
     private func detailRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
             Spacer(minLength: 8)

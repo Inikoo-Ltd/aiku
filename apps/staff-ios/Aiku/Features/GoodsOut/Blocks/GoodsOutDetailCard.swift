@@ -15,7 +15,7 @@ struct GoodsOutDetailCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(13, .bold))
                 .foregroundStyle(AikuColor.text)
             ForEach(rows) { row in
@@ -50,7 +50,7 @@ struct GoodsOutOrderCards: View {
 
     var body: some View {
         GoodsOutDetailCard(title: "Order", rows: [
-            GoodsOutDetailRow(icon: .order, text: "\(note.reference) · order"),
+            GoodsOutDetailRow(icon: .order, text: L10n.format("%@ · order", note.reference)),
             GoodsOutDetailRow(icon: .person, text: "\(note.customer) (\(note.customerNumber))"),
             GoodsOutDetailRow(icon: .person, text: note.contactName),
             GoodsOutDetailRow(icon: .email, text: note.email),

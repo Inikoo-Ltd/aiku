@@ -81,7 +81,7 @@ struct SystemConflictResolveView: View {
             }
             if let record = entry.record?.key {
                 let reference = recordReference(entry, record: record)
-                AikuButton("Open \(record.type.title(reference))", kind: .tertiary) {
+                AikuButton(L10n.format("Open %@", record.type.title(reference)), kind: .tertiary) {
                     open(record, reference: reference)
                 }
             }

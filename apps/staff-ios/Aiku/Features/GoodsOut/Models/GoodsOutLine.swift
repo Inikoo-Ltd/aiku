@@ -6,17 +6,35 @@ enum GoodsOutNotPickedReason: String, CaseIterable, Hashable, Sendable {
     case cancelledByWarehouse
     case notApplicable
 
+    @MainActor
     var title: String {
         switch self {
-        case .outOfStock: "Out of stock"
-        case .cancelledByCustomer: "Cancelled by customer"
-        case .cancelledByWarehouse: "Cancelled by warehouse"
-        case .notApplicable: "Not applicable"
+        case .outOfStock: L10n.text("Out of stock")
+        case .cancelledByCustomer: L10n.text("Cancelled by customer")
+        case .cancelledByWarehouse: L10n.text("Cancelled by warehouse")
+        case .notApplicable: L10n.text("Not applicable")
         }
     }
 
-    var chipText: String { "Not picked · \(title.lowercased())" }
-    var statusText: String { "Not picked · \(title)" }
+    @MainActor
+    var chipText: String {
+        switch self {
+        case .outOfStock: L10n.text("Not picked · out of stock")
+        case .cancelledByCustomer: L10n.text("Not picked · cancelled by customer")
+        case .cancelledByWarehouse: L10n.text("Not picked · cancelled by warehouse")
+        case .notApplicable: L10n.text("Not picked · not applicable")
+        }
+    }
+
+    @MainActor
+    var statusText: String {
+        switch self {
+        case .outOfStock: L10n.text("Not picked · Out of stock")
+        case .cancelledByCustomer: L10n.text("Not picked · Cancelled by customer")
+        case .cancelledByWarehouse: L10n.text("Not picked · Cancelled by warehouse")
+        case .notApplicable: L10n.text("Not picked · Not applicable")
+        }
+    }
 }
 
 enum GoodsOutWaitingReason: String, CaseIterable, Hashable, Sendable {
@@ -37,10 +55,11 @@ enum GoodsOutWaitingReason: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var chipText: String {
         switch self {
-        case .warehouse: "Waiting · warehouse"
-        case .customerService: "Waiting · CS"
+        case .warehouse: L10n.text("Waiting · warehouse")
+        case .customerService: L10n.text("Waiting · CS")
         }
     }
 }
@@ -67,6 +86,7 @@ enum GoodsOutLineStatus: Hashable, Sendable {
         }
     }
 
+    @MainActor
     var chip: Chip? {
         switch self {
         case .toPick, .partlyPicked: nil
@@ -122,10 +142,11 @@ struct GoodsOutLine: Identifiable, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var swipeStatusText: String {
         switch status {
-        case .toPick: "To pick"
-        case .partlyPicked, .picked: "Picked \(picked) of \(required)"
+        case .toPick: L10n.text("To pick")
+        case .partlyPicked, .picked: L10n.format("Picked %lld of %lld", picked, required)
         case .notPicked(let reason): reason.statusText
         case .waiting(let reason): reason.chipText
         }

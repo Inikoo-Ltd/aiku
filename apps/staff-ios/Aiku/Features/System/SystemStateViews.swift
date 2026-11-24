@@ -39,7 +39,7 @@ struct SystemOfflineView: View {
                     }
                     .foregroundStyle(AikuColor.text2)
                     Spacer(minLength: 8)
-                    Text(OfflineTexts.count(offline.waitingCount, "action", "actions"))
+                    Text(L10n.format("%lld actions", offline.waitingCount))
                         .fontWeight(.bold)
                         .foregroundStyle(AikuColor.text)
                 }
@@ -86,6 +86,7 @@ struct SystemSessionExpiredView: View {
     }
 }
 
+@MainActor
 enum SystemNoAccessText {
     static func title(module: String, warehouse: String) -> String {
         let name = warehouse.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -95,9 +96,9 @@ enum SystemNoAccessText {
     static func message(module: String, warehouse: String) -> String {
         let name = warehouse.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
-            return "Your account can’t open **\(module)**. Ask your warehouse manager to add the permission in Aiku."
+            return L10n.format("Your account can’t open **%@**. Ask your warehouse manager to add the permission in Aiku.", L10n.text(module))
         }
-        return "Your account can’t open **\(module)** in **\(name)**. Ask your warehouse manager to add the permission in Aiku."
+        return L10n.format("Your account can’t open **%@** in **%@**. Ask your warehouse manager to add the permission in Aiku.", L10n.text(module), name)
     }
 
     static func canChangeWarehouse(warehouseCount: Int) -> Bool {

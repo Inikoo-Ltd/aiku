@@ -45,7 +45,7 @@ enum StockFraction {
         var exact = Decimal(string: "\(value)", locale: Locale(identifier: "en_US_POSIX")) ?? Decimal(value)
         var rounded = Decimal()
         NSDecimalRound(&rounded, &exact, decimals, .plain)
-        return NSDecimalNumber(decimal: rounded).doubleValue
+        return Double(NSDecimalNumber(decimal: rounded).stringValue) ?? value
     }
 
     private static func phpRound(_ value: Double) -> Double {

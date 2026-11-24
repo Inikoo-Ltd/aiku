@@ -1,11 +1,11 @@
 import Foundation
 
 enum OfflineRecordText {
-    static let queued = "Saved on this phone. It syncs when you are back online."
-    static let needsConnection = "This needs a connection"
-    static let needsYouFirst = "Earlier offline work on this needs you first"
-    static let notSyncedYet = "Your work here has not synced yet. Try again once it has."
-    static let keptOnPhone = "Your work here is kept on this phone and sent when you are back online."
+    static var queued: String { L10n.formatInSavedLanguage("Saved on this phone. It syncs when you are back online.") }
+    static var needsConnection: String { L10n.formatInSavedLanguage("This needs a connection") }
+    static var needsYouFirst: String { L10n.formatInSavedLanguage("Earlier offline work on this needs you first") }
+    static var notSyncedYet: String { L10n.formatInSavedLanguage("Your work here has not synced yet. Try again once it has.") }
+    static var keptOnPhone: String { L10n.formatInSavedLanguage("Your work here is kept on this phone and sent when you are back online.") }
 }
 
 struct OfflineCopy<Value: Sendable>: Sendable {

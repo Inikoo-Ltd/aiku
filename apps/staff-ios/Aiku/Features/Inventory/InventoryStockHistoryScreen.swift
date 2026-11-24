@@ -27,7 +27,7 @@ private struct InventoryLiveStockHistory: View {
     @State private var filter: InventoryHistoryFilter = .all
 
     var body: some View {
-        AppScreen(title: "Stock history", kicker: "SKO · \(skoReference)") {
+        AppScreen(title: "Stock history", kicker: L10n.format("SKO · %@", skoReference)) {
             InventoryScopeChips(
                 options: InventoryHistoryFilter.allCases,
                 selection: filter,
@@ -41,13 +41,13 @@ private struct InventoryLiveStockHistory: View {
                 }
             }
             if feed.isNotFound {
-                EmptyState(icon: .sko, title: "SKO not found", message: "\(skoReference) is not an SKO of this warehouse.")
+                EmptyState(icon: .sko, title: "SKO not found", message: L10n.format("%@ is not an SKO of this warehouse.", skoReference))
             } else if feed.loadedFilter != filter || (feed.isLoading && feed.items.isEmpty) {
                 if feed.loadError == nil {
                     InventorySkeletonCard()
                 }
             } else if feed.items.isEmpty {
-                EmptyState(icon: .history, title: "No stock movements", message: filter == .all ? nil : "Nothing in “\(filter.title)” yet.")
+                EmptyState(icon: .history, title: "No stock movements", message: filter == .all ? nil : L10n.format("Nothing in “%@” yet.", L10n.text(filter.title)))
             } else {
                 CardList(feed.items) { movement in
                     InventoryMovementRow(movement: movement)
@@ -80,7 +80,7 @@ private struct InventorySampleStockHistory: View {
         let movements = store.movements(filter: filter, skoReference: skoReference)
         AppScreen(
             title: "Stock history",
-            kicker: skoReference.map { "SKO · \($0)" } ?? "Inventory · \(session.warehouseLabel)"
+            kicker: skoReference.map { L10n.format("SKO · %@", $0) } ?? L10n.format("Inventory · %@", session.warehouseLabel)
         ) {
             InventoryScopeChips(
                 options: InventoryHistoryFilter.allCases,
@@ -90,7 +90,7 @@ private struct InventorySampleStockHistory: View {
                 onSelect: { filter = $0 }
             )
             if movements.isEmpty {
-                EmptyState(icon: .history, title: "No stock movements", message: filter == .all ? nil : "Nothing in “\(filter.title)” yet.")
+                EmptyState(icon: .history, title: "No stock movements", message: filter == .all ? nil : L10n.format("Nothing in “%@” yet.", L10n.text(filter.title)))
             } else {
                 CardList(movements) { movement in
                     InventoryMovementRow(movement: movement.display(), action: skoReference == nil ? {

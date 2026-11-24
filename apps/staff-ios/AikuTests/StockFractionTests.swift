@@ -12,7 +12,7 @@ struct StockFractionTests {
         (-1.5, 2.0, "-1 1/2"),
         (12.0, 6.0, "12"),
         (0.0, 1.0, "0"),
-    ])
+    ] as [(Double, Double, String)])
     func labels(value: Double, packedIn: Double, label: String) {
         #expect(StockFraction.label(value, packedIn: packedIn) == label)
     }

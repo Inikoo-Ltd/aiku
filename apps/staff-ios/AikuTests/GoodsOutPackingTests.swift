@@ -103,6 +103,7 @@ private func packingStore(calls: PackingCalls, write: @escaping @Sendable (Goods
     return store
 }
 
+@MainActor
 struct GoodsOutPackingTests {
     @Test func packedNoteMapsParcelsShipmentsInsertsAndLines() throws {
         let dto = try decodePacking(GoodsOutDeliveryNoteDTO.self, packedNoteJSON())

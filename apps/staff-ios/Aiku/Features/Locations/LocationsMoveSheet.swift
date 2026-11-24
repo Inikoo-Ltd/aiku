@@ -58,7 +58,7 @@ struct LocationsMoveSheet: View {
 
     var body: some View {
         SheetScaffold(
-            title: isSome ? "Move SKOs from \(source.code)" : "Move all SKOs from \(source.code)",
+            title: isSome ? L10n.format("Move SKOs from %@", source.code) : L10n.format("Move all SKOs from %@", source.code),
             subtitle: isSome ? "Choose the SKOs and quantities to move" : "Or choose some SKOs and quantities to move"
         ) {
             LinkButton(isSome ? "Move all SKOs instead" : "Choose some SKOs") {
@@ -67,7 +67,7 @@ struct LocationsMoveSheet: View {
             .accessibilityIdentifier("locations.move.mode")
             SearchField(text: $query, placeholder: "Target location code", onScan: isRemote ? nil : { isScanning = true })
             if targets.isEmpty {
-                HelperText("No operational stock location starts with “\(query)”.")
+                HelperText(L10n.format("No operational stock location starts with “%@”.", query))
             }
             ForEach(targets) { target in
                 RadioCard(target.code, subtitle: target.shortSubtitle, isSelected: targetCode == target.code) {
@@ -81,7 +81,7 @@ struct LocationsMoveSheet: View {
                     someRow(slot)
                 }
             }
-            CheckboxRow("Remove \(source.code) from these SKOs after moving", isOn: $removeFromSource)
+            CheckboxRow(L10n.format("Remove %@ from these SKOs after moving", source.code), isOn: $removeFromSource)
             RadioCard("Warehouse transfer", subtitle: "Reason", isSelected: true) {}
             if let warning = capacityWarning {
                 InlineAlert(tone: .warn, title: warning)
@@ -118,9 +118,9 @@ struct LocationsMoveSheet: View {
     private var primaryTitle: String {
         guard let targetCode else { return "Choose a target location" }
         if isSome {
-            return "Move \(LocationsFormat.units(plannedUnits)) to \(targetCode)"
+            return L10n.format("Move %lld units to %@", plannedUnits, targetCode)
         }
-        return "Move all to \(targetCode)"
+        return L10n.format("Move all to %@", targetCode)
     }
 
     private var capacityWarning: String? {
@@ -128,10 +128,10 @@ struct LocationsMoveSheet: View {
         let weight = warehouse.movedWeight(from: source.code, quantities: plannedQuantities)
         let volume = warehouse.movedVolume(from: source.code, quantities: plannedQuantities)
         if target.exceedsWeight(adding: weight), let max = target.maxWeightKg {
-            return "Over the \(LocationsFormat.number(max)) kg limit of \(target.code) (\(LocationsFormat.number(target.usedWeightKg + weight)) kg)"
+            return L10n.format("Over the %@ kg limit of %@ (%@ kg)", LocationsFormat.number(max), target.code, LocationsFormat.number(target.usedWeightKg + weight))
         }
         if target.exceedsVolume(adding: volume), let max = target.maxVolumeM3 {
-            return "Over the \(LocationsFormat.number(max)) m³ limit of \(target.code) (\(LocationsFormat.number(target.usedVolumeM3 + volume)) m³)"
+            return L10n.format("Over the %@ m³ limit of %@ (%@ m³)", LocationsFormat.number(max), target.code, LocationsFormat.number(target.usedVolumeM3 + volume))
         }
         return nil
     }
@@ -141,7 +141,7 @@ struct LocationsMoveSheet: View {
         return VStack(alignment: .leading, spacing: 8) {
             CheckboxRow(
                 slot.skoReference,
-                subtitle: "\(slot.name) · \(slot.quantityText) in location",
+                subtitle: L10n.format("%@ · %@ in location", slot.name, slot.quantityText),
                 isOn: Binding(
                     get: { isPicked },
                     set: { isOn in

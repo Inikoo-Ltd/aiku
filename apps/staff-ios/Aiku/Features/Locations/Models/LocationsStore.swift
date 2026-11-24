@@ -50,8 +50,8 @@ final class LocationsStore {
     }
 
     func pillTitle(for tab: LocationsListTab) -> String {
-        guard tab == listTab, let count = loadedCount(for: tab) else { return tab.title }
-        return "\(tab.title) \(count.locationsGrouped)"
+        guard tab == listTab, let count = loadedCount(for: tab) else { return L10n.text(tab.title) }
+        return tab.pillTitle(count: count.locationsGrouped)
     }
 
     private func loadedCount(for tab: LocationsListTab) -> Int? {
@@ -124,7 +124,7 @@ final class LocationsStore {
         }
         guard chosen.can.viewLocations else {
             loadedKey = key
-            loadError = "You don’t have access to locations in \(chosen.name)."
+            loadError = L10n.format("You don’t have access to locations in %@.", chosen.name)
             isLoadingList = false
             return
         }
@@ -136,7 +136,7 @@ final class LocationsStore {
             remoteWarehouse = chosen
             remoteOverview = loadedOverview
             warehouse = LocationsWarehouse(
-                areas: loadedAreas.map(LocationsArea.init(remote:)),
+                areas: loadedAreas.map { LocationsArea(remote: $0) },
                 locations: [],
                 summary: LocationsWarehouseSummary(remote: loadedOverview),
                 autoRemoval: loadedOverview.emptyLocationsRemoval.map(LocationsAutoRemoval.init(remote:)) ?? warehouse.autoRemoval
@@ -175,7 +175,7 @@ final class LocationsStore {
             let (loadedOverview, loadedAreas) = try await (overview, areas)
             guard refreshed.id == remoteWarehouse?.id else { return }
             remoteOverview = loadedOverview
-            warehouse.areas = loadedAreas.map(LocationsArea.init(remote:))
+            warehouse.areas = loadedAreas.map { LocationsArea(remote: $0) }
             warehouse.summary = LocationsWarehouseSummary(remote: loadedOverview)
             if let removal = loadedOverview.emptyLocationsRemoval {
                 warehouse.autoRemoval = LocationsAutoRemoval(remote: removal)
@@ -698,8 +698,8 @@ enum LocationsActionError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .notLoaded: "This location is still loading. Try again in a moment."
-        case let .targetNotFound(code): "No location \(code) in this warehouse."
+        case .notLoaded: L10n.formatInSavedLanguage("This location is still loading. Try again in a moment.")
+        case let .targetNotFound(code): L10n.formatInSavedLanguage("No location %@ in this warehouse.", code)
         case let .waitingForOfflineWork(reason): reason
         }
     }
