@@ -906,7 +906,7 @@ const cancelAssign = () => {
 											avatarOnly
 											size="xs" />
 										<span v-if="element.priority_icon" v-tooltip="{ content: ctrans('Urgency') + ': ' + element.priority_label, delay: 0 }" class="shrink-0">
-											<Icon :data="element.priority_icon" />
+											<Icon :data="{ ...element.priority_icon, tooltip: undefined }" />
 										</span>
 									</span>
 									<span class="flex items-center gap-1.5 text-[11px]">
