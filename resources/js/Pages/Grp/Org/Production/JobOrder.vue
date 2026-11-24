@@ -556,7 +556,7 @@ function receiveIntoStock() {
             <div class="flex-1">
                 <div class="font-semibold text-yellow-800">{{ ctrans('On hold') }}<template v-if="job_order.hold.kind_label && job_order.hold.kind !== 'other'">: {{ job_order.hold.kind_label }}</template></div>
                 <div>{{ job_order.hold.reason }}</div>
-                <div class="text-xs text-gray-500">{{ job_order.hold.by ?? '—' }} · {{ useFormatTime(job_order.hold.at, { formatTime: 'hm' }) }} · {{ ctrans('Receiving into stock is blocked until the hold is cleared') }}</div>
+                <div class="text-xs text-gray-500">{{ job_order.hold.by ?? '—' }} · {{ useFormatTime(job_order.hold.at, { formatTime: 'hm' }) }} · {{ ctrans('Off the tablets and blocked from receiving into stock until the hold is cleared') }}</div>
             </div>
             <Button v-if="hold_route" type="tertiary" size="xs" :label="ctrans('Clear hold')" :disabled="processing" @click="setHold(false)">
                 <template #icon><FontAwesomeIcon icon="fal fa-play-circle" class="text-green-600" fixed-width aria-hidden="true" /></template>
@@ -835,7 +835,7 @@ function receiveIntoStock() {
         <Modal :isOpen="isHoldDialogOpen" width="w-full max-w-md" closeButton @onClose="isHoldDialogOpen = false">
             <form class="space-y-3" @submit.prevent="setHold(true)">
                 <div class="text-lg font-semibold">{{ ctrans('Put :reference on hold', { reference: job_order.reference }) }}</div>
-                <div class="text-sm text-gray-500">{{ ctrans('Work carries on as normal. Only receiving into stock is blocked until the hold is cleared.') }}</div>
+                <div class="text-sm text-gray-500">{{ ctrans('The job leaves the artisans\' tablets and receiving into stock is blocked until the hold is cleared. A step already started can still be finished.') }}</div>
                 <SegmentedToggle v-model="holdKind" :options="hold_kind_options" :ariaLabel="ctrans('Why')" />
                 <InputText v-model="holdReason" class="w-full" maxlength="255" autofocus :placeholder="ctrans('e.g. Labels out of stock, 468 to label when delivered')" :aria-label="ctrans('Reason')" />
                 <div v-for="error in holdErrors" :key="error" class="text-sm text-red-600">{{ error }}</div>
