@@ -380,7 +380,7 @@ onUnmounted(() => {
 <template>
     <Head :title="title" />
 
-    <div class="desk-palette flex min-h-[50vh] md:min-h-[70vh] h-[calc(100vh-6.5rem)] font-desk text-[15px]">
+    <div class="desk-palette flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh-5.75rem)] font-desk text-[15px]">
         <nav
             class="w-full md:w-64 shrink-0 flex-col bg-[var(--desk-sidebar)] text-[var(--desk-text)]"
             :class="selectedUlid || showSlackChannel ? 'hidden md:flex' : 'flex'"
@@ -405,7 +405,7 @@ onUnmounted(() => {
                     @click="isJumpOpen = true">
                     <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
                     <span class="flex-1 truncate text-left">{{ ctrans("Jump to…") }}</span>
-                    <kbd class="font-sans text-xs opacity-70">{{ isMac ? "⌘K" : "Ctrl+K" }}</kbd>
+                    <kbd class="font-sans text-xs opacity-70">{{ isMac ? "⌘J" : "Ctrl+J" }}</kbd>
                 </button>
 
                 <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
