@@ -9,7 +9,6 @@ namespace App\Actions\Dropshipping\Wix\User;
 use App\Actions\Dropshipping\Wix\Traits\WithWixApiServices;
 use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\WixUser;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +27,6 @@ class AuthenticateWixAccount extends OrgAction
 {
     use AsAction;
     use WithAttributes;
-    use WithActionUpdate;
     use WithWixApiServices;
 
     /**
@@ -83,7 +81,11 @@ class AuthenticateWixAccount extends OrgAction
         } catch (\Exception $e) {
             \Sentry::captureException($e);
 
-            return $e->getMessage() ?: __('The Wix installation was not completed');
+            if ($e instanceof ValidationException && $e->getMessage()) {
+                return e($e->getMessage());
+            }
+
+            return __('The Wix installation was not completed');
         }
     }
 
@@ -103,7 +105,7 @@ class AuthenticateWixAccount extends OrgAction
             // A site sends its orders to one channel, so a second account may not link it (PRE-43).
             if (!$wixUser && $wixUsers->whereNotNull('customer_id')->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'message' => __('This Wix site is already connected as a dropshipping channel')
+                    'message' => __('This Wix site is already connected to another account. Close the Wix channel in that account, then install the app again.')
                 ]);
             }
 

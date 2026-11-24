@@ -25,13 +25,12 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadge.vue"
-import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
+import SlackToDeskIcons from "@/Components/Tickets/SlackToDeskIcons.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faArrowRight } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack } from "@fal"
 
-library.add(faSlack, faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faArrowRight)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -530,11 +529,7 @@ const burnUpOptions = {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template v-if="project.slug === 'staff-chat-slack-sync'" #afterTitle>
-            <span class="ml-2 inline-flex items-center gap-x-1.5 text-xl" v-tooltip="ctrans('From Slack to Desk')">
-                <FontAwesomeIcon icon="fab fa-slack" class="text-gray-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon icon="fal fa-arrow-right" class="text-sm text-gray-400" fixed-width aria-hidden="true" />
-                <DeskIcon />
-            </span>
+            <SlackToDeskIcons class="ml-2 text-xl" />
         </template>
         <template #otherBefore>
             <div class="flex gap-2">
