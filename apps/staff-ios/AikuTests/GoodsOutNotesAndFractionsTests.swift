@@ -73,10 +73,11 @@ struct GoodsOutNotesAndFractionsTests {
     @MainActor
     @Test("A picking line shows its location stock as the web's fraction")
     func lineLocationStock() {
+        let stockLabel: String = FractionGlyphs.apply("7 1/2")
         var line = GoodsOutLine(sko: "SKO-1", name: "Incense", location: "12B9", required: 3, locationStock: 7)
-        line.stockLocations = [GoodsOutStockLocation(code: "12B9", kind: "Picking", stock: 7, stockLabel: FractionGlyphs.apply("7 1/2"), exactStock: 7.5)]
+        line.stockLocations = [GoodsOutStockLocation(code: "12B9", kind: "Picking", stock: 7, stockLabel: stockLabel, exactStock: 7.5)]
 
-        #expect(line.detailText(showsLocationStock: true).contains(FractionGlyphs.apply("7 1/2")))
+        #expect(line.detailText(showsLocationStock: true).contains(stockLabel))
     }
 
     @Test("A location holding only part of an SKO is not empty")
