@@ -129,7 +129,7 @@ const initials = (name: string) =>
 
 type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "order_plan" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
 
-const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
+const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list", "price_changes"]
 
 const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolean }[]>(() => [
 	{ key: "home", label: ctrans("Home"), icon: "fal fa-home" },

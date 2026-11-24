@@ -100,7 +100,7 @@ const stateClass: Record<string, string> = {
 		</div>
 
 		<div class="mt-4">
-			<Table :resource="data" :name="tab">
+			<Table :resource="data" :name="tab" withScrollArrows>
 				<template v-if="isPhone" #table>
 					<ul class="divide-y divide-gray-100 border-t border-gray-100">
 						<li v-for="row in data.data ?? []" :key="row.id" class="space-y-1.5 px-4 py-3">
