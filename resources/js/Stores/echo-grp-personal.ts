@@ -16,6 +16,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { alertOnce, alertWayIsOn, chosenAlertSound, showAssignedPopup, showTicketPopup, type AlertSoundKind } from "@/Composables/useNotificationSound"
 import { openChatPane } from "@/Composables/useChatPane"
 import { showAssistantQuestion } from "@/Composables/useAssistantQuestions"
+import { trimRailNotifications } from "@/Composables/useRailNotifications"
 import type { AssistantQuestion } from "@/Components/Utils/AssistantQuestionPopup.vue"
 
 const ticketAlertSpokenLines = (): Record<string, string> => ({ raised: ctrans('New ticket'), answered: ctrans('Ticket answered'), qa: ctrans('Ticket QA') })
@@ -142,6 +143,7 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 const notification = eventData.notification
                 if (notification) {
                     layout.notifications.unshift({ id: '', read: false, href: '', created_at: new Date(), ...notification })
+                    trimRailNotifications(layout.notifications)
                 }
                 const soundKind = notification?.reason ? TICKET_ALERT_SOUND_KINDS[notification.reason] : undefined
                 if (notification && soundKind) {
@@ -164,6 +166,7 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                 const layout = useLayoutStore()
                 const notification = eventData.notification
                 layout.notifications.unshift({ read: false, href: '', created_at: new Date(), ...notification, id: notification.id ?? '' })
+                trimRailNotifications(layout.notifications)
 
                 if (notification.kind === 'assistant_question' && notification.question) {
                     showAssistantQuestion(notification.question)

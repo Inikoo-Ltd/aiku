@@ -15,13 +15,11 @@ import ProfileKPIs from "@/Components/Profile/ProfileKPIs.vue"
 import ProfileTimesheets from "@/Components/Profile/ProfileTimesheets.vue"
 import ProfileVisitLogs from "@/Components/Profile/ProfileVisitLogs.vue"
 import ProfileTodo from "@/Components/Profile/ProfileTodo.vue"
-import ProfileNotifications from "@/Components/Profile/ProfileNotifications.vue"
 import ProfileApiTokens from "@/Components/Profile/ProfileApiTokens.vue"
 import ProfileCalendar from "@/Components/Profile/ProfileCalendar.vue"
 
 import axios from 'axios'
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
@@ -48,6 +46,7 @@ const layout = inject('layout', layoutStructure)
 
 // Section: fetch PageHead and Tabs list
 const dataProfile = ref<{ pageHead: PageHeadingTypes, tabs: TSTabs } | null>(null)
+const loadError = ref('')
 const fetchPageHead = async () => {
     try {
         const { data } = await axios.get(
@@ -55,14 +54,9 @@ const fetchPageHead = async () => {
         )
         dataProfile.value = data
         currentTab.value = data.tabs.current
-        // console.log('response pageHead', data)
-    } catch (error: any) {
+    } catch {
         dataProfile.value = null
-        notify({
-            title: ctrans('Something went wrong.'),
-            text: ctrans('Failed to show Profile page.'),
-            type: 'error',
-        })
+        loadError.value = ctrans('Failed to show Profile page.')
     }
 }
 
@@ -72,7 +66,6 @@ const currentTab = ref('')
 const component = computed(() => {
     const components: Component = {
         todo: ProfileTodo,
-        notifications: ProfileNotifications,
         kpi: ProfileKPIs,
         calendar: ProfileCalendar,
         api_tokens: ProfileApiTokens,
@@ -98,7 +91,7 @@ const handleTabUpdate = (newTabSlug: string) => {
 }
 const isTabLoading = ref(false)
 const headerLayoutVersion = ref(0)
-const viewportFittedTabs = ['notifications', 'timesheets', 'history']
+const viewportFittedTabs = ['timesheets', 'history']
 const isViewportFittedTab = computed(() => viewportFittedTabs.includes(currentTab.value))
 const dataTab = ref(null)
 const fetchTabData = async (tabSlug: string) => {
@@ -108,9 +101,6 @@ const fetchTabData = async (tabSlug: string) => {
     switch (tabSlug) {
         case 'todo':
             routeName = 'grp.profile.todo.index'
-            break
-        case 'notifications':
-            routeName = 'grp.profile.notifications.index'
             break
         case 'kpi':
             routeName = 'grp.profile.kpis.index'
@@ -140,16 +130,12 @@ const fetchTabData = async (tabSlug: string) => {
                 }
             }
         )
+        loadError.value = ''
         dataTab.value = data
         currentTab.value = tabSlug
-        // console.log('response', dataTab.value)
-    } catch (error: any) {
+    } catch {
         dataTab.value = null
-        notify({
-            title: ctrans('Something went wrong.'),
-            text: `Failed to show ${dataProfile.value?.tabs.navigation[tabSlug].title} tab.`,
-            type: 'error',
-        })
+        loadError.value = ctrans('Failed to show :tab tab.', { tab: dataProfile.value?.tabs.navigation[tabSlug]?.title ?? tabSlug })
     } finally {
         isTabLoading.value = false
 
@@ -217,10 +203,14 @@ onMounted(async () => {
             :class="isViewportFittedTab ? 'overflow-hidden' : 'pb-16 overflow-y-auto'">
             <component :is="component" :data="dataTab" :tab="currentTab" v-bind="isViewportFittedTab ? { layoutVersion: headerLayoutVersion } : {}" />
         </div>
-        <div v-else class="h-full w-full flex items-center justify-center text-gray-400 italic">
-            {{ ctrans('No data to shown.') }}
+        <div v-else class="h-full w-full flex items-center justify-center text-sm" :class="loadError ? 'text-red-600' : 'text-gray-400 italic'">
+            {{ loadError || ctrans('No data to shown.') }}
         </div>
     </template>
+
+    <div v-else-if="loadError" class="pt-8 w-full flex items-center justify-center text-sm text-red-600">
+        {{ loadError }}
+    </div>
 
     <!-- Loading: Navigation -->
     <div v-else class="pt-8 w-full flex items-center justify-center">

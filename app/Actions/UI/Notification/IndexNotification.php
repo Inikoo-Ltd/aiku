@@ -31,27 +31,38 @@ class IndexNotification
 
     public function handle(User $user, $prefix = null): LengthAwarePaginator
     {
-        // dd($user);
-        $globalSearch = AllowedFilter::callback('filter', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                if ($value == 'unread') {
-                    $query->whereNull('notifications.read_at');
-                }
+        $stateFilter = AllowedFilter::callback('state', function ($query, $value) {
+            if ($value == 'unread') {
+                $query->whereNull('notifications.read_at');
+            }
 
-                if ($value == 'read') {
-                    $query->whereNotNull('notifications.read_at');
-                }
+            if ($value == 'read') {
+                $query->whereNotNull('notifications.read_at');
+            }
+        });
+
+        $searchFilter = AllowedFilter::callback('search', function ($query, $value) {
+            $pattern = '%'.addcslashes(trim(implode(',', (array) $value)), '%_\\').'%';
+
+            $query->where(function ($query) use ($pattern) {
+                $query->whereRaw("(notifications.data::jsonb->>'title') COLLATE \"C\" ILIKE ?", [$pattern])
+                    ->orWhereRaw("(notifications.data::jsonb->>'body') COLLATE \"C\" ILIKE ?", [$pattern]);
             });
         });
 
+        $typeFilter = AllowedFilter::callback('type', function ($query, $value) {
+            $query->whereIn('notifications.type', (array) $value);
+        });
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for($user->notifications()->whereNot('notifications.type', WorkNotification::class));
+        $query = QueryBuilder::for($user->notifications()->whereNot('notifications.type', WorkNotification::class))
+            ->reorder()
+            ->orderByDesc('notifications.created_at');
 
-        return $query->allowedFilters([$globalSearch])
+        return $query->allowedFilters([$stateFilter, $searchFilter, $typeFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

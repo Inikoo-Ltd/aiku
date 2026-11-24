@@ -8,15 +8,15 @@
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUserClock, faBell, faBellSlash, faVolumeSlash, faGlobe, faEnvelope } from "@fal"
+import { faUserClock, faVolumeSlash, faGlobe, faEnvelope } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { chatsWaiting, emailsWaiting, channelsWaiting, customerPeek, desktopAlerts, enableDesktopAlerts, soundBlocked, unlockSound, waitedFor } from "@/Composables/useNotificationSound"
+import { chatsWaiting, emailsWaiting, channelsWaiting, customerPeek, soundBlocked, unlockSound, waitedFor } from "@/Composables/useNotificationSound"
 import { compactCount } from "@/Composables/useCompactCount"
 import { chatPaneUrl, closeChatPane, lastChatPaneUrl, openChatPane } from "@/Composables/useChatPane"
 
-library.add(faUserClock, faBell, faBellSlash, faVolumeSlash)
+library.add(faUserClock, faVolumeSlash)
 
 defineProps<{ micro?: boolean }>()
 
@@ -161,24 +161,7 @@ onUnmounted(holdPeek)
                     @click.stop="unlockSound">
                     <FontAwesomeIcon icon="fal fa-volume-slash" fixed-width aria-hidden="true" />
                 </button>
-
-                <button
-                    v-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"
-                    class="h-8 w-8 flex items-center justify-center text-xs"
-                    :class="desktopAlerts === 'default' ? 'text-amber-300 hover:text-white' : 'text-[var(--chat-muted)]'"
-                    @click.stop="enableDesktopAlerts">
-                    <FontAwesomeIcon :icon="desktopAlerts === 'default' ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
-                </button>
             </div>
         </div>
-
-        <button
-            v-else-if="desktopAlerts === 'default' || desktopAlerts === 'denied'"
-            v-tooltip="desktopAlerts === 'default' ? ctrans('Turn on desktop alerts') : ctrans('Desktop alerts are blocked in this browser')"
-            class="h-5 w-5 flex items-center justify-center text-xs"
-            :class="desktopAlerts === 'default' ? 'text-amber-300 hover:text-white' : 'text-[var(--chat-muted)]'"
-            @click="enableDesktopAlerts">
-            <FontAwesomeIcon :icon="desktopAlerts === 'default' ? 'fal fa-bell' : 'fal fa-bell-slash'" fixed-width aria-hidden="true" />
-        </button>
     </div>
 </template>

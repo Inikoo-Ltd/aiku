@@ -24,8 +24,12 @@ import CreatedTaskBadgeList from './CreatedTaskBadgeList.vue';
 import ReviewTaskBadgeList from './ReviewTaskBadgeList.vue';
 import RailBadgeVisibilityToggle from './RailBadgeVisibilityToggle.vue';
 import DevelopmentBadgeList from './DevelopmentBadgeList.vue';
+import NotificationBadgeList from './NotificationBadgeList.vue';
+import DesktopAlertsSwitch from './DesktopAlertsSwitch.vue';
+import { unreadRailNotifications } from '@/Composables/useRailNotifications'
+import { useFittedName } from '@/Composables/useFittedName'
 import axios from 'axios'
-import { faTasks, faLightbulbOn } from '@fal'
+import { faTasks, faLightbulbOn, faBell } from '@fal'
 import CustomersWaiting from './CustomersWaiting.vue';
 import WhatsappCallAlert from './WhatsappCallAlert.vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -79,6 +83,13 @@ const toggleBadge = (key: string) => {
 }
 
 const shownOnRail = (key: string, isShown: boolean) => isShown && !isOffRail(key)
+
+const fullName = computed(() => capitalize(layout.user?.contact_name || layout.user?.username) ?? '')
+const nameElement = ref<HTMLElement | null>(null)
+const fittedName = useFittedName(nameElement, fullName)
+
+const unreadNotifications = computed(() => unreadRailNotifications(layout.notifications))
+const notificationsOnRail = computed(() => shownOnRail('notifications', true))
 
 const myTasksCount = computed(() => sumCounts(layout.task_badges?.mine, ['todo', 'in_progress']))
 const myTasksOverdue = computed(() => layout.task_badges?.mine?.overdue?.count ?? 0)
@@ -182,8 +193,10 @@ onBeforeUnmount(clearCollapseTimer)
             <span class="sr-only">{{ ctrans("Open user menu") }}</span>
             <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
         </div>
+        <DesktopAlertsSwitch v-if="!layout.messagingSidebar.show" compact class="order-first" />
         <slot v-if="!layout.messagingSidebar.show" name="afterAvatar" />
-        <span v-if="layout.messagingSidebar.show" v-tooltip="capitalize(layout.user?.contact_name || layout.user?.username)" class="min-w-0 flex-1 truncate text-sm text-white xtext-[var(--chat-muted)]">{{ capitalize(layout.user?.contact_name || layout.user?.username) }}</span>
+        <span v-if="layout.messagingSidebar.show" ref="nameElement" v-tooltip="fullName" class="min-w-0 flex-1 truncate text-sm text-white">{{ fittedName }}</span>
+        <DesktopAlertsSwitch v-if="layout.messagingSidebar.show" />
         </div>
 
         <div v-if="layout.messagingSidebar.show" class="border-t border-[var(--chat-line)]" aria-hidden="true" />
@@ -192,6 +205,38 @@ onBeforeUnmount(clearCollapseTimer)
 
         <WhatsappCallAlert />
         <CustomersWaiting />
+
+        <template v-if="notificationsOnRail">
+            <div class="shrink-0" :class="layout.messagingSidebar.show ? 'flex flex-wrap items-center gap-2' : 'flex flex-col items-center'">
+                <FontAwesomeIcon :icon="faBell" class="w-4 shrink-0 text-center text-xs text-white" :class="layout.messagingSidebar.show ? '' : 'mb-1'" fixed-width v-tooltip="ctrans('Notifications')" aria-hidden="true" />
+                <!-- Badge: Notifications -->
+                <div class="relative flex shrink-0 items-center justify-center" :class="dimmedClass('notifications')">
+                    <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('notifications')" @toggle="toggleBadge('notifications')" />
+                    <Popover width="w-96" position="right-full mr-2 top-0" fit-viewport arrow="right">
+                        <template #button>
+                            <div data-rail="notifications"
+                                v-tooltip="unreadNotifications ? ctrans('Notifications · :count unread', { count: String(unreadNotifications) }) : ctrans('Notifications')"
+                                class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-md bg-slate-200 font-medium tabular-nums text-slate-800 opacity-80 hover:opacity-100">
+                                <Transition name="spin-to-right"><span :key="unreadNotifications"><span class="text-xs">{{ unreadNotifications }}</span></span></Transition>
+                                <template v-if="unreadNotifications">
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 animate-ping text-[5px] text-blue-500" fixed-width aria-hidden="true" />
+                                    <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-[5px] text-blue-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </div>
+                        </template>
+                        <template #content="{ close }">
+                            <NotificationBadgeList :close="close" />
+                        </template>
+                    </Popover>
+                </div>
+            </div>
+
+            <div
+                v-if="ticketsOnRail || tasksOnRail || developmentsOnRail || ordersSectionShown || catalogueSectionShown"
+                class="shrink-0 border-[var(--chat-line)]"
+                :class="layout.messagingSidebar.show ? 'w-full border-t' : 'w-6 border-t'"
+                aria-hidden="true" />
+        </template>
 
         <div
             v-if="ticketsOnRail"

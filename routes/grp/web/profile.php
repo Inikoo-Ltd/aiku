@@ -7,6 +7,7 @@
  */
 
 use App\Actions\UI\Notification\IndexNotification;
+use App\Actions\UI\Notification\IndexNotificationTypes;
 use App\Actions\UI\Profile\DeleteProfileApiToken;
 use App\Actions\UI\Profile\DeleteProfilePushSubscription;
 use App\Actions\UI\Profile\StoreProfilePushSubscription;
@@ -34,6 +35,7 @@ Route::patch('/bookmarks', UpdateUserBookmarks::class)->name('bookmarks.update')
 
 
 Route::get('/notifications', IndexNotification::class)->name('notifications.index');
+Route::get('/notifications/types', IndexNotificationTypes::class)->name('notifications.types');
 
 Route::get('/page-head-tabs', ShowProfilePageHeadTabs::class)->name('page-head-tabs.show');
 Route::get('/showcase', ShowProfileShowcase::class)->name('showcase.show');

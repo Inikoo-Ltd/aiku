@@ -31,6 +31,7 @@ import { setColorStyleRoot } from "@/Composables/useApp"
 import { startOrderAlerts, startWorkAlerts } from "@/Composables/useNotificationSound"
 import { useStaffMessaging } from "@/Stores/staff-messaging"
 import StackedComponents from "@/Layouts/Grp/StackedComponents.vue"
+import AllNotificationsDialog from "@/Components/Notifications/AllNotificationsDialog.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import CloneFromMasterProgress from "@/Components/Catalogue/CloneFromMasterProgress.vue"
 import StockDeliveriesCostingReminder from "@/Components/Procurement/StockDeliveriesCostingReminder.vue"
@@ -342,6 +343,7 @@ const safeTheme = computed(() => {
                 </Transition>
                 <Transition name="stacked-component">
                     <StackedComponents v-if="layout.stackedComponents?.length" />
+                    <AllNotificationsDialog />
                 </Transition>
             </div>
         </Teleport>

@@ -4,7 +4,7 @@ import { ref, onMounted, onUnmounted, inject, computed, defineAsyncComponent } f
 const SearchBar = defineAsyncComponent(() => import("@/Components/SearchBar.vue"))
 import Image from "@common/Components/Image.vue";
 import Popover from '@/Components/Popover.vue'
-import NotificationList from '@/Components/NotificationList/NotificationList.vue'
+import { unreadRailNotifications } from '@/Composables/useRailNotifications'
 const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
 import FocusModeButton from "@/Layouts/Grp/FocusModeButton.vue"
@@ -33,6 +33,7 @@ const sumBadgeCounts = (rows: Record<string, { count: number }> | null | undefin
     Object.entries(rows ?? {}).filter(([key]) => keys.includes(key)).reduce((total, [, row]) => total + row.count, 0)
 
 const mobileBadgeGroups = computed(() => [
+    { key: 'notifications', dot: 'bg-blue-400', total: unreadRailNotifications(layout.notifications) },
     { key: 'tickets', dot: 'bg-lime-400', total: (layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ['assigned_to_me', 'collaborating', 'replied', 'qa_to_check']) : 0) + sumBadgeCounts(layout.ticket_badges?.mine, ['to_do', 'in_progress', 'waiting']) },
     { key: 'developments', dot: 'bg-violet-400', total: layout.development_badges?.waiting ?? 0 },
     { key: 'orders', dot: 'bg-amber-400', total: (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) },
@@ -207,23 +208,6 @@ const isUserMac = navigator.platform.includes('Mac')
                     </span>
                     {{ mobileBadgeTotal > 9 ? '9+' : mobileBadgeTotal }}
                 </button>
-
-                <!-- Button: Notifications -->
-                <div class="relative px-2 rounded-full flex items-center">
-                    <Popover position="right-0 max-sm:fixed max-sm:inset-x-2 max-sm:top-12 max-sm:mt-0" width="w-auto">
-                        <template #button>
-                            <div tabindex="-1" class="relative text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                                <FontAwesomeIcon fixed-width aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
-                                <FontAwesomeIcon v-if="layout?.notifications?.some(notif => !notif.read)" icon='fas fa-circle' class='animate-pulse text-blue-500 absolute top-[1px] -right-0.5 text-[6px]' fixed-width aria-hidden='true' />
-                            </div>
-                        </template>
-                        <template #content="{ close }">
-                            <div class="w-full sm:w-[450px]">
-                                <NotificationList :close />
-                            </div>
-                        </template>
-                    </Popover>
-                </div>
 
                 <!-- Button: Profile -->
                 <div @click="layout.stackedComponents.push({ component: Profile})"

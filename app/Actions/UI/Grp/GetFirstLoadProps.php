@@ -123,7 +123,7 @@ class GetFirstLoadProps
     public function badges(User $user): array
     {
         return [
-            'notifications'              => NotificationsResource::collection($user->notifications()->whereNot('type', WorkNotification::class)->orderBy('created_at', 'desc')->limit(10)->get())->collection,
+            'notifications'              => NotificationsResource::collection($user->notifications()->whereNot('type', WorkNotification::class)->orderBy('created_at', 'desc')->limit(50)->get())->collection,
             'ticket_badges'              => GetTicketBadgeData::run($user),
             'task_badges'                => GetStaffTaskBadgeData::run($user),
             'development_badges'         => ProductDevelopmentWaitingOn::railBadge($user),
