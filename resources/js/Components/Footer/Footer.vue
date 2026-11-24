@@ -8,6 +8,8 @@
 import FooterLanguage from '@/Components/Footer/FooterLanguage.vue'
 import FooterCurrency from '@/Components/Footer/FooterCurrency.vue'
 import FooterBorrowPermissions from '@/Components/Footer/FooterBorrowPermissions.vue'
+import FooterLogout from '@/Components/Footer/FooterLogout.vue'
+import ChangeBubble from '@/Components/Utils/ChangeBubble.vue'
 import { faHeart, faComputerClassic } from '@fas'
 import { faFileAlt } from '@fal'
 import { faDiscord } from '@fortawesome/free-brands-svg-icons'
@@ -86,6 +88,9 @@ const deploymentTooltip = computed(() => {
                <!--  <FooterCurrency /> -->
                 <FooterBorrowPermissions />
                 <FooterLanguage />
+                <ChangeBubble name="logout-moved-to-footer" released="2026-11-24" :text="ctrans('Log out has moved here, from the bottom of the left menu')">
+                    <FooterLogout />
+                </ChangeBubble>
             </div>
         </div>
     </footer>

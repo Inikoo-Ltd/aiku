@@ -25,11 +25,13 @@ import TicketQuickLook from "@/Components/Tickets/TicketQuickLook.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadge.vue"
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faArrowRight } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack)
+library.add(faSlack, faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faArrowRight)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -233,6 +235,7 @@ const milestoneDraft = ref<Milestone[]>([])
 watch(() => props.milestones, (milestones) => (milestoneDraft.value = milestones.map((milestone) => ({ ...milestone }))), { immediate: true })
 
 const isSavingMilestones = ref(false)
+const isEditingMilestones = ref(false)
 const persistMilestones = () => {
     if (isSavingMilestones.value) {
         return
@@ -526,6 +529,13 @@ const burnUpOptions = {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template v-if="project.slug === 'staff-chat-slack-sync'" #afterTitle>
+            <span class="ml-2 inline-flex items-center gap-x-1.5 text-xl" v-tooltip="ctrans('From Slack to Desk')">
+                <FontAwesomeIcon icon="fab fa-slack" class="text-gray-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fal fa-arrow-right" class="text-sm text-gray-400" fixed-width aria-hidden="true" />
+                <DeskIcon />
+            </span>
+        </template>
         <template #otherBefore>
             <div class="flex gap-2">
                 <Link :href="route(routes.create_ticket.name, routes.create_ticket.parameters)">
@@ -765,11 +775,16 @@ const burnUpOptions = {
             <section class="rounded-lg border border-gray-200 p-4">
                 <h2 class="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gray-400">
                     {{ ctrans("Milestones") }}
-                    <span class="normal-case tabular-nums">{{ ctrans(":done of :total done", { done: milestonesDone, total: milestones.length }) }}</span>
+                    <span class="flex items-center gap-2 normal-case tabular-nums">
+                        {{ ctrans(":done of :total done", { done: milestonesDone, total: milestones.length }) }}
+                        <button v-if="can_edit" v-tooltip="isEditingMilestones ? ctrans('Done editing') : ctrans('Edit milestones')" class="text-gray-400 hover:text-gray-700" @click="isEditingMilestones = !isEditingMilestones">
+                            <FontAwesomeIcon :icon="isEditingMilestones ? 'fal fa-check' : 'fal fa-pencil'" fixed-width />
+                        </button>
+                    </span>
                 </h2>
                 <p v-if="!milestoneDraft.length" class="text-sm text-gray-500">{{ ctrans("No milestones yet") }}</p>
                 <ol class="text-sm">
-                    <li v-for="(milestone, index) in milestoneDraft" :key="milestone.id ?? 'new-' + index" class="group relative flex gap-3 pb-4 last:pb-0">
+                    <li v-for="(milestone, index) in milestoneDraft" :key="milestone.id ?? 'new-' + index" class="relative flex gap-3 pb-4 last:pb-0">
                         <span v-if="index < milestoneDraft.length - 1" class="absolute bottom-0 left-3 top-7 border-l border-gray-200" aria-hidden="true" />
                         <button
                             v-tooltip="can_edit ? (milestone.done_at ? ctrans('Mark not done') : ctrans('Mark done')) : milestoneStyles[milestoneStateOf(milestone)].label"
@@ -781,10 +796,10 @@ const burnUpOptions = {
                         </button>
                         <div class="min-w-0 flex-1">
                             <input
-                                v-if="can_edit"
+                                v-if="can_edit && isEditingMilestones"
                                 v-model="milestone.name"
                                 maxlength="255"
-                                class="w-full rounded-md border-transparent px-1 py-0.5 text-sm hover:border-gray-300"
+                                class="w-full rounded-md border-gray-300 px-1 py-0.5 text-sm"
                                 :class="milestone.done_at && 'text-gray-500'"
                                 @change="persistMilestones" />
                             <p v-else class="px-1" :class="milestone.done_at && 'text-gray-500'">{{ milestone.name }}</p>
@@ -794,7 +809,7 @@ const burnUpOptions = {
                                 <template v-else-if="milestone.due_date">{{ ctrans("Due :date", { date: useFormatTime(milestone.due_date, { formatTime: "mdy" }) }) }}</template>
                                 <template v-else>{{ ctrans("No due date") }}</template>
                             </p>
-                            <div v-if="can_edit" class="mt-1 hidden gap-1 group-focus-within:flex group-hover:flex">
+                            <div v-if="can_edit && isEditingMilestones" class="mt-1 flex gap-1">
                                 <DatePicker :model-value="asDate(milestone.start_date)" date-format="d M yy" show-button-bar :placeholder="ctrans('Start')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="setMilestoneDate(milestone, 'start_date', $event)" />
                                 <DatePicker :model-value="asDate(milestone.due_date)" date-format="d M yy" show-button-bar :placeholder="ctrans('Due')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="setMilestoneDate(milestone, 'due_date', $event)" />
                             </div>
@@ -802,10 +817,17 @@ const burnUpOptions = {
                                 <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
                                     <div class="h-full rounded-full" :class="milestone.done_at ? 'bg-green-500' : isOverdue(milestone) ? 'bg-red-400' : 'bg-[var(--app-accent)]'" :style="{ width: percentOf(milestone.done, milestone.total) + '%' }" />
                                 </div>
-                                <span class="w-10 text-right text-xs tabular-nums text-gray-500">{{ milestone.done }}/{{ milestone.total }}</span>
+                                <button
+                                    v-if="milestone.id && milestone.total"
+                                    v-tooltip="ctrans('Show tickets and tasks')"
+                                    class="w-10 text-right text-xs tabular-nums text-gray-500 underline decoration-dotted underline-offset-2 hover:text-gray-800"
+                                    @click="openMilestoneInWork(milestone)">
+                                    {{ milestone.done }}/{{ milestone.total }}
+                                </button>
+                                <span v-else class="w-10 text-right text-xs tabular-nums text-gray-500">{{ milestone.done }}/{{ milestone.total }}</span>
                             </div>
                         </div>
-                        <div v-if="can_edit" class="flex flex-col text-gray-400 sm:invisible sm:group-hover:visible">
+                        <div v-if="can_edit && isEditingMilestones" class="flex flex-col text-gray-400">
                             <button v-tooltip="ctrans('Move up')" :disabled="index === 0" class="hover:text-gray-700 disabled:opacity-30" @click="moveMilestone(index, -1)">
                                 <FontAwesomeIcon icon="fal fa-arrow-up" fixed-width />
                             </button>
@@ -818,7 +840,7 @@ const burnUpOptions = {
                         </div>
                     </li>
                 </ol>
-                <form v-if="can_edit" class="mt-4 space-y-1.5 border-t border-gray-100 pt-3" @submit.prevent="addMilestone">
+                <form v-if="can_edit && isEditingMilestones" class="mt-4 space-y-1.5 border-t border-gray-100 pt-3" @submit.prevent="addMilestone">
                     <InputText v-model="newMilestone.name" maxlength="255" size="small" class="w-full" :placeholder="ctrans('New milestone')" />
                     <div class="flex gap-2">
                         <DatePicker :model-value="asDate(newMilestone.due_date)" date-format="d M yy" :placeholder="ctrans('Due')" :class="fieldFocusClass" :pt="datePickerPt" class="min-w-0 flex-1" @update:model-value="newMilestone.due_date = fromDate($event) ?? ''" />

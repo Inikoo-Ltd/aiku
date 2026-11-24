@@ -7,21 +7,20 @@
 <script setup lang="ts">
 import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
-import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 
-library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard)
+library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard)
 
 const layout = inject("layout", layoutStructure)
 
@@ -32,12 +31,6 @@ const handleToggleLeftBar = () => {
     }
     layout.leftSidebar.show = !layout.leftSidebar.show
 }
-
-const logoutData = computed(() => ({
-    label: ctrans("Logout"),
-    tooltip: ctrans("Logout the app"),
-    icon: "fal fa-sign-out-alt"
-}))
 
 const chatRoute = computed(() => {
     const organisation = layout.currentParams?.organisation
@@ -114,6 +107,7 @@ const allBottomLinks = computed(() => [
     isEngineer.value ? devopsLink.value : tasksLink.value,
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring", problems: 0 },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt", problems: 0 },
+    { route: "grp.chat.staff.index", parameters: {}, root: "grp.chat.staff.", label: ctrans("Desk"), tooltip: ctrans("Desk: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
 ])
 
 const loadingRoute = ref<string | null>(null)
@@ -132,14 +126,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => bottomLinksObserver?.disconnect())
-
-const isLoadingLogout = ref(false)
-const onLogoutAuth = () => {
-    useLogoutAuth(layout.user, {
-        onStart: () => (isLoadingLogout.value = true),
-        onError: () => (isLoadingLogout.value = false)
-    })
-}
 </script>
 
 <template>
@@ -186,7 +172,7 @@ const onLogoutAuth = () => {
                     :key="link.route"
                     :href="route(link.route, link.parameters)"
                     class="relative w-full group flex items-center px-2 text-sm gap-x-2"
-                    :class="isNavigationActive(layout.currentRoute, link.root) ? 'navigationActive' : 'navigation'"
+                    :class="isNavigationActive(layout.currentRoute, link.root) && !(link.icon !== 'desk' && isNavigationActive(layout.currentRoute, 'grp.chat.staff.')) ? 'navigationActive' : 'navigation'"
                     v-tooltip="{
 						content: link.tooltip,
 						delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
@@ -194,6 +180,7 @@ const onLogoutAuth = () => {
                     @start="() => (loadingRoute = link.route)"
                     @finish="() => (loadingRoute = null)">
                     <LoadingIcon v-if="loadingRoute === link.route" class="flex-shrink-0 h-4 w-4" />
+                    <DeskIcon v-else-if="link.icon === 'desk'" class="flex-shrink-0 h-4 w-4" />
                     <FontAwesomeIcon
                         v-else
                         aria-hidden="true"
@@ -217,43 +204,9 @@ const onLogoutAuth = () => {
 							{{ link.label }}
 						</span>
                     </Transition>
+                    <FontAwesomeIcon v-if="link.icon === 'desk' && layout.leftSidebar.show" icon="fab fa-slack" class="h-3.5 w-3.5 opacity-80" fixed-width aria-hidden="true" />
                 </Link>
 
-                <Popover class="relative w-full" v-slot="{ open }">
-                    <PopoverButton
-                        class="flex w-full focus:outline-none focus:ring-0 focus:border-none">
-                        <div
-                            class="w-full group flex items-center px-2 text-sm gap-x-2"
-                            :class="open ? 'navigationActive' : 'navigation'">
-                            <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width icon="fal fa-sign-out-alt" />
-                            <span v-if="layout.leftSidebar.show" class="truncate py-0.5 leading-none whitespace-nowrap">{{ logoutData.label }}</span>
-                        </div>
-                    </PopoverButton>
-
-                    <transition
-                        enter-active-class="transition duration-200 ease-out"
-                        enter-from-class="opacity-0 scale-95"
-                        enter-to-class="opacity-100 scale-100"
-                        leave-active-class="transition duration-150 ease-in"
-                        leave-from-class="opacity-100 scale-100"
-                        leave-to-class="opacity-0 scale-95">
-                        <PopoverPanel
-                            class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
-                            <div class="min-w-32 flex flex-col justify-center gap-y-2">
-                                <div class="whitespace-nowrap text-gray-500 text-xs">
-                                    {{ ctrans("Are you sure want to logout?") }}
-                                </div>
-                                <div class="mx-auto">
-                                    <Button
-                                        @click="onLogoutAuth()"
-                                        :loading="isLoadingLogout"
-                                        :label="ctrans('Yes, Logout')"
-                                        type="red" />
-                                </div>
-                            </div>
-                        </PopoverPanel>
-                    </transition>
-                </Popover>
             </div>
         </div>
 

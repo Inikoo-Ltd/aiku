@@ -240,7 +240,7 @@ const confirmDelete = async () => {
             <TicketUserAvatar v-else-if="!continues" :name="shown.author.name" :avatar="shown.author.avatar" size="lg" />
             <span v-else class="block pt-0.5 text-right text-xxs leading-5 text-gray-400 opacity-0 group-hover:opacity-100">{{ time(shown.sent_at) }}</span>
         </div>
-        <div class="min-w-0 flex-1 text-sm leading-relaxed">
+        <div class="min-w-0 flex-1 text-[15px] leading-[1.46668]">
             <template v-if="shown.is_deleted">
                 <div class="flex flex-wrap items-baseline gap-x-1.5">
                     <span class="italic text-gray-500">{{ ctrans("This message was deleted.") }}</span>
@@ -256,7 +256,7 @@ const confirmDelete = async () => {
                     <FontAwesomeIcon icon="fal fa-reply" fixed-width aria-hidden="true" />{{ ctrans("Replied to a thread") }}
                 </button>
                 <div v-if="!continues" class="flex flex-wrap items-baseline gap-x-1.5">
-                    <span class="font-semibold" :class="shown.author.name ? 'text-gray-900' : 'italic text-gray-500'">{{ authorName(shown) }}</span>
+                    <span class="font-black" :class="shown.author.name ? 'text-gray-900' : 'italic text-gray-500'">{{ authorName(shown) }}</span>
                     <span v-if="shown.author.is_bot" class="inline-flex items-center gap-0.5 rounded bg-gray-200 px-1 text-xxs font-medium uppercase text-gray-600">
                         <FontAwesomeIcon icon="fal fa-robot" fixed-width aria-hidden="true" />{{ ctrans("Bot") }}
                     </span>
