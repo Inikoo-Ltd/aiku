@@ -100,6 +100,7 @@ data class AuditLine(
     val subtitle: String? = null,
     val current: Double,
     val currentLabel: String? = null,
+    val packedIn: Double? = null,
 )
 
 data class ChosenReason(val direction: AuditDirection, val key: String)

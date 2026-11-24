@@ -93,7 +93,10 @@ struct ClockingDay: Identifiable, Hashable, Sendable {
     var id: String { date }
     var title: String { formatted("EEE dd MMM yyyy") ?? "\(weekday) \(dayOfMonth) \(monthYear)" }
     var shortTitle: String { formatted("EEE dd MMM") ?? "\(weekday) \(dayOfMonth) \(monthYear.split(separator: " ").first.map(String.init) ?? "")" }
-    var weekdayTitle: String { formatted("EEE") ?? weekday }
+    var weekdayTitle: String {
+        guard let short = formatted("EEE") else { return weekday }
+        return short.count > 4 ? formatted("EEEEEE") ?? short : short
+    }
 
     private func formatted(_ pattern: String) -> String? {
         ClockingMapper.parseDay(date).map { CalendarText.format(pattern, $0) }

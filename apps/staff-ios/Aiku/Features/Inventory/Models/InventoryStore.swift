@@ -131,10 +131,10 @@ final class InventoryStore {
     }
 
     private var timeLabel: String {
-        clock().formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(L10n.dateLocale))
+        clock().formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(L10n.formatLocale))
     }
 
     private var auditDate: String {
-        clock().formatted(.dateTime.day(.twoDigits).month(.abbreviated).locale(L10n.dateLocale))
+        clock().formatted(.dateTime.day(.twoDigits).month(.abbreviated).locale(L10n.formatLocale))
     }
 }

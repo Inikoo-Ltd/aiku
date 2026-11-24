@@ -117,9 +117,12 @@ enum ClockingMapper {
         guard let first = parseDay(start) else { return start }
         let last = first.addingTimeInterval(6 * 86_400)
         let utc = TimeZone(identifier: "UTC")!
+        if L10n.formatLocale.language.languageCode?.identifier != "en" {
+            return L10n.dateRange(from: first, to: last, template: "dMMMy", timeZone: utc)
+        }
         let sameMonth = formatter("MM", utc).string(from: first) == formatter("MM", utc).string(from: last)
-        let firstText = formatter(sameMonth ? "dd" : "dd MMM", utc, locale: L10n.dateLocale).string(from: first)
-        return "\(firstText) – \(formatter("dd MMM yyyy", utc, locale: L10n.dateLocale).string(from: last))"
+        let firstText = formatter(sameMonth ? "dd" : "dd MMM", utc, locale: L10n.formatLocale).string(from: first)
+        return "\(firstText) – \(formatter("dd MMM yyyy", utc, locale: L10n.formatLocale).string(from: last))"
     }
 
     static func method(_ value: String) -> ClockingMethod? {

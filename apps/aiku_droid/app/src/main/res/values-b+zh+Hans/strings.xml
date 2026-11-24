@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">盘点库存</string>
     <string name="inventory_action_consume">内部消耗</string>
     <string name="inventory_action_move">移动库存</string>
-    <string name="inventory_action_remove_locations">移除库位</string>
     <string name="inventory_add_confirm">添加 %1$s</string>
     <string name="inventory_add_missing">请选择库位。</string>
     <string name="inventory_add_picking_hint">其另一个拣货库位将变为存储库位</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">请设置大于 0 的数量。</string>
     <string name="inventory_reasons_failed">无法加载原因</string>
     <string name="inventory_recent_movements">最近变动</string>
-    <string name="inventory_remove_missing">请至少选择一个库位。</string>
-    <string name="inventory_remove_subtitle">选择要移除的库位</string>
-    <string name="inventory_remove_title">移除库位 · %1$s</string>
-    <string name="inventory_remove_warning">已移除库位中剩余的库存将被冲销。</string>
     <string name="inventory_replenish">补货 %1$s</string>
     <string name="inventory_running">结余 %1$s</string>
     <string name="inventory_scan_no_sko">没有 %1$s 的 SKO</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">已停产</string>
     <string name="inventory_state_discontinuing">即将停产</string>
     <string name="inventory_state_in_process">处理中</string>
-    <string name="inventory_stock_actions">库存操作</string>
-    <string name="inventory_stock_actions_footnote">库存操作需要库存编辑权限。移动库存至少需要两个库位。</string>
     <string name="inventory_stock_value_line">库存价值 %1$s</string>
     <string name="inventory_tile_abnormalities">异常</string>
     <string name="inventory_tile_current_skos">当前 SKO</string>
@@ -2234,9 +2227,6 @@
     <plurals name="inventory_packed_in">
         <item quantity="other">包装规格：每个 SKO %1$s 件</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="other">移除 %1$d 个库位</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="other">已移除 %1$d 个库位</item>
     </plurals>
@@ -2353,4 +2343,26 @@
         <item quantity="other">共 %1$s 件</item>
     </plurals>
     <string name="inventory_default_for">%1$s 的默认库位</string>
+    <string name="inventory_location_audit">盘点</string>
+    <string name="inventory_location_open">打开库位</string>
+    <string name="inventory_location_remove">移除库位</string>
+    <string name="inventory_remove_one_title">移除 %1$s？</string>
+    <string name="inventory_remove_one_writeoff">%2$s 中剩余的 %1$s 将被核销。</string>
+    <string name="inventory_remove_one_empty">%1$s 将不再是 %2$s 的库位。</string>
+    <string name="inventory_audit_confirm_title">保存此次盘点？</string>
+    <string name="inventory_audit_confirm_change">%1$s：%2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s：%2$s，无变化</string>
+    <string name="inventory_audit_one_subtitle">%1$s · 盘点 %2$s</string>
+    <string name="inventory_move_confirm_title">移动此库存？</string>
+    <string name="inventory_move_confirm_body">%1$s，从 %2$s 到 %3$s。</string>
+    <string name="inventory_count_all">盘点所有库位</string>
+    <string name="inventory_add_location_link">+ 添加库位</string>
+    <string name="inventory_show_barcode">显示条码</string>
+    <string name="inventory_barcode_sko_title">SKO 条码</string>
+    <string name="inventory_barcode_unit_title">单件条码</string>
+    <string name="inventory_barcode_description">条码 %1$s</string>
+    <string name="inventory_barcode_unreadable">此代码无法绘制为条码，请手动输入。</string>
+    <string name="inventory_remove_one_confirm">移除</string>
+    <string name="inventory_sko_status_heading">SKO 状态</string>
+    <string name="inventory_quantity_status_heading">数量状态</string>
 </resources>

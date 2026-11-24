@@ -92,7 +92,16 @@ const props = defineProps<{
 		currency: string
 		sales: Array<{ date: string; sales: number; orders: number }>
 		compare_sales: Array<{ date: string; sales: number; orders: number }>
-		monthly_sales?: Array<{ month: string; from: string; to: string; is_partial: boolean; sales: number; previous_month: string | null; previous_sales: number | null }>
+		monthly_sales?: Array<{
+			month: string
+			from: string
+			to: string
+			is_partial: boolean
+			sales: number
+			previous_month: string | null
+			previous_sales: number | null
+			buyers?: Array<{ organisation: string | null; organisation_name: string | null; sales: number; previous_sales: number | null }>
+		}>
 		totals: { current: Totals; previous: Totals }
 		shops: Array<{ shop_id: number; shop_code: string; shop_name: string; shop_state: string; organisation_id: number; node_state: string | null; sales: number; previous_sales: number; orders: number; previous_orders: number; stock_out_days: number }>
 		breakdown_label: string | null
@@ -468,6 +477,11 @@ const chartOptions = computed(() => ({
 
 const monthlySales = computed(() => [...(props.data.monthly_sales ?? [])].reverse())
 const formatMonth = (month: string) => useFormatTime(month, { formatTime: "MMM yyyy" })
+const hasBuyerSplit = computed(() => monthlySales.value.some((row) => row.buyers?.length))
+const expandedMonths = ref<string[]>([])
+const toggleMonth = (month: string) => {
+	expandedMonths.value = expandedMonths.value.includes(month) ? expandedMonths.value.filter((expanded) => expanded !== month) : [...expandedMonths.value, month]
+}
 
 const totalChange = computed(() => current.value.sales - previous.value.sales)
 const shareOfChange = (delta: number) => (totalChange.value ? `${Math.round((delta / Math.abs(totalChange.value)) * 100)}%` : "—")
@@ -658,7 +672,7 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 			<div class="border-b px-4 py-2 font-semibold">{{ ctrans("Sales per month") }}</div>
 			<div class="max-h-[32rem] overflow-auto">
 				<table class="w-full text-xs tabular-nums">
-					<thead class="sticky top-0 bg-white text-gray-600">
+					<thead class="sticky top-0 whitespace-nowrap bg-white text-gray-600">
 						<tr class="border-b">
 							<th class="px-4 py-2 text-left font-normal">{{ ctrans("Month") }}</th>
 							<th class="px-2 py-2 text-right font-normal">{{ ctrans("Now") }}</th>
@@ -668,18 +682,49 @@ const hasManyShops = computed(() => props.data.filters.shops.length > 1)
 						</tr>
 					</thead>
 					<tbody class="divide-y">
-						<tr v-for="row in monthlySales" :key="row.month" class="transition-colors hover:bg-gray-50">
-							<td class="px-4 py-1.5">
-								<span class="font-medium">{{ formatMonth(row.month) }}</span>
-								<span v-if="row.is_partial" class="ml-1 text-gray-400">({{ formatDate(row.from) }} – {{ formatDate(row.to) }})</span>
-							</td>
-							<td class="px-2 py-1.5 text-right">{{ money(row.sales) }}</td>
-							<td class="px-2 py-1.5 text-gray-500">{{ row.previous_month ? formatMonth(row.previous_month) : "—" }}</td>
-							<td class="px-2 py-1.5 text-right">{{ row.previous_sales === null ? "—" : money(row.previous_sales) }}</td>
-							<td class="px-4 py-1.5 text-right" :class="changeClass(row.sales - (row.previous_sales ?? 0))">
-								{{ formatChange(row.previous_sales === null ? null : change(row.sales, row.previous_sales)) }}
-							</td>
-						</tr>
+						<template v-for="row in monthlySales" :key="row.month">
+							<tr class="transition-colors hover:bg-gray-50">
+								<td class="px-4 py-1.5">
+									<button
+										v-if="row.buyers?.length"
+										type="button"
+										class="inline-flex items-center gap-1 text-left hover:text-[var(--app-accent)]"
+										:aria-expanded="expandedMonths.includes(row.month)"
+										v-tooltip="ctrans('Sales by customers and by each partner')"
+										@click="toggleMonth(row.month)"
+										data-monthly-sales-toggle
+									>
+										<FontAwesomeIcon :icon="expandedMonths.includes(row.month) ? faChevronDown : faChevronRight" class="w-3 text-gray-400" fixed-width aria-hidden="true" />
+										<span class="font-medium">{{ formatMonth(row.month) }}</span>
+									</button>
+									<span v-else class="font-medium" :class="hasBuyerSplit ? 'pl-4' : ''">{{ formatMonth(row.month) }}</span>
+									<span v-if="row.is_partial" class="ml-1 text-gray-400">({{ formatDate(row.from) }} – {{ formatDate(row.to) }})</span>
+								</td>
+								<td class="px-2 py-1.5 text-right">{{ money(row.sales) }}</td>
+								<td class="px-2 py-1.5 text-gray-500">{{ row.previous_month ? formatMonth(row.previous_month) : "—" }}</td>
+								<td class="px-2 py-1.5 text-right">{{ row.previous_sales === null ? "—" : money(row.previous_sales) }}</td>
+								<td class="px-4 py-1.5 text-right" :class="changeClass(row.sales - (row.previous_sales ?? 0))">
+									{{ formatChange(row.previous_sales === null ? null : change(row.sales, row.previous_sales)) }}
+								</td>
+							</tr>
+							<template v-if="row.buyers?.length && expandedMonths.includes(row.month)">
+								<tr v-for="buyer in row.buyers" :key="row.month + (buyer.organisation ?? '')" class="bg-gray-50 text-gray-600" data-monthly-sales-buyer>
+									<td class="py-1 pl-12 pr-4">
+										<span v-if="buyer.organisation" class="inline-flex items-center gap-1.5">
+											<span>{{ buyer.organisation_name ? `${buyer.organisation_name} (${buyer.organisation})` : buyer.organisation }}</span>
+											<span class="rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-1.5 py-px text-[10px] font-semibold uppercase leading-4 text-[var(--app-accent-strong)]">{{ ctrans("Partner") }}</span>
+										</span>
+										<span v-else>{{ ctrans("Customers") }}</span>
+									</td>
+									<td class="px-2 py-1 text-right">{{ money(buyer.sales) }}</td>
+									<td class="px-2 py-1" />
+									<td class="px-2 py-1 text-right">{{ buyer.previous_sales === null ? "—" : money(buyer.previous_sales) }}</td>
+									<td class="px-4 py-1 text-right" :class="changeClass(buyer.sales - (buyer.previous_sales ?? 0))">
+										{{ formatChange(buyer.previous_sales === null ? null : change(buyer.sales, buyer.previous_sales)) }}
+									</td>
+								</tr>
+							</template>
+						</template>
 					</tbody>
 					<tfoot class="sticky bottom-0 border-t bg-gray-50 font-semibold">
 						<tr>

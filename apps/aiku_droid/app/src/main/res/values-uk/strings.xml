@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Аудит запасу</string>
     <string name="inventory_action_consume">Внутрішнє споживання</string>
     <string name="inventory_action_move">Перемістити запас</string>
-    <string name="inventory_action_remove_locations">Видалити комірки</string>
     <string name="inventory_add_confirm">Додати %1$s</string>
     <string name="inventory_add_missing">Виберіть комірку.</string>
     <string name="inventory_add_picking_hint">Інша його комірка комплектування стане коміркою зберігання</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Укажіть кількість більше 0.</string>
     <string name="inventory_reasons_failed">Не вдалося завантажити причини</string>
     <string name="inventory_recent_movements">Останні переміщення</string>
-    <string name="inventory_remove_missing">Виберіть принаймні одну комірку.</string>
-    <string name="inventory_remove_subtitle">Виберіть комірки для видалення</string>
-    <string name="inventory_remove_title">Видалити комірки · %1$s</string>
-    <string name="inventory_remove_warning">Запас, що залишився у видаленій комірці, буде списано.</string>
     <string name="inventory_replenish">поповнити %1$s</string>
     <string name="inventory_running">залишок %1$s</string>
     <string name="inventory_scan_no_sko">Немає SKO для %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Знято з виробництва</string>
     <string name="inventory_state_discontinuing">Припинення</string>
     <string name="inventory_state_in_process">У процесі</string>
-    <string name="inventory_stock_actions">Дії із запасом</string>
-    <string name="inventory_stock_actions_footnote">Для дій із запасом потрібні права на редагування запасів. Для переміщення запасу потрібно щонайменше дві комірки.</string>
     <string name="inventory_stock_value_line">Вартість запасу %1$s</string>
     <string name="inventory_tile_abnormalities">Аномалії</string>
     <string name="inventory_tile_current_skos">Поточні SKO</string>
@@ -2483,12 +2476,6 @@
         <item quantity="many">Упаковка: %1$s одиниць на SKO</item>
         <item quantity="other">Упаковка: %1$s одиниці на SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Видалити %1$d комірку</item>
-        <item quantity="few">Видалити %1$d комірки</item>
-        <item quantity="many">Видалити %1$d комірок</item>
-        <item quantity="other">Видалити %1$d комірки</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">Видалено %1$d комірку</item>
         <item quantity="few">Видалено %1$d комірки</item>
@@ -2686,4 +2673,26 @@
         <item quantity="other">усього %1$s одиниці</item>
     </plurals>
     <string name="inventory_default_for">За замовчуванням для %1$s</string>
+    <string name="inventory_location_audit">Перевірити</string>
+    <string name="inventory_location_open">Відкрити комірку</string>
+    <string name="inventory_location_remove">Прибрати комірку</string>
+    <string name="inventory_remove_one_title">Прибрати %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Залишок %1$s у %2$s буде списано.</string>
+    <string name="inventory_remove_one_empty">%1$s більше не буде коміркою для %2$s.</string>
+    <string name="inventory_audit_confirm_title">Зберегти цей підрахунок?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, без змін</string>
+    <string name="inventory_audit_one_subtitle">%1$s · порахувати %2$s</string>
+    <string name="inventory_move_confirm_title">Перемістити цей запас?</string>
+    <string name="inventory_move_confirm_body">%1$s з %2$s до %3$s.</string>
+    <string name="inventory_count_all">Порахувати всі комірки</string>
+    <string name="inventory_add_location_link">+ Додати комірку</string>
+    <string name="inventory_show_barcode">Показати штрихкод</string>
+    <string name="inventory_barcode_sko_title">Штрихкод SKO</string>
+    <string name="inventory_barcode_unit_title">Штрихкод одиниці</string>
+    <string name="inventory_barcode_description">Штрихкод %1$s</string>
+    <string name="inventory_barcode_unreadable">Цей код не можна намалювати як штрихкод. Введіть його вручну.</string>
+    <string name="inventory_remove_one_confirm">Прибрати</string>
+    <string name="inventory_sko_status_heading">Статус SKO</string>
+    <string name="inventory_quantity_status_heading">Статус кількості</string>
 </resources>

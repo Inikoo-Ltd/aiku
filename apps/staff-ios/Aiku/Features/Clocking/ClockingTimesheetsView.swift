@@ -153,8 +153,10 @@ struct ClockingTimesheetsView: View {
         } label: {
             HStack(spacing: 12) {
                 VStack(spacing: 0) {
-                    Text(day.weekdayTitle.uppercased(with: L10n.dateLocale))
+                    Text(day.weekdayTitle.uppercased(with: L10n.formatLocale))
                         .font(.aiku(11, .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .foregroundStyle(AikuColor.text3)
                     Text(day.dayOfMonth)
                         .font(.aiku(18, .bold))

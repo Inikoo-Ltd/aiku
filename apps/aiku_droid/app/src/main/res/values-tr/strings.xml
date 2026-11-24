@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Stok sayımı yap</string>
     <string name="inventory_action_consume">İç tüketim</string>
     <string name="inventory_action_move">Stoğu taşı</string>
-    <string name="inventory_action_remove_locations">Lokasyonları kaldır</string>
     <string name="inventory_add_confirm">Ekle: %1$s</string>
     <string name="inventory_add_missing">Bir lokasyon seçin.</string>
     <string name="inventory_add_picking_hint">Diğer toplama lokasyonu depolama lokasyonu olur</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">0\'dan büyük bir miktar girin.</string>
     <string name="inventory_reasons_failed">Nedenler yüklenemedi</string>
     <string name="inventory_recent_movements">Son hareketler</string>
-    <string name="inventory_remove_missing">En az bir lokasyon seçin.</string>
-    <string name="inventory_remove_subtitle">Kaldırılacak lokasyonları seçin</string>
-    <string name="inventory_remove_title">Lokasyonları kaldır · %1$s</string>
-    <string name="inventory_remove_warning">Kaldırılan bir lokasyonda kalan stok zarar yazılır.</string>
     <string name="inventory_replenish">ikmal %1$s</string>
     <string name="inventory_running">bakiye %1$s</string>
     <string name="inventory_scan_no_sko">%1$s için SKO yok</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Satıştan kaldırıldı</string>
     <string name="inventory_state_discontinuing">Satıştan kaldırılıyor</string>
     <string name="inventory_state_in_process">İşlemde</string>
-    <string name="inventory_stock_actions">Stok işlemleri</string>
-    <string name="inventory_stock_actions_footnote">Stok işlemleri için stok düzenleme yetkisi gerekir. Stoğu taşımak için en az iki lokasyon gerekir.</string>
     <string name="inventory_stock_value_line">Stok değeri %1$s</string>
     <string name="inventory_tile_abnormalities">Anormallikler</string>
     <string name="inventory_tile_current_skos">Mevcut SKO\'lar</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Paketleme: SKO başına %1$s birim</item>
         <item quantity="other">Paketleme: SKO başına %1$s birim</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d lokasyonu kaldır</item>
-        <item quantity="other">%1$d lokasyonu kaldır</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d lokasyon kaldırıldı</item>
         <item quantity="other">%1$d lokasyon kaldırıldı</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">toplam %1$s birim</item>
     </plurals>
     <string name="inventory_default_for">%1$s için varsayılan</string>
+    <string name="inventory_location_audit">Denetle</string>
+    <string name="inventory_location_open">Lokasyonu aç</string>
+    <string name="inventory_location_remove">Lokasyonu kaldır</string>
+    <string name="inventory_remove_one_title">%1$s kaldırılsın mı?</string>
+    <string name="inventory_remove_one_writeoff">%2$s içinde kalan %1$s zarar olarak düşülecek.</string>
+    <string name="inventory_remove_one_empty">%1$s artık %2$s için bir lokasyon olmayacak.</string>
+    <string name="inventory_audit_confirm_title">Bu sayım kaydedilsin mi?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, değişiklik yok</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s say</string>
+    <string name="inventory_move_confirm_title">Bu stok taşınsın mı?</string>
+    <string name="inventory_move_confirm_body">%2$s → %3$s: %1$s.</string>
+    <string name="inventory_count_all">Tüm lokasyonları say</string>
+    <string name="inventory_add_location_link">+ Lokasyon ekle</string>
+    <string name="inventory_show_barcode">Barkodu göster</string>
+    <string name="inventory_barcode_sko_title">SKO barkodu</string>
+    <string name="inventory_barcode_unit_title">Birim barkodu</string>
+    <string name="inventory_barcode_description">Barkod %1$s</string>
+    <string name="inventory_barcode_unreadable">Bu kod barkod olarak çizilemiyor. Elle yazın.</string>
+    <string name="inventory_remove_one_confirm">Kaldır</string>
+    <string name="inventory_sko_status_heading">SKO durumu</string>
+    <string name="inventory_quantity_status_heading">Miktar durumu</string>
 </resources>

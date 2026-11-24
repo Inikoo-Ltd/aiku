@@ -81,12 +81,12 @@ enum InventoryLive {
     }
 
     static func dayText(_ iso: String?, timeZone: TimeZone = .current) -> String? {
-        date(iso).map { $0.formatted(Date.FormatStyle(timeZone: timeZone).day(.twoDigits).month(.abbreviated).locale(L10n.dateLocale)) }
+        date(iso).map { $0.formatted(Date.FormatStyle(timeZone: timeZone).day(.twoDigits).month(.abbreviated).locale(L10n.formatLocale)) }
     }
 
     static func momentText(_ iso: String?, timeZone: TimeZone = .current) -> String? {
         date(iso).map {
-            $0.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(L10n.dateLocale))
+            $0.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(L10n.formatLocale))
         }
     }
 

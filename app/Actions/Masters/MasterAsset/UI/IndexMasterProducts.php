@@ -675,10 +675,7 @@ class IndexMasterProducts extends OrgAction
                 'variantSlugs'            => $masterAssets->pluck('variant_slug')->filter()->unique()->mapWithKeys(fn ($slug) => [$slug => productCodeToHexCode($slug)]),
                 'masterProductCategoryId' => $this->parent instanceof MasterProductCategory ? $this->parent->id : null,
                 'pricingMajorCurrencies'  => $hasPricing
-                    ? collect(($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop)->price_exchanges ?? [])
-                        ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
-                        ->keys()
-                        ->values()
+                    ? GetMasterShopCurrenciesRate::majorCurrencyCodes($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop)
                     : null,
                 'pricingCurrencies'       => $hasPricing
                     ? $this->wrapPricingSupportProp(fn () => $this->getPricingCurrenciesRate())

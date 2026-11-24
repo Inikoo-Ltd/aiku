@@ -101,10 +101,7 @@ class GetMasterProductShowcase
         return [
             'images'              => $this->getImagesData($masterAsset),
             'main_image'          => $masterAsset->imageSources(),
-            'majorCurrencies'     => collect($masterAsset->masterShop?->price_exchanges ?? [])
-                ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
-                ->keys()
-                ->values(),
+            'majorCurrencies'     => GetMasterShopCurrenciesRate::majorCurrencyCodes($masterAsset->masterShop),
             'pricingCosts'        => $this->getPricingCosts($masterAsset),
             'competitors'         => IndexMasterAssetCompetitorProducts::make()->summary($masterAsset),
             'is_dropship'         => $masterAsset->masterShop?->type == ShopTypeEnum::DROPSHIPPING,

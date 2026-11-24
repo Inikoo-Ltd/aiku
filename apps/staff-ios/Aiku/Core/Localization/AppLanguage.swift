@@ -6,7 +6,7 @@ struct AppLanguage: Identifiable, Hashable, Sendable {
     let nativeName: String
     let englishName: String
 
-    var locale: Locale { Locale(identifier: id) }
+    var locale: Locale { Locale(identifier: id == "ne" ? "ne_NP@numbers=latn" : id) }
 
     func name(in appLocale: Locale) -> String {
         guard let name = appLocale.localizedString(forIdentifier: id), let first = name.first else { return englishName }
@@ -159,8 +159,8 @@ final class LanguageStore {
     }
 
     func text(_ key: String) -> String {
-        guard let translations, !key.isEmpty else { return key }
-        return translations.localizedString(forKey: key, value: key, table: nil)
+        guard !key.isEmpty, let catalogue = translations ?? Self.sourceTexts(in: bundle) else { return key }
+        return catalogue.localizedString(forKey: key, value: key, table: nil)
     }
 
     func format(_ key: String, _ arguments: [any CVarArg]) -> String {
@@ -197,8 +197,23 @@ enum L10n {
         return String(format: template, locale: language.locale, arguments: arguments)
     }
 
-    static var dateLocale: Locale {
+    static var formatLocale: Locale {
         let id = LanguageStore.savedLanguageID() ?? AppLanguages.defaultID
         return id == AppLanguages.defaultID ? Locale(identifier: "en_GB") : AppLanguages.language(id: id).locale
+    }
+
+    static func datePattern(_ pattern: String, locale: Locale = formatLocale) -> String {
+        guard locale.language.languageCode?.identifier != "en" else { return pattern }
+        let template = pattern.filter(\.isLetter)
+        return DateFormatter.dateFormat(fromTemplate: template, options: 0, locale: locale) ?? pattern
+    }
+
+    static func dateRange(from start: Date, to end: Date, template: String, timeZone: TimeZone, locale: Locale = formatLocale) -> String {
+        let formatter = DateIntervalFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateTemplate = template
+        return formatter.string(from: start, to: end)
     }
 }

@@ -9,6 +9,7 @@
 namespace App\Actions\Api\Group\Inventory;
 
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocks;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
@@ -25,6 +26,7 @@ class IndexMobileOrgStockFamilySkos
 {
     use AsController;
     use WithMobileInventoryAccess;
+    use WithMobileStockFractions;
 
     public const array FIELDS = ['id', 'slug', 'code', 'name', 'quantity_in_locations', 'quantity_available', 'stock_value', 'number_locations', 'stock_cover', 'woc'];
 
@@ -47,8 +49,9 @@ class IndexMobileOrgStockFamilySkos
         ])->validate();
 
         $this->useWebTableParameters($filters);
-        $skos  = IndexOrgStocks::make()->handle($orgStockFamily, null, $filters['bucket'] ?? 'current', $warehouse);
-        $stats = $orgStockFamily->stats;
+        $skos     = IndexOrgStocks::make()->handle($orgStockFamily, null, $filters['bucket'] ?? 'current', $warehouse);
+        $stats    = $orgStockFamily->stats;
+        $packedIn = OrgStock::query()->whereIn('id', collect($skos->items())->pluck('id'))->pluck('packed_in', 'id');
 
         return response()->json([
             'family' => [
@@ -59,12 +62,46 @@ class IndexMobileOrgStockFamilySkos
                 'number_current_org_stocks' => (int) $stats?->number_current_org_stocks,
                 'stock_value'               => (float) $stats?->stock_value,
                 'currency_code'             => $warehouse->organisation->currency->code,
+                'sko_status'                => $this->skoStatus($orgStockFamily),
+                'quantity_status'           => $this->quantityStatus($orgStockFamily),
             ],
             'data'   => collect($skos->items())->map(fn (OrgStock $orgStock) => array_merge(
                 Arr::only(OrgStocksResource::make($orgStock)->resolve(), self::FIELDS),
-                ['state' => $orgStock->state->value]
+                ['state' => $orgStock->state->value],
+                $this->quantityFields('quantity_available', $orgStock->getAttribute('quantity_available'), $packedIn->get($orgStock->id)),
+                $this->quantityFields('quantity_in_locations', $orgStock->getAttribute('quantity_in_locations'), $packedIn->get($orgStock->id)),
             ))->values()->all(),
             'meta'   => $this->paginationMeta($skos),
         ]);
+    }
+
+    /**
+     * The "SKO Status" box of the web family page (GetOrgStockFamilyShowcase stock_counts).
+     *
+     * @return array<int, array{key: string, label: string, count: int}>
+     */
+    private function skoStatus(OrgStockFamily $orgStockFamily): array
+    {
+        $stats = $orgStockFamily->stats;
+
+        return [
+            ['key' => 'active', 'label' => __('Active'), 'count' => (int) $stats?->number_org_stocks_state_active],
+            ['key' => 'discontinuing', 'label' => __('Discontinuing'), 'count' => (int) $stats?->number_org_stocks_state_discontinuing],
+            ['key' => 'discontinued', 'label' => __('Discontinued'), 'count' => (int) $stats?->number_org_stocks_state_discontinued],
+            ['key' => 'suspended', 'label' => __('Suspended'), 'count' => (int) $stats?->number_org_stocks_state_suspended],
+        ];
+    }
+
+    /**
+     * The "Quantity Status" box of the web family page: the organisation's stock cover buckets for this family.
+     *
+     * @return array<int, array{key: string, label: string, count: int}>
+     */
+    private function quantityStatus(OrgStockFamily $orgStockFamily): array
+    {
+        return collect(GetOrganisationStockCoverBuckets::run($orgStockFamily->organisation, $orgStockFamily))
+            ->map(fn (array $bucket) => ['key' => $bucket['bucket'], 'label' => $bucket['label'], 'count' => (int) $bucket['count']])
+            ->values()
+            ->all();
     }
 }

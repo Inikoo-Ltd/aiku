@@ -94,8 +94,10 @@ struct ShellValueRow: View {
                 Text(L10n.text(value))
                     .font(.aiku(14))
                     .foregroundStyle(valueTone?.foreground ?? AikuColor.text3)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if action != nil {
                 AppIcon.chevronRight.image

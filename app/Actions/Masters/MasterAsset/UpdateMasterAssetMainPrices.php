@@ -9,6 +9,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterAsset;
@@ -87,9 +88,7 @@ class UpdateMasterAssetMainPrices extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $mainCurrencies = collect($this->masterAsset->masterShop?->price_exchanges ?? [])
-            ->filter(fn (array $exchange) => $exchange['is_major'] ?? false)
-            ->keys();
+        $mainCurrencies = GetMasterShopCurrenciesRate::majorCurrencyCodes($this->masterAsset->masterShop);
 
         foreach (['master_prices', 'master_rrps'] as $field) {
             $notMain = collect(array_keys((array) $this->get($field, [])))->diff($mainCurrencies);

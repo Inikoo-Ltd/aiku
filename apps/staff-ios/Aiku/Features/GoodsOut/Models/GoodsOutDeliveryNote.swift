@@ -143,7 +143,7 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
     var nextLineToPick: GoodsOutLine? { linesByLocation.first { !$0.isHandled } }
 
     var weightText: String {
-        weightKg.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "en_GB"))) + " kg"
+        GoodsOutWeight.text(weightKg)
     }
 
     @MainActor

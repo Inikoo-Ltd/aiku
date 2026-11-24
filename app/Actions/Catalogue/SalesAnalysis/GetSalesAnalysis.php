@@ -58,7 +58,7 @@ class GetSalesAnalysis
         }
 
         return Cache::remember(
-            'sales-analysis:v7:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
+            'sales-analysis:v9:'.$scope->cacheKey.':'.md5(json_encode([Arr::only($modelData, ['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners']), now()->toDateString()])),
             now()->endOfDay(),
             fn () => $this->analyse($scope, $modelData)
         );
@@ -282,24 +282,30 @@ class GetSalesAnalysis
      * Every month of the period next to the month in the same position of the compared period;
      * the first and last months only count the days inside the period.
      *
-     * @return array<int, array{month: string, from: string, to: string, is_partial: bool, sales: float, previous_month: string|null, previous_sales: float|null}>
+     * With partners included on a shop level record, each month also lists its buyers: the customers,
+     * then each partner organisation by code, with the sales of the compared month.
+     *
+     * @return array<int, array{month: string, from: string, to: string, is_partial: bool, sales: float, previous_month: string|null, previous_sales: float|null, buyers?: array<int, array{organisation: string|null, organisation_name: string|null, sales: float, previous_sales: float|null}>}>
      */
     private function monthlySales(Carbon $from, Carbon $to, Carbon $compareFrom, Carbon $compareTo): array
     {
         $months         = $this->months($from, $to);
         $previousMonths = $this->months($compareFrom, $compareTo);
+        $partnerCodes   = $this->partnerOrganisationCodes([...$months, ...$previousMonths]);
+        $partnerNames   = $partnerCodes ? DB::table('organisations')->whereIn('code', array_unique($partnerCodes))->pluck('name', 'code')->all() : [];
 
         return array_map(fn (array $month, int $index) => [
-            ...$month,
+            ...Arr::except($month, 'buyers'),
             'previous_month' => $previousMonths[$index]['month'] ?? null,
             'previous_sales' => $previousMonths[$index]['sales'] ?? null,
+            ...($partnerCodes ? ['buyers' => $this->buyers($month['buyers'], $previousMonths[$index]['buyers'] ?? null, $partnerCodes, $partnerNames)] : []),
         ], $months, array_keys($months));
     }
 
     private function months(Carbon $from, Carbon $to): array
     {
-        $sales  = $this->periodSales($from, $to)['month'];
-        $months = [];
+        $periodSales = $this->periodSales($from, $to);
+        $months      = [];
         for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
             $start    = $month->max($from);
             $end      = $month->copy()->endOfMonth()->startOfDay()->min($to);
@@ -308,11 +314,60 @@ class GetSalesAnalysis
                 'from'       => $start->toDateString(),
                 'to'         => $end->toDateString(),
                 'is_partial' => !$start->isSameDay($month) || !$end->isLastOfMonth(),
-                'sales'      => round($sales[$month->toDateString()] ?? 0, 2),
+                'sales'      => round($periodSales['month'][$month->toDateString()] ?? 0, 2),
+                'buyers'     => $periodSales['month_buyer'][$month->toDateString()] ?? [],
             ];
         }
 
         return $months;
+    }
+
+    private function splitsByBuyer(): bool
+    {
+        return $this->scope->splitsByBuyer && $this->includePartners;
+    }
+
+    /**
+     * @return array<int, string> partner customer id => code of the organisation buying through it
+     */
+    private function partnerOrganisationCodes(array $months): array
+    {
+        $customerIds = collect($months)->flatMap(fn (array $month) => array_keys($month['buyers']))->filter()->unique()->values()->all();
+        if (!$customerIds) {
+            return [];
+        }
+
+        $codes = DB::table('customers')
+            ->join('organisations', 'organisations.id', '=', 'customers.as_organisation_id')
+            ->whereIn('customers.id', $customerIds)
+            ->pluck('organisations.code', 'customers.id')
+            ->all();
+
+        return collect($customerIds)->mapWithKeys(fn (int $customerId) => [$customerId => $codes[$customerId] ?? __('Partner')])->all();
+    }
+
+    /**
+     * @param array<int, float> $sales partner customer id (0 for customers) => sales of the month
+     * @param array<int, float>|null $previousSales the same for the compared month, null when there is none
+     * @param array<int, string> $partnerCodes
+     * @param array<string, string> $partnerNames organisation code => name
+     * @return array<int, array{organisation: string|null, organisation_name: string|null, sales: float, previous_sales: float|null}>
+     */
+    private function buyers(array $sales, ?array $previousSales, array $partnerCodes, array $partnerNames): array
+    {
+        $sumBy = fn (array $amounts) => collect($amounts)->groupBy(fn ($amount, $customerId) => $partnerCodes[(int) $customerId] ?? '', true)->map(fn (Collection $group) => $group->sum());
+
+        $current  = $sumBy($sales);
+        $previous = $previousSales === null ? null : $sumBy($previousSales);
+
+        return collect(['', ...collect($partnerCodes)->unique()->sort()->values()->all()])
+            ->map(fn (string $organisation) => [
+                'organisation'      => $organisation === '' ? null : $organisation,
+                'organisation_name' => $partnerNames[$organisation] ?? null,
+                'sales'             => round($current[$organisation] ?? 0, 2),
+                'previous_sales' => $previous === null ? null : round($previous[$organisation] ?? 0, 2),
+            ])
+            ->all();
     }
 
     private function bucketUnit(TimeSeriesFrequencyEnum $frequency): string
@@ -328,7 +383,9 @@ class GetSalesAnalysis
      * One pass over the invoice lines of a period: the sales by time bucket, by shop and by asset,
      * which the chart, the websites and the breakdown are read from, and the totals.
      *
-     * @return array{bucket: array<string, float>, month: array<string, float>, shop: array<int, float>, asset: array<int, float>, totals: object}
+     * The month by buyer split (partner customer id, 0 for customers) is only read when the scope splits by buyer.
+     *
+     * @return array{bucket: array<string, float>, month: array<string, float>, month_buyer: array<string, array<int, float>>, shop: array<int, float>, asset: array<int, float>, totals: object}
      */
     private function periodSales(Carbon $from, Carbon $to): array
     {
@@ -337,12 +394,20 @@ class GetSalesAnalysis
             return $this->periodSales[$key];
         }
 
+        $splitsByBuyer = $this->splitsByBuyer();
+
         $lines = $this->invoiceLines($from, $to)->selectRaw(
             "date_trunc('{$this->unit}', invoice_transactions.date)::date::text as bucket, date_trunc('month', invoice_transactions.date)::date::text as month,
             invoice_transactions.shop_id, invoice_transactions.asset_id,
             invoice_transactions.{$this->scope->amountColumn} as amount, invoice_transactions.order_id, invoice_transactions.invoice_id,
             invoice_transactions.is_refund, invoice_transactions.customer_id"
+            .($splitsByBuyer ? ', case when invoice_transactions.is_partner then invoice_transactions.customer_id else 0 end as buyer' : '')
         );
+
+        $monthByBuyer = $splitsByBuyer
+            ? "select 'month_buyer', month || '|' || buyer, sum(amount)::float, null, null, null, null from lines group by month, buyer
+            union all"
+            : '';
 
         $rows = DB::select(
             "with lines as materialized ({$lines->toSql()})
@@ -350,6 +415,7 @@ class GetSalesAnalysis
             union all
             select 'month', month, sum(amount)::float, null, null, null, null from lines group by month
             union all
+            {$monthByBuyer}
             select 'shop', shop_id::text, sum(amount)::float, null, null, null, null from lines group by shop_id
             union all
             select 'asset', asset_id::text, sum(amount)::float, null, null, null, null from lines group by asset_id
@@ -359,10 +425,13 @@ class GetSalesAnalysis
             $lines->getBindings()
         );
 
-        $sales = ['bucket' => [], 'month' => [], 'shop' => [], 'asset' => [], 'totals' => null];
+        $sales = ['bucket' => [], 'month' => [], 'month_buyer' => [], 'shop' => [], 'asset' => [], 'totals' => null];
         foreach ($rows as $row) {
             if ($row->dimension === 'totals') {
                 $sales['totals'] = $row;
+            } elseif ($row->dimension === 'month_buyer') {
+                [$month, $buyer]                        = explode('|', $row->key);
+                $sales['month_buyer'][$month][(int) $buyer] = $row->sales;
             } else {
                 $sales[$row->dimension][$row->key] = $row->sales;
             }

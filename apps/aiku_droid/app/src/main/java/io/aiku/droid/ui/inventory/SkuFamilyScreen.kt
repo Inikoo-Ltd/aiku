@@ -76,6 +76,7 @@ private fun SkuFamilyContent(state: SkoFamilyUiState, family: SkoFamilyViewModel
                 ),
                 columns = 2,
             )
+            FamilyStatusSections(skoStatus = summary.skoStatus, quantityStatus = summary.quantityStatus)
         }
         InventorySectionHeading(text = stringResource(R.string.inventory_skos_heading), trailingText = list.total?.let { countText(it) })
         list.firstPageProblem?.let { problem ->
@@ -91,7 +92,7 @@ private fun SkuFamilyContent(state: SkoFamilyUiState, family: SkoFamilyViewModel
                         code = sko.code,
                         subtitle = sko.name,
                         chip = stateLabels[sko.state]?.takeIf { sko.state != ACTIVE_STATE },
-                        done = stockText(sko.quantityAvailable),
+                        done = stockText(sko.quantityAvailable, sko.quantityAvailableLabel),
                         onClick = { navigator.open(SkuRoute(id = sko.id, code = sko.code)) },
                     )
                 }

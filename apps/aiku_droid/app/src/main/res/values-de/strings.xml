@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Bestand prüfen</string>
     <string name="inventory_action_consume">Interner Verbrauch</string>
     <string name="inventory_action_move">Bestand umlagern</string>
-    <string name="inventory_action_remove_locations">Lagerplätze entfernen</string>
     <string name="inventory_add_confirm">%1$s hinzufügen</string>
     <string name="inventory_add_missing">Wählen Sie einen Lagerplatz.</string>
     <string name="inventory_add_picking_hint">Sein anderer Kommissionierplatz wird zum Einlagerungsplatz</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Legen Sie eine Menge über 0 fest.</string>
     <string name="inventory_reasons_failed">Die Gründe konnten nicht geladen werden</string>
     <string name="inventory_recent_movements">Letzte Bewegungen</string>
-    <string name="inventory_remove_missing">Wählen Sie mindestens einen Lagerplatz.</string>
-    <string name="inventory_remove_subtitle">Wählen Sie die zu entfernenden Lagerplätze</string>
-    <string name="inventory_remove_title">Lagerplätze entfernen · %1$s</string>
-    <string name="inventory_remove_warning">Bestand, das auf einem entfernten Lagerplatz verbleibt, wird ausgebucht.</string>
     <string name="inventory_replenish">auffüllen %1$s</string>
     <string name="inventory_running">laufend %1$s</string>
     <string name="inventory_scan_no_sko">Kein SKO für %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Ausgelaufen</string>
     <string name="inventory_state_discontinuing">Auslaufend</string>
     <string name="inventory_state_in_process">In Bearbeitung</string>
-    <string name="inventory_stock_actions">Bestandsaktionen</string>
-    <string name="inventory_stock_actions_footnote">Bestandsaktionen erfordern Bestandsbearbeitungsrechte. „Bestand umlagern“ erfordert mindestens zwei Lagerplätze.</string>
     <string name="inventory_stock_value_line">Bestandswert %1$s</string>
     <string name="inventory_tile_abnormalities">Anomalien</string>
     <string name="inventory_tile_current_skos">Aktuelle SKOs</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Verpackt in: %1$s Einheit pro SKO</item>
         <item quantity="other">Verpackt in: %1$s Einheiten pro SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d Lagerplatz entfernen</item>
-        <item quantity="other">%1$d Lagerplätze entfernen</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d Lagerplatz entfernt</item>
         <item quantity="other">%1$d Lagerplätze entfernt</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">%1$s Einheiten insgesamt</item>
     </plurals>
     <string name="inventory_default_for">Standard für %1$s</string>
+    <string name="inventory_location_audit">Prüfen</string>
+    <string name="inventory_location_open">Lagerplatz öffnen</string>
+    <string name="inventory_location_remove">Lagerplatz entfernen</string>
+    <string name="inventory_remove_one_title">%1$s entfernen?</string>
+    <string name="inventory_remove_one_writeoff">Der Bestand %1$s auf %2$s wird ausgebucht.</string>
+    <string name="inventory_remove_one_empty">%1$s ist dann kein Lagerplatz mehr für %2$s.</string>
+    <string name="inventory_audit_confirm_title">Diese Zählung speichern?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, unverändert</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s zählen</string>
+    <string name="inventory_move_confirm_title">Diesen Bestand umlagern?</string>
+    <string name="inventory_move_confirm_body">%1$s von %2$s nach %3$s.</string>
+    <string name="inventory_count_all">Alle Lagerplätze zählen</string>
+    <string name="inventory_add_location_link">+ Lagerplatz hinzufügen</string>
+    <string name="inventory_show_barcode">Barcode anzeigen</string>
+    <string name="inventory_barcode_sko_title">SKO-Barcode</string>
+    <string name="inventory_barcode_unit_title">Einheiten-Barcode</string>
+    <string name="inventory_barcode_description">Barcode %1$s</string>
+    <string name="inventory_barcode_unreadable">Dieser Code lässt sich nicht als Barcode darstellen. Bitte eintippen.</string>
+    <string name="inventory_remove_one_confirm">Entfernen</string>
+    <string name="inventory_sko_status_heading">SKO-Status</string>
+    <string name="inventory_quantity_status_heading">Mengenstatus</string>
 </resources>

@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Granska lager</string>
     <string name="inventory_action_consume">Intern förbrukning</string>
     <string name="inventory_action_move">Flytta lager</string>
-    <string name="inventory_action_remove_locations">Ta bort lagerplatser</string>
     <string name="inventory_add_confirm">Lägg till %1$s</string>
     <string name="inventory_add_missing">Välj en lagerplats.</string>
     <string name="inventory_add_picking_hint">Dess andra plockplats blir lagringsplats</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Ange ett antal över 0.</string>
     <string name="inventory_reasons_failed">Det gick inte att läsa in orsakerna</string>
     <string name="inventory_recent_movements">Senaste rörelser</string>
-    <string name="inventory_remove_missing">Välj minst en lagerplats.</string>
-    <string name="inventory_remove_subtitle">Välj lagerplatserna som ska tas bort</string>
-    <string name="inventory_remove_title">Ta bort lagerplatser · %1$s</string>
-    <string name="inventory_remove_warning">Lager som finns kvar på en borttagen lagerplats skrivs av.</string>
     <string name="inventory_replenish">fyll på %1$s</string>
     <string name="inventory_running">saldo %1$s</string>
     <string name="inventory_scan_no_sko">Ingen SKO för %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Avvecklad</string>
     <string name="inventory_state_discontinuing">Avvecklar</string>
     <string name="inventory_state_in_process">Pågår</string>
-    <string name="inventory_stock_actions">Lageråtgärder</string>
-    <string name="inventory_stock_actions_footnote">Lageråtgärder kräver behörighet att redigera lager. Flytta lager kräver minst två lagerplatser.</string>
     <string name="inventory_stock_value_line">Lagervärde %1$s</string>
     <string name="inventory_tile_abnormalities">Avvikelser</string>
     <string name="inventory_tile_current_skos">Nuvarande SKO:er</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Packas i: %1$s enhet per SKO</item>
         <item quantity="other">Packas i: %1$s enheter per SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Ta bort %1$d lagerplats</item>
-        <item quantity="other">Ta bort %1$d lagerplatser</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d lagerplats borttagen</item>
         <item quantity="other">%1$d lagerplatser borttagna</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">%1$s enheter totalt</item>
     </plurals>
     <string name="inventory_default_for">Standard för %1$s</string>
+    <string name="inventory_location_audit">Granska</string>
+    <string name="inventory_location_open">Öppna lagerplats</string>
+    <string name="inventory_location_remove">Ta bort lagerplats</string>
+    <string name="inventory_remove_one_title">Ta bort %1$s?</string>
+    <string name="inventory_remove_one_writeoff">De %1$s som finns kvar på %2$s skrivs av.</string>
+    <string name="inventory_remove_one_empty">%1$s blir inte längre en lagerplats för %2$s.</string>
+    <string name="inventory_audit_confirm_title">Spara den här inventeringen?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, oförändrat</string>
+    <string name="inventory_audit_one_subtitle">%1$s · räkna %2$s</string>
+    <string name="inventory_move_confirm_title">Flytta det här lagret?</string>
+    <string name="inventory_move_confirm_body">%1$s från %2$s till %3$s.</string>
+    <string name="inventory_count_all">Räkna alla lagerplatser</string>
+    <string name="inventory_add_location_link">+ Lägg till lagerplats</string>
+    <string name="inventory_show_barcode">Visa streckkod</string>
+    <string name="inventory_barcode_sko_title">SKO-streckkod</string>
+    <string name="inventory_barcode_unit_title">Enhetsstreckkod</string>
+    <string name="inventory_barcode_description">Streckkod %1$s</string>
+    <string name="inventory_barcode_unreadable">Koden kan inte ritas som streckkod. Skriv in den manuellt.</string>
+    <string name="inventory_remove_one_confirm">Ta bort</string>
+    <string name="inventory_sko_status_heading">SKO-status</string>
+    <string name="inventory_quantity_status_heading">Kvantitetsstatus</string>
 </resources>

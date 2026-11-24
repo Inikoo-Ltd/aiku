@@ -37,7 +37,7 @@ struct MainTabBar: View {
                             CountBadge(count: badge).offset(x: 14, y: -6)
                         }
                     }
-                Text(L10n.text(title))
+                Text(Hyphenation.softHyphens(in: L10n.text(title), locale: L10n.formatLocale))
                     .font(.aiku(11, .semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)

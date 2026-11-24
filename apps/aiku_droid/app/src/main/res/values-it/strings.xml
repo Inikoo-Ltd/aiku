@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Verifica stock</string>
     <string name="inventory_action_consume">Consumo interno</string>
     <string name="inventory_action_move">Sposta stock</string>
-    <string name="inventory_action_remove_locations">Rimuovi ubicazioni</string>
     <string name="inventory_add_confirm">Aggiungi %1$s</string>
     <string name="inventory_add_missing">Scelga un\'ubicazione.</string>
     <string name="inventory_add_picking_hint">La sua altra ubicazione di prelievo diventa di stoccaggio</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Imposti una quantità superiore a 0.</string>
     <string name="inventory_reasons_failed">Impossibile caricare i motivi</string>
     <string name="inventory_recent_movements">Movimenti recenti</string>
-    <string name="inventory_remove_missing">Scelga almeno un\'ubicazione.</string>
-    <string name="inventory_remove_subtitle">Scelga le ubicazioni da rimuovere</string>
-    <string name="inventory_remove_title">Rimuovi ubicazioni · %1$s</string>
-    <string name="inventory_remove_warning">Lo stock rimasto in un\'ubicazione rimossa viene stornato.</string>
     <string name="inventory_replenish">rifornire %1$s</string>
     <string name="inventory_running">progressivo %1$s</string>
     <string name="inventory_scan_no_sko">Nessuno SKO per %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Fuori produzione</string>
     <string name="inventory_state_discontinuing">In dismissione</string>
     <string name="inventory_state_in_process">In corso</string>
-    <string name="inventory_stock_actions">Azioni sullo stock</string>
-    <string name="inventory_stock_actions_footnote">Le azioni sullo stock richiedono i permessi di modifica dello stock. Sposta stock richiede almeno due ubicazioni.</string>
     <string name="inventory_stock_value_line">Valore dello stock %1$s</string>
     <string name="inventory_tile_abnormalities">Anomalie</string>
     <string name="inventory_tile_current_skos">SKO attuali</string>
@@ -2400,11 +2393,6 @@
         <item quantity="other">Confezionato in: %1$s unità per SKO</item>
         <item quantity="many">Confezionato in: %1$s unità per SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Rimuovi %1$d ubicazione</item>
-        <item quantity="other">Rimuovi %1$d ubicazioni</item>
-        <item quantity="many">Rimuovi %1$d ubicazioni</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d ubicazione rimossa</item>
         <item quantity="other">%1$d ubicazioni rimosse</item>
@@ -2575,4 +2563,26 @@
         <item quantity="other">%1$s unità in totale</item>
     </plurals>
     <string name="inventory_default_for">Predefinita per %1$s</string>
+    <string name="inventory_location_audit">Verifica</string>
+    <string name="inventory_location_open">Apri ubicazione</string>
+    <string name="inventory_location_remove">Rimuovi ubicazione</string>
+    <string name="inventory_remove_one_title">Rimuovere %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Le %1$s ancora in %2$s verranno stornate.</string>
+    <string name="inventory_remove_one_empty">%1$s non sarà più un’ubicazione di %2$s.</string>
+    <string name="inventory_audit_confirm_title">Salvare questo conteggio?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, invariato</string>
+    <string name="inventory_audit_one_subtitle">%1$s · conta %2$s</string>
+    <string name="inventory_move_confirm_title">Spostare questo stock?</string>
+    <string name="inventory_move_confirm_body">%1$s da %2$s a %3$s.</string>
+    <string name="inventory_count_all">Conta tutte le ubicazioni</string>
+    <string name="inventory_add_location_link">+ Aggiungi ubicazione</string>
+    <string name="inventory_show_barcode">Mostra codice a barre</string>
+    <string name="inventory_barcode_sko_title">Codice a barre SKO</string>
+    <string name="inventory_barcode_unit_title">Codice a barre unità</string>
+    <string name="inventory_barcode_description">Codice a barre %1$s</string>
+    <string name="inventory_barcode_unreadable">Questo codice non può essere disegnato come codice a barre. Digitalo a mano.</string>
+    <string name="inventory_remove_one_confirm">Rimuovi</string>
+    <string name="inventory_sko_status_heading">Stato SKO</string>
+    <string name="inventory_quantity_status_heading">Stato quantità</string>
 </resources>

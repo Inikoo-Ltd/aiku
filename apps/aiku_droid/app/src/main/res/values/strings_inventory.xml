@@ -100,13 +100,10 @@
     <string name="inventory_audited_on">Last audited %1$s</string>
     <string name="inventory_never_audited">Never audited</string>
     <string name="inventory_recent_movements">Recent movements</string>
-    <string name="inventory_stock_actions">Stock actions</string>
-    <string name="inventory_stock_actions_footnote">Stock actions need stock edit rights. Move stock needs at least two locations.</string>
     <string name="inventory_action_audit">Audit stock</string>
     <string name="inventory_action_move">Move stock</string>
     <string name="inventory_action_consume">Internal consumption</string>
     <string name="inventory_action_add_location">Add location</string>
-    <string name="inventory_action_remove_locations">Remove locations</string>
 
     <string name="inventory_in_location">%1$s in location</string>
     <string name="inventory_quantity">Quantity</string>
@@ -154,14 +151,6 @@
     <string name="inventory_add_confirm">Add %1$s</string>
     <string name="inventory_location_added">Location added</string>
 
-    <string name="inventory_remove_title">Remove locations · %1$s</string>
-    <string name="inventory_remove_subtitle">Choose the locations to remove</string>
-    <string name="inventory_remove_warning">Stock left in a removed location is written off.</string>
-    <string name="inventory_remove_missing">Choose at least one location.</string>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Remove %1$d location</item>
-        <item quantity="other">Remove %1$d locations</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d location removed</item>
         <item quantity="other">%1$d locations removed</item>
@@ -198,4 +187,26 @@
         <item quantity="other">%1$s units in total</item>
     </plurals>
     <string name="inventory_default_for">Default for %1$s</string>
+    <string name="inventory_location_audit">Audit</string>
+    <string name="inventory_location_open">Open location</string>
+    <string name="inventory_location_remove">Remove location</string>
+    <string name="inventory_remove_one_title">Remove %1$s?</string>
+    <string name="inventory_remove_one_writeoff">The %1$s still in %2$s will be written off.</string>
+    <string name="inventory_remove_one_empty">%1$s will no longer be a location of %2$s.</string>
+    <string name="inventory_audit_confirm_title">Save this count?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, no change</string>
+    <string name="inventory_audit_one_subtitle">%1$s · count %2$s</string>
+    <string name="inventory_move_confirm_title">Move this stock?</string>
+    <string name="inventory_move_confirm_body">%1$s from %2$s to %3$s.</string>
+    <string name="inventory_count_all">Count all locations</string>
+    <string name="inventory_add_location_link">+ Add location</string>
+    <string name="inventory_show_barcode">Show barcode</string>
+    <string name="inventory_barcode_sko_title">SKO barcode</string>
+    <string name="inventory_barcode_unit_title">Unit barcode</string>
+    <string name="inventory_barcode_description">Barcode %1$s</string>
+    <string name="inventory_barcode_unreadable">This code can’t be drawn as a barcode. Type it in instead.</string>
+    <string name="inventory_remove_one_confirm">Remove</string>
+    <string name="inventory_sko_status_heading">SKO status</string>
+    <string name="inventory_quantity_status_heading">Quantity status</string>
 </resources>

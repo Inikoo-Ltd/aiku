@@ -12,22 +12,25 @@
 namespace Tests\Feature;
 
 use App\Actions\Api\Group\Inventory\IndexMobileOrgStocks;
-use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
-use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Inventory\LocationOrgStock\ConsumeLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
-use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\UI\ShowInventoryDashboard;
 use App\Actions\Inventory\Warehouse\StoreWarehouse;
+use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
-use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Goods\Stock;
@@ -236,6 +239,31 @@ test('mobile SKO list follows the web buckets, family, search, sort and counts w
     $list(['bucket' => 'nope', 'family_id' => 999999999, 'sort' => 'sku_value'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['bucket', 'family_id', 'sort']);
+});
+
+test('mobile SKO family page gives the web family SKO and quantity status and fraction labels on its SKOs', function () {
+    [, $warehouse] = mobileInventoryViewer($this->group);
+    $stockFamily   = StoreStockFamily::make()->action($warehouse->group, StockFamily::factory()->definition());
+    $family        = StoreOrgStockFamily::make()->action($warehouse->organisation, $stockFamily, []);
+    [$sko]         = mobileInventorySko($warehouse, 'MIF'.Str::upper(Str::random(6)));
+    $sko->update(['state' => OrgStockStateEnum::ACTIVE, 'org_stock_family_id' => $family->id, 'packed_in' => 4]);
+    $sko->locationOrgStocks()->update(['quantity' => 1.375]);
+    OrgStockHydrateQuantityInLocations::run($sko->id);
+    OrgStockFamilyHydrateOrgStocks::run($family);
+
+    $response = getJson(route('grp.api.mobile.warehouses.org_stock_families.skos', [$warehouse->id, $family->id]), mobileInventoryHeaders())->assertOk();
+    $buckets  = GetOrganisationStockCoverBuckets::run($warehouse->organisation, $family->refresh());
+
+    expect($response->json('family.sko_status'))->toBe([
+        ['key' => 'active', 'label' => 'Active', 'count' => 1],
+        ['key' => 'discontinuing', 'label' => 'Discontinuing', 'count' => 0],
+        ['key' => 'discontinued', 'label' => 'Discontinued', 'count' => 0],
+        ['key' => 'suspended', 'label' => 'Suspended', 'count' => 0],
+    ])
+        ->and($response->json('family.quantity_status'))->toBe(collect($buckets)->map(fn (array $bucket) => ['key' => $bucket['bucket'], 'label' => $bucket['label'], 'count' => (int) $bucket['count']])->all())
+        ->and(collect($response->json('family.quantity_status'))->pluck('key')->all())->toBe(['out', 'w1', 'w2', 'w3', 'w4', 'ok', 'excess', 'dead'])
+        ->and($response->json('data.0.code'))->toBe($sko->code)
+        ->and($response->json('data.0.quantity_in_locations_label'))->toBe('2 3/4');
 });
 
 test('mobile negative SKO list gives one row per negative location of this warehouse, most negative first, counted as the web counts them', function () {

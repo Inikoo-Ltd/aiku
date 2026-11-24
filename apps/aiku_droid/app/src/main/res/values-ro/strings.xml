@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Auditați stocul</string>
     <string name="inventory_action_consume">Consum intern</string>
     <string name="inventory_action_move">Mutați stocul</string>
-    <string name="inventory_action_remove_locations">Eliminați locații</string>
     <string name="inventory_add_confirm">Adăugați %1$s</string>
     <string name="inventory_add_missing">Alegeți o locație.</string>
     <string name="inventory_add_picking_hint">Cealaltă locație de cules a sa devine locație de depozitare</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Setați o cantitate mai mare de 0.</string>
     <string name="inventory_reasons_failed">Motivele nu au putut fi încărcate</string>
     <string name="inventory_recent_movements">Mișcări recente</string>
-    <string name="inventory_remove_missing">Alegeți cel puțin o locație.</string>
-    <string name="inventory_remove_subtitle">Alegeți locațiile de eliminat</string>
-    <string name="inventory_remove_title">Eliminați locații · %1$s</string>
-    <string name="inventory_remove_warning">Stocul rămas într-o locație eliminată este scos din evidență.</string>
     <string name="inventory_replenish">reaprovizionare %1$s</string>
     <string name="inventory_running">sold %1$s</string>
     <string name="inventory_scan_no_sko">Niciun SKO pentru %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Retrasă din vânzare</string>
     <string name="inventory_state_discontinuing">În curs de retragere</string>
     <string name="inventory_state_in_process">În curs</string>
-    <string name="inventory_stock_actions">Acțiuni de stoc</string>
-    <string name="inventory_stock_actions_footnote">Acțiunile de stoc necesită drepturi de editare a stocului. Mutarea stocului necesită cel puțin două locații.</string>
     <string name="inventory_stock_value_line">Valoarea stocului %1$s</string>
     <string name="inventory_tile_abnormalities">Anomalii</string>
     <string name="inventory_tile_current_skos">SKO-uri actuale</string>
@@ -2400,11 +2393,6 @@
         <item quantity="few">Ambalat câte: %1$s unități per SKO</item>
         <item quantity="other">Ambalat câte: %1$s de unități per SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Eliminați %1$d locație</item>
-        <item quantity="few">Eliminați %1$d locații</item>
-        <item quantity="other">Eliminați %1$d de locații</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d locație eliminată</item>
         <item quantity="few">%1$d locații eliminate</item>
@@ -2575,4 +2563,26 @@
         <item quantity="other">%1$s de unități în total</item>
     </plurals>
     <string name="inventory_default_for">Implicită pentru %1$s</string>
+    <string name="inventory_location_audit">Auditează</string>
+    <string name="inventory_location_open">Deschide locația</string>
+    <string name="inventory_location_remove">Elimină locația</string>
+    <string name="inventory_remove_one_title">Elimini %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Stocul de %1$s rămas în %2$s va fi scos din evidență.</string>
+    <string name="inventory_remove_one_empty">%1$s nu va mai fi o locație a %2$s.</string>
+    <string name="inventory_audit_confirm_title">Salvezi această numărătoare?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, fără modificare</string>
+    <string name="inventory_audit_one_subtitle">%1$s · numără %2$s</string>
+    <string name="inventory_move_confirm_title">Muți acest stoc?</string>
+    <string name="inventory_move_confirm_body">%1$s din %2$s în %3$s.</string>
+    <string name="inventory_count_all">Numără toate locațiile</string>
+    <string name="inventory_add_location_link">+ Adaugă locație</string>
+    <string name="inventory_show_barcode">Arată codul de bare</string>
+    <string name="inventory_barcode_sko_title">Cod de bare SKO</string>
+    <string name="inventory_barcode_unit_title">Cod de bare unitate</string>
+    <string name="inventory_barcode_description">Cod de bare %1$s</string>
+    <string name="inventory_barcode_unreadable">Acest cod nu poate fi desenat ca cod de bare. Introdu-l manual.</string>
+    <string name="inventory_remove_one_confirm">Elimină</string>
+    <string name="inventory_sko_status_heading">Starea SKO</string>
+    <string name="inventory_quantity_status_heading">Starea cantității</string>
 </resources>

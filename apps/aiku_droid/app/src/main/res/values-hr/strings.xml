@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Inventura zalihe</string>
     <string name="inventory_action_consume">Interna potrošnja</string>
     <string name="inventory_action_move">Premjesti zalihu</string>
-    <string name="inventory_action_remove_locations">Ukloni lokacije</string>
     <string name="inventory_add_confirm">Dodaj %1$s</string>
     <string name="inventory_add_missing">Odaberite lokaciju.</string>
     <string name="inventory_add_picking_hint">Njegova druga lokacija za branje postaje lokacija za pohranu</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Postavite količinu veću od 0.</string>
     <string name="inventory_reasons_failed">Učitavanje razloga nije uspjelo</string>
     <string name="inventory_recent_movements">Nedavna kretanja</string>
-    <string name="inventory_remove_missing">Odaberite barem jednu lokaciju.</string>
-    <string name="inventory_remove_subtitle">Odaberite lokacije za uklanjanje</string>
-    <string name="inventory_remove_title">Ukloni lokacije · %1$s</string>
-    <string name="inventory_remove_warning">Zaliha preostala na uklonjenoj lokaciji otpisuje se.</string>
     <string name="inventory_replenish">nadopuna %1$s</string>
     <string name="inventory_running">stanje %1$s</string>
     <string name="inventory_scan_no_sko">Nema SKO-a za %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Ukinuto</string>
     <string name="inventory_state_discontinuing">Ukidanje</string>
     <string name="inventory_state_in_process">U procesu</string>
-    <string name="inventory_stock_actions">Radnje sa zalihom</string>
-    <string name="inventory_stock_actions_footnote">Za radnje sa zalihom potrebna su prava uređivanja zaliha. Za premještanje zalihe potrebne su barem dvije lokacije.</string>
     <string name="inventory_stock_value_line">Vrijednost zalihe %1$s</string>
     <string name="inventory_tile_abnormalities">Abnormalnosti</string>
     <string name="inventory_tile_current_skos">Trenutni SKO-ovi</string>
@@ -2400,11 +2393,6 @@
         <item quantity="few">Pakirano: %1$s jedinice po SKO-u</item>
         <item quantity="other">Pakirano: %1$s jedinica po SKO-u</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Ukloni %1$d lokaciju</item>
-        <item quantity="few">Ukloni %1$d lokacije</item>
-        <item quantity="other">Ukloni %1$d lokacija</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">Uklonjena %1$d lokacija</item>
         <item quantity="few">Uklonjene %1$d lokacije</item>
@@ -2575,4 +2563,26 @@
         <item quantity="other">ukupno %1$s komada</item>
     </plurals>
     <string name="inventory_default_for">Zadano za %1$s</string>
+    <string name="inventory_location_audit">Inventura</string>
+    <string name="inventory_location_open">Otvori lokaciju</string>
+    <string name="inventory_location_remove">Ukloni lokaciju</string>
+    <string name="inventory_remove_one_title">Ukloniti %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Zaliha %1$s koja je još na %2$s bit će otpisana.</string>
+    <string name="inventory_remove_one_empty">%1$s više neće biti lokacija za %2$s.</string>
+    <string name="inventory_audit_confirm_title">Spremiti ovo brojanje?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, bez promjene</string>
+    <string name="inventory_audit_one_subtitle">%1$s · prebroji %2$s</string>
+    <string name="inventory_move_confirm_title">Premjestiti ovu zalihu?</string>
+    <string name="inventory_move_confirm_body">%1$s s %2$s na %3$s.</string>
+    <string name="inventory_count_all">Prebroji sve lokacije</string>
+    <string name="inventory_add_location_link">+ Dodaj lokaciju</string>
+    <string name="inventory_show_barcode">Prikaži barkod</string>
+    <string name="inventory_barcode_sko_title">Barkod SKO-a</string>
+    <string name="inventory_barcode_unit_title">Barkod komada</string>
+    <string name="inventory_barcode_description">Barkod %1$s</string>
+    <string name="inventory_barcode_unreadable">Ovaj se kod ne može prikazati kao barkod. Upišite ga ručno.</string>
+    <string name="inventory_remove_one_confirm">Ukloni</string>
+    <string name="inventory_sko_status_heading">Status SKO-a</string>
+    <string name="inventory_quantity_status_heading">Status količine</string>
 </resources>

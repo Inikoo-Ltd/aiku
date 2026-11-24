@@ -16,6 +16,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.lastUpdatedTime
+import io.aiku.droid.ui.inventory.stockFractionLabel
 import io.aiku.droid.ui.theme.LocalAikuColors
 import java.time.Instant
 import java.time.ZoneId
@@ -34,7 +35,7 @@ internal fun OfflineCopyNotice(copy: OfflineCopy) {
 
 @Composable
 internal fun queuedWorkText(work: QueuedLineWork, line: DeliveryNoteLine): String {
-    val quantity = quantityText(work.quantity)
+    val quantity = quantityText(work.quantity, stockFractionLabel(work.quantity, line.orgStock?.packedIn))
     return when (work.operation) {
         OfflineOperation.PICK -> line.locations.firstOrNull { it.locationOrgStockId == work.locationOrgStockId }?.code?.takeIf { it.isNotBlank() }
             ?.let { stringResource(R.string.goodsout_offline_queued_pick, quantity, it) }

@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Одит на наличност</string>
     <string name="inventory_action_consume">Вътрешно потребление</string>
     <string name="inventory_action_move">Премести наличност</string>
-    <string name="inventory_action_remove_locations">Премахни локации</string>
     <string name="inventory_add_confirm">Добави %1$s</string>
     <string name="inventory_add_missing">Изберете локация.</string>
     <string name="inventory_add_picking_hint">Другата му локация за вземане става локация за съхранение</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Задайте количество над 0.</string>
     <string name="inventory_reasons_failed">Причините не можаха да се заредят</string>
     <string name="inventory_recent_movements">Последни движения</string>
-    <string name="inventory_remove_missing">Изберете поне една локация.</string>
-    <string name="inventory_remove_subtitle">Изберете локациите за премахване</string>
-    <string name="inventory_remove_title">Премахни локации · %1$s</string>
-    <string name="inventory_remove_warning">Наличността, останала в премахната локация, се отписва.</string>
     <string name="inventory_replenish">попълни %1$s</string>
     <string name="inventory_running">текуща %1$s</string>
     <string name="inventory_scan_no_sko">Няма SKO за %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Спрян от производство</string>
     <string name="inventory_state_discontinuing">Преустановяване</string>
     <string name="inventory_state_in_process">В процес</string>
-    <string name="inventory_stock_actions">Действия с наличности</string>
-    <string name="inventory_stock_actions_footnote">Действията с наличности изискват права за редактиране на наличности. „Премести наличност“ изисква поне две локации.</string>
     <string name="inventory_stock_value_line">Стойност на наличността %1$s</string>
     <string name="inventory_tile_abnormalities">Аномалии</string>
     <string name="inventory_tile_current_skos">Текущи SKO</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Опаковка: %1$s единица на SKO</item>
         <item quantity="other">Опаковка: %1$s единици на SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Премахни %1$d локация</item>
-        <item quantity="other">Премахни %1$d локации</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d локация е премахната</item>
         <item quantity="other">%1$d локации са премахнати</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">%1$s бройки общо</item>
     </plurals>
     <string name="inventory_default_for">По подразбиране за %1$s</string>
+    <string name="inventory_location_audit">Одит</string>
+    <string name="inventory_location_open">Отвори локацията</string>
+    <string name="inventory_location_remove">Премахни локацията</string>
+    <string name="inventory_remove_one_title">Да се премахне ли %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Наличността %1$s, която е още в %2$s, ще бъде отписана.</string>
+    <string name="inventory_remove_one_empty">%1$s вече няма да е локация на %2$s.</string>
+    <string name="inventory_audit_confirm_title">Да се запази ли това преброяване?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, без промяна</string>
+    <string name="inventory_audit_one_subtitle">%1$s · преброй %2$s</string>
+    <string name="inventory_move_confirm_title">Да се премести ли тази наличност?</string>
+    <string name="inventory_move_confirm_body">%1$s от %2$s в %3$s.</string>
+    <string name="inventory_count_all">Преброй всички локации</string>
+    <string name="inventory_add_location_link">+ Добави локация</string>
+    <string name="inventory_show_barcode">Покажи баркода</string>
+    <string name="inventory_barcode_sko_title">Баркод на SKO</string>
+    <string name="inventory_barcode_unit_title">Баркод на бройка</string>
+    <string name="inventory_barcode_description">Баркод %1$s</string>
+    <string name="inventory_barcode_unreadable">Този код не може да се изобрази като баркод. Въведете го ръчно.</string>
+    <string name="inventory_remove_one_confirm">Премахни</string>
+    <string name="inventory_sko_status_heading">Статус на SKO</string>
+    <string name="inventory_quantity_status_heading">Статус на количеството</string>
 </resources>

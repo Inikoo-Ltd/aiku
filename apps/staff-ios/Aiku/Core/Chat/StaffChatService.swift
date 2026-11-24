@@ -26,14 +26,14 @@ enum StaffChatFormat {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let formatter = DateFormatter()
-        formatter.locale = L10n.dateLocale
+        formatter.locale = L10n.formatLocale
         formatter.timeZone = timeZone
         if calendar.isDate(date, inSameDayAs: now) {
             formatter.dateFormat = "HH:mm"
         } else if calendar.component(.year, from: date) == calendar.component(.year, from: now) {
-            formatter.dateFormat = "d MMM HH:mm"
+            formatter.dateFormat = L10n.datePattern("d MMM HH:mm")
         } else {
-            formatter.dateFormat = "d MMM yyyy HH:mm"
+            formatter.dateFormat = L10n.datePattern("d MMM yyyy HH:mm")
         }
         return formatter.string(from: date)
     }

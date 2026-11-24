@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Készlet leltározása</string>
     <string name="inventory_action_consume">Belső felhasználás</string>
     <string name="inventory_action_move">Készlet áthelyezése</string>
-    <string name="inventory_action_remove_locations">Raktárhelyek eltávolítása</string>
     <string name="inventory_add_confirm">%1$s hozzáadása</string>
     <string name="inventory_add_missing">Válasszon raktárhelyet.</string>
     <string name="inventory_add_picking_hint">A másik komissiózási helye tárolóhellyé válik</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Adjon meg 0-nál nagyobb mennyiséget.</string>
     <string name="inventory_reasons_failed">Nem sikerült betölteni az okokat</string>
     <string name="inventory_recent_movements">Legutóbbi mozgások</string>
-    <string name="inventory_remove_missing">Válasszon legalább egy raktárhelyet.</string>
-    <string name="inventory_remove_subtitle">Válassza ki az eltávolítandó raktárhelyeket</string>
-    <string name="inventory_remove_title">Raktárhelyek eltávolítása · %1$s</string>
-    <string name="inventory_remove_warning">Az eltávolított raktárhelyen maradt készlet leírásra kerül.</string>
     <string name="inventory_replenish">feltöltés: %1$s</string>
     <string name="inventory_running">göngyölített: %1$s</string>
     <string name="inventory_scan_no_sko">Nincs SKO ehhez: %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Megszűnt</string>
     <string name="inventory_state_discontinuing">Megszűnik</string>
     <string name="inventory_state_in_process">Folyamatban</string>
-    <string name="inventory_stock_actions">Készletműveletek</string>
-    <string name="inventory_stock_actions_footnote">A készletműveletekhez készletszerkesztési jog kell. A készletáthelyezéshez legalább két raktárhely szükséges.</string>
     <string name="inventory_stock_value_line">Készletérték: %1$s</string>
     <string name="inventory_tile_abnormalities">Rendellenességek</string>
     <string name="inventory_tile_current_skos">Aktuális SKO-k</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Kiszerelés: %1$s egység / SKO</item>
         <item quantity="other">Kiszerelés: %1$s egység / SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d raktárhely eltávolítása</item>
-        <item quantity="other">%1$d raktárhely eltávolítása</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d raktárhely eltávolítva</item>
         <item quantity="other">%1$d raktárhely eltávolítva</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">összesen %1$s egység</item>
     </plurals>
     <string name="inventory_default_for">Alapértelmezett: %1$s</string>
+    <string name="inventory_location_audit">Leltár</string>
+    <string name="inventory_location_open">Raktárhely megnyitása</string>
+    <string name="inventory_location_remove">Raktárhely eltávolítása</string>
+    <string name="inventory_remove_one_title">Eltávolítod: %1$s?</string>
+    <string name="inventory_remove_one_writeoff">A(z) %2$s helyen maradt %1$s leírásra kerül.</string>
+    <string name="inventory_remove_one_empty">%1$s többé nem lesz %2$s raktárhelye.</string>
+    <string name="inventory_audit_confirm_title">Mented ezt a számlálást?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, nincs változás</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s számlálása</string>
+    <string name="inventory_move_confirm_title">Áthelyezed ezt a készletet?</string>
+    <string name="inventory_move_confirm_body">%1$s: %2$s → %3$s.</string>
+    <string name="inventory_count_all">Összes raktárhely számlálása</string>
+    <string name="inventory_add_location_link">+ Raktárhely hozzáadása</string>
+    <string name="inventory_show_barcode">Vonalkód megjelenítése</string>
+    <string name="inventory_barcode_sko_title">SKO vonalkód</string>
+    <string name="inventory_barcode_unit_title">Egység vonalkód</string>
+    <string name="inventory_barcode_description">Vonalkód: %1$s</string>
+    <string name="inventory_barcode_unreadable">Ez a kód nem jeleníthető meg vonalkódként. Írd be kézzel.</string>
+    <string name="inventory_remove_one_confirm">Eltávolítás</string>
+    <string name="inventory_sko_status_heading">SKO állapot</string>
+    <string name="inventory_quantity_status_heading">Mennyiségi állapot</string>
 </resources>
