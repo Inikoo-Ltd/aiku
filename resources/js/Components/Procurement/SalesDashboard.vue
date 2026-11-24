@@ -369,16 +369,6 @@ const rankings = computed(() =>
 					figure: "sold" as const,
 				},
 				{
-					key: "out",
-					title: ctrans("Out of stock"),
-					hint: ctrans("Nothing left to sell where shown; the best sellers there first"),
-					empty: ctrans("No product is out of stock"),
-					rows: shownRankings.value.out.rows,
-					count: shownRankings.value.out.count,
-					tone: "text-red-600",
-					figure: "sold" as const,
-				},
-				{
 					key: "dead",
 					title: ctrans("In stock but not selling"),
 					hint: atSupplierPrices.value ? ctrans("Stock sitting in the warehouse with no sales expected, at your prices; the largest first") : ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
@@ -387,6 +377,16 @@ const rankings = computed(() =>
 					count: shownRankings.value.dead.count,
 					tone: "text-gray-500",
 					figure: "stock" as const,
+				},
+				{
+					key: "out",
+					title: ctrans("Out of stock"),
+					hint: ctrans("Nothing left to sell where shown; the best sellers there first"),
+					empty: ctrans("No product is out of stock"),
+					rows: shownRankings.value.out.rows,
+					count: shownRankings.value.out.count,
+					tone: "text-red-600",
+					figure: "sold" as const,
 				},
 				{
 					key: "low",
