@@ -367,16 +367,6 @@ const rankings = computed(() =>
 					figure: "sold" as const,
 				},
 				{
-					key: "low",
-					title: ctrans("About to run out"),
-					hint: ctrans("At the rate it sells, the stock will not last until a new order can arrive"),
-					empty: ctrans("No product is about to run out"),
-					rows: shownRankings.value.low.rows,
-					count: shownRankings.value.low.count,
-					tone: "text-amber-600",
-					figure: "sold" as const,
-				},
-				{
 					key: "dead",
 					title: ctrans("In stock but not selling"),
 					hint: atSupplierPrices.value ? ctrans("Stock sitting in the warehouse with no sales expected, at your prices; the largest first") : ctrans("Stock sitting in the warehouse with no sales expected, at what it cost; the largest first"),
@@ -385,6 +375,16 @@ const rankings = computed(() =>
 					count: shownRankings.value.dead.count,
 					tone: "text-gray-500",
 					figure: "stock" as const,
+				},
+				{
+					key: "low",
+					title: ctrans("About to run out"),
+					hint: ctrans("At the rate it sells, the stock will not last until a new order can arrive"),
+					empty: ctrans("No product is about to run out"),
+					rows: shownRankings.value.low.rows,
+					count: shownRankings.value.low.count,
+					tone: "text-amber-600",
+					figure: "sold" as const,
 				},
 			]
 		: []
