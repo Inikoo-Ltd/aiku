@@ -27115,5 +27115,9 @@
     "We will credit :amount to your balance.": "Na váš zostatok pripíšeme :amount.",
     "What happened?": "Čo sa stalo?",
     "What would you like us to do?": "Čo si želáte, aby sme urobili?",
-    "Which items went wrong?": "S ktorým tovarom bol problém?"
+    "Which items went wrong?": "S ktorým tovarom bol problém?",
+    "DIČ": "DIČ",
+    "10 digits, without SK. We send your invoices to it as e-invoices.": "10 číslic, bez SK. Na toto DIČ vám posielame faktúry ako elektronické faktúry.",
+    "Enter your company DIČ, we send your invoices to it as e-invoices.": "Zadajte DIČ vašej firmy, posielame naň faktúry ako elektronické faktúry.",
+    "This is not a valid Slovak DIČ. Please check the number.": "Toto nie je platné slovenské DIČ. Skontrolujte, prosím, číslo."
 }

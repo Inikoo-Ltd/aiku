@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\SysAdmin;
 
+use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\CRM\Customer\RegisterCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Actions\Web\WebsiteConversionEvent\ProcessRegistrationConversionEvent;
@@ -15,6 +16,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -24,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
+use Closure;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithRetinaRegistration
@@ -34,6 +37,10 @@ trait WithRetinaRegistration
     public function handle(array $modelData): void
     {
         $sessionId = Arr::pull($modelData, 'session_id');
+        $dic       = Arr::pull($modelData, 'dic');
+        if ($dic && self::asksForDic($this->shop) && $this->isSlovakAddress($modelData)) {
+            $modelData['peppol_id'] = BuildUblInvoice::PEPPOL_SCHEME.':'.$dic;
+        }
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
@@ -55,8 +62,33 @@ trait WithRetinaRegistration
         Cookie::queue('aiku_lts', '', 60);
     }
 
+    /**
+     * Shops of a Slovak company ask Slovak businesses for their DIČ, the address their e-invoices go to on Peppol.
+     */
+    public static function asksForDic(Shop $shop): bool
+    {
+        return $shop->organisation->country?->code === 'SK';
+    }
+
+    private function dicFromSlovakVatNumber(?array $taxNumber): ?string
+    {
+        $number = preg_replace('/^SK/', '', strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', (string)Arr::get($taxNumber, 'number'))));
+
+        return Country::find(Arr::get($taxNumber, 'country_id'))?->code === 'SK' && BuildUblInvoice::isSlovakDic($number) ? $number : null;
+    }
+
+    private function isSlovakAddress(array $modelData): bool
+    {
+        return Country::find(Arr::get($modelData, 'contact_address.country_id'))?->code === 'SK';
+    }
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        if (self::asksForDic($this->shop) && !$this->get('dic') && trim((string)$this->get('company_name')) !== ''
+            && $this->isSlovakAddress($this->all())) {
+            $validator->errors()->add('dic', __('Enter your company DIČ, we send your invoices to it as e-invoices.'));
+        }
+
         $pollReplies = $request->input('poll_replies', []);
 
         if (count($pollReplies) === 0) {
@@ -174,6 +206,13 @@ trait WithRetinaRegistration
         }
 
         $this->prepareTaxNumberInput($request);
+
+        if (self::asksForDic($this->shop) && $this->isSlovakAddress($this->all())) {
+            $dic = preg_replace('/\D/', '', (string)$this->get('dic'));
+            $this->set('dic', $dic ?: $this->dicFromSlovakVatNumber($this->get('tax_number')));
+        } elseif ($this->has('dic')) {
+            $this->set('dic', null);
+        }
     }
 
 
@@ -232,6 +271,16 @@ trait WithRetinaRegistration
             'is_opt_in'       => ['required', 'boolean'],
             'is_whatsapp_newsletter_opt_in' => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
+            'dic'             => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (is_string($value) && !BuildUblInvoice::isSlovakDic($value)) {
+                        $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                    }
+                },
+            ],
             'tax_number'      => [Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable', 'array'],
             'password'        =>
                 [

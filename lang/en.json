@@ -26811,5 +26811,9 @@
     "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:": "These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:",
     ":units units": ":units units",
     "Needed by :date": "Needed by :date",
-    "Sales to our own companies are included, services recharged to them are not": "Sales to our own companies are included, services recharged to them are not"
+    "Sales to our own companies are included, services recharged to them are not": "Sales to our own companies are included, services recharged to them are not",
+    "DIČ": "DIČ",
+    "10 digits, without SK. We send your invoices to it as e-invoices.": "10 digits, without SK. We send your invoices to it as e-invoices.",
+    "Enter your company DIČ, we send your invoices to it as e-invoices.": "Enter your company DIČ, we send your invoices to it as e-invoices.",
+    "This is not a valid Slovak DIČ. Please check the number.": "This is not a valid Slovak DIČ. Please check the number."
 }

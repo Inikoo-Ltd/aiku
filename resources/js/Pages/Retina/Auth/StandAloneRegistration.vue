@@ -71,7 +71,8 @@ const form = useForm({
 	is_opt_in: props.registration_settings.marketing_opt_in_default,
 	is_whatsapp_newsletter_opt_in: !!props.whatsapp_newsletter_offered && (props.registration_settings.whatsapp_newsletter_default ?? false),
 	interest: [],
-    tax_number: ''
+    tax_number: '',
+    dic: '',
 
 })
 

@@ -8,6 +8,7 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
+use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
 use App\Actions\Helpers\Country\UI\GetAddressDataForShop;
 use App\Actions\IrisAction;
 use App\Http\Resources\CRM\PollsResource;
@@ -31,7 +32,7 @@ class GetIrisRegistrationData extends IrisAction
                 'contact_name' => $request->user()->contact_name,
                 'email'        => $request->user()->email,
             ] : null,
-            'registration_settings' => Arr::get($shop->settings, 'registration', []),
+            'registration_settings' => [...Arr::get($shop->settings, 'registration', []), 'asks_for_dic' => RegisterRetinaFromStandalone::asksForDic($shop)],
             'whatsapp_newsletter_offered' => GetRetinaWhatsappOptInData::isOfferedAtRegistration($shop),
             'shop_type'             => $shop->type->value,
         ];

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ctrans } from '@/Composables/useTrans'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 
 import Address from "@/Components/Forms/Fields/Address.vue"
 import Textarea from "primevue/textarea"
@@ -27,6 +27,7 @@ const props = defineProps<{
         company_name_label: string,
         company_name_placeholder: string,
         tax_number_is_required: boolean
+        asks_for_dic?: boolean
     },
     shopType?: string
 }>()
@@ -85,6 +86,19 @@ if (!props.form.contact_address?.country_id) {
 
 const selectedCountryCode = computed(
     () => props.countriesAddressData?.[props.form.contact_address?.country_id]?.code ?? ''
+)
+
+const showsDic = computed(() => !!props.registration_settings?.asks_for_dic && selectedCountryCode.value === 'SK')
+
+watch(
+    () => props.form.tax_number?.value,
+    (taxNumber) => {
+        const dicFromVat = String(taxNumber ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').match(/^SK(\d{10})$/)?.[1]
+        if (showsDic.value && dicFromVat && !props.form.dic) {
+            props.form.dic = dicFromVat
+            props.form.clearErrors('dic')
+        }
+    }
 )
 </script>
 
@@ -225,10 +239,27 @@ const selectedCountryCode = computed(
         </TaxNumber>
     </div>
 
+    <!-- Field: DIČ -->
+    <div v-if="showsDic" class="sm:col-span-6">
+        <label for="dic" class="mb-2 block text-sm font-medium text-gray-700">
+            <FontAwesomeIcon v-if="form.company_name" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            {{ ctrans("DIČ") }}
+        </label>
+        <InputText
+            v-model="form.dic"
+            @update:model-value="form.clearErrors('dic')"
+            id="dic"
+            name="dic"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="2120123456"
+            class="w-full"
+            :class="form.errors.dic ? 'errorShake' : ''" />
+        <p class="mt-1 text-xs text-gray-500">{{ ctrans("10 digits, without SK. We send your invoices to it as e-invoices.") }}</p>
+        <p v-if="form.errors.dic" class="text-sm text-red-600 mt-1">{{ form.errors.dic }}</p>
+    </div>
 
-
-
-    <div class="sm:col-span-6">
+    <div v-if="form.poll_replies?.length" class="sm:col-span-6">
         <hr />
     </div>
 
@@ -302,8 +333,4 @@ const selectedCountryCode = computed(
             <p v-if="form.errors.interest" class="text-sm text-red-600 mt-1">{{ form.errors.interest }}</p>
         </div>
     </template>
-
-    <div class="sm:col-span-6">
-        <hr />
-    </div>
 </template>

@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\WebUser\Retina\UI;
 
 use App\Actions\IrisAction;
+use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
 use Google_Client;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,7 +43,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
                 'defaultCountryId'     => GetRetinaRegistrationDefaultCountry::run($shop, $countriesAddressData, $request),
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls'                => $pollsResource,
-                'registration_settings' => Arr::get($this->shop->settings, 'registration', []),
+                'registration_settings' => [...Arr::get($this->shop->settings, 'registration', []), 'asks_for_dic' => RegisterRetinaFromStandalone::asksForDic($this->shop)],
                 'registerRoute'        => [
                     'name'       => 'retina.register_from_google.store',
                 ],

@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
@@ -294,6 +295,7 @@ class StoreCustomer extends OrgAction
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'peppol_id'                => BuildUblInvoice::peppolIdRules(),
             'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_address'          => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],

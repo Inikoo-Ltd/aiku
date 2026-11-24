@@ -65,6 +65,7 @@ const form = useForm({
 	is_whatsapp_newsletter_opt_in: false,
 	interest: [],
 	tax_number: "",
+	dic: "",
 })
 
 const isLoading = ref(false)

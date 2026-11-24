@@ -3520,6 +3520,61 @@ test('web registration files the tax number under the contact address country, n
         ->and($customer->taxNumber->number)->toBe('04851400400');
 });
 
+test('a Slovak business registering in a shop of a Slovak company must give its DIČ, which becomes its Peppol ID', function () {
+    if ($this->website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($this->website);
+    }
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $slovakia          = Country::where('code', 'SK')->first();
+    $organisation      = $this->website->shop->organisation;
+    $originalCountryId = $organisation->country_id;
+    $organisation->update(['country_id' => $slovakia->id]);
+    $registration = fn (array $data) => array_merge([
+        'contact_name'                  => 'Slovak Test',
+        'company_name'                  => 'Test s.r.o.',
+        'password'                      => 'password',
+        'is_opt_in'                     => true,
+        'is_whatsapp_newsletter_opt_in' => false,
+        'contact_address'               => array_merge(Address::factory()->definition(), ['country_id' => $slovakia->id, 'country_code' => 'SK']),
+    ], $data);
+
+    try {
+        auth()->logout();
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-missing@example.com']))
+            ->assertSessionHasErrors('dic');
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-typo@example.com', 'dic' => '2021344161']))
+            ->assertSessionHasErrors('dic');
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-letters@example.com', 'dic' => 'abc']))
+            ->assertSessionHasErrors('dic');
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic@example.com', 'dic' => '2021 344 160']))
+            ->assertSessionHasNoErrors();
+
+        expect(Customer::where('email', 'registration-dic-missing@example.com')->exists())->toBeFalse()
+            ->and(Customer::where('email', 'registration-dic@example.com')->firstOrFail()->peppol_id)->toBe('0245:2021344160');
+
+        auth('retina')->logout();
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-person@example.com', 'company_name' => '']))
+            ->assertSessionHasNoErrors();
+        expect(Customer::where('email', 'registration-dic-person@example.com')->firstOrFail()->peppol_id)->toBeNull();
+
+        auth('retina')->logout();
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-from-vat@example.com', 'tax_number' => ['number' => 'SK2021965990', 'country_code' => 'SK']]))
+            ->assertSessionHasNoErrors();
+        expect(Customer::where('email', 'registration-dic-from-vat@example.com')->firstOrFail()->peppol_id)->toBe('0245:2021965990');
+
+        auth('retina')->logout();
+        $czechia = Country::where('code', 'CZ')->first();
+        post(route('retina.register_from_standalone.store'), $registration([
+            'email'           => 'registration-dic-hidden@example.com',
+            'dic'             => '1234567890',
+            'contact_address' => array_merge(Address::factory()->definition(), ['country_id' => $czechia->id, 'country_code' => 'CZ']),
+        ]))->assertSessionHasNoErrors();
+        expect(Customer::where('email', 'registration-dic-hidden@example.com')->firstOrFail()->peppol_id)->toBeNull();
+    } finally {
+        $organisation->update(['country_id' => $originalCountryId]);
+    }
+});
+
 test('web registration rejects a bare dial code when the shop requires a phone number', function () {
     if ($this->website->state != WebsiteStateEnum::LIVE) {
         LaunchWebsite::make()->action($this->website);

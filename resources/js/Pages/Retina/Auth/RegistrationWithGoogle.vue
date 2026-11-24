@@ -68,6 +68,7 @@ const form = useForm({
 	is_whatsapp_newsletter_opt_in: props.registration_settings?.whatsapp_newsletter_default || false,
 	interest: [],
 	tax_number: "",
+	dic: "",
 })
 
 // Define reactive variables
