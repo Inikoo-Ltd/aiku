@@ -106,35 +106,30 @@ const saveGROffer = () => {
 
 <template>
     <div class="pb-8 m-5">
-        <div class="space-y-4">
-            <Message
-                v-if="!data.family?.data.description || !data.family?.data.description_title || !data.family?.data.description_extra && actions"
-                severity="error" closable>
-                <template #icon>
-                    <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
-                </template>
-                <div class="ml-2">
-                    <div class="flex gap-2 flex-wrap box-border">
-                        <span v-if="!data.family?.data.description_title">{{ ctrans("Description Title is missing")
-                            }}.</span>
-                        <span v-if="!data.family?.data.description">{{ ctrans("Description is missing") }}.</span>
-                        <span v-if="!data.family?.data.description_extra">{{ ctrans("Extra description is missing")
-                            }}.</span>
-                    </div>
-                    {{ ctrans("Please") }}
-                    <Link
-                        @click="navigateTo"
-                        class="underline font-bold">
-                    {{ ctrans("add missing description fields") }}
-                    </Link>.
+        <Message
+            v-if="!data.family?.data.description || !data.family?.data.description_title || !data.family?.data.description_extra && actions"
+            severity="error" closable class="mb-4">
+            <template #icon>
+                <FontAwesomeIcon :icon="faInfoCircle" fixed-width />
+            </template>
+            <div class="ml-2">
+                <div class="flex gap-2 flex-wrap box-border">
+                    <span v-if="!data.family?.data.description_title">{{ ctrans("Description Title is missing")
+                        }}.</span>
+                    <span v-if="!data.family?.data.description">{{ ctrans("Description is missing") }}.</span>
+                    <span v-if="!data.family?.data.description_extra">{{ ctrans("Extra description is missing")
+                        }}.</span>
                 </div>
-            </Message>
+                {{ ctrans("Please") }}
+                <Link
+                    @click="navigateTo"
+                    class="underline font-bold">
+                {{ ctrans("add missing description fields") }}
+                </Link>.
+            </div>
+        </Message>
 
-            <MasterFamilyShopsStatus v-if="data.shopsStatus" :data="data.shopsStatus" />
-            <MasterFamilyCompleteness v-if="data.completeness" :data="data.completeness" :shopsTotal="data.shopsStatus?.total ?? 0" @edit="navigateTo" />
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 2xl:grid-cols-[5fr_11fr_minmax(18rem,4fr)] gap-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2 2xl:col-span-1">
                 <dd v-if="data.tags && data.tags.length > 0" class="font-medium flex flex-wrap gap-1 pb-3">
                     <span v-for="tag in data.tags" :key="tag.id" v-tooltip="'tag'"
@@ -157,6 +152,9 @@ const saveGROffer = () => {
             </div>
 
             <div class="col-span-1 md:col-span-3 lg:col-span-2 2xl:col-span-1 space-y-4">
+                <MasterFamilyShopsStatus v-if="data.shopsStatus" :data="data.shopsStatus" />
+                <MasterFamilyCompleteness v-if="data.completeness" :data="data.completeness" :shopsTotal="data.shopsStatus?.total ?? 0" @edit="navigateTo" />
+
                 <div v-if="master_vol_gr_reward?.show_gr_vol" class="offer">
                     <template v-if="master_vol_gr_reward?.show_gr_vol">
                         <div class="mb-1 flex items-center gap-2 font-bold">

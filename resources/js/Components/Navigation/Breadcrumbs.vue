@@ -25,6 +25,8 @@ library.add(faSparkles, faArrowFromLeft, faArrowLeft, faArrowRight, faChevronRig
 
 const help = computed(() => usePage().props.help as { title: string, url: string } | null)
 
+const COMPACT_TRAIL_MIN_INDEXED_CRUMBS = 3
+
 const props = defineProps<{
     breadcrumbs: {
         type: string
@@ -130,6 +132,8 @@ const isCurrentPageBookmarked = computed(() => {
     return bookmarks.value.some(bookmark => bookmark.url.split('?')[0] === currentPath.value)
 })
 
+const isCompactTrail = computed(() => (props.breadcrumbs ?? []).filter(breadcrumb => breadcrumb.type === 'modelWithIndex').length >= COMPACT_TRAIL_MIN_INDEXED_CRUMBS)
+
 const getCurrentPageLabel = () => {
     const lastBreadcrumb = props.breadcrumbs?.[props.breadcrumbs.length - 1]
     return lastBreadcrumb?.simple?.label
@@ -212,14 +216,19 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                     </template>
                     <template v-else-if="breadcrumb.type === 'modelWithIndex'">
                         <div class="hidden md:inline-flex">
-                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50 place-self-center" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 opacity-50 place-self-center" :class="isCompactTrail ? 'mx-2' : 'mx-3'" icon="fa-regular fa-chevron-right" fixed-width aria-hidden="true" />
                             <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'"  class="hover:text-gray-700 grid grid-flow-col items-center"
-                                :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' ">
-                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5 mr-1" fixed-width aria-hidden="true" />
-                                <span>{{ breadcrumb.modelWithIndex.index.label }}</span> <span v-if="breadcrumb.modelWithIndex.index.suffix" class="ml-1 italic"> {{ breadcrumb.modelWithIndex.index.suffix }} </span>
+                                :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
+                                v-tooltip="isCompactTrail ? breadcrumb.modelWithIndex.index.label : undefined"
+                                :aria-label="isCompactTrail ? breadcrumb.modelWithIndex.index.label : undefined">
+                                <FontAwesomeIcon icon="fal fa-bars" class="flex-shrink-0 h-3.5 w-3.5" :class="isCompactTrail ? '' : 'mr-1'" fixed-width aria-hidden="true" />
+                                <template v-if="!isCompactTrail">
+                                    <span>{{ breadcrumb.modelWithIndex.index.label }}</span> <span v-if="breadcrumb.modelWithIndex.index.suffix" class="ml-1 italic"> {{ breadcrumb.modelWithIndex.index.suffix }} </span>
+                                </template>
                             </component>
                         </div>
-                        <span class="mx-3 select-none">→</span>
+                        <span v-if="!isCompactTrail" class="mx-3 select-none">→</span>
+                        <span v-else class="hidden w-1.5 md:inline-block" aria-hidden="true" />
                         <component
                             :is="breadcrumb.modelWithIndex?.model?.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'" class="breadcrumbSection"
                             :href="breadcrumb.modelWithIndex?.model?.url ? breadcrumb.modelWithIndex?.model?.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'">
@@ -287,7 +296,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             </component>
 
                             <!-- Subpage -->
-                            <component :is="breadcrumb.modelWithIndex?.model.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'"  class="py-2 grid grid-flow-col justify-start items-center text-indigo-400"
+                            <component :is="breadcrumb.modelWithIndex?.model.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'"  class="py-2 grid grid-flow-col justify-start items-center text-[var(--app-accent)]"
                                 :href="breadcrumb.modelWithIndex?.model.url ? breadcrumb.modelWithIndex?.model.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
                                 :style="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
                             >
@@ -319,7 +328,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                 <Popover class="w-full h-full" position="right-0" width="w-64">
                     <template #button>
                         <div class="rounded w-full h-full flex items-center justify-center cursor-pointer hover:text-[var(--app-accent)]"
-                            :class="isCurrentPageBookmarked ? 'text-indigo-500' : 'opacity-70 hover:opacity-100'"
+                            :class="isCurrentPageBookmarked ? 'text-[var(--app-accent)]' : 'opacity-70 hover:opacity-100'"
                             v-tooltip="isCurrentPageBookmarked ? ctrans('Remove bookmark') : ctrans('Bookmark this page')"
                         >
                             <LoadingIcon v-if="isSavingBookmarks" />
@@ -333,7 +342,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                                 @click="toggleBookmarkCurrentPage"
                                 class="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
                             >
-                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-indigo-500' : ''" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon :icon="isCurrentPageBookmarked ? 'fas fa-bookmark' : 'fal fa-bookmark'" class="flex-shrink-0 h-3.5 w-3.5" :class="isCurrentPageBookmarked ? 'text-[var(--app-accent)]' : ''" fixed-width aria-hidden="true" />
                                 <span>{{ isCurrentPageBookmarked ? ctrans('Remove bookmark') : ctrans('Bookmark this page') }}</span>
                             </button>
 
@@ -346,7 +355,7 @@ const removeBookmark = (bookmarkToRemove: Bookmark) => {
                             <div v-else class="max-h-64 overflow-y-auto space-y-0.5">
                                 <div v-for="bookmark in bookmarks" :key="bookmark.url" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100">
                                     <Link :href="bookmark.url" @click="close" class="flex-1 min-w-0 py-0.5" v-tooltip="bookmark.label">
-                                        <div class="truncate hover:text-indigo-600">{{ bookmark.label }}</div>
+                                        <div class="truncate hover:text-[var(--app-accent)]">{{ bookmark.label }}</div>
                                         <div v-if="getBookmarkSubtitle(bookmark)" class="truncate text-[10px] leading-3 text-gray-400">
                                             {{ getBookmarkSubtitle(bookmark) }}
                                         </div>

@@ -67,60 +67,47 @@ const missingItems = computed(() => props.data.items.filter(item => !item.is_com
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <div class="px-4 pt-4 pb-3">
-            <h3 class="font-semibold text-gray-700">{{ ctrans("Master completeness") }}</h3>
-            <p class="text-xs text-gray-500">{{ ctrans("Information the Master provides for all :count shop pages", { count: shopsTotal }) }}</p>
+    <div class="rounded-lg border border-gray-200 bg-white p-3">
+        <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Master completeness") }}</h3>
+                <p class="text-[11px] text-gray-500">{{ ctrans("Information the Master provides for all :count shop pages", { count: shopsTotal }) }}</p>
+            </div>
+            <Button type="tertiary" size="xs" :icon="faEdit" v-tooltip="ctrans('Edit in page settings')" :aria-label="ctrans('Edit in page settings')" @click="emit('edit')" />
         </div>
 
-        <div class="grid grid-cols-1 border-t border-gray-100 md:grid-cols-2">
-            <div class="flex flex-col items-center justify-center bg-gray-50 px-4 py-6">
-                <svg viewBox="0 0 200 125" class="w-full max-w-64" role="img" :aria-label="ctrans(':score out of 100', { score: data.score })">
-                    <path v-for="band in gaugeBands" :key="band.from" :d="gaugeArc(band.from, band.to)" :stroke="band.color" stroke-width="18" fill="none" />
-                    <line x1="100" y1="100" :x2="needleTip.x" :y2="needleTip.y" stroke="#1f2937" stroke-width="3" stroke-linecap="round" />
-                    <circle cx="100" cy="100" r="5" fill="#1f2937" />
-                    <circle :cx="marker.x" :cy="marker.y" r="7" fill="#fff" stroke="#1f2937" stroke-width="3" />
-                    <text x="20" y="122" text-anchor="middle" class="fill-gray-500 text-[9px]">0</text>
-                    <text x="180" y="122" text-anchor="middle" class="fill-gray-500 text-[9px]">100</text>
-                </svg>
-
-                <div class="mt-1 flex items-baseline gap-1">
-                    <span class="text-4xl font-bold text-gray-800">{{ data.score }}</span>
-                    <span class="text-sm text-gray-500">/ 100</span>
+        <div class="mt-2 flex items-center gap-3">
+            <svg viewBox="0 0 200 110" class="w-24 shrink-0" role="img" :aria-label="ctrans(':score out of 100', { score: data.score })">
+                <path v-for="band in gaugeBands" :key="band.from" :d="gaugeArc(band.from, band.to)" :stroke="band.color" stroke-width="22" fill="none" />
+                <line x1="100" y1="100" :x2="needleTip.x" :y2="needleTip.y" stroke="#1f2937" stroke-width="5" stroke-linecap="round" />
+                <circle cx="100" cy="100" r="7" fill="#1f2937" />
+                <circle :cx="marker.x" :cy="marker.y" r="9" fill="#fff" stroke="#1f2937" stroke-width="4" />
+            </svg>
+            <div class="min-w-0">
+                <div class="flex items-baseline gap-1">
+                    <span class="text-2xl font-bold leading-none text-gray-800">{{ data.score }}</span>
+                    <span class="text-xs text-gray-500">/ 100</span>
                 </div>
-                <span class="mt-2 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="scoreStatus.class">{{ scoreStatus.label }}</span>
-                <p class="mt-2 text-xs text-gray-500">
-                    {{ ctrans(":complete of :total items complete · applied to :shops shop pages", { complete: data.complete, total: data.total, shops: shopsTotal }) }}
+                <span class="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="scoreStatus.class">{{ scoreStatus.label }}</span>
+                <p class="mt-0.5 text-[11px] text-gray-500">
+                    {{ ctrans(":complete of :total items complete", { complete: data.complete, total: data.total }) }}
                 </p>
             </div>
-
-            <div class="flex flex-col gap-4 p-4">
-                <div>
-                    <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("All :count items", { count: data.total }) }}</h4>
-                    <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-4">
-                        <div
-                            v-for="item in sortedItems"
-                            :key="item.key"
-                            class="flex items-center gap-1.5 rounded border px-2 py-1 text-xs"
-                            :class="item.is_complete ? 'border-green-200 bg-green-50 text-gray-700' : 'border-red-300 bg-red-50 font-semibold text-gray-800'">
-                            <FontAwesomeIcon :icon="item.is_complete ? faCheck : faTimes" :class="item.is_complete ? 'text-green-600' : 'text-red-500'" fixed-width aria-hidden="true" />
-                            <span class="min-w-0 break-words">{{ item.label }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="missingItems.length" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-gray-700">
-                    <span class="font-semibold text-red-600">{{ ctransChoice(":count item missing|:count items missing", missingItems.length, { count: missingItems.length }) }}</span>
-                    · {{ missingItems.map(item => item.label).join(", ") }}
-                </div>
-                <div v-else class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-semibold text-green-700">
-                    {{ ctrans("All items complete") }}
-                </div>
-
-                <div>
-                    <Button type="tertiary" :label="ctrans('Edit in page settings')" :icon="faEdit" @click="emit('edit')" />
-                </div>
-            </div>
         </div>
+
+        <div class="mt-2 flex flex-wrap gap-1">
+            <span
+                v-for="item in sortedItems"
+                :key="item.key"
+                class="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] leading-tight"
+                :class="item.is_complete ? 'border-green-200 bg-green-50 text-gray-600' : 'border-red-300 bg-red-50 font-semibold text-red-700'">
+                <FontAwesomeIcon :icon="item.is_complete ? faCheck : faTimes" :class="item.is_complete ? 'text-green-600' : 'text-red-500'" fixed-width aria-hidden="true" />
+                {{ item.label }}
+            </span>
+        </div>
+
+        <p v-if="missingItems.length" class="mt-2 text-[11px] font-semibold text-red-600">
+            {{ ctransChoice(":count item missing|:count items missing", missingItems.length, { count: missingItems.length }) }}
+        </p>
     </div>
 </template>

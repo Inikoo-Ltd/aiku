@@ -267,10 +267,9 @@ class ShowMasterFamily extends OrgAction
                 ],
                 'pageHead'                => [
                     'title'         => $masterFamily->name,
-                    'model'         => __('Master Family'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('Department')
+                        'title' => __('Master Family')
                     ],
                     'iconRight'     => $stateIcon,
                     'actions'       => [
@@ -285,7 +284,7 @@ class ShowMasterFamily extends OrgAction
                          $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('Edit Price'),
+                            'label' => __('Edit Prices'),
                             'icon'  => ['fal', 'fa-money-bill'],
                             'route' => [
                                 'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',

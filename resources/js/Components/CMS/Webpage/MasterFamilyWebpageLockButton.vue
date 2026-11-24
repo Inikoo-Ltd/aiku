@@ -29,6 +29,7 @@ const props = defineProps<{
         lock_route: routeType
         unlock_route: routeType
     }
+    compact?: boolean
 }>()
 
 const mode = ref<Mode | null>(null)
@@ -71,7 +72,8 @@ const submit = () => {
     <Button
         type="tertiary"
         :icon="faLock"
-        :label="ctrans('Lock family webpages')"
+        :label="compact ? undefined : ctrans('Lock family webpages')"
+        :aria-label="ctrans('Lock family webpages')"
         :disabled="!hasWebpages"
         v-tooltip="hasWebpages ? ctrans('Lock this family webpage on the websites you choose') : ctrans('No webpages for this family yet')"
         @click="openModal('lock')"
@@ -80,7 +82,9 @@ const submit = () => {
         v-if="lockedWebpages.length"
         type="tertiary"
         :icon="faLockOpen"
-        :label="ctrans('Unlock family webpages')"
+        :label="compact ? undefined : ctrans('Unlock family webpages')"
+        :aria-label="ctrans('Unlock family webpages')"
+        v-tooltip="compact ? ctrans('Unlock family webpages') : undefined"
         @click="openModal('unlock')"
     />
 

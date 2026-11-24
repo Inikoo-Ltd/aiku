@@ -13,6 +13,9 @@ import {
     faBrowser,
     faUpload,
     faChartLine,
+    faChevronDown,
+    faMoneyBill,
+    faPlus,
 } from "@fal"
 import { faExclamationTriangle, faCactus } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -45,8 +48,10 @@ import RelatedProductCategory from "@/Components/Master/RelatedProductCategory.v
 import MasterFamilyIndexOrdering from "@/Components/Master/MasterFamilyIndexOrdering.vue"
 import MasterFamilyWebpageLockButton from "@/Components/CMS/Webpage/MasterFamilyWebpageLockButton.vue"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import Menu from "primevue/menu"
 
 library.add(
+    faMoneyBill,
     faFolder,
     faCube,
     faCameraRetro,
@@ -140,15 +145,60 @@ const component = computed(() => {
 
 const showDialog = ref(false);
 
+const addMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+type PageHeadAction = { key?: string, route: routeType } | false
+
+const findAction = (key: string) => ((props.pageHead as { actions?: PageHeadAction[] }).actions ?? []).find((action): action is Exclude<PageHeadAction, false> => !!action && action.key === key)
+
+const actionsInMenus = ["variants"]
+
+const pageHeadWithMenus = computed(() => {
+    const pageHead = props.pageHead as { actions?: PageHeadAction[] }
+
+    return {
+        ...pageHead,
+        actions: (pageHead.actions ?? []).filter(action => !action || !actionsInMenus.includes(action.key ?? "")),
+    }
+})
+
+const addMenuItems = computed(() => {
+    const variantsAction = findAction("variants")
+
+    return [
+        { label: ctrans("Master Product"), faIcon: faCube, command: () => (showDialog.value = true) },
+        ...(variantsAction
+            ? [{
+                label: ctrans("Variants"),
+                faIcon: faProjectDiagram,
+                disabled: !props.isPerfectFamily,
+                tooltip: props.isPerfectFamily ? null : ctrans("Unable to create new variant. Please fix data that are related to this Master Family"),
+                command: () => router.visit(route(variantsAction.route.name, variantsAction.route.parameters)),
+            }]
+            : []),
+        ...(layout?.app?.environment === "local"
+            ? [{ label: ctrans("Upload Excel"), faIcon: faUpload, command: () => (isModalUploadOpen.value = true) }]
+            : []),
+    ]
+})
+
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
 
-    <PageHeading :data="pageHead">
-        <template #button-master-product="{ action }">
-            <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
+    <PageHeading :data="pageHeadWithMenus">
+        <template #button-master-product>
+            <Button type="primary" :label="ctrans('Add')" :icon="faPlus" :iconRight="faChevronDown" aria-haspopup="true" aria-controls="master-family-add-menu" @click="(event) => addMenu?.toggle(event)" />
+            <Menu id="master-family-add-menu" ref="addMenu" :model="addMenuItems" popup class="text-sm">
+                <template #item="{ item, props: itemProps }">
+                    <a v-bind="itemProps.action" v-tooltip="item.tooltip" class="flex items-center gap-2">
+                        <FontAwesomeIcon :icon="item.faIcon" class="text-gray-500" fixed-width aria-hidden="true" />
+                        <span>{{ item.label }}</span>
+                    </a>
+                </template>
+            </Menu>
         </template>
 
         <template #afterTitle2>
@@ -168,23 +218,9 @@ const showDialog = ref(false);
             </div>
         </template>
 
-        <template #button-variants>
-            <div v-if="!isPerfectFamily">
-                <Button :style="'create'" :label="ctrans('Variants')" :tooltip="ctrans('Unable to create new variant. Please fix data that are related to this Master Family')" :disabled="true"/>
-            </div>
-        </template>
-
         <template #other>
-            <MasterFamilyWebpageLockButton v-if="webpage_locks" :locks="webpage_locks" />
-			<Button
-                v-if="layout?.app?.environment === 'local'"
-				@click="() => (isModalUploadOpen = true)"
-				:style="'create'"
-				:icon="faUpload"
-				v-tooltip="'upload excel'"
-                label="Upload Excel"
-            />
-		</template>
+            <MasterFamilyWebpageLockButton v-if="webpage_locks" :locks="webpage_locks" compact />
+        </template>
     </PageHeading>
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
