@@ -49,7 +49,7 @@ export interface EditedSubmission {
 
 const props = defineProps<{
 	forms: PortalForms
-	products: { id: number; code: string; name: string; price?: number; moq?: number | null }[]
+	products: { id: number; code: string; name: string; price?: number; moq?: number | null; units_per_carton?: number | null }[]
 	currency: string | null
 	editing: EditedSubmission | null
 	initialType?: string
@@ -168,6 +168,8 @@ watch(type, () => {
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
 const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
+const unitsPerCarton = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.units_per_carton ?? null)
+const estimatedMoqUnits = computed(() => (unitsPerCarton.value && typeof form.moq === "number" && form.moq > 0 ? form.moq * unitsPerCarton.value : null))
 const oneYearAfter = (date: Date) => new Date(date.getFullYear() + 1, date.getMonth(), date.getDate())
 const isSameDay = (first: Date, second: Date) => first.toDateString() === second.toDateString()
 
@@ -356,7 +358,13 @@ const caption = "font-medium text-gray-700"
 						{{ ctrans("Price higher than inflation") }}
 					</span>
 				</label>
-				<label :class="label"><span :class="caption">{{ ctrans("MOQ, in cartons") }}</span><InputNumber v-model="form.moq" :min="1" :useGrouping="false" @input="(event) => (form.moq = typedNumber(event.value))" /></label>
+				<label :class="label">
+					<span :class="caption">{{ ctrans("MOQ, in cartons") }}</span>
+					<InputNumber v-model="form.moq" :min="1" :useGrouping="false" @input="(event) => (form.moq = typedNumber(event.value))" />
+					<span v-if="unitsPerCarton" class="text-xs text-gray-500">
+						{{ ctrans(":units units per carton", { units: unitsPerCarton.toLocaleString() }) }}<template v-if="estimatedMoqUnits"> · {{ ctrans("about :units units", { units: estimatedMoqUnits.toLocaleString() }) }}</template>
+					</span>
+				</label>
 				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
 				<div :class="label">
 					<label for="price-change-until" :class="caption">{{ ctrans("Until") }}</label>

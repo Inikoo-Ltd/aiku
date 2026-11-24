@@ -41,6 +41,7 @@ interface ProductRow {
 	status_label: string
 	cost: number
 	moq: number | null
+	units_per_carton: number | null
 	price_change: PriceChange | null
 }
 
@@ -214,7 +215,7 @@ const stateClass: Record<string, string> = {
 				v-if="selected"
 				:key="selected.id"
 				:forms="forms"
-				:products="[{ id: selected.id, code: selected.code, name: selected.name, price: selected.cost, moq: selected.moq }]"
+				:products="[{ id: selected.id, code: selected.code, name: selected.name, price: selected.cost, moq: selected.moq, units_per_carton: selected.units_per_carton }]"
 				:currency="currency"
 				:editing="editing"
 				locked-type="price_change"

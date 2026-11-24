@@ -65,6 +65,7 @@ class SupplierPortalPriceChangesResource extends JsonResource
             'status_label' => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => __('Discontinued')][$status],
             'cost'         => (float) $this->cost,
             'moq'          => $this->minimum_carton_order ? (int) $this->minimum_carton_order : null,
+            'units_per_carton' => $this->units_per_carton ? (int) $this->units_per_carton : null,
             'price_change' => $priceChange,
         ];
     }

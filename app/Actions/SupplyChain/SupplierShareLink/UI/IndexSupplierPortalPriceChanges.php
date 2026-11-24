@@ -105,6 +105,7 @@ class IndexSupplierPortalPriceChanges
                 'supplier_products.is_available',
                 'supplier_products.cost',
                 'supplier_products.minimum_carton_order',
+                'supplier_products.units_per_carton',
                 'supplier_products.image_id',
                 'price_change.id as price_change_id',
                 'price_change.state as price_change_state',
