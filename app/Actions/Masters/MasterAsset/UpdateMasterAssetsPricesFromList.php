@@ -9,7 +9,6 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -74,7 +73,7 @@ class UpdateMasterAssetsPricesFromList extends OrgAction
         $skipped = [];
 
         foreach ($masterAssets as $masterAsset) {
-            $values = static::newValues($masterAsset, $rowsById->get($masterAsset->id), GetMasterShopCurrenciesRate::priceExchanges($masterAsset->masterShop));
+            $values = static::newValues($masterAsset, $rowsById->get($masterAsset->id), $masterAsset->masterShop?->price_exchanges ?? []);
 
             $modelData = ['ids' => [$masterAsset->id], 'rrp_per_unit' => false];
             foreach ($values as $field => $currencyValues) {

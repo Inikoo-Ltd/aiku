@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterAsset;
@@ -40,7 +39,7 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
 
         foreach (MasterAsset::whereIn('id', $masterAssetIDs)->where('group_id', $this->group->id)->with('masterShop')->get() as $masterAsset) {
             $dataToUpdate   = [];
-            $priceExchanges = GetMasterShopCurrenciesRate::priceExchanges($masterAsset->masterShop);
+            $priceExchanges = $masterAsset->masterShop?->price_exchanges ?? [];
 
             foreach (['master_prices', 'master_rrps'] as $field) {
                 if (!Arr::has($modelData, $field)) {

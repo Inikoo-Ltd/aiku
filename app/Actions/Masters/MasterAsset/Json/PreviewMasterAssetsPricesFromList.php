@@ -10,7 +10,6 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetsPricesFromList;
-use App\Actions\Masters\MasterShop\GetMasterShopCurrenciesRate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -32,7 +31,7 @@ class PreviewMasterAssetsPricesFromList extends OrgAction
 
     public function handle(MasterShop $masterShop, ?MasterProductCategory $scope, array $rows): array
     {
-        $priceExchanges = GetMasterShopCurrenciesRate::priceExchanges($masterShop);
+        $priceExchanges = $masterShop->price_exchanges ?? [];
 
         $codes = collect($rows)->pluck('code')->map(fn (string $code) => mb_strtolower(trim($code)))->unique()->values();
 
