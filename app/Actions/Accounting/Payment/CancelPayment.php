@@ -28,6 +28,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,6 +55,12 @@ class CancelPayment extends OrgAction
             if ($payment->state === PaymentStateEnum::CANCELLED) {
                 throw ValidationException::withMessages([
                     'message' => __('Unable to cancel this payment as it is already cancelled.'),
+                ]);
+            }
+
+            if (Arr::get($payment->data, 'refunded_by_api')) {
+                throw ValidationException::withMessages([
+                    'message' => __('This refund was sent to the customer by Checkout.com and cannot be cancelled here.'),
                 ]);
             }
 

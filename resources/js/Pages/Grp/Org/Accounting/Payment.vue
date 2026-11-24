@@ -23,6 +23,8 @@ import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faUndoAlt } from '@fal';
+import RefundPaymentByApiDialog, { ApiRefundOptions } from '@/Components/Accounting/RefundPaymentByApiDialog.vue';
 
 
 library.add(faCoins);
@@ -182,6 +184,8 @@ interface Props {
     }
     is_cancelled?: boolean
     payment_account_type?: string
+    api_refund?: ApiRefundOptions | null
+    currency_code?: string
 }
 
 const props = defineProps<Props>()
@@ -191,6 +195,8 @@ const showReceiptButton = computed(() => {
     // Show receipt button only if payment is done for top up and in showcase tab (Need to have valid params too)
     return props.tabs.current === 'showcase' && props.topup_receipt_route?.show && validParams
 })
+
+const isOpenApiRefund = ref(false)
 
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -261,10 +267,19 @@ const openSingleTopUpReceipt = () => {
 					/>
 				</template>
 			</ModalConfirmation>
+            <Button v-if="api_refund" type="tertiary" :label="ctrans('Refund')" @click="isOpenApiRefund = true">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faUndoAlt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                </template>
+                <template #iconRight>
+                    <span v-tooltip="ctrans('Refunded by Checkout.com to what the customer paid with')" class="rounded border border-gray-400 px-1 text-[10px] font-semibold leading-4 text-gray-600">API</span>
+                </template>
+            </Button>
             <Button v-if="showReceiptButton" :type="'tertiary'" @click="openSingleTopUpReceipt" :icon="faFilePdf" :label="ctrans('Download Receipt')">
             </Button>
         </template>
     </PageHeading>
+    <RefundPaymentByApiDialog v-if="api_refund" v-model:visible="isOpenApiRefund" :options="api_refund" :currencyCode="currency_code ?? ''" :paymentReference="title" />
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
 </template>

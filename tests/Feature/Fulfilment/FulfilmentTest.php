@@ -4499,6 +4499,7 @@ test('a refund paid back by Checkout.com API is recorded once, retried with the 
 
     $refund = StoreRefund::make()->action($invoice, []);
     StoreRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->first(), ['net_amount' => round($invoice->invoiceTransactions()->first()->net_amount * 0.05, 2)]);
+    expect(fn () => RefundPaymentByApi::make()->handle($payment, ['amount' => 0.01, 'invoice_id' => $refund->id]))->toThrow(ValidationException::class, 'refund invoice');
     $refund      = FinaliseRefund::make()->action($refund->refresh(), [])->refresh();
     $refundTotal = round(abs((float) $refund->total_amount), 2);
     $totalRefund = (float) $payment->refresh()->total_refund;
@@ -4548,7 +4549,7 @@ test('the Checkout.com refund call sends the payment id, minor units and key, an
     $payment = new Payment(['reference' => 'pay_test123']);
     $payment->setRelation('paymentAccount', new \App\Models\Accounting\PaymentAccount(['type' => 'checkout']));
     $payment->setRelation('paymentAccountShop', $paymentAccountShop);
-    $refundInvoice = new Invoice(['reference' => 'RF-API-1']);
+    $refundInvoice = 'RF-API-1';
 
     $accepted = \Mockery::mock(\Checkout\Payments\PaymentsClient::class);
     $accepted->shouldReceive('refundPayment')->once()

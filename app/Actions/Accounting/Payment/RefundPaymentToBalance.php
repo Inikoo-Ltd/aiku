@@ -57,6 +57,9 @@ class RefundPaymentToBalance extends OrgAction
 
         return DB::transaction(function () use ($refundAmount, $payment, $paymentAccountShop, $invoice) {
             $payment = self::lockForRefund($payment, $invoice, $refundAmount);
+            if (!$invoice && RefundPaymentByApi::creditRefundableLeft($payment) > 0) {
+                throw ValidationException::withMessages(['amount' => __('The money of this payment is already in the customer credit')]);
+            }
 
             $refundPayment = StorePayment::make()->action($payment->customer, $paymentAccountShop->paymentAccount, [
                 'amount'              => $refundAmount,
@@ -104,6 +107,10 @@ class RefundPaymentToBalance extends OrgAction
             throw ValidationException::withMessages(['amount' => __('Only a payment can be refunded, not a refund')]);
         }
 
+        if ($payment->state === PaymentStateEnum::CANCELLED) {
+            throw ValidationException::withMessages(['amount' => __('A cancelled payment cannot be refunded')]);
+        }
+
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::BANK_FEE) {
             throw ValidationException::withMessages(['amount' => __('A bank fee we absorbed was never received, so it cannot be refunded')]);
         }
@@ -116,7 +123,7 @@ class RefundPaymentToBalance extends OrgAction
             throw ValidationException::withMessages(['amount' => __('Only a successful payment can be refunded, this one is :state', ['state' => PaymentStateEnum::labels()[$payment->state->value] ?? $payment->state->value])]);
         }
 
-        if ($amount > round((float) $payment->amount - (float) $payment->total_refund, 2)) {
+        if ($amount > round((float) $payment->amount - RefundPaymentByApi::alreadyRefunded($payment), 2)) {
             throw ValidationException::withMessages(['amount' => __('The amount is more than is left to refund on this payment')]);
         }
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Payment\UI;
 
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -148,6 +149,11 @@ class ShowPayment extends OrgAction
                     ]
                 ],
                 'payment_account_type' => $payment->paymentAccount?->type,
+                'api_refund'           => $request->user()->authTo([
+                    "crm.$payment->shop_id.edit",
+                    "accounting.$payment->organisation_id.edit",
+                ]) ? RefundPaymentByApi::refundOptions($payment) : null,
+                'currency_code'        => $payment->currency?->code,
                 'is_cancelled' => $payment->state === PaymentStateEnum::CANCELLED,
 
                 PaymentTabsEnum::SHOWCASE->value => $this->tab == PaymentTabsEnum::SHOWCASE->value ?

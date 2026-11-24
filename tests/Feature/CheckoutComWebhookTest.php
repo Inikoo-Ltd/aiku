@@ -1230,3 +1230,151 @@ test('a refund Checkout.com declines later is undone on the payment and the orde
         ->and($payment->with_refund)->toBeFalse()
         ->and((float) $order->refresh()->payment_amount)->toBe($paidBefore);
 })->depends('webhook payment_captured pays and submits the order');
+
+test('a top up paid by Checkout.com is refunded by API from the customer credit', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $payment  = Payment::where('reference', 'pay_test_topup')->where('type', \App\Enums\Accounting\Payment\PaymentTypeEnum::PAYMENT)->firstOrFail();
+    $customer = $payment->customer;
+    $ledger   = fn () => round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $customer->id)->sum('amount'), 2);
+    if ($ledger() < 25) {
+        \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($customer, [
+            'amount' => round(25 - $ledger() + 10, 2),
+            'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
+        ], notifyCustomer: false);
+    }
+    $before = $ledger();
+
+    $options = \App\Actions\Accounting\Payment\RefundPaymentByApi::refundOptions($payment);
+    expect($options['refund_invoices'])->toBe([])
+        ->and($options['blocked'])->toBeNull()
+        ->and($options['credit']['max'])->toBe(min(25.0, $before));
+
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->once()->andReturn('act_test_topup_refund');
+    $refundPayment = \App\Actions\Accounting\Payment\RefundPaymentByApi::make()->handle($payment, ['amount' => 25, 'from_credit' => true]);
+
+    expect($refundPayment->reference)->toBe('act_test_topup_refund')
+        ->and((float) $refundPayment->amount)->toBe(-25.0)
+        ->and($ledger())->toBe(round($before - 25, 2))
+        ->and((float) $customer->refresh()->balance)->toBe(round($before - 25, 2))
+        ->and((float) $payment->refresh()->total_refund)->toBe(25.0)
+        ->and(\App\Actions\Accounting\Payment\RefundPaymentByApi::creditRefundableLeft($payment))->toBe(0.0)
+        ->and(\App\Actions\Accounting\Payment\RefundPaymentByApi::refundOptions($payment))->toBeNull()
+        ->and(App\Models\Accounting\CreditTransaction::where('payment_id', $refundPayment->id)->value('type'))->toBe(\App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::MONEY_BACK);
+})->depends('webhook payment_captured processes a top up');
+
+test('a live order payment is refused until the order is cancelled, then refunded from credit, and a declined refund puts the credit back once', function (array $context) {
+    list($order, $orderPaymentApiPoint) = $context;
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $refundByApi = \App\Actions\Accounting\Payment\RefundPaymentByApi::class;
+    $payment     = $order->payments()->where('reference', 'pay_test_captured')->firstOrFail();
+    $ledger      = fn () => round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2);
+
+    $live = $refundByApi::refundOptions($payment);
+    expect($live['credit'])->toBeNull()
+        ->and($live['refund_invoices'])->toBe([])
+        ->and($live['blocked'])->toContain('cancel it first')
+        ->and(fn () => $refundByApi::make()->handle($payment, ['amount' => 5, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class, 'not in the customer credit');
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order->refresh());
+    $balance     = $ledger();
+    $totalRefund = (float) $payment->refresh()->total_refund;
+    $paidOrder   = (float) $order->refresh()->payment_amount;
+    $refundRows  = Payment::where('original_payment_id', $payment->id)->count();
+
+    expect($refundByApi::refundOptions($payment)['credit']['max'])->toBe(round(min(25 - $totalRefund, $balance), 2))
+        ->and(fn () => $refundByApi::make()->handle($payment, ['amount' => 30, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    $keys = [];
+    $refundByApi::partialMock()->shouldReceive('refundAtCheckout')->once()
+        ->andReturnUsing(function ($payment, $amount, $reference, $key) use (&$keys) {
+            $keys[] = $key;
+            throw Illuminate\Validation\ValidationException::withMessages(['amount' => 'Checkout.com refused the refund: refund_not_allowed']);
+        });
+    expect(fn () => $refundByApi::make()->handle($payment, ['amount' => 20, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class, 'refund_not_allowed')
+        ->and($ledger())->toBe($balance)
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund)
+        ->and(Payment::where('original_payment_id', $payment->id)->count())->toBe($refundRows);
+
+    $refundByApi::partialMock()->shouldReceive('refundAtCheckout')->once()
+        ->andReturnUsing(function ($payment, $amount, $reference, $key) use (&$keys) {
+            $keys[] = $key;
+
+            return 'act_test_credit_refund';
+        });
+    $refundPayment = $refundByApi::make()->handle($payment->refresh(), ['amount' => 20, 'from_credit' => true]);
+
+    expect($refundPayment->reference)->toBe('act_test_credit_refund')
+        ->and($keys[0])->toBe($keys[1])
+        ->and($ledger())->toBe(round($balance - 20, 2))
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund + 20)
+        ->and((float) $order->refresh()->payment_amount)->toBe($paidOrder)
+        ->and($refundByApi::creditRefundableLeft($payment))->toBe(round(25 - 20 - $totalRefund, 2));
+
+    $payload                      = fakeCheckoutComWebhookPayload('payment_refund_declined', 'evt_test_credit_refund_declined', 'pay_test_captured', $orderPaymentApiPoint, 2000);
+    $payload['data']['action_id'] = 'act_test_credit_refund';
+    $declinedLog                  = $this->group->paymentGatewayLogs()->create(['payload' => $payload, 'gateway' => 'checkout-com']);
+    PreProcessCheckoutComPaymentGatewayLog::run($declinedLog);
+
+    expect($declinedLog->refresh()->status)->toBe(PaymentGatewayLogStatusEnum::OK)
+        ->and($refundPayment->refresh()->status)->toBe(PaymentStatusEnum::FAIL)
+        ->and($ledger())->toBe($balance)
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund)
+        ->and($refundByApi::creditRefundableLeft($payment))->toBe(round(25 - $totalRefund, 2))
+        ->and($refundByApi::idempotencyKey($payment, 20))->not->toBe($keys[0]);
+
+    $payload['id'] = 'evt_test_credit_refund_declined_again';
+    $againLog      = $this->group->paymentGatewayLogs()->create(['payload' => $payload, 'gateway' => 'checkout-com']);
+    PreProcessCheckoutComPaymentGatewayLog::run($againLog);
+
+    expect($againLog->refresh()->status)->toBe(PaymentGatewayLogStatusEnum::NA)
+        ->and($ledger())->toBe($balance);
+})->depends('webhook payment_captured pays and submits the order');
+
+test('a cancel that kept part of the money caps the refund from credit, an API refund cannot be cancelled and a cancelled payment cannot be refunded', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $refundByApi = \App\Actions\Accounting\Payment\RefundPaymentByApi::class;
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+    ProcessCheckoutComPaymentGatewayLog::partialMock()->shouldReceive('getCheckOutPayment')
+        ->andReturn(['id' => 'pay_test_partial_cancel', 'status' => 'Captured', 'amount' => 2500, 'source' => ['type' => 'card']]);
+    PreProcessCheckoutComPaymentGatewayLog::run($this->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_test_partial_cancel', 'pay_test_partial_cancel', $orderPaymentApiPoint, 2500),
+        'gateway' => 'checkout-com',
+    ]));
+    $payment = Payment::where('reference', 'pay_test_partial_cancel')->firstOrFail();
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order->refresh(), ['refund_amount' => 10]);
+
+    expect($refundByApi::creditRefundableLeft($payment))->toBe(10.0)
+        ->and(fn () => $refundByApi::make()->handle($payment, ['amount' => 11, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    $refundByApi::partialMock()->shouldReceive('refundAtCheckout')->once()->andReturn('act_test_partial_cancel');
+    $refundPayment = $refundByApi::make()->handle($payment, ['amount' => 10, 'from_credit' => true]);
+
+    expect($refundPayment->data['refunded_by_api'])->toBeTrue()
+        ->and($refundByApi::creditRefundableLeft($payment->refresh()))->toBe(0.0)
+        ->and(fn () => \App\Actions\Accounting\Payment\CancelPayment::make()->handle($refundPayment))->toThrow(Illuminate\Validation\ValidationException::class, 'cannot be cancelled here')
+        ->and($refundPayment->refresh()->state)->toBe(PaymentStateEnum::COMPLETED);
+
+    $refunded = $this->group->paymentGatewayLogs()->create([
+        'payload' => [...fakeCheckoutComWebhookPayload('payment_refunded', 'evt_test_unknown_refund', 'pay_test_partial_cancel', $orderPaymentApiPoint, 500), 'data' => [...fakeCheckoutComWebhookPayload('payment_refunded', 'evt_test_unknown_refund', 'pay_test_partial_cancel', $orderPaymentApiPoint, 500)['data'], 'action_id' => 'act_made_in_dashboard']],
+        'gateway' => 'checkout-com',
+    ]);
+    PreProcessCheckoutComPaymentGatewayLog::run($refunded);
+    expect($refunded->refresh()->state)->toBe(PaymentGatewayLogStateEnum::PROCESSED)
+        ->and($refunded->status)->toBe(PaymentGatewayLogStatusEnum::NA);
+
+    $payment->refresh()->update(['total_refund' => 0]);
+    expect($refundByApi::alreadyRefunded($payment))->toBe(10.0)
+        ->and($refundByApi::refundOptions($payment)['left_on_payment'])->toBe(15.0)
+        ->and(fn () => $refundByApi::make()->handle($payment, ['amount' => 16, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class, 'more than is left')
+        ->and(fn () => \App\Actions\Accounting\Payment\RefundPaymentToBalance::lockForRefund($payment, null, 16))->toThrow(Illuminate\Validation\ValidationException::class, 'more than is left');
+
+    $cancelledPayment = Payment::where('reference', 'pay_test_captured')->firstOrFail();
+    $cancelledPayment->update(['state' => PaymentStateEnum::CANCELLED]);
+    expect($refundByApi::refundOptions($cancelledPayment))->toBeNull()
+        ->and(fn () => $refundByApi::make()->handle($cancelledPayment, ['amount' => 1, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class, 'Only a successful payment');
+});

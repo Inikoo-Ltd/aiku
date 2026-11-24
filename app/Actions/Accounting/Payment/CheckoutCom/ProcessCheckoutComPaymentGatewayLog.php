@@ -68,6 +68,10 @@ class ProcessCheckoutComPaymentGatewayLog
             return self::processDeclinedRefund($paymentGatewayLog);
         }
 
+        if ($paymentGatewayLog->type == 'payment_refunded') {
+            return self::processRefunded($paymentGatewayLog);
+        }
+
         if ($paymentGatewayLog->operation == 'order' && $paymentGatewayLog->api_point_model_type == 'OrderPaymentApiPoint') {
             return $this->handleOrderOperation($paymentGatewayLog);
         }
@@ -440,10 +444,28 @@ class ProcessCheckoutComPaymentGatewayLog
     /**
      * @throws \Throwable
      */
+    /**
+     * A refund Checkout.com made that aiku has no record of was made in the Checkout.com dashboard, or by a refund
+     * by API whose save failed after Checkout.com took it: either way the books miss it, so someone must look.
+     */
+    public static function processRefunded(PaymentGatewayLog $paymentGatewayLog): PaymentGatewayLog
+    {
+        $actionId      = (string) Arr::get($paymentGatewayLog->payload, 'data.action_id');
+        $refundPayment = $actionId !== '' ? Payment::where('reference', $actionId)->where('type', PaymentTypeEnum::REFUND)->first() : null;
+        if (!$refundPayment) {
+            Sentry::captureMessage("Checkout.com refunded $actionId of {$paymentGatewayLog->gateway_payment_id} and aiku has no refund recorded for it");
+        }
+
+        return self::markProcessed($paymentGatewayLog, $refundPayment ? PaymentGatewayLogStatusEnum::OK : PaymentGatewayLogStatusEnum::NA, $refundPayment?->id);
+    }
+
     public static function processDeclinedRefund(PaymentGatewayLog $paymentGatewayLog): PaymentGatewayLog
     {
         $actionId      = (string) Arr::get($paymentGatewayLog->payload, 'data.action_id');
         $refundPayment = $actionId !== '' ? RefundPaymentByApi::undoDeclinedRefund($actionId) : null;
+        if (!$refundPayment && !Payment::where('reference', $actionId)->where('type', PaymentTypeEnum::REFUND)->exists()) {
+            Sentry::captureMessage("Checkout.com declined refund $actionId of {$paymentGatewayLog->gateway_payment_id} and aiku has no refund recorded for it");
+        }
 
         return self::markProcessed($paymentGatewayLog, $refundPayment ? PaymentGatewayLogStatusEnum::OK : PaymentGatewayLogStatusEnum::NA, $refundPayment?->id);
     }

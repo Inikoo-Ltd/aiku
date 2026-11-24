@@ -8,6 +8,8 @@
 
 namespace App\Actions\Accounting\CreditTransaction;
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCreditTransactions;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\OrgAction;
@@ -44,10 +46,15 @@ class StoreCreditTransaction extends OrgAction
         $modelData = $this->processExchanges($modelData, $customer->shop, 'amount');
 
         /** @var CreditTransaction $creditTransaction */
-        $creditTransaction = $customer->creditTransactions()->create($modelData);
+        $creditTransaction = DB::transaction(function () use ($customer, $modelData) {
+            if ((float) Arr::get($modelData, 'amount') < 0) {
+                Customer::lockForUpdate()->find($customer->id);
+            }
+            $creditTransaction = $customer->creditTransactions()->create($modelData);
+            CustomerHydrateCreditTransactions::run($customer->id);
 
-
-        CustomerHydrateCreditTransactions::run($customer->id);
+            return $creditTransaction;
+        });
 
         ProcessCreditBalanceNotification::run($customer, $this->notifyCustomer);
 
