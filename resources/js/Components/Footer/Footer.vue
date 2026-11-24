@@ -11,7 +11,7 @@ import FooterBorrowPermissions from '@/Components/Footer/FooterBorrowPermissions
 import FooterLogout from '@/Components/Footer/FooterLogout.vue'
 import ChangeBubble from '@/Components/Utils/ChangeBubble.vue'
 import { faHeart, faComputerClassic } from '@fas'
-import { faFileAlt } from '@fal'
+import { faFileAlt, faKey } from '@fal'
 import { faDiscord } from '@fortawesome/free-brands-svg-icons'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -26,7 +26,7 @@ import { Link } from '@inertiajs/vue3'
 
 const layout = inject('layout', layoutStructure)
 
-library.add(faHeart, faComputerClassic, faDiscord, faFileAlt)
+library.add(faHeart, faComputerClassic, faDiscord, faFileAlt, faKey)
 
 const deploymentTooltip = computed(() => {
     const hash = layout?.app?.last_deployment_hash
@@ -86,6 +86,13 @@ const deploymentTooltip = computed(() => {
 
                 </div>
                <!--  <FooterCurrency /> -->
+                <ChangeBubble v-if="layout?.second_factor_prompt" name="set-up-passkey-or-2fa" released="2026-11-24" :days="60"
+                    :text="ctrans('Please set up a passkey or two-factor authentication on your profile, to keep payments safe')">
+                    <Link :href="route('grp.profile.edit')" class="flex h-full items-center gap-x-1 px-2 text-amber-500 hover:text-amber-400">
+                        <FontAwesomeIcon icon="fal fa-key" fixed-width aria-hidden="true" />
+                        <span class="hidden md:inline whitespace-nowrap">{{ ctrans('Set up passkey') }}</span>
+                    </Link>
+                </ChangeBubble>
                 <FooterBorrowPermissions />
                 <FooterLanguage />
                 <ChangeBubble name="logout-moved-to-footer" released="2026-11-24" :text="ctrans('Log out has moved here, from the bottom of the left menu')">

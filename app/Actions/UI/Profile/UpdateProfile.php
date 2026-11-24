@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Rules\StaffPassword;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
@@ -24,7 +25,6 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
-use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateProfile extends OrgAction
@@ -292,7 +292,7 @@ class UpdateProfile extends OrgAction
     public function rules(): array
     {
         return [
-            'password'          => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') ? null : Password::min(8)],
+            'password'          => ['sometimes', 'required', new StaffPassword(request()->user(), app()->isLocal() || app()->environment('testing'))],
             'email'             => 'sometimes|required|email|unique:App\Models\SysAdmin\User,email,'.request()->user()->id,
             'nickname'          => ['sometimes', 'nullable', 'string', 'min:2', 'max:24', 'regex:/^[\pL\pN ._-]+$/u', Rule::unique('users', 'nickname')->ignore(request()->user()->id)],
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],

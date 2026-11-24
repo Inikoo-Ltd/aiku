@@ -210,6 +210,7 @@ export const initialiseApp = () => {
         if (usePage().props.layout) {
             layout.has_group_access = !!usePage().props.layout.has_group_access
             layout.can_view_devops = !!usePage().props.layout.can_view_devops
+            layout.second_factor_prompt = !!usePage().props.layout.second_factor_prompt
         }
 
 

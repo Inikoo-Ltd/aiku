@@ -85,6 +85,7 @@ class GetFirstLoadProps
                     'place'    => IndexTimeZones::make()->clockNameFor($timezone),
                 ])
                 ->all());
+            data_set($props, 'layout.second_factor_prompt', $user->shouldSetUpSecondFactor());
         }
 
 
