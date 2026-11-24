@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierSubmission\UI;
 
+use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
 use App\Actions\SupplyChain\SupplierSubmission\EscalateOverdueSupplierPlanningNotes;
@@ -149,6 +150,7 @@ class IndexSupplierSubmissions extends OrgAction
     public function htmlResponse(LengthAwarePaginator $submissions): Response
     {
         return Inertia::render('SupplyChain/SupplierSubmissions', [
+            'supplier_submissions_received_count' => GetFirstLoadProps::make()->supplierSubmissionsReceivedCount(request()->user()),
             'breadcrumbs' => $this->getBreadcrumbs(),
             'title'       => __('Supplier submissions'),
             'pageHead'    => [

@@ -23,6 +23,7 @@ use App\Actions\Dispatching\WaitingItems\GetDispatchingWaitingBadgeData;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Actions\UI\Grp\Layout\GetOrganisationsLayout;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Http\Resources\SysAdmin\NotificationsResource;
 use App\Models\DevOps\AppDeployment;
 use App\Models\Helpers\Language;
@@ -32,6 +33,7 @@ use App\Notifications\WorkNotification;
 use Closure;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Sentry;
 use Throwable;
@@ -131,7 +133,20 @@ class GetFirstLoadProps
             'master_updated_count'       => GetMasterUpdatedBadgeData::make()->totalCount($user),
             'products_need_review_count' => GetProductsNeedReviewBadgeData::make()->totalCount($user),
             'faire_skipped_count'        => GetFaireSkippedBadgeData::make()->totalCount($user),
+            'supplier_submissions_received_count' => $this->supplierSubmissionsReceivedCount($user),
         ];
+    }
+
+    public function supplierSubmissionsReceivedCount(User $user): int
+    {
+        if (!$user->authTo(['supply-chain.view', 'compliance.view'])) {
+            return 0;
+        }
+
+        return DB::table('supplier_submissions')
+            ->where('group_id', $user->group_id)
+            ->where('state', SupplierSubmissionStateEnum::RECEIVED->value)
+            ->count();
     }
 
     public function cacheKey(?User $user, Language $language): string

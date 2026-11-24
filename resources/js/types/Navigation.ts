@@ -17,6 +17,7 @@ export interface SubSection {
     root: string
     roots?: string[]
     route: routeType
+    badge?: string
 }
 
 export interface Navigation {

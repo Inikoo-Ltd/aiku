@@ -103,5 +103,6 @@ export const layoutStructure = {
     products_need_review_count: 0 as number,
     master_updated_count: 0 as number,
     faire_skipped_count: 0 as number,
+    supplier_submissions_received_count: 0 as number,
     bookmarks: [] as Bookmark[],
 }

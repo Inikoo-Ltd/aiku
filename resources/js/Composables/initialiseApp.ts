@@ -162,6 +162,7 @@ export const initialiseApp = () => {
         layout.products_need_review_count = badges.products_need_review_count
         layout.master_updated_count = badges.master_updated_count
         layout.faire_skipped_count = badges.faire_skipped_count
+        layout.supplier_submissions_received_count = badges.supplier_submissions_received_count ?? 0
 
         const coveredLeaveIds = layout.leave_covers.map((cover) => cover.id).join(",")
         layout.rightSidebar.leaveCovers = {
@@ -196,6 +197,10 @@ export const initialiseApp = () => {
 
         if (usePage().props.help_portal_url) {
             layout.help_portal_url = usePage().props.help_portal_url
+        }
+
+        if (typeof usePage().props.supplier_submissions_received_count === "number") {
+            layout.supplier_submissions_received_count = usePage().props.supplier_submissions_received_count as number
         }
 
         // Set group

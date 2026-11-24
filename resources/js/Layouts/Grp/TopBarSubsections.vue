@@ -2,6 +2,7 @@
 import { Link } from "@inertiajs/vue3";
 import { useLayoutStore } from "@/Stores/layout";
 import { capitalize } from "@/Composables/capitalize";
+import { ctrans } from "@/Composables/useTrans";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { faClock as falClock, faPencil as falPencil } from "@fal";
 import { faDotCircle } from "@fas";
@@ -10,6 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 
 library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog);
 
@@ -30,6 +32,14 @@ const isSubSectionActive = (subSection: SubSection) => {
 };
 
 const isLoading = ref<string | boolean>(false)
+
+const badgeCount = (subSection: SubSection): number => {
+    if (!subSection.badge) {
+        return 0
+    }
+
+    return Number((layoutStore as Record<string, unknown>)[subSection.badge] ?? 0)
+}
 
 const getTooltip = (subSection: SubSection) => {
     if (!subSection.tooltip || subSection.tooltip === subSection.label) {
@@ -67,6 +77,9 @@ const getTooltip = (subSection: SubSection) => {
             <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70" aria-hidden="true" />
             <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-5 lg:h-3.5" aria-hidden="true" />
             <span v-if="subSection.label" class="hidden lg:inline whitespace-nowrap">{{ subSection.label }}</span>
+            <span v-if="badgeCount(subSection) > 0" class="absolute top-1.5 right-1.5">
+                <PingIcon v-tooltip="ctrans(':count waiting', { count: badgeCount(subSection) })" class="text-[7px] text-amber-500 self-start" aria-hidden="true" />
+            </span>
         </component>
     </template>
 </template>

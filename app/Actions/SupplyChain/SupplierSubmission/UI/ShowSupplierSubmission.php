@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierSubmission\UI;
 
+use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierSubmission\ApplySupplierSubmission;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
@@ -156,6 +157,7 @@ class ShowSupplierSubmission extends OrgAction
             : [];
 
         return Inertia::render('SupplyChain/SupplierSubmission', [
+            'supplier_submissions_received_count' => GetFirstLoadProps::make()->supplierSubmissionsReceivedCount($request->user()),
             'breadcrumbs' => array_merge(IndexSupplierSubmissions::make()->getBreadcrumbs(), [[
                 'type'   => 'simple',
                 'simple' => ['label' => '#'.$supplierSubmission->id],

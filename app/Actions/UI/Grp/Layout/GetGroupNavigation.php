@@ -679,6 +679,7 @@ class GetGroupNavigation
                         'label' => __('Submissions'),
                         'icon'  => ['fal', 'fa-inbox-in'],
                         'root'  => 'grp.supply-chain.supplier_submissions.',
+                        'badge' => 'supplier_submissions_received_count',
                         'route' => [
                             'name' => 'grp.supply-chain.supplier_submissions.index',
                         ]
