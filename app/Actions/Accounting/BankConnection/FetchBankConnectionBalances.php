@@ -66,14 +66,14 @@ class FetchBankConnectionBalances
     }
 
     /**
-     * Wise keeps several balances in one currency (an emptied one beside the one in use): they are added together.
+     * Wise keeps several balances in one currency (an emptied one beside the one in use, and savings jars): they are added together.
      *
      * @return array<string, array{amount: float, reserved_amount: float}> by currency code
      */
     private function wiseBalances(BankConnection $bankConnection): array
     {
         $balances = [];
-        foreach ($this->wiseGet($bankConnection->credentials, "/v4/profiles/$bankConnection->external_id/balances", ['types' => 'STANDARD']) ?? [] as $balance) {
+        foreach ($this->wiseGet($bankConnection->credentials, "/v4/profiles/$bankConnection->external_id/balances", ['types' => 'STANDARD,SAVINGS']) ?? [] as $balance) {
             $code = $balance['currency'] ?? null;
             if (!is_string($code) || !is_numeric($balance['amount']['value'] ?? null)) {
                 throw new RuntimeException('Unreadable Wise balance: '.mb_substr(json_encode($balance), 0, 300));

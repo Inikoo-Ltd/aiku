@@ -2438,10 +2438,10 @@ test('each wise sync keeps the balances as one snapshot a day per currency, and 
         'api.wise.com/v2/profiles'                 => Http::response([['id' => 555, 'type' => 'BUSINESS']]),
         'api.wise.com/v1/profiles/555/activities*' => Http::response(['cursor' => null, 'activities' => []]),
     ]);
-    $balance = fn (string $currency, float $amount, float $reserved = 0) => [
+    $balance = fn (string $currency, float $amount, float $reserved = 0, string $type = 'STANDARD') => [
         'id'             => random_int(1, 999999),
         'currency'       => $currency,
-        'type'           => 'STANDARD',
+        'type'           => $type,
         'amount'         => ['value' => $amount, 'currency' => $currency],
         'reservedAmount' => ['value' => $reserved, 'currency' => $currency],
     ];
@@ -2452,15 +2452,16 @@ test('each wise sync keeps the balances as one snapshot a day per currency, and 
     ]);
     $snapshot = fn () => \App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->get()->keyBy(fn ($row) => $row->currency->code);
 
-    $this->wiseBalances = [$balance('EUR', 100.5, 5), $balance('PLN', 0), $balance('PLN', 250), $balance('GBP', 10)];
+    $this->wiseBalances = [$balance('EUR', 100.5, 5), $balance('PLN', 0), $balance('PLN', 250), $balance('GBP', 10), $balance('GBP', 500, type: 'SAVINGS')];
     expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []])
         ->and($snapshot()->keys()->sort()->values()->all())->toBe(['EUR', 'GBP', 'PLN'])
         ->and((float) $snapshot()['PLN']->amount)->toBe(250.0)
+        ->and((float) $snapshot()['GBP']->amount)->toBe(510.0)
         ->and((float) $snapshot()['EUR']->amount)->toBe(100.5)
         ->and((float) $snapshot()['EUR']->reserved_amount)->toBe(5.0)
         ->and($snapshot()['EUR']->date->toDateString())->toBe(now()->toDateString())
         ->and($snapshot()['EUR']->organisation_id)->toBe($this->organisation->id);
-    Http::assertSent(fn ($request) => str_contains($request->url(), '/v4/profiles/555/balances') && $request->hasHeader('Authorization', 'Bearer cash-token'));
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/v4/profiles/555/balances') && $request['types'] === 'STANDARD,SAVINGS' && $request->hasHeader('Authorization', 'Bearer cash-token'));
 
     $this->wiseBalances = [$balance('EUR', 200), $balance('PLN', 250)];
     $this->artisan('bank-connections:balances', ['bankConnection' => $bankConnection->id])->assertSuccessful();
