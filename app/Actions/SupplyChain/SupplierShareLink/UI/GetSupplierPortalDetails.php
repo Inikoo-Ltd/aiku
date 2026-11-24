@@ -40,6 +40,8 @@ class GetSupplierPortalDetails
 
     public const string OWNER_USERNAME = 'david';
 
+    public const string OWNER_EMAIL = 'david@ancientwisdom.biz';
+
     /**
      * The purchasing staff each organisation puts in front of its suppliers, by organisation slug.
      *
@@ -121,10 +123,10 @@ class GetSupplierPortalDetails
         $owner = DB::table('users')
             ->where('group_id', $supplier->group_id)
             ->where('username', self::OWNER_USERNAME)
-            ->selectRaw('users.contact_name as name, '.$this->emailSql().' as email')
+            ->select('users.contact_name as name')
             ->first();
 
-        return $owner ? ['name' => $owner->name, 'email' => $owner->email] : null;
+        return $owner ? ['name' => $owner->name, 'email' => self::OWNER_EMAIL] : null;
     }
 
     /**
