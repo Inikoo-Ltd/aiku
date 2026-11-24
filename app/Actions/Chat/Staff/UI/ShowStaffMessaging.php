@@ -52,7 +52,7 @@ class ShowStaffMessaging extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response|RedirectResponse
     {
-        $title        = __('Internal Messages');
+        $title        = __('Desk');
         $conversation = $this->conversation;
 
         if ($conversation?->context instanceof StaffTask) {
@@ -93,7 +93,7 @@ class ShowStaffMessaging extends OrgAction
                         'route' => [
                             'name' => 'grp.chat.staff.index',
                         ],
-                        'label' => __('Internal Messages'),
+                        'label' => __('Desk'),
                     ],
                 ],
             ]

@@ -5,16 +5,12 @@
   -->
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue"
+import { ref, watch } from "vue"
 import axios from "axios"
-import Textarea from "primevue/textarea"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane } from "@fal"
+import Checkbox from "primevue/checkbox"
 import { ctrans } from "@/Composables/useTrans"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import DeskMessageEditor from "@/Components/Messaging/DeskMessageEditor.vue"
 import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
-
-library.add(faPaperPlane)
 
 export interface SlackWriteState {
     allowed: boolean
@@ -33,13 +29,16 @@ const props = defineProps<{
     channelId: number
     write: SlackWriteState
     threadTs?: string | null
+    channelName?: string | null
     placeholder?: string
 }>()
 
 const emit = defineEmits<{ (e: "sent", sent: SlackSentMessage): void }>()
 
 const text = ref("")
-const boxEl = ref<HTMLElement | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
+const editorRef = ref<InstanceType<typeof DeskMessageEditor> | null>(null)
+const alsoToChannel = ref(false)
 const sending = ref(false)
 const error = ref<string | null>(null)
 let idempotencyKey: string | null = null
@@ -57,12 +56,14 @@ const send = async () => {
         const { data } = await axios.post(route("grp.chat.staff.slack.messages.store", { slackChannel: props.channelId }), {
             text: text.value,
             thread_ts: props.threadTs ?? null,
+            also_to_channel: Boolean(props.threadTs) && alsoToChannel.value,
             idempotency_key: idempotencyKey,
         })
         idempotencyKey = null
         text.value = ""
+        alsoToChannel.value = false
         emit("sent", data)
-        nextTick(() => boxEl.value?.querySelector("textarea")?.focus())
+        editorRef.value?.focus()
     } catch (e: any) {
         error.value = e?.response?.status === 429
             ? ctrans("You are sending too fast. Try again in a moment.")
@@ -74,34 +75,38 @@ const send = async () => {
     }
 }
 
-const onKeydown = (event: KeyboardEvent) => {
-    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return
-    event.preventDefault()
-    send()
+const editLast = () => {
+    const pencils = rootEl.value?.parentElement?.querySelectorAll<HTMLElement>("[data-desk-own-edit]")
+    pencils?.[pencils.length - 1]?.click()
 }
 </script>
 
 <template>
-    <div v-if="write.allowed" class="shrink-0 border-t border-gray-200 bg-white px-3 py-2">
+    <div v-if="write.allowed" ref="rootEl" class="shrink-0 bg-white px-4 pb-4 pt-1">
         <p v-if="write.reason" class="text-xs text-gray-500">
             {{ write.reason }}
             <a v-if="write.connect_url" :href="write.connect_url" class="font-medium text-gray-700 underline hover:text-gray-900">{{ ctrans("Connect Slack") }}</a>
         </p>
         <template v-else>
-            <div ref="boxEl" class="flex items-end gap-x-2">
-                <Textarea
-                    v-model="text"
-                    auto-resize
-                    rows="1"
-                    :disabled="sending"
-                    :placeholder="placeholder ?? ctrans('Message')"
-                    :aria-label="placeholder ?? ctrans('Message')"
-                    class="max-h-40 min-w-0 flex-1 !overflow-y-auto text-sm"
-                    @keydown="onKeydown" />
-                <Button type="tertiary" icon="fal fa-paper-plane" :label="ctrans('Send')" :loading="sending" :disabled="sending || !text.trim()" @click="send" />
+            <DeskMessageEditor
+                ref="editorRef"
+                v-model="text"
+                :placeholder="placeholder ?? ctrans('Message')"
+                :sending="sending"
+                :disabled="sending"
+                can-edit-last
+                attach-disabled
+                :attach-label="ctrans('Sending files from Desk is coming soon')"
+                @submit="send"
+                @edit-last="editLast" />
+            <div class="flex items-center gap-x-3 pt-1.5">
+                <label v-if="threadTs" class="inline-flex cursor-pointer items-center gap-x-2 text-[13px] text-[#1d1c1d]">
+                    <Checkbox v-model="alsoToChannel" binary size="small" :disabled="sending" input-id="desk-also-to-channel" />
+                    {{ channelName ? ctrans("Also send to #:channel", { channel: channelName }) : ctrans("Also send to channel") }}
+                </label>
+                <p v-if="error" class="ml-auto text-xs text-red-600" role="alert">{{ error }}</p>
+                <p v-else class="ml-auto hidden text-xxs text-gray-400 sm:block">{{ ctrans("Shift + Enter to add a new line") }}</p>
             </div>
-            <p v-if="error" class="pt-1 text-xs text-red-600" role="alert">{{ error }}</p>
-            <p v-else class="hidden pt-1 text-xxs text-gray-400 sm:block">{{ ctrans("Enter to send, Shift+Enter for a new line. Posted in Slack as you.") }}</p>
         </template>
     </div>
 </template>

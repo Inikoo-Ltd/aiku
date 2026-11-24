@@ -41,7 +41,7 @@ import { computed, onUnmounted, watch } from "vue"
 import { router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArrowLeft, faChevronDown, faRobot, faSearch, faTimes } from "@fal"
+import { faArrowLeft, faArrowRight, faChevronDown, faSearch, faTimes } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
@@ -49,11 +49,10 @@ import DatePicker from "primevue/datepicker"
 import Checkbox from "primevue/checkbox"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 
-library.add(faArrowLeft, faChevronDown, faRobot, faSearch, faTimes)
+library.add(faArrowLeft, faArrowRight, faChevronDown, faSearch, faTimes)
 
 const props = defineProps<{
     channels: { id: number; name: string | null }[]
@@ -170,35 +169,49 @@ const open = (result: SlackSearchResult) => {
 }
 
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
-const smallSelectPt = { label: { class: "!py-1 !text-xs" } }
-const datePickerPt = { pcInputText: { root: { class: "!w-28 !py-1 !text-xs" } } }
+const filterClass = (isSet: boolean) => (isSet ? "!border-[#1d1c1d]/50 !bg-[#1d1c1d]/[.06] text-[#1d1c1d]" : "!border-[#dddddd] text-[#1d1c1d] hover:!bg-[#f8f8f8]")
+const filterSelectPt = { root: { class: "!h-7 !rounded-md" }, label: { class: "!py-0.5 !text-[13px] !font-bold !text-inherit" } }
+const datePickerPt = (isSet: boolean) => ({ pcInputText: { root: { class: ["!h-7 !w-32 !rounded-md !py-0.5 !text-[13px] !font-bold", filterClass(isSet)] } } })
+
+const groups = computed(() => {
+    const grouped: { key: string; channel: SlackSearchResult["channel"]; results: SlackSearchResult[] }[] = []
+    for (const result of results.value) {
+        const last = grouped[grouped.length - 1]
+        if (last && last.channel.id === result.channel.id) {
+            last.results.push(result)
+        } else {
+            grouped.push({ key: result.channel.id + "-" + result.id, channel: result.channel, results: [result] })
+        }
+    }
+    return grouped
+})
 </script>
 
 <template>
-    <div class="flex h-full w-full min-w-0 flex-col">
-        <form class="shrink-0 space-y-2 border-b border-gray-200 bg-white px-3 py-2" role="search" @submit.prevent="search()">
+    <div class="flex h-full w-full min-w-0 flex-col text-[#1d1c1d]">
+        <form class="shrink-0 border-b border-[#e2e2e2] bg-white px-4 py-2.5" role="search" @submit.prevent="search()">
             <div class="flex items-center gap-2">
                 <div class="relative min-w-0 flex-1">
-                    <FontAwesomeIcon icon="fal fa-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-[#616061]" fixed-width aria-hidden="true" />
                     <InputText
                         v-model="query"
                         :placeholder="ctrans('Search Slack messages…')"
                         :aria-label="ctrans('Search Slack messages')"
                         maxlength="200"
                         size="small"
-                        class="w-full !pl-8"
+                        class="w-full !rounded-md !border-[#dddddd] !py-1.5 !pl-8 !text-[13px]"
                         :class="fieldFocusClass"
                         @focus="showResults = true" />
                 </div>
-                <Button v-if="isActive && !showResults" type="tertiary" size="xs" :label="ctrans('Back to results')" @click="showResults = true">
-                    <template #icon><FontAwesomeIcon icon="fal fa-arrow-left" fixed-width aria-hidden="true" /></template>
-                </Button>
-                <Button v-if="isActive" type="tertiary" size="xs" :label="ctrans('Close search')" @click="clear">
-                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
-                </Button>
+                <button v-if="isActive && !showResults" type="button" class="inline-flex h-8 shrink-0 items-center gap-x-1.5 rounded-md border border-[#dddddd] px-3 text-[13px] font-bold hover:bg-[#f8f8f8]" @click="showResults = true">
+                    <FontAwesomeIcon icon="fal fa-arrow-left" fixed-width aria-hidden="true" />{{ ctrans("Back to results") }}
+                </button>
+                <button v-if="isActive" type="button" v-tooltip.bottom="ctrans('Close search')" :aria-label="ctrans('Close search')" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#616061] hover:bg-[#1d1c1d]/[.06] hover:text-[#1d1c1d]" @click="clear">
+                    <FontAwesomeIcon icon="fal fa-times" class="text-base" fixed-width aria-hidden="true" />
+                </button>
             </div>
 
-            <div v-if="isShowingResults" class="flex flex-wrap items-center gap-2">
+            <div v-if="isShowingResults" class="mt-2.5 flex flex-wrap items-center gap-2">
                 <Select
                     v-model="channel"
                     :options="channelOptions"
@@ -206,12 +219,12 @@ const datePickerPt = { pcInputText: { root: { class: "!w-28 !py-1 !text-xs" } } 
                     option-value="id"
                     filter
                     show-clear
-                    :placeholder="ctrans('All channels')"
+                    :placeholder="ctrans('In')"
                     :aria-label="ctrans('Channel')"
                     size="small"
-                    class="w-44"
-                    :class="fieldFocusClass"
-                    :pt="smallSelectPt" />
+                    class="w-40"
+                    :class="[fieldFocusClass, filterClass(channel !== null)]"
+                    :pt="filterSelectPt" />
                 <Select
                     v-model="person"
                     :options="people ?? []"
@@ -220,57 +233,65 @@ const datePickerPt = { pcInputText: { root: { class: "!w-28 !py-1 !text-xs" } } 
                     filter
                     show-clear
                     :loading="people !== null && people.length === 0"
-                    :placeholder="ctrans('Anyone')"
+                    :placeholder="ctrans('From')"
                     :aria-label="ctrans('Written by')"
                     size="small"
-                    class="w-44"
-                    :class="fieldFocusClass"
-                    :pt="smallSelectPt" />
-                <DatePicker v-model="from" :max-date="to ?? undefined" date-format="d M yy" show-icon icon-display="input" show-button-bar :manual-input="false" :placeholder="ctrans('From')" :aria-label="ctrans('From')" :class="fieldFocusClass" :pt="datePickerPt" />
-                <DatePicker v-model="to" :min-date="from ?? undefined" date-format="d M yy" show-icon icon-display="input" show-button-bar :manual-input="false" :placeholder="ctrans('To')" :aria-label="ctrans('To')" :class="fieldFocusClass" :pt="datePickerPt" />
-                <label class="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-gray-700">
-                    <Checkbox v-model="hasFile" binary input-id="slack-search-has-file" />
+                    class="w-40"
+                    :class="[fieldFocusClass, filterClass(person !== null)]"
+                    :pt="filterSelectPt" />
+                <DatePicker v-model="from" :max-date="to ?? undefined" date-format="d M yy" show-icon icon-display="input" show-button-bar :manual-input="false" :placeholder="ctrans('After')" :aria-label="ctrans('From')" :class="fieldFocusClass" :pt="datePickerPt(from !== null)" />
+                <DatePicker v-model="to" :min-date="from ?? undefined" date-format="d M yy" show-icon icon-display="input" show-button-bar :manual-input="false" :placeholder="ctrans('Before')" :aria-label="ctrans('To')" :class="fieldFocusClass" :pt="datePickerPt(to !== null)" />
+                <label class="inline-flex h-7 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-bold" :class="filterClass(hasFile)">
+                    <Checkbox v-model="hasFile" binary input-id="slack-search-has-file" size="small" />
                     {{ ctrans("Has a file") }}
                 </label>
             </div>
         </form>
 
-        <div v-if="isShowingResults" class="min-h-0 flex-1 overflow-y-auto bg-white" aria-live="polite">
-            <div v-if="error" class="px-3 py-2 text-xs text-red-600">{{ error }}</div>
-            <div v-if="isLoading && !results.length" class="flex justify-center py-6"><LoadingIcon /></div>
-            <div v-else-if="isTooShort" class="px-3 py-8 text-center text-xs text-gray-500">{{ ctrans("Type at least 2 letters or numbers") }}</div>
-            <div v-else-if="hasSearched && !results.length && !error" class="px-3 py-8 text-center text-xs text-gray-500 space-y-1">
-                <p class="font-medium text-gray-700">{{ ctrans("No messages found") }}</p>
-                <p>{{ ctrans("Words match from their start: \"supp\" finds \"supplier\", but \"197367\" does not find \"AWD197367\".") }}</p>
+        <div v-if="isShowingResults" class="min-h-0 flex-1 overflow-y-auto bg-white pb-4" aria-live="polite">
+            <div v-if="error" class="px-4 py-2 text-[13px] text-red-600">{{ error }}</div>
+            <div v-if="isLoading && !results.length" class="flex justify-center py-8"><LoadingIcon /></div>
+            <div v-else-if="isTooShort" class="px-4 py-10 text-center text-[15px] text-[#616061]">{{ ctrans("Type at least 2 letters or numbers") }}</div>
+            <div v-else-if="hasSearched && !results.length && !error" class="mx-auto max-w-md space-y-1 px-4 py-10 text-center">
+                <p class="text-lg font-black">{{ ctrans("No messages found") }}</p>
+                <p class="text-[15px] text-[#616061]">{{ ctrans("Words match from their start: \"supp\" finds \"supplier\", but \"197367\" does not find \"AWD197367\".") }}</p>
             </div>
 
-            <ul v-else class="divide-y divide-gray-100" :class="isLoading && 'opacity-60'">
-                <li v-for="result in results" :key="result.id">
-                    <button type="button" class="block w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-[var(--app-accent-soft)] focus:outline-none" @click="open(result)">
-                        <div class="flex items-center gap-x-2 text-xs">
-                            <TicketUserAvatar :name="result.author.name" :avatar="result.author.avatar" size="sm" />
-                            <span class="truncate font-semibold" :class="result.author.name ? 'text-gray-900' : 'italic text-gray-500'">{{ result.author.name ?? ctrans("Unknown person") }}</span>
-                            <span v-if="result.author.is_bot" class="inline-flex shrink-0 items-center gap-0.5 rounded bg-gray-200 px-1 text-xxs font-medium uppercase text-gray-600">
-                                <FontAwesomeIcon icon="fal fa-robot" fixed-width aria-hidden="true" />{{ ctrans("Bot") }}
-                            </span>
-                            <span class="shrink-0 whitespace-nowrap text-gray-500">#{{ result.channel.name }}</span>
-                            <span v-if="result.is_reply" class="shrink-0 whitespace-nowrap text-xxs text-gray-400">{{ ctrans("in a thread") }}</span>
-                            <span class="ml-auto shrink-0 whitespace-nowrap text-xxs text-gray-400">{{ useFormatTime(result.sent_at, { formatTime: "short-datetime" }) }}</span>
-                        </div>
-                        <p class="mt-1 break-words pl-8 text-sm leading-relaxed text-gray-700">
-                            <template v-for="(segment, index) in result.segments" :key="index">
-                                <mark v-if="segment.hit" class="rounded bg-[var(--app-accent-soft)] px-0.5 font-semibold text-gray-900">{{ segment.text }}</mark>
-                                <template v-else>{{ segment.text }}</template>
-                            </template>
-                        </p>
-                    </button>
-                </li>
-            </ul>
+            <div v-else class="space-y-3 px-4 pt-3" :class="isLoading && 'opacity-60'">
+                <section v-for="group in groups" :key="group.key" class="overflow-hidden rounded-lg border border-[#dddddd]">
+                    <h3 class="truncate px-4 pb-0.5 pt-2.5 text-[13px] font-bold"># {{ group.channel.name }}</h3>
+                    <ul>
+                        <li v-for="result in group.results" :key="result.id">
+                            <button type="button" class="group relative flex w-full gap-x-2 px-4 py-2 text-left hover:bg-[#f8f8f8] focus:bg-[#f8f8f8] focus:outline-none" @click="open(result)">
+                                <TicketUserAvatar :name="result.author.name" :avatar="result.author.avatar" size="lg" class="!rounded-lg" />
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-baseline gap-x-2">
+                                        <span class="truncate text-[15px] font-black" :class="!result.author.name && 'italic text-[#616061]'">{{ result.author.name ?? ctrans("Unknown person") }}</span>
+                                        <span v-if="result.author.is_bot" class="shrink-0 rounded-sm bg-[#1d1c1d]/[.13] px-1 text-[10px] font-bold uppercase leading-4 text-[#616061]">{{ ctrans("App") }}</span>
+                                        <span class="shrink-0 whitespace-nowrap text-xs text-[#616061]">{{ useFormatTime(result.sent_at, { formatTime: "short-datetime" }) }}</span>
+                                        <span v-if="result.is_reply" class="shrink-0 whitespace-nowrap text-xs text-[#616061]">· {{ ctrans("in a thread") }}</span>
+                                    </div>
+                                    <p class="break-words text-[15px] leading-[22px]">
+                                        <template v-for="(segment, index) in result.segments" :key="index">
+                                            <mark v-if="segment.hit" class="rounded-sm bg-[#f2c744]/40 font-bold text-[#1d1c1d]">{{ segment.text }}</mark>
+                                            <template v-else>{{ segment.text }}</template>
+                                        </template>
+                                    </p>
+                                </div>
+                                <span class="absolute right-3 top-2 hidden items-center gap-x-1 rounded-md border border-[#dddddd] bg-white px-2 py-0.5 text-xs font-bold shadow-sm group-hover:inline-flex group-focus:inline-flex">
+                                    {{ ctrans("Jump to message") }}<FontAwesomeIcon icon="fal fa-arrow-right" fixed-width aria-hidden="true" />
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+                </section>
+            </div>
 
-            <div v-if="nextCursor" class="flex justify-center py-3">
-                <Button type="tertiary" size="xs" :label="ctrans('Older results')" :loading="isLoadingMore" @click="search(true)">
-                    <template #icon><FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" /></template>
-                </Button>
+            <div v-if="nextCursor" class="flex justify-center pt-4">
+                <button type="button" class="inline-flex h-8 items-center gap-x-1.5 rounded-md border border-[#dddddd] px-3 text-[13px] font-bold hover:bg-[#f8f8f8] disabled:opacity-60" :disabled="isLoadingMore" @click="search(true)">
+                    <LoadingIcon v-if="isLoadingMore" />
+                    <FontAwesomeIcon v-else icon="fal fa-chevron-down" fixed-width aria-hidden="true" />{{ ctrans("Older results") }}
+                </button>
             </div>
         </div>
 

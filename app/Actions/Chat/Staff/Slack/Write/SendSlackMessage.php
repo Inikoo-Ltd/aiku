@@ -23,7 +23,7 @@ use Throwable;
 
 /**
  * Posts a message to a public Slack channel as the signed-in person, with their own token, optionally as a reply in a
- * thread, and stores Slack's answer at once. The event Slack sends back for the same ts finds the row already held, so
+ * thread (also shown in the channel when asked, as Slack's "Also send to channel"), and stores Slack's answer at once. The event Slack sends back for the same ts finds the row already held, so
  * it neither adds a second one nor announces it as new again. What the person typed is sent as plain text.
  */
 class SendSlackMessage
@@ -44,6 +44,7 @@ class SendSlackMessage
         return [
             'text'            => ['required', 'string', 'max:'.self::MAX_LENGTH],
             'thread_ts'       => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,12}\.\d{1,8}$/'],
+            'also_to_channel' => ['sometimes', 'boolean'],
             'idempotency_key' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ];
     }
@@ -59,7 +60,7 @@ class SendSlackMessage
     /**
      * @return array<string, mixed> the stored row as the live screen shows it, its thread parent and when it was rendered
      */
-    public function handle(User $user, SlackChannel $slackChannel, string $text, ?string $threadTs, string $idempotencyKey): array
+    public function handle(User $user, SlackChannel $slackChannel, string $text, ?string $threadTs, string $idempotencyKey, bool $alsoToChannel = false): array
     {
         if (!$slackChannel->isVisibleTo($user) || !SlackChannel::kept()->whereKey($slackChannel->id)->exists() || $slackChannel->is_archived) {
             $this->refuse(__('Messages cannot be sent to this channel.'));
@@ -76,7 +77,8 @@ class SendSlackMessage
             $this->refuse(__('The message is too long for Slack, keep it under :max characters.', ['max' => number_format(self::MAX_LENGTH)]));
         }
 
-        $rootTs = $threadTs ? $this->threadRoot($slackChannel, $threadTs) : null;
+        $rootTs      = $threadTs ? $this->threadRoot($slackChannel, $threadTs) : null;
+        $isBroadcast = $rootTs !== null && $alsoToChannel;
 
         $client = $this->clientFor($user);
 
@@ -89,7 +91,8 @@ class SendSlackMessage
             $response = $client->call('chat.postMessage', array_filter([
                 'channel'   => $slackChannel->slack_id,
                 'text'      => $text,
-                'thread_ts' => $rootTs,
+                'thread_ts'       => $rootTs,
+                'reply_broadcast' => $isBroadcast,
             ]));
         } catch (SlackWriteException $exception) {
             if ($exception->slackError === 'unreachable') {
@@ -111,7 +114,7 @@ class SendSlackMessage
         if ($rootTs) {
             SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $rootTs)->whereNull('thread_ts')->update(['thread_ts' => $rootTs]);
         }
-        $message = $this->storeOnce($slackChannel, ['ts' => $ts, 'thread_ts' => $rootTs, 'user' => $client->slackUserId(), 'text' => $text, ...$posted]);
+        $message = $this->storeOnce($slackChannel, ['ts' => $ts, 'thread_ts' => $rootTs, 'user' => $client->slackUserId(), 'text' => $text, ...($isBroadcast ? ['subtype' => 'thread_broadcast'] : []), ...$posted]);
         if ($message?->wasRecentlyCreated) {
             rescue(fn () => SlackChannelMessageChanged::dispatch($slackChannel, $message, 'new'));
             rescue(fn () => NotifySlackMentions::run($message));
@@ -203,6 +206,6 @@ class SendSlackMessage
 
     public function asController(SlackChannel $slackChannel, ActionRequest $request): array
     {
-        return $this->handle($request->user(), $slackChannel, $request->validated('text'), $request->validated('thread_ts'), $request->validated('idempotency_key'));
+        return $this->handle($request->user(), $slackChannel, $request->validated('text'), $request->validated('thread_ts'), $request->validated('idempotency_key'), (bool) $request->validated('also_to_channel', false));
     }
 }
