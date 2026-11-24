@@ -13,7 +13,7 @@ import TableMasterProductsBulkEditV2 from "@/Components/Tables/Grp/Goods/TableMa
 import { capitalize } from "@/Composables/capitalize"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from '@/Components/Utils/Modal.vue'
-import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus, faMoneyBill } from "@fal"
+import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faPencil, faMinus, faMoneyBill, faPaste } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
@@ -29,9 +29,10 @@ import { useTabChange } from '@/Composables/tab-change'
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
 import SummaryCards, { type SummaryCard } from "@/Components/DataDisplay/SummaryCards.vue"
+import MasterProductsPriceListImport from "@/Components/Masters/MasterProductsPriceListImport.vue"
 
 
-library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faMoneyBill)
+library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus, faMoneyBill, faPaste)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -88,6 +89,10 @@ watch(currentTab, (tab) => {
 })
 
 const pricingBulkField = ref<'master_prices' | 'master_rrps' | null>(null)
+const isPriceListImportOpen = ref(false)
+const pricingCurrencyCodes = computed<string[]>(() =>
+    props.pricingCurrencies ? Object.keys(props.pricingCurrencies) : (props.pricingMajorCurrencies ?? [])
+)
 
 // Bumping this tells the bulk edit tab's table to open the tax modal for the selection
 const taxBulkSignal = ref(0)
@@ -204,6 +209,14 @@ watch(() => currentTab.value, () => {
         <template #other>
             <template v-if="currentTab === 'pricing'">
                 <Button
+                    v-if="!hide_bulk_edit"
+                    @click="() => isPriceListImportOpen = true"
+                    :label="ctrans('Update from list')"
+                    type="tertiary"
+                    icon="fal fa-paste"
+                    :key="currentTab"
+                />
+                <Button
                     @click="() => pricingBulkField = 'master_prices'"
                     :label="ctrans('Bulk edit prices') + ` (${compSelectedProductsId?.length})`"
                     :disabled="!compSelectedProductsId.length"
@@ -295,6 +308,14 @@ watch(() => currentTab.value, () => {
         :routes="routes"
         @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId"
     ></component>
+
+    <MasterProductsPriceListImport
+        v-if="currentTab === 'pricing'"
+        v-model:visible="isPriceListImportOpen"
+        :currencyCodes="pricingCurrencyCodes"
+        :majorCurrencies="pricingMajorCurrencies"
+        :masterProductCategoryId="masterProductCategoryId"
+    />
 
     <!-- Dialog Create Product -->
     <FormCreateMasterProduct

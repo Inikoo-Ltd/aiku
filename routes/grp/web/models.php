@@ -535,6 +535,7 @@ use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetsPricesFromList;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetMainPrices;
 use App\Actions\Masters\Competitor\RefreshCompetitorIntel;
@@ -1177,6 +1178,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
+Route::patch('master-asset/update-prices-from-list', UpdateMasterAssetsPricesFromList::class)->name('master_asset.prices.update_from_list');
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
 Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');

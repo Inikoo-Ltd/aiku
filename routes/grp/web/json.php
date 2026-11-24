@@ -165,6 +165,7 @@ use App\Actions\CRM\Customer\Json\GetCustomersInShop;
 use App\Actions\CRM\Prospect\Json\GetProspectByEmail;
 use App\Actions\Dispatching\DeliveryNoteItem\FetchDeliveryNoteItemImage;
 use App\Actions\Masters\MasterAsset\Json\GetMasterProductsPricingSales;
+use App\Actions\Masters\MasterAsset\Json\PreviewMasterAssetsPricesFromList;
 use App\Actions\Goods\Stock\JSON\ValidateStockTradeUnitChanges;
 use App\Actions\Masters\MasterAsset\Json\GetMasterUpdatedBadge;
 use App\Actions\Catalogue\Product\Json\GetProductsNeedReviewBadge;
@@ -425,6 +426,8 @@ Route::get('master-assets/open-orders-affected-by-units-change', GetMasterAssets
 Route::post('{masterAsset:id}/get-price-rebels', GetPriceRebelProducts::class)->name('master_products.get_price_rebels')->withoutScopedBindings();
 Route::post('master-product-category/{masterProductCategory:id}/pricing-sales', GetMasterProductsPricingSales::class)->name('master_product_category.pricing_sales')->withoutScopedBindings();
 Route::post('master-shop/{masterShop}/pricing-sales', [GetMasterProductsPricingSales::class, 'inMasterShop'])->name('master_shop.pricing_sales')->withoutScopedBindings();
+Route::post('master-product-category/{masterProductCategory:id}/prices-from-list/preview', PreviewMasterAssetsPricesFromList::class)->name('master_product_category.prices_from_list.preview')->withoutScopedBindings();
+Route::post('master-shop/{masterShop}/prices-from-list/preview', [PreviewMasterAssetsPricesFromList::class, 'inMasterShop'])->name('master_shop.prices_from_list.preview')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
