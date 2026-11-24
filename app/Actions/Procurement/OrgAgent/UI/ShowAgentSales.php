@@ -279,7 +279,7 @@ class ShowAgentSales extends OrgAction
             ->whereNotNull('os.id')
             ->when($supplier, fn ($query) => $query->where('sp.supplier_id', $supplier->id))
             ->whereRaw('((osp.state = ? and osp.is_available) or sold.sold > 0)', [OrgSupplierProductStateEnum::ACTIVE->value])
-            ->selectRaw('sp.id as supplier_product_id, sp.code, sp.name, os.id as org_stock_id, '.$stock.' as stock_value, coalesce(sold.sold, 0) as sold, '.$buckets->bucketSql($orgAgent).' as bucket')
+            ->selectRaw('sp.id as supplier_product_id, sp.code, sp.name, os.id as org_stock_id, '.$stock.' as stock_value, coalesce(sold.sold, 0) as sold, '.$buckets->salesBucketSql($orgAgent).' as bucket')
             ->get()
             ->unique('org_stock_id')
             ->values();

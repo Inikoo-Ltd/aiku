@@ -193,6 +193,19 @@ class GetAgentStockCoverBuckets
     }
 
     /**
+     * The sales views judge a SKO that has never held any stock and is already on its way as never
+     * stocked, not out of stock: there was nothing to sell yet, so it is not a stock-out.
+     */
+    public function salesBucketSql(OrgAgent|OrgSupplier $relationship): string
+    {
+        return "case when os.quantity_available < 1
+                and not exists (select 1 from org_stock_movements never_moved where never_moved.org_stock_id = os.id)
+                and not exists (select 1 from stock_delivery_items never_placed where never_placed.org_stock_id = os.id and never_placed.unit_quantity_placed > 0)
+                and ".GetOrganisationStockCoverBuckets::comingSkosExpression('os')." > 0
+            then 'never' else ".$this->bucketSql($relationship).' end';
+    }
+
+    /**
      * A supplier product we do not stock whose SKOs are all discontinued is not something we never
      * got round to stocking, it is a dead code: its price and availability have not been looked at
      * in years. It stays out of the catalogue.

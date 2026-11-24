@@ -420,7 +420,7 @@ class GetAgentSalesProducts
                 'distinct on (os.id) sp.id as supplier_product_id, sp.code, sp.name, sp.supplier_id, sup.code as supplier_code, sup.name as supplier_name, sup.slug as supplier_slug,
                 ?::text as organisation_code,
                 coalesce(sold.sold, 0) * ? as sold, coalesce(sold.last_year, 0) * ? as last_year,
-                coalesce(s.stock_value, 0) * ? as stock_value, '.$buckets->bucketSql($orgAgent).' as bucket,
+                coalesce(s.stock_value, 0) * ? as stock_value, '.$buckets->salesBucketSql($orgAgent).' as bucket,
                 coalesce(sold.invoices, 0) as invoices, coalesce(sold.refunds, 0) as refunds,
                 coalesce(reviewed.reviews, 0) as reviews, coalesce(reviewed.rating_sum, 0) as rating_sum',
                 [$orgAgent->organisation->code, $toAgent, $toAgent, $stockToAgent]
