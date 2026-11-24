@@ -1004,6 +1004,63 @@ test('sales analysis shop rows carry the live page of the scope record in that s
     expect($pageUrl([$familyPage->id => $this->shop->id]))->toBeNull();
 });
 
+test('shop sales per month open into customers and each partner organisation when partners are included', function () {
+    $partner = DB::table('customers')->where('shop_id', $this->shop->id)->whereNotNull('as_organisation_id')->first();
+    if (!$partner) {
+        $partnerCustomer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+        DB::table('customers')->where('id', $partnerCustomer->id)->update(['as_organisation_id' => $this->organisation->id]);
+        $partner = DB::table('customers')->where('id', $partnerCustomer->id)->first();
+    }
+    $partnerCode   = DB::table('organisations')->where('id', $partner->as_organisation_id)->value('code');
+    $partnerName   = DB::table('organisations')->where('id', $partner->as_organisation_id)->value('name');
+    $taxCategoryId = DB::table('tax_categories')->value('id');
+
+    foreach ([['2041-03-05', $this->customer->id, false, 100], ['2041-03-10', $partner->id, true, 40], ['2040-03-12', $partner->id, true, 25], ['2041-04-02', $this->customer->id, false, 10]] as [$date, $customerId, $isPartner, $amount]) {
+        DB::table('invoice_transactions')->insert([
+            'group_id'        => $this->shop->group_id,
+            'organisation_id' => $this->shop->organisation_id,
+            'shop_id'         => $this->shop->id,
+            'customer_id'     => $customerId,
+            'tax_category_id' => $taxCategoryId,
+            'asset_id'        => $this->product->asset_id,
+            'date'            => $date,
+            'quantity'        => 1,
+            'in_process'      => false,
+            'is_partner'      => $isPartner,
+            'net_amount'      => $amount,
+            'grp_net_amount'  => $amount,
+            'data'            => '{}',
+            'created_at'      => now(),
+            'updated_at'      => now(),
+        ]);
+    }
+
+    $monthlySales = fn (bool $splitsByBuyer, bool $partners) => GetSalesAnalysis::make()->handle(new SalesAnalysisScope(
+        currency: 'GBP',
+        amountColumn: 'net_amount',
+        productIds: [$this->product->id],
+        splitsByBuyer: $splitsByBuyer,
+    ), ['from' => '2041-03-01', 'to' => '2041-04-30', 'compareFrom' => '2040-03-01', 'compareTo' => '2040-04-30', 'partners' => $partners])['monthly_sales'];
+
+    $split = $monthlySales(true, true);
+
+    expect($split)->toHaveCount(2)
+        ->and($split[0])->toMatchArray(['month' => '2041-03-01', 'sales' => 140.0, 'previous_sales' => 25.0])
+        ->and($split[0]['buyers'])->toBe([
+            ['organisation' => null, 'organisation_name' => null, 'sales' => 100.0, 'previous_sales' => 0.0],
+            ['organisation' => $partnerCode, 'organisation_name' => $partnerName, 'sales' => 40.0, 'previous_sales' => 25.0],
+        ])
+        ->and($split[1]['buyers'])->toBe([
+            ['organisation' => null, 'organisation_name' => null, 'sales' => 10.0, 'previous_sales' => 0.0],
+            ['organisation' => $partnerCode, 'organisation_name' => $partnerName, 'sales' => 0.0, 'previous_sales' => 0.0],
+        ])
+        ->and($monthlySales(true, false)[0])->not->toHaveKey('buyers')->toMatchArray(['sales' => 100.0])
+        ->and($monthlySales(false, true)[0])->not->toHaveKey('buyers')->toMatchArray(['sales' => 140.0])
+        ->and(SalesAnalysisScope::forProductCategory($this->department)->splitsByBuyer)->toBeTrue()
+        ->and(SalesAnalysisScope::forProductCategory($this->family)->splitsByBuyer)->toBeTrue()
+        ->and(SalesAnalysisScope::forProduct($this->product)->splitsByBuyer)->toBeTrue();
+});
+
 test('UI edit family in department', function () {
     $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.departments.show.families.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->family->slug]));

@@ -51,6 +51,7 @@ final class SalesAnalysisScope
      * @param array<int, int> $webpageShops webpage id => shop id of the pages of the scope itself
      * @param array<int, string> $shopNodeStates shop id => state of the scope's own record in that shop
      * @param array<int, string> $shopNodeSlugs shop id => slug of the scope's own record in that shop, opened with $shopNodeRoute
+     * @param bool $splitsByBuyer the sales per month open into customers and each partner organisation (shop level records only)
      */
     public function __construct(
         public string $currency,
@@ -65,6 +66,7 @@ final class SalesAnalysisScope
         public array $shopNodeStates = [],
         public array $shopNodeSlugs = [],
         public ?string $shopNodeRoute = null,
+        public bool $splitsByBuyer = false,
         public ?string $cacheKey = null,
     ) {
     }
@@ -228,6 +230,7 @@ final class SalesAnalysisScope
             offerTriggers: ['ProductCategory' => [$category->id], 'Product' => $productIds],
             webpageShops: $category->webpage_id ? [$category->webpage_id => $category->shop_id] : [],
             shopNodeStates: [$category->shop_id => $category->state?->value],
+            splitsByBuyer: true,
         );
     }
 
@@ -241,6 +244,7 @@ final class SalesAnalysisScope
             offerTriggers: ['Product' => [$product->id]],
             webpageShops: $product->webpage_id ? [$product->webpage_id => $product->shop_id] : [],
             shopNodeStates: [$product->shop_id => $product->state?->value],
+            splitsByBuyer: true,
         );
     }
 
