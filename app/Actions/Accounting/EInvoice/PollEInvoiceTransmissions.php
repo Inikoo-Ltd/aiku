@@ -26,7 +26,7 @@ class PollEInvoiceTransmissions
 
     public const int STUCK_AFTER_DAYS = 3;
 
-    public const int UNSENT_AFTER_HOURS = 24;
+    public const int UNSENT_AFTER_HOURS = 1;
 
     public const int STOP_POLLING_AFTER_DAYS = 30;
 

@@ -233,6 +233,13 @@ class EditOrganisationSettings extends OrgAction
                                     'valueProp' => 'code',
                                     'value' => Arr::get($organisation->settings, 'e_invoicing.countries', []),
                                 ],
+                                'e_invoice_starts_on' => [
+                                    'type' => 'date',
+                                    'modelType' => 'yyyy-MM-dd',
+                                    'label' => __('Peppol e-invoices start on'),
+                                    'information' => __('Invoices and refunds dated before this day are not sent, and fetching supplier e-invoices starts on this day. Set it before the countries. Empty: from now.'),
+                                    'value' => Arr::get($organisation->settings, 'e_invoicing.starts_on'),
+                                ],
                             ],
                         ],
                         [

@@ -349,11 +349,11 @@ test('a transaction listed under another tag is never adopted as this invoice\'s
     expect($transmission->refresh()->transaction_id)->toBe('9998');
 });
 
-test('a send the provider has not accepted a day after it was queued is reported once, even without the API key', function () {
+test('a send the provider has not accepted an hour after it was queued is reported once the same day, even without the API key', function () {
     config(['services.softip.api_key' => null]);
     softipFake([]);
     $transmission = SendEInvoice::make()->handle($this->invoice);
-    $transmission->forceFill(['created_at' => now()->subHours(25)])->save();
+    $transmission->forceFill(['created_at' => now()->subHours(2)])->save();
 
     PollEInvoiceTransmissions::make()->handle();
     PollEInvoiceTransmissions::make()->handle();
@@ -524,4 +524,30 @@ test('the PDF says it was also sent as an e-invoice only when it is sent, or in 
     softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9401', 'status' => 'NEW', 'checksum' => 'abc'])]);
     SendEInvoice::make()->handle($this->invoice->fresh());
     expect($scope->goesAsEInvoice($this->invoice->fresh()))->toBeTrue();
+});
+
+test('nothing is e-invoiced before the organisation\'s start date, and from that day it is', function () {
+    $scope = new IsInvoiceInEInvoiceScope();
+    $this->invoice->update(['address_id' => $this->customer->address_id, 'tax_number' => 'SK2021344160', 'tax_number_valid' => true, 'date' => '2026-11-30 12:00:00']);
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, [
+        'e_invoice_countries' => [$this->invoice->fresh()->address->country_code],
+        'e_invoice_starts_on' => '2026-12-01',
+    ]);
+    $organisation = $this->organisation->fresh();
+
+    expect(Illuminate\Support\Arr::get($organisation->settings, 'e_invoicing.starts_on'))->toBe('2026-12-01')
+        ->and($scope->handle($this->invoice->fresh()))->toBeFalse()
+        ->and(IsInvoiceInEInvoiceScope::hasStarted($organisation, Illuminate\Support\Carbon::parse('2026-11-30 12:00:00')))->toBeFalse();
+
+    $this->invoice->update(['date' => '2026-12-01 09:00:00']);
+    expect($scope->handle($this->invoice->fresh()))->toBeTrue()
+        ->and(IsInvoiceInEInvoiceScope::hasStarted($organisation, Illuminate\Support\Carbon::parse('2026-12-01 09:00:00')))->toBeTrue();
+
+    $originalTimezoneId = $organisation->timezone_id;
+    $organisation->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Europe/Bratislava')->value('id') ?? $originalTimezoneId]);
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($organisation->fresh(), ['e_invoice_starts_on' => '2026-11-30T23:00:00.000Z']);
+    expect(Illuminate\Support\Arr::get($organisation->fresh()->settings, 'e_invoicing.starts_on'))->toBe($organisation->fresh()->timezone?->name === 'Europe/Bratislava' ? '2026-12-01' : '2026-11-30');
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($organisation->fresh(), ['e_invoice_countries' => [], 'e_invoice_starts_on' => null]);
+    $organisation->update(['timezone_id' => $originalTimezoneId]);
 });

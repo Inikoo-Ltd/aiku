@@ -35,7 +35,7 @@ class FetchReceivedEInvoices
     public function handle(Organisation $organisation): ?array
     {
         $inbox = app(SoftipInbox::class);
-        if (!$inbox->isConfigured() || !Arr::get($organisation->settings, 'e_invoicing.countries')) {
+        if (!$inbox->isConfigured() || !Arr::get($organisation->settings, 'e_invoicing.countries') || !IsInvoiceInEInvoiceScope::hasStarted($organisation)) {
             return null;
         }
 

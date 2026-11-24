@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\Organisation;
 
+use Illuminate\Support\Carbon;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
@@ -33,6 +34,18 @@ class UpdateOrganisation extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
+
+    /**
+     * A plain Y-m-d is kept as it is; a timestamp from a browser in another timezone is read as the day it is in the organisation.
+     */
+    private function startsOnDate(Organisation $organisation, string $startsOn): string
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $startsOn)) {
+            return $startsOn;
+        }
+
+        return Carbon::parse($startsOn)->setTimezone($organisation->timezone?->name ?? 'UTC')->toDateString();
+    }
 
     public function handle(Organisation $organisation, array $modelData): Organisation
     {
@@ -94,6 +107,11 @@ class UpdateOrganisation extends OrgAction
 
         if (Arr::has($modelData, 'attach_isdoc_to_pdf')) {
             data_set($modelData, "settings.invoice_export.attach_isdoc_to_pdf", Arr::pull($modelData, 'attach_isdoc_to_pdf'));
+        }
+
+        if (Arr::has($modelData, 'e_invoice_starts_on')) {
+            $startsOn = Arr::pull($modelData, 'e_invoice_starts_on');
+            data_set($modelData, 'settings.e_invoicing.starts_on', $startsOn ? $this->startsOnDate($organisation, (string)$startsOn) : null);
         }
 
         if (Arr::has($modelData, 'e_invoice_countries')) {
@@ -382,6 +400,7 @@ class UpdateOrganisation extends OrgAction
             'attach_isdoc_to_pdf'                   => ['sometimes', 'boolean'],
             'show_tax_liability_date'               => ['sometimes', 'boolean'],
             'e_invoice_countries'                   => ['sometimes', 'nullable', 'array'],
+            'e_invoice_starts_on'                   => ['sometimes', 'nullable', 'date'],
             'e_invoice_countries.*'                 => ['string', Rule::exists('countries', 'code')],
             'google_drive_folder_key'               => ['sometimes', 'string'],
             'access_id'                             => ['sometimes', 'string', 'nullable'],

@@ -9,6 +9,8 @@
 namespace App\Actions\Accounting\EInvoice;
 
 use App\Models\Accounting\Invoice;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -29,10 +31,27 @@ class IsInvoiceInEInvoiceScope
             return false;
         }
 
+        if ($invoice->date && !self::hasStarted($invoice->organisation, $invoice->date)) {
+            return false;
+        }
+
         return BuildUblInvoice::buyerParticipantId($invoice) !== null
             || strlen(preg_replace('/\D/', '', (string)$invoice->tax_number)) >= 8
             || strlen(preg_replace('/\D/', '', (string)$invoice->identity_document_number)) >= 8
             || trim((string)$invoice->customer?->company_name) !== '';
+    }
+
+    /**
+     * E-invoicing starts on the organisation's start date (settings e_invoicing.starts_on, in its own timezone); none set: already started.
+     */
+    public static function hasStarted(Organisation $organisation, ?Carbon $at = null): bool
+    {
+        $startsOn = Arr::get($organisation->settings, 'e_invoicing.starts_on');
+        if (!$startsOn) {
+            return true;
+        }
+
+        return ($at ?? now())->copy()->setTimezone($organisation->timezone?->name ?? 'UTC')->toDateString() >= $startsOn;
     }
 
     /**
