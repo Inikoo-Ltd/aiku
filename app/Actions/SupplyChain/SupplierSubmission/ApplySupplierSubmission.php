@@ -28,6 +28,7 @@ use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -244,12 +245,38 @@ class ApplySupplierSubmission
                 $mediaIds[] = $attachment->id;
             }
 
-            $tradeUnit->products()->get()
-                ->merge(in_array($scope, TradeAttachmentScopeEnum::substanceScopes(), true) ? $tradeUnit->productsOfDocumentsSharers() : [])
-                ->unique('id')
-                ->each(fn (Product $product) => CloneProductAttachmentsFromTradeUnits::dispatch($product));
+            $this->refreshProductAttachments($tradeUnit, $scope);
         }
 
         return ['media_ids' => array_values(array_unique($mediaIds)), 'trade_unit_ids' => $tradeUnits->pluck('id')->all()];
+    }
+
+    /**
+     * Takes back an accepted compliance document when the decision is overridden: only the attachments this
+     * submission added are removed, never the same file put on the trade unit another way.
+     */
+    public function undoComplianceDocument(SupplierSubmission $supplierSubmission): void
+    {
+        $tradeUnitIds = Arr::get($supplierSubmission->applied ?? [], 'trade_unit_ids', []);
+        if (!$tradeUnitIds) {
+            return;
+        }
+
+        DB::table('model_has_attachments')
+            ->where('model_type', 'TradeUnit')
+            ->whereIn('model_id', $tradeUnitIds)
+            ->whereRaw("data->>'supplier_submission_id' = ?", [(string) $supplierSubmission->id])
+            ->delete();
+
+        $scope = (string) Arr::get($supplierSubmission->data, 'document_type', TradeAttachmentScopeEnum::OTHER->value);
+        TradeUnit::whereIn('id', $tradeUnitIds)->get()->each(fn (TradeUnit $tradeUnit) => $this->refreshProductAttachments($tradeUnit, $scope));
+    }
+
+    private function refreshProductAttachments(TradeUnit $tradeUnit, string $scope): void
+    {
+        $tradeUnit->products()->get()
+            ->merge(in_array($scope, TradeAttachmentScopeEnum::substanceScopes(), true) ? $tradeUnit->productsOfDocumentsSharers() : [])
+            ->unique('id')
+            ->each(fn (Product $product) => CloneProductAttachmentsFromTradeUnits::dispatch($product));
     }
 }

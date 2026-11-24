@@ -40,6 +40,7 @@ const props = defineProps<{
 		applied: Record<string, any> | null
 		applied_at: string | null
 		applied_to?: { label: string; url: string }[]
+		history?: { from: string; to: string; by: string | null; at: string; reason: string | null; override: boolean }[]
 		sent_by: string | null
 		supplier: { code: string; name: string; url: string }
 		product: { code: string; name: string; cost: number; currency: string | null } | null
@@ -48,6 +49,8 @@ const props = defineProps<{
 	}
 	decide: {
 		can: boolean
+		is_final?: boolean
+		can_override?: boolean
 		route: RouteTarget
 		states: { value: string; label: string }[]
 		applies: boolean
@@ -62,7 +65,11 @@ const form = useForm({
 	feedback: props.submission.feedback ?? "",
 	shop_id: null as number | null,
 	fields: props.decide.company_fields.filter((field) => props.submission.data[field]),
+	override_reason: "",
 })
+
+const isLockedForMe = computed(() => !!props.decide.is_final && !props.decide.can_override)
+const isOverriding = computed(() => !!props.decide.is_final && form.state !== props.submission.state)
 
 const isAccepting = computed(() => form.state === "accepted" && !props.submission.applied_at)
 const fieldLabels: Record<string, string> = {
@@ -115,7 +122,7 @@ const fieldValue = (field: string, value: unknown) => {
 	return value
 }
 
-const HIDDEN_FIELDS = ["plan", "escalated_for"]
+const HIDDEN_FIELDS = ["plan", "escalated_for", "decisions"]
 const shownData = computed(() => Object.fromEntries(Object.entries(props.submission.data).filter(([field]) => !HIDDEN_FIELDS.includes(field))))
 
 const plan = computed(() => props.submission.data.plan as { as_of: string; status: string; order_from: string | null; order_to: string | null; arrive_from: string | null; arrive_to: string | null; units_low: number; units_high: number; cartons_low: number | null; cartons_high: number | null } | undefined)
@@ -206,7 +213,10 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 					<Link v-for="target in submission.applied_to" :key="target.url" :href="target.url" class="primaryLink whitespace-nowrap">{{ target.label }}</Link>
 				</p>
 
-				<template v-if="decide.can">
+				<p v-if="decide.can && isLockedForMe" class="rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+					{{ ctrans("This document is decided. Only the compliance team can change the decision.") }}
+				</p>
+				<template v-if="decide.can && !isLockedForMe">
 					<label class="flex flex-col gap-1">
 						<span class="font-medium text-gray-700">{{ ctrans("State") }}</span>
 						<Select v-model="form.state" :options="decide.states" optionLabel="label" optionValue="value" />
@@ -215,6 +225,14 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						<span class="font-medium text-gray-700">{{ ctrans("Reply to the supplier") }}</span>
 						<Textarea v-model="form.feedback" rows="4" autoResize />
 						<span class="text-xs text-gray-400">{{ ctrans("The supplier reads this on its page.") }}</span>
+					</label>
+					<label v-if="isOverriding" class="flex flex-col gap-1">
+						<span class="font-medium text-gray-700">{{ ctrans("Why you change the decision") }} <span class="text-red-500">*</span></span>
+						<Textarea v-model="form.override_reason" rows="3" autoResize />
+						<span class="text-xs text-gray-400">
+							{{ ctrans("For our team only: the supplier does not see it. Whoever made the decision is told.") }}
+							<template v-if="submission.state === 'accepted'"> {{ ctrans("The files are taken off the trade unit of the product.") }}</template>
+						</span>
 					</label>
 
 					<template v-if="isAccepting && decide.applies">
@@ -230,7 +248,7 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 							<Select v-model="form.shop_id" :options="decide.shops" optionLabel="label" optionValue="value" filter />
 						</label>
 						<p v-if="submission.type === 'photos'" class="text-xs text-gray-500">{{ ctrans("The pictures are added to the supplier product, for internal use.") }}</p>
-						<p v-if="submission.type === 'compliance_document'" class="text-xs text-gray-500">{{ ctrans("The files are added to the supplier's attachments.") }}</p>
+						<p v-if="submission.type === 'compliance_document'" class="text-xs text-gray-500">{{ ctrans("The files are added to the trade unit of the product, so every purchase order of it shows them. Once decided, only the compliance team can change the decision.") }}</p>
 						<p v-if="submission.type === 'contact'" class="text-xs text-gray-500">{{ ctrans("The email is added to the supplier's emails: the person can sign in to the supplier page and gets the newsletter.") }}</p>
 						<p v-if="submission.type === 'price_change'" class="text-xs text-gray-500">{{ ctrans("The proposed price becomes the product cost, and the product is no longer on hold.") }}</p>
 					</template>
@@ -245,7 +263,20 @@ const save = () => form.post(route(props.decide.route.name, props.decide.route.p
 						</Button>
 					</div>
 				</template>
-				<p v-else class="text-xs text-gray-500">{{ ctrans("Only supply chain editors can decide.") }}</p>
+				<p v-else-if="!decide.can" class="text-xs text-gray-500">{{ ctrans("Only supply chain editors can decide.") }}</p>
+
+				<div v-if="submission.history?.length" class="space-y-1 border-t border-gray-100 pt-3">
+					<h3 class="text-xs font-semibold text-gray-600">{{ ctrans("History") }}</h3>
+					<ul class="space-y-1.5">
+						<li v-for="(entry, index) in submission.history" :key="index" class="text-xs">
+							<p class="text-gray-700">
+								<span :class="entry.override ? 'font-medium text-amber-700' : ''">{{ entry.from }} → {{ entry.to }}</span>
+								<span class="text-gray-400"> · {{ useFormatTime(entry.at) }}<template v-if="entry.by"> · {{ entry.by }}</template></span>
+							</p>
+							<p v-if="entry.reason" class="whitespace-pre-line text-gray-500">{{ entry.reason }}</p>
+						</li>
+					</ul>
+				</div>
 			</section>
 		</div>
 	</div>

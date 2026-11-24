@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
+use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
 use App\Actions\SupplyChain\SupplierSubmission\UI\ShowSupplierSubmission;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
@@ -22,6 +23,7 @@ use App\Models\Procurement\SupplierAgreedTerm;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -210,7 +212,7 @@ class GetSupplierPortalDetails
                 'sent_at'     => $submission->submitted_at,
                 'created_at'  => $submission->created_at,
                 'editable'    => $submission->state->isEditableBySupplier($submission->type),
-                'data'        => $submission->state->isEditableBySupplier($submission->type) ? $submission->data : null,
+                'data'        => $submission->state->isEditableBySupplier($submission->type) ? Arr::except($submission->data ?? [], [DecideSupplierSubmission::HISTORY_KEY]) : null,
                 'detail'      => $submission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? $this->complianceDetail($submission) : null,
             ])
             ->all();

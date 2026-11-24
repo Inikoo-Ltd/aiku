@@ -34,6 +34,7 @@ enum UserNotificationEnum: string
     case SUPPLIER_MATERIAL_PLANNING = 'supplier_material_planning';
     case SUPPLIER_PLANNING_OVERDUE = 'supplier_planning_overdue';
     case SUPPLIER_COMPLIANCE_DOCUMENT = 'supplier_compliance_document';
+    case SUPPLIER_COMPLIANCE_OVERRIDDEN = 'supplier_compliance_overridden';
     case PRODUCT_DEVELOPMENT_TASK = 'product_development_task';
     case PRODUCT_DEVELOPMENT_MENTION = 'product_development_mention';
     case PRODUCT_DEVELOPMENT_FILES = 'product_development_files';
@@ -75,6 +76,7 @@ enum UserNotificationEnum: string
         self::SUPPLIER_MATERIAL_PLANNING,
         self::SUPPLIER_PLANNING_OVERDUE,
         self::SUPPLIER_COMPLIANCE_DOCUMENT,
+        self::SUPPLIER_COMPLIANCE_OVERRIDDEN,
         self::DELIVERY_FEEDBACK,
     ];
 
@@ -103,6 +105,7 @@ enum UserNotificationEnum: string
             self::SUPPLIER_MATERIAL_PLANNING    => __('A supplier sends material planning notes or documents for a product my organisation buys'),
             self::SUPPLIER_PLANNING_OVERDUE     => __('A supplier material planning note is still not answered after the days set in the supplier page settings'),
             self::SUPPLIER_COMPLIANCE_DOCUMENT  => __('A supplier sends a compliance document for a product my organisation buys, or that I review as compliance'),
+            self::SUPPLIER_COMPLIANCE_OVERRIDDEN => __('The compliance team changes my decision on a supplier compliance document'),
             self::PRODUCT_DEVELOPMENT_TASK      => __('A product development gives me a task or reminds me of one'),
             self::PRODUCT_DEVELOPMENT_MENTION   => __('Someone @mentions me on a product development'),
             self::PRODUCT_DEVELOPMENT_FILES     => __('A file I need is uploaded to one of my product developments'),
@@ -196,6 +199,7 @@ enum UserNotificationEnum: string
             self::SUPPLIER_MATERIAL_PLANNING    => 'fal fa-tree',
             self::SUPPLIER_PLANNING_OVERDUE     => 'fal fa-hourglass-end',
             self::SUPPLIER_COMPLIANCE_DOCUMENT  => 'fal fa-clipboard-check',
+            self::SUPPLIER_COMPLIANCE_OVERRIDDEN => 'fal fa-undo',
             self::PURCHASE_ORDER_MINIMUM_POKE   => 'fal fa-hand-point-right',
             self::PRODUCT_DEVELOPMENT_TASK      => 'fal fa-lightbulb-on',
             self::PRODUCT_DEVELOPMENT_MENTION   => 'fal fa-at',

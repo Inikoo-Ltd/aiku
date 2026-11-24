@@ -34,20 +34,43 @@ class DecideSupplierSubmission extends OrgAction
 {
     private SupplierSubmission $supplierSubmission;
 
+    public const array FINAL_STATES = [SupplierSubmissionStateEnum::ACCEPTED, SupplierSubmissionStateEnum::NOT_PROCEEDING];
+
     /**
-     * @param  array{state: string, feedback?: string|null, shop_id?: int|null, fields?: array<int, string>|null, decided_by_user_id?: int|null}  $modelData
+     * @param  array{state: string, feedback?: string|null, shop_id?: int|null, fields?: array<int, string>|null, decided_by_user_id?: int|null, override_reason?: string|null}  $modelData
      */
     public function handle(SupplierSubmission $supplierSubmission, array $modelData): SupplierSubmission
     {
         $state = SupplierSubmissionStateEnum::from($modelData['state']);
 
         return DB::transaction(function () use ($supplierSubmission, $modelData, $state) {
+            $previousState     = $supplierSubmission->state;
+            $previousDeciderId = $supplierSubmission->decided_by_user_id;
+            $isOverride        = self::isOverride($supplierSubmission, $state);
+
+            if ($supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT && $state !== SupplierSubmissionStateEnum::ACCEPTED && $supplierSubmission->applied_at) {
+                ApplySupplierSubmission::make()->undoComplianceDocument($supplierSubmission);
+                $supplierSubmission->update(['applied' => null, 'applied_at' => null]);
+            }
+
             $applied = null;
             if ($state === SupplierSubmissionStateEnum::ACCEPTED && !$supplierSubmission->applied_at) {
                 $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields', 'decided_by_user_id']));
             }
             if ($state === SupplierSubmissionStateEnum::NOT_PROCEEDING && $supplierSubmission->type === SupplierSubmissionTypeEnum::PRICE_CHANGE && $supplierSubmission->supplierProduct) {
                 ApplySupplierSubmission::make()->liftPriceChangeHold($supplierSubmission->supplierProduct);
+            }
+
+            $data = $supplierSubmission->data ?? [];
+            if ($previousState !== $state) {
+                $data[self::HISTORY_KEY][] = array_filter([
+                    'from'     => $previousState->value,
+                    'to'       => $state->value,
+                    'user_id'  => Arr::get($modelData, 'decided_by_user_id'),
+                    'at'       => now()->toIso8601String(),
+                    'reason'   => $isOverride ? Arr::get($modelData, 'override_reason') : null,
+                    'override' => $isOverride ?: null,
+                ], fn ($value) => $value !== null);
             }
 
             $supplierSubmission->update(array_filter([
@@ -57,10 +80,35 @@ class DecideSupplierSubmission extends OrgAction
                 'decided_at'         => now(),
                 'applied'            => $applied,
                 'applied_at'         => $applied !== null ? now() : null,
+                'data'               => $data,
             ], fn ($value) => $value !== null));
+
+            if ($isOverride && $previousDeciderId && $previousDeciderId !== Arr::get($modelData, 'decided_by_user_id')) {
+                NotifyOfSupplierComplianceDocument::make()->tellOverriddenDecider($supplierSubmission, $previousDeciderId, $previousState, Arr::get($modelData, 'override_reason'));
+            }
 
             return $supplierSubmission;
         });
+    }
+
+    public const string HISTORY_KEY = 'decisions';
+
+    /**
+     * A compliance document accepted or not proceeding has been decided: changing that decision overrides it.
+     */
+    public static function isOverride(SupplierSubmission $supplierSubmission, SupplierSubmissionStateEnum $state): bool
+    {
+        return $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT
+            && in_array($supplierSubmission->state, self::FINAL_STATES, true)
+            && $state !== $supplierSubmission->state;
+    }
+
+    /**
+     * Only the compliance team, and Group Admins through it, change a compliance document decision already made.
+     */
+    public static function canOverride(User $user): bool
+    {
+        return $user->authTo('compliance.edit');
     }
 
     public function authorize(ActionRequest $request): bool
@@ -102,6 +150,7 @@ class DecideSupplierSubmission extends OrgAction
             'shop_id'  => ['nullable', 'integer', Rule::exists('shops', 'id')->where('group_id', $this->group->id)],
             'fields'   => ['nullable', 'array'],
             'fields.*' => ['string', Rule::in(ApplySupplierSubmission::COMPANY_FIELDS)],
+            'override_reason' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -116,6 +165,13 @@ class DecideSupplierSubmission extends OrgAction
         }
         if ($state === SupplierSubmissionStateEnum::ACCEPTED && $this->supplierSubmission->type === SupplierSubmissionTypeEnum::REFERRAL && !$this->get('shop_id') && !$this->supplierSubmission->applied_at) {
             $validator->errors()->add('shop_id', __('Choose the shop the prospect goes to'));
+        }
+        if ($state && self::isOverride($this->supplierSubmission, $state)) {
+            if (!self::canOverride(request()->user())) {
+                $validator->errors()->add('state', __('This document is already decided. Only the compliance team can change the decision.'));
+            } elseif (!trim((string) $this->get('override_reason'))) {
+                $validator->errors()->add('override_reason', __('Say why you change the decision'));
+            }
         }
         if ($this->supplierSubmission->state === SupplierSubmissionStateEnum::DRAFT) {
             $validator->errors()->add('state', __('The supplier has not sent this yet'));

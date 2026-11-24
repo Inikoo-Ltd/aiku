@@ -21,6 +21,7 @@ use App\Models\CRM\Prospect;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\SupplyChain\SupplierSubmission;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -122,6 +123,31 @@ class ShowSupplierSubmission extends OrgAction
             ->all();
     }
 
+    /**
+     * Every change of state staff made, with who, when and, for an override, why. Internal: the supplier never sees it.
+     *
+     * @return array<int, array{from: string, to: string, by: string|null, at: string, reason: string|null, override: bool}>
+     */
+    private function history(SupplierSubmission $submission): array
+    {
+        $entries = collect(Arr::get($submission->data ?? [], DecideSupplierSubmission::HISTORY_KEY, []));
+        if ($entries->isEmpty()) {
+            return [];
+        }
+
+        $states = SupplierSubmissionStateEnum::labels();
+        $users  = User::whereIn('id', $entries->pluck('user_id')->filter()->unique())->get()->keyBy('id');
+
+        return $entries->map(fn (array $entry) => [
+            'from'     => $states[$entry['from']] ?? $entry['from'],
+            'to'       => $states[$entry['to']] ?? $entry['to'],
+            'by'       => ($user = $users->get(Arr::get($entry, 'user_id'))) ? ($user->contact_name ?: $user->username) : null,
+            'at'       => $entry['at'],
+            'reason'   => Arr::get($entry, 'reason'),
+            'override' => (bool) Arr::get($entry, 'override', false),
+        ])->reverse()->values()->all();
+    }
+
     public function htmlResponse(SupplierSubmission $supplierSubmission, ActionRequest $request): Response
     {
         $supplier = $supplierSubmission->supplier;
@@ -147,8 +173,8 @@ class ShowSupplierSubmission extends OrgAction
                 'state'        => $supplierSubmission->state->value,
                 'state_label'  => SupplierSubmissionStateEnum::labels()[$supplierSubmission->state->value],
                 'data'         => $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT
-                    ? [...$supplierSubmission->data, 'document_type' => TradeAttachmentScopeEnum::labels()[Arr::get($supplierSubmission->data, 'document_type', '')] ?? Arr::get($supplierSubmission->data, 'document_type')]
-                    : $supplierSubmission->data,
+                    ? [...Arr::except($supplierSubmission->data, [DecideSupplierSubmission::HISTORY_KEY]), 'document_type' => TradeAttachmentScopeEnum::labels()[Arr::get($supplierSubmission->data, 'document_type', '')] ?? Arr::get($supplierSubmission->data, 'document_type')]
+                    : Arr::except($supplierSubmission->data ?? [], [DecideSupplierSubmission::HISTORY_KEY]),
                 'current'      => $current,
                 'feedback'     => $supplierSubmission->feedback,
                 'expires_on'   => $supplierSubmission->expires_on?->toDateString(),
@@ -158,6 +184,7 @@ class ShowSupplierSubmission extends OrgAction
                 'applied'      => $supplierSubmission->applied,
                 'applied_at'   => $supplierSubmission->applied_at,
                 'applied_to'   => $this->appliedTo($supplierSubmission),
+                'history'      => $this->history($supplierSubmission),
                 'sent_by'      => $supplierSubmission->portalContact?->email,
                 'supplier'     => ['code' => $supplier->code, 'name' => $supplier->name, 'url' => route('grp.majordomo.redirect_supplier', [$supplier->id])],
                 'product'      => $supplierSubmission->supplierProduct ? ['code' => $supplierSubmission->supplierProduct->code, 'name' => $supplierSubmission->supplierProduct->name, 'cost' => $supplierSubmission->supplierProduct->cost, 'currency' => $supplier->currency?->code] : null,
@@ -170,6 +197,8 @@ class ShowSupplierSubmission extends OrgAction
             ],
             'decide'      => [
                 'can'            => $this->canEdit && $supplierSubmission->state !== SupplierSubmissionStateEnum::DRAFT,
+                'is_final'       => $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT && in_array($supplierSubmission->state, DecideSupplierSubmission::FINAL_STATES, true),
+                'can_override'   => DecideSupplierSubmission::canOverride($request->user()),
                 'route'          => ['name' => 'grp.models.supplier_submission.decide', 'parameters' => ['supplierSubmission' => $supplierSubmission->id]],
                 'states'         => collect(SupplierSubmissionStateEnum::labels())->except([SupplierSubmissionStateEnum::DRAFT->value, SupplierSubmissionStateEnum::RECEIVED->value])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 'applies'        => in_array($supplierSubmission->type, [SupplierSubmissionTypeEnum::COMPANY_DETAILS, SupplierSubmissionTypeEnum::PHOTOS, SupplierSubmissionTypeEnum::REFERRAL, SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT, SupplierSubmissionTypeEnum::PRICE_CHANGE, SupplierSubmissionTypeEnum::CONTACT], true),

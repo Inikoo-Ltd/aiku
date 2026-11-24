@@ -12,6 +12,7 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
 use App\Actions\SysAdmin\User\NotifyUserOnChosenChannels;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\SysAdmin\User\UserNotificationEnum;
@@ -99,6 +100,43 @@ class NotifyOfSupplierComplianceDocument
             ->unique('id')
             ->filter(fn (User $user) => DecideSupplierSubmission::canDecide($user, $submission) || $user->authTo(['supply-chain.view', 'compliance.view']))
             ->values();
+    }
+
+    /**
+     * Tells the person whose decision the compliance team changed, with the reason, if they may still see it.
+     */
+    public function tellOverriddenDecider(SupplierSubmission $submission, int $userId, SupplierSubmissionStateEnum $previousState, ?string $reason): void
+    {
+        $user = User::where('status', true)->find($userId);
+        if (!$user || !DecideSupplierSubmission::canDecide($user, $submission)) {
+            return;
+        }
+
+        $submission->loadMissing(['supplier', 'supplierProduct'])->load('decidedBy');
+        $states = SupplierSubmissionStateEnum::labels();
+
+        $this->withLocale($this->userLocale($user), function () use ($submission, $user, $previousState, $reason, $states) {
+            $title = __(':user changed your decision on :document for :code', [
+                'user'     => $submission->decidedBy?->contact_name ?: $submission->decidedBy?->username,
+                'document' => $this->documentLabel($submission),
+                'code'     => $submission->supplierProduct?->code,
+            ]);
+            $body  = __(':from → :to. :reason', [
+                'from'   => $states[$previousState->value],
+                'to'     => $states[$submission->state->value],
+                'reason' => (string) $reason,
+            ]);
+            $why   = __('You get this email because you decided this supplier compliance document.');
+
+            NotifyUserOnChosenChannels::run(
+                $user,
+                UserNotificationEnum::SUPPLIER_COMPLIANCE_OVERRIDDEN,
+                new SupplierComplianceDocumentNotification($submission, $title, $body, $why),
+                $title,
+                $body,
+                SupplierComplianceDocumentNotification::url($submission)
+            );
+        });
     }
 
     public function owner(SupplierSubmission $submission): ?SupplierPortalContact
