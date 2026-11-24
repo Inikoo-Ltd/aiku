@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import Chart from "primevue/chart"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -17,10 +17,10 @@ import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCoins, faChartLine, faChartPie, faUniversity, faListUl, faExclamationTriangle, faUnlink } from "@fal"
+import { faCoins, faChartLine, faChartPie, faUniversity, faListUl, faExclamationTriangle, faUnlink, faChevronDown, faChevronRight } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faCoins, faChartLine, faChartPie, faUniversity, faListUl, faExclamationTriangle, faUnlink)
+library.add(faCoins, faChartLine, faChartPie, faUniversity, faListUl, faExclamationTriangle, faUnlink, faChevronDown, faChevronRight)
 
 type Status = "ok" | "stale" | "failed" | "never"
 interface Balance {
@@ -39,6 +39,7 @@ interface Connection {
 	taken_at: string | null
 	from_lines: boolean
 	failed_at: string | null
+	bank: string
 	amount: number
 	reserved: number
 	balances: Balance[]
@@ -96,6 +97,23 @@ const organisation = computed({
 })
 
 const hasBalances = computed(() => props.cash.connections.some((connection) => connection.balances.length > 0))
+const banks = computed(() => {
+	const grouped = new Map<string, Connection[]>()
+	props.cash.connections
+		.filter((connection) => connection.balances.length)
+		.forEach((connection) => grouped.set(connection.bank, [...(grouped.get(connection.bank) ?? []), connection]))
+	return [...grouped.entries()]
+		.map(([label, connections]) => ({
+			label,
+			connections: connections.length,
+			amount: connections.reduce((sum, connection) => sum + connection.amount, 0),
+			reserved: connections.reduce((sum, connection) => sum + connection.reserved, 0),
+			rows: connections.flatMap((connection) => connection.balances.map((balance, index) => ({ connection, balance, first: index === 0 }))),
+		}))
+		.sort((a, b) => b.amount - a.amount)
+})
+const closedBanks = ref<Record<string, boolean>>({})
+const toggleBank = (label: string) => (closedBanks.value = { ...closedBanks.value, [label]: !closedBanks.value[label] })
 const flagged = computed(() => props.cash.connections.filter((connection) => connection.status !== "ok"))
 
 const change = (previous: number | null, days: number) => {
@@ -294,37 +312,54 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (Math.max(row.a
 				</template>
 				<div class="overflow-x-auto">
 					<table class="w-full text-sm tabular-nums">
-						<thead class="whitespace-nowrap text-left text-xs uppercase text-gray-500">
-							<tr>
-								<th v-if="isGroup" class="py-1.5 pr-4 font-medium">{{ ctrans("Organisation") }}</th>
-								<th class="py-1.5 pr-4 font-medium">{{ ctrans("Bank") }}</th>
-								<th class="py-1.5 pr-4 font-medium">{{ ctrans("Currency") }}</th>
-								<th class="py-1.5 pr-4 text-right font-medium">{{ ctrans("Balance") }}</th>
-								<th class="py-1.5 pr-4 text-right font-medium">{{ ctrans("On hold") }}</th>
-								<th class="py-1.5 pr-4 text-right font-medium">{{ ctrans("In :currency", { currency }) }}</th>
-								<th class="py-1.5 font-medium">{{ ctrans("Balance read") }}</th>
+						<thead class="whitespace-nowrap text-left text-xs text-gray-400">
+							<tr class="border-b border-gray-100">
+								<th class="py-1.5 pr-4 font-normal">{{ ctrans("Bank") }}</th>
+								<th class="py-1.5 pr-4 font-normal">{{ ctrans("Currency") }}</th>
+								<th class="py-1.5 pr-4 text-right font-normal">{{ ctrans("Balance") }}</th>
+								<th class="py-1.5 pr-4 text-right font-normal">{{ ctrans("On hold") }}</th>
+								<th class="py-1.5 pr-4 text-right font-normal">{{ ctrans("In :currency", { currency }) }}</th>
+								<th class="py-1.5 font-normal">{{ ctrans("Balance read") }}</th>
 							</tr>
 						</thead>
-						<tbody v-for="connection in cash.connections.filter((item) => item.balances.length)" :key="connection.id" class="border-t border-gray-200">
-							<tr v-for="(balance, index) in connection.balances" :key="balance.currency" :class="index ? 'border-t border-gray-100' : ''">
-								<td v-if="isGroup && !index" :rowspan="connection.balances.length" class="whitespace-nowrap py-1.5 pr-4 align-top text-gray-700">{{ connection.organisation_code }}</td>
-								<td v-if="!index" :rowspan="connection.balances.length" class="py-1.5 pr-4 align-top">
-									<div class="font-medium">{{ connection.name }}</div>
-									<div class="text-xs text-gray-500">{{ money(connection.amount) }}</div>
+						<tbody v-for="bank in banks" :key="bank.label">
+							<tr class="cursor-pointer select-none border-b border-t-2 border-gray-300 bg-gray-100/80 font-medium text-gray-900" @click="toggleBank(bank.label)">
+								<td colspan="3" class="whitespace-nowrap py-1.5 pr-4">
+									{{ bank.label }}
+									<FontAwesomeIcon :icon="closedBanks[bank.label] ? 'fal fa-chevron-right' : 'fal fa-chevron-down'" class="ml-1.5 text-[10px] text-gray-400" fixed-width aria-hidden="true" />
 								</td>
-								<td class="whitespace-nowrap py-1.5 pr-4">{{ balance.currency }}</td>
-								<td class="whitespace-nowrap py-1.5 pr-4 text-right">{{ locale.currencyFormat(balance.currency, balance.amount) }}</td>
-								<td class="whitespace-nowrap py-1.5 pr-4 text-right text-gray-500">{{ balance.reserved ? locale.currencyFormat(balance.currency, balance.reserved) : "" }}</td>
-								<td class="whitespace-nowrap py-1.5 pr-4 text-right font-medium">
-									<template v-if="balance.converted !== null">{{ money(balance.converted) }}</template>
-									<span v-else class="text-xs font-normal text-amber-700">{{ ctrans("no exchange rate") }}</span>
-								</td>
-								<td v-if="!index" :rowspan="connection.balances.length" class="py-1.5 align-top text-xs" :class="connection.status === 'ok' ? 'text-gray-500' : 'text-amber-700'">
-									<span class="flex items-center gap-1.5">
-										<span class="h-2 w-2 shrink-0 rounded-full" :class="connection.status === 'ok' ? 'bg-green-600' : 'bg-amber-500'" aria-hidden="true" />
-										{{ freshness(connection) }}
-									</span>
-								</td>
+								<td class="whitespace-nowrap py-1.5 pr-4 text-right text-gray-500">{{ bank.reserved ? money(bank.reserved) : "" }}</td>
+								<td class="whitespace-nowrap py-1.5 pr-4 text-right">{{ money(bank.amount) }}</td>
+								<td />
+							</tr>
+							<template v-if="!closedBanks[bank.label]">
+								<tr v-for="row in bank.rows" :key="`${row.connection.id}-${row.balance.currency}`" class="border-b border-gray-50">
+									<td v-if="row.first" :rowspan="row.connection.balances.length" class="py-1.5 pl-5 pr-4 align-top">
+										<div class="whitespace-nowrap">{{ row.connection.name }}<span v-if="isGroup" class="ml-1.5 text-xs text-gray-400">{{ row.connection.organisation_code }}</span></div>
+										<div v-if="bank.connections > 1" class="text-xs text-gray-500">{{ money(row.connection.amount) }}</div>
+									</td>
+									<td class="whitespace-nowrap py-1.5 pr-4">{{ row.balance.currency }}</td>
+									<td class="whitespace-nowrap py-1.5 pr-4 text-right">{{ locale.currencyFormat(row.balance.currency, row.balance.amount) }}</td>
+									<td class="whitespace-nowrap py-1.5 pr-4 text-right text-gray-500">{{ row.balance.reserved ? locale.currencyFormat(row.balance.currency, row.balance.reserved) : "" }}</td>
+									<td class="whitespace-nowrap py-1.5 pr-4 text-right">
+										<template v-if="row.balance.converted !== null">{{ money(row.balance.converted) }}</template>
+										<span v-else class="text-xs text-amber-700">{{ ctrans("no exchange rate") }}</span>
+									</td>
+									<td v-if="row.first" :rowspan="row.connection.balances.length" class="py-1.5 align-top text-xs" :class="row.connection.status === 'ok' ? 'text-gray-500' : 'text-amber-700'">
+										<span class="flex items-center gap-1.5 whitespace-nowrap">
+											<span class="h-2 w-2 shrink-0 rounded-full" :class="row.connection.status === 'ok' ? 'bg-green-600' : 'bg-amber-500'" aria-hidden="true" />
+											{{ freshness(row.connection) }}
+										</span>
+									</td>
+								</tr>
+							</template>
+						</tbody>
+						<tbody>
+							<tr class="border-t-2 border-gray-400 font-semibold text-gray-900">
+								<td colspan="3" class="py-1.5 pr-4">{{ ctrans("All banks") }}</td>
+								<td class="whitespace-nowrap py-1.5 pr-4 text-right text-gray-500">{{ cash.total.reserved ? money(cash.total.reserved) : "" }}</td>
+								<td class="whitespace-nowrap py-1.5 pr-4 text-right">{{ money(cash.total.amount) }}</td>
+								<td />
 							</tr>
 						</tbody>
 					</table>
@@ -332,7 +367,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (Math.max(row.a
 			</DashboardWidgetBox>
 		</template>
 
-		<DashboardWidgetBox storageKey="cash_coverage_collapsed">
+		<DashboardWidgetBox v-if="isGroup || cash.not_connected.length" storageKey="cash_coverage_collapsed">
 			<template #header>
 				<span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
 					<FontAwesomeIcon icon="fal fa-list-ul" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
@@ -356,7 +391,7 @@ const barWidth = (row: Ranked, rows: Ranked[]) => `${Math.max(2, (Math.max(row.a
 						</li>
 					</ul>
 				</div>
-				<div :class="isGroup ? 'lg:border-l lg:border-gray-100 lg:pl-6' : ''">
+				<div v-if="cash.not_connected.length" :class="isGroup ? 'lg:border-l lg:border-gray-100 lg:pl-6' : ''">
 					<p class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-600">
 						<FontAwesomeIcon icon="fal fa-unlink" class="text-amber-500" fixed-width aria-hidden="true" />
 						{{ ctrans("Not connected") }}

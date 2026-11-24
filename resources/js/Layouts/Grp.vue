@@ -343,8 +343,8 @@ const safeTheme = computed(() => {
                 </Transition>
                 <Transition name="stacked-component">
                     <StackedComponents v-if="layout.stackedComponents?.length" />
-                    <AllNotificationsDialog />
                 </Transition>
+                <AllNotificationsDialog />
             </div>
         </Teleport>
     </div>

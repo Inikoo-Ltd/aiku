@@ -13,6 +13,7 @@ use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingPagesAuthorisation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
+use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankBalance;
@@ -47,7 +48,6 @@ class ShowCash extends OrgAction
 
     /** The banks each organisation uses that are not connected to aiku yet, by organisation slug. */
     public const array NOT_CONNECTED = [
-        'sk' => ['Tatra banka'],
         'es' => ['Santander', 'Sabadell'],
         'aw' => ['HSBC UK'],
     ];
@@ -126,6 +126,13 @@ class ShowCash extends OrgAction
                 return [
                     'id'                => $bankConnection->id,
                     'name'              => $bankConnection->name,
+                    'bank'              => match ($bankConnection->provider) {
+                        BankConnectionProviderEnum::WISE         => 'Wise',
+                        BankConnectionProviderEnum::FIO          => 'Fio banka',
+                        BankConnectionProviderEnum::TATRA        => 'Tatra banka',
+                        BankConnectionProviderEnum::PAYPAL       => 'PayPal',
+                        BankConnectionProviderEnum::OPEN_BANKING => 'Open banking',
+                    },
                     'organisation'      => $bankConnection->organisation->name,
                     'organisation_code' => $bankConnection->organisation->code,
                     'status'            => match (true) {
