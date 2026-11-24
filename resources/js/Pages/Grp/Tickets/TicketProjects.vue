@@ -19,6 +19,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketProjectProgress from "@/Components/Tickets/TicketProjectProgress.vue"
 import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadge.vue"
+import SlackToDeskIcons from "@/Components/Tickets/SlackToDeskIcons.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faProjectDiagram, faPlus, faList, faThLarge, faTimes, faCheck, faLevelUp, faThumbtack } from "@fal"
@@ -142,6 +143,7 @@ const timeLabel = (progress: Progress) => {
             <template v-else>
                 <FontAwesomeIcon v-if="item.is_pinned" v-tooltip="ctrans('Pinned: an ongoing area with no end date')" icon="fal fa-thumbtack" class="mr-1.5 text-[var(--app-accent)]" fixed-width />
                 <Link :href="route('grp.projects.show', item.slug)" class="font-medium text-gray-800 hover:underline">{{ item.name }}</Link>
+                <SlackToDeskIcons v-if="item.slug === 'staff-chat-slack-sync'" class="ml-2" />
             </template>
         </template>
         <template #cell(status)="{ item }">
@@ -195,6 +197,7 @@ const timeLabel = (progress: Progress) => {
                 <div class="flex items-start justify-between gap-2">
                     <Link :href="route('grp.projects.show', project.slug)" class="text-lg font-semibold text-gray-800 after:absolute after:inset-0">
                         <FontAwesomeIcon v-if="project.is_pinned" icon="fal fa-thumbtack" class="mr-1.5 text-[var(--app-accent)]" fixed-width />{{ project.name }}
+                        <SlackToDeskIcons v-if="project.slug === 'staff-chat-slack-sync'" class="ml-2 text-base" />
                     </Link>
                     <div class="flex shrink-0 flex-wrap justify-end gap-1">
                         <span v-if="project.health" class="rounded-full px-2 py-0.5 text-xs" :class="healthClasses[project.health]">{{ project.health_label }}</span>
