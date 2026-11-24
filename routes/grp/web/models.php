@@ -85,6 +85,7 @@ use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use App\Actions\SupplyChain\SupplierPayment\DeleteSupplierPayment;
 use App\Actions\SupplyChain\SupplierPayment\StoreSupplierPayment;
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
+use App\Actions\Accounting\Payment\RefundCustomerBalanceByApi;
 use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
@@ -1076,6 +1077,7 @@ Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.up
 Route::patch('customer/{customer:id}/credit-line', UpdateCustomerCreditLine::class)->name('customer.credit_line.update')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/increase', IncreaseCreditTransactionCustomer::class)->name('credit_transaction.increase')->withoutScopedBindings();
 Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransactionCustomer::class)->name('credit_transaction.decrease')->withoutScopedBindings();
+Route::post('customer/{customer:id}/refund-balance-by-api', RefundCustomerBalanceByApi::class)->name('customer.refund_balance_by_api')->withoutScopedBindings();
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 

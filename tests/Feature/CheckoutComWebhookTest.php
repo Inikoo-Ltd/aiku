@@ -1520,6 +1520,113 @@ test('only the part of the excess that was paid by card is refunded, the bank pa
         ->and($record['reason'])->not->toBeNull();
 });
 
+test('refunding a balance to card sends back as much as it can, keeps the rest and gifted credit, and never takes the balance below zero', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $refundBalance      = \App\Actions\Accounting\Payment\RefundCustomerBalanceByApi::class;
+    $customer           = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+
+    $captured = ['pay_test_balance_older' => 2500, 'pay_test_balance_newer' => 2000];
+    ProcessCheckoutComPaymentGatewayLog::partialMock()->shouldReceive('getCheckOutPayment')
+        ->andReturnUsing(fn ($paymentAccountShop, $id) => ['id' => $id, 'status' => 'Captured', 'amount' => $captured[$id], 'source' => ['type' => 'card']]);
+    foreach ($captured as $reference => $amount) {
+        list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($customer, $this->product, $paymentAccountShop);
+        PreProcessCheckoutComPaymentGatewayLog::run($this->group->paymentGatewayLogs()->create([
+            'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_'.$reference, $reference, $orderPaymentApiPoint, $amount),
+            'gateway' => 'checkout-com',
+        ]));
+        \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order->refresh());
+    }
+    Payment::where('reference', 'pay_test_balance_older')->update(['date' => now()->subDays(2)]);
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($customer, [
+        'amount' => 7,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
+    ], notifyCustomer: false);
+
+    $plan = $refundBalance::plan($customer);
+    expect($plan['balance'])->toBe(52.0)
+        ->and($plan['to_card'])->toBe(45.0)
+        ->and($plan['stays'])->toBe(7.0)
+        ->and(array_column($plan['refunds'], 'reference'))->toBe(['pay_test_balance_newer', 'pay_test_balance_older']);
+
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->twice()
+        ->andReturnUsing(function ($payment) {
+            if ($payment->reference === 'pay_test_balance_newer') {
+                throw Illuminate\Validation\ValidationException::withMessages(['amount' => 'Checkout.com refused the refund: refund_not_allowed']);
+            }
+
+            return 'act_test_balance_older';
+        });
+    $result = $refundBalance::make()->handle($customer, 45);
+
+    expect($result['to_card'])->toBe(25.0)
+        ->and(array_column($result['refunded'], 'action_id'))->toBe(['act_test_balance_older'])
+        ->and(array_column($result['failed'], 'reference'))->toBe(['pay_test_balance_newer'])
+        ->and($result['failed'][0]['reason'])->toContain('refund_not_allowed')
+        ->and($result['balance'])->toBe(27.0)
+        ->and($refundBalance::plan($customer)['to_card'])->toBe(20.0);
+
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($customer, [
+        'amount' => -24,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::PAYMENT,
+    ], notifyCustomer: false);
+    $plan = $refundBalance::plan($customer);
+    expect($plan['balance'])->toBe(3.0)
+        ->and($plan['gifted'])->toBe(7.0)
+        ->and($plan['to_card'])->toBe(0.0)
+        ->and($plan['stays'])->toBe(3.0)
+        ->and($refundBalance::make()->handle($customer, 3)['refunded'])->toBe([])
+        ->and($refundBalance::ledgerBalance($customer))->toBe(3.0);
+});
+
+test('refunding a balance to card plans a shared cancelled order once, stops on an unclear answer and never sends more than confirmed', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $refundBalance      = \App\Actions\Accounting\Payment\RefundCustomerBalanceByApi::class;
+    $customer           = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($customer, $this->product, $paymentAccountShop);
+    $captured = ['pay_test_shared_first' => 2500, 'pay_test_shared_second' => 2500];
+    ProcessCheckoutComPaymentGatewayLog::partialMock()->shouldReceive('getCheckOutPayment')
+        ->andReturnUsing(fn ($paymentAccountShop, $id) => ['id' => $id, 'status' => 'Captured', 'amount' => $captured[$id], 'source' => ['type' => 'card']]);
+    foreach ($captured as $reference => $amount) {
+        PreProcessCheckoutComPaymentGatewayLog::run($this->group->paymentGatewayLogs()->create([
+            'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_'.$reference, $reference, $orderPaymentApiPoint, $amount),
+            'gateway' => 'checkout-com',
+        ]));
+    }
+    Payment::where('reference', 'pay_test_shared_first')->update(['date' => now()->subDay()]);
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order->refresh(), ['refund_amount' => 40]);
+
+    $plan = $refundBalance::plan($customer);
+    expect($refundBalance::ledgerBalance($customer))->toBe(40.0)
+        ->and($plan['to_card'])->toBeLessThanOrEqual(40.0)
+        ->and(array_sum(array_column($plan['refunds'], 'amount')))->toBe($plan['to_card']);
+
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->once()
+        ->andThrow(\App\Exceptions\CheckoutRefundOutcomeUnknown::withMessages(['amount' => 'No answer from Checkout.com']));
+    $result = $refundBalance::make()->handle($customer, $plan['to_card']);
+    expect($result['stopped'])->toBeTrue()
+        ->and($result['refunded'])->toBe([])
+        ->and($result['unknown'])->toHaveCount(1)
+        ->and($result['balance'])->toBe(40.0);
+
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->once()->andReturn('act_test_shared_confirmed');
+    $result = $refundBalance::make()->handle($customer, 10);
+    expect($result['to_card'])->toBe(10.0)
+        ->and($result['balance'])->toBe(30.0);
+
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->andReturnUsing(fn ($payment, $amount) => 'act_test_shared_'.$payment->id.'_'.(int) round($amount * 100));
+    for ($click = 0; $click < 3; $click++) {
+        $plan = $refundBalance::plan($customer);
+        if ($plan['to_card'] > 0) {
+            $refundBalance::make()->handle($customer, $plan['to_card']);
+        }
+    }
+    expect($refundBalance::ledgerBalance($customer))->toBe(0.0)
+        ->and(round(abs((float) Payment::whereIn('original_payment_id', Payment::whereIn('reference', array_keys($captured))->pluck('id'))->where('status', PaymentStatusEnum::SUCCESS)->sum('amount')), 2))->toBe(40.0);
+});
+
 test('an unanswered refund is recorded as unknown, never retried and leaves the credit untouched', function () {
     $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
     list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_unknown', 200000, 'unknown');

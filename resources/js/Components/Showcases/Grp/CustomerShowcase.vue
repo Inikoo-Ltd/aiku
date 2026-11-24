@@ -41,7 +41,7 @@ import {
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ctrans as trans } from "@/Composables/useTrans"
 import { taxNumberCheckResult, taxNumberCheckDisplay } from "@/Composables/useTaxNumberValidation"
-import { inject, ref, computed } from "vue"
+import { inject, ref, computed, onMounted, watch } from "vue"
 import axios from "axios"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
@@ -66,6 +66,9 @@ import GoldReward from "@/Components/Utils/GoldReward.vue"
 import CustomerMiniTimeline from "@/Components/Showcases/Grp/CustomerMiniTimeline.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
+import RefundBalanceByApiDialog from "@/Components/Accounting/RefundBalanceByApiDialog.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faUndoAlt } from "@fal"
 import { PDRNotes } from "@/types/Pallet"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faGlobe, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faChartLine, faExclamationTriangle, faShoppingCart, faBoxOpen, faStickyNote, faClock, faListAlt, faTrafficLight, faTruck, faGlobeEurope, faIslandTropical, faGift, faBadgePercent, faHistory, faPaperclip)
@@ -251,6 +254,22 @@ if (props.data.editWebUser) {
 // Section: Balance increase and decrease
 const isModalBalanceDecrease = ref(false)
 const isModalBalanceIncrease = ref(false)
+const isModalRefundBalance = ref(false)
+const refundableToCard = ref<number | null>(null)
+const loadRefundableToCard = async () => {
+    if (!props.data.permissions?.edit_balance || !props.data.balance || props.data.shop?.type === 'external' || Number(props.data.customer.balance) <= 0) {
+        refundableToCard.value = null
+        return
+    }
+    try {
+        const { data } = await axios.get(route("grp.json.customer.refund_balance_by_api.preview", { customer: props.data.customer.id }))
+        refundableToCard.value = Number(data.to_card)
+    } catch {
+        refundableToCard.value = null
+    }
+}
+onMounted(loadRefundableToCard)
+watch(() => props.data.customer.balance, loadRefundableToCard)
 
 
 // Tax number validation helper functions
@@ -1110,6 +1129,19 @@ const submitNote = async () => {
                         </div>
                     </div>
                 </div>
+                <div v-if="refundableToCard !== null && data.permissions.edit_balance" class="mt-2 flex items-center justify-between gap-2 text-sm">
+                    <span class="text-gray-500" v-tooltip="trans('What of the balance can go back automatically to the cards that paid it, through Checkout.com. The rest needs refunding another way.')">
+                        {{ trans(":amount can go back to card", { amount: locale.currencyFormat(data.currency?.code, refundableToCard) }) }}
+                    </span>
+                    <Button v-if="refundableToCard > 0" type="tertiary" size="xs" :label="trans('Refund to card')" @click="isModalRefundBalance = true">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faUndoAlt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                        </template>
+                        <template #iconRight>
+                            <span class="rounded border border-gray-400 px-1 text-[10px] font-semibold leading-4 text-gray-600">API</span>
+                        </template>
+                    </Button>
+                </div>
                 <div v-if="Number(data.customer.credit_limit) > 0" class="mt-2 text-sm text-gray-500">
                     {{ trans("Credit limit") }}: {{ locale.currencyFormat(data.currency?.code, data.customer.credit_limit) }}
                     <span v-if="data.customer.payment_terms_days"> · {{ trans(":days days terms", { days: data.customer.payment_terms_days }) }}</span>
@@ -1146,6 +1178,8 @@ const submitNote = async () => {
         <CustomerAddressManagementModal :addresses="data.address_management.addresses"
                                         :updateRoute="data.address_management.address_update_route" />
     </Modal>
+
+    <RefundBalanceByApiDialog v-if="refundableToCard !== null" v-model:visible="isModalRefundBalance" :customerId="data.customer.id" :currencyCode="data.currency?.code" />
 
     <!-- Modal: Increase balance -->
     <Modal v-if="data.shop.type !== 'external' && data.permissions.edit_balance" :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">

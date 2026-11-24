@@ -24,6 +24,7 @@ use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Exceptions\CheckoutRefundOutcomeUnknown;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
@@ -378,7 +379,7 @@ class RefundPaymentByApi extends OrgAction
         } catch (CheckoutApiException $e) {
             if (!$e->http_metadata) {
                 Sentry::captureException($e);
-                throw ValidationException::withMessages(['amount' => __('No answer from Checkout.com, so the refund may or may not have been made: check the payment in Checkout.com before trying again')]);
+                throw CheckoutRefundOutcomeUnknown::withMessages(['amount' => __('No answer from Checkout.com, so the refund may or may not have been made: check the payment in Checkout.com before trying again')]);
             }
             $codes = implode(', ', Arr::get($e->error_details ?? [], 'error_codes', []));
             throw ValidationException::withMessages(['amount' => __('Checkout.com refused the refund: :reason', ['reason' => $codes ?: $e->getMessage()])]);
@@ -387,7 +388,7 @@ class RefundPaymentByApi extends OrgAction
         $actionId = (string) Arr::get($response, 'action_id');
         if ($actionId === '') {
             Sentry::captureMessage("Checkout.com refund of {$payment->reference} answered without action_id");
-            throw ValidationException::withMessages(['amount' => __('Checkout.com accepted the refund without a reference: check the payment in Checkout.com before trying again')]);
+            throw CheckoutRefundOutcomeUnknown::withMessages(['amount' => __('Checkout.com accepted the refund without a reference: check the payment in Checkout.com before trying again')]);
         }
 
         return $actionId;

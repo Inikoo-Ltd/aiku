@@ -39,6 +39,7 @@ use App\Actions\Inventory\LocationOrgStock\HandleLowStockAuditLock;
 use App\Actions\Catalogue\Product\Json\GetProductsIncludingNotForSaleInShop;
 use App\Actions\Dispatching\BatchCode\Json\GetBatchCodes;
 use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
+use App\Actions\Accounting\Payment\RefundCustomerBalanceByApi;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
@@ -234,6 +235,7 @@ Route::get('fulfilment/{fulfilment}/recurring-bill/{scope}/physical-goods', [Get
 Route::get('fulfilment/{fulfilment}/invoice/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inInvoice'])->name('fulfilment.invoice.physical-goods.index');
 
 Route::get('refund/{invoice:id}/original-invoice-payments', GetRefundOriginalInvoicePayments::class)->name('refund.show.original_invoice_payments.index');
+Route::get('customer/{customer:id}/refund-balance-by-api', [RefundCustomerBalanceByApi::class, 'preview'])->name('customer.refund_balance_by_api.preview');
 
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 
