@@ -536,7 +536,7 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 </script>
 
 <template>
-    <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
+    <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full font-desk" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
             <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2 text-gray-600" @click="emit('back')">
@@ -754,8 +754,9 @@ const hasMyReaction = (message: StaffMessage, emoji: string) =>
 
                 <div class="flex w-full items-end gap-x-1" :class="message.user_id === myId ? 'flex-row-reverse' : ''">
                     <div
-                        class="relative max-w-[80%] rounded-lg text-sm"
+                        class="relative max-w-[80%] rounded-lg"
                         :class="[
+                            fullScreen ? 'text-[15px] leading-[1.46668]' : 'text-sm',
                             message.gif_url ? 'p-1' : 'px-3 py-2',
                             message.user_id === myId ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-900',
                             message.client_status === 'failed' && 'opacity-60 ring-1 ring-red-400',

@@ -335,7 +335,7 @@ onUnmounted(() => {
     <Head :title="title" />
     <PageHeading :data="pageHead" />
 
-    <div class="flex min-h-[50vh] md:min-h-[70vh] h-[calc(100vh-10rem)] border-t border-gray-200">
+    <div class="flex min-h-[50vh] md:min-h-[70vh] h-[calc(100vh-10rem)] border-t border-gray-200 font-desk">
         <div class="w-full md:w-80 shrink-0 border-r border-gray-200 bg-white flex flex-col" :class="selectedUlid || showSlackChannel ? 'hidden md:flex' : 'flex'">
             <div class="p-3 border-b border-gray-200 space-y-2">
                 <div class="relative">
