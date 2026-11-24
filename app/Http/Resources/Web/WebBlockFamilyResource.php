@@ -11,8 +11,10 @@ namespace App\Http\Resources\Web;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\WebBlock\Concerns\WithIrisImageVariants;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasCardWebImages;
@@ -86,8 +88,34 @@ class WebBlockFamilyResource extends JsonResource
                     'type'              => 'products_images'
                 ]
             ],
+            'marketing_images'          => self::getMarketingImages($family),
             'faq'                       => WebsiteLanguage::faq($family->webpage?->website_id ?? $family->shop?->website?->id, $family->faq),
         ];
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private static function getMarketingImages(ProductCategory $family): array
+    {
+        return Product::where(function ($query) use ($family) {
+            $query->where('family_id', $family->id);
+            if ($family->department_id) {
+                $query->orWhere('department_id', $family->department_id);
+            }
+        })
+            ->where('is_for_sale', true)
+            ->where('state', '!=', ProductStateEnum::DISCONTINUED->value)
+            ->whereNotNull('web_images->main->gallery')
+            ->orderByRaw('family_id = ? desc', [$family->id])
+            ->orderByDesc('is_golden_product')
+            ->orderBy('id')
+            ->limit(5)
+            ->pluck('web_images')
+            ->map(fn (?array $webImages) => Arr::only(Arr::get($webImages, 'main.gallery') ?? [], ['avif', 'avif_2x', 'original', 'original_2x']))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**
