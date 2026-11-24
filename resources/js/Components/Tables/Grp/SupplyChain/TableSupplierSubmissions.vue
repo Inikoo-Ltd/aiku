@@ -10,6 +10,7 @@ interface SupplierSubmissionRow {
 	submitted_at: string | null
 	supplier_code: string
 	supplier_name: string
+	supplier_slug: string
 	type_label: string
 	state: string
 	state_label: string
@@ -47,7 +48,7 @@ const stateClass: Record<string, string> = {
 			</Link>
 		</template>
 		<template #cell(supplier_code)="{ item }: { item: SupplierSubmissionRow }">
-			<span class="whitespace-nowrap" :title="item.supplier_name">{{ item.supplier_code }}</span>
+			<Link :href="route('grp.supply-chain.suppliers.show', [item.supplier_slug])" class="secondaryLink whitespace-nowrap" :title="item.supplier_name">{{ item.supplier_code }}</Link>
 		</template>
 		<template #cell(supplier_product_code)="{ item }: { item: SupplierSubmissionRow }">
 			<template v-if="item.product">
