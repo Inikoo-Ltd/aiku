@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Rules\StaffPassword;
 use App\Actions\Chat\Agent\RevokeChatAgentAccess;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
@@ -23,7 +24,6 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateUser extends OrgAction
@@ -138,7 +138,7 @@ class UpdateUser extends OrgAction
                     ]
                 ),
             ],
-            'password'       => ['sometimes', 'required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
+            'password'       => ['sometimes', 'required', new StaffPassword($this->user, app()->isLocal() || app()->environment('testing') || !$this->strict)],
             'email'          => [
                 'sometimes',
                 'nullable',

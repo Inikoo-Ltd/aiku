@@ -122,12 +122,11 @@ enum InventoryLive {
         } else {
             detail = L10n.format("%lld locations", row.numberLocations ?? 0)
         }
-        let stateLabel = row.stateLabel?.isEmpty == false ? row.stateLabel : nil
         return InventorySkoListItem(
             skoID: row.id,
             reference: row.code,
             subtitle: [name?.isEmpty == false ? name : nil, detail].compactMap { $0 }.joined(separator: " · "),
-            chip: row.state == InventorySkoState.active.rawValue ? nil : stateLabel.map { Chip($0, isAbnormalities || row.state == InventorySkoState.abnormality.rawValue ? .danger : .neutral) },
+            chip: InventorySkoState.listChip(remote: row.state, label: row.stateLabel),
             quantityText: isAbnormalities ? nil : quantityText(row.quantityAvailable?.value, label: row.quantityAvailableLabel),
             location: location
         )
@@ -261,8 +260,7 @@ enum InventoryLive {
 
     static func auditCounts(for sko: InventorySko, counted: [String: Int], reasons: [String: String]) -> [MobileOrgStockAuditCount] {
         sko.locations.compactMap { location in
-            guard let link = location.link else { return nil }
-            let count = counted[location.code] ?? max(0, location.quantity)
+            guard let link = location.link, let count = counted[location.code] else { return nil }
             if count == location.quantity {
                 return MobileOrgStockAuditCount(locationOrgStockId: link.linkID, quantity: link.exactQuantity)
             }

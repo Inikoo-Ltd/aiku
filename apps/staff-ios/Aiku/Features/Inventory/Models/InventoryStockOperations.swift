@@ -28,9 +28,15 @@ enum InventoryStockError: Error, Equatable, Sendable {
 struct InventoryAuditDraft: Equatable, Sendable {
     var counts: [String: Int]
     var reasons: [String: InventoryAuditReason] = [:]
+    var countedLocations: Set<String>?
 
-    init(sko: InventorySko) {
+    init(sko: InventorySko, only codes: Set<String>? = nil) {
         counts = Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, max(0, $0.quantity)) })
+        countedLocations = codes
+    }
+
+    func isCounted(_ location: InventorySkoLocation) -> Bool {
+        countedLocations?.contains(location.code) ?? true
     }
 
     func counted(_ location: InventorySkoLocation) -> Int {
@@ -42,7 +48,7 @@ struct InventoryAuditDraft: Equatable, Sendable {
     }
 
     func changedLocations(in sko: InventorySko) -> [InventorySkoLocation] {
-        sko.locations.filter { change(for: $0) != 0 }
+        sko.locations.filter { isCounted($0) && change(for: $0) != 0 }
     }
 
     func validReason(for location: InventorySkoLocation) -> InventoryAuditReason? {
@@ -61,6 +67,45 @@ struct InventoryAuditDraft: Equatable, Sendable {
     }
 }
 
+@MainActor
+enum StockConfirmText {
+    static func quantityLabel(_ quantity: Int, packedIn: Double?) -> String {
+        FractionGlyphs.apply(StockFraction.label(Double(quantity), packedIn: packedIn))
+    }
+
+    static func countedText(_ counted: Int, was quantity: Int, wasText: String, packedIn: Double?) -> String {
+        counted == quantity ? wasText : quantityLabel(counted, packedIn: packedIn)
+    }
+
+    static func auditLine(_ title: String, wasText: String, counted: Int, was quantity: Int, packedIn: Double?) -> String {
+        guard counted != quantity else { return L10n.format("%@: %@, no change", title, wasText) }
+        return L10n.format("%@: %@ → %@", title, wasText, quantityLabel(counted, packedIn: packedIn))
+    }
+
+    static func auditSummary(_ sko: InventorySko, counts: [String: Int]) -> String {
+        sko.locations.compactMap { location in
+            guard let counted = counts[location.code] else { return nil }
+            return auditLine(location.code, wasText: location.quantityText, counted: counted, was: location.quantity, packedIn: sko.packedIn)
+        }
+        .joined(separator: "\n")
+    }
+
+    static func moveSummary(quantity: Int, from source: String, to destination: String, packedIn: Double?) -> String {
+        L10n.format("%@ from %@ to %@.", quantityLabel(quantity, packedIn: packedIn), source, destination)
+    }
+
+    static func removeTitle(_ location: InventorySkoLocation) -> String {
+        L10n.format("Remove %@?", location.code)
+    }
+
+    static func removeMessage(_ location: InventorySkoLocation, skoReference: String) -> String {
+        if location.exactQuantity > 0 {
+            return L10n.format("The %@ still in %@ will be written off.", location.quantityText, location.code)
+        }
+        return L10n.format("%@ will no longer be a location of %@.", location.code, skoReference)
+    }
+}
+
 struct InventoryOperationResult: Sendable {
     let sko: InventorySko
     let movements: [InventoryStockMovement]
@@ -76,7 +121,7 @@ enum InventoryStockOperations {
         }
         var updated = sko
         var movements: [InventoryStockMovement] = []
-        for index in updated.locations.indices {
+        for index in updated.locations.indices where draft.isCounted(updated.locations[index]) {
             let location = updated.locations[index]
             let change = draft.change(for: location)
             updated.locations[index].quantity = draft.counted(location)

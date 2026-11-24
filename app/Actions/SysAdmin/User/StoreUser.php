@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Rules\StaffPassword;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateUsers;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -21,7 +22,6 @@ use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -123,7 +123,7 @@ class StoreUser extends OrgAction
                 ),
                 Rule::notIn(['export', 'create'])
             ],
-            'password'          => ['required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
+            'password'          => ['required', new StaffPassword(lenient: app()->isLocal() || app()->environment('testing') || !$this->strict)],
             'reset_password'    => ['sometimes', 'boolean'],
             'email'             => [
                 'sometimes',

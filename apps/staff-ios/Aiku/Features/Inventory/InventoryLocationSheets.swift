@@ -94,71 +94,43 @@ struct InventoryAddLocationSheet: View {
     }
 }
 
-struct InventoryRemoveLocationsSheet: View {
+struct InventoryLocationMenuSheet: View {
     let sko: InventorySko
-    let warning: String
+    let location: InventorySkoLocation
+    let onAudit: (() -> Void)?
+    let onOpen: (() -> Void)?
+    let onRemove: (() -> Void)?
     let onCancel: () -> Void
-    let onSave: (Set<String>) async throws -> String
-    let onDone: (String) -> Void
-    @State private var selection: Set<String>
-    @State private var error: String?
-    @State private var isSaving = false
-
-    init(
-        sko: InventorySko,
-        warning: String,
-        onCancel: @escaping () -> Void,
-        onSave: @escaping (Set<String>) async throws -> String,
-        onDone: @escaping (String) -> Void
-    ) {
-        self.sko = sko
-        self.warning = warning
-        self.onCancel = onCancel
-        self.onSave = onSave
-        self.onDone = onDone
-        _selection = State(initialValue: Set(sko.locations.filter { $0.quantity == 0 && ($0.link?.exactQuantity ?? 0) == 0 }.map(\.code)))
-    }
+    @State private var isConfirmingRemove = false
 
     var body: some View {
-        SheetScaffold(title: L10n.format("Remove locations · %@", sko.reference), subtitle: "Choose the locations to remove") {
-            ForEach(sko.locations) { location in
-                RadioCard(
-                    location.code,
-                    subtitle: [location.typeLabel, L10n.format("%@ in location", location.quantityText)].joined(separator: " · "),
-                    isSelected: selection.contains(location.code)
-                ) {
-                    selection = InventorySkoFilter.toggled(selection, location.code)
-                    error = nil
-                }
-            }
-            InventoryDangerNote(text: warning)
-            if let error {
-                FieldError(error)
-            }
+        SheetScaffold(title: location.code, subtitle: L10n.format("%@ in location", location.quantityText)) {
+            EmptyView()
         } footer: {
-            AikuButton(buttonTitle, look: AikuButtonLook(.dangerStrong, icon: .trash)) {
-                save()
+            if let onAudit {
+                AikuButton("Audit", look: AikuButtonLook(.tertiary, icon: .audit), action: onAudit)
+                    .accessibilityIdentifier("inventory.locationMenu.audit")
             }
-            .disabled(selection.isEmpty || isSaving)
-            .accessibilityIdentifier("inventory.removeLocations.save")
+            if let onOpen {
+                AikuButton("Open location", look: AikuButtonLook(.tertiary, icon: .locations), action: onOpen)
+                    .accessibilityIdentifier("inventory.locationMenu.open")
+            }
+            if onRemove != nil {
+                AikuButton("Remove location", look: AikuButtonLook(.danger, icon: .trash)) {
+                    isConfirmingRemove = true
+                }
+                .accessibilityIdentifier("inventory.locationMenu.remove")
+            }
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
-    }
-
-    private var buttonTitle: String {
-        if isSaving { return "Removing…" }
-        return selection.isEmpty ? "Remove locations" : L10n.format("Remove %lld locations", selection.count)
-    }
-
-    private func save() {
-        isSaving = true
-        Task {
-            defer { isSaving = false }
-            do {
-                onDone(try await onSave(selection))
-            } catch {
-                self.error = InventoryLive.message(for: error)
-            }
+        .aikuConfirm(
+            StockConfirmText.removeTitle(location),
+            isPresented: $isConfirmingRemove,
+            message: StockConfirmText.removeMessage(location, skoReference: sko.reference),
+            confirmTitle: "Remove",
+            isDestructive: true
+        ) {
+            onRemove?()
         }
     }
 }

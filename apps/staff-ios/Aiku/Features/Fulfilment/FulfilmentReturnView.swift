@@ -470,11 +470,20 @@ private struct PalletReturnScreen: View {
             .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AikuColor.border))
         }
-        ForEach([("Customer notes", detail.customerNotes), ("Public notes", detail.publicNotes), ("Internal notes", detail.internalNotes), ("Collection notes", detail.collectionNotes)], id: \.0) { title, text in
-            if let text, !text.isEmpty {
-                InlineAlert(tone: .neutral, icon: .document, title: title, message: text)
+        ForEach(Self.noteRows(detail), id: \.title) { row in
+            if let text = row.text, !text.isEmpty {
+                NoteCard(title: row.title, icon: .document, kind: row.kind, text: text)
             }
         }
+    }
+
+    private static func noteRows(_ detail: MobilePalletReturnDetail) -> [(title: String, text: String?, kind: NoteKind)] {
+        [
+            (title: "Customer notes", text: detail.customerNotes, kind: .fulfilmentCustomer),
+            (title: "Public notes", text: detail.publicNotes, kind: .fulfilmentPublic),
+            (title: "Internal notes", text: detail.internalNotes, kind: .fulfilmentPrivate),
+            (title: "Collection notes", text: detail.collectionNotes, kind: .plain)
+        ]
     }
 
     private func footerView(_ detail: MobilePalletReturnDetail) -> AnyView? {

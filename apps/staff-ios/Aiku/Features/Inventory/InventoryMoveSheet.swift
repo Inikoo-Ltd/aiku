@@ -12,6 +12,7 @@ struct InventoryMoveSheet: View {
     @State private var reason: InventoryMoveReason = .warehouseTransfer
     @State private var error: String?
     @State private var isSaving = false
+    @State private var isConfirming = false
 
     init(
         sko: InventorySko,
@@ -67,13 +68,25 @@ struct InventoryMoveSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Moving…" : L10n.format("Move %@", String(quantity)), icon: .next) {
-                save()
+            AikuButton(isSaving ? "Moving…" : moveTitle, icon: .next) {
+                isConfirming = true
             }
             .disabled(!canSave || isSaving)
             .accessibilityIdentifier("inventory.move.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
+        .aikuConfirm(
+            "Move this stock?",
+            isPresented: $isConfirming,
+            message: StockConfirmText.moveSummary(quantity: quantity, from: source, to: destination, packedIn: sko.packedIn),
+            confirmTitle: moveTitle
+        ) {
+            save()
+        }
+    }
+
+    private var moveTitle: String {
+        L10n.format("Move %@", StockConfirmText.quantityLabel(quantity, packedIn: sko.packedIn))
     }
 
     private var available: Int {

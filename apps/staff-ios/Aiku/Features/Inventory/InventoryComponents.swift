@@ -190,21 +190,6 @@ struct InventoryScopeChips<Option: Hashable>: View {
     }
 }
 
-struct InventoryDangerNote: View {
-    let text: String
-
-    var body: some View {
-        Text(L10n.text(text))
-            .font(.aiku(14))
-            .foregroundStyle(AikuColor.dangerInk)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AikuColor.dangerSoft, in: RoundedRectangle(cornerRadius: 10))
-            .accessibilityAddTraits(.isStaticText)
-    }
-}
-
 struct InventoryQuantityField: View {
     let title: String
     @Binding var value: Int
@@ -244,5 +229,94 @@ struct InventorySkeletonCard: View {
             }
         }
         .accessibilityLabel("Loading")
+    }
+}
+
+struct InventoryFamilyStatusSections: View {
+    let skoStatus: [InventoryFamilyStatusItem]
+    let quantityStatus: [InventoryFamilyStatusItem]
+
+    var body: some View {
+        if !skoStatus.isEmpty {
+            SectionHeading("SKO status")
+            StatGrid(columns: 2) {
+                ForEach(Array(skoStatus.enumerated()), id: \.offset) { _, item in
+                    InventoryFamilyStatusTile(item: item)
+                }
+            }
+        }
+        if !quantityStatus.isEmpty {
+            SectionHeading("Quantity status")
+            StatGrid(columns: 2) {
+                ForEach(Array(quantityStatus.enumerated()), id: \.offset) { _, item in
+                    InventoryFamilyQuantityStatusRow(item: item)
+                }
+            }
+        }
+    }
+}
+
+struct InventoryFamilyStatusTile: View {
+    let item: InventoryFamilyStatusItem
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: item.symbol)
+                .font(.system(size: 24))
+                .foregroundStyle(item.tone.statusTint)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.count.grouped)
+                    .font(.aiku(22, .bold))
+                    .foregroundStyle(AikuColor.text)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(item.title)
+                    .font(.aiku(13))
+                    .foregroundStyle(AikuColor.text3)
+                    .lineLimit(2)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .cardSurface(radius: 10)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct InventoryFamilyQuantityStatusRow: View {
+    let item: InventoryFamilyStatusItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: item.symbol)
+                .font(.system(size: 16))
+                .foregroundStyle(item.tone.statusTint)
+                .accessibilityHidden(true)
+            Text(item.title)
+                .font(.aiku(14))
+                .foregroundStyle(AikuColor.text2)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(item.count.grouped)
+                .font(.aiku(15, .bold))
+                .foregroundStyle(AikuColor.text)
+                .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .cardSurface(radius: 10)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private extension Tone {
+    @MainActor var statusTint: Color {
+        self == .neutral ? AikuColor.text3 : foreground
     }
 }

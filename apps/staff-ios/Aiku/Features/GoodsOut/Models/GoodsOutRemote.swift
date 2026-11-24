@@ -397,7 +397,8 @@ enum GoodsOutMapper {
                 kind: location.type.map { $0.capitalized } ?? "",
                 stock: Int((location.stock ?? 0).rounded(.down)),
                 locationOrgStockID: location.locationOrgStockId,
-                stockLabel: FractionGlyphs.apply(location.stockLabel)
+                stockLabel: FractionGlyphs.apply(location.stockLabel),
+                exactStock: location.stock
             )
         }
         let pickings = (dto.pickings ?? []).map { picking in

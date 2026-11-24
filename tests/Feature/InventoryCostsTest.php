@@ -874,6 +874,10 @@ test('SKO showcase shows the margin range of its products per shop', function ()
     expect($margins())->toMatchArray(['min' => 40.0, 'max' => 60.0])
         ->and(collect($margins()['shops'])->pluck('min')->sort()->values()->all())->toEqual([40, 60]);
 
+    $listMargins = collect(\Pest\Laravel\get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index', [$this->organisation->slug, $location->warehouse->slug]))
+        ->assertOk()->inertiaProps('index.data'))->firstWhere('id', $orgStock->id)['margins'];
+    expect($listMargins)->toMatchArray(['min' => 40.0, 'max' => 60.0]);
+
     $products['margin-b']->update(['price' => 0.01]);
     expect($margins())->toMatchArray(['min' => 40.0, 'max' => 40.0]);
 

@@ -147,6 +147,9 @@ private struct InventoryRemoteFamilyDetail: View {
                 StatTile(summary.map { InventoryMoney.label($0.stockValue, currencyCode: $0.currencyCode) } ?? family.stockValueLabel, label: "Stock value")
                 StatTile(family.coverLabel, label: "Cover")
             }
+            if let summary {
+                InventoryFamilyStatusSections(skoStatus: summary.skoStatusItems, quantityStatus: summary.quantityStatusItems)
+            }
             SectionHeading("SKOs")
             if let message = feed.loadError {
                 InlineAlert(title: "Couldn’t load SKOs", message: message)
@@ -163,11 +166,11 @@ private struct InventoryRemoteFamilyDetail: View {
                 CardList(feed.skos) { sko in
                     InventorySkoRow(
                         reference: sko.code,
-                        chip: nil,
+                        chip: sko.stateChip,
                         subtitle: [sko.name ?? "", sko.stockValue.flatMap(\.value).map { L10n.format("stock value %@", InventoryMoney.label($0, currencyCode: summary?.currencyCode)) } ?? ""]
                             .filter { !$0.isEmpty }
                             .joined(separator: " · "),
-                        quantity: sko.quantityInLocations?.value.map { Int($0.rounded(.towardZero)) }
+                        quantityText: sko.quantityText
                     ) {
                         router.open(InventoryRoute.skoID(id: sko.id))
                     }

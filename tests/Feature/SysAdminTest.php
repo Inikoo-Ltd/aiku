@@ -9,6 +9,8 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\UI\Profile\UpdateProfile;
+use Illuminate\Support\Facades\Validator;
+use App\Rules\StaffPassword;
 use PragmaRX\Google2FAQRCode\Google2FA;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -870,6 +872,52 @@ test('update guest status', function ($guest) {
 
     return $guest;
 })->depends('update guest credentials');
+
+test('staff passwords need 12 characters with letters and numbers', function () {
+    $passes = fn (string $password) => Validator::make(['password' => $password], ['password' => [new StaffPassword()]])->passes();
+
+    expect($passes('short123'))->toBeFalse()
+        ->and($passes('onlylettersherenow'))->toBeFalse()
+        ->and($passes('123456789012345'))->toBeFalse()
+        ->and($passes('letters-and-1234'))->toBeTrue();
+});
+
+test('staff cannot reuse any of their last 4 passwords', function ($guest) {
+    $user = $guest->getUser();
+
+    foreach (['first-pass-0001', 'second-pass-0002', 'third-pass-0003', 'fourth-pass-0004', 'fifth-pass-0005'] as $password) {
+        $user->update(['password' => $password]);
+    }
+    $user->refresh();
+
+    $passes = fn (string $password) => Validator::make(['password' => $password], ['password' => [new StaffPassword($user)]])->passes();
+
+    expect($user->password_history)->toHaveCount(User::PASSWORD_HISTORY_SIZE - 1)
+        ->and($passes('fifth-pass-0005'))->toBeFalse()
+        ->and($passes('second-pass-0002'))->toBeFalse()
+        ->and($passes('first-pass-0001'))->toBeTrue()
+        ->and($passes('brand-new-pass-0006'))->toBeTrue();
+
+    $user->update(['password' => 'test_user_two']);
+
+    return $guest;
+})->depends('update guest status');
+
+test('admins without a passkey or 2FA are asked to set one up', function ($guest) {
+    $user = $guest->getUser();
+    setPermissionsTeamId($guest->group->id);
+
+    expect($user->hasRole('org-admin-'.$guest->group->organisations()->first()->id) || $user->hasRole('group-admin'))->toBeTrue()
+        ->and($user->fresh()->shouldSetUpSecondFactor())->toBeTrue()
+        ->and(data_get(GetFirstLoadProps::run($user->fresh()), 'layout.second_factor_prompt'))->toBeTrue();
+
+    $user->update(['google2fa_secret' => 'ABCDEFGHIJKLMNOP']);
+    expect($user->fresh()->shouldSetUpSecondFactor())->toBeFalse();
+
+    $user->update(['google2fa_secret' => null]);
+
+    return $guest;
+})->depends('staff cannot reuse any of their last 4 passwords');
 
 test('fail to create guest with invalid usernames', function (Group $group) {
     app()->instance('group', $group);

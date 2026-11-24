@@ -2,6 +2,7 @@ import SwiftUI
 
 struct InventoryAuditSheet: View {
     let sko: InventorySko
+    var onlyLocation: String?
     let reasonChoices: (Int) -> [InventoryReasonChoice]
     let reasonsError: String?
     let onCancel: () -> Void
@@ -11,9 +12,11 @@ struct InventoryAuditSheet: View {
     @State private var reasons: [String: String] = [:]
     @State private var error: String?
     @State private var isSaving = false
+    @State private var isConfirming = false
 
     init(
         sko: InventorySko,
+        onlyLocation: String? = nil,
         reasonChoices: @escaping (Int) -> [InventoryReasonChoice],
         reasonsError: String? = nil,
         onCancel: @escaping () -> Void,
@@ -21,6 +24,7 @@ struct InventoryAuditSheet: View {
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
+        self.onlyLocation = onlyLocation
         self.reasonChoices = reasonChoices
         self.reasonsError = reasonsError
         self.onCancel = onCancel
@@ -30,9 +34,9 @@ struct InventoryAuditSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: L10n.format("Audit stock · %@", sko.reference), subtitle: L10n.format("%@ · count each location", sko.name)) {
+        SheetScaffold(title: L10n.format("Audit stock · %@", sko.reference), subtitle: subtitle) {
             Card {
-                ForEach(Array(sko.locations.enumerated()), id: \.element.id) { index, location in
+                ForEach(Array(auditedLocations.enumerated()), id: \.element.id) { index, location in
                     if index > 0 {
                         RowDivider()
                     }
@@ -50,12 +54,36 @@ struct InventoryAuditSheet: View {
             }
         } footer: {
             AikuButton(isSaving ? "Saving…" : "Save audit", look: AikuButtonLook(.primary, icon: .check)) {
-                save()
+                askToSave()
             }
             .disabled(!canSave || isSaving)
             .accessibilityIdentifier("inventory.audit.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
+        .aikuConfirm(
+            "Save this count?",
+            isPresented: $isConfirming,
+            message: StockConfirmText.auditSummary(sko, counts: countedValues),
+            confirmTitle: "Save audit"
+        ) {
+            save()
+        }
+    }
+
+    private var subtitle: String {
+        if let onlyLocation, auditedLocations.count == 1 {
+            return L10n.format("%@ · count %@", sko.name, onlyLocation)
+        }
+        return L10n.format("%@ · count each location", sko.name)
+    }
+
+    private var auditedLocations: [InventorySkoLocation] {
+        guard let onlyLocation else { return sko.locations }
+        return sko.locations.filter { $0.code == onlyLocation }
+    }
+
+    private var countedValues: [String: Int] {
+        Dictionary(uniqueKeysWithValues: auditedLocations.map { ($0.code, counted($0)) })
     }
 
     private func counted(_ location: InventorySkoLocation) -> Int {
@@ -67,7 +95,7 @@ struct InventoryAuditSheet: View {
     }
 
     private var changedLocations: [InventorySkoLocation] {
-        sko.locations.filter { change($0) != 0 }
+        auditedLocations.filter { change($0) != 0 }
     }
 
     private func validReason(_ location: InventorySkoLocation) -> String? {
@@ -76,7 +104,11 @@ struct InventoryAuditSheet: View {
     }
 
     private var canSave: Bool {
-        !sko.locations.isEmpty && changedLocations.allSatisfy { validReason($0) != nil }
+        !auditedLocations.isEmpty && changedLocations.allSatisfy { validReason($0) != nil }
+    }
+
+    private func countedText(_ location: InventorySkoLocation) -> String {
+        StockConfirmText.countedText(counted(location), was: location.quantity, wasText: location.quantityText, packedIn: sko.packedIn)
     }
 
     private func locationRow(_ location: InventorySkoLocation) -> some View {
@@ -87,7 +119,7 @@ struct InventoryAuditSheet: View {
                     Text(location.code)
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
-                    Text("was \(location.quantityText) · counted \(counted(location))")
+                    Text(L10n.format("was %@ · counted %@", location.quantityText, countedText(location)))
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                 }
@@ -99,7 +131,7 @@ struct InventoryAuditSheet: View {
                 }
             }
             QuantityStepper(value: countBinding(location), range: 0...99999)
-                .accessibilityLabel("Counted in \(location.code)")
+                .accessibilityLabel(L10n.format("Counted in %@", location.code))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -127,16 +159,22 @@ struct InventoryAuditSheet: View {
         }
     }
 
-    private func save() {
+    private func askToSave() {
         if let missing = changedLocations.first(where: { validReason($0) == nil }) {
             error = InventoryStockError.missingReason(missing.code).message
             return
         }
+        isConfirming = true
+    }
+
+    private func save() {
+        let audited = countedValues
+        let chosen = reasons.filter { audited[$0.key] != nil }
         isSaving = true
         Task {
             defer { isSaving = false }
             do {
-                onDone(try await onSave(counts, reasons))
+                onDone(try await onSave(audited, chosen))
             } catch {
                 self.error = InventoryLive.message(for: error)
             }

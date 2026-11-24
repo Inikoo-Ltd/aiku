@@ -24,7 +24,7 @@ struct GoodsOutOfflineNotices: View {
                     let needsYou = entry.state == .needsYou
                     let open: (() -> Void)? = needsYou ? { openConflict(entry) } : nil
                     ListRow(
-                        GoodsOutOfflineText.summary(entry, sko: sko(of: entry)),
+                        GoodsOutOfflineText.summary(entry, line: queuedLine(of: entry)),
                         subtitle: needsYou ? entry.result.flatMap { OfflineTexts.reason($0) } : nil,
                         chips: [needsYou ? Chip("Needs you", .warn) : Chip("Waiting to sync", .info)],
                         showsChevron: needsYou,
@@ -49,9 +49,9 @@ struct GoodsOutOfflineNotices: View {
         return offline.pending(for: .deliveryNote(noteID))
     }
 
-    private func sko(of entry: QueueEntry) -> String? {
+    private func queuedLine(of entry: QueueEntry) -> GoodsOutLineDTO? {
         guard let noteID, let lineID = entry.payloadInt(GoodsOutOfflinePlanner.lineKey) else { return nil }
-        return copies.copy(noteID)?.dto.lines?.first { $0.id == lineID }?.orgStock?.code
+        return copies.copy(noteID)?.dto.lines?.first { $0.id == lineID }
     }
 
     private func openConflict(_ entry: QueueEntry) {
@@ -65,8 +65,9 @@ struct GoodsOutOfflineNotices: View {
 
 @MainActor
 enum GoodsOutOfflineText {
-    static func summary(_ entry: QueueEntry, sko: String?) -> String {
-        let quantity = OfflineTexts.quantity(entry.quantity)
+    static func summary(_ entry: QueueEntry, line: GoodsOutLineDTO?) -> String {
+        let quantity = FractionGlyphs.apply(StockFraction.label(entry.quantity, packedIn: line?.orgStock?.packedIn))
+        let sko = line?.orgStock?.code
         let action = switch entry.operation {
         case .pick: L10n.format("Picked %@", quantity)
         case .notPicked: L10n.format("Not picked %@", quantity)
