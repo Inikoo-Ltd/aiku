@@ -125,10 +125,7 @@ class TellShoppingAssistantCustomersTeamIsAway
             ->exists();
 
         if ($emailIsOn && $customer->email) {
-            SendChatNotificationToCustomer::dispatch($customer, [
-                'chat_link'    => $conversation->website ? $conversation->website->getUrl().'/assistant?conversation='.$conversation->ulid : null,
-                'chat_message' => $body,
-            ]);
+            SendChatNotificationToCustomer::dispatch($customer, FollowUpShoppingAssistantRestockQuestion::emailData($conversation, $body));
         }
     }
 

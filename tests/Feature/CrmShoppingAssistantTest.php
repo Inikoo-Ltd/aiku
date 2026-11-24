@@ -2260,8 +2260,13 @@ test('the answer purchasing writes when marking a restock question done reaches 
         ->and($channel)->toBe($hasOutbox ? 'email' : 'customer_services')
         ->and($answer($emailed))->toContain('Back next week.');
     if ($hasOutbox) {
-        App\Actions\Comms\Email\SendChatNotificationToCustomer::assertPushed(fn ($action, array $parameters) => str_contains($parameters[1]['chat_link'], '/assistant?conversation='.$emailed->ulid) && str_contains($parameters[1]['chat_message'], 'Back next week.'));
+        App\Actions\Comms\Email\SendChatNotificationToCustomer::assertPushed(fn ($action, array $parameters) => !str_contains((string) $parameters[1]['chat_link'], 'conversation=') && str_contains($parameters[1]['chat_message'], 'Back next week.') && str_contains($parameters[1]['chat_message'], 'log in to your account'));
     }
+
+    $emailData = App\Actions\CRM\ShoppingAssistant\FollowUpShoppingAssistantRestockQuestion::emailData($emailed->fresh(), 'Back next week.');
+    expect($emailData['chat_link'])->toBe($emailed->website->getUrl())
+        ->and($emailData['chat_message'])->toStartWith('Back next week.<br><br>')
+        ->toContain('log in to your account and click Ask '.App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::name($emailed->website));
 });
 
 function shoppingAssistantEmbeddingsFake(float $value = 0.1): Closure

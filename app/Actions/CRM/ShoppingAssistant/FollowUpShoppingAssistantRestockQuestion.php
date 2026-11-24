@@ -30,9 +30,10 @@ use Throwable;
  * A restock question marked done: its answer goes to the customer. The answer is the note written
  * when marking the task done, else the last message the purchasing team wrote in the task's thread.
  * It is translated from English into the shop's language and added to the customer's assistant
- * conversation, then emailed with the shop's "Chat notification to customer" email and a link that
- * opens that conversation. Where that email is not switched on (12 Nov 2026: UK, Aroma, aeu, acar,
- * ace, awad), customer services gets a task to pass the answer on. With no answer written, nothing
+ * conversation, then emailed with the shop's "Chat notification to customer" email, which tells the
+ * customer to log in and open the assistant from the top of the website (HELP-4905: a link to the
+ * conversation lost it at the login a logged-out customer is sent to). Where that email is not
+ * switched on (12 Nov 2026: UK, Aroma, aeu, acar, ace, awad), customer services gets a task to pass the answer on. With no answer written, nothing
  * is sent and the thread says so. An answer is sent once.
  */
 class FollowUpShoppingAssistantRestockQuestion
@@ -100,10 +101,7 @@ class FollowUpShoppingAssistantRestockQuestion
             ->exists();
 
         if ($emailIsOn && $customer->email) {
-            SendChatNotificationToCustomer::dispatch($customer, [
-                'chat_link'    => $conversation->website ? $conversation->website->getUrl().'/assistant?conversation='.$conversation->ulid : null,
-                'chat_message' => $message,
-            ]);
+            SendChatNotificationToCustomer::dispatch($customer, self::emailData($conversation, $message));
 
             return ['email', __('Sent to the customer by email, in their language.')];
         }
@@ -124,6 +122,22 @@ class FollowUpShoppingAssistantRestockQuestion
         ]);
 
         return ['customer_services', __('This shop cannot email it automatically, so customer services was asked to send it: :reference', ['reference' => $relay->reference])];
+    }
+
+    /**
+     * @return array{chat_link: string|null, chat_message: string}
+     */
+    public static function emailData(ShoppingAssistantConversation $conversation, string $message): array
+    {
+        $website = $conversation->website;
+        if (!$website) {
+            return ['chat_link' => null, 'chat_message' => $message];
+        }
+
+        return [
+            'chat_link'    => $website->getUrl(),
+            'chat_message' => $message.'<br><br>'.e(__('To continue the conversation, log in to your account and click Ask :name at the top of the website.', ['name' => GetShoppingAssistantSettings::name($website)], $conversation->language_code)),
+        ];
     }
 
     private function lastAnswerInThread(StaffTask $task, User $assistant): string
