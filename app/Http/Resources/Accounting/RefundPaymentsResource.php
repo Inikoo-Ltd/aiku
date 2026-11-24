@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -37,11 +38,8 @@ class RefundPaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $apiRefund    = false;
+        $apiRefund    = RefundPaymentByApi::canRefundByApi($this->payment_account_type, $this->reference);
         $manualRefund = false;
-        //        if ($this->payment_account_code == 'checkout-v2') {
-        //            $apiRefund = true;
-        //        }
         if ($this->payment_account_type != 'account') {
             $manualRefund = true;
         }

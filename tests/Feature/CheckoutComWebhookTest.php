@@ -1197,3 +1197,36 @@ test('a payment link is refused when the order owes nothing', function () {
     expect(fn () => App\Actions\Accounting\OrderPaymentApiPoint\StoreOrderPaymentLink::make()->action($order))
         ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
+
+test('a refund Checkout.com declines later is undone on the payment and the order', function (array $context) {
+    list($order, $orderPaymentApiPoint) = $context;
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $payment       = $order->payments()->where('reference', 'pay_test_captured')->first();
+    $paidBefore    = (float) $order->refresh()->payment_amount;
+    $refundPayment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $payment->paymentAccount, [
+        'amount'              => -10,
+        'reference'           => 'act_test_refund_declined',
+        'status'              => PaymentStatusEnum::SUCCESS->value,
+        'state'               => PaymentStateEnum::COMPLETED->value,
+        'type'                => \App\Enums\Accounting\Payment\PaymentTypeEnum::REFUND,
+        'original_payment_id' => $payment->id,
+    ]);
+    $payment->update(['total_refund' => 10, 'with_refund' => true]);
+    \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $refundPayment, []);
+    expect((float) $order->refresh()->payment_amount)->toBe($paidBefore - 10);
+
+    $payload                     = fakeCheckoutComWebhookPayload('payment_refund_declined', 'evt_test_refund_declined', 'pay_test_captured', $orderPaymentApiPoint, 1000);
+    $payload['data']['action_id'] = 'act_test_refund_declined';
+    $declinedLog                 = $this->group->paymentGatewayLogs()->create(['payload' => $payload, 'gateway' => 'checkout-com']);
+
+    PreProcessCheckoutComPaymentGatewayLog::run($declinedLog);
+
+    expect($declinedLog->refresh()->status)->toBe(PaymentGatewayLogStatusEnum::OK)
+        ->and($declinedLog->payment_id)->toBe($refundPayment->id)
+        ->and($refundPayment->refresh()->status)->toBe(PaymentStatusEnum::FAIL)
+        ->and($refundPayment->state)->toBe(PaymentStateEnum::DECLINED)
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
+        ->and($payment->with_refund)->toBeFalse()
+        ->and((float) $order->refresh()->payment_amount)->toBe($paidBefore);
+})->depends('webhook payment_captured pays and submits the order');

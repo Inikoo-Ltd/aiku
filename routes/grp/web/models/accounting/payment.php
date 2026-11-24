@@ -6,6 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use App\Actions\Accounting\Payment\RefundPaymentManual;
 use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use App\Actions\Accounting\Payment\UpdatePayment;
@@ -15,7 +16,7 @@ Route::name('payment.')->prefix('payment/{payment:id}')->group(function () {
     Route::patch('', UpdatePayment::class)->name('update');
     Route::post('/refund-to-balance', RefundPaymentToBalance::class)->name('refund_to_balance');
     Route::post('/refund-manual', RefundPaymentManual::class)->name('refund_manual');
-    Route::post('/refund-api', RefundPaymentManual::class)->name('refund_api');
+    Route::post('/refund-api', RefundPaymentByApi::class)->name('refund_api');
 
 
 });

@@ -33,6 +33,7 @@ use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\PaymentGatewayLog;
 use App\Models\Accounting\TopUpPaymentApiPoint;
 use App\Models\Ordering\Order;
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -61,6 +62,10 @@ class ProcessCheckoutComPaymentGatewayLog
     {
         if ($paymentGatewayLog->state == PaymentGatewayLogStateEnum::PROCESSED) {
             return $paymentGatewayLog;
+        }
+
+        if ($paymentGatewayLog->type == 'payment_refund_declined') {
+            return self::processDeclinedRefund($paymentGatewayLog);
         }
 
         if ($paymentGatewayLog->operation == 'order' && $paymentGatewayLog->api_point_model_type == 'OrderPaymentApiPoint') {
@@ -432,7 +437,18 @@ class ProcessCheckoutComPaymentGatewayLog
         return $this->markProcessed($paymentGatewayLog, PaymentGatewayLogStatusEnum::NA);
     }
 
-    private function markProcessed(PaymentGatewayLog $paymentGatewayLog, PaymentGatewayLogStatusEnum $status, ?int $paymentId = null): PaymentGatewayLog
+    /**
+     * @throws \Throwable
+     */
+    public static function processDeclinedRefund(PaymentGatewayLog $paymentGatewayLog): PaymentGatewayLog
+    {
+        $actionId      = (string) Arr::get($paymentGatewayLog->payload, 'data.action_id');
+        $refundPayment = $actionId !== '' ? RefundPaymentByApi::undoDeclinedRefund($actionId) : null;
+
+        return self::markProcessed($paymentGatewayLog, $refundPayment ? PaymentGatewayLogStatusEnum::OK : PaymentGatewayLogStatusEnum::NA, $refundPayment?->id);
+    }
+
+    private static function markProcessed(PaymentGatewayLog $paymentGatewayLog, PaymentGatewayLogStatusEnum $status, ?int $paymentId = null): PaymentGatewayLog
     {
         $dataToUpdate = [
             'state'        => PaymentGatewayLogStateEnum::PROCESSED,

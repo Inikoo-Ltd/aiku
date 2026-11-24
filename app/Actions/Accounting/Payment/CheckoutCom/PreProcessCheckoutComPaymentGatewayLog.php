@@ -147,6 +147,10 @@ class PreProcessCheckoutComPaymentGatewayLog
         ];
         $paymentGatewayLog->update($dataToUpdate);
 
+        if (app()->isProduction() && $paymentGatewayLog->type == 'payment_refund_declined') {
+            return ProcessCheckoutComPaymentGatewayLog::processDeclinedRefund($paymentGatewayLog);
+        }
+
         return $paymentGatewayLog;
     }
 

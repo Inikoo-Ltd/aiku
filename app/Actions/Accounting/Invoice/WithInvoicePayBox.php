@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use App\Models\Accounting\Payment;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -202,6 +203,11 @@ trait WithInvoicePayBox
                         "crm.$invoice->shop_id.edit",
                         "accounting.$invoice->organisation_id.edit",
                     ]),
+                    'can_refund_by_api'    => (bool) $invoice->originalInvoice?->payments
+                        ->contains(fn (Payment $payment) => $payment->status == PaymentStatusEnum::SUCCESS
+                            && $payment->type == PaymentTypeEnum::PAYMENT
+                            && (float) $payment->amount > (float) $payment->total_refund
+                            && RefundPaymentByApi::canRefundByApi($payment->paymentAccount->type->value, $payment->reference)),
                     'routes'               => [
                         'payments'               => [
                             'name'       => 'grp.json.refund.show.original_invoice_payments.index',

@@ -2,14 +2,14 @@
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { inject, computed, watch, ref } from "vue"
-import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import { usePage } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faSave } from "@far"
 import { faExclamationTriangle } from "@fad"
 import { faDigging as fasDigging, faRobot as fasRobot, faPiggyBank as fasPiggyBank } from "@fas"
-import { faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank } from "@fal"
+import { faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank, faUndoAlt } from "@fal"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund"
 import PureTable from "@/Components/Pure/PureTable/PureTable.vue"
@@ -23,13 +23,14 @@ import { InvoiceResource } from "@/types/invoice"
 
 const screenType = inject('screenType', ref('desktop'))
 
-library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
+library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank, faUndoAlt)
 
 
 const props = defineProps<{
     refund?: InvoiceResource
     invoice_pay: {
         can_refund_payments: boolean
+        can_refund_by_api?: boolean
         currency_code: string
         total_invoice: number
         total_refunds: number
@@ -72,7 +73,7 @@ const onSubmitRefundToPaymentsMethod = (data, form: any) => {
     } else if (data.selected_action === 'balance') {
         onClickBalance(data, form)
     } else if (data.selected_action === 'automatic') {
-        onClickAutomatic(data, form.refund_amount)
+        onClickAutomatic(data, form)
     }
 }
 
@@ -98,116 +99,56 @@ const onClickRefundPayments = () => {
 }
 
 const listLoadingIconActions = ref<string[]>([])
-const onClickManual = (paymentMethod, form) => {
+const refundErrors = ref<Record<number, string>>({})
 
+const submitRefund = (paymentMethod, form, refundRoute: routeType, loadingKey: string, fallbackError: string, payload: (data: any) => object) => {
     form
-    .transform((data) => ({
+    .transform(payload)
+    .submit(
+        refundRoute.method || "post",
+        route(refundRoute.name, refundRoute.parameters),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                delete refundErrors.value[paymentMethod.id]
+                listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
+            },
+            onSuccess: () => {
+                form.defaults()
+                props.handleTabUpdate('payments')
+                _PureTable.value?.fetchData()
+            },
+            onError: errors => {
+                refundErrors.value[paymentMethod.id] = errorText(errors, fallbackError)
+            },
+            onFinish: () => {
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+            },
+        },
+    )
+}
+
+const onClickManual = (paymentMethod, form) => {
+    submitRefund(paymentMethod, form, paymentMethod.manual_refund_route, "manual", ctrans("Failed to submit manual refund"), (data) => ({
         amount: data.refund_amount,
         reference: paymentMethod.manual_refund_reference,
         invoice_id: props.refund?.id
     }))
-    .submit(
-        paymentMethod.manual_refund_route.method || "post",
-        route(paymentMethod.manual_refund_route.name, paymentMethod.manual_refund_route.parameters),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                listLoadingIconActions.value.push(`${paymentMethod.id}-manual`)
-            },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully submit manual refund"),
-                    type: "success"
-                })
-                props.handleTabUpdate('payments')
-                _PureTable.value?.fetchData()
-            },
-            onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: errorText(errors, ctrans("Failed to submit manual refund")),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-manual`)
-            },
-        },
-    )
 }
 
 const onClickBalance = (paymentMethod, form) => {
-
-    form
-    .transform((data) => ({
+    submitRefund(paymentMethod, form, paymentMethod.balance_refund_route, "balance", ctrans("Failed to submit refund balance"), (data) => ({
         amount: data.refund_amount,
         invoice_id: props.refund?.id
     }))
-    .submit(
-        paymentMethod.balance_refund_route.method || "post",
-        route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                listLoadingIconActions.value.push(`${paymentMethod.id}-balance`)
-            },
-            onSuccess: () => {
-                notify({
-                    title: ctrans("Success"),
-                    text: ctrans("Successfully submit the data"),
-                    type: "success"
-                })
-                props.handleTabUpdate('payments')
-                _PureTable.value?.fetchData()
-            },
-            onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: errorText(errors, ctrans("Failed to submit refund balance")),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-balance`)
-            },
-        },
-    )
 }
 
-const onClickAutomatic = (paymentMethod, loadingKey: string) => {
-    // router[paymentMethod.balance_refund_route.method || 'patch'](
-    //     route(paymentMethod.api_refund_route.name, paymentMethod.api_refund_route.parameters),
-    //     {
-    //         data: 'qqq'
-    //     },
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => { 
-    //             listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
-    //         },
-    //         onSuccess: () => {
-    //             notify({
-    //                 title: ctrans("Success"),
-    //                 text: ctrans("Successfully submit the data"),
-    //                 type: "success"
-    //             })
-    //         },
-    //         onError: errors => {
-    //             notify({
-    //                 title: ctrans("Something went wrong"),
-    //                 text: ctrans("Failed to set location"),
-    //                 type: "error"
-    //             })
-    //         },
-    //         onFinish: () => {
-    //             listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
-    //         },
-    //     }
-    // )
+const onClickAutomatic = (paymentMethod, form) => {
+    submitRefund(paymentMethod, form, paymentMethod.api_refund_route, "automatic", ctrans("Failed to refund by API"), (data) => ({
+        amount: data.refund_amount,
+        invoice_id: props.refund?.id
+    }))
 }
 
 const compToolTip = computed(() => {
@@ -277,10 +218,15 @@ const compToolTip = computed(() => {
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     <!-- <div xv-if="layout.app.environment === 'local'"> -->
-                        <button v-if="Number(invoice_pay.total_need_to_pay) < 0 && invoice_pay.can_refund_payments" @click="onClickRefundPayments"
-                            size="xxs" class="secondaryLink text-[--app-accent]">
-                            {{ ctrans("Refund payment") }}
-                        </button>
+                        <Button v-if="Number(invoice_pay.total_need_to_pay) < 0 && invoice_pay.can_refund_payments" @click="onClickRefundPayments"
+                            type="tertiary" size="xs" :label="ctrans('Refund payment')">
+                            <template #icon>
+                                <FontAwesomeIcon icon="fal fa-undo-alt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                            </template>
+                            <template #iconRight>
+                                <span v-if="invoice_pay.can_refund_by_api" v-tooltip="ctrans('Can be refunded by Checkout.com to what the customer paid with')" class="rounded border border-gray-400 px-1 text-[10px] font-semibold leading-4 text-gray-600">API</span>
+                            </template>
+                        </Button>
                     <!-- </div> -->
 
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
@@ -380,13 +326,13 @@ const compToolTip = computed(() => {
                                             <div>
                                                 {{ ctrans("Select method") }}:
                                             </div>
-                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="ctrans('Manual Refund (you will need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
+                                            <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="ctrans('Manual Refund (you will need to process refund externally and provide a transaction id)')" class="hover:text-[var(--app-accent)] cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-[var(--app-accent)]' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="ctrans('Refund to customer balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
+                                            <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="ctrans('Refund to customer balance')" class="hover:text-[var(--app-accent)] cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-[var(--app-accent)]' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'balance' ? 'fas fa-piggy-bank' : 'fal fa-piggy-bank'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div v-if="data.can_api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="ctrans('Refund by API')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
+                                            <div v-if="data.can_api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="ctrans('Refund by Checkout.com to what the customer paid with')" class="hover:text-[var(--app-accent)] cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-[var(--app-accent)]' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'automatic' ? 'fas fa-robot' : 'fal fa-robot'" class="" fixed-width aria-hidden="true" />
                                             </div>
                                         </div>
@@ -426,6 +372,9 @@ const compToolTip = computed(() => {
                                             <span v-else class="text-gray-400 font-medium italic">
                                                 {{ ctrans("Refund Complete") }}
                                             </span>
+                                            <div v-if="refundErrors[data.id]" class="text-red-500 text-xs mt-1">
+                                                {{ refundErrors[data.id] }}
+                                            </div>
                                         </div>
                                     </div>
                                 </template>

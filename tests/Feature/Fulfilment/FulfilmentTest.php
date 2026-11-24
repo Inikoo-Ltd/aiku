@@ -13,6 +13,7 @@ use App\Actions\Accounting\Invoice\RefundClaimToBalance;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use App\Actions\Accounting\Payment\RefundPaymentManual;
 use App\Actions\Accounting\Payment\RefundPaymentToBalance;
 use App\Actions\Accounting\StandaloneFulfilmentInvoice\CompleteStandaloneFulfilmentInvoice;
@@ -4490,6 +4491,96 @@ test('a refund paid by hand in parts is paid up to what it owes, not beyond', fu
     expect($refund->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and(round(abs((float) $refund->payment_amount), 2))->toBe(round($refundTotal, 2));
 })->depends('refund to credit balance');
+
+test('a refund paid back by Checkout.com API is recorded once, retried with the same key and undone when declined', function (array $data) {
+    /** @var Payment $payment */
+    [$payment] = $data;
+    $invoice = $payment->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
+
+    $refund = StoreRefund::make()->action($invoice, []);
+    StoreRefundInvoiceTransaction::make()->action($refund, $invoice->invoiceTransactions()->first(), ['net_amount' => round($invoice->invoiceTransactions()->first()->net_amount * 0.05, 2)]);
+    $refund      = FinaliseRefund::make()->action($refund->refresh(), [])->refresh();
+    $refundTotal = round(abs((float) $refund->total_amount), 2);
+    $totalRefund = (float) $payment->refresh()->total_refund;
+
+    expect(fn () => RefundPaymentByApi::make()->handle($payment, ['amount' => $refundTotal]))->toThrow(ValidationException::class, 'refund invoice')
+        ->and(fn () => RefundPaymentByApi::make()->handle($payment, ['amount' => 0.004, 'invoice_id' => $refund->id]))->toThrow(ValidationException::class, 'at least 0.01');
+
+    $keys = [];
+    RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->twice()
+        ->andReturnUsing(function ($payment, $amount, $invoice, $key) use (&$keys) {
+            $keys[] = $key;
+            throw ValidationException::withMessages(['amount' => 'Checkout.com refused the refund: refund_amount_exceeds_balance']);
+        });
+    expect(fn () => RefundPaymentByApi::make()->handle($payment, ['amount' => $refundTotal, 'invoice_id' => $refund->id]))->toThrow(ValidationException::class, 'refund_amount_exceeds_balance')
+        ->and(fn () => RefundPaymentByApi::make()->handle($payment->refresh(), ['amount' => $refundTotal, 'invoice_id' => $refund->id]))->toThrow(ValidationException::class)
+        ->and($keys)->toHaveCount(2)
+        ->and($keys[0])->toBe($keys[1])
+        ->and($keys[0])->toBe(RefundPaymentByApi::idempotencyKey($payment, $refundTotal))
+        ->and((float) $payment->refresh()->total_refund)->toBe($totalRefund)
+        ->and($refund->refresh()->payments->count())->toBe(0);
+
+    RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')->once()->andReturn('act_refund_test');
+    $refundPayment = RefundPaymentByApi::make()->handle($payment->refresh(), ['amount' => $refundTotal, 'invoice_id' => $refund->id]);
+
+    expect($refundPayment->reference)->toBe('act_refund_test')
+        ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
+        ->and($refundPayment->payment_account_id)->toBe($payment->payment_account_id)
+        ->and($refundPayment->original_payment_id)->toBe($payment->id)
+        ->and(round((float) $refundPayment->amount, 2))->toBe(-$refundTotal)
+        ->and(round((float) $payment->refresh()->total_refund - $totalRefund, 2))->toBe($refundTotal)
+        ->and($refund->refresh()->pay_status)->toBe(InvoicePayStatusEnum::PAID)
+        ->and(RefundPaymentByApi::idempotencyKey($payment, $refundTotal))->not->toBe($keys[0]);
+
+    $undone = RefundPaymentByApi::undoDeclinedRefund('act_refund_test');
+    expect($undone->id)->toBe($refundPayment->id)
+        ->and($undone->refresh()->status)->toBe(PaymentStatusEnum::FAIL)
+        ->and($undone->state)->toBe(PaymentStateEnum::DECLINED)
+        ->and(round((float) $payment->refresh()->total_refund, 2))->toBe(round($totalRefund, 2))
+        ->and($refund->refresh()->pay_status)->not->toBe(InvoicePayStatusEnum::PAID)
+        ->and(RefundPaymentByApi::undoDeclinedRefund('act_refund_test'))->toBeNull()
+        ->and(round((float) $payment->refresh()->total_refund, 2))->toBe(round($totalRefund, 2));
+})->depends('refund to credit balance');
+
+test('the Checkout.com refund call sends the payment id, minor units and key, and reads its answers', function () {
+    $paymentAccountShop = new \App\Models\Accounting\PaymentAccountShop();
+
+    $payment = new Payment(['reference' => 'pay_test123']);
+    $payment->setRelation('paymentAccount', new \App\Models\Accounting\PaymentAccount(['type' => 'checkout']));
+    $payment->setRelation('paymentAccountShop', $paymentAccountShop);
+    $refundInvoice = new Invoice(['reference' => 'RF-API-1']);
+
+    $accepted = \Mockery::mock(\Checkout\Payments\PaymentsClient::class);
+    $accepted->shouldReceive('refundPayment')->once()
+        ->withArgs(fn ($id, $request, $key) => $id === 'pay_test123' && $request->amount === 1999 && $request->reference === 'RF-API-1' && $key === 'key-1')
+        ->andReturn(['action_id' => 'act_ok']);
+
+    $refused                = new \Checkout\CheckoutApiException('422');
+    $refused->http_metadata = new \Checkout\HttpMetadata('Unprocessable', 422, [], '1.1');
+    $refused->error_details = ['error_codes' => ['refund_amount_exceeds_balance']];
+    $refusing               = \Mockery::mock(\Checkout\Payments\PaymentsClient::class);
+    $refusing->shouldReceive('refundPayment')->andThrow($refused);
+
+    $silent = \Mockery::mock(\Checkout\Payments\PaymentsClient::class);
+    $silent->shouldReceive('refundPayment')->andThrow(new \Checkout\CheckoutApiException('timeout'));
+
+    $noActionId = \Mockery::mock(\Checkout\Payments\PaymentsClient::class);
+    $noActionId->shouldReceive('refundPayment')->andReturn([]);
+
+    RefundPaymentByApi::partialMock()->shouldReceive('checkoutPaymentsClient')->andReturn($accepted, $refusing, $silent, $noActionId);
+    $action = RefundPaymentByApi::make();
+
+    expect($action->refundAtCheckout($payment, 19.99, $refundInvoice, 'key-1'))->toBe('act_ok')
+        ->and(fn () => $action->refundAtCheckout($payment, 1, $refundInvoice, 'k'))->toThrow(ValidationException::class, 'refused the refund: refund_amount_exceeds_balance')
+        ->and(fn () => $action->refundAtCheckout($payment, 1, $refundInvoice, 'k'))->toThrow(ValidationException::class, 'No answer from Checkout.com')
+        ->and(fn () => $action->refundAtCheckout($payment, 1, $refundInvoice, 'k'))->toThrow(ValidationException::class, 'without a reference');
+
+    $notCheckout = new Payment(['reference' => 'aurora-123']);
+    $notCheckout->setRelation('paymentAccount', new \App\Models\Accounting\PaymentAccount(['type' => 'checkout']));
+    expect(fn () => RefundPaymentByApi::make()->refundAtCheckout($notCheckout, 1, $refundInvoice, 'k'))->toThrow(ValidationException::class, 'Only Checkout.com payments')
+        ->and(RefundPaymentByApi::canRefundByApi('checkout', 'pay_abc'))->toBeTrue()
+        ->and(RefundPaymentByApi::canRefundByApi('bank', 'pay_abc'))->toBeFalse();
+});
 
 test('store audit for pallet 6th customer', function () {
     $fulfilmentCustomer = FulfilmentCustomer::find(6);
