@@ -43,7 +43,7 @@ interface Supplier {
 defineProps<{
     data: {}
     tab?: string
-    relationshipContact?: { options: { value: number; label: string }[] } | null
+    canSetRelationshipContact?: boolean
 }>()
 
 const selectedRows = ref<Record<string, boolean>>({})
@@ -87,11 +87,10 @@ function agentRoute(supplier: Supplier) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(relationshipContact)" @onSelectRow="(rows) => selectedRows = { ...rows }">
-        <template v-if="relationshipContact" #add-on-button>
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(canSetRelationshipContact)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+        <template v-if="canSetRelationshipContact" #add-on-button>
             <SuppliersRelationshipContactButton
                 :selectedIds="selectedSupplierIds"
-                :options="relationshipContact.options"
                 @saved="reloadData"
             />
         </template>

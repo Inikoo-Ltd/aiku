@@ -402,13 +402,19 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 								</div>
 							</li>
 						</template>
-						<li v-for="buyer in contactsLoading ? [] : buyers ?? []" :key="`${buyer.email ?? buyer.name}-${buyer.organisations.join()}`" class="flex items-center gap-3 px-4 py-3">
-							<img v-if="buyer.country_code" :src="`/flags/${buyer.country_code.toLowerCase()}.png`" :alt="buyer.country_code" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-gray-200" />
+						<li
+							v-for="buyer in contactsLoading ? [] : buyers ?? []"
+							:key="`${buyer.email ?? buyer.name}-${buyer.organisations.join()}`"
+							class="flex items-center gap-3 border-l-4 px-4 py-3"
+							:class="buyer.is_main ? '' : 'border-transparent'"
+							:style="buyer.is_main ? { borderLeftColor: accent.colour, backgroundColor: accent.tint } : undefined"
+						>
+							<img v-if="buyer.country_code" :src="`/flags/${buyer.country_code.toLowerCase()}.png`" :alt="buyer.country_code" class="h-9 w-9 shrink-0 rounded-full object-cover" :class="buyer.is_main ? 'ring-2' : 'ring-1 ring-gray-200'" :style="buyer.is_main ? { '--tw-ring-color': accent.colour } : undefined" />
 							<span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisations[0]) }}</span>
 							<div class="min-w-0 text-sm">
 								<p class="flex min-w-0 items-center gap-1.5">
 									<span class="truncate font-semibold text-gray-900">{{ buyer.name }}</span>
-									<span v-if="buyer.is_main" :title="ctrans('Your main contact at :group', { group })" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" :style="{ backgroundColor: accent.tint, color: accent.colour }">{{ ctrans("Main") }}</span>
+									<span v-if="buyer.is_main" :title="ctrans('Your main contact at :group', { group })" class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold shadow-sm" :style="{ backgroundColor: theme.background, color: theme.text }"><FontAwesomeIcon icon="fal fa-star" fixed-width aria-hidden="true" />{{ ctrans("Main contact") }}</span>
 								</p>
 								<p class="text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisations.length ? buyer.organisations.join(" · ") : group }) }}</p>
 								<a v-if="buyer.email" :href="`mailto:${buyer.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ buyer.email }}</span></a>

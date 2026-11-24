@@ -376,8 +376,11 @@ trait WithSupplierEditFields
                 'type'        => 'select',
                 'label'       => __('Relationship contact'),
                 'information' => __('Labelled Main among the contacts on the supplier portal'),
-                'placeholder' => __('Select a staff member'),
-                'options'     => SetSuppliersRelationshipContact::userOptions($supplier->group),
+                'placeholder' => __('Select one of the portal contacts'),
+                'options'     => array_map(
+                    fn (array $option) => ['value' => $option['value'], 'label' => $option['label'].' ('.implode(', ', $option['organisations']).')'],
+                    SetSuppliersRelationshipContact::contactOptions(collect([$supplier]))
+                ),
                 'value'       => $supplier->relationship_contact_user_id,
                 'searchable'  => true,
                 'mode'        => 'single',

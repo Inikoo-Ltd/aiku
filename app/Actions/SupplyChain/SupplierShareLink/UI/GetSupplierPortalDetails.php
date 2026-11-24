@@ -24,6 +24,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -130,14 +131,33 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * The purchasing contacts of each organisation buying from the supplier, with the email to write to them: the staff
-     * the organisation names in PURCHASING_CONTACT_USERNAMES, otherwise who placed its latest purchase order. A contact
-     * for several organisations is listed once, with all of them. The supplier's relationship contact is flagged is_main,
+     * The purchasing contacts the supplier sees on its portal. The supplier's relationship contact is flagged is_main,
      * and added when no organisation lists them.
      *
      * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null, is_main: bool}>
      */
     private function buyers(Supplier $supplier): array
+    {
+        return $this->purchasingContacts($supplier)
+            ->map(fn (array $contact) => [
+                ...Arr::except($contact, 'user_id'),
+                'is_main' => $contact['user_id'] === (int) $supplier->relationship_contact_user_id,
+            ])
+            ->when(
+                $supplier->relationship_contact_user_id,
+                fn ($contacts) => $contacts->contains('is_main', true) ? $contacts : $contacts->push(...$this->relationshipContactOutsideBuyers($supplier))
+            )
+            ->all();
+    }
+
+    /**
+     * The purchasing contacts of each organisation buying from the supplier, with the email to write to them: the staff
+     * the organisation names in PURCHASING_CONTACT_USERNAMES, otherwise who placed its latest purchase order. A contact
+     * for several organisations is listed once, with all of them.
+     *
+     * @return Collection<int, array{user_id: int, organisations: list<string>, country_code: string|null, name: string|null, email: string|null}>
+     */
+    public function purchasingContacts(Supplier $supplier): Collection
     {
         $latestBuyerPerOrganisation = DB::table('purchase_orders as po')
             ->join('org_suppliers', fn ($join) => $join->on('org_suppliers.id', 'po.parent_id')->where('po.parent_type', 'OrgSupplier'))
@@ -174,18 +194,13 @@ class GetSupplierPortalDetails
             })
             ->groupBy('user_id')
             ->map(fn ($rows) => [
+                'user_id'       => (int) $rows->first()->user_id,
                 'organisations' => $rows->pluck('organisation')->all(),
                 'country_code'  => $rows->first()->country_code,
                 'name'          => $rows->first()->name,
                 'email'         => $rows->first()->email,
-                'is_main'       => (int) $rows->first()->user_id === (int) $supplier->relationship_contact_user_id,
             ])
-            ->values()
-            ->when(
-                $supplier->relationship_contact_user_id,
-                fn ($contacts) => $contacts->contains('is_main', true) ? $contacts : $contacts->push(...$this->relationshipContactOutsideBuyers($supplier))
-            )
-            ->all();
+            ->values();
     }
 
     /**

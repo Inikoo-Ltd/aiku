@@ -226,7 +226,7 @@ class UpdateSupplier extends OrgAction
                 'nullable',
                 Rule::exists('agents', 'id')->where('group_id', $this->group->id)->whereNull('deleted_at'),
             ],
-            'relationship_contact_user_id' => ['sometimes', 'nullable', 'integer', SetSuppliersRelationshipContact::userRule($this->group)],
+            'relationship_contact_user_id' => ['sometimes', 'nullable', 'integer', SetSuppliersRelationshipContact::portalContactRule($this->supplier)],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules(), $this->packingRules($this->supplier));

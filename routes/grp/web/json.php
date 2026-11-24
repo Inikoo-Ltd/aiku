@@ -149,6 +149,7 @@ use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SupplyChain\SupplierChangeRequest\Json\GetSupplierChangeRequestPreview;
 use App\Actions\SupplyChain\SupplierChangeRequest\Json\GetSupplierChangeRequestProgress;
 use App\Actions\SupplyChain\SupplierProduct\Json\GetSupplierProductsToCopy;
+use App\Actions\SupplyChain\Supplier\Json\GetSuppliersRelationshipContactOptions;
 use App\Actions\Procurement\OrgSupplier\Json\GetOrgSuppliers;
 use App\Actions\Accounting\BankTransaction\Json\GetBankTransactionCustomerCandidates;
 use App\Actions\Accounting\BankTransaction\Json\GetBankTransactionOrderCandidates;
@@ -323,6 +324,7 @@ Route::get('organisation/{organisation:id}/shop/{shop:id}/bank-transaction/{bank
 Route::get('organisation/{organisation}/org-supplier-products', GetOrgSupplierProducts::class)->name('org_supplier_products.index');
 Route::get('organisation/{organisation:id}/supplier/{supplier:id}/copy-from', GetSupplierProductsToCopy::class)->name('supplier.supplier_products_to_copy')->withoutScopedBindings();
 Route::get('supplier/{supplier:id}/copy-from', [GetSupplierProductsToCopy::class, 'inGroup'])->name('supplier.supplier_products_to_copy_in_group');
+Route::get('suppliers/relationship-contact-options', GetSuppliersRelationshipContactOptions::class)->name('suppliers.relationship_contact_options');
 Route::get('supplier-change-request/{supplierChangeRequest:id}/preview', GetSupplierChangeRequestPreview::class)->name('supplier_change_request.preview');
 Route::get('supplier-change-request/{supplierChangeRequest:id}/progress', GetSupplierChangeRequestProgress::class)->name('supplier_change_request.progress');
 Route::get('org-supplier-product/{orgSupplierProduct:id}/minimum-orders', GetOrgSupplierProductMinimumOrders::class)->name('org_supplier_product.minimum_orders');

@@ -15,7 +15,6 @@ use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
-use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
@@ -481,9 +480,7 @@ class IndexSuppliers extends OrgAction
                     'actions'       => $actions,
                 ],
                 'data'        => SuppliersResource::collection($suppliers),
-                'relationshipContact' => $this->canEdit ? [
-                    'options' => SetSuppliersRelationshipContact::userOptions($this->parent instanceof Group ? $this->parent : $this->parent->group),
-                ] : null,
+                'canSetRelationshipContact' => $this->canEdit,
             ]
         )->table($this->tableStructure($this->parent));
     }

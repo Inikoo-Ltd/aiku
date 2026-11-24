@@ -17,12 +17,12 @@ defineProps<{
     pageHead: object
     title: string
     data: object
-    relationshipContact?: { options: { value: number; label: string }[] } | null
+    canSetRelationshipContact?: boolean
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableSuppliers :data="data" :relationshipContact="relationshipContact" />
+    <TableSuppliers :data="data" :canSetRelationshipContact="canSetRelationshipContact" />
 </template>
