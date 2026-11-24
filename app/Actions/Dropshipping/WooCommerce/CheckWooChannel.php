@@ -68,11 +68,14 @@ class CheckWooChannel
         }
 
         $data = array_merge([
-            'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
         ], self::connectionFailureData($probe['failure']));
+
+        if (blank($wooCommerceUser->customerSalesChannel->name)) {
+            $data['name'] = $wooCommerceUser->name;
+        }
 
         if ($platformStatus) {
             $data['state']                 = CustomerSalesChannelStateEnum::AUTHENTICATED;

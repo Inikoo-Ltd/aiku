@@ -296,6 +296,16 @@ test('checking a channel marks it not ready while the store is down and authenti
         ->and(wooSent('POST', 'webhooks'))->toHaveCount(0);
 });
 
+test('checking a channel keeps the name the customer gave it', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $wooCommerceUser->update(['settings' => ['webhooks' => ['order_created' => 1, 'product_deleted' => 2], 'weight_option' => 'kg']]);
+    $wooCommerceUser->customerSalesChannel->update(['name' => 'Renamed by customer']);
+
+    wooFake();
+
+    expect(CheckWooChannel::run($wooCommerceUser->refresh())->name)->toBe('Renamed by customer');
+});
+
 test('checking a channel records why its store cannot be reached and only counts a refusal or a firewall as blocked', function ($reply, WooCommerceConnectionFailureEnum $failure, bool $isBlocked) {
     $wooCommerceUser = wooConnect(wooCustomer($this->shop));
 
