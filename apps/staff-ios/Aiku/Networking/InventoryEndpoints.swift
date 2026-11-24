@@ -29,8 +29,34 @@ struct MobileFamilySko: Decodable, Sendable, Equatable, Identifiable {
     let code: String
     let name: String?
     let state: String
+    let quantityAvailable: OptionalFlexibleDouble?
+    let quantityAvailableLabel: String?
     let quantityInLocations: OptionalFlexibleDouble?
+    let quantityInLocationsLabel: String?
     let stockValue: OptionalFlexibleDouble?
+}
+
+struct MobileFamilyStatusCount: Decodable, Sendable, Equatable {
+    let key: String
+    let label: String
+    let count: Int
+
+    init(key: String, label: String, count: Int) {
+        self.key = key
+        self.label = label
+        self.count = count
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case key, label, count
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        key = (try? container.decodeIfPresent(String.self, forKey: .key)) ?? ""
+        label = (try? container.decodeIfPresent(String.self, forKey: .label)) ?? ""
+        count = (try? container.decodeIfPresent(FlexibleInt.self, forKey: .count))?.value ?? 0
+    }
 }
 
 struct MobileFamilySkosPage: Decodable, Sendable, Equatable {
@@ -42,6 +68,25 @@ struct MobileFamilySkosPage: Decodable, Sendable, Equatable {
         let numberCurrentOrgStocks: Int
         let stockValue: Double
         let currencyCode: String?
+        let skoStatus: [MobileFamilyStatusCount]
+        let quantityStatus: [MobileFamilyStatusCount]
+
+        private enum CodingKeys: String, CodingKey {
+            case id, code, name, state, numberCurrentOrgStocks, stockValue, currencyCode, skoStatus, quantityStatus
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(Int.self, forKey: .id)
+            code = try container.decode(String.self, forKey: .code)
+            name = try container.decodeIfPresent(String.self, forKey: .name)
+            state = try container.decode(String.self, forKey: .state)
+            numberCurrentOrgStocks = try container.decode(Int.self, forKey: .numberCurrentOrgStocks)
+            stockValue = try container.decode(Double.self, forKey: .stockValue)
+            currencyCode = try container.decodeIfPresent(String.self, forKey: .currencyCode)
+            skoStatus = (try? container.decodeIfPresent([MobileFamilyStatusCount].self, forKey: .skoStatus)) ?? []
+            quantityStatus = (try? container.decodeIfPresent([MobileFamilyStatusCount].self, forKey: .quantityStatus)) ?? []
+        }
     }
 
     let family: Family

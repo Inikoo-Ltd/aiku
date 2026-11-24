@@ -1,13 +1,25 @@
 import SwiftUI
 
-enum InventorySkoSheet: String, Identifiable {
+enum InventorySkoSheet: Identifiable {
     case audit
+    case auditLocation(String)
     case move
     case consume
     case addLocation
-    case removeLocations
+    case locationMenu(String)
+    case barcode(InventoryShownBarcode)
 
-    var id: String { rawValue }
+    var id: String {
+        switch self {
+        case .audit: "audit"
+        case .auditLocation(let code): "audit.\(code)"
+        case .move: "move"
+        case .consume: "consume"
+        case .addLocation: "addLocation"
+        case .locationMenu(let code): "locationMenu.\(code)"
+        case .barcode(let barcode): "barcode.\(barcode.value)"
+        }
+    }
 }
 
 struct InventorySkoActions {
@@ -60,7 +72,6 @@ private struct InventoryLiveSkoDetail: View {
                     familyTitle: sko.live?.familyTitle,
                     canEditStocks: sko.live?.canEditStocks ?? false,
                     emptyLocationsMessage: "This SKO has no location in this warehouse.",
-                    removeWarning: "Stock left in a removed location is written off.",
                     openHistory: {
                         router.open(InventoryRoute.skoHistoryID(id: sko.live?.id ?? 0, reference: sko.reference))
                     },
@@ -125,7 +136,6 @@ private struct InventorySampleSkoDetail: View {
             familyTitle: store.family(of: sko)?.title,
             canEditStocks: true,
             emptyLocationsMessage: "Add a location to start keeping stock of this SKO.",
-            removeWarning: "Stock left in a removed location is written off.",
             openHistory: {
                 router.open(InventoryRoute.skoHistory(reference: sko.reference))
             },
@@ -143,7 +153,7 @@ private struct InventorySampleSkoDetail: View {
                 InventoryAuditReason.reasons(forChange: change).map { InventoryReasonChoice(id: $0.rawValue, title: $0.title) }
             },
             audit: { counted, reasons in
-                var draft = InventoryAuditDraft(sko: store.sko(reference: reference))
+                var draft = InventoryAuditDraft(sko: store.sko(reference: reference), only: Set(counted.keys))
                 draft.counts.merge(counted) { _, new in new }
                 draft.reasons = reasons.compactMapValues(InventoryAuditReason.init(rawValue:))
                 return try store.audit(reference, draft: draft)
@@ -164,14 +174,17 @@ private struct InventorySkoDetailView: View {
     let familyTitle: String?
     let canEditStocks: Bool
     let emptyLocationsMessage: String
-    let removeWarning: String
     let openHistory: () -> Void
     let openLocation: ((InventorySkoLocation) -> Void)?
     let actions: InventorySkoActions
     var offlineNotices: OfflineRecordNotices? = nil
     @State private var activeSheet: InventorySkoSheet?
+    @State private var swipeOpen: GoodsOutSwipeOpen?
+    @State private var pendingRemoval: InventorySkoLocation?
+    @State private var isRemoving = false
 
     var body: some View {
+        let removal = pendingRemoval
         AppScreen(
             title: sko.reference,
             kicker: L10n.format("SKO · %@", sko.live?.stateLabel ?? L10n.text(sko.state.title)),
@@ -181,11 +194,13 @@ private struct InventorySkoDetailView: View {
             if let offlineNotices {
                 offlineNotices
             }
-            if !infoLines.isEmpty {
-                InventoryInfoCard(title: L10n.text("SKO"), lines: infoLines)
+            if !infoRows.isEmpty {
+                InventorySkoInfoCard(title: L10n.text("SKO"), rows: infoRows) { barcode in
+                    activeSheet = .barcode(barcode)
+                }
             }
-            InventorySkoStockCard(sko: sko)
-            SectionHeading("Locations", detail: "\(sko.locations.count)")
+            InventorySkoStockCard(sko: sko, actions: stockActions)
+            locationsHeading
             if sko.locations.isEmpty {
                 if canEditStocks {
                     EmptyState(icon: .locations, title: "No locations yet", message: emptyLocationsMessage, actionTitle: "Add location") {
@@ -197,24 +212,42 @@ private struct InventorySkoDetailView: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(sko.locations) { location in
-                        InventorySkoLocationCard(
-                            location: location,
-                            packedIn: sko.packedIn,
-                            action: openLocation.map { open in { open(location) } }
-                        )
+                        locationCard(location)
                     }
                 }
-            }
-            if canEditStocks {
-                SectionHeading("Stock actions")
-                actionButtons
-                HelperText("Stock actions need stock edit rights. Move stock needs at least two locations.")
+                if canEditStocks, sko.locations.count >= Self.minimumLocationsToCountAll {
+                    LinkButton("Count all locations") {
+                        activeSheet = .audit
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .accessibilityIdentifier("inventory.action.countAll")
+                }
             }
         }
         .aikuSheet(item: $activeSheet) { sheet in
             sheetContent(sheet)
         }
+        .aikuConfirm(
+            removal.map { StockConfirmText.removeTitle($0) } ?? "",
+            isPresented: Binding {
+                pendingRemoval != nil
+            } set: { isShown in
+                if !isShown {
+                    pendingRemoval = nil
+                }
+            },
+            message: removal.map { StockConfirmText.removeMessage($0, skoReference: sko.reference) } ?? "",
+            confirmTitle: "Remove",
+            isDestructive: true
+        ) {
+            if let removal {
+                remove(removal)
+            }
+        }
     }
+
+    private static let minimumLocationsToCountAll = 2
 
     private var header: some View {
         HStack(spacing: 8) {
@@ -238,80 +271,189 @@ private struct InventorySkoDetailView: View {
         }
     }
 
-    private var infoLines: [InventoryInfoLine] {
-        var lines: [InventoryInfoLine] = []
-        if sko.unitsPerSko > 0 {
-            lines.append(InventoryInfoLine(icon: .sko, text: L10n.format("Packed in: %lld units per SKO", sko.unitsPerSko)))
+    private var locationsHeading: some View {
+        HStack(alignment: .center, spacing: 12) {
+            SectionHeading("Locations", detail: "\(sko.locations.count)")
+            if canEditStocks {
+                LinkButton("+ Add location", size: 13) {
+                    activeSheet = .addLocation
+                }
+                .accessibilityIdentifier("inventory.action.addLocation")
+            }
         }
-        let barcodes = [sko.barcode.map { L10n.format("SKO barcode %@", $0) }, sko.unitBarcode.map { L10n.format("unit EAN %@", $0) }].compactMap { $0 }
-        if !barcodes.isEmpty {
-            lines.append(InventoryInfoLine(icon: .scan, text: barcodes.joined(separator: " · ")))
+    }
+
+    private var infoRows: [InventorySkoInfoRow] {
+        var rows: [InventorySkoInfoRow] = []
+        if sko.unitsPerSko > 0 {
+            rows.append(InventorySkoInfoRow(icon: .sko, text: L10n.format("Packed in: %lld units per SKO", sko.unitsPerSko)))
+        }
+        if let barcode = sko.barcode {
+            rows.append(InventorySkoInfoRow(
+                icon: .scan,
+                text: L10n.format("SKO barcode %@", barcode),
+                barcode: InventoryShownBarcode(title: L10n.text("SKO barcode"), value: barcode)
+            ))
+        }
+        if let unitBarcode = sko.unitBarcode {
+            rows.append(InventorySkoInfoRow(
+                icon: .scan,
+                text: L10n.format("Unit barcode %@", unitBarcode),
+                barcode: InventoryShownBarcode(title: L10n.text("Unit barcode"), value: unitBarcode)
+            ))
         }
         if let note = sko.pickerNote {
-            lines.append(InventoryInfoLine(icon: .note, text: L10n.format("Note to pickers: %@", note)))
+            rows.append(InventorySkoInfoRow(icon: .note, text: L10n.format("Note to pickers: %@", note)))
         }
         if let note = sko.packerNote {
-            lines.append(InventoryInfoLine(icon: .note, text: L10n.format("Note to packers: %@", note)))
+            rows.append(InventorySkoInfoRow(icon: .note, text: L10n.format("Note to packers: %@", note)))
         }
         if let abnormality = sko.abnormalityNote {
-            lines.append(InventoryInfoLine(icon: .warning, text: L10n.format("Abnormality: %@", abnormality)))
+            rows.append(InventorySkoInfoRow(icon: .warning, text: L10n.format("Abnormality: %@", abnormality)))
         }
-        return lines
+        return rows
     }
 
-    private var actionButtons: some View {
-        VStack(spacing: 8) {
-            StatGrid(columns: 2) {
-                actionButton("Audit stock", icon: .check, sheet: .audit, isEnabled: !sko.locations.isEmpty)
-                actionButton("Move stock", icon: .locations, sheet: .move, isEnabled: sko.canMoveStock)
-                actionButton("Internal consumption", icon: .sko, sheet: .consume, isEnabled: sko.canConsume)
-                actionButton("Add location", icon: .locations, sheet: .addLocation, isEnabled: true)
+    private var stockActions: [InventorySkoStockAction] {
+        guard canEditStocks else { return [] }
+        return [
+            InventorySkoStockAction(id: "consume", title: "Internal consumption", icon: .sko, isEnabled: sko.canConsume) {
+                activeSheet = .consume
+            },
+            InventorySkoStockAction(id: "move", title: "Move stock", icon: .transfer, isEnabled: sko.canMoveStock) {
+                activeSheet = .move
+            },
+        ]
+    }
+
+    @ViewBuilder
+    private func locationCard(_ location: InventorySkoLocation) -> some View {
+        let card = InventorySkoLocationCard(
+            location: location,
+            packedIn: sko.packedIn,
+            onTap: tapAction(location),
+            onAudit: menuAudit(location)
+        )
+        if canEditStocks {
+            GoodsOutSwipeRow(
+                rowID: location.code,
+                open: $swipeOpen,
+                trailingActions: [
+                    GoodsOutSwipeAction(
+                        id: "inventory.remove.\(location.code)",
+                        title: "Remove location",
+                        icon: .trash,
+                        background: AikuColor.dangerStrong,
+                        foreground: AikuColor.onDangerStrong
+                    ) {
+                        pendingRemoval = location
+                    },
+                ],
+                trailingBackground: AikuColor.dangerStrong,
+                fullTrailing: { pendingRemoval = location }
+            ) {
+                card
             }
-            AikuButton("Remove locations", look: AikuButtonLook(.danger, icon: .trash)) {
-                activeSheet = .removeLocations
-            }
-            .disabled(sko.locations.isEmpty)
-            .accessibilityIdentifier("inventory.action.removeLocations")
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        } else {
+            card
         }
     }
 
-    private func actionButton(_ title: String, icon: AppIcon, sheet: InventorySkoSheet, isEnabled: Bool) -> some View {
-        Button {
-            activeSheet = sheet
-        } label: {
-            HStack(spacing: 8) {
-                icon.image.font(.system(size: 17, weight: .medium))
-                Text(L10n.text(title))
-            }
+    private func tapAction(_ location: InventorySkoLocation) -> (() -> Void)? {
+        if canEditStocks {
+            return { openFromCard { activeSheet = .locationMenu(location.code) } }
         }
-        .buttonStyle(AikuButtonStyle(kind: .tertiary))
-        .disabled(!isEnabled)
-        .accessibilityIdentifier("inventory.action.\(sheet.rawValue)")
+        if let openLocation {
+            return { openFromCard { openLocation(location) } }
+        }
+        return nil
+    }
+
+    private func openFromCard(_ open: () -> Void) {
+        if swipeOpen != nil {
+            swipeOpen = nil
+        } else {
+            open()
+        }
     }
 
     @ViewBuilder
     private func sheetContent(_ sheet: InventorySkoSheet) -> some View {
         switch sheet {
         case .audit:
-            InventoryAuditSheet(
-                sko: sko,
-                reasonChoices: actions.reasonChoices,
-                reasonsError: actions.reasonsError(),
-                onCancel: closeSheet,
-                onSave: actions.audit,
-                onDone: finish
-            )
-            .task {
-                await actions.loadReasons()
-            }
+            auditSheet(onlyLocation: nil)
+        case .auditLocation(let code):
+            auditSheet(onlyLocation: code)
         case .move:
             InventoryMoveSheet(sko: sko, showsReasons: actions.showsMoveReasons, onCancel: closeSheet, onSave: actions.move, onDone: finish)
         case .consume:
             InventoryConsumeSheet(sko: sko, onCancel: closeSheet, onSave: actions.consume, onDone: finish)
         case .addLocation:
             InventoryAddLocationSheet(sko: sko, options: actions.locationOptions, onCancel: closeSheet, onSave: actions.addLocation, onDone: finish)
-        case .removeLocations:
-            InventoryRemoveLocationsSheet(sko: sko, warning: removeWarning, onCancel: closeSheet, onSave: actions.removeLocations, onDone: finish)
+        case .locationMenu(let code):
+            if let location = sko.location(code) {
+                InventoryLocationMenuSheet(
+                    sko: sko,
+                    location: location,
+                    onAudit: menuAudit(location),
+                    onOpen: menuOpen(location),
+                    onRemove: menuRemove(location),
+                    onCancel: closeSheet
+                )
+            }
+        case .barcode(let barcode):
+            InventoryBarcodeSheet(barcode: barcode, subtitle: "\(sko.reference) · \(sko.name)", onClose: closeSheet)
+        }
+    }
+
+    private func menuAudit(_ location: InventorySkoLocation) -> (() -> Void)? {
+        guard canEditStocks else { return nil }
+        return { activeSheet = .auditLocation(location.code) }
+    }
+
+    private func menuOpen(_ location: InventorySkoLocation) -> (() -> Void)? {
+        guard let openLocation else { return nil }
+        return {
+            activeSheet = nil
+            openLocation(location)
+        }
+    }
+
+    private func menuRemove(_ location: InventorySkoLocation) -> (() -> Void)? {
+        guard canEditStocks else { return nil }
+        return {
+            activeSheet = nil
+            remove(location)
+        }
+    }
+
+    private func auditSheet(onlyLocation: String?) -> some View {
+        InventoryAuditSheet(
+            sko: sko,
+            onlyLocation: onlyLocation,
+            reasonChoices: actions.reasonChoices,
+            reasonsError: actions.reasonsError(),
+            onCancel: closeSheet,
+            onSave: actions.audit,
+            onDone: finish
+        )
+        .task {
+            await actions.loadReasons()
+        }
+    }
+
+    private func remove(_ location: InventorySkoLocation) {
+        guard !isRemoving else { return }
+        isRemoving = true
+        swipeOpen = nil
+        Task {
+            defer { isRemoving = false }
+            do {
+                finish(try await actions.removeLocations([location.code]))
+            } catch {
+                toasts.show(InventoryLive.message(for: error), tone: .danger)
+            }
         }
     }
 
@@ -332,32 +474,87 @@ private struct InventorySkoDetailView: View {
     }
 }
 
+private struct InventorySkoInfoRow: Identifiable {
+    let icon: AppIcon
+    let text: String
+    var barcode: InventoryShownBarcode? = nil
+
+    var id: String { text }
+}
+
+private struct InventorySkoInfoCard: View {
+    let title: String
+    let rows: [InventorySkoInfoRow]
+    let showBarcode: (InventoryShownBarcode) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.aiku(13, .bold))
+                .foregroundStyle(AikuColor.text)
+            ForEach(rows) { row in
+                HStack(spacing: 10) {
+                    row.icon.image
+                        .font(.system(size: 14))
+                        .foregroundStyle(AikuColor.text3)
+                        .frame(width: 16)
+                        .accessibilityHidden(true)
+                    Text(row.text)
+                        .font(.aiku(14))
+                        .foregroundStyle(AikuColor.text2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let barcode = row.barcode {
+                        IconButton(.barcode, label: "Show barcode", tint: AikuColor.link) {
+                            showBarcode(barcode)
+                        }
+                        .accessibilityIdentifier("inventory.showBarcode.\(barcode.value)")
+                    }
+                }
+                .frame(minHeight: 28)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardSurface()
+    }
+}
+
+private struct InventorySkoStockAction: Identifiable {
+    let id: String
+    let title: String
+    let icon: AppIcon
+    let isEnabled: Bool
+    let action: () -> Void
+}
+
 private struct InventorySkoStockCard: View {
     let sko: InventorySko
+    let actions: [InventorySkoStockAction]
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(L10n.text("In locations").uppercased(with: LanguageStore.shared.locale))
-                    .font(.aiku(12, .bold))
-                    .tracking(0.7)
-                    .foregroundStyle(AikuColor.text3)
-                Text(sko.live?.stockLabel ?? sko.stock.grouped)
-                    .font(.aiku(32, .bold))
-                    .foregroundStyle(isNegative ? AikuColor.danger : AikuColor.text)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if let unitsInTotal = sko.unitsInTotalText(translate: { L10n.text($0) }) {
-                    Text(unitsInTotal)
-                        .font(.aiku(13))
-                        .foregroundStyle(AikuColor.text3)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 12) {
+                    stockSummary
+                    if !actions.isEmpty {
+                        VStack(spacing: 8) {
+                            actionButtons
+                        }
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    stockSummary
+                    if !actions.isEmpty {
+                        HStack(spacing: 8) {
+                            actionButtons
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
             RowDivider()
             KeyValueRow("Reserved", sko.live?.reservedLabel ?? sko.reserved.grouped)
             RowDivider()
@@ -368,6 +565,36 @@ private struct InventorySkoStockCard: View {
         .accessibilityIdentifier("inventory.stockCard")
     }
 
+    private var stockSummary: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.text("In locations").uppercased(with: LanguageStore.shared.locale))
+                .font(.aiku(12, .bold))
+                .tracking(0.7)
+                .foregroundStyle(AikuColor.text3)
+            Text(sko.live?.stockLabel ?? sko.stock.grouped)
+                .font(.aiku(32, .bold))
+                .foregroundStyle(isNegative ? AikuColor.danger : AikuColor.text)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if let unitsInTotal = sko.unitsInTotalText(translate: { L10n.text($0) }) {
+                Text(unitsInTotal)
+                    .font(.aiku(13))
+                    .foregroundStyle(AikuColor.text3)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var actionButtons: some View {
+        ForEach(actions) { action in
+            AikuButton(action.title, look: AikuButtonLook(.tertiary, icon: action.icon), size: .small, action: action.action)
+                .disabled(!action.isEnabled)
+                .accessibilityIdentifier("inventory.action.\(action.id)")
+        }
+    }
+
     private var isNegative: Bool {
         sko.live?.stockIsNegative ?? (sko.stock < 0)
     }
@@ -376,13 +603,18 @@ private struct InventorySkoStockCard: View {
 private struct InventorySkoLocationCard: View {
     let location: InventorySkoLocation
     let packedIn: Double?
-    let action: (() -> Void)?
+    let onTap: (() -> Void)?
+    let onAudit: (() -> Void)?
 
     var body: some View {
         Group {
-            if let action {
-                Button(action: action) { card }
-                    .buttonStyle(.plain)
+            if let onTap {
+                card
+                    .onTapGesture(perform: onTap)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction {
+                        onTap()
+                    }
             } else {
                 card
             }
@@ -396,18 +628,25 @@ private struct InventorySkoLocationCard: View {
             HStack(alignment: .center, spacing: 12) {
                 IconTile(.locations, tone: .info)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(location.code)
-                        .font(.aiku(17, .bold))
-                        .foregroundStyle(AikuColor.text)
-                        .fixedSize(horizontal: false, vertical: true)
+                    FlowLayout(spacing: 8, lineSpacing: 4) {
+                        Text(location.code)
+                            .font(.aiku(17, .bold))
+                            .foregroundStyle(AikuColor.text)
+                        StatusChip(location.type.title, tone: location.typeTone)
+                    }
                     Text(location.auditedText(translate: { L10n.text($0) }))
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                StatusChip(location.type.title, tone: location.typeTone)
+                if let onAudit {
+                    AikuButton("Audit", look: AikuButtonLook(.tertiary, icon: .audit), size: .small, fullWidth: false, action: onAudit)
+                        .fixedSize()
+                        .accessibilityIdentifier("inventory.location.\(location.code).audit")
+                }
             }
-            .padding(.horizontal, 14)
+            .padding(.leading, 14)
+            .padding(.trailing, 10)
             .padding(.vertical, 12)
             RowDivider()
             HStack(alignment: .firstTextBaseline, spacing: 12) {

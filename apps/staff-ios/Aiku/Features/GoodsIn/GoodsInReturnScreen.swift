@@ -268,32 +268,7 @@ private struct GoodsInTimelineCard: View {
     let entries: [MobileReturnTimelineEntry]
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach(Array(entries.enumerated()), id: \.offset) { _, entry in
-                    let date = GoodsInText.moment(entry.at)
-                    VStack(spacing: 4) {
-                        Text(entry.label)
-                            .font(.aiku(11, .semibold))
-                            .foregroundStyle(date == nil ? AikuColor.faint : AikuColor.text)
-                            .multilineTextAlignment(.center)
-                        Circle()
-                            .fill(date == nil ? AikuColor.borderStrong : AikuColor.success)
-                            .frame(width: 12, height: 12)
-                        Text(date ?? "–")
-                            .font(.aiku(11))
-                            .foregroundStyle(AikuColor.text3)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(width: 104)
-                    .accessibilityElement(children: .combine)
-                }
-            }
-            .padding(.vertical, 10)
-        }
-        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardSurface()
+        StateTimeline(steps: entries.map { StateTimelineStep(label: $0.label, date: GoodsInText.moment($0.at)) })
     }
 }
 

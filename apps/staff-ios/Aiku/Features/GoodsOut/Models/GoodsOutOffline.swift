@@ -196,14 +196,14 @@ enum GoodsOutOfflineOverlay {
         switch entry.operation {
         case .pick:
             updated.quantityPicked = GoodsOutOfflinePlanner.rounded((line.quantityPicked ?? 0) + quantity)
-            updated.quantityPickedLabel = nil
+            updated.quantityPickedLabel = fractionLabel(updated.quantityPicked, of: line)
             let location = entry.payloadInt("location_org_stock_id")
             updated.locations = line.locations?.map { row in
                 guard row.locationOrgStockId == location else { return row }
                 var picked = row
                 picked.quantityPicked = GoodsOutOfflinePlanner.rounded((row.quantityPicked ?? 0) + quantity)
                 picked.stock = row.stock.map { GoodsOutOfflinePlanner.rounded($0 - quantity) }
-                picked.stockLabel = nil
+                picked.stockLabel = fractionLabel(picked.stock, of: line)
                 return picked
             }
             recomputePick(&updated)
@@ -221,14 +221,18 @@ enum GoodsOutOfflineOverlay {
         case .pack:
             let toPack = GoodsOutOfflinePlanner.rounded(max(0, (line.quantityToPack ?? 0) - quantity))
             updated.quantityPacked = GoodsOutOfflinePlanner.rounded((line.quantityPacked ?? 0) + quantity)
-            updated.quantityPackedLabel = nil
+            updated.quantityPackedLabel = fractionLabel(updated.quantityPacked, of: line)
             updated.quantityToPack = toPack
-            updated.quantityToPackLabel = nil
+            updated.quantityToPackLabel = fractionLabel(toPack, of: line)
             updated.isDonePacking = (line.isDonePacking ?? false) || toPack <= 0
         default:
             break
         }
         return updated
+    }
+
+    static func fractionLabel(_ value: Double?, of line: GoodsOutLineDTO) -> String? {
+        value.map { StockFraction.label($0, packedIn: line.orgStock?.packedIn) }
     }
 
     private static func outstandingForWaiting(_ line: GoodsOutLineDTO) -> Double {
@@ -240,7 +244,7 @@ enum GoodsOutOfflineOverlay {
         let settled = (line.quantityPicked ?? 0) + (line.quantityNotPicked ?? 0) + (line.quantityWaitingWarehouse ?? 0) + (line.quantityWaitingCrm ?? 0)
         let toPick = GoodsOutOfflinePlanner.rounded(max(0, required - settled))
         line.quantityToPick = toPick
-        line.quantityToPickLabel = nil
+        line.quantityToPickLabel = fractionLabel(toPick, of: line)
         line.isPicked = toPick <= 0
     }
 }

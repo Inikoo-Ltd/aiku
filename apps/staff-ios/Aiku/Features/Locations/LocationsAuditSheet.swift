@@ -8,6 +8,7 @@ struct LocationsAuditSheet: View {
     @State private var counted: [String: Int]
     @State private var reasons: [String: LocationsAuditReason] = [:]
     @State private var note = ""
+    @State private var isConfirming = false
 
     init(
         location: LocationsLocation,
@@ -57,19 +58,41 @@ struct LocationsAuditSheet: View {
             AikuTextField("Note (optional)", text: $note, placeholder: "Broken in box")
         } footer: {
             AikuButton(missingReasons > 0 ? "Choose a reason for each difference" : "Save audit", look: AikuButtonLook(.primary, icon: .check)) {
-                onSave(slots.map {
-                    LocationsAuditCount(
-                        skoReference: $0.skoReference,
-                        counted: counted[$0.skoReference] ?? $0.quantity,
-                        reason: reasons[$0.skoReference],
-                        note: note.trimmingCharacters(in: .whitespacesAndNewlines)
-                    )
-                })
+                isConfirming = true
             }
             .disabled(missingReasons > 0)
             .accessibilityIdentifier("locations.audit.save")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
         }
+        .aikuConfirm("Save this count?", isPresented: $isConfirming, message: auditSummary, confirmTitle: "Save audit") {
+            save()
+        }
+    }
+
+    private var auditSummary: String {
+        slots.map { slot in
+            StockConfirmText.auditLine(slot.skoReference, wasText: slot.quantityText, counted: countedValue(slot), was: slot.quantity, packedIn: nil)
+        }
+        .joined(separator: "\n")
+    }
+
+    private func countedValue(_ slot: LocationsSlot) -> Int {
+        counted[slot.skoReference] ?? slot.quantity
+    }
+
+    private func countedText(_ slot: LocationsSlot) -> String {
+        StockConfirmText.countedText(countedValue(slot), was: slot.quantity, wasText: slot.quantityText, packedIn: nil)
+    }
+
+    private func save() {
+        onSave(slots.map {
+            LocationsAuditCount(
+                skoReference: $0.skoReference,
+                counted: countedValue($0),
+                reason: reasons[$0.skoReference],
+                note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        })
     }
 
     private func row(_ slot: LocationsSlot) -> some View {
@@ -82,7 +105,7 @@ struct LocationsAuditSheet: View {
                     Text(slot.skoReference)
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
-                    Text(difference == 0 ? L10n.format("was %lld", slot.quantity) : L10n.format("was %lld · %@", slot.quantity, difference.signedChange))
+                    Text(difference == 0 ? L10n.format("was %@", slot.quantityText) : L10n.format("was %@ · %@", slot.quantityText, difference.signedChange))
                         .font(.aiku(13))
                         .foregroundStyle(difference == 0 ? AikuColor.text3 : (difference < 0 ? AikuColor.danger : AikuColor.success))
                 }
@@ -105,19 +128,20 @@ struct LocationsAuditSheet: View {
     }
 
     private func counter(_ slot: LocationsSlot) -> some View {
-        let value = counted[slot.skoReference] ?? slot.quantity
+        let value = countedValue(slot)
+        let valueText = countedText(slot)
         return HStack(spacing: 0) {
             stepButton("−", label: L10n.format("Decrease %@", slot.skoReference), isEnabled: value > 0) {
                 counted[slot.skoReference] = max(value - 1, 0)
             }
-            Text("\(value)")
+            Text(valueText)
                 .font(.aiku(16, .bold))
                 .foregroundStyle(AikuColor.text)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(minWidth: 40)
-                .accessibilityLabel("\(slot.skoReference) counted \(value)")
+                .accessibilityLabel(L10n.format("%@ counted %@", slot.skoReference, valueText))
             stepButton("+", label: L10n.format("Increase %@", slot.skoReference), isEnabled: true) {
                 counted[slot.skoReference] = value + 1
             }

@@ -102,7 +102,7 @@ struct InventoryLiveTests {
         #expect(feed.items[0].subtitle == "Lavender · 2 locations")
         #expect(feed.items[0].chip == nil)
         #expect(feed.items[0].quantityText == "12.5")
-        #expect(feed.items[1].chip == Chip("Discontinuing", .neutral))
+        #expect(feed.items[1].chip == Chip("Discontinuing", .warn))
         #expect(feed.items[1].subtitle == "Rose · 1 location")
         #expect(feed.counts.map { InventorySkoScope.discontinued.count(in: $0) } == 12)
         #expect(feed.hasMorePages)
@@ -256,6 +256,26 @@ struct InventoryLiveTests {
             MobileOrgStockAuditCount(locationOrgStockId: 157741, quantity: 58, reason: "damaged"),
         ])
         #expect(UUID(uuidString: await calls.requestIDs.first ?? "") != nil)
+    }
+
+    @Test func auditingOneLocationLeavesTheOthersUnaudited() async throws {
+        let detail = try Self.detail()
+        let result = try Self.written("Stock count saved.")
+        let calls = Calls()
+        let feed = InventorySkoFeed(warehouseID: 4, target: .id(74495), canEditStocks: true, service: InventoryService(
+            orgStock: { _, _ in detail },
+            audit: { _, _, counts, requestID in
+                await calls.audit(counts, requestID)
+                return result
+            }
+        ))
+        await feed.load()
+
+        _ = try await feed.audit(counted: ["C-01": 58], reasons: ["C-01": "damaged"])
+
+        #expect(await calls.audits.first == [
+            MobileOrgStockAuditCount(locationOrgStockId: 157741, quantity: 58, reason: "damaged"),
+        ])
     }
 
     @Test func stockEditsUseTheLocationLinks() async throws {

@@ -72,7 +72,8 @@ enum ShellSearchFormat {
         case .pallets: FulfilmentStorageText.palletStateTone(row.state)
         case .palletDeliveries: PalletDeliveryText.deliveryTone(row.state)
         case .palletReturns: PalletReturnText.stateTone(row.state)
-        case .skos, .skoFamilies, .locations: .neutral
+        case .skos: InventorySkoState.remoteTone(row.state)
+        case .skoFamilies, .locations: .neutral
         }
     }
 

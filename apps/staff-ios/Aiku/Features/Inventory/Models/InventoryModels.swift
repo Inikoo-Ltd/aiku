@@ -17,6 +17,15 @@ enum InventorySkoState: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    var tone: Tone {
+        switch self {
+        case .active: .success
+        case .discontinuing: .warn
+        case .discontinued, .abnormality: .danger
+        case .suspended: .neutral
+        }
+    }
+
     var dotHex: UInt32 {
         switch self {
         case .active: 0x22C55E
@@ -24,6 +33,78 @@ enum InventorySkoState: String, CaseIterable, Hashable, Sendable {
         case .discontinued: 0xEF4444
         case .suspended: 0x94A3B8
         case .abnormality: 0xDC2626
+        }
+    }
+
+    var statusSymbol: String {
+        switch self {
+        case .active: "checkmark.circle"
+        case .discontinuing: "exclamationmark.circle"
+        case .discontinued, .abnormality: "xmark.circle"
+        case .suspended: "pause.circle"
+        }
+    }
+
+    static func remoteTone(_ state: String) -> Tone {
+        InventorySkoState(rawValue: state)?.tone ?? .neutral
+    }
+
+    static func listChip(remote state: String, label: String?) -> Chip? {
+        guard state != InventorySkoState.active.rawValue else { return nil }
+        let trimmed = label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let text: String? = trimmed.isEmpty ? InventorySkoState(rawValue: state)?.title : trimmed
+        guard let text else { return nil }
+        return Chip(text, remoteTone(state))
+    }
+}
+
+enum InventoryFamilyStatusKind: Hashable, Sendable {
+    case sko
+    case quantity
+}
+
+struct InventoryFamilyStatusItem: Identifiable, Hashable, Sendable {
+    let kind: InventoryFamilyStatusKind
+    let key: String
+    let label: String
+    let count: Int
+
+    var id: String { key }
+
+    var title: String { label.isEmpty ? key : label }
+
+    var tone: Tone {
+        switch kind {
+        case .sko: InventorySkoState.remoteTone(key)
+        case .quantity: Self.quantityTone(key)
+        }
+    }
+
+    var symbol: String {
+        switch kind {
+        case .sko: InventorySkoState(rawValue: key)?.statusSymbol ?? "pause.circle"
+        case .quantity: Self.quantitySymbol(key)
+        }
+    }
+
+    static func quantityTone(_ key: String) -> Tone {
+        switch key {
+        case "out", "w1": .danger
+        case "w2": .orange
+        case "w3", "w4": .warn
+        case "ok": .success
+        case "excess": .info
+        default: .neutral
+        }
+    }
+
+    static func quantitySymbol(_ key: String) -> String {
+        switch key {
+        case "out": "xmark.circle"
+        case "w1", "w2": "xmark.octagon"
+        case "w3", "w4": "exclamationmark.triangle"
+        case "ok": "smallcircle.filled.circle"
+        default: "arrow.up.circle"
         }
     }
 }
@@ -304,7 +385,7 @@ struct InventorySko: Identifiable, Hashable, Sendable {
 
     var listChip: Chip {
         if isAbnormal { return Chip(live?.stateLabel ?? "Abnormality", .danger) }
-        if let live { return Chip(live.stateLabel, state == .active ? .success : .warn) }
+        if let live { return Chip(live.stateLabel, state.tone) }
         return status.chip
     }
 

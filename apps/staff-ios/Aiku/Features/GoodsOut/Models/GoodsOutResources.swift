@@ -43,9 +43,10 @@ struct GoodsOutStockLocation: Identifiable, Hashable, Sendable {
     let stock: Int
     var locationOrgStockID: Int?
     var stockLabel: String?
+    var exactStock: Double?
 
     var id: String { code }
-    var isEmpty: Bool { stock <= 0 }
+    var isEmpty: Bool { (exactStock ?? Double(stock)) <= 0 }
     @MainActor
     var stockText: String {
         if isEmpty { return L10n.text("Empty") }

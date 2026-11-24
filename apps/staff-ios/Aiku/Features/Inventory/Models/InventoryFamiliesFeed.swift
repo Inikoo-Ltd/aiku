@@ -176,6 +176,32 @@ extension InventoryFamily {
     }
 }
 
+extension MobileFamilySko {
+    var stateChip: Chip? {
+        InventorySkoState.listChip(remote: state, label: nil)
+    }
+
+    var quantityText: String? {
+        if let available = quantityAvailable?.value {
+            return InventoryLive.quantityText(available, label: quantityAvailableLabel)
+        }
+        if let inLocations = quantityInLocations?.value {
+            return InventoryLive.quantityText(inLocations, label: quantityInLocationsLabel)
+        }
+        return nil
+    }
+}
+
+extension MobileFamilySkosPage.Family {
+    var skoStatusItems: [InventoryFamilyStatusItem] {
+        skoStatus.map { InventoryFamilyStatusItem(kind: .sko, key: $0.key, label: $0.label, count: $0.count) }
+    }
+
+    var quantityStatusItems: [InventoryFamilyStatusItem] {
+        quantityStatus.map { InventoryFamilyStatusItem(kind: .quantity, key: $0.key, label: $0.label, count: $0.count) }
+    }
+}
+
 enum InventoryMoney {
     static func label(_ amount: Double, currencyCode: String?) -> String {
         guard let currencyCode else { return amount.formatted(.number.precision(.fractionLength(0))) }

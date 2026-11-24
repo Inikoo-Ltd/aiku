@@ -18,7 +18,8 @@ struct InventoryAPITests {
 
     private static let responses: [String: String] = [
         "mobile/warehouses/1/org-stock-families": #"{"data":[{"id":27,"state":"active","slug":"eo-aw","code":"EO","name":"Essential Oils","number_current_org_stocks":84,"number_out_of_stock_org_stocks":3,"currency_code":"GBP","stock_value":"17030.33","potential_sales":"0","on_the_way_po_value":"0","on_the_way_po_count":0,"stock_turn":2.5,"stock_cover":4.25},{"id":5822,"state":"active","slug":"a-aw","code":"A","name":"A","number_current_org_stocks":1,"currency_code":"GBP","stock_value":"806.52","stock_cover":null}],"meta":{"current_page":1,"last_page":18,"per_page":50,"total":882},"counts":{"in_process":42,"active":882,"discontinuing":103,"discontinued":1726}}"#,
-        "mobile/warehouses/1/org-stock-families/27/skos": #"{"family":{"id":27,"code":"EO","name":"Essential Oils","state":"active","number_current_org_stocks":84,"stock_value":17030.33,"currency_code":"GBP"},"data":[{"id":133,"slug":"eo-01-aw","code":"EO-01","name":"Lavender Essential Oil","quantity_available":"1797","quantity_in_locations":"1828","stock_value":"1221.96","number_locations":null,"woc":-9.7,"stock_cover":1.3,"state":"active"}],"meta":{"current_page":1,"last_page":2,"per_page":50,"total":84}}"#,
+        "mobile/warehouses/1/org-stock-families/27/skos": #"{"family":{"id":27,"code":"EO","name":"Essential Oils","state":"active","number_current_org_stocks":84,"stock_value":17030.33,"currency_code":"GBP","sko_status":[{"key":"active","label":"Active","count":84},{"key":"discontinuing","label":"Discontinuing","count":3},{"key":"discontinued","label":"Discontinued","count":12},{"key":"suspended","label":"Suspended","count":0}],"quantity_status":[{"key":"out","label":"Out of stock","count":2},{"key":"w1","label":"Doomed","count":1},{"key":"w2","label":"Critical","count":"4"},{"key":"w3","label":"Danger","count":0},{"key":"w4","label":"On watch","count":0},{"key":"ok","label":"Covered","count":70},{"key":"excess","label":"Excess","count":5},{"key":"dead","label":"Dead stock","count":2}]},"data":[{"id":133,"slug":"eo-01-aw","code":"EO-01","name":"Lavender Essential Oil","quantity_available":"1797.75","quantity_available_label":"1797 3/4","quantity_available_fraction":[1797,[3,4]],"quantity_in_locations":"1828.75","quantity_in_locations_label":"1828 3/4","stock_value":"1221.96","number_locations":null,"woc":-9.7,"stock_cover":1.3,"state":"active"},{"id":134,"slug":"eo-02-aw","code":"EO-02","name":"Rose Essential Oil","quantity_available":0.5,"quantity_available_label":"1/2","quantity_in_locations":0.5,"quantity_in_locations_label":"1/2","stock_value":"0","number_locations":1,"woc":null,"stock_cover":null,"state":"discontinuing"}],"meta":{"current_page":1,"last_page":2,"per_page":50,"total":84}}"#,
+        "mobile/warehouses/1/org-stock-families/28/skos": #"{"family":{"id":28,"code":"EO","name":"Essential Oils","state":"active","number_current_org_stocks":84,"stock_value":17030.33,"currency_code":"GBP"},"data":[{"id":133,"slug":"eo-01-aw","code":"EO-01","name":"Lavender Essential Oil","quantity_available":"1797","quantity_in_locations":"1828","stock_value":"1221.96","number_locations":null,"woc":-9.7,"stock_cover":1.3,"state":"active"}],"meta":{"current_page":1,"last_page":2,"per_page":50,"total":84}}"#,
     ]
 
     private func client() -> APIClient {
@@ -69,7 +70,44 @@ struct InventoryAPITests {
         #expect(feed.hasMorePages)
         let sko = try #require(feed.skos.first)
         #expect(sko.code == "EO-01")
-        #expect(sko.quantityInLocations?.value == 1828)
+        #expect(sko.quantityInLocations?.value == 1828.75)
+        #expect(sko.quantityInLocationsLabel == "1828 3/4")
+        #expect(sko.quantityAvailableLabel == "1797 3/4")
+    }
+
+    @Test func familySkosFeedReadsTheWebFamilyStatusAndFractionLabels() async throws {
+        let feed = InventoryFamilySkosFeed(warehouseID: 1, familyID: 27)
+
+        await feed.reload(apiClient: client())
+
+        let summary = try #require(feed.summary)
+        #expect(summary.skoStatus.map(\.key) == ["active", "discontinuing", "discontinued", "suspended"])
+        #expect(summary.skoStatus[1] == MobileFamilyStatusCount(key: "discontinuing", label: "Discontinuing", count: 3))
+        #expect(summary.quantityStatus.map(\.key) == ["out", "w1", "w2", "w3", "w4", "ok", "excess", "dead"])
+        #expect(summary.quantityStatus[2].count == 4)
+        #expect(summary.skoStatusItems.map(\.tone) == [.success, .warn, .danger, .neutral])
+        #expect(summary.quantityStatusItems.first?.title == "Out of stock")
+        #expect(summary.quantityStatusItems.first?.tone == .danger)
+        let lavender = try #require(feed.skos.first)
+        #expect(lavender.quantityText == "1797\u{202F}³⁄₄")
+        #expect(lavender.stateChip == nil)
+        let rose = try #require(feed.skos.last)
+        #expect(rose.quantityText == "¹⁄₂")
+        #expect(rose.stateChip == Chip("Discontinuing", .warn))
+    }
+
+    @Test func familySkosFromAnOlderServerHaveNoStatusAndKeepTheirNumbers() async throws {
+        let feed = InventoryFamilySkosFeed(warehouseID: 1, familyID: 28)
+
+        await feed.reload(apiClient: client())
+
+        #expect(feed.loadError == nil)
+        let summary = try #require(feed.summary)
+        #expect(summary.skoStatus.isEmpty)
+        #expect(summary.quantityStatus.isEmpty)
+        let sko = try #require(feed.skos.first)
+        #expect(sko.quantityAvailableLabel == nil)
+        #expect(sko.quantityText == "1,797")
     }
 
     @Test func sampleFamiliesKeepTheirWeeksOfCover() {

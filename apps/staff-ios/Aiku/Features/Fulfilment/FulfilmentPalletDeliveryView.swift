@@ -218,13 +218,13 @@ private struct PalletDeliveryScreen: View {
     @ViewBuilder
     private func notes(_ delivery: MobilePalletDeliveryDetail) -> some View {
         if let note = delivery.customerNotes, !note.isEmpty {
-            InlineAlert(tone: .neutral, icon: .document, title: "Customer notes", message: note)
+            NoteCard(title: "Customer notes", icon: .lock, kind: .fulfilmentCustomer, text: note)
         }
         if let note = delivery.publicNotes, !note.isEmpty {
-            InlineAlert(tone: .neutral, icon: .document, title: "Public notes", message: note)
+            NoteCard(title: "Public notes", icon: .lock, kind: .fulfilmentPublic, text: note)
         }
         if let note = delivery.internalNotes, !note.isEmpty {
-            InlineAlert(tone: .warn, icon: .document, title: "Internal notes", message: note)
+            NoteCard(title: "Internal notes", icon: .lock, kind: .fulfilmentPrivate, text: note)
         }
     }
 
