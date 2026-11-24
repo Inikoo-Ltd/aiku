@@ -74,7 +74,9 @@ class CallbackRetinaEbayUser extends RetinaAction
 
                 ReconnectEbayChannel::run($ebayUser);
 
-                CheckEbayChannel::run($ebayUser->refresh());
+                UpdateEbayUserData::make()->restoreLocation($ebayUser->refresh());
+
+                CheckEbayChannel::run($ebayUser);
 
                 $routeName = match ($ebayUser->customer->is_fulfilment) {
                     true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',

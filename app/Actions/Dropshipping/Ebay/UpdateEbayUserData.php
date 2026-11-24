@@ -104,10 +104,14 @@ class UpdateEbayUserData extends OrgAction
      */
     public function restoreLocation(EbayUser $ebayUser): bool
     {
+        if (!$ebayUser->hasUsableLocationKey()) {
+            return false;
+        }
+
         $locationKey = $ebayUser->location_key;
         $locations   = $ebayUser->getInventoryLocations();
 
-        if (!$ebayUser->hasUsableLocationKey() || !is_array($locations) || !Arr::has($locations, 'total')) {
+        if (!is_array($locations) || !Arr::has($locations, 'total')) {
             return false;
         }
 

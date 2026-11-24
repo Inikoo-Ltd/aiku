@@ -1416,6 +1416,35 @@ test('a publish refused for a location eBay lists as enabled is not retried and 
         ->and($portfolio->upload_warning)->toContain('Location information not found');
 });
 
+test('a draft upload whose offer eBay refuses for a location missing on the account recreates it and stores the draft', function () {
+    $ebayUser = ebayChannel($this);
+    $ebayUser->customerSalesChannel->update(['settings' => ['upload_as_draft' => true]]);
+    $portfolio  = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
+    $offerPosts = 0;
+    $offers     = ebayOfferRoutes(createdOfferId: 'offer-draft');
+
+    fakeEbay($this, ebayCatalogueRoutes() + [
+        '/sell/inventory/v1/location' => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(null, 204)
+            : Http::response(['locations' => [], 'total' => 0]),
+        '/sell/inventory/v1/offer' => function (Request $request) use (&$offerPosts, $offers) {
+            if ($request->method() === 'POST' && ++$offerPosts === 1) {
+                return Http::response(['errors' => [['errorId' => 25002, 'domain' => 'API_INVENTORY', 'category' => 'Request', 'message' => 'A user error has occurred. Location information not found. Please try again or contact customer service.']]], 400);
+            }
+
+            return $offers($request);
+        },
+    ]);
+
+    $portfolio = StoreEbayProduct::run($ebayUser, $portfolio)->refresh();
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/aw-warehouse-gb'))->not->toBeNull()
+        ->and($offerPosts)->toBe(2)
+        ->and($portfolio->platform_product_id)->toBe('offer-draft')
+        ->and($portfolio->upload_warning)->toBeNull()
+        ->and(lastPortfolioLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::OK);
+});
+
 test('uploading with a token eBay no longer accepts shows the authorisation error and never publishes', function () {
     $ebayUser  = ebayChannel($this);
     $portfolio = StorePortfolio::make()->action($ebayUser->customerSalesChannel, $this->product, []);
@@ -1923,6 +1952,26 @@ test('the OAuth callback exchanges the code, stores the tokens and hands the use
         && $request['code'] === 'v^1.1#auth-code'
         && $request['redirect_uri'] === 'aiku-redirect'
         && str_starts_with($request->header('Authorization')[0], 'Basic '));
+});
+
+test('the OAuth callback creates the channel location on the eBay account just authorised when it is not there', function () {
+    $ebayUser = ebayChannel($this);
+    $ebayUser->update(['step' => EbayUserStepEnum::MARKETPLACE, 'data' => ['ebay_user' => ['userId' => 'u-first', 'username' => 'first_seller']]]);
+
+    fakeEbay($this, [
+        'oauth2/token'                => ['access_token' => 'v^1.1#other-access', 'refresh_token' => 'v^1.1#other-refresh', 'expires_in' => 7200],
+        '/commerce/identity/v1/user/' => ['userId' => 'u-second', 'username' => 'second_seller', 'accountType' => 'BUSINESS'],
+        '/sell/inventory/v1/location' => fn (Request $request) => $request->method() === 'POST'
+            ? Http::response(null, 204)
+            : Http::response(['locations' => [], 'total' => 0]),
+    ]);
+    CheckEbayChannel::mock()->shouldReceive('handle')->once()->andReturn($ebayUser->customerSalesChannel);
+
+    CallbackRetinaEbayUser::make()->handle($ebayUser->customer, ['code' => 'v^1.1#auth-code']);
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/aw-warehouse-gb')->data()['location']['address']['country'])->toBe('GB')
+        ->and($ebayUser->refresh()->location_key)->toBe('aw-warehouse-gb')
+        ->and(Arr::get($ebayUser->data, 'ebay_user.userId'))->toBe('u-second');
 });
 
 test('the OAuth callback with no channel waiting for it just sends the customer to the success page', function () {

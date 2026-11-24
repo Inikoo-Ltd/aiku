@@ -305,20 +305,20 @@ class StoreEbayProduct extends RetinaAction
                     $offerData['category_id'] = $categoryId;
                 }
 
-                $updatedOffer = $ebayUser->updateOffer(Arr::get($offer, 'offerId'), $offerData);
+                $updatedOffer = $this->withLocationRestored($ebayUser, fn () => $ebayUser->updateOffer(Arr::get($offer, 'offerId'), $offerData));
 
                 if ($handleError($updatedOffer)) {
                     return $this->retryOnFreshOffer($ebayUser, $portfolio, $updatedOffer, $reusedUnpublishedOfferId, $isRetryOnFreshOffer);
                 }
             } else {
-                $offer = $ebayUser->storeOffer([
+                $offer = $this->withLocationRestored($ebayUser, fn () => $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
                     'description' => Arr::get($inventoryItem, 'product.description'),
                     'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity', 1),
                     'price' => $customerPrice,
                     'currency' => $portfolio->shop->currency->code,
                     'category_id' => $categoryId
-                ]);
+                ]));
             }
 
             if ($handleError($offer)) {
@@ -434,6 +434,24 @@ class StoreEbayProduct extends RetinaAction
      * listing that points at it. The channel's policy is kept while eBay still lists it as usable, otherwise
      * another usable one is taken, or a new one is created from the channel's postage settings.
      */
+    /**
+     * eBay checks the channel's location when the offer is created or updated, not only at publish (PRE-137: a
+     * channel re-authorised with another eBay account kept a key that only existed on the first account). The
+     * location is restored under the same key and the call is made once more, so draft uploads recover too.
+     *
+     * @param  callable(): mixed  $offerCall
+     */
+    private function withLocationRestored(EbayUser $ebayUser, callable $offerCall): mixed
+    {
+        $response = $offerCall();
+
+        if ($ebayUser->isLocationNotFoundError($response) && UpdateEbayUserData::make()->restoreLocation($ebayUser)) {
+            return $offerCall();
+        }
+
+        return $response;
+    }
+
     private function swapInUsableFulfilmentPolicy(EbayUser $ebayUser, string $offerId): bool
     {
         $currentPolicyId = $ebayUser->fulfillment_policy_id;
