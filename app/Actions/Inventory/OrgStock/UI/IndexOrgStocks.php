@@ -21,6 +21,7 @@ use App\Actions\Procurement\OrgAgent\WithOrgAgentSubNavigation;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithOrgPartnerSubNavigation;
 use App\Actions\Traits\Authorisations\Inventory\WithInventoryAuthorisation;
+use App\Actions\Traits\WithMarginData;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -49,6 +50,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexOrgStocks extends OrgAction
 {
     use WithInventoryAuthorisation;
+    use WithMarginData;
     use WithOrgAgentSubNavigation;
     use WithOrgPartnerSubNavigation;
 
@@ -404,6 +406,8 @@ class IndexOrgStocks extends OrgAction
             $this->attachLocations($paginator);
         } elseif ($prefix === OrgStocksTabsEnum::NEXT_DELIVERIES->value) {
             $this->attachNextDeliveries($paginator, $organisationId);
+        } elseif ($prefix === OrgStocksTabsEnum::INDEX->value) {
+            $this->attachMargins($paginator, $organisationId, $onlyWarehouse);
         }
 
         return $paginator;
@@ -416,6 +420,13 @@ class IndexOrgStocks extends OrgAction
             ->whereColumn('location_org_stocks.org_stock_id', 'org_stocks.id')
             ->where('location_org_stocks.quantity', '<', 0)
             ->when($warehouse, fn ($negativeLocations) => $negativeLocations->where('location_org_stocks.warehouse_id', $warehouse->id)));
+    }
+
+    protected function attachMargins(LengthAwarePaginator $paginator, int $organisationId, ?Warehouse $warehouse): void
+    {
+        $margins = $this->getOrgStocksMargins($paginator->getCollection()->pluck('id')->all(), Organisation::find($organisationId), $warehouse?->id);
+
+        $paginator->getCollection()->each(fn (OrgStock $orgStock) => $orgStock->setAttribute('margins', $margins[$orgStock->id] ?? null));
     }
 
     protected function attachLocations(LengthAwarePaginator $paginator): void
@@ -584,6 +595,7 @@ class IndexOrgStocks extends OrgAction
                     ->column(key: 'quantity_available', label: __('Stock'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'stock_value', label: __('Value'), tooltip: __('Stock value — valued with').' '.OrgStockValuationMethodEnum::official()->label().' ('.__('the official valuation').')', tooltipIcon: true, canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'potential_sales', label: __('Pot. sales'), tooltip: __('Potential sales'), canBeHidden: false, sortable: true, type: 'currency')
+                    ->column(key: 'margins', label: __('Margin'), tooltip: __('Price against replacement cost, lowest to highest across shops'), canBeHidden: false, align: 'right')
                     ->column(key: 'on_the_way_po_value', label: __('OTW'), tooltip: __("On the way (submitted purchase orders)"), canBeHidden: false, sortable: true, type: 'currency')
                     ->column(key: 'stock_cover', label: __('Cover'), canBeHidden: false, sortable: true, align: 'right');
 

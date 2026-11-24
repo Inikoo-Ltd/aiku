@@ -8,11 +8,15 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -70,6 +74,57 @@ trait WithMarginData
             FROM product_has_org_stocks phos
             JOIN org_stocks os ON os.id = phos.org_stock_id
             WHERE phos.product_id = products.id AND $replacementCost > 0) * $quantityColumn";
+    }
+
+    /**
+     * Commercial margin of the products selling each SKO, per shop: price converted to org
+     * currency against the replacement cost of all the product's SKOs. Products with no
+     * price (or the 0.01 placeholder some external shops hold) or no cost basis are left out, never shown as 100%.
+     * SKOs with nothing to show are missing from the result.
+     *
+     * @param  list<int>  $orgStockIds
+     * @return array<int, array{min: float, max: float, shops: list<array{shop: string, min: float, max: float}>}>
+     */
+    public function getOrgStocksMargins(array $orgStockIds, Organisation $organisation, ?int $warehouseId = null): array
+    {
+        if (!$orgStockIds) {
+            return [];
+        }
+
+        $rows = DB::table('products')
+            ->join('product_has_org_stocks as this_sko', 'this_sko.product_id', '=', 'products.id')
+            ->join('shops', 'shops.id', '=', 'products.shop_id')
+            ->whereIn('this_sko.org_stock_id', $orgStockIds)
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->whereNot('shops.state', ShopStateEnum::CLOSED->value)
+            ->where('products.price', '>', 0.01)
+            ->selectRaw('this_sko.org_stock_id, products.shop_id, products.price, '.$this->estimatedCostSql('1').' as cost')
+            ->get()
+            ->filter(fn ($row) => $row->cost > 0);
+
+        $shops = Shop::whereIn('id', $rows->pluck('shop_id')->unique())->with('currency')->get()
+            ->filter(fn (Shop $shop) => $this->canSeeMargins($shop, $warehouseId))
+            ->keyBy('id');
+
+        $rates = $shops->map(fn (Shop $shop) => GetCurrencyExchange::run($shop->currency, $organisation->currency));
+
+        return $rows->whereIn('shop_id', $shops->keys())->groupBy('org_stock_id')
+            ->map(function ($orgStockRows) use ($shops, $rates) {
+                $perShop = $orgStockRows->groupBy('shop_id')
+                    ->map(function ($shopRows, $shopId) use ($shops, $rates) {
+                        $rate    = $rates[$shopId];
+                        $margins = $rate ? $shopRows->map(fn ($row) => round(100 * (1 - $row->cost / ($row->price * $rate)), 1)) : collect();
+
+                        return ['shop' => $shops[$shopId]->name, 'min' => $margins->min(), 'max' => $margins->max()];
+                    })
+                    ->filter(fn ($shopMargin) => $shopMargin['min'] !== null)
+                    ->sortBy('shop')
+                    ->values();
+
+                return $perShop->isEmpty() ? null : ['min' => $perShop->min('min'), 'max' => $perShop->max('max'), 'shops' => $perShop->all()];
+            })
+            ->filter()
+            ->all();
     }
 
     /**

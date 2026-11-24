@@ -23,10 +23,6 @@ use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Traits\HasBucketImages;
 use App\Actions\Traits\WithMarginData;
-use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Models\Catalogue\Shop;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductsShowcaseData;
 use App\Actions\Procurement\GetOrganisationStockCoverBuckets;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -150,7 +146,7 @@ class GetOrgStockShowcase
                     ],
                     'cover'           => $this->getCover($orgStock),
                     'stock_cost'      => $this->getStockCost($orgStock),
-                    'margins'         => $this->getMargins($orgStock, $warehouse),
+                    'margins'         => $this->getOrgStocksMargins([$orgStock->id], $orgStock->organisation, $warehouse->id)[$orgStock->id] ?? null,
                     'summary'         => $this->getSummary($orgStock),
                     'waiting_delivery_notes_route' => [
                         'name'       => preg_replace('/\.(stock_history|procurement|products|delivery_notes|batch_codes|labels)$/', '', request()->route()->getName()).'.delivery_notes',
@@ -296,50 +292,6 @@ class GetOrgStockShowcase
                 'value' => $perSku[$method->value],
             ], OrgStockValuationMethodEnum::ordered()),
         ];
-    }
-
-    /**
-     * Commercial margin of the products selling this SKO, per shop: price converted to org
-     * currency against the replacement cost of all the product's SKOs. Products with no
-     * price (or the 0.01 placeholder some external shops hold) or no cost basis are left out, never shown as 100%.
-     *
-     * @return array{min: float, max: float, shops: list<array{shop: string, min: float, max: float}>}|null
-     */
-    private function getMargins(OrgStock $orgStock, Warehouse $warehouse): ?array
-    {
-        $rows = DB::table('products')
-            ->join('product_has_org_stocks as this_sko', 'this_sko.product_id', '=', 'products.id')
-            ->join('shops', 'shops.id', '=', 'products.shop_id')
-            ->where('this_sko.org_stock_id', $orgStock->id)
-            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
-            ->whereNot('shops.state', ShopStateEnum::CLOSED->value)
-            ->where('products.price', '>', 0.01)
-            ->selectRaw('products.shop_id, products.price, '.$this->estimatedCostSql('1').' as cost')
-            ->get()
-            ->filter(fn ($row) => $row->cost > 0);
-
-        $shops = Shop::whereIn('id', $rows->pluck('shop_id')->unique())->with('currency')->get()
-            ->filter(fn (Shop $shop) => $this->canSeeMargins($shop, $warehouse->id))
-            ->keyBy('id');
-
-        $orgCurrency = $orgStock->organisation->currency;
-        $perShop     = $rows->whereIn('shop_id', $shops->keys())->groupBy('shop_id')
-            ->map(function ($shopRows, $shopId) use ($shops, $orgCurrency) {
-                $shop    = $shops[$shopId];
-                $rate    = GetCurrencyExchange::run($shop->currency, $orgCurrency);
-                $margins = $rate ? $shopRows->map(fn ($row) => round(100 * (1 - $row->cost / ($row->price * $rate)), 1)) : collect();
-
-                return ['shop' => $shop->name, 'min' => $margins->min(), 'max' => $margins->max()];
-            })
-            ->filter(fn ($shopMargin) => $shopMargin['min'] !== null)
-            ->sortBy('shop')
-            ->values();
-
-        if ($perShop->isEmpty()) {
-            return null;
-        }
-
-        return ['min' => $perShop->min('min'), 'max' => $perShop->max('max'), 'shops' => $perShop->all()];
     }
 
     private function getFractionalQuantity(int|float|null $quantity, int|float|null $packedIn): array
