@@ -82,6 +82,9 @@ const isCreatingOrder = ref(false)
 
 const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
+
+const marginRange = ({ min, max }: { min: number; max: number }) =>
+    min === max ? `${min}%` : `${min}% – ${max}%`
 const isOpenMoveAllSku = ref(false)
 const transferReasonOptions = computed(() => props.transfer_reason ?? {})
 const defaultReason = computed(() => Object.keys(transferReasonOptions.value)[0] ?? null)
@@ -585,6 +588,14 @@ const orgStockRouteProductIndex = (orgStock: OrgStock) => {
 
         <template #cell(potential_sales)="{ item }">
             <span class="tabular-nums">{{ locale.currencyFormat(item.currency_code, item.potential_sales) }}</span>
+        </template>
+
+        <template #cell(margins)="{ item }">
+            <span v-if="item.margins" class="tabular-nums whitespace-nowrap"
+                v-tooltip="item.margins.shops.map((shopMargin: { shop: string; min: number; max: number }) => `${shopMargin.shop}: ${marginRange(shopMargin)}`).join('\n')">
+                {{ marginRange(item.margins) }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #cell(stock_cover)="{ item }">

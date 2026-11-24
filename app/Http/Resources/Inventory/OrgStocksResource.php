@@ -104,6 +104,7 @@ class OrgStocksResource extends JsonResource
             'sku_value'                         => $this->sku_value ?? 0,
             'locations_list'                    => $this->locations_list ?? null,
             'next_deliveries'                   => $this->next_deliveries ?? null,
+            'margins'                           => $this->margins ?? null,
         ];
     }
 
