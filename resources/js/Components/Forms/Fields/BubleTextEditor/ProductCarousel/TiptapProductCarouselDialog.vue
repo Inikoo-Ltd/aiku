@@ -13,11 +13,16 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Image from "@common/Components/Image.vue"
 import { ctrans } from "@/Composables/useTrans"
 import {
+	CAROUSEL_TEXT_TAGS,
+	type CarouselTextTag,
+	DEFAULT_PRODUCT_NAME_TAG,
+	DEFAULT_TITLE_TAG,
 	MAX_PRODUCTS_PER_CAROUSEL,
 	PRODUCTS_PER_VIEW_OPTIONS,
 	type ProductCarouselAttributes,
 	type ProductCarouselRoutes,
 	type ProductCarouselSource,
+	carouselTextTag,
 	familyProductsLimit,
 } from "./productCarouselAttributes"
 
@@ -51,6 +56,8 @@ const visible = ref(props.show)
 const source = ref<ProductCarouselSource>(props.attributes.source)
 const title = ref(props.attributes.title)
 const perView = ref(String(props.attributes.perView))
+const titleTag = ref<CarouselTextTag>(carouselTextTag(props.attributes.titleTag, DEFAULT_TITLE_TAG))
+const productNameTag = ref<CarouselTextTag>(carouselTextTag(props.attributes.productNameTag, DEFAULT_PRODUCT_NAME_TAG))
 const limit = ref(familyProductsLimit(props.attributes.limit))
 const pickedProducts = ref<PickedProduct[]>(props.attributes.codes.map((code) => ({ code })))
 const productQuery = ref<any>(null)
@@ -64,6 +71,10 @@ const sourceOptions = computed(() => [
 	{ label: ctrans("Products"), value: "products" as ProductCarouselSource, icon: faBox },
 	{ label: ctrans("Family"), value: "family" as ProductCarouselSource, icon: faFolder },
 ])
+
+const textTagOptions = computed(() =>
+	CAROUSEL_TEXT_TAGS.map((tag) => ({ label: tag === "p" ? ctrans("Paragraph") : tag.toUpperCase(), value: tag })),
+)
 
 const perViewOptions = PRODUCTS_PER_VIEW_OPTIONS.map((value) => ({ label: String(value), value: String(value) }))
 
@@ -186,6 +197,8 @@ function save() {
 		limit: familyProductsLimit(limit.value),
 		title: title.value.trim(),
 		perView: Number(perView.value),
+		titleTag: titleTag.value,
+		productNameTag: productNameTag.value,
 	})
 	closeDialog()
 }
@@ -205,6 +218,17 @@ function save() {
 					{{ ctrans("Title") }}
 				</label>
 				<InputText id="input-product-carousel-title" v-model="title" class="w-full" :placeholder="ctrans('Optional, e.g. Our Christmas picks')" />
+			</div>
+
+			<div>
+				<div class="mb-2 select-none text-sm text-gray-600">{{ ctrans("Title tag") }}</div>
+				<SegmentedToggle v-model="titleTag" :options="textTagOptions" :ariaLabel="ctrans('Title tag')" />
+			</div>
+
+			<div>
+				<div class="mb-2 select-none text-sm text-gray-600">{{ ctrans("Product name tag") }}</div>
+				<SegmentedToggle v-model="productNameTag" :options="textTagOptions" :ariaLabel="ctrans('Product name tag')" />
+				<p class="mt-1 text-xs text-gray-500">{{ ctrans("Pick the heading level that fits the page structure, or Paragraph for plain text.") }}</p>
 			</div>
 
 			<div>

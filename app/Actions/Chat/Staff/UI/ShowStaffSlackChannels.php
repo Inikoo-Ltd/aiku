@@ -20,6 +20,7 @@ use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -105,12 +106,14 @@ class ShowStaffSlackChannels extends OrgAction
      * The channel list and its live channel, computed once and only when a response asks for them. Deferred, they
      * come as one group after the page has opened; a person who is not active cannot read Slack, so they get none.
      *
-     * @return array{slack_channels: mixed, slack_live_channel: mixed}
+     * @return array{slack_channels: mixed, slack_live_channel: mixed, desk_starred: array<int, string>}
      */
     public function listProps(Group $group, User $user, bool $deferred = false): array
     {
+        $starred = Arr::get($user->settings, 'desk_starred') ?? [];
+
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_live_channel' => null];
+            return ['slack_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
         }
 
         $memo        = null;
@@ -120,8 +123,8 @@ class ShowStaffSlackChannels extends OrgAction
         $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
 
         return $deferred
-            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack')]
-            : ['slack_channels' => $channels, 'slack_live_channel' => $liveChannel];
+            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
+            : ['slack_channels' => $channels, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
     }
 
     private function tsParameter(ActionRequest $request, string $key): ?string

@@ -61,6 +61,13 @@ import kotlin.math.abs
 
 internal const val ACTIVE_STATE = "active"
 
+internal fun skoStateTone(state: String): Tone = when (state) {
+    ACTIVE_STATE -> Tone.Success
+    "discontinuing" -> Tone.Warn
+    "discontinued", "abnormality" -> Tone.Danger
+    else -> Tone.Neutral
+}
+
 internal val skoChipBuckets = listOf(SkoBucket.Current, SkoBucket.Discontinued, SkoBucket.Abnormality, SkoBucket.All)
 
 @StringRes
@@ -243,7 +250,7 @@ private fun SkoListRow(sko: OrgStockRow, isAbnormality: Boolean, onOpen: () -> U
         code = sko.code,
         subtitle = subtitle,
         chip = sko.stateLabel.takeIf { sko.state != ACTIVE_STATE && it.isNotBlank() },
-        chipTone = if (isAbnormality) Tone.Danger else Tone.Neutral,
+        chipTone = skoStateTone(sko.state),
         done = if (isAbnormality) null else stockText(sko.quantityAvailable, sko.quantityAvailableLabel),
         imageUrl = sko.imageUrl,
         extra = if (locationLine == null) {

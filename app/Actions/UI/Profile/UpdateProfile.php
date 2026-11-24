@@ -115,6 +115,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['tickets_list_mine'] = (string) Arr::pull($modelData, 'tickets_list_mine');
         }
 
+        if (Arr::exists($modelData, 'desk_starred')) {
+            $modelData['settings']['desk_starred'] = array_values(array_unique(Arr::pull($modelData, 'desk_starred') ?? []));
+        }
+
         if (Arr::exists($modelData, 'projects_view')) {
             $modelData['settings']['projects_view'] = (string) Arr::pull($modelData, 'projects_view');
         }
@@ -346,6 +350,8 @@ class UpdateProfile extends OrgAction
             'tickets_list_mine'                   => ['sometimes', 'nullable', 'string', 'max:100'],
             'sales_quarters'                      => ['sometimes', 'integer', 'between:4,8'],
             'projects_view'                       => ['sometimes', 'string', Rule::in(['table', 'cards'])],
+            'desk_starred'                        => ['sometimes', 'nullable', 'array', 'max:200'],
+            'desk_starred.*'                      => ['string', 'regex:/^(slack-\d+|dm-[0-9A-Za-z]{26})$/'],
             'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],
             'rail_hidden_badges.*'                => ['string', Rule::in(self::RAIL_BADGES)],
             'rail_parts'                          => ['sometimes', 'array', 'max:50'],

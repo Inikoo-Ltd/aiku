@@ -389,7 +389,7 @@ const confirmDelete = async () => {
             </button>
         </div>
 
-        <div v-if="hasToolbar" class="absolute -top-4 right-4 z-10 hidden group-hover:block group-focus-within:block">
+        <div v-if="hasToolbar" class="absolute -top-4 right-4 z-10 invisible transition-[visibility] delay-0 group-hover:visible group-hover:delay-100 group-focus-within:visible">
             <DeskMessageToolbar
                 :can-react="canAct"
                 :mine="mineUnicode"

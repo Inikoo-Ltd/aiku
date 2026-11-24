@@ -1,7 +1,7 @@
 import { Node } from "@tiptap/core"
-import { type ProductCarouselAttributes, defaultProductCarouselAttributes, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "./productCarouselAttributes"
+import { DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, type ProductCarouselAttributes, carouselTextTag, defaultProductCarouselAttributes, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "./productCarouselAttributes.ts"
 
-export { type ProductCarouselAttributes, defaultProductCarouselAttributes } from "./productCarouselAttributes"
+export { type ProductCarouselAttributes, defaultProductCarouselAttributes } from "./productCarouselAttributes.ts"
 
 export const PRODUCT_CAROUSEL_NODE = "productCarousel"
 
@@ -67,6 +67,16 @@ export const ProductCarousel = Node.create<ProductCarouselOptions>({
 				default: defaultProductCarouselAttributes().perView,
 				parseHTML: (element) => productsPerView(element.getAttribute("data-per-view")),
 				renderHTML: (attributes) => ({ "data-per-view": String(productsPerView(attributes.perView)) }),
+			},
+			titleTag: {
+				default: DEFAULT_TITLE_TAG,
+				parseHTML: (element) => carouselTextTag(element.getAttribute("data-title-tag"), DEFAULT_TITLE_TAG),
+				renderHTML: (attributes) => ({ "data-title-tag": carouselTextTag(attributes.titleTag, DEFAULT_TITLE_TAG) }),
+			},
+			productNameTag: {
+				default: DEFAULT_PRODUCT_NAME_TAG,
+				parseHTML: (element) => carouselTextTag(element.getAttribute("data-product-name-tag"), DEFAULT_PRODUCT_NAME_TAG),
+				renderHTML: (attributes) => ({ "data-product-name-tag": carouselTextTag(attributes.productNameTag, DEFAULT_PRODUCT_NAME_TAG) }),
 			},
 		}
 	},

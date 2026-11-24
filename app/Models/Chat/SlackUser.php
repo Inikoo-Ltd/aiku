@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_deleted
  * @property int|null $user_id
  * @property array|null $data
+ * @property \Illuminate\Support\Carbon|null $link_confirmed_at
+ * @property int|null $link_confirmed_by_user_id
  */
 class SlackUser extends Model
 {
@@ -37,6 +39,7 @@ class SlackUser extends Model
             'data'       => 'array',
             'is_bot'     => 'boolean',
             'is_deleted' => 'boolean',
+            'link_confirmed_at' => 'datetime',
         ];
     }
 

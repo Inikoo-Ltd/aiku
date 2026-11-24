@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.data.api.FamilyStatusCount
+import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private val TileShape = RoundedCornerShape(10.dp)
@@ -46,11 +48,12 @@ private val Green500 = Color(0xFF22C55E)
 private val Blue500 = Color(0xFF3B82F6)
 private val Gray500 = Color(0xFF6B7280)
 
-internal fun skoStatusLook(key: String): StatusLook = when (key) {
-    "active" -> StatusLook(R.drawable.ic_fa_check_circle, Green500)
-    "discontinuing" -> StatusLook(R.drawable.ic_fa_exclamation_circle, Yellow500)
-    "discontinued" -> StatusLook(R.drawable.ic_fa_times_circle, Red500)
-    else -> StatusLook(R.drawable.ic_fa_pause_circle, Gray500)
+@DrawableRes
+internal fun skoStatusIcon(key: String): Int = when (key) {
+    "active" -> R.drawable.ic_fa_check_circle
+    "discontinuing" -> R.drawable.ic_fa_exclamation_circle
+    "discontinued" -> R.drawable.ic_fa_times_circle
+    else -> R.drawable.ic_fa_pause_circle
 }
 
 internal fun quantityStatusLook(key: String): StatusLook = when (key) {
@@ -62,6 +65,13 @@ internal fun quantityStatusLook(key: String): StatusLook = when (key) {
     "ok" -> StatusLook(R.drawable.ic_fa_dot_circle, Green500)
     "excess" -> StatusLook(R.drawable.ic_fa_arrow_alt_circle_up, Blue500)
     else -> StatusLook(R.drawable.ic_fa_arrow_alt_circle_up, Gray500)
+}
+
+@Composable
+private fun skoStatusLook(key: String): StatusLook {
+    val tone = skoStateTone(key)
+    val tint = if (tone == Tone.Neutral) LocalAikuColors.current.textTertiary else LocalAikuColors.current.tone(tone).content
+    return StatusLook(skoStatusIcon(key), tint)
 }
 
 @Composable

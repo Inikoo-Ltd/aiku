@@ -648,6 +648,21 @@ test('people can hide right panel badges from the narrow bar', function () {
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_parts' => [['key' => 'not_a_part', 'value' => false]]])->assertSessionHasErrors('rail_parts.0.key');
 });
 
+test('Desk keeps each person\'s starred channels and conversations and gives them back to the Desk page', function () {
+    actingAs($this->user);
+    $ulid = (string) \Illuminate\Support\Str::ulid();
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['desk_starred' => ['slack-12', 'dm-'.$ulid, 'slack-12']])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['desk_starred'])->toBe(['slack-12', 'dm-'.$ulid]);
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['desk_starred' => ['<script>']])->assertSessionHasErrors('desk_starred.0');
+
+    get(route('grp.chat.staff.index'))->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMessaging')->where('desk_starred', ['slack-12', 'dm-'.$ulid]));
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['desk_starred' => []])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['desk_starred'] ?? [])->toBe([]);
+});
+
 test('people get told about tasks for them and the task badge counts their work', function () {
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class]);
     $newColleague = fn () => \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => [['slug' => 'group-admin', 'scopes' => []]]]))->getUser();

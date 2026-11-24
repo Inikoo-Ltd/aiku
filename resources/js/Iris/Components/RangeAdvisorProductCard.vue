@@ -31,6 +31,7 @@ const props = defineProps<{
     buttonStyleHover?: object
     dark?: boolean
     hideBasket?: boolean
+    nameTag?: string
 }>()
 
 const layout: any = inject("layout", retinaLayoutStructure)
@@ -121,9 +122,11 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
                 <span class="advisor-reason-text">{{ product.assistant_reason }}</span>
             </p>
 
-            <component :is="product.url ? LinkIris : 'span'" :href="product.url ?? undefined" class="advisor-name" :title="product.name">
-                <span v-if="product.units > 1" class="advisor-units">{{ product.units }}×</span>
-                {{ product.name }}
+            <component :is="nameTag ?? 'div'" class="advisor-name-tag">
+                <component :is="product.url ? LinkIris : 'span'" :href="product.url ?? undefined" class="advisor-name" :title="product.name">
+                    <span v-if="product.units > 1" class="advisor-units">{{ product.units }}×</span>
+                    {{ product.name }}
+                </component>
             </component>
 
             <div class="advisor-meta">
@@ -278,6 +281,15 @@ const money = (amount: number) => locale.currencyFormat(currencyCode.value, amou
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.advisor-name-tag {
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
 }
 
 .advisor-name {
