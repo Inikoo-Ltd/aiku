@@ -44,6 +44,9 @@ class ClassifyBankOutgoing
 
     public const string OWN_BALANCE_TYPE = 'INTERBALANCE';
 
+    /** PayPal refunds (T1107) and reversals (T1106) of customer payments: already refund invoices, never a cost. */
+    public const array CUSTOMER_REFUND_TYPES = ['T1107', 'T1106'];
+
     public const string NEEDS_PERSON = 'needs_person';
 
     public string $commandSignature = 'bank-transactions:classify-outgoing';
@@ -61,6 +64,7 @@ class ClassifyBankOutgoing
         $label  = 'case
             when bank_transactions.provider_type in ('.$inList(self::FEE_TYPES).") then '".BankPayeeCategoryEnum::BANK_FEES->value."'
             when bank_transactions.provider_type = 'TRANSFER' and bank_transactions.order_id is not null then '".BankPayeeCategoryEnum::CUSTOMER_REFUNDS->value."'
+            when bank_transactions.provider_type in (".$inList(self::CUSTOMER_REFUND_TYPES).") then '".BankPayeeCategoryEnum::CUSTOMER_REFUNDS->value."'
             when bank_transactions.provider_type is null or bank_transactions.provider_type not in (".$inList(self::PAYEE_TYPES).") then '".BankPayeeCategoryEnum::OTHER->value."'
             else coalesce(
                 (select bank_payees.category from bank_payees where bank_payees.group_id = bank_transactions.group_id and bank_payees.key = bank_transactions.payee_key),

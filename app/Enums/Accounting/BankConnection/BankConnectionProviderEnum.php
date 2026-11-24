@@ -17,5 +17,6 @@ enum BankConnectionProviderEnum: string
     case WISE = 'wise';
     case FIO = 'fio';
     case TATRA = 'tatra';
+    case PAYPAL = 'paypal';
     case OPEN_BANKING = 'open_banking';
 }

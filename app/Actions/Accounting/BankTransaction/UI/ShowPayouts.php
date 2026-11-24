@@ -47,7 +47,7 @@ class ShowPayouts extends OrgAction
 {
     use WithBankLines;
 
-    public const array PROVIDERS = ['checkout', 'pastpay', 'cod'];
+    public const array PROVIDERS = ['checkout', 'paypal', 'pastpay', 'cod'];
 
     /** ponytail: matches the 90 days MatchBankTransactions looks back for PastPay; older unsettled money is shown apart, as it was most likely paid in a payout that did not reconcile. */
     public const int HELD_DAYS = 90;
@@ -130,7 +130,7 @@ class ShowPayouts extends OrgAction
 
         $orgAmount   = $this->orgAmountSql();
         $channelSql  = IndexBankIncoming::PROVIDER_SQL;
-        $familySql   = "case when ($channelSql) in ('checkout', 'pastpay') then ($channelSql) else 'cod' end";
+        $familySql   = "case when ($channelSql) in ('checkout', 'paypal', 'pastpay') then ($channelSql) else 'cod' end";
         $fees        = self::FEES_SQL;
         $payoutLines = $this->bankLines(BankTransaction::query(), $parent, $period, null, null, null)
             ->whereRaw('('.IndexBankIncoming::BUCKET_SQL.') = ?', ['payment_accounts'])

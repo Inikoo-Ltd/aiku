@@ -1238,6 +1238,7 @@ class MatchBankTransactions
                     ->flatMap(fn (BankTransaction $bankTransaction) => $bankTransaction->settledOrderIds())
                     ->all();
                 BankTransaction::where('bank_connection_id', $bankConnection->id)
+                    ->whereIn('provider_type', self::CUSTOMER_TRANSFER_TYPES)
                     ->whereNull('payment_id')
                     ->where(fn ($query) => $query->whereNull('match_state')->orWhere('match_state', '!=', BankTransactionMatchStateEnum::DISMISSED))
                     ->whereNull('match_data->dismissed_at')

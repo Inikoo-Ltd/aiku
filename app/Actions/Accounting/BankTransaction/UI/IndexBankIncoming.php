@@ -260,6 +260,7 @@ class IndexBankIncoming extends OrgAction
         return [
             'checkout' => 'Checkout',
             'pastpay'  => 'PastPay',
+            'paypal'   => 'PayPal',
             ...collect(ReconcileCodPayouts::CARRIERS)->map(fn (array $carrier) => $carrier['name'])->all(),
             'cod'      => __('Cash on delivery'),
         ];

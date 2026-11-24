@@ -96,7 +96,7 @@ const periodOptions = [
 const organisationOptions = computed(() => [{ label: ctrans("All"), value: "all" }, ...props.organisations])
 
 const groups = computed(() => {
-	const labels: Record<string, string> = { checkout: "Checkout", pastpay: "PastPay", cod: ctrans("Cash on delivery"), marketplace: ctrans("Marketplaces") }
+	const labels: Record<string, string> = { checkout: "Checkout", paypal: "PayPal", pastpay: "PastPay", cod: ctrans("Cash on delivery"), marketplace: ctrans("Marketplaces") }
 	return Object.entries(labels)
 		.map(([key, label]) => ({ key, label, rows: props.payouts.rows.filter((row) => row.provider === key) }))
 		.filter((group) => group.rows.length)
