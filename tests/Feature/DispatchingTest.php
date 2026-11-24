@@ -5559,6 +5559,69 @@ test('lines waiting for customer service flag other items still waiting in the w
         ->and($row['delivery_note_number_items_not_picked'])->toBeGreaterThanOrEqual(1);
 });
 
+test('waiting items for customer service show since when each delivery note waits, oldest first', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+    $deliveryNote->update(['number_items_waiting_crm' => 1, 'handling_blocked_at' => now()->subDays(3)]);
+
+    $newerNote = $deliveryNote->replicate(['slug', 'reference']);
+    $newerNote->slug = $deliveryNote->slug.'-newer';
+    $newerNote->reference = $deliveryNote->reference.'-newer';
+    $newerNote->handling_blocked_at = now()->subDay();
+    $newerNote->save();
+
+    $rows = function (array $extra = []) use ($deliveryNote, $newerNote) {
+        return collect(get(route('grp.org.shops.show.ordering.backlog.waiting_items', array_merge([$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse'], $extra)))
+            ->assertOk()
+            ->viewData('page')['props']['waiting_crm_items']['data'])
+            ->whereIn('delivery_note_id', [$deliveryNote->id, $newerNote->id])
+            ->values();
+    };
+
+    $oldestFirst = $rows();
+    expect($oldestFirst->pluck('delivery_note_id')->all())->toBe([$deliveryNote->id, $newerNote->id])
+        ->and($oldestFirst[0]['waiting_since'])->toBe(\Illuminate\Support\Carbon::parse($deliveryNote->refresh()->handling_blocked_at)->toIso8601String());
+
+    expect($rows(['sort' => '-waiting_since'])->pluck('delivery_note_id')->all())->toBe([$newerNote->id, $deliveryNote->id]);
+});
+
+test('warehouse waiting lists show since when each delivery note waits: grouped by note oldest first, itemized keeps the picking walk unless sorted by it', function () {
+    $blockedNote = function (int $daysWaiting) {
+        [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+        $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1, 'quantity_waiting_warehouse' => 0]);
+        $deliveryNote->update([
+            'state'                    => DeliveryNoteStateEnum::HANDLING_BLOCKED,
+            'number_items_waiting_crm' => 1,
+            'handling_blocked_at'      => now()->subDays($daysWaiting),
+        ]);
+
+        return $deliveryNote;
+    };
+
+    $olderNote = $blockedNote(3);
+    $newerNote = $blockedNote(1);
+    $ours      = [$olderNote->id, $newerNote->id];
+
+    $tabRows = function (string $tab, array $extra = []) use ($ours) {
+        return collect(get(route('grp.org.warehouses.show.dispatching.waiting_crm_items', array_merge([$this->organisation->slug, $this->warehouse->slug, 'tab' => $tab], $extra)))
+            ->assertOk()
+            ->viewData('page')['props'][$tab]['data'])
+            ->whereIn('delivery_note_id', $ours)
+            ->values();
+    };
+
+    $grouped = $tabRows('grouped_by_delivery_note');
+    expect($grouped->pluck('delivery_note_id')->all())->toBe([$olderNote->id, $newerNote->id])
+        ->and($grouped[0]['waiting_since'])->toBe(\Illuminate\Support\Carbon::parse($olderNote->refresh()->handling_blocked_at)->toIso8601String())
+        ->and($tabRows('grouped_by_delivery_note', ['grouped_by_delivery_note_sort' => '-waiting_since'])->pluck('delivery_note_id')->all())->toBe([$newerNote->id, $olderNote->id]);
+
+    $itemized = $tabRows('itemized', ['itemized_sort' => 'waiting_since']);
+    expect($itemized->pluck('delivery_note_id')->all())->toBe([$olderNote->id, $newerNote->id])
+        ->and($itemized[1]['waiting_since'])->toBe(\Illuminate\Support\Carbon::parse($newerNote->refresh()->handling_blocked_at)->toIso8601String())
+        ->and($tabRows('itemized', ['itemized_sort' => '-waiting_since'])->pluck('delivery_note_id')->all())->toBe([$newerNote->id, $olderNote->id]);
+});
+
 test('pending orders waiting items list only orders the warehouse has finished by default, the rest under still with warehouse', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

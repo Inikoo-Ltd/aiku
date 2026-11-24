@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\UI;
 
+use App\Actions\Dispatching\DeliveryNote\UI\WithWaitingSinceSort;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -28,6 +29,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWaitingCrmItemsGrouped extends OrgAction
 {
     use WithOrderingAuthorisation;
+    use WithWaitingSinceSort;
 
     public const string READY = 'ready';
     public const string WITH_WAREHOUSE = 'with_warehouse';
@@ -88,7 +90,9 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
             prefix: $prefix
         );
 
-        return $query->defaultSort('delivery_notes.id')
+        $waitingSinceSort = $this->waitingSinceSort(DeliveryNote::WAITING_SINCE_SQL, 'delivery_notes.id');
+
+        return $query->defaultSort($waitingSinceSort)
             ->select([
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.slug as delivery_note_slug',
@@ -104,6 +108,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 'delivery_notes.shipping_notes as delivery_note_shipping_notes',
                 'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
                 'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
+                DB::raw(DeliveryNote::WAITING_SINCE_SQL.' as waiting_since'),
                 'orders.id as order_id',
                 'orders.slug as order_slug',
                 'orders.reference as order_reference',
@@ -112,11 +117,12 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
             ])
-            ->allowedSorts(['delivery_note_reference'])
+            ->allowedSorts(['delivery_note_reference', $waitingSinceSort])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
+
 
     public function tableStructure(Shop $shop, ?string $prefix = null): Closure
     {
@@ -144,8 +150,9 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
 
             $table->withEmptyState([
                 'title' => __('There is not delivery note with waiting items'),
-            ])->defaultSort('delivery_notes.id');
+            ])->defaultSort('waiting_since');
 
+            $table->column(key: 'waiting_since', label: __('Waiting since'), canBeHidden: false, sortable: true);
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
         };

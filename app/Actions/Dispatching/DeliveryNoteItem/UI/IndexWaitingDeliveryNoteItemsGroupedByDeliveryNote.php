@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
+use App\Actions\Dispatching\DeliveryNote\UI\WithWaitingSinceSort;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -22,6 +23,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
 {
     use WithDeliveryNotesChannel;
+    use WithWaitingSinceSort;
 
     public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
@@ -59,7 +61,9 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
         $query->orderByRaw('delivery_note_is_premium_dispatch DESC NULLS LAST');
         $query->orderByRaw('waiting_warehouse_released_at ASC NULLS LAST');
 
-        return $query->defaultSort('delivery_notes.id')
+        $waitingSinceSort = $this->waitingSinceSort('waiting_since', 'delivery_note_id');
+
+        return $query->defaultSort($waitingSinceSort)
             ->distinct()
             ->select([
                 'delivery_notes.id as delivery_note_id',
@@ -80,9 +84,10 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
             ])
+            ->selectRaw(DeliveryNote::WAITING_SINCE_SQL.' as waiting_since')
             ->selectRaw('(SELECT min(dni_rel.waiting_warehouse_released_at) FROM delivery_note_items dni_rel WHERE dni_rel.delivery_note_id = delivery_notes.id AND dni_rel.has_waiting_warehouse = true) as waiting_warehouse_released_at')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
-            ->allowedSorts(['delivery_note_reference'])
+            ->allowedSorts(['delivery_note_reference', $waitingSinceSort])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
@@ -101,8 +106,9 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
                 'count'  => 0,
             ];
 
-            $table->withEmptyState($emptyStateData);
+            $table->withEmptyState($emptyStateData)->defaultSort('waiting_since');
 
+            $table->column(key: 'waiting_since', label: __('Waiting since'), canBeHidden: false, sortable: true);
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
         };

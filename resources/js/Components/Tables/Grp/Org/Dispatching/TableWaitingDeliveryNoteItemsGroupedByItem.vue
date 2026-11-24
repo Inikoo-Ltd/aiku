@@ -17,6 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingSince from "@/Components/DataDisplay/WaitingSince.vue"
 import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
@@ -113,6 +114,7 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
                                 fixed-width
                                 aria-hidden="true"
                             />
+                            <WaitingSince :date="deliveryItem.waiting_since" compact />
                             <NotesDisplay
                                 reference-field="delivery_note_reference"
                                 :item="deliveryItem"

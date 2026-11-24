@@ -14,6 +14,7 @@ use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -138,6 +139,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'delivery_note_id'           => $this->delivery_note_id,
             'delivery_note_slug'         => $this->delivery_note_slug,
             'delivery_note_reference'    => $this->delivery_note_reference,
+            'waiting_since'              => $this->waiting_since ? Carbon::parse($this->waiting_since)->toIso8601String() : null,
             'delivery_note_state'        => $this->delivery_note_state,
             'opposite_waiting_count'     => (int) $this->opposite_waiting_count,
             'trolley_names'   => $this->trolley_names,

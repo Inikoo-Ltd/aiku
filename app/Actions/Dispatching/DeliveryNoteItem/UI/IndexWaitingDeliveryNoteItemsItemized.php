@@ -10,9 +10,11 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\Traits\WithDeliveryNoteItemUI;
 use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
+use App\Actions\Dispatching\DeliveryNote\UI\WithWaitingSinceSort;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
 use App\Services\QueryBuilder;
@@ -23,6 +25,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
 {
     use WithDeliveryNotesChannel;
     use WithDeliveryNoteItemUI;
+    use WithWaitingSinceSort;
 
     public function handle(Warehouse $warehouse, string $waitingType, DeliveryNoteStateEnum $state, string $shopType = 'all', ?string $prefix = null): LengthAwarePaginator
     {
@@ -85,11 +88,12 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                     'shops.slug as shop_slug',
                 ]
             ))
+            ->selectRaw(DeliveryNote::WAITING_SINCE_SQL.' as waiting_since')
             ->selectRaw("(SELECT string_agg(t.name, ', ' ORDER BY t.name) FROM trolleys t WHERE ($trolleysInUseCondition)) as trolley_names")
             ->selectRaw("(SELECT json_agg(json_build_object('id', t.id, 'name', t.name, 'is_picking_session_trolley', t.picking_session_id IS NOT NULL) ORDER BY t.name) FROM trolleys t WHERE ($trolleysInUseCondition)) as trolleys_data")
             ->selectRaw('(SELECT string_agg(pb.code, \', \' ORDER BY pb.code) FROM picked_bay_has_delivery_notes pbdn JOIN picked_bays pb ON pb.id = pbdn.picked_bay_id WHERE pbdn.delivery_note_id = delivery_notes.id) as picked_bay_codes')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
-            ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])
+            ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position', $this->waitingSinceSort(DeliveryNote::WAITING_SINCE_SQL, 'delivery_note_items.id')])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
@@ -111,6 +115,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             $table->withEmptyState($emptyStateData)->defaultSort('picking_position');
 
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'waiting_since', label: __('Waiting'), canBeHidden: false, sortable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
             if (!$readOnly) {

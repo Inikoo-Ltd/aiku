@@ -106,6 +106,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'warehouse_area'                    => $warehouseArea,
 
             'delivery_note_id'                  => $deliveryNote?->id,
+            'waiting_since'                     => $deliveryNote?->waitingSince()?->toIso8601String(),
             'delivery_note_slug'                => $deliveryNote?->slug,
             'delivery_note_reference'           => $deliveryNote?->reference,
             'delivery_note_is_premium_dispatch' => $deliveryNote?->is_premium_dispatch,

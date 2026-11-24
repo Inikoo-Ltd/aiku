@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandl
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @property mixed $delivery_note_id
@@ -43,6 +44,7 @@ class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
             'delivery_note_id'                  => $this->delivery_note_id,
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_reference'           => $this->delivery_note_reference,
+            'waiting_since'                     => $this->waiting_since ? Carbon::parse($this->waiting_since)->toIso8601String() : null,
             'delivery_note_state_icon'          => $deliveryNote?->state->stateIcon()[$deliveryNote->state->value] ?? null,
             'trolleys'                          => $deliveryNote?->trolleysInUseForDisplay() ?? [],
             'picked_bays'                       => $deliveryNote?->pickedBays->sortBy('code')->map(fn ($pickedBay) => [

@@ -225,6 +225,15 @@ class DeliveryNote extends Model implements Auditable
     use SendsWorkNotifications;
     public const array STAFF_NOTE_FIELDS = ['private_warehouse_note', 'shipping_notes'];
 
+    public const string WAITING_SINCE_SQL = 'coalesce(delivery_notes.handling_blocked_at, delivery_notes.handling_at, delivery_notes.date)';
+
+    public function waitingSince(): ?Carbon
+    {
+        $since = $this->handling_blocked_at ?? $this->handling_at ?? $this->date;
+
+        return $since ? Carbon::parse($since) : null;
+    }
+
     protected $casts = [
         'handled_in_aurora'       => 'boolean',
         'data'                    => 'array',

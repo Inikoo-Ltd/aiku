@@ -17,6 +17,7 @@ import { inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingSince from "@/Components/DataDisplay/WaitingSince.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PickingItemActionsPanel from "@/Components/Warehouse/DeliveryNotes/PickingItemActionsPanel.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
@@ -132,6 +133,10 @@ const getWaitingCrmFractional = (item: any) => {
                     {{ item.picked_bay_codes }}
                 </span>
             </div>
+        </template>
+
+        <template #cell(waiting_since)="{ item }">
+            <WaitingSince :date="item.waiting_since" compact />
         </template>
 
         <!-- Column: Code -->

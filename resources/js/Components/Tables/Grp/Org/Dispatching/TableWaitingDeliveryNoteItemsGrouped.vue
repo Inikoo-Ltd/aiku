@@ -17,6 +17,7 @@ import { inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
 import NotesDisplay from "@/Components/NotesDisplay.vue"
+import WaitingSince from "@/Components/DataDisplay/WaitingSince.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LabelItemsWaitingForWarehouse from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForWarehouse.vue"
 import LabelItemsWaitingForCrm from "@/Components/Warehouse/DeliveryNotes/LabelItemsWaitingForCrm.vue"
@@ -87,6 +88,10 @@ const getWaitingCrmFractional = (deliveryItem: any) => {
 
 
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop :rowColorFunction="rowHighlightClass">
+        <template #cell(waiting_since)="{ item }">
+            <WaitingSince :date="item.waiting_since" />
+        </template>
+
         <template #cell(delivery_note_reference)="{ item }">
             <div class="flex gap-2 flex-wrap items-center">
                 <Link :href="routeToDeliveryNote(item.delivery_note_slug)" class="primaryLink">

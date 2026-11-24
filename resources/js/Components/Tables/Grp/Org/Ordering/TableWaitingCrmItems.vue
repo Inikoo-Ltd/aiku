@@ -27,6 +27,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
+import WaitingSince from "@/Components/DataDisplay/WaitingSince.vue"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import Image from "@common/Components/Image.vue"
 library.add(faStickyNote, faExchangeAlt, faSearch, faSave, faTimes, faTruck, faShoppingCart, faHourglassStart, faFragile)
@@ -486,6 +487,10 @@ const submitSendBackWarehouse = () => {
 
 <template>
     <Table :resource="data" :name="tab" rowAlignTop>
+        <template #cell(waiting_since)="{ item }">
+            <WaitingSince :date="item.waiting_since" />
+        </template>
+
         <template #cell(delivery_note_reference)="{ item }">
             <div class="flex gap-2 flex-wrap items-center">
                 <FontAwesomeIcon icon="fal fa-truck" class="opacity-60" fixed-width aria-hidden="true" />

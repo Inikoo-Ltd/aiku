@@ -11,6 +11,7 @@ namespace App\Http\Resources\Dispatching;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsCrm;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @property mixed $delivery_note_id
@@ -34,6 +35,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $delivery_note_state
  * @property mixed $delivery_note_number_items_waiting_warehouse
  * @property mixed $delivery_note_number_items_not_picked
+ * @property mixed $waiting_since
  */
 class WaitingDeliveryNoteItemsCrmGroupedResource extends JsonResource
 {
@@ -46,6 +48,7 @@ class WaitingDeliveryNoteItemsCrmGroupedResource extends JsonResource
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_state'               => $this->delivery_note_state,
+            'waiting_since'                     => $this->waiting_since ? Carbon::parse($this->waiting_since)->toIso8601String() : null,
             'delivery_note_state_icon'          => $deliveryNote?->state->stateIcon()[$deliveryNote->state->value] ?? null,
             'delivery_note_number_items_waiting_warehouse' => (int) $this->delivery_note_number_items_waiting_warehouse,
             'delivery_note_number_items_not_picked'        => (int) $this->delivery_note_number_items_not_picked,
