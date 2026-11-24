@@ -10,8 +10,9 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faHashtag, faKeyboard, faSearch, faUser, faUsers, faTasks } from "@fal"
+import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks } from "@fal"
 import Dialog from "primevue/dialog"
+import InputText from "primevue/inputtext"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
@@ -23,7 +24,7 @@ import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } 
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faHashtag, faKeyboard, faSearch, faUser, faUsers, faTasks)
+library.add(faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks)
 
 interface SlackChannelListItem {
     id: number
@@ -316,13 +317,22 @@ const onJump = (target: DeskJumpTarget) => {
     else if (target.coworker) startChatWith(target.coworker)
 }
 
+const sidebarFilter = ref("")
+const filterText = computed(() => sidebarFilter.value.trim().toLowerCase())
+const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().includes(filterText.value)
+
 const isChannelRowShown = (channelId: number) => !isCollapsed("channels") || isSelectedChannel(channelId) || unreadOf(channelId) > 0
 const isConversationRowShown = (conversation: { ulid: string; unread_count: number }) => !isCollapsed("dms") || selectedUlid.value === conversation.ulid || conversation.unread_count > 0
 
+const shownActiveChannels = computed(() => activeSlackChannels.value.filter((channel) => (filterText.value ? matchesFilter(channel.name) : isChannelRowShown(channel.id))))
+const shownArchivedChannels = computed(() => (filterText.value ? archivedSlackChannels.value.filter((channel) => matchesFilter(channel.name)) : showArchived.value ? archivedSlackChannels.value : []))
+const shownConversations = computed(() => messagingConversations.value.filter((conversation) => (filterText.value ? matchesFilter(conversationTitle(conversation)) : isConversationRowShown(conversation))))
+const hasNoFilterMatch = computed(() => !!filterText.value && !shownActiveChannels.value.length && !shownArchivedChannels.value.length && !shownConversations.value.length)
+
 const sidebarOrder = computed(() => [
-    ...activeSlackChannels.value.filter((channel) => isChannelRowShown(channel.id)).map((channel) => ({ channelId: channel.id })),
-    ...(showArchived.value ? archivedSlackChannels.value.map((channel) => ({ channelId: channel.id })) : []),
-    ...messagingConversations.value.filter(isConversationRowShown).map((conversation) => ({ ulid: conversation.ulid })),
+    ...shownActiveChannels.value.map((channel) => ({ channelId: channel.id })),
+    ...shownArchivedChannels.value.map((channel) => ({ channelId: channel.id })),
+    ...shownConversations.value.map((conversation) => ({ ulid: conversation.ulid })),
 ])
 
 const moveInSidebar = (step: 1 | -1) => {
@@ -399,14 +409,21 @@ onUnmounted(() => {
             </div>
 
             <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                <button
-                    type="button"
-                    class="mx-2 mb-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md bg-white/10 px-2 text-[13px] text-[var(--desk-text)] hover:bg-white/20"
-                    @click="isJumpOpen = true">
-                    <FontAwesomeIcon icon="fal fa-search" fixed-width aria-hidden="true" />
-                    <span class="flex-1 truncate text-left">{{ ctrans("Jump to…") }}</span>
-                    <kbd class="font-sans text-xs opacity-70">{{ isMac ? "⌘J" : "Ctrl+J" }}</kbd>
-                </button>
+                <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-white/10 px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-white/20 focus-within:ring-1 focus-within:ring-white/60 hover:bg-white/20">
+                    <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
+                    <InputText
+                        v-model="sidebarFilter"
+                        unstyled
+                        class="min-w-0 flex-1 bg-transparent text-white placeholder:text-[var(--desk-text)] focus:outline-none"
+                        :placeholder="ctrans('Find a conversation…')"
+                        :aria-label="ctrans('Find a conversation…')"
+                        @keydown.esc.stop="sidebarFilter = ''" />
+                    <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
+                        <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                    </button>
+                </label>
+
+                <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ ctrans("No channels or people match “:filter”", { filter: sidebarFilter.trim() }) }}</p>
 
                 <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
 
@@ -421,7 +438,7 @@ onUnmounted(() => {
                     <p>{{ ctrans("Public Slack channels show here once your aiku account is linked to your Slack account by the same email address.") }}</p>
                 </div>
 
-                <section v-if="hasSlack" class="mt-1">
+                <section v-if="hasSlack && (!filterText || shownActiveChannels.length)" class="mt-1">
                     <div class="group flex h-7 items-center pr-2">
                         <button type="button" class="flex flex-1 items-center gap-x-1 rounded px-2 py-0.5 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="!isCollapsed('channels')" @click="toggleSection('channels')">
                             <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="isCollapsed('channels') && '-rotate-90'" fixed-width aria-hidden="true" />
@@ -437,9 +454,8 @@ onUnmounted(() => {
                             <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
                         </button>
                     </div>
-                    <template v-for="channel in activeSlackChannels" :key="'slack-' + channel.id">
+                    <template v-for="channel in shownActiveChannels" :key="'slack-' + channel.id">
                         <Link
-                            v-if="isChannelRowShown(channel.id)"
                             :href="route('grp.chat.staff.slack.show', channel.id)"
                             preserve-state
                             preserve-scroll
@@ -455,14 +471,14 @@ onUnmounted(() => {
                     </template>
                 </section>
 
-                <section v-if="hasSlack && archivedSlackChannels.length" class="mt-3">
-                    <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="showArchived" @click="toggleSection('archived')">
+                <section v-if="hasSlack && (filterText ? shownArchivedChannels.length : archivedSlackChannels.length)" class="mt-3">
+                    <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" v-if="!filterText" :aria-expanded="showArchived" @click="toggleSection('archived')">
                         <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showArchived && '-rotate-90'" fixed-width aria-hidden="true" />
                         <span>{{ ctrans("Archived (:count)", { count: String(archivedSlackChannels.length) }) }}</span>
                     </button>
-                    <template v-if="showArchived">
+                    <template v-if="shownArchivedChannels.length">
                         <Link
-                            v-for="channel in archivedSlackChannels"
+                            v-for="channel in shownArchivedChannels"
                             :key="'slack-' + channel.id"
                             :href="route('grp.chat.staff.slack.show', channel.id)"
                             preserve-state
@@ -479,16 +495,15 @@ onUnmounted(() => {
                     </template>
                 </section>
 
-                <section class="mt-3">
+                <section v-if="!filterText || shownConversations.length" class="mt-3">
                     <div class="flex h-7 items-center pr-2">
                         <button type="button" class="flex flex-1 items-center gap-x-1 rounded px-2 py-0.5 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="!isCollapsed('dms')" @click="toggleSection('dms')">
                             <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="isCollapsed('dms') && '-rotate-90'" fixed-width aria-hidden="true" />
                             <span>{{ ctrans("Direct messages") }}</span>
                         </button>
                     </div>
-                    <template v-for="conversation in messagingConversations" :key="conversation.ulid">
+                    <template v-for="conversation in shownConversations" :key="conversation.ulid">
                         <button
-                            v-if="isConversationRowShown(conversation)"
                             type="button"
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left"
                             :class="selectedUlid === conversation.ulid ? 'bg-[var(--desk-active)] text-[var(--desk-active-text)]' : conversation.unread_count > 0 ? 'font-bold text-white hover:bg-[var(--desk-hover)]' : 'hover:bg-[var(--desk-hover)]'"
@@ -506,6 +521,7 @@ onUnmounted(() => {
                         </button>
                     </template>
                     <button
+                        v-if="!filterText"
                         type="button"
                         class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                         @click="isJumpOpen = true">
@@ -515,7 +531,7 @@ onUnmounted(() => {
                 </section>
 
                 <Link
-                    v-if="taskThreadCount"
+                    v-if="taskThreadCount && !filterText"
                     :href="route('grp.tasks.index')"
                     class="mx-2 mt-3 flex h-7 items-center gap-x-2 rounded-md px-4 text-[13px] hover:bg-[var(--desk-hover)]">
                     <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
