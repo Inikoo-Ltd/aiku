@@ -3673,49 +3673,6 @@ test('master shop currencies rate can restrict to open shops only', function () 
         ->and($openShops->keys()->all())->not->toContain('EUR');
 });
 
-test('master price editors always show GBP and EUR, a missing one as a main currency, without moving the base currency', function () {
-    $masterShop = createFreshMasterShop();
-    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
-
-    $gbp = Currency::where('code', 'GBP')->firstOrFail();
-    $this->shop->updateQuietly(['master_shop_id' => $masterShop->id, 'currency_id' => $gbp->id, 'state' => ShopStateEnum::OPEN]);
-
-    $rates = GetMasterShopCurrenciesRate::run($masterShop);
-
-    expect($rates->keys()->sort()->values()->all())->toBe(['EUR', 'GBP'])
-        ->and($rates['EUR'])->toMatchArray(['is_major' => true, 'ratio_eur' => 1.0, 'major' => null])
-        ->and(GetMasterShopCurrenciesRate::majorCurrencyCodes($masterShop)->all())->toBe(['GBP', 'EUR'])
-        ->and(GetMasterShopCurrenciesRate::baseCurrencyCode($masterShop->price_exchanges))->toBe('GBP')
-        ->and(GetMasterShopCurrenciesRate::run($masterShop, onlyOpenShops: true)->keys()->all())->toBe(['GBP']);
-
-    $masterShop->update(['price_exchanges' => [
-        'GBP' => ['is_major' => true],
-        'EUR' => ['is_major' => false, 'major' => 'GBP', 'exchange' => 1.18],
-    ]]);
-
-    expect(GetMasterShopCurrenciesRate::run($masterShop->refresh())['EUR'])->toMatchArray(['is_major' => false, 'major' => 'GBP', 'ratio_eur' => 1.18])
-        ->and(GetMasterShopCurrenciesRate::majorCurrencyCodes($masterShop)->all())->toBe(['GBP']);
-
-    $masterShop->update(['price_exchanges' => ['GBP' => ['is_major' => true]]]);
-    $masterDepartment = StoreMasterDepartment::make()->action($masterShop->refresh(), ['code' => 'GEDEP-'.uniqid(), 'name' => 'Always GBP EUR Dept']);
-    $masterFamily     = StoreMasterFamily::make()->action($masterDepartment, ['code' => 'GEFAM-'.uniqid(), 'name' => 'Always GBP EUR Family']);
-    $masterAsset      = StoreMasterAsset::make()->action($masterFamily, [
-        'code'    => 'GEAST-'.uniqid(),
-        'name'    => 'Always GBP EUR Asset',
-        'is_main' => true,
-        'type'    => MasterAssetTypeEnum::PRODUCT,
-        'price'   => 10,
-        'stocks'  => [],
-    ]);
-
-    \App\Actions\Masters\MasterAsset\UpdateMasterAssetMainPrices::make()->action($masterAsset, ['master_prices' => ['GBP' => 12, 'EUR' => 14]]);
-    $masterAsset->refresh();
-
-    expect((float) data_get($masterAsset->master_prices, 'EUR.value'))->toBe(14.0)
-        ->and((float) data_get($masterAsset->master_prices, 'GBP.value'))->toBe(12.0)
-        ->and((float) $masterAsset->price)->toBe(12.0);
-});
-
 test('master products in trade unit index uses time series aggregation', function () {
     request()->setRouteResolver(fn () => new \Illuminate\Routing\Route('GET', 'test', []));
     $tradeUnits = createTradeUnits($this->group);

@@ -148,7 +148,10 @@ class ShowMasterVariant extends OrgAction
                     'navigation' => MasterVariantTabsEnum::navigation()
                 ],
                 'masterProductCategoryId' => $masterVariant->masterFamily->id,
-                'pricingMajorCurrencies'  => GetMasterShopCurrenciesRate::majorCurrencyCodes($masterShop),
+                'pricingMajorCurrencies'  => collect($masterShop->price_exchanges ?? [])
+                    ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                    ->keys()
+                    ->values(),
                 'pricingCurrencies'       => $this->tab === MasterVariantTabsEnum::PRICING->value
                     ? $pricingSupportProps()['pricingCurrencies']
                     : Inertia::optional(fn () => $pricingSupportProps()['pricingCurrencies']),

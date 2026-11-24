@@ -18,35 +18,6 @@ class GetMasterShopCurrenciesRate
 {
     use AsObject;
 
-    public const array ALWAYS_SHOWN_CURRENCIES = ['GBP', 'EUR'];
-
-    /**
-     * The master shop's price exchanges with GBP and EUR always there: one the shop has no shop
-     * selling in is a main currency set by hand, so every master price editor shows both.
-     *
-     * @return array<string, array{is_major?: bool, major?: string, exchange?: float}>
-     */
-    public static function priceExchanges(?MasterShop $masterShop): array
-    {
-        $priceExchanges = $masterShop?->price_exchanges ?? [];
-        foreach (self::ALWAYS_SHOWN_CURRENCIES as $currencyCode) {
-            $priceExchanges[$currencyCode] ??= ['is_major' => true];
-        }
-
-        return $priceExchanges;
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    public static function majorCurrencyCodes(?MasterShop $masterShop): Collection
-    {
-        return collect(self::priceExchanges($masterShop))
-            ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
-            ->keys()
-            ->values();
-    }
-
     /**
      * The base major is the one the minor currencies actually follow (ties broken by
      * config order), falling back to the first configured major. Same rule as the
@@ -75,8 +46,7 @@ class GetMasterShopCurrenciesRate
      * @param bool $onlyOpenShops restrict the currency set to open shops. Master product creation
      *                            seeds prices for shops that will actually sell, while the edit,
      *                            bulk edit and family pages expose every currency the master shop
-     *                            has ever had a shop for, so a closed shop's prices stay editable,
-     *                            plus GBP and EUR, which those editors always show.
+     *                            has ever had a shop for, so a closed shop's prices stay editable.
      */
     public function handle(MasterShop $masterShop, bool $onlyOpenShops = false): Collection
     {
@@ -86,10 +56,8 @@ class GetMasterShopCurrenciesRate
             ->distinct()
             ->get();
 
-        $priceExchanges = self::priceExchanges($masterShop);
-        $currencies     = Currency::whereIn('id', $shopCurrencies->pluck('currency_id'))
-            ->when(!$onlyOpenShops, fn ($query) => $query->orWhereIn('code', self::ALWAYS_SHOWN_CURRENCIES))
-            ->get();
+        $priceExchanges = $masterShop->price_exchanges ?? [];
+        $currencies     = Currency::whereIn('id', $shopCurrencies)->get();
 
         return $currencies->mapWithKeys(function (Currency $currency) use ($priceExchanges) {
             $exchangeData = $priceExchanges[$currency->code] ?? null;
