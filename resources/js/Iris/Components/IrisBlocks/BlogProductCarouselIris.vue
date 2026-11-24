@@ -9,11 +9,14 @@ import RangeAdvisorProductCard from "@/Iris/Components/RangeAdvisorProductCard.v
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { ProductResource } from "@/types/Iris/Products"
+import type { CarouselTextTag } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
 
 const props = defineProps<{
 	title?: string
 	codes: string[]
 	perView: number
+	titleTag?: CarouselTextTag
+	productNameTag?: CarouselTextTag
 	products: Record<string, ProductResource>
 }>()
 
@@ -53,7 +56,7 @@ const hasMoreThanFits = computed(() => carouselProducts.value.length > props.per
 <template>
 	<section v-if="carouselProducts.length" class="blog-product-carousel" :aria-label="title || ctrans('Products')">
 		<div v-if="title || hasMoreThanFits" class="blog-product-carousel-header">
-			<h3 v-if="title" class="blog-product-carousel-title">{{ title }}</h3>
+			<component :is="titleTag ?? 'h3'" v-if="title" class="blog-product-carousel-title">{{ title }}</component>
 			<div v-if="hasMoreThanFits" class="blog-product-carousel-nav">
 				<button type="button" :aria-label="ctrans('Previous')" :disabled="isBeginning" @click="swiperInstance?.slidePrev()">
 					<FontAwesomeIcon :icon="faChevronLeft" fixed-width aria-hidden="true" />
@@ -77,6 +80,7 @@ const hasMoreThanFits = computed(() => carouselProducts.value.length > props.per
 			<SwiperSlide v-for="product in carouselProducts" :key="product.id" class="!h-auto">
 				<RangeAdvisorProductCard
 					:product="product as any"
+					:nameTag="productNameTag"
 					:hideBasket="isDropshipping"
 					:hasInBasket="get(layout, ['family_page', 'productInBasket', 'list', product.id])"
 					:buttonStyle="layout?.buttonBasket?.buttonStyle"

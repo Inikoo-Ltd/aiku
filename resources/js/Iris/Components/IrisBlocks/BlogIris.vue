@@ -22,7 +22,7 @@ import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 import { useHtmlWithScripts, useInlineScriptBlocks } from "@/Composables/useHtmlWithScripts"
 import BlogProductCarouselIris from "@/Iris/Components/IrisBlocks/BlogProductCarouselIris.vue"
-import { familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
+import { type CarouselTextTag, DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, carouselTextTag, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
 import { ProductResource } from "@/types/Iris/Products"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
@@ -68,6 +68,8 @@ interface ProductCarouselTarget {
   codes: string[]
   title: string
   perView: number
+  titleTag: CarouselTextTag
+  productNameTag: CarouselTextTag
 }
 
 const productCarousels = ref<ProductCarouselTarget[]>([])
@@ -86,6 +88,8 @@ const findProductCarousels = async () => {
           : parseProductCodes(element.getAttribute("data-codes") ?? ""),
         title: element.getAttribute("data-title") ?? "",
         perView: productsPerView(element.getAttribute("data-per-view")),
+        titleTag: carouselTextTag(element.getAttribute("data-title-tag"), DEFAULT_TITLE_TAG),
+        productNameTag: carouselTextTag(element.getAttribute("data-product-name-tag"), DEFAULT_PRODUCT_NAME_TAG),
       }
     })
 }
@@ -213,7 +217,7 @@ const screenType = inject("screenType", "desktop")
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10 break-words" ref="contentRef" v-html="contentHtml" />
         <Teleport v-for="(carousel, index) in productCarousels" :key="index" :to="carousel.element">
-          <BlogProductCarouselIris :codes="carousel.codes" :title="carousel.title" :perView="carousel.perView" :products="fieldValue.carousel_products ?? {}" />
+          <BlogProductCarouselIris :codes="carousel.codes" :title="carousel.title" :perView="carousel.perView" :titleTag="carousel.titleTag" :productNameTag="carousel.productNameTag" :products="fieldValue.carousel_products ?? {}" />
         </Teleport>
       </div>
 
