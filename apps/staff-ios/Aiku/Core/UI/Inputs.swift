@@ -413,13 +413,16 @@ struct SegmentedControl<Option: Hashable>: View {
                         if let symbol = icon?(option) {
                             symbol.image.font(.system(size: 15))
                         }
-                        Text(L10n.text(title(option)))
+                        Text(Hyphenation.softHyphens(in: L10n.text(title(option)), locale: L10n.formatLocale))
                             .font(.aiku(14, .semibold))
-                            .lineLimit(1)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
                             .minimumScaleFactor(0.8)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .foregroundStyle(isSelected ? AikuColor.text : AikuColor.text3)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity, minHeight: 44, maxHeight: .infinity)
                     .background(isSelected ? AikuColor.surface : .clear, in: RoundedRectangle(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSelected ? AikuColor.borderStrong : .clear))
                     .contentShape(Rectangle())
@@ -428,6 +431,7 @@ struct SegmentedControl<Option: Hashable>: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .padding(4)
         .background(AikuColor.bg, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(AikuColor.border))

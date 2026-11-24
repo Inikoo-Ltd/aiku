@@ -59,16 +59,21 @@ enum CalendarGrid {
     static let englishWeekdayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 
     static var weekdayLabels: [String] {
-        let locale = L10n.dateLocale
+        let locale = L10n.formatLocale
         guard locale.language.languageCode?.identifier != "en" else { return englishWeekdayLabels }
-        return mondayFirst(CalendarText.formatter(locale).shortStandaloneWeekdaySymbols) ?? englishWeekdayLabels
+        return mondayFirst(CalendarText.formatter(locale).shortStandaloneWeekdaySymbols)?.map { capitalised($0, locale: locale) } ?? englishWeekdayLabels
     }
 
     static func narrowWeekday(_ englishShort: String) -> String {
         let fallback = String(englishShort.prefix(1))
+        let locale = L10n.formatLocale
         guard let index = ClockingWeek.weekdays.firstIndex(of: englishShort),
-              let symbols = mondayFirst(CalendarText.formatter(L10n.dateLocale).veryShortStandaloneWeekdaySymbols) else { return fallback }
-        return symbols[index]
+              let symbols = mondayFirst(CalendarText.formatter(locale).veryShortStandaloneWeekdaySymbols) else { return fallback }
+        return capitalised(symbols[index], locale: locale)
+    }
+
+    private static func capitalised(_ symbol: String, locale: Locale) -> String {
+        symbol.prefix(1).uppercased(with: locale) + symbol.dropFirst()
     }
 
     private static func mondayFirst(_ symbols: [String]?) -> [String]? {
@@ -191,8 +196,8 @@ struct CalendarHolidaySummary: Hashable, Sendable {
 
 enum CalendarText {
     static func format(_ pattern: String, _ date: Date) -> String {
-        let formatter = formatter(L10n.dateLocale)
-        formatter.dateFormat = pattern
+        let formatter = formatter(L10n.formatLocale)
+        formatter.dateFormat = L10n.datePattern(pattern)
         return formatter.string(from: date)
     }
 
@@ -221,6 +226,9 @@ enum CalendarText {
     static func rangeLabel(from: String, to: String) -> String {
         guard let first = ClockingMapper.parseDay(from) else { return from }
         guard to != from, let last = ClockingMapper.parseDay(to) else { return format("EEE d MMM", first) }
+        if L10n.formatLocale.language.languageCode?.identifier != "en" {
+            return L10n.dateRange(from: first, to: last, template: "dMMM", timeZone: TimeZone(identifier: "UTC")!)
+        }
         let sameMonth = from.prefix(7) == to.prefix(7)
         return "\(format(sameMonth ? "d" : "d MMM", first)) – \(format("d MMM", last))"
     }

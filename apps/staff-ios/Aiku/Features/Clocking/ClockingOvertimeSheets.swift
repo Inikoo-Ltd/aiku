@@ -76,7 +76,7 @@ struct ClockingOvertimeRequestSheet: View {
             .font(.aiku(15))
             .foregroundStyle(AikuColor.text)
             .tint(AikuColor.primary)
-            .environment(\.locale, L10n.dateLocale)
+            .environment(\.locale, L10n.formatLocale)
             .cardSurface()
             Text(durationText)
                 .font(.aiku(13))

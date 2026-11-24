@@ -11,20 +11,18 @@ enum GoodsOutDateFormat {
     }
 
     static func stamp(_ date: Date) -> String {
-        date.formatted(
-            Date.VerbatimFormatStyle(
-                format: "\(day: .defaultDigits) \(month: .abbreviated) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)",
-                locale: L10n.dateLocale,
-                timeZone: timeZone,
-                calendar: Calendar(identifier: .gregorian)
-            )
-        )
+        let formatter = DateFormatter()
+        formatter.locale = L10n.formatLocale
+        formatter.timeZone = timeZone
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = L10n.datePattern("d MMM HH:mm")
+        return formatter.string(from: date)
     }
 
     static func time(_ date: Date) -> String {
         date.formatted(
             Date.FormatStyle(timeZone: timeZone)
-                .locale(L10n.dateLocale)
+                .locale(L10n.formatLocale)
                 .hour(.twoDigits(amPM: .omitted))
                 .minute(.twoDigits)
                 .second(.twoDigits)
@@ -35,7 +33,7 @@ enum GoodsOutDateFormat {
         date.formatted(
             Date.VerbatimFormatStyle(
                 format: "\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)",
-                locale: L10n.dateLocale,
+                locale: L10n.formatLocale,
                 timeZone: timeZone,
                 calendar: Calendar(identifier: .gregorian)
             )

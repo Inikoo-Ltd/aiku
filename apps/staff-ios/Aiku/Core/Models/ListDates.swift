@@ -50,9 +50,9 @@ enum ListDates {
 
     static func text(_ date: Date, in timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()
-        formatter.locale = L10n.dateLocale
+        formatter.locale = L10n.formatLocale
         formatter.timeZone = timeZone
-        formatter.dateFormat = "d MMM yyyy"
+        formatter.dateFormat = L10n.datePattern("d MMM yyyy")
         return formatter.string(from: date)
     }
 

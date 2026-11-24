@@ -101,8 +101,8 @@ struct DateRangeFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            field("From", date: range.from, bounds: range.to.map { ...$0 }) { range = range.withFrom($0) }
-            field("To", date: range.to, lower: range.from) { range = range.withTo($0) }
+            field("From (date)", date: range.from, bounds: range.to.map { ...$0 }) { range = range.withFrom($0) }
+            field("To (date)", date: range.to, lower: range.from) { range = range.withTo($0) }
             if let shown = ListDates.rangeText(range) {
                 HStack(spacing: 8) {
                     Text(shown)

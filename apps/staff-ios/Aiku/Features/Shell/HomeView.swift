@@ -109,46 +109,69 @@ struct HomeView: View {
 
     private func clockingCardContent(_ status: ShellClockStatus?) -> some View {
         let isClockedIn = status?.isClockedIn == true
-        return HStack(spacing: 14) {
-            AppIcon.faUserClock.image
-                .font(.system(size: 20))
-                .foregroundStyle(isClockedIn ? AikuColor.success : AikuColor.text3)
-                .frame(width: 44, height: 44)
-                .background(isClockedIn ? AikuColor.successSoft : AikuColor.bg, in: Circle())
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: status == nil ? 8 : 2) {
-                if let status {
-                    Text(status.title)
-                        .font(.aiku(16, .bold))
-                        .foregroundStyle(AikuColor.text)
-                    Text(status.detail)
-                        .font(.aiku(13))
-                        .foregroundStyle(AikuColor.text3)
-                    if let weekTotal = ShellHomeContent.weekTotal(clocking) {
-                        Text("This week \(weekTotal)")
-                            .font(.aiku(13))
-                            .foregroundStyle(AikuColor.text3)
-                    }
-                    if let lastUpdated = clocking.lastUpdated {
-                        Text(LastUpdatedText.label(for: lastUpdated))
-                            .font(.aiku(12))
-                            .foregroundStyle(AikuColor.text3)
-                    }
-                } else {
-                    SkeletonBlock(width: 150, height: 14)
-                    SkeletonBlock(width: 110, height: 11)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                clockingIcon(isClockedIn: isClockedIn)
+                clockingTexts(status)
+                    .frame(minWidth: 130, idealWidth: 130, maxWidth: .infinity, alignment: .leading)
+                clockingButton
+                    .fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 14) {
+                    clockingIcon(isClockedIn: isClockedIn)
+                    clockingTexts(status)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                clockingButton
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            AikuButton("Clocking", size: .small, fullWidth: false) {
-                router.open(ClockingRoute.clocking)
-            }
-            .accessibilityIdentifier("shell.home.clocking")
         }
         .padding(16)
         .cardSurface()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Clocking")
+    }
+
+    private func clockingIcon(isClockedIn: Bool) -> some View {
+        AppIcon.faUserClock.image
+            .font(.system(size: 20))
+            .foregroundStyle(isClockedIn ? AikuColor.success : AikuColor.text3)
+            .frame(width: 44, height: 44)
+            .background(isClockedIn ? AikuColor.successSoft : AikuColor.bg, in: Circle())
+            .accessibilityHidden(true)
+    }
+
+    private var clockingButton: some View {
+        AikuButton("Clocking", size: .small, fullWidth: false) {
+            router.open(ClockingRoute.clocking)
+        }
+        .accessibilityIdentifier("shell.home.clocking")
+    }
+
+    private func clockingTexts(_ status: ShellClockStatus?) -> some View {
+        VStack(alignment: .leading, spacing: status == nil ? 8 : 2) {
+            if let status {
+                Text(status.title)
+                    .font(.aiku(16, .bold))
+                    .foregroundStyle(AikuColor.text)
+                Text(status.detail)
+                    .font(.aiku(13))
+                    .foregroundStyle(AikuColor.text3)
+                if let weekTotal = ShellHomeContent.weekTotal(clocking) {
+                    Text("This week \(weekTotal)")
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                }
+                if let lastUpdated = clocking.lastUpdated {
+                    Text(LastUpdatedText.label(for: lastUpdated))
+                        .font(.aiku(12))
+                        .foregroundStyle(AikuColor.text3)
+                }
+            } else {
+                SkeletonBlock(width: 150, height: 14)
+                SkeletonBlock(width: 110, height: 11)
+            }
+        }
     }
 
     private var shortcuts: some View {
@@ -161,16 +184,18 @@ struct HomeView: View {
                     } label: {
                         VStack(spacing: 6) {
                             IconTile(shortcut.icon, tone: .info, size: 40, radius: 10)
-                            Text(L10n.text(shortcut.title))
+                            Text(Hyphenation.softHyphens(in: L10n.text(shortcut.title), locale: L10n.formatLocale))
                                 .font(.aiku(12, .semibold))
                                 .foregroundStyle(AikuColor.text2)
-                                .lineLimit(1)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
                                 .minimumScaleFactor(0.8)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(.top, 12)
                         .padding(.bottom, 10)
                         .padding(.horizontal, 4)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .cardSurface()
                         .overlay(alignment: .topTrailing) {
                             if let badge = shortcut.badge {

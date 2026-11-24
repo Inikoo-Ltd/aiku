@@ -2,7 +2,10 @@ import Foundation
 
 enum GoodsOutWeight {
     static func text(_ kilograms: Double) -> String {
-        kilograms.formatted(.number.precision(.fractionLength(1)).locale(Locale(identifier: "en_GB"))) + " kg"
+        Measurement(value: kilograms, unit: UnitMass.kilograms).formatted(
+            .measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(1)))
+                .locale(L10n.formatLocale)
+        )
     }
 
     static func rounded(_ kilograms: Double) -> Double {
