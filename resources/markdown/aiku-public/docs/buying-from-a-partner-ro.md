@@ -1,8 +1,8 @@
 ---
 title: Cumpărarea de la un partener
 summary: Ghidul cumpărătorului - pornește de la dashboard-ul de cumpărături, completează lista manual, din catalogul partenerului sau cu auto-completare, și recepționează marfa la sosire.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Comenzile plasate sunt înregistrate împreună cu cererea ta, dar **nu pot fi a
 ## Când lista spune nu
 
 Adăugările sunt refuzate în trei cazuri, intenționat: lista a atins **budget**-ul (bugetul) pentru acest partener (articolele de rang A și cele fără stoc sunt scutite — o urgență încape întotdeauna), depozitul e sub 5% locații libere, sau acest partener a revendicat deja cota lui echitabilă din sloturile libere cu produse pe care nu le-ai stocat niciodată. Rezolvă mesajul în loc să cauți altă cale de intrare — aceeași gardă acoperă adăugările manuale, cele în bloc și Auto-fill. [Articolul despre dashboard](/docs/reading-the-partner-shopping-dashboard-ro) explică de unde vin acele limite.
+
+## Când partenerul nu poate produce o linie
+
+Uneori producția partenerului nu poate produce ceva ce ai comandat: lipsește un ingredient sau a putut trimite din stoc doar o parte din linie. Partenerul marchează linia ca **Nu se poate produce** și scrie motivul. Cine a adăugat linia primește un e-mail despre asta, iar restul echipei de achiziții o vede în notificări. Setarea pentru e-mail e în profilul tău, la notificări, ca celelalte. O linie pe care nu o pot produce deloc dispare apoi din lista ta **Comenzi**, ca să o poți comanda în altă parte; o linie produsă doar parțial rămâne, cu partea lipsă marcată **Nu se poate produce**. Ca să vezi din nou aceste linii, alege filtrul **Nu se poate produce** din partea de sus a paginii Comenzi.
 
 ## Când marfa e pe drum
 

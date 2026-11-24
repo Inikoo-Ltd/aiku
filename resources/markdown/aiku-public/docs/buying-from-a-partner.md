@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-11-21
+date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -78,6 +78,10 @@ Placed orders are logged with your request but **cannot be undone** from the AI 
 ## When the list says no
 
 Adds are refused in three cases, on purpose: the list has reached the **budget** for this partner (A-rank and out-of-stock items are exempt — an emergency always fits), the warehouse is under 5% free locations, or this partner has already claimed its fair share of the free slots with products you have never stocked. Deal with the message rather than looking for another way in: the same guard covers manual adds, bulk adds and Auto-fill. The [dashboard article](/docs/reading-the-partner-shopping-dashboard) explains where those limits come from.
+
+## When the partner cannot make a line
+
+Sometimes the partner's production cannot make something you ordered: an ingredient is missing, or they could only send part of a line from stock. They mark the line **Cannot be made** with a reason. Whoever added that line gets an email saying so, and the rest of your procurement team sees it in their notifications. The email setting is on your profile under notifications, like the others. A line they cannot make at all then drops off your **Orders** list so you can order it elsewhere; a line they made only part of stays there, with the missing part marked **Cannot be made**. To see those lines again, pick the **Cannot be made** filter at the top of Orders.
 
 ## When the goods are on their way
 

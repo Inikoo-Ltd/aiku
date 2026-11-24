@@ -493,6 +493,42 @@ describe('partner shopping list', function () {
             ->and(collect($row['progress']['details'])->pluck('label')->all())->toContain('Cannot be made: No honey in stock until November');
     });
 
+    test('a line the partner cannot make leaves the Orders list and whoever added it is emailed (HELP-4906)', function () {
+        Notification::fake();
+        $seller     = $this->orgPartner->partner;
+        $production = Production::where('organisation_id', $seller->id)->first()
+            ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
+        $dismisser = $this->adminGuest->getUser();
+        $adder     = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+        $adder->givePermissionTo("procurement.{$this->orgPartner->organisation_id}.edit");
+        $teammate = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+        $teammate->givePermissionTo("procurement.{$this->orgPartner->organisation_id}.edit");
+
+        $item  = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 5]);
+        $other = submittedPartnerShoppingListItem($this->orgPartner, createOrgStocks($this->orgPartner->organisation, [collect($this->stocks)->first(fn ($stock) => $stock->id !== $this->buyerOrgStock->stock_id)])[0], ['quantity' => 2]);
+        $item->update(['added_by_user_id' => $adder->id]);
+
+        \App\Actions\Production\PartnerShippingList\DismissToProduceItems::make()->action($production, [$item->id], 'No sandalwood oil', $dismisser);
+
+        Notification::assertSentTo($adder, \App\Notifications\ToProduceItemsCantBeDoneNotification::class, fn ($notification, array $channels) => $channels === ['database', 'mail']
+            && str_contains($notification->note, 'No sandalwood oil')
+            && str_contains($notification->url(), 'filter'));
+        Notification::assertSentTo($teammate, \App\Notifications\ToProduceItemsCantBeDoneNotification::class, fn ($notification, array $channels) => $channels === ['database']);
+        Notification::assertNotSentTo($dismisser, \App\Notifications\ToProduceItemsCantBeDoneNotification::class);
+
+        actingAs($dismisser);
+        $sentUrl = route('grp.org.procurement.org_partners.show.shopping_list.sent', [$this->organisation->slug, $this->orgPartner->id]);
+        $listed  = fn (array $query = []) => collect(get($sentUrl.($query ? '?'.http_build_query($query) : ''))->assertOk()->viewData('page')['props']['data']['data'])->pluck('id');
+
+        expect($other->id)->not->toBe($item->id)
+            ->and($listed())->not->toContain($item->id)->toContain($other->id)
+            ->and($listed(['filter' => ['state' => 'dismissed']]))->toContain($item->id)->not->toContain($other->id);
+
+        $props = get($sentUrl)->viewData('page')['props'];
+        expect($props['defaultFilters']['state'])->toBe([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value])
+            ->and(collect($props['filterGroups'])->firstWhere('key', 'order')['options'][0]['count'] + collect($props['filterGroups'])->firstWhere('key', 'order')['options'][1]['count'])->toBe($props['data']['total']);
+    });
+
     test('store partner shopping list item denormalises', function () {
         $item = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, [
             'quantity' => 40,

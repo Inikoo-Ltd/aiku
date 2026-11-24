@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Sprievodca pre nákupcov - začnite na nákupnom paneli, doplňte zoznam ručne, z partnerovho katalógu alebo pomocou automatického dopĺňania, a prevezmite tovar po jeho príchode.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Zadané objednávky sa zaznamenávajú spolu s vašou požiadavkou, ale zo zázn
 ## Keď zoznam povie nie
 
 Pridávanie sa odmietne v troch prípadoch, zámerne: zoznam dosiahol **budget** pre tohto partnera (položky s rank A a bez skladu sú výnimkou — núdzová situácia sa vždy zmestí), sklad má menej ako 5 % voľných lokácií, alebo si tento partner už vyčerpal svoj spravodlivý podiel voľných miest produktmi, ktoré ste nikdy neskladovali. Riešte hlásenie namiesto hľadania inej cesty — rovnaká poistka platí pre ručné pridávanie, hromadné pridávanie aj Auto-fill. [Článok o paneli](/docs/reading-the-partner-shopping-dashboard-sk) vysvetľuje, odkiaľ tieto limity pochádzajú.
+
+## Keď partner nemôže riadok vyrobiť
+
+Niekedy výroba partnera nemôže vyrobiť niečo, čo ste objednali: chýba surovina, alebo zo skladu mohli poslať len časť riadku. Riadok potom označí ako **Nedá sa vyrobiť** a uvedú dôvod. Kto riadok pridal, dostane o tom e-mail a zvyšok vášho nákupného tímu to uvidí v upozorneniach. E-mail sa nastavuje vo vašom profile v upozorneniach, rovnako ako ostatné. Riadok, ktorý nemôžu vyrobiť vôbec, potom zmizne z vášho zoznamu **Objednávky**, aby ste ho mohli objednať inde; riadok vyrobený len čiastočne tam zostane a chýbajúca časť je označená **Nedá sa vyrobiť**. Ak chcete tieto riadky znova vidieť, vyberte hore v Objednávkach filter **Nedá sa vyrobiť**.
 
 ## Keď je tovar na ceste
 

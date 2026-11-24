@@ -10,6 +10,7 @@ namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
+use App\Actions\Procurement\PartnerShoppingListItem\NotifyPartnerLinesCannotBeMade;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
@@ -17,12 +18,16 @@ use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class PrePickPartnerShoppingListItems extends OrgAction
 {
+    /** @var Collection<int, PartnerShoppingListItem> */
+    private Collection $closedShort;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -51,7 +56,36 @@ class PrePickPartnerShoppingListItems extends OrgAction
      */
     public function handle(Organisation $seller, array $lines, bool $wholeLinesOnly = false): array
     {
-        return DB::transaction(fn () => $this->prePick($seller, $lines, $wholeLinesOnly));
+        $this->closedShort = collect();
+
+        $result = DB::transaction(fn () => $this->prePick($seller, $lines, $wholeLinesOnly));
+
+        $this->notifyClosedShort($seller);
+
+        return $result;
+    }
+
+    /**
+     * HELP-4906: what a line closed short leaves unmade is a line the buyer will not get, so whoever added it is told.
+     */
+    private function notifyClosedShort(Organisation $seller): void
+    {
+        $user = request()->user();
+        $who  = $user ? ($user->contact_name ?: $user->username) : $seller->name;
+
+        $this->closedShort->whereNotNull('org_partner_id')->groupBy('org_partner_id')->each(function (Collection $items) use ($seller, $user, $who) {
+            $orgPartner = $items->first()->orgPartner;
+            if (!$orgPartner) {
+                return;
+            }
+
+            NotifyPartnerLinesCannotBeMade::run($orgPartner, $items, __(':user (:hub production) cannot make :codes. Reason: :reason', [
+                'user'   => $who,
+                'hub'    => $seller->code,
+                'codes'  => $items->map(fn (PartnerShoppingListItem $item) => $item->orgStock?->code.' ×'.trimDecimalZeros($item->quantity))->join(', '),
+                'reason' => __('closed short at pre-pick, only what was in stock is sent'),
+            ]), $user);
+        });
     }
 
     /**
@@ -113,7 +147,7 @@ class PrePickPartnerShoppingListItems extends OrgAction
                 $openSibling->increment('quantity', $remainder);
             } elseif ($remainder > 0) {
                 /* What we cannot cover yet stays on the list as its own line, still waiting, unless it was closed short. */
-                PartnerShoppingListItem::create([
+                $remainderItem = PartnerShoppingListItem::create([
                     ...$item->only([
                         'group_id',
                         'organisation_id',
@@ -137,6 +171,9 @@ class PrePickPartnerShoppingListItems extends OrgAction
                         'dismissed_by_user_id' => request()->user()?->id,
                     ] : []),
                 ]);
+                if ($cancelShortfall) {
+                    $this->closedShort->push($remainderItem);
+                }
             }
 
             $item->update([

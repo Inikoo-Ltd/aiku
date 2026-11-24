@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Złożone zamówienia są zapisywane razem z Twoją prośbą, ale **nie można i
 ## Kiedy lista mówi nie
 
 Dodawanie jest odrzucane celowo w trzech przypadkach: lista osiągnęła **budget** (budżet) dla tego partnera (pozycje rangi A i bez stanu magazynowego są zwolnione - awaria zawsze się zmieści), magazyn ma poniżej 5% wolnych lokalizacji, albo ten partner wykorzystał już swój sprawiedliwy udział w wolnych slotach produktami, których nigdy nie magazynowałeś. Zajmij się komunikatem zamiast szukać obejścia: ta sama blokada obejmuje dodawanie ręczne, hurtowe i Auto-fill. [Artykuł o pulpicie](/docs/reading-the-partner-shopping-dashboard-pl) wyjaśnia, skąd biorą się te limity.
+
+## Kiedy partner nie może wyprodukować pozycji
+
+Czasem produkcja partnera nie może wyprodukować czegoś, co zamówiłeś: brakuje składnika albo z magazynu dało się wysłać tylko część pozycji. Partner oznacza wtedy pozycję jako **Nie można wyprodukować** i podaje powód. Osoba, która dodała tę pozycję, dostaje o tym e-mail, a reszta zespołu zakupów widzi to w swoich powiadomieniach. Ustawienie e-maila jest w Twoim profilu, w powiadomieniach, tak jak pozostałe. Pozycja, której nie mogą wyprodukować wcale, znika wtedy z Twojej listy **Zamówienia**, abyś mógł zamówić ją gdzie indziej; pozycja wyprodukowana tylko częściowo zostaje, a brakująca część jest oznaczona jako **Nie można wyprodukować**. Aby znów zobaczyć te pozycje, wybierz filtr **Nie można wyprodukować** u góry Zamówień.
 
 ## Kiedy towar jest w drodze
 

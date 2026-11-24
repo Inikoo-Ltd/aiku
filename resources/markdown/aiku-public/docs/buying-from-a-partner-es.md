@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Los pedidos hechos quedan registrados con tu petición, pero **no se pueden desh
 ## Cuando la lista dice que no
 
 Los añadidos se rechazan en tres casos, a propósito: la lista ha alcanzado el **budget** para este socio (los artículos de rango A y sin stock están exentos — una emergencia siempre cabe), el almacén está por debajo del 5% de ubicaciones libres, o este socio ya ha reclamado su parte proporcional de las plazas libres con productos que nunca has almacenado. Atiende el mensaje en vez de buscar otra vía: la misma protección cubre los añadidos manuales, en bloque y de Auto-fill. El [artículo del panel](/docs/reading-the-partner-shopping-dashboard-es) explica de dónde vienen esos límites.
+
+## Cuando el socio no puede fabricar una línea
+
+A veces la producción del socio no puede fabricar algo que has pedido: falta un ingrediente, o solo pudo enviar parte de una línea desde su stock. Marca la línea como **No se puede fabricar** con un motivo. Quien añadió esa línea recibe un correo avisándole, y el resto de tu equipo de compras lo ve en sus notificaciones. El aviso por correo se ajusta en tu perfil, en notificaciones, como los demás. Una línea que no pueden fabricar en absoluto sale entonces de tu lista de **Pedidos** para que puedas pedirla en otro sitio; una línea que solo fabricaron en parte se queda, con la parte que falta marcada como **No se puede fabricar**. Para volver a ver esas líneas, elige el filtro **No se puede fabricar** arriba en Pedidos.
 
 ## Cuando la mercancía va de camino
 

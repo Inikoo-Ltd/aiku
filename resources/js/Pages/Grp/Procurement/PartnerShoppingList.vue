@@ -52,6 +52,7 @@ const props = defineProps<{
 	linesValue: number
 	orgStockFetchRoute: { name: string; parameters: object }
 	filterGroups: { key: string; label: string; options: { value: string; label: string; count: number }[] }[]
+	defaultFilters?: Record<string, string[]>
 	upload_excel: {
 		title: { label: string; information: string }
 		progressDescription: string
@@ -71,8 +72,11 @@ const tableLoadingEvents = {
 }
 const confirm = useConfirm()
 
-const selectedFilters = (key: string) =>
-	(new URLSearchParams(location.search).get(`filter[${key}]`) ?? "").split(",").filter(Boolean)
+const selectedFilters = (key: string) => {
+	const picked = new URLSearchParams(location.search).get(`filter[${key}]`)
+
+	return picked === null ? [...(props.defaultFilters?.[key] ?? [])] : picked.split(",").filter(Boolean)
+}
 
 const toggleFilter = (key: string, value: string) => {
 	const url = new URL(location.href)

@@ -71,6 +71,22 @@ class IndexPartnerShoppingListItems extends OrgAction
 
     private const string NO_CATEGORY = 'none';
 
+    /**
+     * @return array<int, string>
+     */
+    private function shownStates(): array
+    {
+        $picked = array_values(array_filter(explode(',', (string) data_get(request()->query('filter'), 'state', ''))));
+
+        return $picked ?: self::DEFAULT_SENT_STATES;
+    }
+
+    /**
+     * HELP-4906: a line the partner cannot make is off the Orders list unless the "Cannot be made" chip is picked,
+     * so the buyer is not left watching it; whoever added it is told by NotifyPartnerLinesCannotBeMade.
+     */
+    private const array DEFAULT_SENT_STATES = [ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value];
+
     private static function bookedInSql(string $items): string
     {
         return "coalesce((select stock_deliveries.state in ('booking_in', 'booked_in', 'placed') from stock_deliveries
@@ -154,17 +170,18 @@ class IndexPartnerShoppingListItems extends OrgAction
                         where piece.deleted_at is null
                     ) select 1 from pieces where pieces.state in ($placeholders))", $values);
         });
+        $shown = fn () => $this->isSentView ? $stateOfLineOrPiece($items(), $this->shownStates()) : $items();
         $stateCounts = collect([ShoppingListItemStateEnum::OPEN->value, ShoppingListItemStateEnum::ORDERED->value, ShoppingListItemStateEnum::DISMISSED->value])
             ->mapWithKeys(fn ($state) => [$state => $this->isSentView ? $stateOfLineOrPiece($items(), [$state])->count() : 0]);
-        $rankCounts  = $items()
+        $rankCounts  = $shown()
             ->join('org_stocks', 'org_stocks.id', 'partner_shopping_list_items.org_stock_id')
             ->selectRaw('org_stocks.health_rank as rank, count(*) as total')
             ->groupBy('org_stocks.health_rank')
             ->pluck('total', 'rank');
-        $originCounts   = $items()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
-        $productionLines = PartnerShoppingListItem::whereOrderKind($items(), 'production')->count();
-        $rescueLines     = PartnerShoppingListItem::whereOrderKind($items(), 'rescue')->count();
-        $categoryCounts = $items()
+        $originCounts   = $shown()->selectRaw('suggested_by_hub, count(*) as total')->groupBy('suggested_by_hub')->pluck('total', 'suggested_by_hub');
+        $productionLines = PartnerShoppingListItem::whereOrderKind($shown(), 'production')->count();
+        $rescueLines     = PartnerShoppingListItem::whereOrderKind($shown(), 'rescue')->count();
+        $categoryCounts = $shown()
             ->leftJoin('org_stocks as partner_org_stocks', function ($join) {
                 $join->on('partner_org_stocks.stock_id', 'partner_shopping_list_items.stock_id')
                     ->on('partner_org_stocks.organisation_id', 'partner_shopping_list_items.partner_organisation_id');
@@ -294,7 +311,11 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->defaultSort('-created_at')
             ->allowedFilters([
                 $globalSearch,
-                ...collect($this->filterGroups($orgPartner))->map(fn ($group, $key) => AllowedFilter::callback($key, fn ($query, $value) => $group['engine']($query, (array) $value)))->values(),
+                ...collect($this->filterGroups($orgPartner))->map(function ($group, $key) {
+                    $filter = AllowedFilter::callback($key, fn ($query, $value) => $group['engine']($query, (array) $value));
+
+                    return $key === 'state' ? $filter->default(self::DEFAULT_SENT_STATES) : $filter;
+                })->values(),
             ])
             ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
             ->orderByDesc('partner_shopping_list_items.id')
@@ -872,6 +893,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     ->where('suggested_by_hub', true)
                     ->count(),
                 'partnerCode' => $this->orgPartner->partner->code,
+                'defaultFilters' => $this->isSentView ? ['state' => self::DEFAULT_SENT_STATES] : (object) [],
                 'filterGroups' => collect($this->filterGroups($this->orgPartner))->map(fn ($group, $key) => ['key' => $key, 'label' => $group['label'], 'options' => $group['options']])->values(),
                 'data' => $items,
             ]

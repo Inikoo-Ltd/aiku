@@ -704,6 +704,10 @@ test('pre-pick closed short cancels the shortfall instead of leaving it outstand
     $sellerOrgStock->update(['quantity_available' => 25]);
 
     $item = submittedPartnerShoppingListItem($this->orgPartner, $buyerOrgStock, ['quantity' => 28]);
+    \Illuminate\Support\Facades\Notification::fake();
+    $adder = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $adder->givePermissionTo("procurement.{$this->orgPartner->organisation_id}.edit");
+    $item->update(['added_by_user_id' => $adder->id]);
 
     $this->post(route('grp.org.productions.show.pre_pick.pick', [$seller->slug, $production->slug]), ['lines' => [['id' => $item->id, 'quantity' => 25, 'cancel_shortfall' => true]]])
         ->assertRedirect();
@@ -717,6 +721,9 @@ test('pre-pick closed short cancels the shortfall instead of leaving it outstand
         ->and($shortfall->state)->toBe(ShoppingListItemStateEnum::DISMISSED)
         ->and($shortfall->dismissed_at)->not->toBeNull()
         ->and(PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::OPEN)->whereNull('pre_picked_at')->exists())->toBeFalse();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo($adder, \App\Notifications\ToProduceItemsCantBeDoneNotification::class, fn ($notification, array $channels) => in_array('mail', $channels, true)
+        && str_contains($notification->note, $buyerOrgStock->code.' ×3'));
 });
 
 test('only a manufacturing hub sells to its partners through the shopping list and pre-pick', function () {

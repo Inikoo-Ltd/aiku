@@ -9,20 +9,18 @@
 namespace App\Actions\Production\PartnerShippingList;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PartnerShoppingListItem\NotifyPartnerLinesCannotBeMade;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\Permission;
 use App\Models\SysAdmin\User;
-use App\Notifications\ToProduceItemsCantBeDoneNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -95,14 +93,7 @@ class DismissToProduceItems extends OrgAction
 
             $this->audit($orgPartner->organisation, $note);
 
-            $buyerId = $orgPartner->organisation_id;
-            Notification::send(
-                User::permission(Permission::whereIn('name', ["procurement.$buyerId", "procurement.$buyerId.edit"])->pluck('name')->all())
-                    ->where('status', true)
-                    ->where('id', '!=', $user->id)
-                    ->get(),
-                new ToProduceItemsCantBeDoneNotification($orgPartner, $note)
-            );
+            NotifyPartnerLinesCannotBeMade::run($orgPartner, $partnerItems, $note, $user);
         });
 
         return $items;

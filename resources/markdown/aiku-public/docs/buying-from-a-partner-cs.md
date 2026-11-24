@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Průvodce pro kupujícího - začněte u nákupního dashboardu, naplňte seznam ručně, z partnerova katalogu nebo pomocí automatického doplnění, a přijměte zboží, když dorazí.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Zadané objednávky se zaznamenávají spolu s vaším požadavkem, ale z logu A
 ## Když seznam řekne ne
 
 Přidání je odmítnuto ve třech případech, záměrně: seznam dosáhl **budget** (rozpočtu) pro tohoto partnera (položky ranku A a bez skladu jsou z limitu vyňaty — nouzová situace se vejde vždy), sklad má pod 5 % volných míst, nebo tento partner už vyčerpal svůj spravedlivý podíl na volných místech u produktů, které jste nikdy neskladovali. Řešte tu zprávu, nehledejte jinou cestu — stejná pojistka platí pro ruční přidání, hromadné přidání i automatické doplnění. [Článek o dashboardu](/docs/reading-the-partner-shopping-dashboard-cs) vysvětluje, odkud tyto limity pocházejí.
+
+## Když partner nemůže řádek vyrobit
+
+Někdy výroba partnera nemůže vyrobit něco, co jste objednali: chybí surovina, nebo mohli poslat ze skladu jen část řádku. Řádek pak označí jako **Nelze vyrobit** a uvedou důvod. Kdo řádek přidal, dostane o tom e-mail a zbytek vašeho nákupního týmu to uvidí v upozorněních. E-mail se nastavuje ve vašem profilu v upozorněních, stejně jako ostatní. Řádek, který nemohou vyrobit vůbec, pak zmizí z vašeho seznamu **Objednávky**, abyste ho mohli objednat jinde; řádek vyrobený jen zčásti tam zůstane a chybějící část je označena **Nelze vyrobit**. Chcete-li tyto řádky znovu vidět, vyberte nahoře v Objednávkách filtr **Nelze vyrobit**.
 
 ## Když je zboží na cestě
 

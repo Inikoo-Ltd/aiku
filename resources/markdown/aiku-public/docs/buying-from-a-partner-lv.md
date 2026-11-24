@@ -1,8 +1,8 @@
 ---
 title: Pirkšana no partnera
 summary: Pircēja rokasgrāmata - sāc no iepirkumu paneļa, aizpildi sarakstu ar roku, no partnera kataloga vai ar automātisku aizpildi, un saņem preci, kad tā pienāk.
-date: 2026-11-21
-source_date: 2026-11-21
+date: 2026-11-24
+source_date: 2026-11-24
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -78,6 +78,10 @@ Veiktie pasūtījumi tiek reģistrēti kopā ar tavu pieprasījumu, bet no AI iz
 ## Kad saraksts saka nē
 
 Pievienošana tiek atteikta trīs gadījumos, un tas ir ar nolūku: saraksts sasniedzis **budžeta** griestus šim partnerim (A ranga un nulles atlikuma preces ir atbrīvotas — ārkārtas gadījums vienmēr iederas), noliktavai palikuši mazāk par 5% brīvu vietu, vai šis partneris jau ir izmantojis savu taisnīgo daļu no brīvajām vietām ar produktiem, ko tu nekad neesi turējis krājumā. Risini ziņojumu, nevis meklē citu ceļu — tas pats slēdzis darbojas manuālai pievienošanai, masveida pievienošanai un automātiskajai aizpildei. [Paneļa raksts](/docs/reading-the-partner-shopping-dashboard-lv) izskaidro, no kurienes šie limiti nāk.
+
+## Kad partneris nevar izgatavot rindu
+
+Dažreiz partnera ražošana nevar izgatavot kaut ko, ko pasūtījāt: trūkst kādas sastāvdaļas, vai no noliktavas varēja nosūtīt tikai daļu rindas. Viņi atzīmē rindu kā **Cannot be made** un norāda iemeslu. Tas, kurš rindu pievienoja, saņem par to e-pastu, bet pārējā iepirkumu komanda to redz savos paziņojumos. E-pasta iestatījums ir jūsu profilā pie paziņojumiem, tāpat kā pārējie. Rinda, ko viņi nevar izgatavot nemaz, pēc tam pazūd no jūsu saraksta **Pasūtījumi**, lai jūs to varētu pasūtīt citur; rinda, kas izgatavota tikai daļēji, paliek, un trūkstošā daļa ir atzīmēta kā **Cannot be made**. Lai šīs rindas atkal redzētu, Pasūtījumu augšā izvēlieties filtru **Cannot be made**.
 
 ## Kad prece ir ceļā
 
