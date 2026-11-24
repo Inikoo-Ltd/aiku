@@ -4748,6 +4748,22 @@ test('an order waiting in the warehouse gets an estimated dispatch day range wit
     expect($general['fact'])->toBe(__('Based on how our warehouse is running this week, an order placed today should go out between :from and :to. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['from' => $today, 'to' => $tomorrow], 'en'))
         ->and(json_encode($general['content']))->not->toMatch('/\d/');
 
+    expect($estimate['content'])->not->toHaveKey('busy')
+        ->and($estimate['fact'])->not->toContain('busiest');
+
+    foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
+        \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 0.4, 'median_hours' => 40], 900);
+    }
+    $busySentence = __('This is our busiest time of the year, so orders are taking longer than usual to go out.', [], 'en');
+    $busyOrder    = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+    $busyGeneral  = $tools->execute($conversation, 'dispatch_times', []);
+
+    expect($busyOrder['fact'])->toContain($busySentence.' '.__('Based on how our warehouse is running this week, we estimate your order will go out between', [], 'en'))
+        ->and($busyOrder['content']['busy'])->toContain('offer_reason order_question')
+        ->and(json_encode($busyOrder['content']))->not->toMatch('/0\.4|\b2\.5\b/')
+        ->and($busyGeneral['fact'])->toStartWith($busySentence.' ')
+        ->and($busyGeneral['content']['busy'])->toContain('customer service');
+
     foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
         \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 0.01, 'median_hours' => 40], 900);
     }

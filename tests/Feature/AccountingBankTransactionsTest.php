@@ -3286,3 +3286,100 @@ test('an orderchamp payout is linked only to the one hand-paid order of its coun
         ->and($lines['old']->order_id)->toBeNull()
         ->and($old->refresh()->payment_amount)->toEqual(141.70);
 });
+
+function paypalLine(string $id, string $code, string $status, string $currency, float $amount, ?float $fee = null, array $extra = []): array
+{
+    return [
+        'transaction_info' => array_merge(array_filter([
+            'transaction_id'              => $id,
+            'transaction_event_code'      => $code,
+            'transaction_status'          => $status,
+            'transaction_initiation_date' => '2026-11-17T08:48:05Z',
+            'transaction_updated_date'    => '2026-11-17T08:48:05Z',
+            'transaction_amount'          => ['currency_code' => $currency, 'value' => number_format($amount, 2, '.', '')],
+            'fee_amount'                  => $fee === null ? null : ['currency_code' => $currency, 'value' => number_format($fee, 2, '.', '')],
+        ]), $extra),
+        'payer_info' => ['payer_name' => ['alternate_full_name' => 'Haven']],
+    ];
+}
+
+test('a paypal account is mirrored as a bank: lines net of fee, customer payments as paypal payouts, conversions and withdrawals as own moves, holds and their releases left out whatever their status, balances per currency', function () {
+    $lines = [
+        paypalLine('pay1', 'T0006', 'S', 'EUR', 1249.32, -42.83, ['custom_field' => '565237b3-4d01-815c-a4c2-8bcc944cb3ce']),
+        paypalLine('conv-out', 'T0200', 'S', 'PLN', -1893.61),
+        paypalLine('conv-in', 'T0200', 'S', 'EUR', 410.68),
+        paypalLine('refund', 'T1107', 'S', 'EUR', -10.83, null, ['invoice_id' => 'IT15821', 'transaction_subject' => 'Items faulty']),
+        paypalLine('withdraw', 'T0403', 'S', 'EUR', -327000, null, ['bank_reference_id' => 'YYW1051189730993']),
+        paypalLine('hold', 'T1110', 'P', 'EUR', -75.14),
+        paypalLine('hold', 'T1111', 'D', 'EUR', 75.14),
+        paypalLine('account-hold', 'T1501', 'P', 'EUR', -3408.89),
+        paypalLine('hold-release', 'T1105', 'S', 'EUR', 3408.89),
+        paypalLine('deposit', 'T0300', 'S', 'EUR', 1000),
+    ];
+    Http::fake([
+        'api-m.paypal.com/v1/oauth2/token'          => Http::response(['access_token' => 'paypal-token', 'expires_in' => 32400]),
+        'api-m.paypal.com/v1/reporting/balances*'   => Http::response(['account_id' => 'NAFU9HDZBS2ZG', 'balances' => [
+            ['currency' => 'EUR', 'total_balance' => ['currency_code' => 'EUR', 'value' => '425086.43'], 'withheld_balance' => ['currency_code' => 'EUR', 'value' => '75.14']],
+            ['currency' => 'PLN', 'total_balance' => ['currency_code' => 'PLN', 'value' => '2267.56'], 'withheld_balance' => ['currency_code' => 'PLN', 'value' => '0.00']],
+        ]]),
+        'api-m.paypal.com/v1/reporting/transactions*' => Http::sequence()
+            ->push(['transaction_details' => $lines, 'total_items' => count($lines), 'total_pages' => 1])
+            ->whenEmpty(Http::response(['transaction_details' => [$lines[0]], 'total_items' => 1, 'total_pages' => 1])),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::PAYPAL,
+        'name'        => 'PayPal',
+        'credentials' => 'paypal-client:paypal-secret',
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true))->toBe(['synced' => 6, 'skipped' => 0, 'skipped_examples' => []]);
+
+    $stored = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+    expect($bankConnection->refresh()->external_id)->toBe('NAFU9HDZBS2ZG')
+        ->and($stored->keys()->sort()->values()->all())->toBe(['conv-in', 'conv-out', 'deposit', 'pay1', 'refund', 'withdraw'])
+        ->and($stored['deposit']->provider_type)->toBe(\App\Actions\Accounting\BankPayee\ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+        ->and((float) $stored['pay1']->amount)->toBe(1206.49)
+        ->and($stored['pay1']->direction)->toBe(BankTransactionDirectionEnum::IN)
+        ->and($stored['pay1']->fee_amount)->toBeNull()
+        ->and($stored['pay1']->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($stored['pay1']->match_data['provider'])->toBe('paypal')
+        ->and($stored['pay1']->match_data['processor_fees'])->toBe(42.83)
+        ->and($stored['pay1']->counterparty_name)->toBe('Haven')
+        ->and($stored['pay1']->reference)->toBe('565237b3-4d01-815c-a4c2-8bcc944cb3ce')
+        ->and($stored['pay1']->provider_type)->toBe('T0006')
+        ->and($stored['conv-out']->provider_type)->toBe(\App\Actions\Accounting\BankPayee\ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+        ->and($stored['conv-in']->provider_type)->toBe(\App\Actions\Accounting\BankPayee\ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+        ->and($stored['conv-in']->match_state)->toBeNull()
+        ->and($stored['withdraw']->provider_type)->toBe(\App\Actions\Accounting\BankPayee\ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+        ->and((float) $stored['withdraw']->amount)->toBe(-327000.0)
+        ->and($stored['withdraw']->reference)->toBe('YYW1051189730993')
+        ->and($stored['refund']->direction)->toBe(BankTransactionDirectionEnum::OUT)
+        ->and($stored['refund']->provider_type)->toBe('T1107')
+        ->and($stored['refund']->reference)->toBe('IT15821')
+        ->and($stored['refund']->description)->toBe('Items faulty');
+
+    $balances = \App\Models\Accounting\BankBalance::where('bank_connection_id', $bankConnection->id)->get()->keyBy(fn ($row) => $row->currency->code);
+    expect((float) $balances['EUR']->amount)->toBe(425086.43)
+        ->and((float) $balances['EUR']->reserved_amount)->toBe(75.14)
+        ->and((float) $balances['PLN']->amount)->toBe(2267.56);
+
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []]);
+
+    expect($stored['refund']->refresh()->out_category)->toBe(\App\Enums\Accounting\BankPayee\BankPayeeCategoryEnum::CUSTOMER_REFUNDS->value);
+
+    $payouts = collect(\App\Actions\Accounting\BankTransaction\UI\ShowPayouts::make()->handle($this->organisation, collect([$this->organisation]), 'all')['rows']);
+    expect($payouts->firstWhere('key', "paypal|{$this->organisation->id}|EUR")['paid_out']['native'] ?? null)->toBe(1206.49)
+        ->and($payouts->firstWhere('key', "cod|{$this->organisation->id}|EUR"))->toBeNull();
+
+    $this->artisan('bank-transactions:match', ['bankConnection' => $bankConnection->id, '--reset' => true])->assertSuccessful();
+    expect($stored['pay1']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT)
+        ->and($stored['pay1']->match_data['processor_fees'])->toBe(42.83);
+
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/v1/oauth2/token')
+        && $request->hasHeader('Authorization', 'Basic '.base64_encode('paypal-client:paypal-secret'))
+        && $request['grant_type'] === 'client_credentials');
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/reporting/transactions?')
+        && $request['fields'] === 'transaction_info,payer_info'
+        && $request->hasHeader('Authorization', 'Bearer paypal-token'));
+});

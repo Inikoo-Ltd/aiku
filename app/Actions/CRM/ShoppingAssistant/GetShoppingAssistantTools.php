@@ -175,6 +175,8 @@ class GetShoppingAssistantTools
 
     public const string STUCK_ORDER_TASK_KIND = 'shopping_assistant_stuck_order';
 
+    public const string BUSY_NOTE = 'Our warehouse is busier than usual and the line under your reply says so, written by the system. Be honest and calm about it, as something normal in busy weeks: no alarm and no repeated apologies.';
+
     public const string STUCK_ORDER_DEPARTMENT = 'customer-services';
 
     private const array ORDER_OPEN_STATES = [
@@ -1319,6 +1321,17 @@ class GetShoppingAssistantTools
     }
 
     /**
+     * HELP-4886, Raul 24 Nov 2026: honest, not alarming. A backlog in the Christmas season is normal
+     * and said as such; outside it, we are simply busier than usual. Said only when the data says so.
+     */
+    private function busySentence(string $locale): string
+    {
+        return in_array(now()->month, [11, 12], true)
+            ? __('This is our busiest time of the year, so orders are taking longer than usual to go out.', [], $locale)
+            : __('We are busier than usual at the moment, so orders are taking longer than usual to go out.', [], $locale);
+    }
+
+    /**
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
     private function dispatchTimes(Customer $customer, string $locale): array
@@ -1331,12 +1344,16 @@ class GetShoppingAssistantTools
             $day = fn (Carbon $date) => $date->copy()->locale($locale)->isoFormat('dddd D MMMM');
 
             return [
-                'content'  => ['available' => true, 'note' => 'A sentence with when an order placed today should go out, worked out from how our warehouse is running this week, is added under your reply. Write one short lead-in without any figure or delivery promise, and never repeat a dispatch time from shop information or the website: this sentence is the current one.'],
+                'content'  => array_filter([
+                    'available' => true,
+                    'busy'      => $now['busy'] ? self::BUSY_NOTE.' Suggest customer service if they need an order by a date.' : null,
+                    'note'      => 'A sentence with when an order placed today should go out, worked out from how our warehouse is running this week, is added under your reply. Write one short lead-in without any figure or delivery promise, and never repeat a dispatch time from shop information or the website: this sentence is the current one.',
+                ], fn ($value) => $value !== null),
                 'products' => [],
                 'error'    => null,
-                'fact'     => $now['from']->isSameDay($now['to'])
+                'fact'     => ($now['busy'] ? $this->busySentence($locale).' ' : '').($now['from']->isSameDay($now['to'])
                     ? __('Based on how our warehouse is running this week, an order placed today should go out on :day. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['day' => $day($now['from'])], $locale)
-                    : __('Based on how our warehouse is running this week, an order placed today should go out between :from and :to. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['from' => $day($now['from']), 'to' => $day($now['to'])], $locale),
+                    : __('Based on how our warehouse is running this week, an order placed today should go out between :from and :to. This is an estimate, not a guaranteed date, and it is dispatch from our warehouse, not delivery to you.', ['from' => $day($now['from']), 'to' => $day($now['to'])], $locale)),
             ];
         }
 
@@ -1503,6 +1520,7 @@ class GetShoppingAssistantTools
         $outlook = !$priority && in_array($order->state, self::ORDER_OPEN_STATES, true) && !$this->unpaidOrderPayment($customer, $order)
             ? $this->dispatchOutlook($order, $locale, $conversation)
             : null;
+        $busy    = (bool) ($outlook['busy'] ?? false);
         if ($outlook) {
             $line .= "\n".$outlook['sentence'];
         }
@@ -1517,9 +1535,7 @@ class GetShoppingAssistantTools
                     : null,
                 'priority'     => $priority,
                 'payment'      => $this->unpaidOrderPayment($customer, $order),
-                'busy_season'  => in_array(now()->month, [11, 12], true) && in_array($order->state, self::ORDER_OPEN_STATES, true)
-                    ? 'It is our Christmas rush, our busiest weeks of the year. Be honest about it: we are working through every order as fast as we can.'
-                    : null,
+                'busy'         => $busy ? self::BUSY_NOTE.' After your answer, offer our team (answer_kind offer_person, offer_reason order_question) in case they need this order by a date or are worried about it.' : null,
                 'other_open_orders' => $reference === '' && $open->count() > 1
                     ? ($open->count() - 1).' more of their orders are not dispatched yet; this is the oldest. Ask for the order number if they meant another.'
                     : null,
@@ -1529,7 +1545,7 @@ class GetShoppingAssistantTools
                     OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
                     default                    => 'the order number and the date it was placed',
                 },
-                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it and tell them how to pay it only from payment; never give a cause of a failed payment that payment does not state. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person.',
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Be warm and honest: tell the customer in two or three sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery or dispatch date. When priority is given, say sorry for the wait and that, as a thank-you for their patience, we have just moved it to premium dispatch free of charge, so it goes to the front of the picking queue. When it is waiting for payment, say that is what holds it and tell them how to pay it only from payment; never give a cause of a failed payment that payment does not state. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a refund, a payment problem, an invoice), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question; a plain wait in the queue needs no person unless busy says otherwise.',
             ], fn ($value) => $value !== null),
             'products' => [],
             'error'    => null,
@@ -1543,7 +1559,7 @@ class GetShoppingAssistantTools
      * dispatch date; a stuck order also gets one customer services task, whatever the customer
      * does next. The queue size and the pace never leave GetOrderDispatchOutlook.
      *
-     * @return array{sentence: string, note: string}|null
+     * @return array{sentence: string, busy: bool, note: string}|null
      */
     private function dispatchOutlook(Order $order, string $locale, ?ShoppingAssistantConversation $conversation): ?array
     {
@@ -1553,7 +1569,8 @@ class GetShoppingAssistantTools
         }
 
         $day      = fn (Carbon $date) => $date->copy()->locale($locale)->isoFormat('dddd D MMMM');
-        $sentence = match ($outlook['kind']) {
+        $busy     = $outlook['kind'] === 'estimate' && $outlook['busy'];
+        $sentence = ($busy ? $this->busySentence($locale).' ' : '').match ($outlook['kind']) {
             'estimate' => $outlook['from']->isSameDay($outlook['to'])
                 ? __('Based on how our warehouse is running this week, we estimate your order will go out on :day. This is an estimate, not a guaranteed date.', ['day' => $day($outlook['from'])], $locale)
                 : __('Based on how our warehouse is running this week, we estimate your order will go out between :from and :to. This is an estimate, not a guaranteed date.', ['from' => $day($outlook['from']), 'to' => $day($outlook['to'])], $locale),
@@ -1579,6 +1596,7 @@ class GetShoppingAssistantTools
 
         return [
             'sentence' => $sentence,
+            'busy'     => $busy,
             'note'     => $stuck
                 ? 'The order is stuck and the line under your reply says why, written by the system. Say it plainly and kindly in one or two sentences without repeating item names, and that our team has been told; then offer our team: answer_kind offer_person, offer_reason order_question. Never give a dispatch date.'
                 : 'The line under your reply gives an estimated dispatch day range, worked out from how our warehouse is running this week. Mention that an estimate is below, never write a date or a number of days yourself, and never call it a promise or a guarantee.',

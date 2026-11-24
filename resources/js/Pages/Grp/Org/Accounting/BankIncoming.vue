@@ -410,6 +410,11 @@ const submit = () => {
 				<template v-else-if="item.payout.provider === 'cod'">
 					{{ ctrans(":carrier cash on delivery payout, its parcel list is not read yet", { carrier: item.payout.carrier }) }}
 				</template>
+				<template v-else-if="item.payout.provider === 'paypal'">
+					{{ ctrans("PayPal payment through Checkout, PayPal kept :fees", {
+						fees: locale.currencyFormat(item.currency_code, item.payout.processor_fees),
+					}) }}
+				</template>
 				<template v-else-if="item.payout.reconciled">
 					{{ ctrans("Checkout payout of :payments payments and :refunds refunds, Checkout kept :fees, the bank :bank_fee", {
 						payments: item.payout.payments,

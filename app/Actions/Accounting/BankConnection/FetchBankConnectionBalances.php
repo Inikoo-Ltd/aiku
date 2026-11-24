@@ -45,6 +45,7 @@ class FetchBankConnectionBalances
                 BankConnectionProviderEnum::WISE => $this->wiseBalances($bankConnection),
                 BankConnectionProviderEnum::FIO => $this->syncedBalance($bankConnection, 'fio_balance'),
                 BankConnectionProviderEnum::TATRA => $this->syncedBalance($bankConnection, 'tatra_balance'),
+                BankConnectionProviderEnum::PAYPAL => $bankConnection->sync_data['paypal_balances'] ?? throw new RuntimeException('No paypal_balances read yet'),
                 default => throw new RuntimeException("No bank balances for provider {$bankConnection->provider->value}"),
             };
             $stored = $this->store($bankConnection, $balances);

@@ -55,7 +55,13 @@ class GetOrderDispatchOutlook
     public const int MAX_DAYS = 15;
 
     /**
-     * @return array{kind: string, from?: Carbon, to?: Carbon, items?: array<int, string>, delivery_note_id: int}|null
+     * HELP-4886. Busier than usual when the orders waiting in the warehouse are more than this many
+     * days of this week's pace: our shipping page promises dispatch in 1-2 working days.
+     */
+    public const float BUSY_DAYS = 2;
+
+    /**
+     * @return array{kind: string, from?: Carbon, to?: Carbon, busy?: bool, items?: array<int, string>, delivery_note_id: int}|null
      */
     public function handle(Order $order, ?Carbon $now = null): ?array
     {
@@ -97,7 +103,7 @@ class GetOrderDispatchOutlook
 
         $range = $this->range($this->ordersAhead($note->warehouse_id, $stream, $note), $pace, $stream, $now, $note->warehouse->organisation->timezone?->name ?? 'UTC');
 
-        return $range ? ['kind' => 'estimate', ...$range, 'delivery_note_id' => $note->id] : null;
+        return $range ? ['kind' => 'estimate', ...$range, 'busy' => $this->ordersAhead($note->warehouse_id, $stream) / $pace > self::BUSY_DAYS, 'delivery_note_id' => $note->id] : null;
     }
 
     /**
@@ -105,8 +111,9 @@ class GetOrderDispatchOutlook
      * the moment?": it goes behind every order already waiting in the warehouse the shop's last orders
      * went to most in the last 30 days, so in a busy week it follows the real backlog, not the 30-day
      * figure or a website text. too_far when the backlog is deeper than MAX_DAYS: no date is given then.
+     * busy when the backlog is more than BUSY_DAYS of this week's pace.
      *
-     * @return array{from: Carbon, to: Carbon}|array{too_far: true}|null
+     * @return array{from: Carbon, to: Carbon, busy: bool}|array{too_far: true}|null
      */
     public function forNewOrder(Shop $shop, ?Carbon $now = null): ?array
     {
@@ -126,7 +133,10 @@ class GetOrderDispatchOutlook
             return null;
         }
 
-        return $this->range($this->ordersAhead($warehouse->id, $stream), $pace, $stream, $now ?? now(), $warehouse->organisation->timezone?->name ?? 'UTC') ?? ['too_far' => true];
+        $ahead = $this->ordersAhead($warehouse->id, $stream);
+        $range = $this->range($ahead, $pace, $stream, $now ?? now(), $warehouse->organisation->timezone?->name ?? 'UTC');
+
+        return $range ? [...$range, 'busy' => $ahead / $pace > self::BUSY_DAYS] : ['too_far' => true];
     }
 
     /**
