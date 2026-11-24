@@ -14,7 +14,7 @@ import SupplierPortalProfile, { type PortalProfile } from "@/Components/Procurem
 import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.vue"
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
 import StockDeliveryFeedbackCards, { type FeedbackCard } from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
-import Image from "@common/Components/Image.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import { useColorTheme } from "@/Composables/useStockList"
 import { setColorStyleRoot } from "@/Composables/useApp"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
@@ -241,7 +241,7 @@ onMounted(() => {
 		<aside class="lg:sticky lg:top-0 lg:flex lg:h-[calc(100dvh-1.5rem)] lg:w-64 lg:shrink-0 lg:flex-col" :style="{ backgroundColor: navigationTheme.background, color: navigationTheme.text }">
 			<div class="flex items-center gap-3 px-4 pb-3 pt-4 lg:px-5 lg:pb-5 lg:pt-6">
 				<div class="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg text-sm font-bold" :style="{ backgroundColor: navigationTheme.badge }">
-					<Image v-if="profile?.company_logo" :src="profile.company_logo" class="absolute inset-0 h-full w-full object-cover" :alt="supplier.name" />
+					<ZoomableImage v-if="profile?.company_logo" :src="profile.company_logo" :full="profile.company_logo_full" class="absolute inset-0 h-full w-full rounded-lg border-0" :alt="supplier.name" />
 					<template v-else>{{ initials(supplier.name) }}</template>
 				</div>
 				<div class="min-w-0">
@@ -297,6 +297,7 @@ onMounted(() => {
 					:supplier="supplier"
 					:group="group"
 					:logo="profile?.company_logo"
+					:logo-full="profile?.company_logo_full"
 					:company="company"
 					:agent="agent"
 					:owner="owner"

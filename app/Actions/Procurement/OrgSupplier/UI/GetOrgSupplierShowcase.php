@@ -38,6 +38,7 @@ class GetOrgSupplierShowcase
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
                 'photo'      => $supplier->imageSources(320, 320),
+                'photo_full' => $supplier->image?->fullResolutionUrls(),
                 'supplierInfo' => [
                     ...$this->supplierInfo($supplier),
                     'next_purchase_order_reference' => $this->withOrganisationLabel($this->nextPurchaseOrderReference($orgSupplier)),

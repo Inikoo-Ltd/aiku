@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalStatCard from "@/Components/Procurement/SupplierPortalStatCard.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import type { JourneyRibbon } from "@/Components/SupplyChain/PurchaseOrderJourneyRibbon.vue"
-import Image from "@common/Components/Image.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import type { Image as ImageProxy } from "@/types/Image"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -55,6 +55,7 @@ const props = defineProps<{
 	supplier: { code: string; name: string }
 	group: string
 	logo?: ImageProxy | null
+	logoFull?: { original_url: string; download_url: string } | null
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
@@ -136,7 +137,7 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 			<div class="relative flex flex-col gap-6 p-5 sm:p-7 md:flex-row md:items-center md:justify-between">
 				<div class="flex min-w-0 items-center gap-4">
 					<div class="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl text-lg font-bold" :style="{ backgroundColor: theme.badge }">
-						<Image v-if="logo" :src="logo" class="absolute inset-0 h-full w-full object-cover" :alt="supplier.name" />
+						<ZoomableImage v-if="logo" :src="logo" :full="logoFull" class="absolute inset-0 h-full w-full rounded-xl border-0" :alt="supplier.name" />
 						<template v-else>{{ initials(supplier.name) }}</template>
 					</div>
 					<div class="min-w-0">

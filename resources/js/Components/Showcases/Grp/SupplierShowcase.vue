@@ -36,8 +36,7 @@ import {
 } from '@fal'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
-import Image from '@common/Components/Image.vue'
-import ImagePrime from 'primevue/image'
+import ZoomableImage from '@/Components/Utils/ZoomableImage.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
@@ -74,7 +73,6 @@ type RouteLink = {
 type FactoryHoliday = {
     from: string
     to?: string | null
-| null
     note?: string | null
 }
 
@@ -112,7 +110,7 @@ const props = defineProps<{
                 formatted_address?: string
             }
             photo?: Record<string, any> | null
-            photo_large?: Record<string, any> | null
+            photo_full?: { original_url: string; download_url: string } | null
             supplierInfo?: {
                 delivery_type?: string
                 delivery_time?: number
@@ -363,19 +361,12 @@ const formatHoliday = (holiday: FactoryHoliday) => {
                 <div class="flex items-center gap-4 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
                     <div
                         class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 ring-1 ring-gray-300">
-                        <ImagePrime v-if="contactCard?.photo" preview class="block h-full w-full cursor-zoom-in">
-                            <template #image>
-                                <Image :src="contactCard.photo" image-cover class="block h-full w-full" :alt="title" />
-                            </template>
-                            <template #preview="{ style, previewCallback }">
-                                <Image
-                                    :src="contactCard.photo_large ?? contactCard.photo"
-                                    :alt="title"
-                                    class="block max-h-[85vh] max-w-[90vw]"
-                                    :style="style"
-                                    @click="previewCallback" />
-                            </template>
-                        </ImagePrime>
+                        <ZoomableImage
+                            v-if="contactCard?.photo"
+                            :src="contactCard.photo"
+                            :full="contactCard.photo_full"
+                            :alt="title"
+                            class="h-full w-full rounded-full border-0" />
                         <FontAwesomeIcon v-else icon="fal fa-person-dolly" class="text-xl" fixed-width aria-hidden="true" />
                     </div>
                     <div class="min-w-0 flex-1">

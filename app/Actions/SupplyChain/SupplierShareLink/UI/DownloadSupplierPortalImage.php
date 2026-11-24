@@ -20,8 +20,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * A product image at full size, to view or download from the supplier page. Only the images of the supplier's own
- * products, its own or the trade unit's, can be reached through its link.
+ * A product image or the supplier's own photo at full size, to view or download from the supplier page. Only the
+ * supplier's photo and the images of its own products, its own or the trade unit's, can be reached through its link.
  */
 class DownloadSupplierPortalImage
 {
@@ -29,7 +29,7 @@ class DownloadSupplierPortalImage
 
     public function handle(Supplier $supplier, Media $media, bool $inline = false): BinaryFileResponse
     {
-        abort_unless($this->isProductImage($supplier, $media), 404);
+        abort_unless($supplier->image_id === $media->id || $this->isProductImage($supplier, $media), 404);
 
         return DownloadAttachment::make()->handle($media, $inline);
     }

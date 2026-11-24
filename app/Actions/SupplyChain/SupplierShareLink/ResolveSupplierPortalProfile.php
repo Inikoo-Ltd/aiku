@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierShareLink;
 
+use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalProducts;
 use App\Models\SupplyChain\SupplierPortalProfile;
 use App\Models\SupplyChain\SupplierShareLink;
 use Illuminate\Http\Request;
@@ -72,6 +73,7 @@ class ResolveSupplierPortalProfile
             'avatar'       => $profile->imageSources(160, 160),
             'display_name' => $profile->name ?? $profile->portalContact?->name ?? $supplier->contact_name ?? $supplier->officialName(),
             'company_logo' => $supplier->imageSources(160, 160),
+            'company_logo_full' => $supplier->image ? IndexSupplierPortalProducts::make()->fullResolutionUrls($supplier->image, request()->route('token')) : null,
         ];
     }
 }

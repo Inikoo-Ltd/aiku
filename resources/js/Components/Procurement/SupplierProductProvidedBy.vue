@@ -138,7 +138,7 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                 class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
                 <button v-if="party.image" type="button" class="h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
                     @click.prevent.stop="openImageViewer(party.image, party.name)">
-                    <Image :src="party.image" class="h-full w-full" />
+                    <Image :src="party.image" imageCover class="h-full w-full" />
                 </button>
                 <Icon v-else :data="{ icon: party.icon }" class="w-12 shrink-0 text-center text-2xl text-gray-400" />
                 <div class="min-w-0">
@@ -155,7 +155,7 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                 class="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50">
                 <button v-if="party.image" type="button" class="h-12 w-12 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
                     @click.prevent.stop="openImageViewer(party.image, party.name)">
-                    <Image :src="party.image" class="h-full w-full" />
+                    <Image :src="party.image" imageCover class="h-full w-full" />
                 </button>
                 <Icon v-else :data="{ icon: party.icon }" class="w-12 shrink-0 text-center text-2xl text-gray-400" />
                 <div class="min-w-0">
@@ -191,7 +191,7 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                     class="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-2 py-1.5">
                     <button v-if="other.image" type="button" class="h-8 w-8 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
                         @click="openImageViewer(other.image, other.supplier_name)">
-                        <Image :src="other.image" class="h-full w-full" />
+                        <Image :src="other.image" imageCover class="h-full w-full" />
                     </button>
                     <Link v-else :href="route(other.supplier_route.name, other.supplier_route.parameters)" class="shrink-0"
                         v-tooltip="ctrans('Open supplier')">

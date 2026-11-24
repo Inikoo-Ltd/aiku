@@ -6,6 +6,7 @@ import InputText from "primevue/inputtext"
 import SelectButton from "primevue/selectbutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import { Cropper } from "vue-advanced-cropper"
 import "vue-advanced-cropper/dist/style.css"
 import type { Image as ImageProxy } from "@/types/Image"
@@ -24,6 +25,7 @@ export interface PortalProfile {
 	avatar: ImageProxy | null
 	display_name: string
 	company_logo: ImageProxy | null
+	company_logo_full?: { original_url: string; download_url: string } | null
 }
 
 const props = defineProps<{
@@ -153,7 +155,7 @@ const openCompanyDetails = () => {
 			<span class="hidden max-w-[10rem] truncate font-medium sm:inline">{{ profile.display_name }}</span>
 			<span class="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold text-white" :style="{ backgroundColor: themeColour }">
 				<span>{{ initials || "?" }}</span>
-				<Image v-if="picture" :src="picture" class="absolute inset-0 h-full w-full object-cover" :alt="profile.display_name" />
+				<Image v-if="picture" :src="picture" imageCover class="absolute inset-0 h-full w-full" :alt="profile.display_name" />
 			</span>
 		</button>
 
@@ -163,7 +165,7 @@ const openCompanyDetails = () => {
 				<div class="flex items-center gap-4">
 					<span class="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full text-2xl font-semibold text-white" :style="{ backgroundColor: themeColour }">
 						<span>{{ initials || "?" }}</span>
-						<Image v-if="picture" :src="picture" class="absolute inset-0 h-full w-full object-cover" :alt="profile.display_name" />
+						<Image v-if="picture" :src="picture" imageCover class="absolute inset-0 h-full w-full" :alt="profile.display_name" />
 					</span>
 					<div class="space-y-1">
 						<Button type="tertiary" size="xs" :label="profile.avatar ? ctrans('Change photo') : ctrans('Add a photo')" :loading="isSaving" @click="photoInput?.click()">
@@ -218,7 +220,7 @@ const openCompanyDetails = () => {
 				<div class="flex items-center gap-4 border-t border-gray-100 pt-4">
 					<span class="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-gray-400">
 						<FontAwesomeIcon icon="fal fa-building" size="lg" fixed-width aria-hidden="true" />
-						<Image v-if="profile.company_logo" :src="profile.company_logo" class="absolute inset-0 h-full w-full object-cover" :alt="ctrans('Company photo')" />
+						<ZoomableImage v-if="profile.company_logo" :src="profile.company_logo" :full="profile.company_logo_full" class="absolute inset-0 h-full w-full rounded-xl border-0" :alt="ctrans('Company photo')" />
 					</span>
 					<div class="space-y-1">
 						<div class="text-xs font-medium text-gray-500">{{ ctrans("Company photo") }}</div>

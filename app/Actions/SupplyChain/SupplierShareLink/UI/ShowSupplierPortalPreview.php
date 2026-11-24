@@ -61,6 +61,7 @@ class ShowSupplierPortalPreview extends OrgAction
                 'avatar'       => null,
                 'display_name' => $supplier->contact_name ?? $supplier->officialName(),
                 'company_logo' => $supplier->imageSources(160, 160),
+                'company_logo_full' => $supplier->image?->fullResolutionUrls(),
             ],
             'forms'    => ShowSupplierShare::make()->forms(
                 collect(SupplierSubmissionTypeEnum::cases())->mapWithKeys(fn (SupplierSubmissionTypeEnum $type) => [$type->value => $blocked('submissions/'.$type->value)])->all(),
