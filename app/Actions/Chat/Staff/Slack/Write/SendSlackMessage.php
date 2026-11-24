@@ -13,10 +13,12 @@ use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
+use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -24,7 +26,8 @@ use Throwable;
 /**
  * Posts a message to a public Slack channel as the signed-in person, with their own token, optionally as a reply in a
  * thread (also shown in the channel when asked, as Slack's "Also send to channel"), and stores Slack's answer at once. The event Slack sends back for the same ts finds the row already held, so
- * it neither adds a second one nor announces it as new again. What the person typed is sent as plain text.
+ * it neither adds a second one nor announces it as new again. What the person typed is sent as plain text; only a
+ * mention chosen in the box (MENTION, between two U+E000 private-use characters, which no trimming removes) becomes Slack's own mention code.
  */
 class SendSlackMessage
 {
@@ -39,12 +42,17 @@ class SendSlackMessage
 
     private const string BARE_LINK = '/(<https?:\/\/[^<>|\s]+>)/u';
 
+    public const string MENTION = '/\x{E000}(@U[A-Z0-9]{2,20}|#C[A-Z0-9]{2,20}|!here|!channel)\x{E000}/u';
+
+    public const int EVERYONE_CONFIRM_ABOVE = 6;
+
     public function rules(): array
     {
         return [
             'text'            => ['required', 'string', 'max:'.self::MAX_LENGTH],
             'thread_ts'       => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,12}\.\d{1,8}$/'],
             'also_to_channel' => ['sometimes', 'boolean'],
+            'notify_everyone' => ['sometimes', 'boolean'],
             'idempotency_key' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9_-]+$/'],
         ];
     }
@@ -60,7 +68,7 @@ class SendSlackMessage
     /**
      * @return array<string, mixed> the stored row as the live screen shows it, its thread parent and when it was rendered
      */
-    public function handle(User $user, SlackChannel $slackChannel, string $text, ?string $threadTs, string $idempotencyKey, bool $alsoToChannel = false): array
+    public function handle(User $user, SlackChannel $slackChannel, string $text, ?string $threadTs, string $idempotencyKey, bool $alsoToChannel = false, bool $notifyEveryone = false): array
     {
         if (!$slackChannel->isVisibleTo($user) || !SlackChannel::kept()->whereKey($slackChannel->id)->exists() || $slackChannel->is_archived) {
             $this->refuse(__('Messages cannot be sent to this channel.'));
@@ -69,7 +77,7 @@ class SendSlackMessage
             $this->refuse(__('You cannot send messages to Slack from aiku.'));
         }
 
-        $text = self::toSlackText(trim($text));
+        $text = $this->withMentions(self::toSlackText(trim($text)), $user, $slackChannel, $notifyEveryone);
         if ($text === '') {
             $this->refuse(__('Write a message first.'));
         }
@@ -119,6 +127,9 @@ class SendSlackMessage
             rescue(fn () => SlackChannelMessageChanged::dispatch($slackChannel, $message, 'new'));
             rescue(fn () => NotifySlackMentions::run($message));
         }
+        if ($message && !$message->sent_from_aiku) {
+            $message->forceFill(['sent_from_aiku' => true])->saveQuietly();
+        }
 
         return $this->payload($slackChannel, $message);
     }
@@ -136,6 +147,45 @@ class SendSlackMessage
             $parts,
             array_keys($parts)
         ));
+    }
+
+    /**
+     * A chosen mention arrives as MENTION and is turned into Slack's code only for a live person, a channel this person
+     * may see, or here/channel, which in a channel of more than EVERYONE_CONFIRM_ABOVE members (or of unknown size) needs
+     * the box's confirmation. Anything else loses its separators and stays the plain text it was.
+     */
+    public function withMentions(string $text, User $user, SlackChannel $slackChannel, bool $notifyEveryone): string
+    {
+        preg_match_all(self::MENTION, $text, $found);
+        $tokens = array_unique($found[1]);
+        if ($tokens === []) {
+            return str_replace("\u{E000}", '', $text);
+        }
+
+        $ids      = fn (string $prefix) => array_values(array_map(fn (string $token) => substr($token, 1), array_filter($tokens, fn (string $token) => $token[0] === $prefix)));
+        $people   = SlackUser::whereIn('slack_id', $ids('@'))->where('is_bot', false)->where('is_deleted', false)->pluck('slack_id')->all();
+        $channels = SlackChannel::visibleTo($user)->whereIn('slack_id', $ids('#'))->pluck('slack_id')->all();
+        $everyone = array_intersect($tokens, ['!here', '!channel']);
+        if ($everyone !== [] && !$notifyEveryone && self::needsEveryoneConfirmation($slackChannel->members()->count())) {
+            throw ValidationException::withMessages(['notify_everyone' => __('Confirm that you want to notify everyone in this channel.')]);
+        }
+
+        $converted = preg_replace_callback(self::MENTION, fn (array $match) => match (true) {
+            $match[1][0] === '@' && in_array(substr($match[1], 1), $people, true)   => '<'.$match[1].'>',
+            $match[1][0] === '#' && in_array(substr($match[1], 1), $channels, true) => '<'.$match[1].'>',
+            $match[1][0] === '!'                                                    => '<'.$match[1].'>',
+            default                                                                 => $match[1],
+        }, $text);
+
+        return str_replace("\u{E000}", '', $converted);
+    }
+
+    /**
+     * A channel whose members were never synced (count 0) is treated as large: the size is unknown, so ask.
+     */
+    public static function needsEveryoneConfirmation(int $memberCount): bool
+    {
+        return $memberCount === 0 || $memberCount > self::EVERYONE_CONFIRM_ABOVE;
     }
 
     public static function errorSentence(string $code): string
@@ -206,6 +256,6 @@ class SendSlackMessage
 
     public function asController(SlackChannel $slackChannel, ActionRequest $request): array
     {
-        return $this->handle($request->user(), $slackChannel, $request->validated('text'), $request->validated('thread_ts'), $request->validated('idempotency_key'), (bool) $request->validated('also_to_channel', false));
+        return $this->handle($request->user(), $slackChannel, $request->validated('text'), $request->validated('thread_ts'), $request->validated('idempotency_key'), (bool) $request->validated('also_to_channel', false), (bool) $request->validated('notify_everyone', false));
     }
 }

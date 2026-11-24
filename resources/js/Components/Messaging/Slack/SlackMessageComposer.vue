@@ -8,14 +8,23 @@
 import { ref, watch } from "vue"
 import axios from "axios"
 import Checkbox from "primevue/checkbox"
+import Dialog from "primevue/dialog"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import DeskMessageEditor from "@/Components/Messaging/DeskMessageEditor.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faCheck, faTimes } from "@fal"
+import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskMessageEditor.vue"
+import { mentionsEveryone } from "@/Components/Messaging/deskMarkup"
 import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 
 export interface SlackWriteState {
     allowed: boolean
     reason: string | null
     connect_url: string | null
+    people?: DeskPerson[]
+    channels?: DeskPerson[]
+    member_count?: number
 }
 
 export interface SlackSentMessage {
@@ -41,14 +50,24 @@ const editorRef = ref<InstanceType<typeof DeskMessageEditor> | null>(null)
 const alsoToChannel = ref(false)
 const sending = ref(false)
 const error = ref<string | null>(null)
+const confirmingEveryone = ref(false)
+const EVERYONE_CONFIRM_ABOVE = 6
 let idempotencyKey: string | null = null
+
+library.add(faCheck, faTimes)
 
 watch(text, () => {
     error.value = null
 })
 
-const send = async () => {
+const send = async (notifyEveryone = false) => {
     if (sending.value || !text.value.trim()) return
+    const members = props.write.member_count ?? 0
+    if (!notifyEveryone && mentionsEveryone(text.value) && (members === 0 || members > EVERYONE_CONFIRM_ABOVE)) {
+        confirmingEveryone.value = true
+        return
+    }
+    confirmingEveryone.value = false
     sending.value = true
     error.value = null
     idempotencyKey ??= crypto.randomUUID()
@@ -58,6 +77,7 @@ const send = async () => {
             thread_ts: props.threadTs ?? null,
             also_to_channel: Boolean(props.threadTs) && alsoToChannel.value,
             idempotency_key: idempotencyKey,
+            notify_everyone: notifyEveryone,
         })
         idempotencyKey = null
         text.value = ""
@@ -65,6 +85,10 @@ const send = async () => {
         emit("sent", data)
         editorRef.value?.focus()
     } catch (e: any) {
+        if (e?.response?.status === 422 && e?.response?.data?.errors?.notify_everyone) {
+            confirmingEveryone.value = true
+            return
+        }
         error.value = e?.response?.status === 429
             ? ctrans("You are sending too fast. Try again in a moment.")
             : e?.response?.status === 403
@@ -94,10 +118,13 @@ const editLast = () => {
                 :placeholder="placeholder ?? ctrans('Message')"
                 :sending="sending"
                 :disabled="sending"
+                :people="write.people ?? []"
+                :channels="write.channels ?? []"
+                mention-tokens
                 can-edit-last
                 attach-disabled
                 :attach-label="ctrans('Sending files from Desk is coming soon')"
-                @submit="send"
+                @submit="send()"
                 @edit-last="editLast" />
             <div class="flex items-center gap-x-3 pt-1.5">
                 <label v-if="threadTs" class="inline-flex cursor-pointer items-center gap-x-2 text-[13px] text-[#1d1c1d]">
@@ -108,5 +135,18 @@ const editLast = () => {
                 <p v-else class="ml-auto hidden text-xxs text-gray-400 sm:block">{{ ctrans("Shift + Enter to add a new line") }}</p>
             </div>
         </template>
+        <Dialog v-model:visible="confirmingEveryone" modal :header="ctrans('Notify everyone?')" :style="{ width: '28rem' }">
+            <p class="text-sm text-gray-700">{{ ctrans("This will notify everyone in this channel.") }}</p>
+            <template #footer>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="confirmingEveryone = false">
+                        <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="primary" full :label="ctrans('Notify everyone')" @click="send(true)">
+                        <template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>

@@ -33,7 +33,7 @@ export interface DeskPerson {
     avatar?: { original?: string | null } | null
 }
 
-type Suggestion = { kind: "@"; person: DeskPerson } | { kind: ":"; name: string; unicode: string }
+type Suggestion = { kind: "@" | "#"; person: DeskPerson } | { kind: ":"; name: string; unicode: string }
 
 const props = withDefaults(defineProps<{
     modelValue?: string
@@ -41,11 +41,13 @@ const props = withDefaults(defineProps<{
     disabled?: boolean
     sending?: boolean
     people?: DeskPerson[]
+    channels?: DeskPerson[]
+    mentionTokens?: boolean
     canSend?: boolean
     canEditLast?: boolean
     attachLabel?: string
     attachDisabled?: boolean
-}>(), { modelValue: "", people: () => [] })
+}>(), { modelValue: "", people: () => [], channels: () => [] })
 
 const emit = defineEmits<{
     (e: "update:modelValue", value: string): void
@@ -55,7 +57,7 @@ const emit = defineEmits<{
     (e: "paste", event: ClipboardEvent): void
 }>()
 
-const suggest = reactive<{ open: boolean; kind: "@" | ":"; query: string; items: Suggestion[]; index: number; pick: ((item: Suggestion) => void) | null }>({
+const suggest = reactive<{ open: boolean; kind: "@" | "#" | ":"; query: string; items: Suggestion[]; index: number; pick: ((item: Suggestion) => void) | null }>({
     open: false,
     kind: "@",
     query: "",
@@ -65,12 +67,12 @@ const suggest = reactive<{ open: boolean; kind: "@" | ":"; query: string; items:
 })
 const listOpen = computed(() => suggest.open && suggest.items.length > 0)
 
-const peopleFor = (query: string): Suggestion[] => {
+const matching = (list: DeskPerson[], query: string, kind: "@" | "#"): Suggestion[] => {
     const wanted = query.toLowerCase()
-    return props.people
-        .filter((person) => !wanted || person.label.toLowerCase().split(/\s+/).some((word) => word.startsWith(wanted)) || person.label.toLowerCase().startsWith(wanted))
+    return list
+        .filter((person) => !wanted || person.label.toLowerCase().split(kind === "#" ? /[\s_-]+/ : /\s+/).some((word) => word.startsWith(wanted)) || person.label.toLowerCase().startsWith(wanted))
         .slice(0, 8)
-        .map((person) => ({ kind: "@", person }))
+        .map((person) => ({ kind, person }))
 }
 
 const emojiFor = (query: string): Suggestion[] => {
@@ -83,7 +85,7 @@ const emojiFor = (query: string): Suggestion[] => {
         .map(([name, unicode]) => ({ kind: ":", name, unicode }))
 }
 
-const renderSuggestions = (kind: "@" | ":") => () => ({
+const renderSuggestions = (kind: "@" | "#" | ":") => () => ({
     onStart: (state: any) => Object.assign(suggest, { open: true, kind, query: state.query, items: state.items, index: 0, pick: state.command }),
     onUpdate: (state: any) => Object.assign(suggest, { query: state.query, items: state.items, index: 0, pick: state.command }),
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
@@ -145,13 +147,13 @@ const editor = useEditor({
         Placeholder.configure({ placeholder: () => props.placeholder ?? "" }),
         Mention.configure({
             HTMLAttributes: { class: "desk-mention" },
-            renderText: ({ node }) => `@${node.attrs.label ?? node.attrs.id}`,
-            renderHTML: ({ options, node }) => ["span", { ...options.HTMLAttributes, "data-type": "mention" }, `@${node.attrs.label ?? node.attrs.id}`],
+            renderText: ({ node }) => `${node.attrs.mentionSuggestionChar ?? "@"}${node.attrs.label ?? node.attrs.id}`,
+            renderHTML: ({ options, node }) => ["span", { ...options.HTMLAttributes, "data-type": "mention" }, `${node.attrs.mentionSuggestionChar ?? "@"}${node.attrs.label ?? node.attrs.id}`],
             suggestions: [
                 {
                     char: "@",
                     pluginKey: new PluginKey("deskPeople"),
-                    items: ({ query }: { query: string }) => peopleFor(query),
+                    items: ({ query }: { query: string }) => matching(props.people, query, "@"),
                     command: ({ editor: current, range, props: item }: any) => {
                         current.chain().focus().insertContentAt(range, [
                             { type: "mention", attrs: { id: item.person.id, label: item.person.label, mentionSuggestionChar: "@" } },
@@ -159,6 +161,19 @@ const editor = useEditor({
                         ]).run()
                     },
                     render: renderSuggestions("@"),
+                },
+                {
+                    char: "#",
+                    pluginKey: new PluginKey("deskChannels"),
+                    allow: () => props.channels.length > 0,
+                    items: ({ query }: { query: string }) => matching(props.channels, query, "#"),
+                    command: ({ editor: current, range, props: item }: any) => {
+                        current.chain().focus().insertContentAt(range, [
+                            { type: "mention", attrs: { id: item.person.id, label: item.person.label, mentionSuggestionChar: "#" } },
+                            { type: "text", text: " " },
+                        ]).run()
+                    },
+                    render: renderSuggestions("#"),
                 },
                 {
                     char: ":",
@@ -180,7 +195,7 @@ const editor = useEditor({
         },
     },
     onUpdate: ({ editor: current }) => {
-        lastEmitted = deskDocToSlackText(current.getJSON() as any)
+        lastEmitted = deskDocToSlackText(current.getJSON() as any, props.mentionTokens)
         emit("update:modelValue", lastEmitted)
     },
 })
@@ -235,11 +250,11 @@ defineExpose({
 
 <template>
     <div class="relative">
-        <div v-if="listOpen" class="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border border-gray-200 bg-white py-1.5 shadow-lg" role="listbox" :aria-label="suggest.kind === '@' ? ctrans('People') : ctrans('Emoji')">
+        <div v-if="listOpen" class="absolute bottom-full left-0 right-0 z-30 mb-1 overflow-hidden rounded-lg border border-gray-200 bg-white py-1.5 shadow-lg" role="listbox" :aria-label="suggest.kind === '@' ? ctrans('People') : suggest.kind === '#' ? ctrans('Channels') : ctrans('Emoji')">
             <p v-if="suggest.kind === ':'" class="px-4 pb-1 text-xs text-gray-500">{{ ctrans("Emoji matching :query", { query: ":" + suggest.query }) }}</p>
             <button
                 v-for="(item, index) in suggest.items"
-                :key="item.kind === '@' ? item.person.id : item.name"
+                :key="item.kind === ':' ? item.name : item.person.id"
                 type="button"
                 role="option"
                 :aria-selected="index === suggest.index"
@@ -250,6 +265,10 @@ defineExpose({
                 <template v-if="item.kind === '@'">
                     <TicketUserAvatar :name="item.person.label" :avatar="item.person.avatar ?? null" size="xs" square />
                     <span class="truncate font-bold">{{ item.person.label }}</span>
+                </template>
+                <template v-else-if="item.kind === '#'">
+                    <span class="w-5 text-center text-gray-500" aria-hidden="true">#</span>
+                    <span class="truncate">{{ item.person.label }}</span>
                 </template>
                 <template v-else>
                     <span class="w-5 text-center text-lg leading-none">{{ item.unicode }}</span>

@@ -62,8 +62,12 @@ const disconnect = () => {
             <ul class="list-disc pl-5">
                 <li>{{ ctrans('post, edit and delete your messages') }}</li>
                 <li>{{ ctrans('add and remove your reactions') }}</li>
+                <li>{{ ctrans('upload files') }}</li>
+                <li>{{ ctrans('create, join, leave and archive public channels') }}</li>
+                <li>{{ ctrans('pin messages and add channel bookmarks') }}</li>
+                <li>{{ ctrans('schedule messages and set reminders') }}</li>
             </ul>
-            <p>{{ ctrans('aiku uses this only in public channels. It does not get permission to read your direct messages or private channels, nor to create, rename or archive channels. When a new feature needs more, you will be asked to connect again. You can disconnect at any time.') }}</p>
+            <p>{{ ctrans('aiku uses this only in public channels. It does not get permission to read your direct messages or private channels. When a new feature needs more, you will be asked to connect again. You can disconnect at any time.') }}</p>
         </div>
 
         <template v-if="connection.state !== 'connected'">

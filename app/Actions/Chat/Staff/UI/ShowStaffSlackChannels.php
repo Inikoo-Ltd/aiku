@@ -18,6 +18,7 @@ use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
+use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -195,7 +196,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
-                    'write'        => $this->writeState($request->user()),
+                    'write'        => $this->writeState($request->user(), $slackChannel),
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,
@@ -210,17 +211,35 @@ class ShowStaffSlackChannels extends OrgAction
     /**
      * Whether the composer shows, and when it cannot be used yet, the sentence saying why and the way to connect.
      *
-     * @return array{allowed: bool, reason: string|null, connect_url: string|null}
+     * When the person can write, also who and which channels the box may mention: live people, members of this channel first.
+     *
+     * @return array{allowed: bool, reason: string|null, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int}
      */
-    public function writeState(User $user): array
+    public function writeState(User $user, ?SlackChannel $slackChannel = null): array
     {
         $allowed = SlackWriteAccess::allows($user);
         $reason  = $allowed ? SlackWriteAccess::reasonUnavailable($user) : null;
-
-        return [
+        $state   = [
             'allowed'     => $allowed,
             'reason'      => $reason,
             'connect_url' => $reason && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) ? route('grp.profile.edit', ['section' => 'slack']) : null,
+        ];
+        if (!$allowed || $reason || !$slackChannel) {
+            return $state;
+        }
+
+        $members = $slackChannel->members()->pluck('slack_user_id')->flip();
+        $people  = SlackUser::where('is_bot', false)->where('is_deleted', false)->get(['slack_id', 'display_name', 'real_name'])
+            ->map(fn (SlackUser $person) => ['id' => $person->slack_id, 'label' => $person->display_name ?: $person->real_name ?: $person->slack_id, 'member' => $members->has($person->slack_id)])
+            ->sortBy([['member', 'desc'], ['label', 'asc']])
+            ->map(fn (array $person) => ['id' => $person['id'], 'label' => $person['label']])
+            ->values()->all();
+
+        return [
+            ...$state,
+            'people'       => [['id' => '!here', 'label' => 'here'], ['id' => '!channel', 'label' => 'channel'], ...$people],
+            'channels'     => SlackChannel::visibleTo($user)->orderBy('name')->get(['slack_id', 'name'])->map(fn (SlackChannel $channel) => ['id' => $channel->slack_id, 'label' => (string) $channel->name])->all(),
+            'member_count' => $members->count(),
         ];
     }
 }

@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Actions\Chat\Staff\Slack\Write\SendSlackMessage;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
@@ -298,4 +299,73 @@ test('the channel screen tells the composer who may write, and why not yet, INI-
 
     SlackConnection::where('user_id', $this->writer->id)->delete();
     expect($state($this->writer)['reason'])->toBe('Connect your Slack account to write here');
+});
+
+test('a mention chosen in the box becomes Slack\'s own code for a live person, a channel the writer may see, here and channel; typed codes, leavers, bots, hidden channels and unknown ids stay plain text, INI-461', function () {
+    ($this->slack)();
+    SlackUser::create(['slack_id' => "ULEFT{$this->s}", 'real_name' => 'Left Person', 'is_deleted' => true]);
+    SlackUser::create(['slack_id' => "UBOT{$this->s}", 'real_name' => 'A Bot', 'is_bot' => true]);
+    $this->general->members()->create(['slack_user_id' => "UWRITE{$this->s}"]);
+    $chosen = fn (string $token) => "\u{E000}{$token}\u{E000}";
+
+    ($this->send)($this->general, $chosen("@UBOB{$this->s}")." look at ".$chosen("#CGENERAL{$this->s}")." and ".$chosen("#CPRIVATE{$this->s}").', '.$chosen("@ULEFT{$this->s}").' '.$chosen("@UBOT{$this->s}").' '.$chosen('@UNKNOWN1').' '.$chosen('!here').' <@UREAD'.$this->s.'> '.$chosen("@UBOB{$this->s}"))->assertOk();
+
+    expect(($this->posts)()[0][0]['text'])->toBe("<@UBOB{$this->s}> look at <#CGENERAL{$this->s}> and #CPRIVATE{$this->s}, @ULEFT{$this->s} @UBOT{$this->s} @UNKNOWN1 <!here> &lt;@UREAD{$this->s}&gt; <@UBOB{$this->s}>")
+        ->and(($this->messages)($this->general)->first()->text)->toContain("<@UBOB{$this->s}>")
+        ->and($this->bob->notifications()->where('type', SlackMentionNotification::class)->count())->toBe(1);
+});
+
+test('here or channel in a channel of more than six members is sent only once the writer confirmed it, INI-461', function () {
+    ($this->slack)();
+    foreach (range(1, SendSlackMessage::EVERYONE_CONFIRM_ABOVE + 1) as $member) {
+        $this->general->members()->create(['slack_user_id' => "UMEMBER{$member}{$this->s}"]);
+    }
+
+    ($this->send)($this->general, "Hello \u{E000}!channel\u{E000}")->assertStatus(422)->assertJsonValidationErrors('notify_everyone');
+    ($this->send)($this->general, "Hi \u{E000}!here\u{E000}")->assertStatus(422);
+    expect(($this->posts)())->toHaveCount(0)
+        ->and(SendSlackMessage::needsEveryoneConfirmation(0))->toBeTrue()
+        ->and(SendSlackMessage::needsEveryoneConfirmation(SendSlackMessage::EVERYONE_CONFIRM_ABOVE))->toBeFalse()
+        ->and(SendSlackMessage::needsEveryoneConfirmation(SendSlackMessage::EVERYONE_CONFIRM_ABOVE + 1))->toBeTrue();
+
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.messages.store', ['slackChannel' => $this->general->id]), ['text' => "Hello \u{E000}!channel\u{E000}", 'notify_everyone' => true, 'idempotency_key' => Str::uuid()->toString()])->assertOk();
+    expect(($this->posts)()[0][0]['text'])->toBe('Hello <!channel>');
+});
+
+test('a message sent from aiku is marked so, and Slack\'s echo event keeps the mark; a message written in Slack is not marked, INI-454 INI-473', function () {
+    ($this->slack)();
+    $ts = ($this->send)($this->general, 'From aiku')->assertOk()->json('ts');
+
+    StoreSlackMessage::make()->store($this->general, ['type' => 'message', 'user' => "UWRITE{$this->s}", 'text' => 'From aiku', 'ts' => $ts, 'bot_id' => 'B1']);
+    StoreSlackMessage::make()->store($this->general, ['type' => 'message', 'user' => "UBOB{$this->s}", 'text' => 'From Slack', 'ts' => '1700000000.000100']);
+
+    expect(($this->messages)($this->general)->pluck('sent_from_aiku', 'text')->all())->toBe(['From Slack' => false, 'From aiku' => true]);
+});
+
+test('the composer gets the people and channels it may mention, here and channel first, then members of this channel, without leavers, bots or hidden channels, INI-461', function () {
+    SlackUser::create(['slack_id' => "ULEFT{$this->s}", 'real_name' => 'Left Person', 'is_deleted' => true]);
+    $this->general->members()->create(['slack_user_id' => "UREAD{$this->s}"]);
+
+    $write = null;
+    actingAs($this->writer)->get(route('grp.chat.staff.slack.show', ['slackChannel' => $this->general->id]))->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use (&$write) {
+            $write = $page->toArray()['props']['slack_channel']['write'];
+        });
+    $people = collect($write['people'])->pluck('id');
+
+    expect($people->take(3)->all())->toBe(['!here', '!channel', "UREAD{$this->s}"])
+        ->and($people)->toContain("UBOB{$this->s}")->not->toContain("ULEFT{$this->s}")
+        ->and(collect($write['channels'])->pluck('id'))->toContain("CGENERAL{$this->s}")->not->toContain("CPRIVATE{$this->s}")
+        ->and($write['member_count'])->toBe(1);
+});
+
+test('what the box sends comes back from the renderer with the same names it showed as chips, INI-461', function () {
+    ($this->slack)();
+    $chosen = fn (string $token) => "\u{E000}{$token}\u{E000}";
+
+    $this->general->members()->create(['slack_user_id' => "UWRITE{$this->s}"]);
+    ($this->send)($this->general, $chosen("@UBOB{$this->s}").' please check '.$chosen("#CGENERAL{$this->s}").' '.$chosen('!here'))->assertOk();
+
+    $stored = ($this->messages)($this->general)->first();
+    expect(trim(FormatSlackMessages::plainText(FormatSlackMessages::make()->handle([$stored])[$stored->id])))->toBe("@Bob Person please check #{$this->general->name} @here");
 });

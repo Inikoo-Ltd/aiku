@@ -55,6 +55,7 @@ class SlackMessage extends Model
             'sent_at'   => 'datetime',
             'edited_at' => 'datetime',
             'pinned_at' => 'datetime',
+            'sent_from_aiku' => 'boolean',
         ];
     }
 

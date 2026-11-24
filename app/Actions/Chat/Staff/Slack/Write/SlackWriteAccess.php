@@ -18,6 +18,11 @@ class SlackWriteAccess
     public const array USER_SCOPES = [
         'chat:write',
         'reactions:write',
+        'files:write',
+        'channels:write',
+        'pins:write',
+        'bookmarks:write',
+        'reminders:write',
     ];
 
     public const array WRITE_ENVIRONMENTS = ['production', 'testing'];

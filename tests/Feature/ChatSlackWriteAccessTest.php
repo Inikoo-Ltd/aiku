@@ -82,7 +82,7 @@ beforeEach(function () {
             'slack.com/api/oauth.v2.access' => Http::response([
                 'ok'          => true,
                 'team'        => ['id' => $teamId],
-                'authed_user' => array_merge(['id' => ($this->slackIdOf)($user), 'scope' => 'chat:write,reactions:write', 'access_token' => $this->token, 'token_type' => 'user'], $authedUser),
+                'authed_user' => array_merge(['id' => ($this->slackIdOf)($user), 'scope' => implode(',', SlackWriteAccess::USER_SCOPES), 'access_token' => $this->token, 'token_type' => 'user'], $authedUser),
             ]),
             'slack.com/api/auth.revoke' => Http::response(['ok' => true, 'revoked' => true]),
         ]);
@@ -118,7 +118,7 @@ test('connecting stores the Slack token encrypted and never shows it, and a repl
         ->and($stored)->not->toContain($this->token)
         ->and($connection->slack_user_id)->toBe(($this->slackIdOf)($user))
         ->and($connection->team_id)->toBe('TOURTEAM')
-        ->and($connection->scopes)->toBe('chat:write,reactions:write')
+        ->and($connection->scopes)->toBe(implode(',', SlackWriteAccess::USER_SCOPES))
         ->and($connection->isLive())->toBeTrue()
         ->and($connection->toArray())->not->toHaveKey('token')
         ->and($connection->toJson())->not->toContain($this->token)

@@ -17,12 +17,23 @@ const bare = (value: string) => value.replace(/^(https?:\/\/|mailto:)/i, "").rep
 
 const sameAsHref = (text: string, href: string) => text === href || bare(text) === bare(href)
 
-const inline = (nodes: DeskNode[] = []): string =>
+const SEPARATOR = "\uE000"
+
+const mention = (node: DeskNode, tokens: boolean): string => {
+    const char = node.attrs?.mentionSuggestionChar === "#" ? "#" : "@"
+    const id = String(node.attrs?.id ?? "")
+    if (!tokens) return `${char}${node.attrs?.label ?? id}`
+    return SEPARATOR + (id.startsWith("!") ? id : char + id) + SEPARATOR
+}
+
+const clean = (text: string, tokens: boolean): string => (tokens ? text.replaceAll(SEPARATOR, "") : text)
+
+const inline = (nodes: DeskNode[] = [], tokens = false): string =>
     nodes
         .map((node) => {
             if (node.type === "hardBreak") return "\n"
-            if (node.type === "mention") return `@${node.attrs?.label ?? node.attrs?.id ?? ""}`
-            const text = node.text ?? ""
+            if (node.type === "mention") return mention(node, tokens)
+            const text = clean(node.text ?? "", tokens)
             const href = node.marks?.find((mark) => mark.type === "link")?.attrs?.href as string | undefined
             const shown = href && !sameAsHref(text.trim(), href) ? `${text} (${href})` : text
             const names = (node.marks ?? []).map((mark) => mark.type)
@@ -34,20 +45,22 @@ const inline = (nodes: DeskNode[] = []): string =>
         })
         .join("")
 
-const list = (node: DeskNode, depth = 0): string[] =>
+const list = (node: DeskNode, tokens: boolean, depth = 0): string[] =>
     (node.content ?? []).flatMap((item, position) => {
         const prefix = "    ".repeat(depth) + (node.type === "bulletList" ? "• " : `${(node.attrs?.start ?? 1) + position}. `)
         return (item.content ?? []).flatMap((child, index) => {
-            if (child.type === "bulletList" || child.type === "orderedList") return list(child, depth + 1)
-            return [(index === 0 ? prefix : "    ".repeat(depth + 1)) + inline(child.content)]
+            if (child.type === "bulletList" || child.type === "orderedList") return list(child, tokens, depth + 1)
+            return [(index === 0 ? prefix : "    ".repeat(depth + 1)) + inline(child.content, tokens)]
         })
     })
 
-const block = (node: DeskNode): string[] => {
-    if (node.type === "bulletList" || node.type === "orderedList") return list(node)
-    if (node.type === "codeBlock") return ["```\n" + (node.content ?? []).map((child) => child.text ?? "").join("") + "\n```"]
-    if (node.type === "blockquote") return (node.content ?? []).flatMap(block).flatMap((line) => line.split("\n")).map((line) => `> ${line}`)
-    return [inline(node.content)]
+const block = (node: DeskNode, tokens: boolean): string[] => {
+    if (node.type === "bulletList" || node.type === "orderedList") return list(node, tokens)
+    if (node.type === "codeBlock") return ["```\n" + (node.content ?? []).map((child) => clean(child.text ?? "", tokens)).join("") + "\n```"]
+    if (node.type === "blockquote") return (node.content ?? []).flatMap((child) => block(child, tokens)).flatMap((line) => line.split("\n")).map((line) => `> ${line}`)
+    return [inline(node.content, tokens)]
 }
 
-export const deskDocToSlackText = (doc: DeskNode): string => (doc.content ?? []).flatMap(block).join("\n").replace(/\s+$/, "")
+export const deskDocToSlackText = (doc: DeskNode, tokens = false): string => (doc.content ?? []).flatMap((node) => block(node, tokens)).join("\n").replace(/\s+$/, "")
+
+export const mentionsEveryone = (text: string): boolean => text.includes(`${SEPARATOR}!here${SEPARATOR}`) || text.includes(`${SEPARATOR}!channel${SEPARATOR}`)
