@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue"
+import { onMounted, reactive, ref, watch } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useCookieConsent, type ConsentCategory, type ConsentChoice } from "@/Composables/useCookieConsent"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -39,47 +39,49 @@ watch(isSettingsOpen, (open) => {
     }
 })
 
-const categories: Category[] = [
+/* Built on every render, with each text in a literal ctrans(...) call: translate:scan (t:fill) only
+   picks up literal strings, and the language file may load after the component is set up. */
+const categories = (): Category[] => [
     {
         key: "strict",
-        title: "Strictly necessary",
-        text: "Strictly necessary cookies keep the website working, for example your basket and login. The website cannot work without them.",
+        title: ctrans("Strictly necessary"),
+        text: ctrans("Strictly necessary cookies keep the website working, for example your basket and login. The website cannot work without them."),
         cookies: [
-            { name: "PHPSESSID", provider: "{host}", expiration: "Session", description: "Keeps your session between pages, for example your login." },
-            { name: "iris_cookie_consent", provider: "{host}", expiration: "6 months", description: "Remembers your cookie choices." },
-            { name: "VISITOR_PRIVACY_METADATA", provider: "YouTube (.youtube.com)", expiration: "6 months", description: "Remembers your privacy choices for embedded YouTube videos." },
-            { name: "aiku_tsd", provider: "{host}", expiration: "1 year", description: "Cookie associated with system checks." },
-            { name: "aiku_lts", provider: "{host}", expiration: "1 year", description: "Cookie associated with system checks." },
-            { name: "iris_vua", provider: "{host}", expiration: "1 year", description: "Remembers that you are logged in." },
+            { name: "PHPSESSID", provider: "{host}", expiration: ctrans("Session"), description: ctrans("Keeps your session between pages, for example your login.") },
+            { name: "iris_cookie_consent", provider: "{host}", expiration: ctrans("6 months"), description: ctrans("Remembers your cookie choices.") },
+            { name: "VISITOR_PRIVACY_METADATA", provider: "YouTube (.youtube.com)", expiration: ctrans("6 months"), description: ctrans("Remembers your privacy choices for embedded YouTube videos.") },
+            { name: "aiku_tsd", provider: "{host}", expiration: ctrans("1 year"), description: ctrans("Cookie associated with system checks.") },
+            { name: "aiku_lts", provider: "{host}", expiration: ctrans("1 year"), description: ctrans("Cookie associated with system checks.") },
+            { name: "iris_vua", provider: "{host}", expiration: ctrans("1 year"), description: ctrans("Remembers that you are logged in.") },
         ],
     },
     {
         key: "analytics",
-        title: "Performance",
-        text: "Performance cookies show us how visitors use the website, so we can improve it. They do not identify you.",
+        title: ctrans("Performance"),
+        text: ctrans("Performance cookies show us how visitors use the website, so we can improve it. They do not identify you."),
         cookies: [
-            { name: "_ga", provider: "Google ({domain})", expiration: "1 year 1 month", description: "Google Analytics: tells visits apart with a random number to count visitors and sessions." },
-            { name: "_ga_*", provider: "Google ({domain})", expiration: "1 year 1 month", description: "Google Analytics: keeps the state of your visit." },
-            { name: "_gid", provider: "Google ({domain})", expiration: "1 day", description: "Google Analytics: counts the pages you view." },
+            { name: "_ga", provider: "Google ({domain})", expiration: ctrans("1 year 1 month"), description: ctrans("Google Analytics: tells visits apart with a random number to count visitors and sessions.") },
+            { name: "_ga_*", provider: "Google ({domain})", expiration: ctrans("1 year 1 month"), description: ctrans("Google Analytics: keeps the state of your visit.") },
+            { name: "_gid", provider: "Google ({domain})", expiration: ctrans("1 day"), description: ctrans("Google Analytics: counts the pages you view.") },
         ],
     },
     {
         key: "marketing",
-        title: "Targeting",
-        text: "Targeting cookies measure our advertising and show you offers that are relevant to you.",
+        title: ctrans("Targeting"),
+        text: ctrans("Targeting cookies measure our advertising and show you offers that are relevant to you."),
         cookies: [
-            { name: "_gcl_au", provider: "Google ({domain})", expiration: "3 months", description: "Google Ads: measures how well our adverts work." },
-            { name: "IDE", provider: "Google (.doubleclick.net)", expiration: "1 year", description: "Google DoubleClick: records the adverts you have seen and how you use the website." },
-            { name: "YSC", provider: "YouTube (.youtube.com)", expiration: "Session", description: "YouTube: counts views of embedded videos." },
-            { name: "VISITOR_INFO1_LIVE", provider: "YouTube (.youtube.com)", expiration: "6 months", description: "YouTube: remembers your preferences for embedded videos." },
+            { name: "_gcl_au", provider: "Google ({domain})", expiration: ctrans("3 months"), description: ctrans("Google Ads: measures how well our adverts work.") },
+            { name: "IDE", provider: "Google (.doubleclick.net)", expiration: ctrans("1 year"), description: ctrans("Google DoubleClick: records the adverts you have seen and how you use the website.") },
+            { name: "YSC", provider: "YouTube (.youtube.com)", expiration: ctrans("Session"), description: ctrans("YouTube: counts views of embedded videos.") },
+            { name: "VISITOR_INFO1_LIVE", provider: "YouTube (.youtube.com)", expiration: ctrans("6 months"), description: ctrans("YouTube: remembers your preferences for embedded videos.") },
         ],
     },
     {
         key: "preferences",
-        title: "Functionality",
-        text: "Functionality cookies remember your choices, such as your language.",
+        title: ctrans("Functionality"),
+        text: ctrans("Functionality cookies remember your choices, such as your language."),
         cookies: [
-            { name: "_gat_*", provider: "Google ({domain})", expiration: "1 minute", description: "Google Analytics: limits how often data is sent." },
+            { name: "_gat_*", provider: "Google ({domain})", expiration: ctrans("1 minute"), description: ctrans("Google Analytics: limits how often data is sent.") },
         ],
     },
 ]
@@ -89,12 +91,12 @@ const categories: Category[] = [
 const host = typeof window === "undefined" ? "" : window.location.hostname
 const providerLabel = (provider: string) => provider.replace("{host}", host).replace("{domain}", "." + host.replace(/^www\./, ""))
 
-const tabs = [
-    { key: "declaration", label: "Cookie declaration" },
-    { key: "about", label: "About cookies" },
+const tabs = () => [
+    { key: "declaration", label: ctrans("Cookie declaration") },
+    { key: "about", label: ctrans("About cookies") },
 ] as const
 
-const optionalCategories = computed(() => categories.filter((category): category is Category & { key: ConsentCategory } => category.key !== "strict"))
+const optionalCategories = () => categories().filter((category): category is Category & { key: ConsentCategory } => category.key !== "strict")
 
 const isOpen = () => (!consent.value || isSettingsOpen.value) && !isDismissed.value
 
@@ -145,13 +147,13 @@ const fontFamily = "'Open Sans', Arial, 'Trebuchet MS', 'Segoe UI', Helvetica, s
                     </span>
                     <span class="text-[12px] font-semibold uppercase tracking-[1px]">{{ ctrans("Strictly necessary") }}</span>
                 </div>
-                <label v-for="category in optionalCategories" :key="category.key"
+                <label v-for="category in optionalCategories()" :key="category.key"
                     class="flex w-1/2 cursor-pointer items-center gap-3 py-[7px] min-[441px]:w-full">
                     <input type="checkbox" class="peer sr-only" :checked="draft[category.key]" @change="tick(category.key)" />
                     <span class="flex size-[18px] shrink-0 items-center justify-center rounded-[2px] border-2 border-white peer-checked:border-[#8dbad8] peer-checked:bg-[#8dbad8] peer-focus-visible:ring-2 peer-focus-visible:ring-white/60">
                         <FontAwesomeIcon v-if="draft[category.key]" :icon="['fal', 'check']" class="text-[12px] text-white" />
                     </span>
-                    <span class="text-[12px] font-semibold uppercase tracking-[1px]">{{ ctrans(category.title) }}</span>
+                    <span class="text-[12px] font-semibold uppercase tracking-[1px]">{{ category.title }}</span>
                 </label>
             </div>
 
@@ -196,28 +198,28 @@ const fontFamily = "'Open Sans', Arial, 'Trebuchet MS', 'Segoe UI', Helvetica, s
                     </div>
 
                     <div class="flex w-full" role="tablist">
-                        <button v-for="tab in tabs" :key="tab.key"
+                        <button v-for="tab in tabs()" :key="tab.key"
                             type="button" role="tab" :aria-selected="activeTab === tab.key"
                             class="flex w-1/2 items-center justify-center border-t-2 p-[6px] text-center text-[12px] font-bold uppercase leading-[1.6] transition-all duration-300 min-[441px]:px-5 min-[441px]:py-[10px] min-[441px]:text-[16px]"
                             :class="activeTab === tab.key ? 'border-[#8dbad8] bg-[#f3f3f3] text-[#8dbad8]' : 'border-transparent bg-white hover:text-[#8dbad8]'"
                             @click="activeTab = tab.key">
-                            {{ ctrans(tab.label) }}
+                            {{ tab.label }}
                         </button>
                     </div>
                 </div>
 
                 <div class="w-full flex-grow overflow-y-auto bg-[#f3f3f3] px-5 pb-[10px] pt-[5px] min-[441px]:px-[50px]">
                     <template v-if="activeTab === 'declaration'">
-                        <div v-for="category in categories" :key="category.key" class="flex flex-col border-b border-[#e2e2e2] pb-[17px] pt-[23px]">
+                        <div v-for="category in categories()" :key="category.key" class="flex flex-col border-b border-[#e2e2e2] pb-[17px] pt-[23px]">
                             <div class="flex items-center justify-between gap-4">
                                 <div class="flex-[9]">
-                                    <div class="mb-[6px] text-[16px] font-bold">{{ ctrans(category.title) }}</div>
-                                    <div class="pb-[5px] text-[13px] leading-[1.6]">{{ ctrans(category.text) }}</div>
+                                    <div class="mb-[6px] text-[16px] font-bold">{{ category.title }}</div>
+                                    <div class="pb-[5px] text-[13px] leading-[1.6]">{{ category.text }}</div>
                                 </div>
                                 <div class="flex flex-1 justify-end">
                                     <button type="button" role="switch"
                                         :aria-checked="category.key === 'strict' ? true : draft[category.key]"
-                                        :aria-label="ctrans(category.title)"
+                                        :aria-label="category.title"
                                         :disabled="category.key === 'strict'"
                                         class="relative flex h-5 w-9 shrink-0 items-center disabled:cursor-default"
                                         @click="category.key !== 'strict' && (draft[category.key] = !draft[category.key])">
@@ -255,8 +257,8 @@ const fontFamily = "'Open Sans', Arial, 'Trebuchet MS', 'Segoe UI', Helvetica, s
                                         <tr v-for="cookie in category.cookies" :key="cookie.name">
                                             <td class="border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ cookie.name }}</td>
                                             <td class="border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ providerLabel(cookie.provider) }}</td>
-                                            <td class="whitespace-nowrap border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ ctrans(cookie.expiration) }}</td>
-                                            <td class="min-w-[14rem] border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ ctrans(cookie.description) }}</td>
+                                            <td class="whitespace-nowrap border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ cookie.expiration }}</td>
+                                            <td class="min-w-[14rem] border-t border-[#e2e2e2] px-2 py-[7px] align-top leading-[1.6]">{{ cookie.description }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
