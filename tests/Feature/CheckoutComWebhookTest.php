@@ -1639,3 +1639,35 @@ test('an unanswered refund is recorded as unknown, never retried and leaves the 
         ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
         ->and($excess)->toBeGreaterThan(0);
 });
+
+test('the local QA command makes card top ups and order payments that can be refunded by API, links a payment to the sandbox and puts it back', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    $command  = \App\Actions\Accounting\Payment\CheckoutCom\LinkPaymentToCheckoutSandbox::class;
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+
+    $ids = ['pay_test_qa_topup', 'pay_test_qa_order', 'pay_test_qa_linked'];
+    $command::partialMock()->shouldReceive('payInSandbox')->times(3)
+        ->andReturnUsing(function () use (&$ids) {
+            return ['id' => array_shift($ids), 'source' => ['type' => 'card', 'scheme' => 'Visa']];
+        });
+
+    $topUp = $command::make()->topUp($customer, 25);
+    expect($topUp->reference)->toBe('pay_test_qa_topup')
+        ->and((float) $customer->refresh()->balance)->toBe(25.0)
+        ->and(\App\Actions\Accounting\Payment\RefundPaymentByApi::creditRefundableLeft($topUp))->toBe(25.0);
+
+    list($order) = createOrderWithCheckoutApiPoint($customer, $this->product, $paymentAccountShop);
+    $orderPayment = $command::make()->payOrder($order->refresh());
+    expect($orderPayment->reference)->toBe('pay_test_qa_order')
+        ->and((float) $orderPayment->amount)->toBe(round((float) $order->total_amount, 2))
+        ->and($order->refresh()->payments()->where('payments.id', $orderPayment->id)->exists())->toBeTrue()
+        ->and(\App\Actions\Accounting\Payment\RefundPaymentByApi::refundOptions($orderPayment)['blocked'])->toContain('cancel it first');
+
+    $orderPayment->update(['reference' => 'pay_test_qa_original']);
+    $command::make()->handle($orderPayment->refresh());
+    expect($orderPayment->refresh()->reference)->toBe('pay_test_qa_linked')
+        ->and($command::make()->restore($orderPayment))->toBe('pay_test_qa_original')
+        ->and($orderPayment->refresh()->reference)->toBe('pay_test_qa_original')
+        ->and($command::make()->restore($orderPayment))->toBeNull();
+});
