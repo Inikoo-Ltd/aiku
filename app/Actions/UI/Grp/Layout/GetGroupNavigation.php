@@ -318,8 +318,8 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label'   => __('Internal Messages'),
-                        'tooltip' => __('Internal Messages'),
+                        'label'   => __('Desk'),
+                        'tooltip' => __('Desk'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
                         'route'   => [

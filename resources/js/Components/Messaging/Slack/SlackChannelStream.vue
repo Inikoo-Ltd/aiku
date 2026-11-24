@@ -265,33 +265,35 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
 <template>
     <div class="relative flex h-full w-full min-w-0 bg-white text-gray-900">
         <div class="relative flex h-full min-w-0 flex-1 flex-col">
-            <div class="shrink-0 border-b border-gray-200 bg-gray-50">
-                <div class="flex items-center gap-x-2 px-3 py-2">
-                    <button type="button" :aria-label="ctrans('Back')" class="-ml-2 p-2 text-gray-600 md:hidden" @click="emit('back')">
+            <div class="shrink-0 border-b border-[#dddddd] bg-white">
+                <div class="flex min-h-[64px] items-center gap-x-2 px-5 py-2.5">
+                    <button type="button" :aria-label="ctrans('Back')" class="-ml-3 p-2 text-gray-600 md:hidden" @click="emit('back')">
                         <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
                     </button>
-                    <FontAwesomeIcon icon="fal fa-hashtag" class="text-gray-400" fixed-width aria-hidden="true" />
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-x-2">
-                            <span class="truncate text-sm font-medium">{{ channel.name }}</span>
-                            <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-200 px-1.5 py-0.5 text-xxs text-gray-600">
+                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><span class="font-bold">#</span>{{ channel.name }}</h2>
+                            <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-[#616061]">
                                 <FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" />{{ ctrans("Archived") }}
                             </span>
-                            <span v-if="channel.member_count" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xxs text-gray-500" v-tooltip="ctrans('Members in Slack')">
+                        </div>
+                        <div class="flex min-w-0 items-center text-[13px] leading-5 text-[#616061]">
+                            <span v-if="channel.member_count" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap" v-tooltip="ctrans('Members in Slack')">
                                 <FontAwesomeIcon icon="fal fa-users" fixed-width aria-hidden="true" />{{ channel.member_count }}
                             </span>
+                            <template v-if="channel.pinned_count">
+                                <span v-if="channel.member_count" class="mx-2 h-3 w-px shrink-0 bg-[#dddddd]" />
+                                <button type="button" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap hover:text-[#1d1c1d]" :aria-label="ctrans('Pinned (:count)', { count: String(channel.pinned_count) })" v-tooltip="ctrans('Pinned messages')" @click="togglePins">
+                                    <FontAwesomeIcon icon="fal fa-thumbtack" fixed-width aria-hidden="true" />{{ channel.pinned_count }}
+                                </button>
+                            </template>
+                            <template v-if="channel.topic || showPurpose">
+                                <span v-if="channel.member_count || channel.pinned_count" class="mx-2 h-3 w-px shrink-0 bg-[#dddddd]" />
+                                <span class="truncate" v-tooltip="showPurpose ? channel.purpose : undefined">{{ channel.topic || channel.purpose }}</span>
+                            </template>
                         </div>
-                        <div v-if="channel.topic" class="truncate text-xs text-gray-500">{{ channel.topic }}</div>
-                        <div v-if="showPurpose" class="truncate text-xxs text-gray-400" v-tooltip="channel.purpose">{{ channel.purpose }}</div>
                     </div>
-                    <Button
-                        v-if="channel.pinned_count"
-                        type="tertiary"
-                        size="xs"
-                        icon="fal fa-thumbtack"
-                        :label="ctrans('Pinned (:count)', { count: String(channel.pinned_count) })"
-                        @click="togglePins" />
-                    <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xxs text-gray-400 sm:inline">{{ ctrans("Read only, from Slack") }}</span>
+                    <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[#616061] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
                 <div v-if="channel.bookmarks?.length" class="flex gap-x-1.5 overflow-x-auto px-3 pb-2">
                     <template v-for="bookmark in channel.bookmarks" :key="bookmark.id">
@@ -357,9 +359,9 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                                 <span class="whitespace-nowrap rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xxs font-medium text-gray-600">{{ dayLabel(message.sent_at) }}</span>
                                 <span class="h-px flex-1 bg-gray-200" />
                             </div>
-                            <div v-if="startsUnread" class="flex items-center gap-x-2 py-1" role="separator">
-                                <span class="h-px flex-1 bg-[var(--app-accent)]" />
-                                <span class="whitespace-nowrap text-xxs font-semibold text-[var(--app-accent)]">{{ ctrans("New messages") }}</span>
+                            <div v-if="startsUnread" class="relative flex items-center py-1.5" role="separator" :aria-label="ctrans('New messages')">
+                                <span class="h-px flex-1 bg-[#e01e5a]" />
+                                <span class="absolute right-0 rounded-r bg-white pl-1.5 pr-1 text-xs font-bold text-[#e01e5a]">{{ ctrans("New") }}</span>
                             </div>
                             <SlackMessageRow :message="message" :continues="continues" :channel-links="channelLinks" @open-thread="openThread($event)" />
                         </div>

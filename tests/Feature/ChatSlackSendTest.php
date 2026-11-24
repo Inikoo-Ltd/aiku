@@ -178,6 +178,23 @@ test('a thread reply goes to the root of the thread, also when answering a reply
         ->and($response->json('parent.reply_count'))->toBe(2);
 });
 
+test('a thread reply sent also to the channel asks Slack to broadcast it and shows in the channel stream; without the tick or outside a thread nothing is broadcast, INI-537', function () {
+    ($this->slack)();
+    $rootTs = ($this->send)($this->general, 'Root')->json('ts');
+
+    $broadcast = actingAs($this->writer)->postJson(route('grp.chat.staff.slack.messages.store', ['slackChannel' => $this->general->id]), ['text' => 'For everyone', 'thread_ts' => $rootTs, 'also_to_channel' => true, 'idempotency_key' => Str::uuid()->toString()])->assertOk();
+    ($this->send)($this->general, 'Only in the thread', $rootTs)->assertOk();
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.messages.store', ['slackChannel' => $this->general->id]), ['text' => 'Not a reply', 'also_to_channel' => true, 'idempotency_key' => Str::uuid()->toString()])->assertOk();
+
+    $posts = ($this->posts)();
+    expect($posts[1][0]['reply_broadcast'])->toBe('true')
+        ->and($posts[2][0]->data())->not->toHaveKey('reply_broadcast')
+        ->and($posts[3][0]->data())->not->toHaveKeys(['reply_broadcast', 'thread_ts'])
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->where('ts', $broadcast->json('ts'))->value('subtype'))->toBe('thread_broadcast')
+        ->and($broadcast->json('message.is_broadcast'))->toBeTrue()
+        ->and(SlackMessage::where('slack_channel_id', $this->general->id)->where('text', 'Only in the thread')->value('subtype'))->toBeNull();
+});
+
 test('a double submit or a retry with the same key posts once and answers with the same message, INI-454', function () {
     ($this->slack)();
 

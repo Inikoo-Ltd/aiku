@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { usePage } from "@inertiajs/vue3"
@@ -324,7 +325,7 @@ onUnmounted(() => {
                 :class="isOnChatInbox ? 'bottom-40 h-11 w-11' : 'bottom-12 h-14 w-14'"
                 @click="mobilePanelOpen = true"
             >
-                <FontAwesomeIcon icon="fal fa-comments" class="text-xl" fixed-width aria-hidden="true" />
+                <DeskIcon class="text-2xl" />
                 <span v-if="store.totalUnread > 0" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center text-xxs">{{ store.totalUnread }}</span>
             </button>
             <Teleport to="body">
@@ -552,7 +553,7 @@ onUnmounted(() => {
                     @pointerup.stop
                     @click.stop="mobilePanelOpen = true"
                 >
-                    <FontAwesomeIcon icon="fal fa-comments" class="text-lg" fixed-width aria-hidden="true" />
+                    <DeskIcon class="text-xl" />
                     <span v-if="store.totalUnread > 0" class="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">{{ store.totalUnread > 99 ? "99+" : store.totalUnread }}</span>
                 </button>
             </template>

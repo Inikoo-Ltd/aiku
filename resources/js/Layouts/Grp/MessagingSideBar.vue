@@ -18,6 +18,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
 import Image from "@/Common/Components/Image.vue"
 import RailControls from "@/Layouts/Grp/RailControls.vue"
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 const ManageTeamModal = defineAsyncComponent(() => import("@/Components/Messaging/ManageTeamModal.vue"))
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -458,7 +459,7 @@ onUnmounted(() => {
 <template>
     <div v-if="isMobile && layout.messagingSidebar.show" class="fixed inset-0 z-[21] bg-gray-900/30 md:hidden" aria-hidden="true" @click="handleToggle" />
     <div
-        class="group/rail flex flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
+        class="group/rail flex flex-col fixed inset-y-0 right-0 h-full font-desk bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
             layout.messagingSidebar.show ? 'w-56' : 'w-6',
             layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-6' : 'md:w-12'),
@@ -509,7 +510,8 @@ onUnmounted(() => {
             </template>
 
             <div v-for="tab in tabs" :key="'micro-people-' + tab.key" class="flex flex-col items-center gap-y-1" :title="tab.label">
-                <FontAwesomeIcon :icon="tab.icon" class="h-2.5 w-2.5 opacity-80" :class="tab.color" aria-hidden="true" />
+                <DeskIcon v-if="tab.key === 'messages'" class="h-2.5 w-2.5" />
+                <FontAwesomeIcon v-else :icon="tab.icon" class="h-2.5 w-2.5 opacity-80" :class="tab.color" aria-hidden="true" />
                 <span v-if="tab.key === 'messages'" :class="store.alertingUnread > 0 ? 'text-white bg-[var(--chat-red)] rounded-full px-0.5 py-0.5 -mx-1' : (store.totalUnread > 0 ? 'text-[var(--chat-text)]' : 'text-[var(--chat-label)]')">{{ compactCount(store.alertingUnread || store.totalUnread) }}</span>
                 <span v-else :class="tab.color">{{ compactCount(tab.count) }}</span>
             </div>
@@ -545,7 +547,8 @@ onUnmounted(() => {
                 v-tooltip="tab.key === 'org' ? orgTooltip : tab.label"
                 @click="selectTab(tab.key)">
                 <span class="relative">
-                    <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                    <DeskIcon v-if="tab.key === 'messages'" class="text-xs" />
+                    <FontAwesomeIcon v-else :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
                     <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
                     <span v-else-if="tab.quietBadge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-line)] text-[var(--chat-text)] rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.quietBadge > 99 ? 99 : tab.quietBadge }}</span>
                 </span>
@@ -563,7 +566,8 @@ onUnmounted(() => {
                 v-tooltip="tab.key === 'org' ? orgTooltip : tab.label"
                 @click="selectTab(tab.key)">
                 <span class="relative">
-                    <FontAwesomeIcon :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
+                    <DeskIcon v-if="tab.key === 'messages'" class="text-xs" />
+                    <FontAwesomeIcon v-else :icon="tab.icon" :class="tab.color" class="text-xs" fixed-width aria-hidden="true" />
                     <span v-if="tab.badge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-red)] text-white rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.badge > 99 ? 99 : tab.badge }}</span>
                     <span v-else-if="tab.quietBadge" class="absolute -top-1.5 -right-1.5 bg-[var(--chat-line)] text-[var(--chat-text)] rounded-full h-3 min-w-[0.75rem] px-0.5 flex items-center justify-center text-[8px] leading-none tabular-nums">{{ tab.quietBadge > 99 ? 99 : tab.quietBadge }}</span>
                 </span>

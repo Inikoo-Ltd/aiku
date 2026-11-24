@@ -16,7 +16,8 @@ module.exports = {
         extend: {
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
-                logo: ['Fira Sans',...defaultTheme.fontFamily.sans]
+                logo: ['Fira Sans',...defaultTheme.fontFamily.sans],
+                desk: ['Lato', ...defaultTheme.fontFamily.sans]
             },
             fontSize: {
                 xxs: ['0.6rem', {

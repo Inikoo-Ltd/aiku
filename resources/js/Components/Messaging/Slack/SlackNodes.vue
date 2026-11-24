@@ -65,13 +65,13 @@ const isHexColour = (colour: unknown) => typeof colour === "string" && /^#[0-9a-
         <em v-else-if="node.type === 'italic'"><SlackNodes :nodes="node.children" :channel-links="channelLinks" /></em>
         <s v-else-if="node.type === 'strike'"><SlackNodes :nodes="node.children" :channel-links="channelLinks" /></s>
         <code v-else-if="node.type === 'code'" class="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[0.85em] text-red-700">{{ node.text }}</code>
-        <a v-else-if="node.type === 'link'" :href="node.url" target="_blank" rel="noopener noreferrer nofollow" class="break-all font-medium text-gray-700 underline decoration-gray-300 hover:decoration-gray-600">{{ node.text }}</a>
-        <span v-else-if="node.type === 'user'" class="rounded bg-[var(--app-accent-soft)] px-0.5 font-medium text-gray-800">@{{ node.name ?? ctrans("unknown") }}</span>
+        <a v-else-if="node.type === 'link'" :href="node.url" target="_blank" rel="noopener noreferrer nofollow" class="break-all text-[#1264a3] hover:underline">{{ node.text }}</a>
+        <span v-else-if="node.type === 'user'" class="rounded bg-[#1d9bd11a] px-0.5 text-[#1264a3]">@{{ node.name ?? ctrans("unknown") }}</span>
         <Link
             v-else-if="node.type === 'channel' && channelLinks?.[node.id]"
             :href="route('grp.chat.staff.slack.show', channelLinks[node.id])"
             preserve-state
-            class="rounded bg-[var(--app-accent-soft)] px-0.5 font-medium text-gray-800 hover:underline">#{{ node.name ?? ctrans("unknown") }}</Link>
+            class="rounded bg-[#1d9bd11a] px-0.5 text-[#1264a3] hover:underline">#{{ node.name ?? ctrans("unknown") }}</Link>
         <span v-else-if="node.type === 'channel'" class="rounded bg-gray-100 px-0.5 font-medium text-gray-600">#{{ node.name ?? ctrans("unknown") }}</span>
         <span v-else-if="node.type === 'group'" class="rounded bg-gray-100 px-0.5 font-medium text-gray-700">{{ node.label ?? "@" + ctrans("group") }}</span>
         <span v-else-if="node.type === 'broadcast'" class="rounded bg-amber-100 px-0.5 font-medium text-amber-800">@{{ node.range }}</span>

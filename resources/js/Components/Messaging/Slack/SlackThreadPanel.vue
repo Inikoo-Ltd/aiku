@@ -12,7 +12,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faChevronDown, faLink, faTimes } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ctrans } from "@/Composables/useTrans"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 import { myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
@@ -87,6 +86,11 @@ watch(() => props.focusTs, (ts, previous) => {
     if (ts && ts !== previous && parent.value) focusReply()
 })
 
+const channelName = computed<string | null>(() => {
+    const channel = (usePage().props as any)?.slack_channel
+    return channel?.id === props.channelId ? channel?.name ?? null : null
+})
+
 const myId = computed<number | null>(() => (usePage().props as any)?.auth?.user?.id ?? null)
 let liveAt: Record<string, number> = {}
 watch(slackReloads, async () => {
@@ -148,19 +152,24 @@ const copyLink = async () => {
 </script>
 
 <template>
-    <aside class="absolute inset-0 z-20 flex flex-col bg-white md:static md:z-auto md:w-96 md:shrink-0 md:border-l md:border-gray-200" :aria-label="ctrans('Thread')">
-        <div class="flex shrink-0 items-center gap-x-2 border-b border-gray-200 bg-gray-50 px-3 py-2">
-            <span class="flex-1 text-sm font-medium text-gray-700">{{ ctrans("Thread") }}</span>
-            <Button type="tertiary" size="xs" :icon="copied ? 'fal fa-check' : 'fal fa-link'" :label="copied ? ctrans('Copied') : ctrans('Copy link')" @click="copyLink" />
-            <button type="button" :aria-label="ctrans('Close')" class="flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-200/70" @click="emit('close')">
-                <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+    <aside class="absolute inset-0 z-20 flex flex-col bg-white text-[#1d1c1d] md:static md:z-auto md:w-[26rem] md:shrink-0 md:border-l md:border-[#e2e2e2]" :aria-label="ctrans('Thread')">
+        <div class="flex h-[49px] shrink-0 items-center gap-x-1 border-b border-[#e2e2e2] pl-4 pr-2">
+            <div class="flex min-w-0 flex-1 items-baseline gap-x-2">
+                <h2 class="text-lg font-black leading-none">{{ ctrans("Thread") }}</h2>
+                <span v-if="channelName" class="truncate text-[13px] text-[#616061]"># {{ channelName }}</span>
+            </div>
+            <button type="button" v-tooltip.bottom="copied ? ctrans('Copied') : ctrans('Copy link')" :aria-label="ctrans('Copy link')" class="flex h-7 w-7 items-center justify-center rounded-md text-[#616061] hover:bg-[#1d1c1d]/[.06] hover:text-[#1d1c1d]" @click="copyLink">
+                <FontAwesomeIcon :icon="copied ? 'fal fa-check' : 'fal fa-link'" fixed-width aria-hidden="true" />
+            </button>
+            <button type="button" v-tooltip.bottom="ctrans('Close')" :aria-label="ctrans('Close')" class="flex h-7 w-7 items-center justify-center rounded-md text-[#616061] hover:bg-[#1d1c1d]/[.06] hover:text-[#1d1c1d]" @click="emit('close')">
+                <FontAwesomeIcon icon="fal fa-times" class="text-base" fixed-width aria-hidden="true" />
             </button>
         </div>
 
-        <div ref="bodyEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+        <div ref="bodyEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2">
             <div v-if="loading && !parent" class="space-y-4 py-4" aria-busy="true">
                 <div v-for="row in 4" :key="'thread-skeleton-' + row" class="flex items-start gap-2">
-                    <span class="skeleton h-9 w-9 shrink-0 rounded-full" />
+                    <span class="skeleton h-9 w-9 shrink-0 rounded-lg" />
                     <div class="flex-1 space-y-1.5">
                         <span class="skeleton block h-3 w-28 rounded" />
                         <span class="skeleton block h-3 w-2/3 rounded" />
@@ -170,27 +179,29 @@ const copyLink = async () => {
 
             <template v-if="parent">
                 <SlackMessageRow :message="parent" :channel-links="channelLinks" in-thread />
-                <div class="flex items-center gap-x-2 py-2">
-                    <span class="whitespace-nowrap text-xxs font-medium text-gray-500">{{ parent.reply_count === 1 ? ctrans("1 reply") : ctrans(":count replies", { count: String(parent.reply_count) }) }}</span>
-                    <span class="h-px flex-1 bg-gray-200" />
+                <div v-if="parent.reply_count" class="flex items-center gap-x-3 px-1 pb-1 pt-3">
+                    <span class="whitespace-nowrap text-[13px] text-[#616061]">{{ parent.reply_count === 1 ? ctrans("1 reply") : ctrans(":count replies", { count: String(parent.reply_count) }) }}</span>
+                    <span class="h-px flex-1 bg-[#e2e2e2]" />
                 </div>
                 <div
                     v-for="reply in replies"
                     :key="reply.id"
                     :data-thread-ts="reply.ts"
-                    class="rounded transition-colors duration-700"
-                    :class="highlightedTs === reply.ts ? 'bg-amber-100/70' : ''">
+                    class="rounded-md transition-colors duration-700"
+                    :class="highlightedTs === reply.ts ? 'bg-[#fdf6e0]' : ''">
                     <SlackMessageRow :message="reply" :channel-links="channelLinks" in-thread />
                 </div>
                 <div v-if="nextCursor" class="flex justify-center pt-3">
                     <LoadingIcon v-if="loading" />
-                    <Button v-else type="tertiary" size="xs" icon="fal fa-chevron-down" :label="ctrans('Show more replies')" @click="load(nextCursor)" />
+                    <button v-else type="button" class="inline-flex items-center gap-x-1.5 rounded-md border border-[#dddddd] px-3 py-1 text-[13px] font-bold text-[#1d1c1d] hover:bg-[#f8f8f8]" @click="load(nextCursor)">
+                        <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />{{ ctrans("Show more replies") }}
+                    </button>
                 </div>
             </template>
 
-            <p v-if="error" class="py-3 text-xs text-red-600">{{ error }}</p>
+            <p v-if="error" class="py-3 text-[13px] text-red-600">{{ error }}</p>
         </div>
 
-        <SlackMessageComposer v-if="write && parent && !parent.is_deleted" :channel-id="channelId" :write="write" :thread-ts="ts" :placeholder="ctrans('Reply…')" @sent="onSent" />
+        <SlackMessageComposer v-if="write && parent && !parent.is_deleted" :channel-id="channelId" :write="write" :thread-ts="ts" :channel-name="channelName" :placeholder="ctrans('Reply…')" @sent="onSent" />
     </aside>
 </template>
