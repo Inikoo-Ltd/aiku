@@ -155,7 +155,7 @@ class SaveOrderModification extends OrgAction
      * The note is locked and its state read again inside the transaction, so a picker pressing
      * "picked" at the same moment cannot leave a line on the note that nobody will walk to.
      */
-    protected function lockDeliveryNoteAcceptingNewLines(Order $order): ?DeliveryNote
+    public function lockDeliveryNoteAcceptingNewLines(Order $order): ?DeliveryNote
     {
         $deliveryNote = $order->deliveryNotes()
             ->where('type', DeliveryNoteTypeEnum::ORDER)
@@ -170,7 +170,7 @@ class SaveOrderModification extends OrgAction
         return $deliveryNote;
     }
 
-    protected function addLineToDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, Product $product, User $user): void
+    public function addLineToDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, Product $product, ?User $user): void
     {
         $transaction->update([
             'state'           => TransactionStateEnum::IN_WAREHOUSE,

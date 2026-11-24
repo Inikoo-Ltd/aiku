@@ -4674,6 +4674,36 @@ test('a claimed line is made good once, and a replacement that left the warehous
         ->and($addToNextOrder)->toThrow(\Illuminate\Validation\ValidationException::class, 'left to claim');
 });
 
+test('a claimed line can go free on the customer open order instead of a priority replacement', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
+    $order = $deliveryNote->orders()->first();
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+    [$openNote] = handlingDeliveryNoteWithPicking($this);
+    $openOrder  = $openNote->orders()->first();
+
+    expect(\App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns::ordersToSendWith($order)->pluck('id'))->toContain($openOrder->id)->not->toContain($order->id);
+    $totalBefore = (float) $openOrder->total_amount;
+
+    $followOn = \App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns::make()->handle($order->refresh(), [['id' => $item->id, 'quantity' => 1]], 'damaged_in_transit', null, $openOrder, $this->user)->sole();
+
+    $line = $followOn->refresh()->transaction;
+    expect($followOn->state)->toBe(\App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum::APPLIED)
+        ->and($followOn->order_id)->toBe($openOrder->id)
+        ->and($line->is_follow_on)->toBeTrue()
+        ->and((float) $line->quantity_ordered)->toEqual(0.0)
+        ->and($line->state)->toBe(\App\Enums\Ordering\Transaction\TransactionStateEnum::IN_WAREHOUSE->value)
+        ->and($order->deliveryNotes()->where('type', \App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum::REPLACEMENT)->exists())->toBeFalse()
+        ->and((float) $openOrder->refresh()->total_amount)->toEqual($totalBefore)
+        ->and(collect($openOrder->post_submit_modification_data)->last()['data']['claim_of'])->toBe($order->reference);
+
+    expect(fn () => \App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns::make()->handle($order->refresh(), [['id' => $item->id, 'quantity' => 1]], null, null, $order))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'open order');
+
+    $followOn->delete();
+});
+
 test('claims are not taken for orders dispatched over 60 days ago', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $order = $deliveryNote->orders()->first();

@@ -16,6 +16,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\UpcomingTransaction\StoreClaimFollowOns;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
@@ -250,6 +251,7 @@ class CreateReplacementDeliveryNote extends OrgAction
             ],
 
             'replacement_reasons' => DeliveryNoteItemReplacementReasonEnum::valuesWithLabels(),
+            'send_with'           => $this->getSendWith($order, $request),
             'box_stats' => $this->getBoxStats($deliveryNote),
             'notes'     => ShowDeliveryNote::make()->getDeliveryNoteNotes($deliveryNote),
             'routes'    => [
@@ -282,6 +284,30 @@ class CreateReplacementDeliveryNote extends OrgAction
         $inertiaResponse->table($this->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
 
         return $inertiaResponse;
+    }
+
+    /**
+     * @return array{route: array{name: string, parameters: array<string, int>}, orders: array<int, array{id: int, reference: string, state: string}>}|null
+     */
+    public function getSendWith(Order $order, ActionRequest $request): ?array
+    {
+        if ($order->customer_client_id || !$request->user()->authTo("crm.$order->shop_id.edit")) {
+            return null;
+        }
+
+        $orders = StoreClaimFollowOns::ordersToSendWith($order);
+        if ($orders->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'route'  => ['name' => 'grp.models.order.claim_follow_on', 'parameters' => ['order' => $order->id]],
+            'orders' => $orders->map(fn (Order $openOrder) => [
+                'id'        => $openOrder->id,
+                'reference' => $openOrder->reference,
+                'state'     => $openOrder->state->labels()[$openOrder->state->value],
+            ])->all(),
+        ];
     }
 
     public function tableStructure(DeliveryNote $parent, $prefix = null): Closure

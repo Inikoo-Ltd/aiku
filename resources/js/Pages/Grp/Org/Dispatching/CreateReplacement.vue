@@ -45,6 +45,9 @@ import { notify } from "@kyvg/vue3-notification";
 import Message from 'primevue/message';
 import { debounce } from "lodash-es";
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import Select from "primevue/select"
+import axios from "axios"
 
 
 library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faSave);
@@ -67,6 +70,10 @@ const props = defineProps<{
     delivery_note: DeliveryNote
     is_collection: boolean
     replacement_reasons: { value: string; label: string }[]
+    send_with?: {
+        route: routeType
+        orders: { id: number; reference: string; state: string }[]
+    } | null
     notes?: {
         note_list: {
             label: string
@@ -120,6 +127,15 @@ const listError = ref({
 provide("listError", listError.value);
 
 const showWarningMessage = ref(true);
+
+const sendMode = ref<'now' | 'with_order'>('now')
+const sendWithOrderId = ref<number | null>(props.send_with?.orders.length === 1 ? props.send_with.orders[0].id : null)
+const sendWithError = ref<string | null>(null)
+const sentWith = ref<string | null>(null)
+const sendModeOptions = [
+    { label: ctrans("Send now"), value: 'now' as const, help: ctrans("A replacement delivery note, picked first") },
+    { label: ctrans("Send with an open order"), value: 'with_order' as const, help: ctrans("Added free to the customer's open order and packed with it, in that order's place in the queue") },
+]
 
 
 const debReloadPage = debounce(() => {
@@ -222,6 +238,31 @@ const onCreateReplacement = (action: any) => {
         return;
     }
 
+    if (sendMode.value === 'with_order' && props.send_with) {
+        sendWithError.value = null
+        if (!sendWithOrderId.value) {
+            sendWithError.value = ctrans("Choose the order to send it with")
+            loadingCreateReplacement.value = false
+            return
+        }
+        axios.post(route(props.send_with.route.name, props.send_with.route.parameters), {
+            delivery_note_items,
+            reason: delivery_note_items[0]?.reason,
+            private_notes: warehouseNote.value,
+            send_with_order_id: sendWithOrderId.value,
+        }).then(() => {
+            const order = props.send_with?.orders.find(candidate => candidate.id === sendWithOrderId.value)
+            sentWith.value = order?.reference ?? null
+            quantityToResendData.value = {}
+        }).catch((error) => {
+            const errors = error.response?.data?.errors ?? {}
+            sendWithError.value = Object.values(errors).flat()[0] as string ?? error.response?.data?.message ?? ctrans("Something went wrong")
+        }).finally(() => {
+            loadingCreateReplacement.value = false
+        })
+        return
+    }
+
     const payload = { delivery_note_items, private_warehouse_note: warehouseNote.value };
 
 
@@ -316,6 +357,17 @@ const onCreateReplacement = (action: any) => {
         :updateRoute="routes.update" :shipments @replace-all="onReplaceAll"
         isShowButtonReplaceAll
     />
+
+    <div v-if="send_with" class="px-4 pt-3 flex flex-wrap items-center gap-3">
+        <SegmentedToggle v-model="sendMode" :options="sendModeOptions" :aria-label="ctrans('How to send')" />
+        <Select v-if="sendMode === 'with_order'" v-model="sendWithOrderId" :options="send_with.orders" optionValue="id"
+            :optionLabel="(order) => `${order.reference} · ${order.state}`" :placeholder="ctrans('Choose order')" size="small" class="min-w-56" />
+        <span v-if="sendWithError" class="text-sm text-red-600">{{ sendWithError }}</span>
+        <span v-if="sentWith" class="text-sm text-green-700">
+            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+            {{ ctrans("Added to order :reference", { reference: sentWith }) }}
+        </span>
+    </div>
 
     <div class="px-4 pt-3">
         <label class="text-sm font-medium text-gray-700">{{ ctrans("Note to warehouse") }}</label>
