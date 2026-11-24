@@ -17,7 +17,6 @@ enum ProfileTabsEnum: string
     use HasTabs;
 
 
-    case NOTIFICATIONS = 'notifications';
     case TIMESHEETS = 'timesheets';
 
     case HISTORY = 'history';
@@ -51,11 +50,6 @@ enum ProfileTabsEnum: string
             ProfileTabsEnum::TODO => [
                 'title' => __('To do'),
                 'icon'  => 'fal fa-clipboard-list-check',
-            ],
-
-            ProfileTabsEnum::NOTIFICATIONS => [
-                'title' => __('Notifications'),
-                'icon'  => 'fal fa-bell',
             ],
 
             ProfileTabsEnum::TIMESHEETS => [

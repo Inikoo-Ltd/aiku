@@ -54,22 +54,23 @@ class LinkSlackUsers
             if ($current?->is($slackUser)) {
                 return [...$row, 'action' => 'already linked'];
             }
-            if ($current) {
-                return [...$row, 'action' => 'refused: '.$user->username.' is already linked to Slack person '.$current->name];
+            if ($current?->link_confirmed_at) {
+                return [...$row, 'action' => 'refused: '.$user->username.' is already linked by hand to Slack person '.$current->name];
             }
             if ($slackUser->user_id && $slackUser->user_id !== $user->id && $slackUser->link_confirmed_at) {
                 return [...$row, 'action' => 'refused: Slack person is linked by hand to '.$slackUser->user?->username];
             }
 
-            return [...$row, 'action' => 'link'];
+            return [...$row, 'action' => $current ? 'link, replaces email match '.$current->name : 'link'];
         }, $pairs);
     }
 
     public function link(SlackUser $slackUser, User $user, User $by): void
     {
-        DB::transaction(function () use ($slackUser, $user, $by) {
+        $replaced = SlackChannel::linkedSlackPerson($user);
+        DB::transaction(function () use ($slackUser, $user, $by, $replaced) {
             $slackUser->update(['user_id' => $user->id, 'link_confirmed_at' => now(), 'link_confirmed_by_user_id' => $by->id]);
-            if (!$user->slack_user_id) {
+            if (!$user->slack_user_id || $user->slack_user_id === $replaced?->slack_id) {
                 $user->update(['slack_user_id' => $slackUser->slack_id]);
             }
         });
@@ -116,7 +117,7 @@ class LinkSlackUsers
 
         $done = 0;
         foreach ($plan as $row) {
-            if ($row['action'] === 'link') {
+            if (str_starts_with($row['action'], 'link')) {
                 $this->link($row['slack_user'], $row['user'], $by);
                 $done++;
             } elseif ($row['action'] === 'unlink') {

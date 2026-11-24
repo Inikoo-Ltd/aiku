@@ -9,8 +9,12 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Enums\UI\SysAdmin\ProfileTabsEnum;
+use App\Models\SysAdmin\User;
+use App\Notifications\WorkNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -85,9 +89,99 @@ test('personal settings page has breadcrumbs back to the profile', function () {
         ->and($breadcrumbs->last()['simple']['label'])->toBe('Personal settings');
 });
 
-test('profile tabs no longer list clocking', function () {
+test('profile tabs no longer list clocking or notifications', function () {
     expect(ProfileTabsEnum::navigation())
         ->not->toHaveKey('clocking')
         ->not->toHaveKey('dashboard')
-        ->toHaveKeys(['notifications', 'timesheets']);
+        ->not->toHaveKey('notifications')
+        ->toHaveKey('timesheets');
+
+    getJson(route('grp.profile.page-head-tabs.show'))
+        ->assertOk()
+        ->assertJsonMissingPath('tabs.navigation.notifications');
+});
+
+function insertProfileNotification(User $user, string $type, string $title, string $body, ?string $readAt = null, ?string $createdAt = null): string
+{
+    $id = (string) Str::uuid();
+    DB::table('notifications')->insert([
+        'id'              => $id,
+        'type'            => $type,
+        'notifiable_type' => 'User',
+        'notifiable_id'   => $user->id,
+        'data'            => json_encode(['title' => $title, 'body' => $body]),
+        'read_at'         => $readAt,
+        'created_at'      => $createdAt ?? now(),
+        'updated_at'      => $createdAt ?? now(),
+    ]);
+
+    return $id;
+}
+
+test('the all notifications list searches, filters by type and state, newest first, on the server', function () {
+    $user   = $this->adminGuest->getUser();
+    $marker = 'NotifSearch'.Str::random(8);
+
+    $oldTicket   = insertProfileNotification($user, 'App\Notifications\TicketNotification', "Old ticket $marker", 'first', null, now()->subDays(3)->toDateTimeString());
+    $newTicket   = insertProfileNotification($user, 'App\Notifications\TicketNotification', 'New ticket', "about $marker", null, now()->subDay()->toDateTimeString());
+    $readArrival = insertProfileNotification($user, 'App\Notifications\ShopStockArrivalsNotification', "Back in stock $marker", 'stock', now()->toDateTimeString(), now()->subDays(2)->toDateTimeString());
+    insertProfileNotification($user, WorkNotification::class, "Work $marker", 'mobile only');
+
+    $search = getJson(route('grp.profile.notifications.index', ['filter' => ['search' => strtolower($marker)]]))->assertOk();
+    expect(collect($search->json('data'))->pluck('id')->all())->toBe([$newTicket, $readArrival, $oldTicket])
+        ->and($search->json('meta.total'))->toBe(3);
+
+    $tickets = getJson(route('grp.profile.notifications.index', ['filter' => ['search' => $marker, 'type' => 'App\Notifications\TicketNotification']]))->assertOk();
+    expect(collect($tickets->json('data'))->pluck('id')->all())->toBe([$newTicket, $oldTicket]);
+
+    $unread = getJson(route('grp.profile.notifications.index', ['filter' => ['search' => $marker, 'state' => 'unread']]))->assertOk();
+    expect(collect($unread->json('data'))->pluck('id')->all())->toBe([$newTicket, $oldTicket]);
+
+    $read = getJson(route('grp.profile.notifications.index', ['filter' => ['search' => $marker, 'state' => 'read']]))->assertOk();
+    expect(collect($read->json('data'))->pluck('id')->all())->toBe([$readArrival]);
+
+    getJson(route('grp.profile.notifications.index', ['filter' => ['search' => $marker], 'notifications_perPage' => 50, 'notificationsPage' => 2]))
+        ->assertOk()
+        ->assertJsonPath('meta.per_page', 50)
+        ->assertJsonPath('meta.current_page', 2)
+        ->assertJsonCount(0, 'data');
+});
+
+test('notification types are listed per user with readable names and counts', function () {
+    $user = $this->adminGuest->getUser();
+
+    $countOf = fn (string $type) => collect(getJson(route('grp.profile.notifications.types'))->assertOk()->json())->firstWhere('value', $type)['count'] ?? 0;
+    $ticketsBefore = $countOf('App\Notifications\TicketNotification');
+
+    insertProfileNotification($user, 'App\Notifications\TicketNotification', 'Ticket', 'one');
+    insertProfileNotification($user, 'App\Notifications\TicketNotification', 'Ticket', 'two');
+    insertProfileNotification($user, 'App\Notifications\SupplierCatalogueRefreshedNotification', 'Catalogue', 'refreshed');
+    insertProfileNotification($user, WorkNotification::class, 'Work', 'mobile only');
+
+    $types = collect(getJson(route('grp.profile.notifications.types'))->assertOk()->json());
+
+    expect($types->firstWhere('value', 'App\Notifications\TicketNotification'))
+        ->toMatchArray(['label' => 'Tickets', 'group' => 'work', 'group_label' => 'Work', 'count' => $ticketsBefore + 2])
+        ->and($types->firstWhere('value', 'App\Notifications\SupplierCatalogueRefreshedNotification'))
+        ->toMatchArray(['label' => 'Supplier catalogue refreshed', 'group' => 'other'])
+        ->and($types->pluck('value'))->not->toContain(WorkNotification::class)
+        ->and($types->pluck('group')->unique()->values()->first())->toBe('work');
+});
+
+test('the notifications rail badge can be hidden like the others', function () {
+    patchJson(route('grp.models.profile.update'), ['rail_hidden_badges' => ['notifications', 'tickets_queue']])->assertSuccessful();
+
+    expect($this->adminGuest->getUser()->fresh()->settings['rail_hidden_badges'])->toBe(['notifications', 'tickets_queue']);
+
+    patchJson(route('grp.models.profile.update'), ['rail_hidden_badges' => []])->assertSuccessful();
+});
+
+test('the rail gets the latest 50 notifications', function () {
+    $user = $this->adminGuest->getUser();
+    collect(range(1, 52))->each(fn (int $index) => insertProfileNotification($user, 'App\Notifications\TicketNotification', "Rail $index", 'body', null, now()->addMinutes($index)->toDateTimeString()));
+
+    $notifications = GetFirstLoadProps::make()->badges($user)['notifications'];
+
+    expect($notifications)->toHaveCount(50)
+        ->and($notifications->first()->resolve()['title'])->toBe('Rail 52');
 });

@@ -436,7 +436,7 @@ test('slack:link-users writes nothing without --confirm, refuses ambiguous pairs
 
     expect($plan[0])->toStartWith('refused: several')
         ->and($plan[1])->toStartWith('refused: Slack person is a bot')
-        ->and($plan[2])->toStartWith('refused: '.$taken->username.' is already linked')
+        ->and($plan[2])->toBe('link, replaces email match person.'.$taken->id)
         ->and($plan[3])->toStartWith('refused: no active aiku user')
         ->and($plan[4])->toBe('link');
 
@@ -445,6 +445,14 @@ test('slack:link-users writes nothing without --confirm, refuses ambiguous pairs
 
     $this->artisan('slack:link-users', ['pairs' => ["$handle={$user->username}"], '--confirm' => true, '--by' => $by->username])->assertSuccessful();
     expect($slack->fresh()->user_id)->toBe($user->id);
+
+    $emailMatch = SlackChannel::linkedSlackPerson($taken);
+    $taken->update(['slack_user_id' => $emailMatch->slack_id]);
+    $this->artisan('slack:link-users', ['pairs' => ["{$other->name}={$taken->username}"], '--confirm' => true, '--by' => $by->username])->assertSuccessful();
+    StoreSlackUser::run(['id' => $emailMatch->slack_id, 'name' => $emailMatch->name, 'profile' => ['email' => $emailMatch->email]]);
+    expect(SlackChannel::linkedSlackPerson($taken)?->is($other))->toBeTrue()
+        ->and($taken->fresh()->slack_user_id)->toBe($other->slack_id)
+        ->and(LinkSlackUsers::make()->plan(["$handle={$taken->username}"], false)[0]['action'])->toBe('refused: '.$taken->username.' is already linked by hand to Slack person '.$other->name);
 
     $this->artisan('slack:link-users', ['pairs' => [$handle], '--undo' => true, '--confirm' => true])->assertSuccessful();
     expect($slack->fresh()->user_id)->toBeNull()

@@ -109,6 +109,7 @@ class SlackChannel extends Model
         return SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
             ->where(fn (Builder $query) => $query->whereNotNull('link_confirmed_at')->orWhereRaw('lower(email) = ?', [strtolower((string) $user->email)]))
             ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
+            ->orderByRaw('link_confirmed_at is null')
             ->first();
     }
 }
