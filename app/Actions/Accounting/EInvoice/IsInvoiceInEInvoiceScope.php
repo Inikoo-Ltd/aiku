@@ -24,7 +24,7 @@ class IsInvoiceInEInvoiceScope
      */
     public function handle(Invoice $invoice): bool
     {
-        $invoice->loadMissing(['organisation', 'address', 'customer']);
+        $invoice->loadMissing(['organisation', 'address', 'customer', 'shop.taxNumber']);
 
         $countries = Arr::get($invoice->organisation->settings, 'e_invoicing.countries', []);
         if (!$countries || $invoice->in_process || !in_array($invoice->address?->country_code, $countries, true)) {
@@ -35,10 +35,27 @@ class IsInvoiceInEInvoiceScope
             return false;
         }
 
-        return BuildUblInvoice::buyerParticipantId($invoice) !== null
+        $buyer = BuildUblInvoice::buyerParticipantId($invoice);
+        if ($buyer !== null && $buyer === self::ownParticipantId($invoice)) {
+            return false;
+        }
+
+        return $buyer !== null
             || strlen(preg_replace('/\D/', '', (string)$invoice->tax_number)) >= 8
             || strlen(preg_replace('/\D/', '', (string)$invoice->identity_document_number)) >= 8
             || trim((string)$invoice->customer?->company_name) !== '';
+    }
+
+    /**
+     * Our own Peppol ID (from the shop's VAT number): staff and own-company accounts carrying it are never e-invoiced to ourselves.
+     *
+     * @return array{scheme: string, id: string}|null
+     */
+    private static function ownParticipantId(Invoice $invoice): ?array
+    {
+        $taxNumber = $invoice->shop?->taxNumber;
+
+        return $taxNumber ? BuildUblInvoice::participantId($taxNumber->country_code.$taxNumber->number) : null;
     }
 
     /**

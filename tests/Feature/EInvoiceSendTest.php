@@ -551,3 +551,24 @@ test('nothing is e-invoiced before the organisation\'s start date, and from that
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($organisation->fresh(), ['e_invoice_countries' => [], 'e_invoice_starts_on' => null]);
     $organisation->update(['timezone_id' => $originalTimezoneId]);
 });
+
+test('an invoice to an account carrying our own VAT number is never e-invoiced to ourselves', function () {
+    $scope = new IsInvoiceInEInvoiceScope();
+    $shop  = $this->invoice->shop;
+    if (!$shop->taxNumber) {
+        \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $shop, modelData: ['number' => '2120525440', 'country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')], strict: false);
+    }
+    $own = $shop->refresh()->taxNumber;
+    $this->invoice->customer->update(['peppol_id' => null, 'company_name' => 'Ancient Wisdom s.r.o.']);
+    $this->invoice->update(['address_id' => $this->customer->address_id, 'tax_number' => $own->country_code.$own->number, 'tax_number_valid' => true]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => [$this->invoice->fresh()->address->country_code]]])]);
+
+    expect(BuildUblInvoice::participantId($own->country_code.$own->number))->not->toBeNull()
+        ->and($scope->handle($this->invoice->fresh()))->toBeFalse()
+        ->and($scope->goesAsEInvoice($this->invoice->fresh()))->toBeFalse();
+
+    $this->invoice->update(['tax_number' => 'SK2021344160']);
+    expect($scope->handle($this->invoice->fresh()))->toBeTrue();
+
+    $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
+});
