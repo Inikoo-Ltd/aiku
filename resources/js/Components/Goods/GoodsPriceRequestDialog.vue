@@ -52,6 +52,7 @@ interface MasterProduct {
     stocks_in_product: number
     stock_quantity: number
     cost: number | null
+    cost_at_new_price: number | null
     cost_currency: string
     main_currencies: string[]
     other_currencies: string[]
@@ -62,10 +63,20 @@ interface MasterProduct {
     update_route: routeType
 }
 
+interface NewPrice {
+    state: "pending" | "accepted" | "adjusted"
+    organisation: string
+    purchase_order: string
+    currency: string | null
+    unit_cost: number
+    previous_unit_cost: number
+}
+
 interface PriceRequestData {
     code: string
     name: string | null
     requests: PriceRequest[]
+    new_price: NewPrice | null
     master_products: MasterProduct[]
     can_edit_master_prices: boolean
 }
@@ -209,13 +220,35 @@ function isAnswering(request: PriceRequest, answerValue: Answer): boolean {
     return answering.value?.id === request.id && answering.value.answer === answerValue
 }
 
-function margin(masterProduct: MasterProduct, currency: string): number | null {
-    const price = masterForms[masterProduct.id]?.prices[currency]
-    if (masterProduct.cost === null || currency !== masterProduct.cost_currency || !price) {
+function marginCost(masterProduct: MasterProduct): number | null {
+    return masterProduct.cost_at_new_price ?? masterProduct.cost
+}
+
+function hasCostAtNewPrice(masterProduct: MasterProduct): boolean {
+    return masterProduct.cost !== null && masterProduct.cost_at_new_price !== null && masterProduct.cost_at_new_price !== masterProduct.cost
+}
+
+const newPriceNote = computed(() => {
+    const newPrice = data.value?.new_price
+    if (!newPrice || !data.value?.master_products.some(hasCostAtNewPrice)) {
         return null
     }
 
-    return Math.round(((price - masterProduct.cost) / price) * 1000) / 10
+    const replacements = { price: unitCost(newPrice.currency, newPrice.unit_cost), reference: newPrice.purchase_order }
+
+    return newPrice.state === "pending"
+        ? ctrans("Margins use the cost at the asked price of :price per unit (:reference) until it is answered", replacements)
+        : ctrans("Margins use the cost at the agreed price of :price per unit (:reference) until those goods are booked in", replacements)
+})
+
+function margin(masterProduct: MasterProduct, currency: string): number | null {
+    const price = masterForms[masterProduct.id]?.prices[currency]
+    const cost = marginCost(masterProduct)
+    if (cost === null || currency !== masterProduct.cost_currency || !price) {
+        return null
+    }
+
+    return Math.round(((price - cost) / price) * 1000) / 10
 }
 
 function isMasterChanged(masterProduct: MasterProduct): boolean {
@@ -362,6 +395,7 @@ function saveMaster(masterProduct: MasterProduct): void {
             <section class="space-y-2">
                 <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Selling price and RRP of the master products") }}</h3>
 
+                <p v-if="newPriceNote" class="text-xs text-gray-500">{{ newPriceNote }}</p>
                 <p v-if="!data.master_products.length" class="text-xs text-gray-500">{{ ctrans("No active master product sells this product") }}</p>
                 <p v-else-if="!data.can_edit_master_prices" class="text-xs text-gray-500">{{ ctrans("You need master edit rights to change these prices") }}</p>
 
@@ -401,7 +435,10 @@ function saveMaster(masterProduct: MasterProduct): void {
                             {{ ctrans("Family :family pricing", { family: masterProduct.master_family.code }) }}
                             <FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" aria-hidden="true" />
                         </a>
-                        <span v-if="masterProduct.cost !== null" class="text-gray-500">{{ ctrans("Cost :cost", { cost: money(masterProduct.cost_currency, masterProduct.cost) }) }}</span>
+                        <span v-if="hasCostAtNewPrice(masterProduct)" class="text-gray-500">
+                            {{ ctrans("Cost :cost, :new at the new price", { cost: money(masterProduct.cost_currency, masterProduct.cost), new: money(masterProduct.cost_currency, masterProduct.cost_at_new_price) }) }}
+                        </span>
+                        <span v-else-if="masterProduct.cost !== null" class="text-gray-500">{{ ctrans("Cost :cost", { cost: money(masterProduct.cost_currency, masterProduct.cost) }) }}</span>
                     </div>
 
                     <table class="w-full text-xs tabular-nums">

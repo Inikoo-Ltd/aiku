@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\UI;
 
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\OrgAction;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -55,8 +56,13 @@ class ShowGoodsStockPriceRequests extends OrgAction
      */
     public static function pendingQuery(): Builder
     {
+        return self::openLinesQuery()
+            ->where('purchase_order_transactions.price_query_state', PurchaseOrderTransactionPriceQueryStateEnum::PENDING->value);
+    }
+
+    private static function openLinesQuery(): Builder
+    {
         return PurchaseOrderTransaction::query()
-            ->where('purchase_order_transactions.price_query_state', PurchaseOrderTransactionPriceQueryStateEnum::PENDING->value)
             ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED->value, PurchaseOrderTransactionStateEnum::CONFIRMED->value])
             ->whereHas('purchaseOrder', fn (Builder $query) => $query->whereIn('state', PurchaseOrderStateEnum::openValues()));
     }
@@ -78,16 +84,74 @@ class ShowGoodsStockPriceRequests extends OrgAction
     }
 
     /**
-     * @return array{code: string, name: ?string, requests: array, master_products: array, can_edit_master_prices: bool}
+     * @return array{code: string, name: ?string, requests: array, new_price: ?array, master_products: array, can_edit_master_prices: bool}
      */
     public function handle(Stock $stock, User $user): array
     {
+        $newPriceLine = $this->newPriceLine($stock);
+
         return [
             'code'                   => $stock->code,
             'name'                   => $stock->name,
             'requests'               => $this->requests($stock, $user),
-            'master_products'        => $this->masterProducts($stock),
+            'new_price'              => $newPriceLine ? $this->newPrice($newPriceLine) : null,
+            'master_products'        => $this->masterProducts($stock, $newPriceLine ? $this->priceRatio($newPriceLine) : null),
             'can_edit_master_prices' => $user->authTo('masters.edit'),
+        ];
+    }
+
+    /**
+     * The latest new price asked or agreed for this stock on a line not yet received. effective_cost follows
+     * what was paid at goods in, so until those goods arrive the margin is shown at this price instead.
+     */
+    private function newPriceLine(Stock $stock): ?PurchaseOrderTransaction
+    {
+        return self::openLinesQuery()
+            ->whereIn('purchase_order_transactions.price_query_state', [
+                PurchaseOrderTransactionPriceQueryStateEnum::PENDING->value,
+                PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value,
+                PurchaseOrderTransactionPriceQueryStateEnum::ADJUSTED->value,
+            ])
+            ->whereHas('orgStock', fn (Builder $query) => $query->where('stock_id', $stock->id))
+            ->with(['purchaseOrder.organisation', 'purchaseOrder.currency', 'currency'])
+            ->orderByDesc('price_queried_at')
+            ->orderByDesc('id')
+            ->get()
+            ->first(fn (PurchaseOrderTransaction $transaction) => $this->priceRatio($transaction) !== null);
+    }
+
+    private function newUnitCost(PurchaseOrderTransaction $transaction): float
+    {
+        return (float) ($transaction->price_query_state === PurchaseOrderTransactionPriceQueryStateEnum::PENDING
+            ? $transaction->price_query_unit_cost
+            : $transaction->unit_cost);
+    }
+
+    private function previousUnitCost(PurchaseOrderTransaction $transaction): float
+    {
+        return (float) ($transaction->price_query_previous_unit_cost ?? $transaction->unit_cost);
+    }
+
+    private function priceRatio(PurchaseOrderTransaction $transaction): ?float
+    {
+        $previousUnitCost = $this->previousUnitCost($transaction);
+        $newUnitCost      = $this->newUnitCost($transaction);
+
+        return $previousUnitCost > 0 && $newUnitCost > 0 ? $newUnitCost / $previousUnitCost : null;
+    }
+
+    /**
+     * @return array{state: string, organisation: string, purchase_order: string, currency: ?string, unit_cost: float, previous_unit_cost: float}
+     */
+    private function newPrice(PurchaseOrderTransaction $transaction): array
+    {
+        return [
+            'state'              => $transaction->price_query_state->value,
+            'organisation'       => $transaction->purchaseOrder->organisation->code,
+            'purchase_order'     => $transaction->purchaseOrder->reference,
+            'currency'           => $transaction->currencyCodeIn($transaction->purchaseOrder),
+            'unit_cost'          => $this->newUnitCost($transaction),
+            'previous_unit_cost' => $this->previousUnitCost($transaction),
         ];
     }
 
@@ -139,13 +203,15 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->all();
     }
 
-    private function masterProducts(Stock $stock): array
+    private function masterProducts(Stock $stock, ?float $priceRatio): array
     {
+        $effectiveCost = MasterAssetHydrateEffectiveCost::make();
+
         return MasterAsset::query()
             ->whereHas('stocks', fn (Builder $query) => $query->where('stocks.id', $stock->id))
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
-            ->with(['masterShop', 'masterFamily'])
+            ->with(['masterShop', 'masterFamily', ...($priceRatio !== null ? ['tradeUnits.orgStocks'] : [])])
             ->addSelect([
                 'stocks_in_product' => DB::table('master_asset_has_stocks')
                     ->selectRaw('count(distinct stock_id)')
@@ -157,9 +223,10 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ])
             ->get()
             ->sortBy(fn (MasterAsset $masterAsset) => [(int) $masterAsset->stocks_in_product > 1, $masterAsset->code])
-            ->map(function (MasterAsset $masterAsset) {
+            ->map(function (MasterAsset $masterAsset) use ($stock, $priceRatio, $effectiveCost) {
                 $exchanges      = collect($masterAsset->masterShop?->price_exchanges ?? []);
                 $mainCurrencies = $exchanges->filter(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values();
+                $costAtNewPrice = $priceRatio !== null ? $effectiveCost->costWithStockPriceChange($masterAsset, $stock->id, $priceRatio) : null;
 
                 return [
                     'id'              => $masterAsset->id,
@@ -170,6 +237,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'stocks_in_product' => (int) $masterAsset->stocks_in_product,
                     'stock_quantity'  => (float) $masterAsset->stock_quantity,
                     'cost'            => $masterAsset->effective_cost !== null ? round((float) $masterAsset->effective_cost, 2) : null,
+                    'cost_at_new_price' => $costAtNewPrice !== null ? round($costAtNewPrice, 2) : null,
                     'cost_currency'   => $this->group->currency->code,
                     'main_currencies' => $mainCurrencies->all(),
                     'other_currencies' => $exchanges->reject(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values()->all(),
