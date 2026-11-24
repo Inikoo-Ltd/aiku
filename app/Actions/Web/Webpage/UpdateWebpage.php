@@ -31,6 +31,7 @@ use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use App\Rules\NotReservedIrisPath;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -137,6 +138,12 @@ class UpdateWebpage extends OrgAction
                 }
             } else {
                 Redirect::where('from_path', $webpage->url)->where('website_id', $webpage->website->id)->delete();
+
+                if (Arr::has($modelData, 'state_data.state') && Arr::get($modelData, 'state_data.state') != WebpageStateEnum::CLOSED->value) {
+                    data_set($modelData, 'redirect_webpage_id', null);
+                    Redirect::where('from_webpage_id', $webpage->id)->delete();
+                    Cache::forget(config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url));
+                }
             }
 
             if ($webpage->model instanceof Product) {

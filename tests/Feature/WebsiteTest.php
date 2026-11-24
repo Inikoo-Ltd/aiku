@@ -1509,6 +1509,29 @@ test('a webpage set offline shows when it closed and where visitors are redirect
         ->etc());
 })->depends('create b2b website');
 
+test('a closed webpage set live again stops redirecting', function (Website $website) {
+    $reopenedWebpage = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $targetWebpage   = StoreWebpage::make()->action($website->storefront, Webpage::factory()->definition());
+    $reopenedWebpage->update(['state' => WebpageStateEnum::LIVE]);
+    $targetWebpage->update(['state' => WebpageStateEnum::LIVE]);
+
+    UpdateWebpage::make()->action($reopenedWebpage, [
+        'state_data' => [
+            'state'               => WebpageStateEnum::CLOSED->value,
+            'redirect_webpage_id' => $targetWebpage->id,
+        ],
+    ]);
+    expect(Redirect::where('from_webpage_id', $reopenedWebpage->id)->exists())->toBeTrue();
+
+    $reopenedWebpage = UpdateWebpage::make()->action($reopenedWebpage->refresh(), [
+        'state_data' => ['state' => WebpageStateEnum::LIVE->value],
+    ]);
+
+    expect($reopenedWebpage->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($reopenedWebpage->redirect_webpage_id)->toBeNull()
+        ->and(Redirect::where('from_webpage_id', $reopenedWebpage->id)->exists())->toBeFalse();
+})->depends('create b2b website');
+
 test('a webpage that is not live offers no page speed report', function (Website $website, Webpage $webpage) {
     $this->withoutExceptionHandling();
 
