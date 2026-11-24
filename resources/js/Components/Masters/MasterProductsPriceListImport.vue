@@ -16,7 +16,7 @@ import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTimes, faCheck, faArrowLeft, faEye, faExclamationTriangle, faArrowRight } from "@fal"
+import { faTimes, faCheck, faArrowLeft, faEye, faExclamationTriangle, faArrowRight, faCopy } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { RouteParams } from "@/types/route-params"
@@ -240,6 +240,26 @@ const submit = () => {
     )
 }
 
+const exampleCurrencies = computed<string[]>(() => {
+    const preferred = (props.majorCurrencies?.length ? props.majorCurrencies : props.currencyCodes).slice(0, 2)
+
+    return preferred.length ? preferred : ["EUR", "GBP"]
+})
+
+const exampleRows = computed<string[][]>(() => [
+    ["Code", ...exampleCurrencies.value.map(code => `Selling Price ${code}`), ...exampleCurrencies.value.map(code => `RRP/Unit ${code}`)],
+    ["ABC-01", ...exampleCurrencies.value.map((_, index) => (4.75 - index * 0.75).toFixed(2)), ...exampleCurrencies.value.map((_, index) => (13 - index * 3).toFixed(2))],
+    ["ABC-02", ...exampleCurrencies.value.map((_, index) => (6.5 - index).toFixed(2)), ...exampleCurrencies.value.map((_, index) => (16 - index * 2.5).toFixed(2))],
+])
+
+const isExampleCopied = ref(false)
+
+const copyExample = async () => {
+    await navigator.clipboard.writeText(exampleRows.value.map(row => row.join("\t")).join("\n"))
+    isExampleCopied.value = true
+    setTimeout(() => isExampleCopied.value = false, 2000)
+}
+
 const formatAmount = (currency: string, amount: number | null) =>
     amount === null ? "—" : locale.currencyFormat(currency, amount)
 </script>
@@ -266,6 +286,39 @@ const formatAmount = (currency: string, amount: number | null) =>
                 <p class="text-xs text-gray-500">
                     {{ ctrans("Columns are recognised by their header. Check below what each column sets and change it when the header is not recognised.") }}
                 </p>
+            </div>
+
+            <div v-if="!columns.length" class="space-y-2 rounded border border-gray-200 bg-gray-50 p-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-xs font-semibold text-gray-700">{{ ctrans("Example") }}</div>
+                    <Button type="tertiary" size="xs" :label="isExampleCopied ? ctrans('Copied') : ctrans('Copy example')" @click="copyExample">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="isExampleCopied ? faCheck : faCopy" :class="isExampleCopied ? 'text-green-600' : ''" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+                <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+                    <table class="min-w-full font-mono text-xs">
+                        <thead class="whitespace-nowrap bg-gray-50 text-gray-600">
+                            <tr>
+                                <th v-for="(cell, index) in exampleRows[0]" :key="index" class="px-2 py-1 text-left font-medium">{{ cell }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700">
+                            <tr v-for="(row, rowIndex) in exampleRows.slice(1)" :key="rowIndex">
+                                <td v-for="(cell, index) in row" :key="index" class="whitespace-nowrap px-2 py-1" :class="index ? 'text-right tabular-nums' : ''">{{ cell }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="list-disc space-y-0.5 pl-4 text-xs text-gray-500">
+                    <li>{{ ctrans("Copy the rows straight from Excel or Google Sheets, header row included. Columns separated by tabs, semicolons or commas also work.") }}</li>
+                    <li>{{ ctrans("Product code: a header with Code, SKU or Ref.") }}</li>
+                    <li>{{ ctrans("Selling price: a header with Price, Selling or Wholesale and the currency.") }}</li>
+                    <li>{{ ctrans("RRP: a header with RRP or Retail and the currency; add Unit (RRP/Unit) when the RRP is per unit.") }}</li>
+                    <li>{{ ctrans("Currency as a code (EUR, GBP) or a symbol (€, £). Other columns, like the name, are ignored.") }}</li>
+                    <li>{{ ctrans("Leave out the currencies or columns you do not want to change.") }}</li>
+                </ul>
             </div>
 
             <div v-if="columns.length" class="space-y-2">
