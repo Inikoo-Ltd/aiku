@@ -8,7 +8,8 @@ extension GoodsOutDeliveryNote {
     var packableLines: [GoodsOutLine] { linesByLocation.filter(\.isPackable) }
     var packableUnits: Int { packableLines.reduce(0) { $0 + $1.picked } }
     var packedUnits: Int { packableLines.reduce(0) { $0 + $1.packed } }
-    var packedProgress: String { "\(packedUnits) of \(packableUnits) packed" }
+    @MainActor
+    var packedProgress: String { L10n.format("%lld of %lld packed", packedUnits, packableUnits) }
     var linesStillToPack: Int { packableLines.filter { !$0.isFullyPacked }.count }
     var allLinesPacked: Bool { !packableLines.isEmpty && linesStillToPack == 0 }
     var nextLineToPack: GoodsOutLine? { packableLines.first { !$0.isFullyPacked } }
@@ -19,30 +20,33 @@ extension GoodsOutDeliveryNote {
     var unprintedLeaflets: [GoodsOutLeaflet] { leaflets.filter { !$0.isPrinted } }
     var openTasks: Int { tasks.filter(\.isOpen).count }
 
+    @MainActor
     var shipperTitle: String {
         if let shipment = shipments.first { return shipment.shipper }
         if shipsViaPlatform, let platform { return platform }
-        return shipper?.title ?? "No shipper"
+        return L10n.text(shipper?.title ?? "No shipper")
     }
 
+    @MainActor
     var parcelCountText: String {
         let count = max(parcels.count, 1)
-        if isCollection { return "\(count) \(count == 1 ? "parcel" : "parcels")" }
-        return "\(count) \(count == 1 ? "box" : "boxes")"
+        return isCollection ? L10n.format("%lld parcels", count) : L10n.format("%lld boxes", count)
     }
 
     var shippedWeightText: String { GoodsOutWeight.text(parcels.isEmpty ? weightKg : parcelWeightKg) }
 
+    @MainActor
     var dispatchSummary: String {
         var parts = [shipperTitle, parcelCountText, shippedWeightText]
         if shipments.allSatisfy(\.labelPrinted), unprintedLeaflets.isEmpty {
-            parts.append(leaflets.isEmpty ? "labels printed" : "labels and leaflets printed")
+            parts.append(leaflets.isEmpty ? L10n.text("labels printed") : L10n.text("labels and leaflets printed"))
         }
         return parts.joined(separator: " · ")
     }
 
     var dispatchedUnits: Int { packedUnits > 0 ? packedUnits : pickedUnits }
 
+    @MainActor
     var notPickedSummary: String? {
         var units = 0
         var reasons: [String] = []
@@ -55,31 +59,37 @@ extension GoodsOutDeliveryNote {
             }
         }
         guard units > 0 else { return nil }
-        return "\(units) not picked · \(reasons.joined(separator: ", "))"
+        return L10n.format("%lld not picked · %@", units, reasons.joined(separator: ", "))
     }
 
+    @MainActor
     var packingBlocker: String? {
-        guard state == .packing else { return "Only a delivery note being packed can be set as packed." }
+        guard state == .packing else { return L10n.text("Only a delivery note being packed can be set as packed.") }
         let left = linesStillToPack
-        if left > 0 { return "\(left) \(left == 1 ? "line" : "lines") still to pack" }
-        if parcels.isEmpty { return "Add a parcel" }
-        if let parcel = parcelsMissingDimensions.first { return "Enter the dimensions of \(parcel.title)" }
+        if left > 0 { return L10n.format("%lld lines still to pack", left) }
+        if parcels.isEmpty { return L10n.text("Add a parcel") }
+        if let parcel = parcelsMissingDimensions.first { return L10n.format("Enter the dimensions of %@", parcel.title) }
         return nil
     }
 
-    var canSetAsPacked: Bool { packingBlocker == nil }
+    var canSetAsPacked: Bool {
+        state == .packing && linesStillToPack == 0 && !parcels.isEmpty && parcelsMissingDimensions.isEmpty
+    }
 
+    @MainActor
     var finaliseBlocker: String? {
-        guard state == .packed else { return "Only a packed delivery note can be finalised." }
+        guard state == .packed else { return L10n.text("Only a packed delivery note can be finalised.") }
         if needsShipment, shipments.isEmpty {
-            if shipsViaPlatform, let platform { return "Get the shipment from \(platform) first" }
-            return "Add a shipment before Finalise"
+            if shipsViaPlatform, let platform { return L10n.format("Get the shipment from %@ first", platform) }
+            return L10n.text("Add a shipment before Finalise")
         }
-        if !unprintedLeaflets.isEmpty { return "Print every insert before continuing" }
+        if !unprintedLeaflets.isEmpty { return L10n.text("Print every insert before continuing") }
         return nil
     }
 
-    var canFinalise: Bool { finaliseBlocker == nil }
+    var canFinalise: Bool {
+        state == .packed && !(needsShipment && shipments.isEmpty) && unprintedLeaflets.isEmpty
+    }
     var canGenerateInvoice: Bool { (state == .finalised || state == .dispatched) && !invoiceGenerated }
     var canCancel: Bool { state != .dispatched && state != .cancelled }
     var canEditAddress: Bool { state != .dispatched && state != .cancelled }
@@ -278,12 +288,13 @@ extension GoodsOutDeliveryNote {
         return true
     }
 
+    @MainActor
     @discardableResult
     mutating func addTask(title: String, assignee: String) -> Bool {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         let id = (tasks.map(\.id).max() ?? 0) + 1
-        tasks.append(GoodsOutTask(id: id, title: "Task: \(trimmed)", assignee: assignee))
+        tasks.append(GoodsOutTask(id: id, title: L10n.format("Task: %@", trimmed), assignee: assignee))
         return true
     }
 
@@ -369,11 +380,12 @@ extension GoodsOutDeliveryNote {
         return list
     }
 
+    @MainActor
     var remoteFooterStatus: (title: String, detail: String) {
         let stateTitle = remote?.stateLabel.isEmpty == false ? remote?.stateLabel ?? state.title : state.title
         if let notice = remote?.readOnlyNotice { return (stateTitle, notice) }
-        if state == .packed, parcels.isEmpty { return (stateTitle, "Add at least one parcel before this delivery note can be finalised.") }
-        return (stateTitle, "There is nothing to do on this delivery note in the app right now.")
+        if state == .packed, parcels.isEmpty { return (stateTitle, L10n.text("Add at least one parcel before this delivery note can be finalised.")) }
+        return (stateTitle, L10n.text("There is nothing to do on this delivery note in the app right now."))
     }
 
     var packingFootNote: String? {
@@ -434,39 +446,45 @@ struct GoodsOutParcelDraft: Identifiable, Hashable, Sendable {
         Double(text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
     }
 
+    @MainActor
     var weightProblem: String? {
-        guard let value = Self.number(weight) else { return "Enter the weight." }
-        guard value > 0, value <= Self.maxWeightKg else { return "The weight must be more than 0 and at most 1000 kg." }
+        guard let value = Self.number(weight) else { return L10n.text("Enter the weight.") }
+        guard value > 0, value <= Self.maxWeightKg else { return L10n.text("The weight must be more than 0 and at most 1000 kg.") }
         return nil
     }
 
+    @MainActor
     var sizeProblem: String? {
         let values = [length, width, height].map(Self.number)
-        if values.contains(where: { $0 == nil }) { return "Enter the length, width and height." }
-        if values.contains(where: { ($0 ?? 0) <= 0 || ($0 ?? 0) > Self.maxSizeCm }) { return "Each size must be more than 0 and at most 1000 cm." }
+        if values.contains(where: { $0 == nil }) { return L10n.text("Enter the length, width and height.") }
+        if values.contains(where: { ($0 ?? 0) <= 0 || ($0 ?? 0) > Self.maxSizeCm }) { return L10n.text("Each size must be more than 0 and at most 1000 cm.") }
         return nil
     }
 
+    @MainActor
     var boxesProblem: String? {
         let text = boxes.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return nil }
-        guard let value = Int(text), value >= 1 else { return "Boxes must be a whole number of 1 or more." }
+        guard let value = Int(text), value >= 1 else { return L10n.text("Boxes must be a whole number of 1 or more.") }
         return nil
     }
 
+    @MainActor
     var problem: String? { weightProblem ?? sizeProblem ?? boxesProblem }
 
+    @MainActor
     var input: GoodsOutParcelInput? {
         guard problem == nil, let weightKg = Self.number(weight) else { return nil }
         let sizes = [length, width, height].compactMap(Self.number)
         return GoodsOutParcelInput(weightKg: weightKg, dimensionsCm: sizes, boxes: Int(boxes.trimmingCharacters(in: .whitespaces)))
     }
 
+    @MainActor
     static func inputs(_ drafts: [GoodsOutParcelDraft]) -> Result<[GoodsOutParcelInput], GoodsOutProblem> {
-        if drafts.isEmpty { return .failure(GoodsOutProblem(message: "Add at least one parcel.")) }
-        if drafts.count > maxParcels { return .failure(GoodsOutProblem(message: "A delivery note can have at most 50 parcels.")) }
+        if drafts.isEmpty { return .failure(GoodsOutProblem(message: L10n.text("Add at least one parcel."))) }
+        if drafts.count > maxParcels { return .failure(GoodsOutProblem(message: L10n.text("A delivery note can have at most 50 parcels."))) }
         if let index = drafts.firstIndex(where: { $0.problem != nil }), let problem = drafts[index].problem {
-            return .failure(GoodsOutProblem(message: "Parcel \(index + 1): \(problem)"))
+            return .failure(GoodsOutProblem(message: L10n.format("Parcel %lld: %@", index + 1, problem)))
         }
         return .success(drafts.compactMap(\.input))
     }
@@ -483,19 +501,20 @@ struct GoodsOutBoxDraft: Identifiable, Hashable, Sendable {
 
     static let maxBox = 999
 
+    @MainActor
     static func inputs(_ drafts: [GoodsOutBoxDraft], picked: Double) -> Result<[GoodsOutLineBoxInput], GoodsOutProblem> {
         var boxes: [GoodsOutLineBoxInput] = []
         for draft in drafts {
             guard let box = Int(draft.box.trimmingCharacters(in: .whitespaces)), (1...maxBox).contains(box) else {
-                return .failure(GoodsOutProblem(message: "Each box number must be from 1 to \(maxBox)."))
+                return .failure(GoodsOutProblem(message: L10n.format("Each box number must be from 1 to %lld.", maxBox)))
             }
             guard let quantity = GoodsOutParcelDraft.number(draft.quantity), quantity >= 0 else {
-                return .failure(GoodsOutProblem(message: "Enter a quantity of 0 or more for each box."))
+                return .failure(GoodsOutProblem(message: L10n.text("Enter a quantity of 0 or more for each box.")))
             }
             boxes.append(GoodsOutLineBoxInput(box: box, quantity: quantity))
         }
         if boxes.reduce(0, { $0 + $1.quantity }) > picked + 0.0005 {
-            return .failure(GoodsOutProblem(message: "The boxes hold more than the \(GoodsOutLinePacking.text(picked)) picked."))
+            return .failure(GoodsOutProblem(message: L10n.format("The boxes hold more than the %@ picked.", GoodsOutLinePacking.text(picked))))
         }
         return .success(boxes)
     }

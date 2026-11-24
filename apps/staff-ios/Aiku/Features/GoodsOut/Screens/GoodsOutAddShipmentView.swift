@@ -19,7 +19,7 @@ struct GoodsOutAddShipmentView: View {
     @ViewBuilder
     private var sampleBody: some View {
         if let note = store.note(reference) {
-            AppScreen(title: "Add shipment", kicker: "Delivery note \(note.reference) · \(note.state.title)") {
+            AppScreen(title: "Add shipment", kicker: L10n.format("Delivery note %@ · %@", note.reference, note.state.title)) {
                 GoodsOutStateStepper(state: note.state)
                 Card {
                     ListRow("Delivery address", subtitle: note.deliveryAddress.labelLine(customer: note.customer), icon: .locations, action: note.canEditAddress ? { activeSheet = .editAddress } : nil) {
@@ -67,7 +67,7 @@ struct GoodsOutAddShipmentView: View {
                 guard let option = store.shipperOptions.first(where: { $0.id == selectedID(note) }) else { return }
                 let previous = store.addShipment(note.reference, shipper: option)
                 let tracking = store.note(note.reference)?.shipments.last?.tracking ?? ""
-                GoodsOutFeedback.done("\(option.title) shipment added · \(tracking)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ shipment added · %@", option.title, tracking), previous: previous, toasts: toasts)
                 if previous != nil {
                     router.back()
                 }
@@ -139,13 +139,13 @@ struct GoodsOutRemoteAddShipmentView: View {
             if let note = store.note(reference), note.isDetailed {
                 screen(note)
             } else if let error = store.noteError(reference: reference) {
-                AppScreen(title: "Add shipment", kicker: "Delivery note \(reference)") {
-                    GoodsOutLoadProblem(title: "Couldn’t load delivery note \(reference)", message: error) {
+                AppScreen(title: "Add shipment", kicker: L10n.format("Delivery note %@", reference)) {
+                    GoodsOutLoadProblem(title: L10n.format("Couldn’t load delivery note %@", reference), message: error) {
                         Task { await store.loadNote(reference: reference) }
                     }
                 }
             } else {
-                AppScreen(title: "Add shipment", kicker: "Delivery note \(reference)") {
+                AppScreen(title: "Add shipment", kicker: L10n.format("Delivery note %@", reference)) {
                     GoodsOutSkeletonCard(rows: 3)
                 }
                 .task { await store.loadNote(reference: reference) }
@@ -161,7 +161,7 @@ struct GoodsOutRemoteAddShipmentView: View {
 
     private func screen(_ note: GoodsOutDeliveryNote) -> some View {
         let chosen = list.flatMap(selected)
-        return AppScreen(title: "Add shipment", kicker: "Delivery note \(note.reference) · \(note.remote?.stateLabel ?? note.state.title)") {
+        return AppScreen(title: "Add shipment", kicker: L10n.format("Delivery note %@ · %@", note.reference, note.remote?.stateLabel ?? note.state.title)) {
             GoodsOutStateStepper(state: note.state)
             Card {
                 ListRow("Delivery address", subtitle: note.addressText ?? "No delivery address", icon: .locations)
@@ -198,7 +198,7 @@ struct GoodsOutRemoteAddShipmentView: View {
             "Use another shipper?",
             isPresented: Binding(get: { if case .confirmOverride = followUp { return true }; return false }, set: { if !$0, case .confirmOverride = followUp { followUp = nil } }),
             message: overrideMessage,
-            confirmTitle: "Use \(overrideShipperName)"
+            confirmTitle: overrideConfirmTitle
         ) {
             if case .confirmOverride(_, let request) = followUp {
                 followUp = nil
@@ -226,7 +226,7 @@ struct GoodsOutRemoteAddShipmentView: View {
             if !list.manualShippers.isEmpty {
                 GoodsOutSectionTitle(title: "Other shippers")
                 if list.manualShippers.count >= Self.searchFrom {
-                    SearchField(text: $search, placeholder: "Select shipping")
+                    SearchField(text: $search, placeholder: L10n.text("Select shipping"))
                 }
                 let query = search.trimmingCharacters(in: .whitespaces)
                 choices(
@@ -274,11 +274,10 @@ struct GoodsOutRemoteAddShipmentView: View {
         return ""
     }
 
-    private var overrideShipperName: String {
-        if case .confirmOverride(_, let request) = followUp {
-            return list?.shippers.first { $0.id == request.shipperID }?.name ?? "this shipper"
-        }
-        return ""
+    private var overrideConfirmTitle: String {
+        guard case .confirmOverride(_, let request) = followUp else { return "" }
+        guard let name = list?.shippers.first(where: { $0.id == request.shipperID })?.name else { return L10n.text("Use this shipper") }
+        return L10n.format("Use %@", name)
     }
 
     private func loadShippers() async {

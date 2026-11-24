@@ -18,13 +18,13 @@ struct GoodsInFieldGrid: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title)
+            Text(L10n.text(title))
                 .font(.aiku(13, .bold))
                 .foregroundStyle(AikuColor.text)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12, alignment: .topLeading), GridItem(.flexible(), spacing: 12, alignment: .topLeading)], alignment: .leading, spacing: 10) {
                 ForEach(fields) { field in
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(field.label)
+                        Text(L10n.text(field.label))
                             .font(.aiku(11))
                             .foregroundStyle(AikuColor.text3)
                         Text(field.value)
@@ -51,7 +51,7 @@ struct GoodsInPhoto: View {
     var size: CGFloat = 48
 
     var body: some View {
-        let label = "Product photo of \(code)"
+        let label = L10n.format("Product photo of %@", code)
         if let url = imageURL.flatMap(URL.init(string:)) {
             AsyncImage(url: url) { image in
                 image.resizable().scaledToFill()
@@ -136,7 +136,7 @@ struct GoodsInViewTabs<Option: Hashable>: View {
                     Button {
                         if !isActive { onSelect(option) }
                     } label: {
-                        Text(label)
+                        Text(L10n.text(label))
                             .font(.aiku(12, .semibold))
                             .foregroundStyle(isActive ? AikuColor.link : AikuColor.text3)
                             .lineLimit(1)
@@ -174,10 +174,10 @@ struct GoodsInScanPrompt: View {
                     AppIcon.scan.image
                         .font(.system(size: 18, weight: .semibold))
                         .accessibilityHidden(true)
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(14, .bold))
                 }
-                Text(message)
+                Text(L10n.text(message))
                     .font(.aiku(13))
                     .multilineTextAlignment(.leading)
             }
@@ -203,7 +203,7 @@ struct GoodsInDisabledNotice: View {
                 .foregroundStyle(AikuColor.warn)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(action.label.isEmpty ? fallbackTitle : action.label)
+                Text(action.label.isEmpty ? L10n.text(fallbackTitle) : action.label)
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
                 Text(action.disabledReason ?? "")
@@ -261,11 +261,11 @@ struct GoodsInChoiceRow: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    Text(L10n.text(title))
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
                     if let subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
+                        Text(L10n.text(subtitle))
                             .font(.aiku(13))
                             .foregroundStyle(AikuColor.text3)
                             .multilineTextAlignment(.leading)
@@ -330,7 +330,7 @@ struct GoodsInQuantityStepper: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
         .accessibilityIdentifier("goodsIn.stepper.\(label.lowercased())")
     }
 }
@@ -354,7 +354,7 @@ struct GoodsInHelper: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(L10n.text(text))
             .font(.aiku(12))
             .foregroundStyle(AikuColor.text4)
             .fixedSize(horizontal: false, vertical: true)
@@ -427,7 +427,7 @@ struct GoodsInStageStepper: View {
                         .frame(height: 28)
                         .background(status == .done ? AikuColor.success : status == .current ? AikuColor.primary : AikuColor.surface, in: Capsule())
                         .overlay(Capsule().strokeBorder(status == .upcoming ? AikuColor.border : Color.clear))
-                        .accessibilityLabel(status == .done ? "\(step.title), done" : status == .current ? "\(step.title), current step" : step.title)
+                        .accessibilityLabel(status == .done ? L10n.format("%@, done", step.title) : status == .current ? L10n.format("%@, current step", step.title) : step.title)
                 }
             }
             .padding(.horizontal, 16)
@@ -461,7 +461,7 @@ struct GoodsInSteps: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
                 ForEach(steps) { step in
-                    Text(step.title)
+                    Text(L10n.text(step.title))
                         .font(.aiku(11, .bold))
                         .lineLimit(1)
                         .fixedSize()
@@ -477,7 +477,7 @@ struct GoodsInSteps: View {
         .scrollBounceBehavior(.basedOnSize, axes: [.horizontal, .vertical])
         .padding(.horizontal, -16)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 }
 

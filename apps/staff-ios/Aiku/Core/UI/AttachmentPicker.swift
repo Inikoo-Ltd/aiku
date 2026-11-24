@@ -36,7 +36,7 @@ struct AttachmentPicker: View {
                                     .foregroundStyle(AikuColor.text4)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            IconButton(.close, label: "Remove \(file.name)", tint: AikuColor.danger) {
+                            IconButton(.close, label: L10n.format("Remove %@", file.name), tint: AikuColor.danger) {
                                 files.removeAll { $0.id == file.id }
                                 problem = nil
                             }

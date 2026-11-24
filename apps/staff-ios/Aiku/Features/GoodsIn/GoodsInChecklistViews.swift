@@ -14,7 +14,7 @@ struct GoodsInChecklistView: View {
     let onOpenCheck: ((String) -> Void)?
 
     var body: some View {
-        GoodsOutSectionTitle(title: "Goods-in checks", detail: "\(checklist.checked) of \(checklist.total) done")
+        GoodsOutSectionTitle(title: "Goods-in checks", detail: L10n.format("%lld of %lld done", checklist.checked, checklist.total))
         if checklist.sections.allSatisfy({ $0.checks.isEmpty }) {
             GoodsInHelper("This delivery has no goods-in checks.")
         }
@@ -61,7 +61,7 @@ struct GoodsInChecklistView: View {
             .compactMap { $0 }
             .filter { !$0.isEmpty }
             .joined(separator: GoodsInText.separator)
-        let status: String? = done.isEmpty ? (check.result == nil ? "Pass or fail" : nil) : done
+        let status: String? = done.isEmpty ? (check.result == nil ? L10n.text("Pass or fail") : nil) : done
         return [check.detail.flatMap { $0.isEmpty ? nil : $0 }, status].compactMap { $0 }.joined(separator: GoodsInText.separator)
     }
 }

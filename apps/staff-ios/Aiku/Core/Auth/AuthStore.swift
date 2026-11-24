@@ -27,6 +27,12 @@ enum DeviceName {
     }
 }
 
+struct AccountLanguageAnswer: Equatable, Sendable {
+    let code: String?
+    let revision: Int
+    let askedAt: Date
+}
+
 @MainActor
 @Observable
 final class AuthStore {
@@ -35,6 +41,7 @@ final class AuthStore {
     private(set) var mobileProfile: MobileProfileResponse?
     private(set) var isRefreshingProfile = false
     private(set) var lastProfileError: String?
+    private(set) var accountLanguage: AccountLanguageAnswer?
 
     @ObservationIgnored private let service: AuthService
     @ObservationIgnored private let tokens: TokenStoring
@@ -91,9 +98,11 @@ final class AuthStore {
         guard isSignedIn, !isRefreshingProfile else { return }
         isRefreshingProfile = true
         defer { isRefreshingProfile = false }
+        let askedAt = Date.now
         do {
             let fresh = try await service.fetchProfile()
             mobileProfile = fresh
+            accountLanguage = AccountLanguageAnswer(code: fresh.language?.code, revision: (accountLanguage?.revision ?? 0) + 1, askedAt: askedAt)
             lastProfileError = nil
             try? profileCache.save(fresh)
         } catch APIError.unauthorized {
@@ -117,6 +126,7 @@ final class AuthStore {
         profileCache.clear()
         profile = nil
         mobileProfile = nil
+        accountLanguage = nil
         lastProfileError = nil
         isSignedIn = false
     }

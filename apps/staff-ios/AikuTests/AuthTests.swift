@@ -315,6 +315,26 @@ struct ProfileCacheTests {
         #expect(offline.lastProfileError != nil)
     }
 
+    @Test func onlyAFreshProfileCarriesTheAccountLanguageNeverTheSavedCopy() async {
+        var stale = sampleMobileProfile
+        stale.language = .init(code: "cs", name: "Čeština")
+        let store = AuthStore(service: makeService(log: CallLog(), login: .failure(.offline)), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: MemoryProfileCache(stale))
+
+        #expect(store.mobileProfile?.language?.code == "cs")
+        #expect(store.accountLanguage == nil)
+
+        await store.refreshProfile()
+        let first = store.accountLanguage
+        #expect(first != nil)
+        #expect(first?.code == sampleMobileProfile.language?.code)
+
+        await store.refreshProfile()
+        #expect(store.accountLanguage != first)
+
+        store.endSession()
+        #expect(store.accountLanguage == nil)
+    }
+
     @Test func signingOutOrSigningInAsSomeoneElseForgetsTheLastProfile() async throws {
         let cache = MemoryProfileCache(sampleMobileProfile)
         let store = AuthStore(service: makeService(log: CallLog(), login: .success(MobileLoginResponse(token: "1|new", expiresAt: nil, user: sampleProfile))), tokens: InMemoryTokenStore(token: "1|abc"), deviceName: "iPhone", profileCache: cache)

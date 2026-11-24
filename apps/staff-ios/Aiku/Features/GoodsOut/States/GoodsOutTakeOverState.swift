@@ -8,7 +8,7 @@ struct GoodsOutTakeOverStateView: View {
         HStack(spacing: 12) {
             IconTile(.lock, tone: .warn)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Picked by \(note.picker ?? "someone else")")
+                Text(note.picker.map { L10n.format("Picked by %@", $0) } ?? L10n.text("Picked by someone else"))
                     .font(.aiku(15, .bold))
                     .foregroundStyle(AikuColor.text)
                 Text("Assigned to somebody else. Take it over so you can pick and pack it.")
@@ -23,7 +23,7 @@ struct GoodsOutTakeOverStateView: View {
         .background(AikuColor.warnSoft, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(AikuColor.warnBd))
         .accessibilityElement(children: .combine)
-        GoodsOutSectionTitle(title: "Items by location", detail: "\(note.pickedProgress) · read-only")
+        GoodsOutSectionTitle(title: "Items by location", detail: L10n.format("%@ · read-only", note.pickedProgress))
         GoodsOutLinesCard(lines: note.linesByLocation)
     }
 }
@@ -36,10 +36,10 @@ struct GoodsOutTakeOverFooter: View {
     var body: some View {
         AikuButton(note.action(.takeOver)?.label ?? "Unlock to pick", icon: .lock, isLoading: store.isWorking(on: note.reference)) {
             if note.isRemote {
-                GoodsOutRun.action(.takeOver, on: note.reference, fallback: "You can work on \(note.reference)", toasts: toasts)
+                GoodsOutRun.action(.takeOver, on: note.reference, fallback: L10n.format("You can work on %@", note.reference), toasts: toasts)
             } else {
                 let previous = store.takeOver(note.reference)
-                GoodsOutFeedback.done("You are now picking \(note.reference)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("You are now picking %@", note.reference), previous: previous, toasts: toasts)
             }
         }
         .accessibilityIdentifier("goodsOut.unlockToPick")

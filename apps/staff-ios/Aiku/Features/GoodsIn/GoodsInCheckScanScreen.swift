@@ -32,7 +32,7 @@ struct GoodsInCheckScanScreen: View {
                 GoodsInLoadingScreen(
                     title: reference,
                     kicker: "Stock delivery",
-                    failedTitle: "\(reference) could not be loaded",
+                    failedTitle: L10n.format("%@ could not be loaded", reference),
                     problem: feed.loadError,
                     retry: { Task { await feed.load() } }
                 )
@@ -108,9 +108,9 @@ private struct GoodsInCheckScanContent: View {
     }
 
     private var hint: String {
-        if cameraAllowed == false { return "Camera access is off. Allow it in Settings, or type the code." }
-        if cameraAllowed == true, !QRCodeScanner.isAvailable { return "This device can’t scan barcodes. Type the code instead." }
-        return "Point at the item barcode"
+        if cameraAllowed == false { return L10n.text("Camera access is off. Allow it in Settings, or type the code.") }
+        if cameraAllowed == true, !QRCodeScanner.isAvailable { return L10n.text("This device can’t scan barcodes. Type the code instead.") }
+        return L10n.text("Point at the item barcode")
     }
 
     @ViewBuilder
@@ -157,7 +157,7 @@ private struct GoodsInCheckScanContent: View {
                 .background(isActive ? AikuColor.scan : Color(hex: 0x111827, opacity: 0.6), in: Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 
     private var modeSwitch: some View {
@@ -190,9 +190,9 @@ private struct GoodsInCheckScanContent: View {
     @ViewBuilder
     private var feedbackView: some View {
         if let code = feed.lookingUpCode {
-            ScanFeedbackBanner(tone: .info, title: "Looking up \(code)…")
+            ScanFeedbackBanner(tone: .info, title: L10n.format("Looking up %@…", code))
         } else if case .found(let code) = feedback {
-            ScanFeedbackBanner(tone: .success, title: "\(code) found")
+            ScanFeedbackBanner(tone: .success, title: L10n.format("%@ found", code))
                 .accessibilityIdentifier("goodsIn.checkScan.found")
         } else if case .problem(let text) = feedback {
             ScanFeedbackBanner(tone: .danger, title: text)
@@ -309,7 +309,7 @@ private struct GoodsInCheckScanContent: View {
             open(.chooseLine(code: code, itemIDs: itemIDs))
         case .notOnDelivery(let code):
             ScanFeedback.shared.rejected()
-            feedback = .problem("\(code) is not on \(delivery.reference)")
+            feedback = .problem(L10n.format("%@ is not on %@", code, delivery.reference))
         case .failed(_, let message):
             feedback = .problem(message)
         }
@@ -325,9 +325,9 @@ private struct GoodsInCheckScanContent: View {
         let item = (feed.delivery ?? delivery).item(itemID)
         let code = item?.code ?? ""
         if item?.wasRaised(above: sent) == true {
-            return "\(code) raised to \(GoodsInText.quantity(item?.skoChecked ?? 0, label: item?.skoCheckedLabel)): that much is already placed"
+            return L10n.format("%@ raised to %@: that much is already placed", code, GoodsInText.quantity(item?.skoChecked ?? 0, label: item?.skoCheckedLabel))
         }
-        return sent == 0 ? "\(code) set as not received" : "\(code) · \(GoodsInText.number(sent)) checked"
+        return sent == 0 ? L10n.format("%@ set as not received", code) : L10n.format("%@ · %@ checked", code, GoodsInText.number(sent))
     }
 
     private var hasTorch: Bool {

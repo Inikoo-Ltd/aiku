@@ -144,10 +144,12 @@ enum FulfilmentStorageText {
         return pallet.type?.capitalized
     }
 
+    @MainActor
     static func locationText(_ pallet: MobileStoredPallet) -> String {
-        pallet.location?.code ?? "no location yet"
+        pallet.location?.code ?? L10n.text("no location yet")
     }
 
+    @MainActor
     static func subtitle(_ pallet: MobileStoredPallet, showCustomer: Bool) -> String {
         let items = pallet.numberStoredItems ?? pallet.storedItems?.count ?? 0
         return PalletDeliveryText.joined([
@@ -155,14 +157,15 @@ enum FulfilmentStorageText {
             typeText(pallet),
             PalletDeliveryText.quoted(pallet.customerReference),
             locationText(pallet),
-            items > 0 ? PalletDeliveryText.plural(items, "stored item", "stored items") : nil
+            items > 0 ? L10n.format("%lld stored items", items) : nil
         ])
     }
 
+    @MainActor
     static func incidentLine(_ pallet: MobileStoredPallet, includeCustomer: Bool) -> String {
         let incident = pallet.incident
         return PalletDeliveryText.joined([
-            incident?.return.map { "Not picked in \($0.reference)" },
+            incident?.return.map { L10n.format("Not picked in %@", $0.reference) },
             PalletDeliveryText.quoted(incident?.message),
             incident?.reporter?.name,
             PalletDeliveryText.day(incident?.date),
@@ -170,11 +173,12 @@ enum FulfilmentStorageText {
         ])
     }
 
+    @MainActor
     static func auditChip(_ line: MobileStoredItemAudit.Line) -> String? {
-        guard let difference = line.difference else { return line.isNewItem ? "New" : nil }
-        if line.auditType == "set_up" { return line.auditTypeLabel ?? "Set up" }
-        if difference == 0 { return "No change" }
-        return difference < 0 ? "Subtraction −\(-difference)" : "Addition +\(difference)"
+        guard let difference = line.difference else { return line.isNewItem ? L10n.text("New") : nil }
+        if line.auditType == "set_up" { return line.auditTypeLabel ?? L10n.text("Set up") }
+        if difference == 0 { return L10n.text("No change") }
+        return difference < 0 ? L10n.format("Subtraction −%lld", -difference) : L10n.format("Addition +%lld", difference)
     }
 }
 
@@ -682,14 +686,14 @@ final class StoredItemAuditLive {
         case .count(let body):
             if let code = body.barcode {
                 guard let line = audit.lineForCode(code) else { return nil }
-                return "\(line.storedItem.reference ?? code) counted: \(line.auditedQuantity ?? 0)"
+                return L10n.format("%@ counted: %lld", line.storedItem.reference ?? code, line.auditedQuantity ?? 0)
             }
             guard let storedItemID = body.storedItemId else { return nil }
-            return "\(audit.line(storedItemID)?.storedItem.reference ?? "") counted: \(body.auditedQuantity ?? 0)"
+            return L10n.format("%@ counted: %lld", audit.line(storedItemID)?.storedItem.reference ?? "", body.auditedQuantity ?? 0)
         case .removeCount:
-            return "Count removed"
+            return L10n.text("Count removed")
         case .complete:
-            return "Audit \(reference) completed"
+            return L10n.format("Audit %@ completed", reference)
         }
     }
 }
@@ -706,8 +710,9 @@ extension MobileStoredItemAuditWrite {
     }
 }
 
+@MainActor
 enum StoredItemAuditText {
     static func unsureMessage(_ code: String) -> String {
-        "The scan of \(code) didn’t get an answer. Try again; it is not counted twice."
+        L10n.format("The scan of %@ didn’t get an answer. Try again; it is not counted twice.", code)
     }
 }

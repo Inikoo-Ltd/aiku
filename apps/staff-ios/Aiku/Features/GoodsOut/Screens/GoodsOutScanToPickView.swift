@@ -12,7 +12,7 @@ struct GoodsOutScanToPickView: View {
 
     var body: some View {
         if let note = store.note(reference) {
-            AppScreen(title: "Scan to pick", kicker: "Delivery note \(note.reference) · \(note.pickedUnits) / \(note.units) picked") {
+            AppScreen(title: "Scan to pick", kicker: L10n.format("Delivery note %@ · %lld / %lld picked", note.reference, note.pickedUnits, note.units)) {
                 content(note)
             } footer: {
                 panel(note)
@@ -35,12 +35,12 @@ struct GoodsOutScanToPickView: View {
     @ViewBuilder
     private func content(_ note: GoodsOutDeliveryNote) -> some View {
         if note.state != .picking {
-            InlineAlert(tone: .warn, icon: .warning, title: "\(note.reference) is \(note.state.title.lowercased())", message: "Scanning picks only while the delivery note is being picked.")
+            InlineAlert(tone: .warn, icon: .warning, title: L10n.format("%@ is %@", note.reference, note.state.title.lowercased()), message: "Scanning picks only while the delivery note is being picked.")
         } else if let line = currentLine(note) {
             GoodsOutScanPromptCard(
                 title: "Listening · camera or Bluetooth scanner",
                 location: line.pickLocation,
-                detail: "Each scan picks 1 · tap here to simulate a scan of \(line.sko)"
+                detail: L10n.format("Each scan picks 1 · tap here to simulate a scan of %@", line.sko)
             ) {
                 scan(line.barcode ?? line.sko, in: note)
             }
@@ -62,7 +62,7 @@ struct GoodsOutScanToPickView: View {
                         RowDivider()
                     }
                     ListRow(entry.sko, subtitle: entry.detail, chips: [entry.chip]) {
-                        ProductThumb(size: 48, label: "Product photo of \(entry.sko)")
+                        ProductThumb(size: 48, label: L10n.format("Product photo of %@", entry.sko))
                     } trailing: {
                         EmptyView()
                     }
@@ -77,14 +77,14 @@ struct GoodsOutScanToPickView: View {
         if note.state == .picking, let line = currentLine(note) {
             let pickAmount = min(max(1, amount), max(1, line.remaining))
             HStack(spacing: 12) {
-                ProductThumb(size: 56, label: "Product photo of \(line.sko)")
+                ProductThumb(size: 56, label: L10n.format("Product photo of %@", line.sko))
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
                         Text(line.sko)
                             .font(.aiku(16, .bold))
                             .foregroundStyle(AikuColor.text)
                         if let count = scannedCounts[line.sko], count > 0 {
-                            StatusChip("Picked \(count)", tone: .success)
+                            StatusChip(L10n.format("Picked %lld", count), tone: .success)
                         }
                     }
                     Text("\(line.pickLocation) · \(line.name)")
@@ -97,14 +97,14 @@ struct GoodsOutScanToPickView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            AikuButton("Pick all \(line.remaining)", icon: .check, isLoading: store.isWorking(on: note.reference)) {
+            AikuButton(L10n.format("Pick all %lld", line.remaining), icon: .check, isLoading: store.isWorking(on: note.reference)) {
                 amount = 1
                 if let lineID = line.apiID {
-                    GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: "\(line.sko) picked ×\(line.remaining)", toasts: toasts)
+                    GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: L10n.format("%@ picked ×%lld", line.sko, line.remaining), toasts: toasts)
                     return
                 }
                 let previous = store.pickAll(note.reference, line: line.id)
-                GoodsOutFeedback.done("\(line.sko) picked ×\(line.remaining)", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ picked ×%lld", line.sko, line.remaining), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.scan.pickAll")
             HStack(spacing: 6) {
@@ -116,18 +116,18 @@ struct GoodsOutScanToPickView: View {
                     .frame(maxWidth: .infinity)
                     .accessibilityLabel("Amount \(pickAmount)")
                 stepButton("+", label: "More", isEnabled: pickAmount < line.remaining) { amount = pickAmount + 1 }
-                AikuButton("Pick \(pickAmount)", kind: .tertiary, size: .regular) {
+                AikuButton(L10n.format("Pick %lld", pickAmount), kind: .tertiary, size: .regular) {
                     amount = 1
                     if let lineID = line.apiID {
                         guard let location = line.defaultStockLocation?.locationOrgStockID else {
-                            toasts.show("No location of \(line.sko) holds stock", tone: .warn)
+                            toasts.show(L10n.format("No location of %@ holds stock", line.sko), tone: .warn)
                             return
                         }
-                        GoodsOutRun.action(.pick(line: lineID, locationOrgStockID: location, quantity: Double(pickAmount)), on: note.reference, fallback: "\(line.sko) picked ×\(pickAmount)", toasts: toasts)
+                        GoodsOutRun.action(.pick(line: lineID, locationOrgStockID: location, quantity: Double(pickAmount)), on: note.reference, fallback: L10n.format("%@ picked ×%lld", line.sko, pickAmount), toasts: toasts)
                         return
                     }
                     let previous = store.pick(note.reference, line: line.id, quantity: pickAmount)
-                    GoodsOutFeedback.done("\(line.sko) picked ×\(pickAmount)", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ picked ×%lld", line.sko, pickAmount), previous: previous, toasts: toasts)
                 }
                 .frame(maxWidth: .infinity)
                 .layoutPriority(1)
@@ -148,7 +148,7 @@ struct GoodsOutScanToPickView: View {
         }
     }
 
-    private func stepButton(_ symbol: String, label: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+    private func stepButton(_ symbol: String, label: LocalizedStringKey, isEnabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(symbol)
                 .font(.aiku(22))
@@ -200,11 +200,11 @@ struct GoodsOutScanToPickView: View {
             scannedCounts[sko, default: 0] += 1
             focusLine = sko
         case .lineComplete(let sko):
-            toasts.show("\(sko) is already picked", tone: .warn)
+            toasts.show(L10n.format("%@ is already picked", sko), tone: .warn)
         case .notOnNote(let code):
-            toasts.show("\(code) is not on this delivery note", tone: .danger, sticky: false)
+            toasts.show(L10n.format("%@ is not on this delivery note", code), tone: .danger, sticky: false)
         case .notPicking:
-            toasts.show("\(note.reference) is not being picked", tone: .warn)
+            toasts.show(L10n.format("%@ is not being picked", note.reference), tone: .warn)
         }
     }
 }

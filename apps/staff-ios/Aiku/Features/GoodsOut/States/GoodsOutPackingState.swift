@@ -30,8 +30,8 @@ struct GoodsOutPackingStateView: View {
         if let next = note.nextLineToPack {
             GoodsOutScanPromptCard(
                 title: "Scan to pack",
-                location: note.currentParcel?.title ?? "Parcel 1",
-                detail: "\(next.sko) · \(next.packRemaining) left on this item",
+                location: note.currentParcel?.title ?? L10n.format("Parcel %lld", 1),
+                detail: [next.sko, L10n.format("%lld left on this item", next.packRemaining)].joined(separator: " · "),
                 caption: "Put it in this box"
             ) {
                 scan()
@@ -43,7 +43,7 @@ struct GoodsOutPackingStateView: View {
         GoodsOutPackLinesCard(lines: note.packableLines) { line in
             present(.packLine(line: line.id))
         }
-        GoodsOutSectionTitle(title: "Parcels (\(note.parcels.count))", detail: "kg · L × W × H")
+        GoodsOutSectionTitle(title: L10n.format("Parcels (%lld)", note.parcels.count), detail: "kg · L × W × H")
         Card {
             ForEach(note.parcels) { parcel in
                 GoodsOutParcelEditorRow(reference: note.reference, parcel: parcel)
@@ -72,9 +72,9 @@ struct GoodsOutPackingStateView: View {
         case .allPacked:
             toasts.show("Every item is packed", tone: .info)
         case .notOnNote(let code):
-            toasts.show("\(code) is not on this delivery note", tone: .danger)
+            toasts.show(L10n.format("%@ is not on this delivery note", code), tone: .danger)
         case .notPacking:
-            toasts.show("\(note.reference) is not being packed", tone: .warn)
+            toasts.show(L10n.format("%@ is not being packed", note.reference), tone: .warn)
         }
     }
 }
@@ -93,7 +93,7 @@ struct GoodsOutPackingFooter: View {
         } else {
             AikuButton("Set as packed") {
                 let previous = store.setAsPacked(note.reference)
-                GoodsOutFeedback.done("\(note.reference) set as packed", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ set as packed", note.reference), previous: previous, toasts: toasts)
                 if previous != nil, note.needsShipment, !note.shipsViaPlatform {
                     router.open(GoodsOutRoute.addShipment(reference: note.reference))
                 }
@@ -125,8 +125,8 @@ struct GoodsOutRemotePackingStateView: View {
         if note.canScanToPack {
             GoodsOutScanPromptCard(
                 title: "Scan to pack",
-                location: note.nextLineToPack?.sko ?? "Every line is packed",
-                detail: note.nextLineToPack.map { "\($0.packing?.toPackText ?? String($0.packRemaining)) left to pack · tap to open the camera" } ?? "Nothing is left to pack on this delivery note",
+                location: note.nextLineToPack?.sko ?? L10n.text("Every line is packed"),
+                detail: note.nextLineToPack.map { L10n.format("%@ left to pack · tap to open the camera", $0.packing?.toPackText ?? String($0.packRemaining)) } ?? "Nothing is left to pack on this delivery note",
                 caption: "Camera or Bluetooth scanner"
             ) {
                 isScanning = true
@@ -139,7 +139,7 @@ struct GoodsOutRemotePackingStateView: View {
         if note.packingDetails?.parcelsEditable == true {
             GoodsOutRemoteParcelsEditor(note: note)
         } else if !note.parcels.isEmpty {
-            GoodsOutSectionTitle(title: "Parcels (\(note.parcels.count))")
+            GoodsOutSectionTitle(title: L10n.format("Parcels (%lld)", note.parcels.count))
             GoodsOutParcelsCard(parcels: note.parcels)
         }
         if let footNote = note.packingFootNote {
@@ -157,7 +157,7 @@ struct GoodsOutRemotePackingStateView: View {
         Task {
             switch await GoodsOutStore.shared.scanToPack(note.reference, barcode: code) {
             case .packed(let sko, let message, let lineDone):
-                toasts.show(message ?? (lineDone ? "\(sko) · line packed" : "\(sko) +1"), sticky: false)
+                toasts.show(message ?? (lineDone ? L10n.format("%@ · line packed", sko) : "\(sko) +1"), sticky: false)
             case .refused(let message):
                 toasts.show(message, tone: .danger, sticky: false)
             }

@@ -32,7 +32,7 @@ struct ClockingCalendarView: View {
                 holidaysSection
                 leaveSection
                 if let holidayYear = store.holidayYearLabel {
-                    HelperText("Holiday year: \(holidayYear)")
+                    HelperText(L10n.format("Holiday year: %@", holidayYear))
                 }
             }
         }
@@ -77,7 +77,7 @@ struct ClockingCalendarView: View {
                         .padding(.top, 5)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Text(leave.typeLabel ?? leave.type ?? "Leave")
+                            Text(leave.typeLabel ?? leave.type ?? L10n.text("Leave"))
                                 .font(.aiku(14, .semibold))
                                 .foregroundStyle(AikuColor.text)
                             Spacer(minLength: 8)
@@ -115,7 +115,7 @@ struct ClockingCalendarView: View {
                     .font(.aiku(14, .semibold))
                     .foregroundStyle(AikuColor.text)
                 if let detail {
-                    Text(detail)
+                    Text(L10n.text(detail))
                         .font(.aiku(13))
                         .foregroundStyle(marker == .worked ? AikuColor.warnInk : AikuColor.text3)
                 }
@@ -126,8 +126,8 @@ struct ClockingCalendarView: View {
     }
 
     private func emptyText(_ summary: CalendarDaySummary) -> String {
-        if summary.isFuture { return "Nothing planned for this day" }
-        return summary.isWeekend ? "Weekend · no clockings" : "No clockings or leave on this day"
+        if summary.isFuture { return L10n.text("Nothing planned for this day") }
+        return summary.isWeekend ? L10n.text("Weekend · no clockings") : L10n.text("No clockings or leave on this day")
     }
 
     @ViewBuilder
@@ -158,7 +158,7 @@ struct ClockingCalendarView: View {
                     HStack(spacing: 10) {
                         ClockingCalendarMarkerDot(marker: .leave(colorHex: leave.typeColorHex, isPending: CalendarText.isPending(leave)), size: 10)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(leave.typeLabel ?? leave.type ?? "Leave")
+                            Text(leave.typeLabel ?? leave.type ?? L10n.text("Leave"))
                                 .font(.aiku(15, .bold))
                                 .foregroundStyle(AikuColor.text)
                             Text(CalendarText.leaveDetail(leave))

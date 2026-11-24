@@ -9,7 +9,7 @@ struct ShellLanguageView: View {
     var body: some View {
         let chosen = AppLanguages.language(id: selectedID ?? languages.languageID)
         AppScreen(title: "Language", kicker: "Profile", spacing: 12) {
-            Text("Changes the app language for you only. Product names, customer names and notes stay as they are in Aiku.")
+            Text("Changes the language of your Aiku account, on the web and in the app. Notifications follow it too. Product names, customer names and notes stay as they are.")
                 .font(.aiku(13))
                 .foregroundStyle(AikuColor.text3)
                 .padding(.horizontal, 4)
@@ -22,7 +22,7 @@ struct ShellLanguageView: View {
                 }
             }
         } footer: {
-            AikuButton("Use \(chosen.nativeName)", icon: .check) {
+            AikuButton(L10n.format("Use %@", chosen.nativeName), icon: .check) {
                 save(chosen)
             }
             .accessibilityIdentifier("shell.language.save")
@@ -38,7 +38,7 @@ struct ShellLanguageView: View {
                     Text(language.nativeName)
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
-                    Text(language.englishName)
+                    Text(language.name(in: languages.locale))
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.text3)
                 }
@@ -58,7 +58,7 @@ struct ShellLanguageView: View {
     private func save(_ language: AppLanguage) {
         languages.select(language.id)
         if languages.isTranslated(language.id) {
-            toasts.show("Language set to \(language.nativeName)")
+            toasts.show(L10n.format("Language set to %@", language.nativeName))
         } else {
             toasts.show("\(language.nativeName) saved · the app stays in English until translations arrive", tone: .info)
         }

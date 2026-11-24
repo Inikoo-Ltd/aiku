@@ -19,8 +19,8 @@ struct ListFilter<Sort: Hashable & Sendable>: Hashable, Sendable {
             parts.append(dateLabel.map { "\(L10n.text($0)): \(range)" } ?? range)
         }
         if let sort, let label = sorts.first(where: { $0.sort == sort })?.label {
-            let sorted = "Sorted by \(L10n.text(label).lowercased())"
-            parts.append(onlineOnlySorts.contains(sort) ? "\(sorted) (online only)" : sorted)
+            let sorted = L10n.format("Sorted by %@", L10n.text(label).lowercased())
+            parts.append(onlineOnlySorts.contains(sort) ? L10n.format("%@ (online only)", sorted) : sorted)
         }
         return parts
     }
@@ -239,8 +239,8 @@ struct ListFilterPanel<Sort: Hashable & Sendable, Extra: View>: View {
     }
 
     private var showText: String {
-        guard let count = total(draft) else { return "Show results" }
-        return count == 1 ? "Show 1 result" : "Show \(count) results"
+        guard let count = total(draft) else { return L10n.text("Show results") }
+        return L10n.format("Show %lld results", count)
     }
 }
 

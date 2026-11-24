@@ -128,6 +128,12 @@ class EditWebsite extends OrgAction
                     'placeholder' => '/gtg',
                     'required'    => false,
                 ],
+                'own_cookie_banner'     => [
+                    'type'        => 'toggle',
+                    'information' => __('Show our own cookie banner in the visitor\'s language instead of the CookieScript one. Turn it on only after the CookieScript tag has been removed from this website\'s GTM container, or visitors will see two banners'),
+                    'label'       => __('Own cookie banner'),
+                    'value'       => (bool) Arr::get($website->settings, 'own_cookie_banner', false),
+                ],
                 'ga4_measurement_id'    => [
                     'type'        => 'input',
                     'information' => __('GA4 property that receives purchases sent from the server, so an order is counted even when the browser never reports it'),

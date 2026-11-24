@@ -9,14 +9,27 @@ enum ShellScanKind: String, Hashable, Sendable {
     case palletDelivery
     case pallet
 
-    var article: String {
+    @MainActor
+    func scanned(_ code: String) -> String {
         switch self {
-        case .location: "a location"
-        case .sko: "a SKO"
-        case .deliveryNote: "a delivery note"
-        case .stockDelivery: "a stock delivery"
-        case .palletDelivery: "a fulfilment delivery"
-        case .pallet: "a pallet"
+        case .location: L10n.format("Scanned %@ · it’s a location", code)
+        case .sko: L10n.format("Scanned %@ · it’s a SKO", code)
+        case .deliveryNote: L10n.format("Scanned %@ · it’s a delivery note", code)
+        case .stockDelivery: L10n.format("Scanned %@ · it’s a stock delivery", code)
+        case .palletDelivery: L10n.format("Scanned %@ · it’s a fulfilment delivery", code)
+        case .pallet: L10n.format("Scanned %@ · it’s a pallet", code)
+        }
+    }
+
+    @MainActor
+    var found: String {
+        switch self {
+        case .location: L10n.text("Location found")
+        case .sko: L10n.text("SKO found")
+        case .deliveryNote: L10n.text("Delivery note found")
+        case .stockDelivery: L10n.text("Stock delivery found")
+        case .palletDelivery: L10n.text("Fulfilment delivery found")
+        case .pallet: L10n.text("Pallet found")
         }
     }
 
@@ -41,14 +54,15 @@ enum ShellScanKind: String, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var fallbackDetail: String {
         switch self {
-        case .location: "Location"
-        case .sko: "SKO"
-        case .deliveryNote: "Delivery note"
-        case .stockDelivery: "Stock delivery"
-        case .palletDelivery: "Fulfilment delivery"
-        case .pallet: "Pallet"
+        case .location: L10n.text("Location")
+        case .sko: L10n.text("SKO")
+        case .deliveryNote: L10n.text("Delivery note")
+        case .stockDelivery: L10n.text("Stock delivery")
+        case .palletDelivery: L10n.text("Fulfilment delivery")
+        case .pallet: L10n.text("Pallet")
         }
     }
 }
@@ -76,6 +90,7 @@ enum ShellScanOutcome: Hashable, Sendable {
     case sessionExpired
 }
 
+@MainActor
 enum ShellScanCatalog {
     static let capabilities: [(icon: AppIcon, text: String)] = [
         (.sko, "SKO barcode → SKO and its locations"),
@@ -107,12 +122,12 @@ enum ShellScanCatalog {
 
     private static func skoTarget(_ sko: MobileScannedSko) -> ShellScanTarget {
         let name = sko.name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let stock = sko.quantityInLocations.map { "\($0.trimmed) in locations" }
+        let stock = sko.quantityInLocations.map { L10n.format("%@ in locations", $0.trimmed) }
         let detail = [name?.isEmpty == false ? name : ShellScanKind.sko.fallbackDetail, stock].compactMap { $0 }.joined(separator: " · ")
         let rows = sko.locations.map { location in
             ShellScanRow(
                 title: location.code,
-                detail: location.quantity.map { "\($0.trimmed) here" } ?? "Location",
+                detail: location.quantity.map { L10n.format("%@ here", $0.trimmed) } ?? L10n.text("Location"),
                 link: .locations(.location(code: location.code))
             )
         }
@@ -123,8 +138,8 @@ enum ShellScanCatalog {
         let area = location.warehouseArea.flatMap { area in
             [area.name, area.code].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.first { !$0.isEmpty }
         }
-        let skos = location.numberOrgStocks.map { count in count == 1 ? "1 SKO" : "\(Int(count).grouped) SKOs" }
-        let parts = [area.map { "Area \($0)" }, skos].compactMap { $0 }
+        let skos = location.numberOrgStocks.map { L10n.format("%lld SKOs", Int($0)) }
+        let parts = [area.map { L10n.format("Area %@", $0) }, skos].compactMap { $0 }
         return ShellScanTarget(
             code: location.code,
             kind: .location,
@@ -134,7 +149,7 @@ enum ShellScanCatalog {
     }
 
     private static func deliveryNoteTarget(_ note: MobileScannedDeliveryNote) -> ShellScanTarget {
-        let items = note.numberItems.map { count in count == 1 ? "1 item" : "\(Int(count).grouped) items" }
+        let items = note.numberItems.map { L10n.format("%lld items", Int($0)) }
         let parts = [note.stateLabel, note.customerName, items].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         return ShellScanTarget(
             code: note.reference,

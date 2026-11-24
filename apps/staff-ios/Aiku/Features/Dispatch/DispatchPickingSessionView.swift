@@ -37,7 +37,7 @@ struct DispatchPickingSessionView: View {
     private func screen(_ item: MobilePickingSession) -> some View {
         AppScreen(
             title: item.reference,
-            kicker: "Picking session · \(item.stateTitle)",
+            kicker: L10n.format("Picking session · %@", item.stateTitle),
             actions: [HeaderAction(.chat, label: "Ask CRM") {
                 router.open(ShellRoute.staffChat(kind: DispatchChat.pickingSessionKind, contextID: item.id, title: item.reference))
             }]
@@ -71,9 +71,9 @@ struct DispatchPickingSessionView: View {
             sheetContent(shown, session: item)
         }
         .aikuConfirm(
-            "Send \(item.reference) back to picking?",
+            L10n.format("Send %@ back to picking?", item.reference),
             isPresented: $isConfirmingBack,
-            message: "\(PickingSessionFormat.count(item.waitingDeliveryNoteCount, "delivery note")) waiting. Each waiting delivery note goes back to picking, so its waiting lines can be picked again. Goods already picked stay picked.",
+            message: L10n.format("%lld delivery notes waiting. Each waiting delivery note goes back to picking, so its waiting lines can be picked again. Goods already picked stay picked.", item.waitingDeliveryNoteCount),
             confirmTitle: item.action(PickingSessionActionKey.backToPicking)?.label ?? "Back to picking"
         ) {
             Task { await run(.backToPicking) }
@@ -88,7 +88,7 @@ struct DispatchPickingSessionView: View {
                     Text("Picker")
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.text3)
-                    Text(PickingSessionFormat.personName(item.picker, currentUserID: authStore.userID) ?? "No picker yet")
+                    Text(PickingSessionFormat.personName(item.picker, currentUserID: authStore.userID) ?? L10n.text("No picker yet"))
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
                 }
@@ -113,7 +113,7 @@ struct DispatchPickingSessionView: View {
             Text(value)
                 .font(.aiku(18, .bold))
                 .foregroundStyle(AikuColor.text)
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(12))
                 .foregroundStyle(AikuColor.text3)
                 .lineLimit(1)
@@ -154,7 +154,7 @@ struct DispatchPickingSessionView: View {
 
     @ViewBuilder
     private func notes(_ item: MobilePickingSession) -> some View {
-        SectionHeading("Delivery notes", detail: PickingSessionFormat.count(item.deliveryNotes.count, "delivery note"))
+        SectionHeading("Delivery notes", detail: L10n.format("%lld delivery notes", item.deliveryNotes.count))
         if item.deliveryNotes.isEmpty {
             HelperText("This session has no delivery notes.")
         } else {
@@ -192,7 +192,7 @@ struct DispatchPickingSessionView: View {
                 HelperText("Select delivery notes to remove. Removed delivery notes leave the session and go back to To do.")
             } else {
                 AikuButton(
-                    "Remove \(PickingSessionFormat.count(chosen.count, "delivery note"))",
+                    L10n.format("Remove %lld delivery notes", chosen.count),
                     look: PickingSessionActionKey.look(for: PickingSessionActionKey.removeDeliveryNotes).forConfirm,
                     isLoading: store.working == .removeDeliveryNotes(Array(chosen))
                 ) {
@@ -203,7 +203,7 @@ struct DispatchPickingSessionView: View {
         } else {
             let actions = item.footerActions
             if actions.isEmpty {
-                HelperText(item.canWork ? "\(item.stateTitle). There is nothing to do on this session in the app right now." : "You can see this session, but you can’t work in this warehouse.")
+                HelperText(item.canWork ? L10n.format("%@. There is nothing to do on this session in the app right now.", item.stateTitle) : "You can see this session, but you can’t work in this warehouse.")
             } else {
                 let primaryKey = actions.first { !$0.isDisabled }?.key
                 ForEach(actions, id: \.key) { action in
@@ -271,7 +271,7 @@ struct DispatchPickingSessionView: View {
                 Task { await run(.attachTrolley(trolleyID)) }
             }, onClose: { sheet = nil })
         case .detachTrolley(let trolley):
-            SheetScaffold(title: "Remove \(trolley.name ?? "the trolley") from this session?", subtitle: "Picking session \(item.reference)") {
+            SheetScaffold(title: removeTrolleyTitle(trolley), subtitle: L10n.format("Picking session %@", item.reference)) {
                 HelperText("The trolley becomes free for another delivery note or session.")
                 if let sheetProblem { FieldError(sheetProblem) }
             } footer: {
@@ -283,6 +283,11 @@ struct DispatchPickingSessionView: View {
         case .addDeliveryNotes:
             DispatchChooseDeliveryNotesSheet(mode: .add(store)) { _ in sheet = nil }
         }
+    }
+
+    private func removeTrolleyTitle(_ trolley: MobileSessionRef) -> String {
+        guard let name = trolley.name else { return L10n.text("Remove the trolley from this session?") }
+        return L10n.format("Remove %@ from this session?", name)
     }
 }
 
@@ -313,7 +318,7 @@ struct DispatchTrolleyChoiceSheet: View {
     @State private var chosenID: Int?
 
     var body: some View {
-        SheetScaffold(title: "Add a trolley", subtitle: store.session.map { "Picking session \($0.reference)" }) {
+        SheetScaffold(title: "Add a trolley", subtitle: store.session.map { L10n.format("Picking session %@", $0.reference) }) {
             if let error = store.trolleysError {
                 DispatchLoadProblem(title: "Couldn’t load the trolleys", message: error) { await load() }
             } else if store.isLoadingTrolleys && store.trolleyChoices.isEmpty {
@@ -346,7 +351,7 @@ struct DispatchTrolleyChoiceSheet: View {
 
     private var chosenTitle: String {
         guard let name = store.trolleyChoices.first(where: { $0.id == chosenID })?.name else { return "Choose a trolley" }
-        return "Use \(name)"
+        return L10n.format("Use %@", name)
     }
 
     private func load() async {

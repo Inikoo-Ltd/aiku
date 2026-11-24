@@ -7,13 +7,14 @@ enum DispatchProblemKind: String, CaseIterable, Hashable, Sendable {
     case appError
     case other
 
+    @MainActor
     var title: String {
         switch self {
-        case .unknownBarcode: "Unknown barcode"
-        case .wrongStock: "Wrong stock"
-        case .dataProblem: "Data problem"
-        case .appError: "App error"
-        case .other: "Other"
+        case .unknownBarcode: L10n.text("Unknown barcode")
+        case .wrongStock: L10n.text("Wrong stock")
+        case .dataProblem: L10n.text("Data problem")
+        case .appError: L10n.text("App error")
+        case .other: L10n.text("Other")
         }
     }
 }

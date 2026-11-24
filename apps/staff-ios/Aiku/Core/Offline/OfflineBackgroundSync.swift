@@ -76,7 +76,7 @@ final class OfflineNotifications: NSObject, UNUserNotificationCenterDelegate, @u
         guard !CrashReporting.isRunningTests else { return }
         let content = UNMutableNotificationContent()
         content.title = "Aiku"
-        content.body = OfflineTexts.count(count, "action needs you", "actions need you")
+        content.body = L10n.formatInSavedLanguage("%lld actions need you", count)
         content.sound = .default
         let request = UNNotificationRequest(identifier: Self.needsYouIdentifier, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { _ in }

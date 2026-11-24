@@ -26,7 +26,7 @@ enum StaffChatFormat {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = L10n.dateLocale
         formatter.timeZone = timeZone
         if calendar.isDate(date, inSameDayAs: now) {
             formatter.dateFormat = "HH:mm"

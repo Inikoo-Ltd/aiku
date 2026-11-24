@@ -22,12 +22,12 @@ struct GoodsOutCancelledStateView: View {
         .accessibilityAddTraits(.isHeader)
         let picked = note.pickedLines
         if !picked.isEmpty {
-            GoodsOutLinesCard(lines: picked, showsChip: false, detail: { "Picked from \($0.pickLocation)" })
+            GoodsOutLinesCard(lines: picked, showsChip: false, detail: { L10n.format("Picked from %@", $0.pickLocation) })
         }
         if note.isRemote {
             if let reference = note.packingDetails?.returnReference {
                 Card {
-                    ListRow("Picked items go back through return \(reference)", subtitle: note.packingDetails?.returnStateLabel, icon: .undo, iconTone: .warn)
+                    ListRow(L10n.format("Picked items go back through return %@", reference), subtitle: note.packingDetails?.returnStateLabel, icon: .undo, iconTone: .warn)
                 }
             }
             HelperText("Take the goods off the trolley or bay. If the order is sent again, the new delivery note can reuse them.")
@@ -42,8 +42,7 @@ struct GoodsOutCancelledStateView: View {
 
     private var stopText: String {
         let units = note.pickedUnits
-        guard units > 0 else { return note.isRemote ? "Nothing was picked for it." : "Stop picking. Nothing was picked yet." }
-        let skos = note.pickedLines.count
-        return "Stop picking. \(units) \(units == 1 ? "unit is" : "units are") already picked (\(skos) \(skos == 1 ? "SKO" : "SKOs"))."
+        guard units > 0 else { return note.isRemote ? L10n.text("Nothing was picked for it.") : L10n.text("Stop picking. Nothing was picked yet.") }
+        return L10n.format("Stop picking. %lld units are already picked (%lld SKOs).", units, note.pickedLines.count)
     }
 }

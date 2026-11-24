@@ -30,7 +30,7 @@ struct InventoryAuditSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Audit stock · \(sko.reference)", subtitle: "\(sko.name) · count each location") {
+        SheetScaffold(title: L10n.format("Audit stock · %@", sko.reference), subtitle: L10n.format("%@ · count each location", sko.name)) {
             Card {
                 ForEach(Array(sko.locations.enumerated()), id: \.element.id) { index, location in
                     if index > 0 {
@@ -108,7 +108,7 @@ struct InventoryAuditSheet: View {
     private func reasonSection(_ location: InventorySkoLocation) -> some View {
         let change = change(location)
         return VStack(alignment: .leading, spacing: 8) {
-            SheetSectionLabel("Reason for \(location.code) (\(change < 0 ? "decrease" : "increase"))")
+            SheetSectionLabel(change < 0 ? L10n.format("Reason for %@ (decrease)", location.code) : L10n.format("Reason for %@ (increase)", location.code))
             ForEach(reasonChoices(change)) { reason in
                 RadioCard(reason.title, isSelected: validReason(location) == reason.id) {
                     reasons[location.code] = reason.id

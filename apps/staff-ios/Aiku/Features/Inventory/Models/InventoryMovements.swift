@@ -88,20 +88,22 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
         self.todaySummary = todaySummary
     }
 
+    @MainActor
     var chip: Chip {
+        let title = L10n.text(kind.title)
         switch kind {
         case .locationTransfer:
-            return Chip("\(kind.title) \(quantity)", .info)
+            return Chip("\(title) \(quantity)", .info)
         case .associate, .disassociate:
             return Chip(kind.title, .info)
         case .purchase, .found, .returns:
-            return Chip("\(kind.title) \(Self.signed(quantity))", .success)
+            return Chip("\(title) \(Self.signed(quantity))", .success)
         case .audit, .adjustment:
-            return Chip("\(kind.title) \(Self.signed(quantity))", quantity < 0 ? .warn : .success)
+            return Chip("\(title) \(Self.signed(quantity))", quantity < 0 ? .warn : .success)
         case .writeOff:
-            return Chip("\(kind.title) \(Self.signed(quantity))", .danger)
+            return Chip("\(title) \(Self.signed(quantity))", .danger)
         case .picked, .consumption:
-            return Chip("\(kind.title) \(Self.signed(quantity))", .neutral)
+            return Chip("\(title) \(Self.signed(quantity))", .neutral)
         }
     }
 
@@ -109,6 +111,7 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
         value > 0 ? "+\(value)" : value < 0 ? "−\(-value)" : "0"
     }
 
+    @MainActor
     func display(usesTodaySummary: Bool = false) -> InventoryMovementDisplay {
         InventoryMovementDisplay(
             id: id.uuidString,

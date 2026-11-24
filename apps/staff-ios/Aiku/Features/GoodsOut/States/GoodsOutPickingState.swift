@@ -22,13 +22,13 @@ struct GoodsOutPickingStateView: View {
             if note.remote?.isDropshipping != true {
                 RowDivider()
                 if note.allows(.changeTrolley) {
-                    ListRow(note.trolley.map { "Trolley \($0)" } ?? "No trolley", subtitle: "Picking into", icon: .trolley) {
+                    ListRow(note.trolley.map { L10n.format("Trolley %@", $0) } ?? "No trolley", subtitle: "Picking into", icon: .trolley) {
                         present(.trolley(startsPicking: false))
                     } trailing: {
                         changeLabel
                     }
                 } else {
-                    ListRow(note.trolley.map { "Trolley \($0)" } ?? "No trolley", subtitle: "Picking into", icon: .trolley)
+                    ListRow(note.trolley.map { L10n.format("Trolley %@", $0) } ?? "No trolley", subtitle: "Picking into", icon: .trolley)
                 }
             }
         }
@@ -41,7 +41,7 @@ struct GoodsOutPickingStateView: View {
             GoodsOutScanPromptCard(
                 title: "Scan to pick",
                 location: next.pickLocation,
-                detail: "\(next.sko) · \(next.remaining) left on this item"
+                detail: [next.sko, L10n.format("%lld left on this item", next.remaining)].joined(separator: " · ")
             ) {
                 router.open(GoodsOutRoute.scanToPick(reference: note.reference))
             }
@@ -66,7 +66,7 @@ struct GoodsOutPickingStateView: View {
 
     private var pickerTitle: String {
         guard let picker = note.picker else { return "No picker" }
-        return picker == store.currentUser ? "\(picker) (you)" : picker
+        return picker == store.currentUser ? L10n.format("%@ (you)", picker) : picker
     }
 
     private var changeLabel: some View {
@@ -89,7 +89,7 @@ struct GoodsOutPickingFooter: View {
             AikuButton(note.finishPickingTitle) {
                 if note.channel.skipsPacking, !note.hasWaitingLines {
                     let previous = store.setAsPicked(note.reference, bay: nil)
-                    GoodsOutFeedback.done("\(note.reference) set as packed", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ set as packed", note.reference), previous: previous, toasts: toasts)
                 } else {
                     present(.pickedBay(setsPicked: true))
                 }
@@ -98,7 +98,7 @@ struct GoodsOutPickingFooter: View {
         } else {
             let count = note.linesStillToHandle
             GoodsOutFooterStatus(
-                title: "\(count) \(count == 1 ? "line" : "lines") still to handle",
+                title: L10n.format("%lld lines still to handle", count),
                 detail: count == 1
                     ? "Pick it, mark it not picked or set it as waiting. Then Set as picked appears."
                     : "Pick them, mark them not picked or set them as waiting. Then Set as picked appears."
@@ -115,7 +115,7 @@ struct GoodsOutPickingFooter: View {
             }
         } else if let action = note.action(.setAsPacked) {
             remoteButton(action, working: working) {
-                GoodsOutRun.action(.post("set-as-packed"), on: note.reference, fallback: "\(note.reference) set as packed", toasts: toasts)
+                GoodsOutRun.action(.post("set-as-packed"), on: note.reference, fallback: L10n.format("%@ set as packed", note.reference), toasts: toasts)
             }
         } else if let action = note.action(.setAsPicked) {
             remoteButton(action, working: working) {
@@ -124,7 +124,7 @@ struct GoodsOutPickingFooter: View {
         } else if note.canWorkLines {
             let count = note.linesStillToHandle
             GoodsOutFooterStatus(
-                title: "\(count) \(count == 1 ? "line" : "lines") still to handle",
+                title: L10n.format("%lld lines still to handle", count),
                 detail: "Pick, mark as not picked or set as waiting every line. Then Set as picked appears."
             )
         } else {

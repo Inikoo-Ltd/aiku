@@ -29,7 +29,7 @@ struct GoodsOutLineRow: View {
 
     private var content: some View {
         HStack(spacing: 12) {
-            ProductThumb(size: 48, label: "Product photo of \(line.sko)")
+            ProductThumb(size: 48, label: L10n.format("Product photo of %@", line.sko))
             VStack(alignment: .leading, spacing: 3) {
                 FlowLayout(spacing: 8, lineSpacing: 4) {
                     Text(line.sko)

@@ -26,11 +26,11 @@ struct InventoryConsumeSheet: View {
 
     var body: some View {
         SheetScaffold(
-            title: "Internal consumption · \(sko.reference)",
+            title: L10n.format("Internal consumption · %@", sko.reference),
             subtitle: "Stock used inside the company (showroom, samples…)"
         ) {
             ForEach(sko.locations.filter { $0.quantity > 0 }) { option in
-                RadioCard(option.code, subtitle: "\(option.quantityText) in location", isSelected: option.code == location) {
+                RadioCard(option.code, subtitle: L10n.format("%@ in location", option.quantityText), isSelected: option.code == location) {
                     location = option.code
                     quantity = min(quantity, max(1, option.quantity))
                     error = nil

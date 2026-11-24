@@ -11,17 +11,18 @@ enum GoodsOutDeliveryNoteState: String, CaseIterable, Hashable, Sendable {
     case waiting
     case cancelled
 
+    @MainActor
     var title: String {
         switch self {
-        case .todo: "To do"
-        case .picking: "Picking"
-        case .picked: "Picked"
-        case .packing: "Packing"
-        case .packed: "Packed"
-        case .finalised: "Finalised"
-        case .dispatched: "Dispatched"
-        case .waiting: "Waiting"
-        case .cancelled: "Cancelled"
+        case .todo: L10n.text("To do")
+        case .picking: L10n.text("Picking")
+        case .picked: L10n.text("Picked")
+        case .packing: L10n.text("Packing")
+        case .packed: L10n.text("Packed")
+        case .finalised: L10n.text("Finalised")
+        case .dispatched: L10n.text("Dispatched")
+        case .waiting: L10n.text("Waiting")
+        case .cancelled: L10n.text("Cancelled")
         }
     }
 
@@ -35,6 +36,7 @@ enum GoodsOutDeliveryNoteState: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var chip: Chip { Chip(title, tone) }
 
     var isLaterState: Bool {
@@ -94,6 +96,7 @@ struct GoodsOutStep: Hashable, Sendable, Identifiable {
     var id: String { title }
 }
 
+@MainActor
 enum GoodsOutStepper {
     static func steps(for state: GoodsOutDeliveryNoteState) -> [GoodsOutStep] {
         let flow = GoodsOutDeliveryNoteState.flow
@@ -124,14 +127,15 @@ enum GoodsOutChannel: String, CaseIterable, Hashable, Sendable {
     case partners
     case fulfilment
 
+    @MainActor
     var title: String {
         switch self {
-        case .wholesale: "Wholesale"
-        case .dropshipping: "Dropshipping"
-        case .b2c: "B2C"
-        case .marketplaces: "Marketplaces"
-        case .partners: "Partners"
-        case .fulfilment: "Fulfilment"
+        case .wholesale: L10n.text("Wholesale")
+        case .dropshipping: L10n.text("Dropshipping")
+        case .b2c: L10n.text("B2C")
+        case .marketplaces: L10n.text("Marketplaces")
+        case .partners: L10n.text("Partners")
+        case .fulfilment: L10n.text("Fulfilment")
         }
     }
 

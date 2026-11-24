@@ -21,7 +21,7 @@ struct InventoryFamiliesScreen: View {
 
     var body: some View {
         let families = isRemote ? feed.families : store.families(in: state, search: search)
-        AppScreen(title: "SKO families", kicker: "Inventory · \(session.warehouseLabel)") {
+        AppScreen(title: "SKO families", kicker: L10n.format("Inventory · %@", session.warehouseLabel)) {
             ModuleTabs(.inventory, current: .skoFamilies)
         } content: {
             InventoryScopeChips(
@@ -47,7 +47,7 @@ struct InventoryFamiliesScreen: View {
             } else if families.isEmpty {
                 EmptyState(
                     icon: .skoFamilies,
-                    title: search.isEmpty ? "No \(state.title.lowercased()) families" : "No families match “\(search)”",
+                    title: search.isEmpty ? state.emptyTitle : L10n.format("No families match “%@”", search),
                     message: search.isEmpty ? nil : "Try a different code or name."
                 )
             } else {
@@ -74,7 +74,7 @@ struct InventoryFamiliesScreen: View {
         }
         .fullScreenCover(isPresented: $isScanning, onDismiss: focusSearchIfNeeded) {
             InventoryScanCover(
-                kicker: "SKO families · \(session.warehouseLabel)",
+                kicker: L10n.format("SKO families · %@", session.warehouseLabel),
                 onClose: { isScanning = false },
                 onScan: {
                     isScanning = false
@@ -141,7 +141,7 @@ private struct InventoryRemoteFamilyDetail: View {
 
     var body: some View {
         let summary = feed.summary
-        AppScreen(title: family.title, kicker: "Stock family · \(family.state.title)") {
+        AppScreen(title: family.title, kicker: L10n.format("Stock family · %@", L10n.text(family.state.title))) {
             StatGrid(columns: 3) {
                 StatTile("\(summary?.numberCurrentOrgStocks ?? family.skoCount)", label: "SKOs")
                 StatTile(summary.map { InventoryMoney.label($0.stockValue, currencyCode: $0.currencyCode) } ?? family.stockValueLabel, label: "Stock value")
@@ -164,7 +164,7 @@ private struct InventoryRemoteFamilyDetail: View {
                     InventorySkoRow(
                         reference: sko.code,
                         chip: nil,
-                        subtitle: [sko.name ?? "", sko.stockValue.flatMap(\.value).map { "stock value \(InventoryMoney.label($0, currencyCode: summary?.currencyCode))" } ?? ""]
+                        subtitle: [sko.name ?? "", sko.stockValue.flatMap(\.value).map { L10n.format("stock value %@", InventoryMoney.label($0, currencyCode: summary?.currencyCode)) } ?? ""]
                             .filter { !$0.isEmpty }
                             .joined(separator: " · "),
                         quantity: sko.quantityInLocations?.value.map { Int($0.rounded(.towardZero)) }
@@ -193,7 +193,7 @@ private struct InventorySampleFamilyDetail: View {
     var body: some View {
         let family = store.family(code: code)
         let skos = InventorySkoQuery.sorted(store.skos(inFamily: family.code), by: .reference)
-        AppScreen(title: family.title, kicker: "Stock family · \(family.state.title)") {
+        AppScreen(title: family.title, kicker: L10n.format("Stock family · %@", L10n.text(family.state.title))) {
             StatGrid(columns: 3) {
                 StatTile("\(family.skoCount)", label: "SKOs")
                 StatTile(family.stockValueLabel, label: "Stock value")

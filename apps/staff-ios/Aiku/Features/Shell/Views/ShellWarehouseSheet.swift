@@ -101,7 +101,7 @@ struct ShellWarehouseSheet: View {
                     Text(warehouse.name)
                         .font(.aiku(15, .semibold))
                         .foregroundStyle(AikuColor.text)
-                    Text(isCurrent ? "\(warehouse.code) · current" : warehouse.code)
+                    Text(isCurrent ? L10n.format("%@ · current", warehouse.code) : warehouse.code)
                         .font(.aiku(12))
                         .foregroundStyle(AikuColor.text3)
                 }
@@ -129,7 +129,7 @@ struct ShellWarehouseSheet: View {
                 warehouseStore.select(warehouseID)
             }
             session.apply(warehouse: choice.warehouseName, code: choice.warehouseCode, organisation: choice.organisation)
-            toasts.show("Switched to \(choice.organisation) · \(choice.warehouseName)")
+            toasts.show(L10n.format("Switched to %@ · %@", choice.organisation, choice.warehouseName))
         }
         onClose()
     }

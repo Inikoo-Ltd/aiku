@@ -50,13 +50,13 @@ enum ShellHomeContent {
         }
     }
 
+    @MainActor
     static func greeting(hour: Int, firstName: String) -> String {
-        let part = switch hour {
-        case 5..<12: "Good morning"
-        case 12..<18: "Good afternoon"
-        default: "Good evening"
+        switch hour {
+        case 5..<12: L10n.format("Good morning, %@", firstName)
+        case 12..<18: L10n.format("Good afternoon, %@", firstName)
+        default: L10n.format("Good evening, %@", firstName)
         }
-        return "\(part), \(firstName)"
     }
 
     static func modules(hasWarehouseAccess: Bool, warehouseLabel: String) -> [ShellHomeModule] {
@@ -64,28 +64,29 @@ enum ShellHomeContent {
         return [ShellHomeModule(id: "warehouse", title: "Warehouse dashboard", subtitle: warehouseLabel, icon: .faWarehouse, link: .shell(.warehouseDashboard))]
     }
 
+    @MainActor
     static func conflictsText(needsYou: Int) -> String {
-        needsYou > 0 ? OfflineTexts.count(needsYou, "needs you", "need you") : "Nothing needs you"
+        needsYou > 0 ? L10n.format("%lld need you", needsYou) : L10n.text("Nothing needs you")
     }
 
     @MainActor
     static func clockStatus(_ clocking: ClockingStore) -> ShellClockStatus? {
         guard clocking.hasStatus else {
-            return clocking.loadError == nil ? nil : ShellClockStatus(title: "Clocking", detail: "Clocking status unavailable", isClockedIn: false)
+            return clocking.loadError == nil ? nil : ShellClockStatus(title: L10n.text("Clocking"), detail: L10n.text("Clocking status unavailable"), isClockedIn: false)
         }
         let today = clocking.today
         if today.isClockedIn {
             let since = today.trackers.last.map { ClockingFormat.shortTime($0.inAt) } ?? "—"
-            let organisation = clocking.organisationName.flatMap { $0.isEmpty ? nil : " · \($0)" } ?? ""
+            let organisation = clocking.organisationName.flatMap { $0.isEmpty ? nil : $0 }
             return ShellClockStatus(
-                title: "Clocked in · \(ClockingFormat.duration(today.working(now: clocking.now)))",
-                detail: "Since \(since)\(organisation)",
+                title: L10n.format("Clocked in · %@", ClockingFormat.duration(today.working(now: clocking.now))),
+                detail: organisation.map { L10n.format("Since %@ · %@", since, $0) } ?? L10n.format("Since %@", since),
                 isClockedIn: true
             )
         }
         return ShellClockStatus(
-            title: "Clocked out",
-            detail: today.lastOut.map { "Last clock out \(ClockingFormat.shortTime($0))" } ?? "No clocking today",
+            title: L10n.text("Clocked out"),
+            detail: today.lastOut.map { L10n.format("Last clock out %@", ClockingFormat.shortTime($0)) } ?? L10n.text("No clocking today"),
             isClockedIn: false
         )
     }
@@ -96,11 +97,12 @@ enum ShellHomeContent {
         return ClockingFormat.duration(week.working(now: clocking.now))
     }
 
+    @MainActor
     static func context(hasWarehouseAccess: Bool, organisation: String, warehouseName: String) -> String? {
         guard !organisation.isEmpty else { return nil }
         if hasWarehouseAccess {
             return warehouseName.isEmpty ? nil : "\(organisation) · \(warehouseName)"
         }
-        return "\(organisation) · \(staffWorkplace)"
+        return "\(organisation) · \(L10n.text(staffWorkplace))"
     }
 }

@@ -25,7 +25,7 @@ struct GoodsOutPrintSheet: View {
     }
 
     private var sampleBody: some View {
-        SheetScaffold(title: "Print \(note.reference)", subtitle: "Delivery note PDF · \(pages) \(pages == 1 ? "page" : "pages")") {
+        SheetScaffold(title: L10n.format("Print %@", note.reference), subtitle: L10n.format("Delivery note PDF · %lld pages", pages)) {
             SheetSectionLabel("Printer")
             ForEach(store.printers) { option in
                 RadioCard(option.id, subtitle: option.detail, isSelected: printer == option.id) {
@@ -43,12 +43,12 @@ struct GoodsOutPrintSheet: View {
         } footer: {
             AikuButton("Print", icon: .printer) {
                 close()
-                toasts.show("\(note.reference) sent to \(printer) · \(copies) \(copies == 1 ? "copy" : "copies")", sticky: false)
+                toasts.show(L10n.format("%@ sent to %@ · %lld copies", note.reference, printer, copies), sticky: false)
             }
             .accessibilityIdentifier("goodsOut.printDeliveryNote")
             AikuButton("Open PDF", kind: .tertiary, size: .small) {
                 close()
-                toasts.show("Delivery note PDF of \(note.reference) opened", tone: .info, sticky: false)
+                toasts.show(L10n.format("Delivery note PDF of %@ opened", note.reference), tone: .info, sticky: false)
             }
         }
     }
@@ -60,7 +60,7 @@ struct GoodsOutDocumentsSheet: View {
     @State private var opener = GoodsOutDocumentOpener()
 
     var body: some View {
-        SheetScaffold(title: "Documents", subtitle: "Delivery note \(note.reference)") {
+        SheetScaffold(title: "Documents", subtitle: L10n.format("Delivery note %@", note.reference)) {
             Card {
                 ForEach(Array(note.documents.enumerated()), id: \.element) { index, document in
                     if index > 0 {
@@ -101,7 +101,7 @@ private struct GoodsOutCopiesStepper: View {
                 .foregroundStyle(AikuColor.text)
                 .monospacedDigit()
                 .frame(minWidth: 24)
-                .accessibilityLabel("\(value) \(value == 1 ? "copy" : "copies")")
+                .accessibilityLabel(L10n.format("%lld copies", value))
             Button {
                 value = min(range.upperBound, value + 1)
             } label: {

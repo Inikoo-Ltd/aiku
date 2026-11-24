@@ -93,7 +93,7 @@ struct ClockingStatusCard: View {
 
     private func stat(_ label: String, _ value: String, monospaced: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
             Text(value)
@@ -116,7 +116,7 @@ struct ClockingStatusCard: View {
                 timeColumn("Clock in", ClockingFormat.time(tracker.inAt))
                 timeColumn("Clock out", tracker.outAt.map(ClockingFormat.time) ?? "—")
             }
-            Text(tracker.isOpen ? "Ongoing" : "Duration \(ClockingFormat.duration(tracker.duration(now: nil)))")
+            Text(tracker.isOpen ? L10n.text("Ongoing") : L10n.format("Duration %@", ClockingFormat.duration(tracker.duration(now: nil))))
                 .font(.aiku(12, .semibold))
                 .foregroundStyle(tracker.isOpen ? AikuColor.ink : AikuColor.success)
                 .multilineTextAlignment(.trailing)
@@ -129,7 +129,7 @@ struct ClockingStatusCard: View {
 
     private func timeColumn(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label)
+            Text(L10n.text(label))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
             Text(value)

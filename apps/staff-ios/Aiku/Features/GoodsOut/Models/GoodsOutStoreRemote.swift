@@ -199,7 +199,7 @@ extension GoodsOutStore {
     func loadTrolleys() async {
         guard isRemote, let warehouseID else { return }
         await loadResource { [service] in
-            GoodsOutMapper.trolleys(try await service.trolleys(warehouseID))
+            await GoodsOutMapper.trolleys(try await service.trolleys(warehouseID))
         } apply: { $0.trolleys = $1 }
     }
 
@@ -214,7 +214,7 @@ extension GoodsOutStore {
         guard isRemote, let warehouseID else { return }
         let userID = userID, name = currentUser
         await loadResource { [service] in
-            GoodsOutMapper.pickers(try await service.pickers(warehouseID), currentUserID: userID, currentUser: name)
+            await GoodsOutMapper.pickers(try await service.pickers(warehouseID), currentUserID: userID, currentUser: name)
         } apply: { $0.pickers = $1 }
     }
 

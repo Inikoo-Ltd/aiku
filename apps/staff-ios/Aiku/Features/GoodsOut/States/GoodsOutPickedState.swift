@@ -31,7 +31,7 @@ struct GoodsOutPickedStateView: View {
 
     private var packerText: String {
         guard let picker = note.picker else { return "Not assigned yet" }
-        return note.packerSameAsPicker ? "Same as picker · \(picker)" : "Chosen by the supervisor"
+        return note.packerSameAsPicker ? L10n.format("Same as picker · %@", picker) : "Chosen by the supervisor"
     }
 }
 
@@ -51,7 +51,7 @@ struct GoodsOutPickedFooter: View {
     private var sampleFooter: some View {
         AikuButton("Start packing", icon: .sko) {
             let previous = store.startPacking(note.reference)
-            GoodsOutFeedback.done("Packing started for \(note.reference)", previous: previous, toasts: toasts)
+            GoodsOutFeedback.done(L10n.format("Packing started for %@", note.reference), previous: previous, toasts: toasts)
         }
         .accessibilityIdentifier("goodsOut.startPacking")
     }

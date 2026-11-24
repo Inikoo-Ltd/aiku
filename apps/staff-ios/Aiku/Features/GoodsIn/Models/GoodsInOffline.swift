@@ -155,6 +155,7 @@ enum GoodsInOfflineOverlay {
 }
 
 enum GoodsInOfflineText {
+    @MainActor
     static func summary(_ entry: QueueEntry, delivery: MobileStockDelivery?) -> String {
         let quantity = OfflineTexts.quantity(entry.quantity)
         let item = entry.payloadInt(GoodsInOfflinePayloads.stockDeliveryItemID).flatMap { delivery?.item($0) }
@@ -162,11 +163,12 @@ enum GoodsInOfflineText {
         let linkID = entry.payloadInt(OfflinePayloadKey.locationOrgStockID)
         let location = linkID.flatMap { id in item?.locations.first { $0.locationOrgStockId == id }?.location.code }
         if let location {
-            return "Place · \(quantity) × \(sko) in \(location)"
+            return L10n.format("Place · %@ × %@ in %@", quantity, sko, location)
         }
-        return "Place · \(quantity) × \(sko) in a new location"
+        return L10n.format("Place · %@ × %@ in a new location", quantity, sko)
     }
 
+    @MainActor
     static func summary(_ entry: QueueEntry, goodsReturn: MobileReturn?) -> String {
         let quantity = OfflineTexts.quantity(entry.quantity)
         let item = entry.payloadInt(GoodsInOfflinePayloads.returnItemID).flatMap { goodsReturn?.item($0) }
@@ -175,11 +177,11 @@ enum GoodsInOfflineText {
         case .returnPutBack:
             let linkID = entry.payloadInt(OfflinePayloadKey.locationOrgStockID)
             let location = linkID.flatMap { id in item?.locations.first { $0.locationOrgStockId == id }?.location.code } ?? ""
-            return "Back to stock · \(quantity) × \(sko) at \(location)"
+            return L10n.format("Back to stock · %@ × %@ at %@", quantity, sko, location)
         case .returnDamaged:
-            return "Damaged · \(quantity) × \(sko)"
+            return L10n.format("Damaged · %@ × %@", quantity, sko)
         default:
-            return "Not returned · \(quantity) × \(sko)"
+            return L10n.format("Not returned · %@ × %@", quantity, sko)
         }
     }
 }

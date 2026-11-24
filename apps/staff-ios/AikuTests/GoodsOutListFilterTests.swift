@@ -96,6 +96,7 @@ private func listStore(connection: ListConnection, lists: SavedLists) throws -> 
     return store
 }
 
+@MainActor
 struct GoodsOutListFilterTests {
     @Test("Sort, date range and presets go to the request with the keys the backend accepts")
     func requestCarriesSortAndDates() throws {

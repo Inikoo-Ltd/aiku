@@ -134,6 +134,7 @@
         (function () {
             window.gtmDataLayer = window.gtmDataLayer || [];
             window.gtag = function () { window.gtmDataLayer.push(arguments); };
+@if(Arr::get(request()->input("website")?->settings, "own_cookie_banner"))
             var consentCookie = document.cookie.match(/(?:^|; )iris_cookie_consent=([^;]*)/);
             var granted = consentCookie ? consentCookie[1].split(".") : [];
             var consentState = function (category) { return granted.indexOf(category) > -1 ? "granted" : "denied"; };
@@ -147,6 +148,7 @@
                 security_storage: "granted",
                 wait_for_update: 500
             });
+@endif
             var fired = false;
             var events = ["pointerdown", "keydown", "touchstart", "scroll"];
             var gtmId = '{{ Arr::get(request()->input("website")?->settings, "google_tag_id", "") }}';

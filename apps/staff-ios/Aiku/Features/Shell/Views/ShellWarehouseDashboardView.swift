@@ -13,11 +13,11 @@ struct ShellWarehouseDashboardView: View {
     var body: some View {
         AppScreen(
             title: "Dashboard",
-            kicker: "Warehouse · \(session.fullContextLabel)",
+            kicker: L10n.format("Warehouse · %@", session.fullContextLabel),
             actions: [HeaderAction(.search, label: "Search") { router.open(ShellRoute.search) }]
         ) {
             Card {
-                ListRow(session.contextLabel, subtitle: "\(session.profile.warehouseCode) · tap to change", icon: .faWarehouseAlt, action: {
+                ListRow(session.contextLabel, subtitle: L10n.format("%@ · tap to change", session.profile.warehouseCode), icon: .faWarehouseAlt, action: {
                     isChoosingWarehouse = true
                 }) {
                     Text("Change")
@@ -171,7 +171,7 @@ struct ShellWarehouseDashboardView: View {
                     .foregroundStyle(isNeutral ? AikuColor.text2 : tile.tone.foreground)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Text(tile.label)
+                Text(L10n.text(tile.label))
                     .font(.aiku(10, .semibold))
                     .foregroundStyle(AikuColor.text3)
                     .lineLimit(1)
@@ -191,7 +191,7 @@ struct ShellWarehouseDashboardView: View {
     @ViewBuilder
     private func figureLine(_ figure: WarehouseDashboardFigure) -> some View {
         let line = HStack {
-            Text(figure.label)
+            Text(L10n.text(figure.label))
                 .foregroundStyle(AikuColor.text3)
             Spacer()
             Text(figure.value)

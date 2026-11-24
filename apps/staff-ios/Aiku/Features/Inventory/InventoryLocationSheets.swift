@@ -16,7 +16,7 @@ struct InventoryAddLocationSheet: View {
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        SheetScaffold(title: "Add location · \(sko.reference)", subtitle: "Scan or search a location") {
+        SheetScaffold(title: L10n.format("Add location · %@", sko.reference), subtitle: "Scan or search a location") {
             InventorySearchField(text: $search, placeholder: "Location code", isFocused: $isSearchFocused) {
                 if let first = matches.first {
                     search = first.code
@@ -29,7 +29,7 @@ struct InventoryAddLocationSheet: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .accessibilityLabel("Looking for locations")
             } else if matches.isEmpty {
-                HelperText(search.trimmingCharacters(in: .whitespaces).isEmpty ? "Type a location code to find it." : "No free location matches “\(search)”.")
+                HelperText(search.trimmingCharacters(in: .whitespaces).isEmpty ? "Type a location code to find it." : L10n.format("No free location matches “%@”.", search))
             } else {
                 ForEach(matches) { option in
                     RadioCard(option.code, subtitle: option.detail, isSelected: option.code == selection?.code) {
@@ -49,7 +49,7 @@ struct InventoryAddLocationSheet: View {
                 FieldError(error)
             }
         } footer: {
-            AikuButton(isSaving ? "Adding…" : selection.map { "Add \($0.code)" } ?? "Add location", look: AikuButtonLook(.primary, icon: .plus)) {
+            AikuButton(isSaving ? "Adding…" : selection.map { L10n.format("Add %@", $0.code) } ?? "Add location", look: AikuButtonLook(.primary, icon: .plus)) {
                 save()
             }
             .disabled(selection == nil || isSaving)
@@ -77,7 +77,7 @@ struct InventoryAddLocationSheet: View {
     private var pickingHint: String {
         let current = sko.locations.filter { $0.type == .picking }.map(\.code)
         guard !current.isEmpty, sko.live != nil else { return "Its other picking location becomes storing" }
-        return "\(current.joined(separator: ", ")), its picking location now, becomes storing"
+        return L10n.format("%@, its picking location now, becomes storing", current.joined(separator: ", "))
     }
 
     private func save() {
@@ -120,11 +120,11 @@ struct InventoryRemoveLocationsSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "Remove locations · \(sko.reference)", subtitle: "Choose the locations to remove") {
+        SheetScaffold(title: L10n.format("Remove locations · %@", sko.reference), subtitle: "Choose the locations to remove") {
             ForEach(sko.locations) { location in
                 RadioCard(
                     location.code,
-                    subtitle: "\(location.typeLabel) · \(location.quantityText) in location",
+                    subtitle: [location.typeLabel, L10n.format("%@ in location", location.quantityText)].joined(separator: " · "),
                     isSelected: selection.contains(location.code)
                 ) {
                     selection = InventorySkoFilter.toggled(selection, location.code)
@@ -147,11 +147,7 @@ struct InventoryRemoveLocationsSheet: View {
 
     private var buttonTitle: String {
         if isSaving { return "Removing…" }
-        switch selection.count {
-        case 0: return "Remove locations"
-        case 1: return "Remove 1 location"
-        default: return "Remove \(selection.count) locations"
-        }
+        return selection.isEmpty ? "Remove locations" : L10n.format("Remove %lld locations", selection.count)
     }
 
     private func save() {

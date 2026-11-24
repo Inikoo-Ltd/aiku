@@ -30,7 +30,7 @@ struct GoodsInReturnScreen: View {
                 GoodsInLoadingScreen(
                     title: reference,
                     kicker: "Return",
-                    failedTitle: "\(reference) could not be loaded",
+                    failedTitle: L10n.format("%@ could not be loaded", reference),
                     problem: feed.loadError,
                     retry: { Task { await feed.load() } }
                 )
@@ -61,7 +61,7 @@ private struct GoodsInReturnContent: View {
     private var setAsReturned: MobileGoodsInAction? { canHandle ? goodsReturn.availableActions.action(GoodsInActionKey.setAsReturned) : nil }
 
     private var kicker: String {
-        if let name = goodsReturn.customer?.name, !name.isEmpty { return "Return · \(name)" }
+        if let name = goodsReturn.customer?.name, !name.isEmpty { return L10n.format("Return · %@", name) }
         return goodsReturn.typeLabel.isEmpty ? "Return" : goodsReturn.typeLabel
     }
 
@@ -101,7 +101,7 @@ private struct GoodsInReturnContent: View {
                 }
             }
             .aikuConfirm(
-                "Set \(goodsReturn.reference) as returned?",
+                L10n.format("Set %@ as returned?", goodsReturn.reference),
                 isPresented: $isConfirmingSetAsReturned,
                 message: "Anything still remaining becomes Not returned.",
                 confirmTitle: setAsReturned.map { $0.label.isEmpty ? "Set as returned" : $0.label } ?? "Set as returned"
@@ -113,7 +113,7 @@ private struct GoodsInReturnContent: View {
     private var undoMessage: String {
         guard let put = undoing else { return "" }
         if put.type == GoodsInReturnPutType.sow {
-            return "\(GoodsInText.quantity(put.quantity, label: put.quantityLabel)) is taken back out of \(put.location?.code ?? "") and goes back to remaining."
+            return L10n.format("%@ is taken back out of %@ and goes back to remaining.", GoodsInText.quantity(put.quantity, label: put.quantityLabel), put.location?.code ?? "")
         }
         return "The quantity goes back to remaining."
     }
@@ -170,7 +170,7 @@ private struct GoodsInReturnContent: View {
             GoodsInTimelineCard(entries: goodsReturn.timeline)
         }
         let handled = goodsReturn.items.filter(\.isHandled).count
-        GoodsOutSectionTitle(title: "Items", detail: "\(handled) of \(goodsReturn.items.count) handled")
+        GoodsOutSectionTitle(title: "Items", detail: L10n.format("%lld of %lld handled", handled, goodsReturn.items.count))
         ForEach(goodsReturn.items) { item in
             GoodsInReturnItemCard(
                 item: item,
@@ -203,9 +203,9 @@ private struct GoodsInReturnContent: View {
     private var details: some View {
         let rows = [
             goodsReturn.customer.flatMap { $0.name.isEmpty ? nil : GoodsOutDetailRow(icon: .person, text: $0.name) },
-            goodsReturn.order.flatMap { $0.reference.isEmpty ? nil : GoodsOutDetailRow(icon: .order, text: "Order \($0.reference)") },
-            goodsReturn.typeLabel.isEmpty ? nil : GoodsOutDetailRow(icon: .document, text: "Type \(goodsReturn.typeLabel)"),
-            goodsReturn.handler.flatMap { $0.name.isEmpty ? nil : GoodsOutDetailRow(icon: .person, text: "Handled by \($0.name)") },
+            goodsReturn.order.flatMap { $0.reference.isEmpty ? nil : GoodsOutDetailRow(icon: .order, text: L10n.format("Order %@", $0.reference)) },
+            goodsReturn.typeLabel.isEmpty ? nil : GoodsOutDetailRow(icon: .document, text: L10n.format("Type %@", goodsReturn.typeLabel)),
+            goodsReturn.handler.flatMap { $0.name.isEmpty ? nil : GoodsOutDetailRow(icon: .person, text: L10n.format("Handled by %@", $0.name)) },
         ].compactMap { $0 }
         if !rows.isEmpty {
             GoodsOutDetailCard(title: "Return", rows: rows)
@@ -253,12 +253,12 @@ private struct GoodsInReturnContent: View {
     private func doneText() -> String? {
         let current = feed.goodsReturn ?? goodsReturn
         switch feed.lastWrite {
-        case .start: return "\(current.reference) started"
-        case .setAsReturned: return "\(current.reference) set as returned"
-        case .returned(let itemID, _, _, _): return "\(current.item(itemID)?.code ?? "") back to stock"
-        case .damaged(let itemID, _, _): return "\(current.item(itemID)?.code ?? "") set as damaged"
-        case .notReturned(let itemID, _, _): return "\(current.item(itemID)?.code ?? "") set as not returned"
-        case .undoPut: return "Undone"
+        case .start: return L10n.format("%@ started", current.reference)
+        case .setAsReturned: return L10n.format("%@ set as returned", current.reference)
+        case .returned(let itemID, _, _, _): return L10n.format("%@ back to stock", current.item(itemID)?.code ?? "")
+        case .damaged(let itemID, _, _): return L10n.format("%@ set as damaged", current.item(itemID)?.code ?? "")
+        case .notReturned(let itemID, _, _): return L10n.format("%@ set as not returned", current.item(itemID)?.code ?? "")
+        case .undoPut: return L10n.text("Undone")
         case nil: return nil
         }
     }
@@ -305,7 +305,7 @@ private struct GoodsInReturnItemCard: View {
     let onUndo: (MobileReturnPut) -> Void
 
     var body: some View {
-        let code = item.code.isEmpty ? "Unknown SKO" : item.code
+        let code = item.code.isEmpty ? L10n.text("Unknown SKO") : item.code
         Card {
             GoodsInItemRow(
                 code: code,
@@ -363,10 +363,10 @@ private struct GoodsInReturnItemCard: View {
 
     private var breakdown: String {
         [
-            "Returned \(GoodsInText.quantity(item.returned, label: item.returnedLabel))",
-            "Damaged \(GoodsInText.quantity(item.damaged, label: item.damagedLabel))",
-            "Not returned \(GoodsInText.quantity(item.notReturned, label: item.notReturnedLabel))",
-            "Remaining \(GoodsInText.quantity(item.remaining, label: item.remainingLabel))",
+            L10n.format("Returned %@", GoodsInText.quantity(item.returned, label: item.returnedLabel)),
+            L10n.format("Damaged %@", GoodsInText.quantity(item.damaged, label: item.damagedLabel)),
+            L10n.format("Not returned %@", GoodsInText.quantity(item.notReturned, label: item.notReturnedLabel)),
+            L10n.format("Remaining %@", GoodsInText.quantity(item.remaining, label: item.remainingLabel)),
         ].joined(separator: GoodsInText.separator)
     }
 
@@ -415,23 +415,23 @@ struct GoodsInReturnItemSheet: View {
 
     private var title: String {
         switch action {
-        case .backToStock: "Back to stock · \(item.code)"
-        case .damaged: "Damaged · \(item.code)"
-        case .notReturned: "Not returned · \(item.code)"
+        case .backToStock: L10n.format("Back to stock · %@", item.code)
+        case .damaged: L10n.format("Damaged · %@", item.code)
+        case .notReturned: L10n.format("Not returned · %@", item.code)
         }
     }
 
     private var confirmTitle: String {
         let amount = GoodsInText.number(shownQuantity)
         switch action {
-        case .backToStock: return "Put \(amount) back in \(location?.location.code ?? "")"
-        case .damaged: return "Set \(amount) as damaged"
-        case .notReturned: return "Set \(amount) as not returned"
+        case .backToStock: return L10n.format("Put %@ back in %@", amount, location?.location.code ?? "")
+        case .damaged: return L10n.format("Set %@ as damaged", amount)
+        case .notReturned: return L10n.format("Set %@ as not returned", amount)
         }
     }
 
     var body: some View {
-        SheetScaffold(title: title, subtitle: "\(item.sko?.name ?? "") · \(GoodsInText.quantity(remaining, label: item.remainingLabel)) remaining") {
+        SheetScaffold(title: title, subtitle: L10n.format("%@ · %@ remaining", item.sko?.name ?? "", GoodsInText.quantity(remaining, label: item.remainingLabel))) {
             switch action {
             case .backToStock:
                 SheetSectionLabel("Location")
@@ -442,8 +442,8 @@ struct GoodsInReturnItemSheet: View {
                     GoodsInChoiceRow(
                         title: option.location.code,
                         subtitle: [
-                            option.type == "picking" ? "Picking location" : option.type == "storing" ? "Storing" : nil,
-                            "\(GoodsInText.quantity(option.quantity, label: option.quantityLabel)) in location",
+                            option.type == "picking" ? L10n.text("Picking location") : option.type == "storing" ? L10n.text("Storing") : nil,
+                            L10n.format("%@ in location", GoodsInText.quantity(option.quantity, label: option.quantityLabel)),
                         ].compactMap { $0 }.joined(separator: GoodsInText.separator),
                         isSelected: option.locationOrgStockId == linkID,
                         identifier: "goodsIn.return.location.\(option.location.code)"
@@ -461,7 +461,7 @@ struct GoodsInReturnItemSheet: View {
             if remaining > 0 {
                 SheetSectionLabel("Quantity")
                 GoodsInQuantityStepper(value: shownQuantity, minimum: min(1, remaining), maximum: remaining) { quantity = $0 }
-                GoodsInHelper("up to \(GoodsInText.quantity(remaining, label: item.remainingLabel))")
+                GoodsInHelper(L10n.format("up to %@", GoodsInText.quantity(remaining, label: item.remainingLabel)))
             }
         } footer: {
             GoodsInSheetProblem(problem: problem)

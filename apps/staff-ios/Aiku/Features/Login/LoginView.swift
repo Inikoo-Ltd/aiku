@@ -150,8 +150,8 @@ struct LoginView: View {
     }
 
     private var buttonTitle: String {
-        if isLocked { return "Signing in…" }
-        return flow.state.failure == nil ? "Sign in" : "Try again"
+        if isLocked { return L10n.text("Signing in…") }
+        return flow.state.failure == nil ? L10n.text("Sign in") : L10n.text("Try again")
     }
 
     private var passkeyButton: some View {

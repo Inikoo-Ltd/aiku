@@ -10,15 +10,16 @@ enum InventoryStockError: Error, Equatable, Sendable {
     case nothingSelected
     case waitingForOfflineWork(String)
 
+    @MainActor
     var message: String {
         switch self {
-        case .quantityMustBePositive: "Enter a quantity above 0."
-        case .notEnoughStock(let available): "Only \(available) in location."
-        case .sameLocation: "Choose two different locations."
-        case .unknownLocation(let code): "\(code) is not a location of this SKO."
-        case .missingReason(let code): "Choose a reason for \(code)."
-        case .locationAlreadyAssigned(let code): "\(code) is already a location of this SKO."
-        case .nothingSelected: "Choose at least one location."
+        case .quantityMustBePositive: L10n.text("Enter a quantity above 0.")
+        case .notEnoughStock(let available): L10n.format("Only %@ in location.", String(available))
+        case .sameLocation: L10n.text("Choose two different locations.")
+        case .unknownLocation(let code): L10n.format("%@ is not a location of this SKO.", code)
+        case .missingReason(let code): L10n.format("Choose a reason for %@.", code)
+        case .locationAlreadyAssigned(let code): L10n.format("%@ is already a location of this SKO.", code)
+        case .nothingSelected: L10n.text("Choose at least one location.")
         case .waitingForOfflineWork(let reason): reason
         }
     }
@@ -66,6 +67,7 @@ struct InventoryOperationResult: Sendable {
     let message: String
 }
 
+@MainActor
 enum InventoryStockOperations {
     static func audit(_ sko: InventorySko, draft: InventoryAuditDraft, auditedOn: String, time: String) throws -> InventoryOperationResult {
         guard !sko.locations.isEmpty else { throw InventoryStockError.nothingSelected }
@@ -97,7 +99,7 @@ enum InventoryStockOperations {
             )
         }
         let net = movements.reduce(0) { $0 + $1.quantity }
-        let message = movements.isEmpty ? "Audit saved · no change" : "Audit saved · \(InventoryStockMovement.signed(net))"
+        let message = movements.isEmpty ? L10n.text("Audit saved · no change") : L10n.format("Audit saved · %@", InventoryStockMovement.signed(net))
         return InventoryOperationResult(sko: updated, movements: movements.reversed(), message: message)
     }
 
@@ -129,7 +131,7 @@ enum InventoryStockOperations {
             summary: "\(source) → \(destination) · \(reason.title) · you · \(time)",
             todaySummary: "\(source) → \(destination) · you · just now"
         )
-        return InventoryOperationResult(sko: updated, movements: [movement], message: "\(unitsLabel(quantity)) moved to \(destination)")
+        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units moved to %@", quantity, destination))
     }
 
     static func consume(_ sko: InventorySko, location code: String, quantity: Int, note: String, time: String) throws -> InventoryOperationResult {
@@ -152,7 +154,7 @@ enum InventoryStockOperations {
             summary: summary,
             todaySummary: "Internal consumption · \(code) · you · just now"
         )
-        return InventoryOperationResult(sko: updated, movements: [movement], message: "\(unitsLabel(quantity)) consumed from \(code)")
+        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units consumed from %@", quantity, code))
     }
 
     static func addLocation(
@@ -186,7 +188,7 @@ enum InventoryStockOperations {
             summary: "\(trimmed) · \(label) · you · \(time)",
             todaySummary: "\(trimmed) · \(label) · you · just now"
         )
-        return InventoryOperationResult(sko: updated, movements: [movement], message: "\(trimmed) added")
+        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%@ added", trimmed))
     }
 
     static func removeLocations(_ sko: InventorySko, codes: Set<String>, time: String) throws -> InventoryOperationResult {
@@ -217,11 +219,7 @@ enum InventoryStockOperations {
                 todaySummary: "\(location.code) · you · just now"
             ))
         }
-        let message = removed.count == 1 ? "\(removed[0].code) removed" : "\(removed.count) locations removed"
+        let message = removed.count == 1 ? L10n.format("%@ removed", removed[0].code) : L10n.format("%lld locations removed", removed.count)
         return InventoryOperationResult(sko: updated, movements: movements.reversed(), message: message)
-    }
-
-    static func unitsLabel(_ quantity: Int) -> String {
-        quantity == 1 ? "1 unit" : "\(quantity) units"
     }
 }

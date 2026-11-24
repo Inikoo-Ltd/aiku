@@ -28,9 +28,9 @@ struct GoodsOutAddressSheet: View {
         _country = State(initialValue: note.deliveryAddress.country)
     }
 
-    private func requiredError(_ text: String, _ label: String) -> String? {
+    private func requiredError(_ text: String, _ message: String) -> String? {
         guard showsErrors, text.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
-        return "Enter the \(label)"
+        return message
     }
 
     var body: some View {
@@ -42,12 +42,12 @@ struct GoodsOutAddressSheet: View {
     }
 
     private var sampleBody: some View {
-        SheetScaffold(title: "Edit delivery address", subtitle: "Delivery note \(note.reference) · used for the shipping label") {
-            AikuTextField("Contact name", text: $contactName, error: requiredError(contactName, "contact name"))
+        SheetScaffold(title: "Edit delivery address", subtitle: L10n.format("Delivery note %@ · used for the shipping label", note.reference)) {
+            AikuTextField("Contact name", text: $contactName, error: requiredError(contactName, "Enter the contact name"))
             AikuTextField("Company", text: $company)
             AikuTextField("Phone", text: $phone, keyboard: .phonePad)
             AikuTextField("Email", text: $email, keyboard: .emailAddress)
-            AikuTextField("Address", text: $street, error: requiredError(street, "street and number"))
+            AikuTextField("Address", text: $street, error: requiredError(street, "Enter the street and number"))
             HStack(alignment: .top, spacing: 8) {
                 AikuTextField("Town", text: $town)
                 AikuTextField("Postcode", text: $postcode)
@@ -63,7 +63,7 @@ struct GoodsOutAddressSheet: View {
                     return
                 }
                 close()
-                GoodsOutFeedback.done("Delivery address of \(note.reference) saved", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("Delivery address of %@ saved", note.reference), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.saveAddress")
             AikuButton("Cancel", kind: .tertiary, action: close)
@@ -102,7 +102,7 @@ struct GoodsOutRemoteAddressSheet: View {
     private var includesContact: Bool { retry != nil || note.packingDetails?.canEditContact == true }
 
     var body: some View {
-        SheetScaffold(title: "Edit delivery address", subtitle: "Delivery note \(note.reference) · used for the shipping label") {
+        SheetScaffold(title: "Edit delivery address", subtitle: L10n.format("Delivery note %@ · used for the shipping label", note.reference)) {
             if let problem {
                 InlineAlert(tone: .danger, title: problem)
             }

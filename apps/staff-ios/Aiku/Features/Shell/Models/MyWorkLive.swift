@@ -101,38 +101,40 @@ final class MyWorkFeed {
     }
 }
 
+@MainActor
 enum MyWorkText {
     static func kind(_ kind: MobileMyWorkKind) -> String {
         switch kind {
-        case .deliveryNote: "Delivery note"
-        case .pickingSession: "Picking session"
-        case .customerReturn: "Customer return"
-        case .palletReturn: "Fulfilment return"
+        case .deliveryNote: L10n.text("Delivery note")
+        case .pickingSession: L10n.text("Picking session")
+        case .customerReturn: L10n.text("Customer return")
+        case .palletReturn: L10n.text("Fulfilment return")
         }
     }
 
     static func size(_ row: MobileMyWorkRow) -> String? {
         guard let count = row.items else { return nil }
         return switch row.kind {
-        case .deliveryNote: plural(count, "line", "lines")
-        case .pickingSession: plural(count, "delivery note", "delivery notes")
-        case .customerReturn: plural(count, "item", "items")
-        case .palletReturn: row.typeGroup == "items" ? plural(count, "stored item", "stored items") : plural(count, "pallet", "pallets")
+        case .deliveryNote: L10n.format("%lld lines", count)
+        case .pickingSession: L10n.format("%lld delivery notes", count)
+        case .customerReturn: L10n.format("%lld items", count)
+        case .palletReturn: row.typeGroup == "items" ? L10n.format("%lld stored items", count) : L10n.format("%lld pallets", count)
         }
     }
 
     static func trolleys(_ names: [String]) -> String? {
         guard !names.isEmpty else { return nil }
-        return "\(names.count == 1 ? "Trolley" : "Trolleys") \(names.joined(separator: ", "))"
+        let joined = names.joined(separator: ", ")
+        return names.count == 1 ? L10n.format("Trolley %@", joined) : L10n.format("Trolleys %@", joined)
     }
 
     static func since(_ text: String?, now: Date) -> String? {
         guard let text, let start = date(text) else { return nil }
         let minutes = Int(now.timeIntervalSince(start) / 60)
-        if minutes < 1 { return "just now" }
-        if minutes < 60 { return "\(plural(minutes, "min", "min")) ago" }
-        if minutes < 1440 { return "\(plural(minutes / 60, "hour", "hours")) ago" }
-        return "\(plural(minutes / 1440, "day", "days")) ago"
+        if minutes < 1 { return L10n.text("just now") }
+        if minutes < 60 { return L10n.format("%lld min ago", minutes) }
+        if minutes < 1440 { return L10n.format("%lld hours ago", minutes / 60) }
+        return L10n.format("%lld days ago", minutes / 1440)
     }
 
     static func subtitle(_ row: MobileMyWorkRow, now: Date) -> String {
@@ -151,10 +153,6 @@ enum MyWorkText {
         case "to_pick", "to_pack", "to_start", "to_dispatch": .info
         default: .neutral
         }
-    }
-
-    private static func plural(_ count: Int, _ one: String, _ other: String) -> String {
-        "\(count) \(count == 1 ? one : other)"
     }
 
     private static func date(_ text: String) -> Date? {

@@ -117,11 +117,12 @@ enum PalletReturnText {
     static let stageTitles = ["Confirmed", "Picking", "Picked", "Dispatched"]
     static let unsureTitle = "Not sure it was saved"
 
+    @MainActor
     static func unsureMessage(_ write: MobilePalletReturnWrite) -> String {
         switch write {
-        case .scan(let barcode, _): "The scan of \(barcode) didn’t get an answer. Try again; it is not counted twice."
-        case .pickFromOtherPallet: "The pick from another pallet didn’t get an answer. Try again; it is not picked twice."
-        default: "The pick didn’t get an answer. Try again; it is not picked twice."
+        case .scan(let barcode, _): L10n.format("The scan of %@ didn’t get an answer. Try again; it is not counted twice.", barcode)
+        case .pickFromOtherPallet: L10n.text("The pick from another pallet didn’t get an answer. Try again; it is not picked twice.")
+        default: L10n.text("The pick didn’t get an answer. Try again; it is not picked twice.")
         }
     }
 
@@ -151,8 +152,9 @@ enum PalletReturnText {
         return .neutral
     }
 
+    @MainActor
     static func typeTitle(_ row: MobilePalletReturnRow) -> String {
-        row.typeLabel ?? (row.typeGroup == "items" ? "Stored items" : "Pallets")
+        row.typeLabel ?? (row.typeGroup == "items" ? L10n.text("Stored items") : L10n.text("Pallets"))
     }
 
     static func rowDate(_ row: MobilePalletReturnRow, in timeZone: TimeZone = .current) -> String? {
@@ -163,21 +165,24 @@ enum PalletReturnText {
         Chip(row.stateLabel?.nilIfEmpty ?? row.state, stateTone(row.state))
     }
 
+    @MainActor
     static func rowDetails(_ row: MobilePalletReturnRow) -> [String] {
         let size = row.typeGroup == "items"
-            ? PalletDeliveryText.plural(row.numberItems, "item line", "item lines")
-            : PalletDeliveryText.plural(row.numberPallets, "pallet", "pallets")
-        let platform = row.platform?.label.map { "from \($0)" }
+            ? L10n.format("%lld item lines", row.numberItems)
+            : L10n.format("%lld pallets", row.numberPallets)
+        let platform = row.platform?.label.map { L10n.format("from %@", $0) }
         let parts: [String?] = [typeTitle(row), platform, size]
         return parts.compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
     }
 
+    @MainActor
     static func kicker(_ detail: MobilePalletReturnDetail) -> String {
-        PalletDeliveryText.joined(["Fulfilment return", detail.typeLabel ?? (detail.isItems ? "Stored items" : "Pallets"), detail.customer?.name])
+        PalletDeliveryText.joined([L10n.text("Fulfilment return"), detail.typeLabel ?? (detail.isItems ? L10n.text("Stored items") : L10n.text("Pallets")), detail.customer?.name])
     }
 
+    @MainActor
     static func locationText(_ location: MobileStoredPallet.Location?) -> String {
-        location?.code ?? "no location"
+        location?.code ?? L10n.text("no location")
     }
 }
 
@@ -528,11 +533,11 @@ final class PalletReturnLive {
         let itemLines = detail.storedItems.flatMap(\.lines)
         if let pallet = itemLines.compactMap(\.pallet).first(where: { $0.matches(code) }) {
             selectedPalletID = pallet.id
-            return .done("Pallet \(pallet.reference ?? code): now scan its items", .info)
+            return .done(L10n.format("Pallet %@: now scan its items", pallet.reference ?? code), .info)
         }
         guard let item = detail.storedItems.first(where: { $0.storedItem.matches(code) }) else {
             scanMissed()
-            return .done("\(code) isn’t on this return", .info)
+            return .done(L10n.format("%@ isn’t on this return", code), .info)
         }
         let line = item.lines.first { $0.pallet?.id == selectedPalletID && $0.hasActions }
             ?? item.lines.first { $0.can("pick") }
@@ -540,7 +545,7 @@ final class PalletReturnLive {
             ?? item.lines.first
         guard let line else {
             scanMissed()
-            return .done("\(code) isn’t on this return", .info)
+            return .done(L10n.format("%@ isn’t on this return", code), .info)
         }
         return .lineFound(line.lineId)
     }
@@ -635,12 +640,12 @@ final class PalletReturnLive {
             scanMissed()
         }
         switch status {
-        case "picked", "done": return .done(message ?? "\(code) picked", .success)
-        case "already_picked", "nothing_changed": return .done(message ?? "\(code) is already picked", .info)
-        case "no_stock": return .done(message ?? "No stock of \(code) left to pick", .warn)
+        case "picked", "done": return .done(message ?? L10n.format("%@ picked", code), .success)
+        case "already_picked", "nothing_changed": return .done(message ?? L10n.format("%@ is already picked", code), .info)
+        case "no_stock": return .done(message ?? L10n.format("No stock of %@ left to pick", code), .warn)
         case "wrong_state": return .done(message ?? "This return isn’t being picked", .warn)
         default:
-            return .done(message ?? "\(code) isn’t on this return", .warn)
+            return .done(message ?? L10n.format("%@ isn’t on this return", code), .warn)
         }
     }
 

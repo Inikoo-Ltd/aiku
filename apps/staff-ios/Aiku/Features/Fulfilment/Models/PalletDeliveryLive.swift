@@ -134,35 +134,35 @@ enum PalletDeliveryText {
         return pallet.type?.capitalized
     }
 
+    @MainActor
     static func locationText(_ pallet: MobileDeliveryPallet) -> String {
-        pallet.location?.code ?? "no location yet"
+        pallet.location?.code ?? L10n.text("no location yet")
     }
 
-    static func plural(_ count: Int, _ one: String, _ many: String) -> String {
-        "\(count.grouped) \(count == 1 ? one : many)"
-    }
-
+    @MainActor
     static func palletSubtitle(_ pallet: MobileDeliveryPallet) -> String {
         let items = pallet.numberStoredItems ?? pallet.storedItems?.count ?? 0
         return joined([
             typeText(pallet),
             quoted(pallet.customerReference),
             locationText(pallet),
-            items > 0 ? plural(items, "stored item", "stored items") : nil
+            items > 0 ? L10n.format("%lld stored items", items) : nil
         ])
     }
 
+    @MainActor
     static func countsText(_ counts: MobilePalletDeliveryCounts) -> String? {
         let parts = [
-            counts.pallets > 0 ? plural(counts.pallets, "pallet", "pallets") : nil,
-            counts.boxes > 0 ? plural(counts.boxes, "box", "boxes") : nil,
-            counts.oversizes > 0 ? plural(counts.oversizes, "oversize", "oversize") : nil
+            counts.pallets > 0 ? L10n.format("%lld pallets", counts.pallets) : nil,
+            counts.boxes > 0 ? L10n.format("%lld boxes", counts.boxes) : nil,
+            counts.oversizes > 0 ? L10n.format("%lld oversize", counts.oversizes) : nil
         ].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
+    @MainActor
     static func bookInProgress(booked: Int, of total: Int) -> String {
-        "\(booked.grouped) of \(total.grouped) booked in"
+        L10n.format("%lld of %lld booked in", booked, total)
     }
 
     static func day(_ iso: String?) -> String? {
@@ -189,6 +189,7 @@ enum PalletDeliveryText {
         Chip(row.stateLabel?.nilIfEmpty ?? row.state, deliveryTone(row.state))
     }
 
+    @MainActor
     static func rowDetails(_ row: MobilePalletDeliveryRow) -> [String] {
         let progress: String? = row.state == "booking_in"
             ? bookInProgress(booked: row.counts.bookedIn, of: max(row.counts.total - row.counts.notReceived, 0))

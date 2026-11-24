@@ -71,17 +71,17 @@ final class ClockingStore {
         let days = today.events.isEmpty ? pastDays : [today] + pastDays
         let weeks = ClockingMapper.weeks(from: days, today: today.date)
         if weeks.first?.label == "This week" { return weeks }
-        return [ClockingWeek(label: "This week", range: ClockingMapper.weekRange(start: ClockingMapper.weekStart(of: today.date) ?? today.date), days: [])] + weeks
+        return [ClockingWeek(label: "This week", range: ClockingMapper.weekRange(start: ClockingMapper.weekStart(of: today.date) ?? today.date), days: [], weeksAgo: 0)] + weeks
     }
 
     var statusSince: String {
         if isClockedIn, let last = today.trackers.last {
-            return "Since: \(ClockingFormat.time(last.inAt))"
+            return L10n.format("Since: %@", ClockingFormat.time(last.inAt))
         }
         if let lastOut = today.lastOut {
-            return "Last clock out \(ClockingFormat.time(lastOut))"
+            return L10n.format("Last clock out %@", ClockingFormat.time(lastOut))
         }
-        return "Not clocked in today"
+        return L10n.text("Not clocked in today")
     }
 
     var adjustmentDay: ClockingDay {
@@ -223,7 +223,7 @@ final class ClockingStore {
                 OfflineWork.shared.syncNow(.clockOut)
             }
             let time = ClockingMapper.secondsSinceMidnight(response.clocking?.clockedAt, in: timeZone) ?? now
-            let event = ClockingEvent(time: time, kind: kind, viaMobileApp: true, place: response.machine?.name ?? "Clocking machine", clockingID: response.clocking?.id, isLate: response.clocking?.isLate ?? false)
+            let event = ClockingEvent(time: time, kind: kind, viaMobileApp: true, place: response.machine?.name ?? L10n.text("Clocking machine"), clockingID: response.clocking?.id, isLate: response.clocking?.isLate ?? false)
             await load()
             return .success(event)
         } catch APIError.offline {

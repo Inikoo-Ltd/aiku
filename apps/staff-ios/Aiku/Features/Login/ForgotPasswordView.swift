@@ -98,7 +98,7 @@ struct ForgotPasswordView: View {
         .buttonStyle(AuthPrimaryButtonStyle())
         .disabled(isSending)
         .accessibilityIdentifier("forgot.reset")
-        AuthTextLink(resendSeconds > 0 ? String(format: "Resend code in %d:%02d", resendSeconds / 60, resendSeconds % 60) : "Resend code") {
+        AuthTextLink(resendSeconds > 0 ? L10n.format("Resend code in %@", String(format: "%d:%02d", resendSeconds / 60, resendSeconds % 60)) : "Resend code") {
             resend()
         }
         .disabled(resendSeconds > 0 || isResending || isSending)

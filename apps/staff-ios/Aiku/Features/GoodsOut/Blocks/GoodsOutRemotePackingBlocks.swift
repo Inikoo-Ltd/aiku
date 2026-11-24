@@ -60,7 +60,7 @@ struct GoodsOutRemotePackingFooter: View {
             }
         }
         .aikuConfirm(
-            confirming.map { "\($0.label)?" } ?? "",
+            confirming.map { L10n.format("%@?", $0.label) } ?? "",
             isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
             message: confirming.map(effect) ?? "",
             confirmTitle: confirming?.label ?? ""
@@ -96,9 +96,9 @@ struct GoodsOutRemotePackingFooter: View {
         let reference = note.reference
         switch GoodsOutActionKey(rawValue: action.key) {
         case .startPacking:
-            GoodsOutWriteFeedback.run(.startPacking, on: reference, fallback: "Packing started for \(reference)", toasts: toasts)
+            GoodsOutWriteFeedback.run(.startPacking, on: reference, fallback: L10n.format("Packing started for %@", reference), toasts: toasts)
         case .setAsPacked:
-            GoodsOutWriteFeedback.run(.setAsPacked, on: reference, fallback: "\(reference) set as packed", toasts: toasts) { _ in
+            GoodsOutWriteFeedback.run(.setAsPacked, on: reference, fallback: L10n.format("%@ set as packed", reference), toasts: toasts) { _ in
                 if let packed = store.note(reference), packed.state == .packed, packed.shipments.isEmpty, packed.allows(.addShipment) {
                     router.open(GoodsOutRoute.addShipment(reference: reference))
                 }
@@ -112,9 +112,9 @@ struct GoodsOutRemotePackingFooter: View {
         case .finaliseAndDispatch:
             GoodsOutWriteFeedback.run(.finaliseAndDispatch, on: reference, fallback: "Delivery note dispatched", toasts: toasts)
         case .takeOver:
-            GoodsOutWriteFeedback.run(.takeOver, on: reference, fallback: "You can work on \(reference) now", toasts: toasts)
+            GoodsOutWriteFeedback.run(.takeOver, on: reference, fallback: L10n.format("You can work on %@ now", reference), toasts: toasts)
         default:
-            toasts.show("\(action.label) isn’t available in the app yet", tone: .warn)
+            toasts.show(L10n.format("%@ isn’t available in the app yet", action.label), tone: .warn)
         }
     }
 }
@@ -275,7 +275,7 @@ struct GoodsOutRemoteShipmentsBlock: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .aikuConfirm(
-            "Delete the \(deleting?.shipper ?? "") shipment?",
+            L10n.format("Delete the %@ shipment?", deleting?.shipper ?? ""),
             isPresented: Binding(get: { deleting?.id == shipment.id }, set: { if !$0 { deleting = nil } }),
             message: "This can’t be undone. The carrier is not told: if the label was already booked, cancel it with the carrier yourself.",
             confirmTitle: "Delete shipment",
@@ -310,12 +310,12 @@ struct GoodsOutRemoteParcelsEditor: View {
     static func canRemoveParcel(parcelCount: Int) -> Bool { parcelCount > 1 }
 
     var body: some View {
-        GoodsOutSectionTitle(title: "Parcels (\(drafts.count))", detail: usesBoxes ? "kg · L × W × H cm · boxes" : "kg · L × W × H cm")
+        GoodsOutSectionTitle(title: L10n.format("Parcels (%lld)", drafts.count), detail: usesBoxes ? "kg · L × W × H cm · boxes" : "kg · L × W × H cm")
         Card {
             ForEach($drafts) { $draft in
                 let index = drafts.firstIndex { $0.id == draft.id } ?? 0
                 GoodsOutParcelDraftRow(
-                    title: "Parcel \(index + 1)",
+                    title: L10n.format("Parcel %lld", index + 1),
                     draft: $draft,
                     usesBoxes: usesBoxes,
                     canRemove: Self.canRemoveParcel(parcelCount: drafts.count)
@@ -409,17 +409,17 @@ private struct GoodsOutParcelDraftRow: View {
                 }
                 Spacer(minLength: 8)
                 if canRemove {
-                    IconButton(.close, label: "Remove \(title)", tint: AikuColor.text3, action: remove)
+                    IconButton(.close, label: L10n.format("Remove %@", title), tint: AikuColor.text3, action: remove)
                         .accessibilityIdentifier("goodsOut.removeParcel")
                 }
             }
             HStack(spacing: 6) {
-                field($draft.weight, placeholder: "kg", label: "weight in kilograms", keyboard: .decimalPad)
-                field($draft.length, placeholder: "L", label: "length in centimetres", keyboard: .decimalPad)
-                field($draft.width, placeholder: "W", label: "width in centimetres", keyboard: .decimalPad)
-                field($draft.height, placeholder: "H", label: "height in centimetres", keyboard: .decimalPad)
+                field($draft.weight, placeholder: "kg", label: L10n.format("%@ weight in kilograms", title), keyboard: .decimalPad)
+                field($draft.length, placeholder: "L", label: L10n.format("%@ length in centimetres", title), keyboard: .decimalPad)
+                field($draft.width, placeholder: "W", label: L10n.format("%@ width in centimetres", title), keyboard: .decimalPad)
+                field($draft.height, placeholder: "H", label: L10n.format("%@ height in centimetres", title), keyboard: .decimalPad)
                 if usesBoxes {
-                    field($draft.boxes, placeholder: "Boxes", label: "number of boxes", keyboard: .numberPad)
+                    field($draft.boxes, placeholder: "Boxes", label: L10n.format("%@ number of boxes", title), keyboard: .numberPad)
                 }
             }
         }
@@ -428,7 +428,7 @@ private struct GoodsOutParcelDraftRow: View {
     }
 
     private func field(_ text: Binding<String>, placeholder: String, label: String, keyboard: UIKeyboardType) -> some View {
-        TextField("", text: text, prompt: Text(placeholder).foregroundStyle(AikuColor.faint))
+        TextField("", text: text, prompt: Text(L10n.text(placeholder)).foregroundStyle(AikuColor.faint))
             .font(.aiku(14, .semibold))
             .foregroundStyle(AikuColor.text)
             .multilineTextAlignment(.center)
@@ -437,7 +437,7 @@ private struct GoodsOutParcelDraftRow: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(AikuColor.surface, in: RoundedRectangle(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(text.wrappedValue.isEmpty && placeholder != "Boxes" ? AikuColor.warn : AikuColor.borderStrong))
-            .accessibilityLabel("\(title) \(label)")
+            .accessibilityLabel(label)
     }
 }
 
@@ -449,7 +449,7 @@ struct GoodsOutPackScanScreen: View {
     private let store = GoodsOutStore.shared
 
     var body: some View {
-        DispatchCameraScan(kicker: "Delivery note \(reference)", title: "Scan to pack", feedback: feedback, onClose: close, onCode: scan) {
+        DispatchCameraScan(kicker: L10n.format("Delivery note %@", reference), title: L10n.text("Scan to pack"), feedback: feedback, onClose: close, onCode: scan) {
             if let note = store.note(reference), let next = note.nextLineToPack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(next.sko)
@@ -477,7 +477,7 @@ struct GoodsOutPackScanScreen: View {
             isSending = false
             switch result {
             case .packed(let sko, let message, let lineDone):
-                feedback = (message ?? (lineDone ? "\(sko) · line packed" : "\(sko) +1"), .success)
+                feedback = (message ?? (lineDone ? L10n.format("%@ · line packed", sko) : "\(sko) +1"), .success)
             case .refused(let message):
                 feedback = (message, .danger)
             }

@@ -48,7 +48,11 @@ struct RootView: View {
         .onChange(of: authStore.mobileProfile, initial: true) { _, profile in
             if let profile {
                 session.apply(profile)
-                languages.applyAccountLanguage(profile.language?.code)
+            }
+        }
+        .onChange(of: authStore.accountLanguage) { _, answer in
+            if let answer {
+                languages.applyAccountLanguage(answer.code, askedAt: answer.askedAt)
             }
         }
         .onChange(of: languages.pendingID, initial: true) { _, pending in

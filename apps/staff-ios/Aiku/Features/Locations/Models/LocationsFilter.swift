@@ -13,6 +13,15 @@ enum LocationsListTab: String, CaseIterable, Hashable, Sendable {
         }
     }
 
+    @MainActor
+    func pillTitle(count: String) -> String {
+        switch self {
+        case .all: L10n.format("All %@", count)
+        case .empty: L10n.format("Empty %@", count)
+        case .partiallyEmpty: L10n.format("Partially empty %@", count)
+        }
+    }
+
     func matches(_ location: LocationsLocation) -> Bool {
         switch self {
         case .all: true
@@ -61,6 +70,16 @@ enum LocationsSort: String, CaseIterable, Hashable, Sendable {
         case .volume: "CBM"
         }
     }
+
+    @MainActor
+    var sortedByText: String {
+        switch self {
+        case .code: L10n.text("sorted by code")
+        case .stockValue: L10n.text("sorted by stock value")
+        case .weight: L10n.text("sorted by weight")
+        case .volume: L10n.text("sorted by cbm")
+        }
+    }
 }
 
 struct LocationsFilter: Hashable, Sendable {
@@ -76,10 +95,10 @@ struct LocationsFilter: Hashable, Sendable {
         areas.count + statuses.count + scopes.count + occupancies.count
     }
 
+    @MainActor
     var summary: String {
-        let count = activeCount
-        let filters = count == 0 ? "No filters" : count == 1 ? "1 filter" : "\(count) filters"
-        return "\(filters) · sorted by \(sort.title.lowercased())"
+        let filters = activeCount == 0 ? L10n.text("No filters") : L10n.format("%lld filters", activeCount)
+        return [filters, sort.sortedByText].joined(separator: " · ")
     }
 
     func matches(_ location: LocationsLocation) -> Bool {

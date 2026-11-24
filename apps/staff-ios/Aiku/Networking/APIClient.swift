@@ -33,14 +33,14 @@ enum APIError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .invalidResponse: "Invalid server response"
-        case .unauthorized: "Not signed in"
-        case .http(let statusCode): "Server error (\(statusCode))"
+        case .invalidResponse: L10n.formatInSavedLanguage("Invalid server response")
+        case .unauthorized: L10n.formatInSavedLanguage("Not signed in")
+        case .http(let statusCode): L10n.formatInSavedLanguage("Server error (%lld)", statusCode)
         case .validation(let message, _, _): message
         case .tooManyAttempts(let message): message
         case .rejected(let message): message
-        case .offline: "No connection"
-        case .unexpectedBody: "Unexpected server response"
+        case .offline: L10n.formatInSavedLanguage("No connection")
+        case .unexpectedBody: L10n.formatInSavedLanguage("Unexpected server response")
         }
     }
 }

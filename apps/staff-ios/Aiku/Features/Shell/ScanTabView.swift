@@ -14,7 +14,7 @@ struct ScanTabView: View {
     @FocusState private var isTypingCode: Bool
 
     var body: some View {
-        AppScreen(title: lookup.outcome == nil ? "Scan" : "Result", kicker: "Scan · \(session.warehouseLabel)", back: .none, spacing: 16) {
+        AppScreen(title: lookup.outcome == nil ? "Scan" : "Result", kicker: L10n.format("Scan · %@", session.warehouseLabel), back: .none, spacing: 16) {
             if session.canScan {
                 content
             } else {
@@ -61,7 +61,7 @@ struct ScanTabView: View {
                 AppIcon.scan.image
                     .font(.system(size: 18, weight: .semibold))
                     .accessibilityHidden(true)
-                Text(listeningTitle)
+                Text(L10n.text(listeningTitle))
                     .font(.aiku(14, .bold))
             }
             Text("SKO, location, delivery note or stock delivery. Opens the right screen.")

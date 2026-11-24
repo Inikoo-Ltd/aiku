@@ -89,9 +89,9 @@ struct ClockingScanFlow: View {
     }
 
     private var hint: String {
-        if cameraAllowed == false { return "Camera access is off. Allow it in Settings, or type the code." }
-        if cameraAllowed == true, !QRCodeScanner.isAvailable { return "This device can’t scan QR codes. Type the code instead." }
-        return "Align QR code inside the frame"
+        if cameraAllowed == false { return L10n.text("Camera access is off. Allow it in Settings, or type the code.") }
+        if cameraAllowed == true, !QRCodeScanner.isAvailable { return L10n.text("This device can’t scan QR codes. Type the code instead.") }
+        return L10n.text("Align QR code inside the frame")
     }
 
     private var topBar: some View {

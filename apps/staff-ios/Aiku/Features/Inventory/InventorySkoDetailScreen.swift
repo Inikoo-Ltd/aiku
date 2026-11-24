@@ -77,7 +77,7 @@ private struct InventoryLiveSkoDetail: View {
             } else {
                 AppScreen(title: feed.title, kicker: "SKO") {
                     if feed.isNotFound {
-                        EmptyState(icon: .sko, title: "SKO not found", message: "\(feed.title) is not an SKO of this warehouse.")
+                        EmptyState(icon: .sko, title: "SKO not found", message: L10n.format("%@ is not an SKO of this warehouse.", feed.title))
                     } else if let message = feed.loadError {
                         InventoryLoadAlert(title: "Couldn’t load the SKO", message: message) {
                             Task { await feed.load() }
@@ -174,7 +174,7 @@ private struct InventorySkoDetailView: View {
     var body: some View {
         AppScreen(
             title: sko.reference,
-            kicker: "SKO · \(sko.live?.stateLabel ?? sko.state.title)",
+            kicker: L10n.format("SKO · %@", sko.live?.stateLabel ?? L10n.text(sko.state.title)),
             actions: [HeaderAction(.history, label: "Stock history") { openHistory() }]
         ) {
             header
@@ -182,7 +182,7 @@ private struct InventorySkoDetailView: View {
                 offlineNotices
             }
             if !infoLines.isEmpty {
-                InventoryInfoCard(title: "SKO", lines: infoLines)
+                InventoryInfoCard(title: L10n.text("SKO"), lines: infoLines)
             }
             InventorySkoStockCard(sko: sko)
             SectionHeading("Locations", detail: "\(sko.locations.count)")
@@ -218,7 +218,7 @@ private struct InventorySkoDetailView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            ProductThumb(size: 96, label: "Product photo of \(sko.reference)")
+            ProductThumb(size: 96, label: L10n.format("Product photo of %@", sko.reference))
             VStack(alignment: .leading, spacing: 4) {
                 Text(sko.name)
                     .font(.aiku(16, .bold))
@@ -241,20 +241,20 @@ private struct InventorySkoDetailView: View {
     private var infoLines: [InventoryInfoLine] {
         var lines: [InventoryInfoLine] = []
         if sko.unitsPerSko > 0 {
-            lines.append(InventoryInfoLine(icon: .sko, text: "Packed in: \(sko.unitsPerSko) \(sko.unitsPerSko == 1 ? "unit" : "units") per SKO"))
+            lines.append(InventoryInfoLine(icon: .sko, text: L10n.format("Packed in: %lld units per SKO", sko.unitsPerSko)))
         }
-        let barcodes = [sko.barcode.map { "SKO barcode \($0)" }, sko.unitBarcode.map { "unit EAN \($0)" }].compactMap { $0 }
+        let barcodes = [sko.barcode.map { L10n.format("SKO barcode %@", $0) }, sko.unitBarcode.map { L10n.format("unit EAN %@", $0) }].compactMap { $0 }
         if !barcodes.isEmpty {
             lines.append(InventoryInfoLine(icon: .scan, text: barcodes.joined(separator: " · ")))
         }
         if let note = sko.pickerNote {
-            lines.append(InventoryInfoLine(icon: .note, text: "Note to pickers: \(note)"))
+            lines.append(InventoryInfoLine(icon: .note, text: L10n.format("Note to pickers: %@", note)))
         }
         if let note = sko.packerNote {
-            lines.append(InventoryInfoLine(icon: .note, text: "Note to packers: \(note)"))
+            lines.append(InventoryInfoLine(icon: .note, text: L10n.format("Note to packers: %@", note)))
         }
         if let abnormality = sko.abnormalityNote {
-            lines.append(InventoryInfoLine(icon: .warning, text: "Abnormality: \(abnormality)"))
+            lines.append(InventoryInfoLine(icon: .warning, text: L10n.format("Abnormality: %@", abnormality)))
         }
         return lines
     }
@@ -281,7 +281,7 @@ private struct InventorySkoDetailView: View {
         } label: {
             HStack(spacing: 8) {
                 icon.image.font(.system(size: 17, weight: .medium))
-                Text(title)
+                Text(L10n.text(title))
             }
         }
         .buttonStyle(AikuButtonStyle(kind: .tertiary))

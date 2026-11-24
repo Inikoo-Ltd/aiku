@@ -217,7 +217,7 @@ struct ShellSearchView: View {
 
     @ViewBuilder
     private func photo(_ row: MobileSearchRow) -> some View {
-        let label = "Product photo of \(row.title)"
+        let label = L10n.format("Product photo of %@", row.title)
         if let url = row.imageUrl.flatMap(URL.init(string:)) {
             AsyncImage(url: url) { image in
                 image.resizable().scaledToFill()
@@ -246,7 +246,7 @@ struct ShellSearchView: View {
     }
 
     private var hint: some View {
-        HelperText("Type at least \(ShellSearchFormat.minimumQueryLength) characters of a reference, code or name.")
+        HelperText(L10n.format("Type at least %lld characters of a reference, code or name.", ShellSearchFormat.minimumQueryLength))
     }
 
     private var recentSection: some View {
@@ -277,7 +277,7 @@ struct ShellSearchView: View {
     private var emptyResults: some View {
         EmptyState(
             icon: .search,
-            title: "No results for “\(store.needle)”",
+            title: L10n.format("No results for “%@”", store.needle),
             message: "Try a SKO reference (SKO-00412), a location code (A-03-02) or a shorter word.",
             actionTitle: session.canScan ? "Scan instead" : nil,
             action: session.canScan ? { router.select(.scan) } : nil

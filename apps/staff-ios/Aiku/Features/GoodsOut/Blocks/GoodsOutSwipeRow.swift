@@ -68,7 +68,7 @@ struct GoodsOutSwipeRow<Content: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityActions {
             ForEach(leadingActions + trailingActions) { item in
-                Button(item.title) {
+                Button(L10n.text(item.title)) {
                     open = nil
                     item.action()
                 }
@@ -106,7 +106,7 @@ struct GoodsOutSwipeRow<Content: View>: View {
             VStack(spacing: 4) {
                 item.icon.image
                     .font(.system(size: 20, weight: .semibold))
-                Text(item.title)
+                Text(L10n.text(item.title))
                     .font(.aiku(13, .bold))
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)

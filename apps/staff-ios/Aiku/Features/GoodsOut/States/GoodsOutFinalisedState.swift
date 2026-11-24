@@ -21,7 +21,7 @@ struct GoodsOutFinalisedStateView: View {
         } else {
             GoodsOutSummaryCard(title: "Ready to dispatch", detail: note.dispatchSummary)
             Card {
-                ListRow("\(note.dispatchedUnits) items dispatched", subtitle: note.notPickedSummary ?? "Every item was picked", icon: .check, iconTone: .success)
+                ListRow(L10n.format("%lld items dispatched", note.dispatchedUnits), subtitle: note.notPickedSummary ?? "Every item was picked", icon: .check, iconTone: .success)
                 if note.invoiceGenerated {
                     RowDivider()
                     ListRow("Invoice generated", subtitle: "Goes in the parcel with the delivery note", icon: .document, iconTone: .neutral)
@@ -50,7 +50,7 @@ struct GoodsOutFinalisedFooter: View {
         if note.isCollection {
             AikuButton("Set as collected", icon: .check) {
                 let previous = store.dispatch(note.reference)
-                GoodsOutFeedback.done("\(note.reference) collected by the customer", previous: previous, toasts: toasts)
+                GoodsOutFeedback.done(L10n.format("%@ collected by the customer", note.reference), previous: previous, toasts: toasts)
             }
             .accessibilityIdentifier("goodsOut.setAsCollected")
         } else {
@@ -58,13 +58,13 @@ struct GoodsOutFinalisedFooter: View {
                 if note.canGenerateInvoice {
                     AikuButton("Generate invoice", icon: .document, kind: .tertiary) {
                         let previous = store.generateInvoice(note.reference)
-                        GoodsOutFeedback.done("Invoice generated for \(note.reference)", previous: previous, toasts: toasts)
+                        GoodsOutFeedback.done(L10n.format("Invoice generated for %@", note.reference), previous: previous, toasts: toasts)
                     }
                     .accessibilityIdentifier("goodsOut.generateInvoice")
                 }
                 AikuButton("Dispatch", icon: .deliveryNote) {
                     let previous = store.dispatch(note.reference)
-                    GoodsOutFeedback.done("\(note.reference) dispatched", previous: previous, toasts: toasts)
+                    GoodsOutFeedback.done(L10n.format("%@ dispatched", note.reference), previous: previous, toasts: toasts)
                 }
                 .accessibilityIdentifier("goodsOut.dispatch")
             }
@@ -87,7 +87,7 @@ struct GoodsOutDispatchedStateView: View {
                 .frame(width: 72, height: 72)
                 .background(AikuColor.successSoft, in: Circle())
                 .accessibilityHidden(true)
-            Text(note.isCollection ? "\(note.reference) collected" : "\(note.reference) dispatched")
+            Text(note.isCollection ? L10n.format("%@ collected", note.reference) : L10n.format("%@ dispatched", note.reference))
                 .font(.aiku(22, .bold))
                 .foregroundStyle(AikuColor.text)
                 .accessibilityAddTraits(.isHeader)
@@ -120,7 +120,8 @@ struct GoodsOutDispatchedStateView: View {
     }
 
     private var detail: String {
-        if note.isCollection { return "\(note.parcelCountText) collected by the customer" }
-        return "\(note.parcelCountText) with \(note.shipperTitle)"
+        let count = max(note.parcels.count, 1)
+        if note.isCollection { return L10n.format("%lld parcels collected by the customer", count) }
+        return L10n.format("%lld boxes with %@", count, note.shipperTitle)
     }
 }

@@ -55,7 +55,7 @@ struct GoodsOutDeliveryNotesView: View {
         }
     }
 
-    private var kicker: String { "Goods out · \(session.warehouseLabel)" }
+    private var kicker: String { L10n.format("Goods out · %@", session.warehouseLabel) }
 
     private func applyInitialTab() {
         guard !hasAppliedInitialTab else { return }
@@ -65,7 +65,7 @@ struct GoodsOutDeliveryNotesView: View {
     }
 
     private var searchPlaceholder: String {
-        store.isRemote ? "Reference or tracking number" : "Reference, customer or SKO"
+        store.isRemote ? L10n.text("Reference or tracking number") : L10n.text("Reference, customer or SKO")
     }
 
     @ViewBuilder
@@ -152,7 +152,7 @@ struct GoodsOutDeliveryNotesView: View {
         let open = { router.open(GoodsOutRoute.deliveryNote(reference: note.reference)) }
         if note.state == .todo, note.remote?.canAddToPickingSession ?? true {
             let isSelected = store.selectedForSession.contains(note.reference)
-            let selectionLabel = isSelected ? "Deselect \(note.reference)" : "Select \(note.reference) for a picking session"
+            let selectionLabel = isSelected ? L10n.format("Deselect %@", note.reference) : L10n.format("Select %@ for a picking session", note.reference)
             RecordRow(note.reference, date: note.recordDate, party: note.customer, badges: rowChips(note), details: details, action: open) {
                 Button {
                     store.toggleSessionSelection(note.reference)
@@ -183,7 +183,7 @@ struct GoodsOutDeliveryNotesView: View {
             chips.append(Chip("VIP", .lime))
         }
         if remote.waitingCount > 0 {
-            chips.append(Chip("\(remote.waitingCount) waiting", .warn))
+            chips.append(Chip(L10n.format("%lld waiting", remote.waitingCount), .warn))
         }
         return chips
     }
@@ -191,9 +191,9 @@ struct GoodsOutDeliveryNotesView: View {
     @ViewBuilder
     private var sessionFooter: some View {
         let count = store.selectedForSession.count
-        AikuButton("Create picking session from \(count) selected", kind: .secondary) {
+        AikuButton(L10n.format("Create picking session from %lld selected", count), kind: .secondary) {
             store.selectedForSession = []
-            toasts.show("\(count) delivery \(count == 1 ? "note" : "notes") ready for a picking session", tone: .info)
+            toasts.show(L10n.format("%lld delivery notes ready for a picking session", count), tone: .info)
             router.open(DispatchRoute.pickingSessions)
         }
         .accessibilityIdentifier("goodsOut.createPickingSession")

@@ -13,7 +13,7 @@ struct FulfilmentReturnsView: View {
 
     var body: some View {
         @Bindable var feed = feed
-        AppScreen(title: "Fulfilment returns", kicker: "Goods out · \(session.warehouseLabel)") {
+        AppScreen(title: "Fulfilment returns", kicker: L10n.format("Goods out · %@", session.warehouseLabel)) {
             ModuleTabs(.goodsOut, current: .fulfilmentReturns)
         } content: {
             FilterChipBar(options: PalletReturnStateFilter.allCases, selection: $feed.state, title: \.title) { state in
@@ -93,7 +93,7 @@ struct FulfilmentReturnsView: View {
                 }
             }
         } else if isCurrent, feed.loadError == nil {
-            EmptyState(icon: .goodsOut, title: search.isEmpty ? "No fulfilment returns here." : "No return matches “\(search)”.")
+            EmptyState(icon: .goodsOut, title: search.isEmpty ? "No fulfilment returns here." : L10n.format("No return matches “%@”.", search))
         } else if feed.loadError == nil {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 88)

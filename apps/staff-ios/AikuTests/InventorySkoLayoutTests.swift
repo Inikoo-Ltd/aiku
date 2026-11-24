@@ -8,6 +8,7 @@ private func decodeDetail(_ json: String) throws -> MobileOrgStockDetail {
     return try decoder.decode(MobileOrgStockDetail.self, from: Data(json.utf8))
 }
 
+@MainActor
 struct InventorySkoLayoutTests {
     private static let detailJSON = #"""
     {"id":81,"code":"JBB-01","name":"Jasmine bath bomb","state":"active","packed_in":12,"quantity_in_locations":2.915667,"quantity_in_locations_label":"2 11/12","locations":[{"location_org_stock_id":11,"type":"picking","quantity":2.915667,"quantity_label":"2 11/12","min_stock":12,"max_stock":48,"is_default_wholesale":true,"is_default_dropshipping":true,"audited_at":"2025-10-14","location":{"id":21,"code":"WAREHOUSE-A-AISLE-12-BAY-04-LEVEL-3"}},{"location_org_stock_id":12,"type":"storing","quantity":0,"quantity_label":"0","replenishment_stock":24,"is_default_dropshipping":true,"audited_at":null,"location":{"id":22,"code":"C-01"}},{"location_org_stock_id":13,"type":"storing","quantity":-0.5,"quantity_label":"-1/2","min_stock":6,"location":{"id":23,"code":"D-02"}}]}

@@ -50,7 +50,8 @@ struct GoodsOutParcel: Identifiable, Hashable, Sendable {
     var boxes: Int?
 
     var id: Int { number }
-    var title: String { "Parcel \(number)" }
+    @MainActor
+    var title: String { L10n.format("Parcel %lld", number) }
 
     var hasDimensions: Bool {
         [length, width, height].allSatisfy { ($0 ?? 0) > 0 }
@@ -63,10 +64,11 @@ struct GoodsOutParcel: Identifiable, Hashable, Sendable {
 
     var weightText: String { GoodsOutWeight.text(weightKg) }
 
+    @MainActor
     var summary: String {
-        var parts = [weightText, dimensionsText ?? "dimensions missing"]
+        var parts = [weightText, dimensionsText ?? L10n.text("dimensions missing")]
         if let boxes {
-            parts.append("\(boxes) \(boxes == 1 ? "box" : "boxes")")
+            parts.append(L10n.format("%lld boxes", boxes))
         }
         return parts.joined(separator: " · ")
     }
@@ -80,12 +82,13 @@ enum GoodsOutBox: String, CaseIterable, Hashable, Sendable {
 
     static let largeBoxMaxKg = 10.0
 
+    @MainActor
     var title: String {
         switch self {
-        case .envelope: "Envelope"
-        case .small: "Box S"
-        case .medium: "Box M"
-        case .large: "Box L"
+        case .envelope: L10n.text("Envelope")
+        case .small: L10n.text("Box S")
+        case .medium: L10n.text("Box M")
+        case .large: L10n.text("Box L")
         }
     }
 
@@ -112,6 +115,7 @@ struct GoodsOutBoxSuggestion: Hashable, Sendable {
     let box: GoodsOutBox
     let count: Int
 
+    @MainActor
     var title: String { count > 1 ? "\(count) × \(box.title)" : box.title }
 }
 
@@ -148,10 +152,11 @@ struct GoodsOutShipment: Identifiable, Hashable, Sendable {
         }
     }
 
+    @MainActor
     var subtitle: String {
-        var parts = ["Tracking \(tracking)", "\(parcelCount) \(parcelCount == 1 ? "parcel" : "parcels")"]
+        var parts = [L10n.format("Tracking %@", tracking), L10n.format("%lld parcels", parcelCount)]
         if let cost {
-            parts.append("shipment cost \(cost)")
+            parts.append(L10n.format("shipment cost %@", cost))
         }
         return parts.joined(separator: " · ")
     }
@@ -173,9 +178,11 @@ struct GoodsOutLeaflet: Identifiable, Hashable, Sendable {
     var stateLabel: String?
     var canOpenPdf = false
 
-    var title: String { name ?? "Leaflet · \(id)" }
+    @MainActor
+    var title: String { name ?? L10n.format("Leaflet · %@", id) }
     var chip: Chip { Chip(stateLabel ?? (isPrinted ? "Printed" : "Not printed"), isPrinted ? .success : .warn) }
-    var copiesText: String { "\(copies) \(copies == 1 ? "copy" : "copies") · goes in the parcel" }
+    @MainActor
+    var copiesText: String { L10n.format("%lld copies · goes in the parcel", copies) }
 }
 
 enum GoodsOutShipmentLabel: Hashable, Sendable {
@@ -230,11 +237,13 @@ struct GoodsOutShipperChoice: Identifiable, Hashable, Sendable {
     let isLockedOut: Bool
     var code = ""
 
+    @MainActor
     var detail: String {
-        if isAPI { return "Creates the label and the tracking number" }
-        return needsTracking ? "No API · tracking number required" : "No API · tracking number optional"
+        if isAPI { return L10n.text("Creates the label and the tracking number") }
+        return needsTracking ? L10n.text("No API · tracking number required") : L10n.text("No API · tracking number optional")
     }
 
+    @MainActor
     var option: GoodsOutShipperOption {
         GoodsOutShipperOption(id: String(id), title: name, detail: detail, hasAPI: isAPI)
     }
@@ -248,16 +257,18 @@ struct GoodsOutShipperList: Hashable, Sendable {
     var apiShippers: [GoodsOutShipperChoice] { available.filter(\.isAPI) }
     var manualShippers: [GoodsOutShipperChoice] { available.filter { !$0.isAPI } }
 
+    @MainActor
     func badge(for shipper: GoodsOutShipperChoice) -> String? {
-        if shipper.id == directive.lockedShipperID { return "Locked" }
-        if shipper.id == directive.preferredShipperID { return "Preferred" }
+        if shipper.id == directive.lockedShipperID { return L10n.text("Locked") }
+        if shipper.id == directive.preferredShipperID { return L10n.text("Preferred") }
         return nil
     }
 
+    @MainActor
     var lockNotice: (title: String, message: String?)? {
         guard let lockedID = directive.lockedShipperID, let name = shippers.first(where: { $0.id == lockedID })?.name else { return nil }
-        let title = directive.isLockedByCustomer ? "The customer chose \(name)" : "Shipping rules lock this delivery note to \(name)"
-        return (title, directive.canOverrideLock ? "You can still choose another shipper; you are asked to confirm." : nil)
+        let title = directive.isLockedByCustomer ? L10n.format("The customer chose %@", name) : L10n.format("Shipping rules lock this delivery note to %@", name)
+        return (title, directive.canOverrideLock ? L10n.text("You can still choose another shipper; you are asked to confirm.") : nil)
     }
 
     func defaultChoice() -> GoodsOutShipperChoice? {
@@ -337,10 +348,11 @@ struct GoodsOutEmail: Identifiable, Hashable, Sendable {
     var status: GoodsOutEmailStatus = .sent
     var orderReference: String?
 
+    @MainActor
     var subtitle: String {
         var parts = [recipient, GoodsOutDateFormat.stamp(sentAt)]
         if let orderReference {
-            parts.append("order \(orderReference)")
+            parts.append(L10n.format("order %@", orderReference))
         }
         return parts.joined(separator: " · ")
     }
@@ -363,7 +375,8 @@ struct GoodsOutTask: Identifiable, Hashable, Sendable {
     var isOpen = true
 
     var chip: Chip { isOpen ? Chip("Open", .info) : Chip("Done", .success) }
-    var subtitle: String { "Linked to this delivery note · assigned to \(assignee)" }
+    @MainActor
+    var subtitle: String { L10n.format("Linked to this delivery note · assigned to %@", assignee) }
 }
 
 struct GoodsOutSetPart: Identifiable, Hashable, Sendable {
@@ -386,19 +399,26 @@ struct GoodsOutIncompleteSet: Hashable, Sendable {
     var hasPicks: Bool { !partsToPutBack.isEmpty }
     var actionTitle: String { hasPicks ? "Parts put back" : "Mark set parts not picked" }
 
+    @MainActor
     var instruction: String {
-        guard hasPicks else { return "Nothing was picked yet. Mark the set parts as not picked." }
-        let codes = partsToPutBack.map(\.sko).formatted(.list(type: .and).locale(Locale(identifier: "en_GB")))
-        return "Put back \(codes) on the shelf, then press Parts put back."
+        guard hasPicks else { return L10n.text("Nothing was picked yet. Mark the set parts as not picked.") }
+        let codes = partsToPutBack.map(\.sko).formatted(.list(type: .and).locale(Self.listLocale))
+        return L10n.format("Put back %@ on the shelf, then press Parts put back.", codes)
     }
 
+    @MainActor
+    private static var listLocale: Locale {
+        let language = LanguageStore.shared
+        return language.languageID == AppLanguages.defaultID ? Locale(identifier: "en_GB") : language.locale
+    }
+
+    @MainActor
     func detail(for part: GoodsOutSetPart) -> String {
         let index = (parts.firstIndex(of: part) ?? 0) + 1
-        var text = "\(part.name) · part \(index) of \(parts.count)"
         if part.wasPicked {
-            text += " · to \(part.location)"
+            return L10n.format("%@ · part %lld of %lld · to %@", part.name, index, parts.count, part.location)
         }
-        return text
+        return L10n.format("%@ · part %lld of %lld", part.name, index, parts.count)
     }
 }
 
@@ -434,9 +454,10 @@ struct GoodsOutCustomsRow: Identifiable, Hashable, Sendable {
     var id: String { sko }
     var isMissing: Bool { tariff == nil || origin == nil }
 
+    @MainActor
     var tradeUnitText: String {
-        let tariffText = tariff.map { "Tariff \($0)" } ?? "no tariff code"
-        let originText = origin.map { "Origin \($0)" } ?? "no country of origin"
+        let tariffText = tariff.map { L10n.format("Tariff %@", $0) } ?? L10n.text("no tariff code")
+        let originText = origin.map { L10n.format("Origin %@", $0) } ?? L10n.text("no country of origin")
         return isMissing ? "\(tariffText) · \(originText)" : "\(tariffText) · \(originText) · \(name)"
     }
 }
@@ -490,16 +511,18 @@ extension GoodsOutLine {
 
     var parcelNumbers: [Int] { packedInto.filter { $0.value > 0 }.keys.sorted() }
 
+    @MainActor
     var parcelText: String {
         if let packing {
             let boxes = packing.boxes.filter { $0.quantity > 0 }.map(\.box).sorted()
-            if boxes.isEmpty { return "\(packing.packedText) of \(packing.pickedText) packed" }
-            return (boxes.count == 1 ? "Box " : "Boxes ") + boxes.map(String.init).joined(separator: ", ")
+            if boxes.isEmpty { return L10n.format("%@ of %@ packed", packing.packedText, packing.pickedText) }
+            let joined = boxes.map(String.init).joined(separator: ", ")
+            return boxes.count == 1 ? L10n.format("Box %@", joined) : L10n.format("Boxes %@", joined)
         }
         let numbers = parcelNumbers
-        guard let first = numbers.first else { return "no parcel yet" }
-        if numbers.count == 1 { return "Parcel \(first)" }
-        return "Parcels " + numbers.map(String.init).joined(separator: ", ")
+        guard let first = numbers.first else { return L10n.text("no parcel yet") }
+        if numbers.count == 1 { return L10n.format("Parcel %lld", first) }
+        return L10n.format("Parcels %@", numbers.map(String.init).joined(separator: ", "))
     }
 
     @discardableResult

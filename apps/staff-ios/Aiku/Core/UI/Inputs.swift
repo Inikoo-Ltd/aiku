@@ -111,7 +111,7 @@ struct AikuTextField: View {
         VStack(alignment: .leading, spacing: 6) {
             FieldLabel(label, isDisabled: isDisabled)
             FieldBox(isFocused: isFocused, hasError: error != nil, isDisabled: isDisabled) {
-                TextField(placeholder, text: $text)
+                TextField(L10n.text(placeholder), text: $text)
                     .font(.aiku(16))
                     .foregroundStyle(isDisabled ? AikuColor.text4 : AikuColor.text)
                     .keyboardType(keyboard)
@@ -146,7 +146,7 @@ struct AikuTextArea: View {
         VStack(alignment: .leading, spacing: 6) {
             FieldLabel(label)
             FieldBox(isFocused: isFocused, height: minHeight, growsVertically: true) {
-                TextField(placeholder, text: $text, axis: .vertical)
+                TextField(L10n.text(placeholder), text: $text, axis: .vertical)
                     .font(.aiku(16))
                     .foregroundStyle(AikuColor.text)
                     .lineLimit(3...8)
@@ -179,7 +179,7 @@ struct SearchField: View {
                 .foregroundStyle(AikuColor.text4)
                 .padding(.leading, 14)
                 .accessibilityHidden(true)
-            TextField(placeholder, text: $text)
+            TextField(L10n.text(placeholder), text: $text)
                 .font(.aiku(15))
                 .foregroundStyle(AikuColor.text)
                 .textInputAutocapitalization(.never)
@@ -250,7 +250,7 @@ struct QuantityStepper: View {
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .accessibilityLabel(label)
+        .accessibilityLabel(L10n.text(label))
     }
 }
 
@@ -413,7 +413,7 @@ struct SegmentedControl<Option: Hashable>: View {
                         if let symbol = icon?(option) {
                             symbol.image.font(.system(size: 15))
                         }
-                        Text(title(option))
+                        Text(L10n.text(title(option)))
                             .font(.aiku(14, .semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
