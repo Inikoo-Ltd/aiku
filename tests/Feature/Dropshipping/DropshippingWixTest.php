@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 beforeAll(function () {
@@ -130,8 +131,29 @@ test('a second account cannot link a Wix site another account already linked (PR
 
     $result = AuthenticateWixAccount::make()->handle(['instance' => wixSignedInstance($wixUser->wix_instance_id)], $intruder);
 
-    expect($result)->toBe(__('This Wix site is already connected as a dropshipping channel'))
+    expect($result)->toBe(__('This Wix site is already connected to another account. Close the Wix channel in that account, then install the app again.'))
         ->and(WixUser::where('wix_instance_id', $wixUser->wix_instance_id)->pluck('customer_id')->all())->toBe([$this->customer->id]);
+});
+
+test('the Wix link callback shows a refusal as a page instead of redirecting back (PRE-135)', function () {
+    config(['services.wix.app_secret' => 'pre-43-secret']);
+    Http::swap(new HttpFactory());
+    Http::fake([
+        '*/oauth2/token' => Http::response(['access_token' => 'token', 'expires_in' => 3600]),
+        '*'              => Http::response([]),
+    ]);
+
+    $wixUser  = wixChannel($this->customer);
+    $intruder = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    $callback = URL::temporarySignedRoute('wix.link', now()->addHours(2), ['customer' => $intruder->id]);
+
+    $this->get($callback.'&'.http_build_query([
+        'instanceId'     => $wixUser->wix_instance_id,
+        'signedInstance' => wixSignedInstance($wixUser->wix_instance_id),
+    ]))->assertOk()->assertSee(__('This Wix site is already connected to another account. Close the Wix channel in that account, then install the app again.'));
+
+    $this->get($callback)->assertOk()->assertSee(__('The Wix installation was not completed'));
 });
 
 test('a Wix instance has one live wix_user, and a closed one does not block a reinstall (PRE-43)', function () {
