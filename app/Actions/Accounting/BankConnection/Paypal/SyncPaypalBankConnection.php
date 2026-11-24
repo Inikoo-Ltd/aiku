@@ -9,12 +9,14 @@
 namespace App\Actions\Accounting\BankConnection\Paypal;
 
 use App\Actions\Accounting\BankPayee\ClassifyBankOutgoing;
+use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Helpers\Currency;
+use App\Models\SysAdmin\Group;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
@@ -102,6 +104,45 @@ class SyncPaypalBankConnection
         }
 
         return ['synced' => $synced, 'skipped' => $skipped, 'skipped_examples' => $skippedExamples];
+    }
+
+    /**
+     * A withdrawal from PayPal arrives at our bank as an incoming transfer naming PayPal's bank reference (Wise SK shows
+     * "YYW1051189730993/PAYPAL/YYW1051189730993"). Both legs are a move between our own balances, so the bank leg is
+     * marked as one too, or cash flow and the review queue would count it as money received. Run after every bank sync,
+     * as a bank resync may give the line its transfer type back.
+     *
+     * @return int bank lines marked
+     */
+    public static function markWithdrawalArrivals(Group $group): int
+    {
+        $marked = 0;
+        BankTransaction::query()
+            ->join('bank_connections', 'bank_connections.id', 'bank_transactions.bank_connection_id')
+            ->where('bank_transactions.group_id', $group->id)
+            ->where('bank_connections.provider', BankConnectionProviderEnum::PAYPAL)
+            ->where('bank_transactions.provider_type', ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+            ->where('bank_transactions.direction', BankTransactionDirectionEnum::OUT)
+            ->whereRaw("bank_transactions.data->'transaction'->'transaction_info'->>'bank_reference_id' ~ '^[A-Za-z0-9]{8,}$'")
+            ->selectRaw("bank_transactions.id, bank_transactions.data->'transaction'->'transaction_info'->>'bank_reference_id' as bank_reference_id")
+            ->toBase()
+            ->get()
+            ->each(function (object $withdrawal) use ($group, &$marked) {
+                $marked += BankTransaction::where('group_id', $group->id)
+                    ->where('direction', BankTransactionDirectionEnum::IN)
+                    ->where('provider_type', 'TRANSFER')
+                    ->whereNull('payment_id')
+                    ->where('reference', 'ilike', '%'.$withdrawal->bank_reference_id.'%')
+                    ->update([
+                        'provider_type' => ClassifyBankOutgoing::OWN_BALANCE_TYPE,
+                        'match_state'   => null,
+                        'order_id'      => null,
+                        'matched_at'    => null,
+                        'match_data'    => json_encode(['paypal_withdrawal_id' => $withdrawal->id]),
+                    ]);
+            });
+
+        return $marked;
     }
 
     /**

@@ -102,6 +102,12 @@ class SyncBankConnection
         self::keepExchangeRates($bankConnection);
 
         try {
+            SyncPaypalBankConnection::markWithdrawalArrivals($bankConnection->group);
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+        }
+
+        try {
             MatchBankTransactions::run($bankConnection);
             PayMatchedBankTransactions::run($bankConnection->refresh());
         } catch (Throwable $exception) {

@@ -3304,7 +3304,7 @@ function paypalLine(string $id, string $code, string $status, string $currency, 
     ];
 }
 
-test('a paypal account is mirrored as a bank: lines net of fee, customer payments as paypal payouts, conversions and withdrawals as own moves, holds and their releases left out whatever their status, balances per currency', function () {
+test('a paypal account is mirrored as a bank: lines net of fee, customer payments as paypal payouts, conversions and withdrawals as own moves on both sides, holds and their releases left out whatever their status, balances per currency', function () {
     $lines = [
         paypalLine('pay1', 'T0006', 'S', 'EUR', 1249.32, -42.83, ['custom_field' => '565237b3-4d01-815c-a4c2-8bcc944cb3ce']),
         paypalLine('conv-out', 'T0200', 'S', 'PLN', -1893.61),
@@ -3365,7 +3365,28 @@ test('a paypal account is mirrored as a bank: lines net of fee, customer payment
         ->and((float) $balances['EUR']->reserved_amount)->toBe(75.14)
         ->and((float) $balances['PLN']->amount)->toBe(2267.56);
 
-    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []]);
+    $bank        = StoreBankConnection::run($this->organisation, ['provider' => BankConnectionProviderEnum::FIO, 'name' => 'Bank EUR', 'credentials' => 'fio-token']);
+    $arrival     = BankTransaction::create(array_merge($stored['withdraw']->only(['group_id', 'organisation_id', 'currency_id', 'status', 'booked_at']), [
+        'bank_connection_id'      => $bank->id,
+        'provider_transaction_id' => 'arrival',
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 327000,
+        'reference'               => 'YYW1051189730993/PAYPAL/YYW1051189730993',
+        'match_state'             => BankTransactionMatchStateEnum::UNMATCHED,
+        'match_data'              => ['reason' => 'no order reference'],
+    ]));
+    $otherIncoming = BankTransaction::create(array_merge($arrival->only(['group_id', 'organisation_id', 'currency_id', 'status', 'booked_at', 'bank_connection_id', 'direction', 'provider_type']), [
+        'provider_transaction_id' => 'other-incoming',
+        'amount'                  => 50,
+        'reference'               => 'YYW9999999999999/PAYPAL',
+    ]));
+
+    expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 0, 'skipped' => 0, 'skipped_examples' => []])
+        ->and($arrival->refresh()->provider_type)->toBe(\App\Actions\Accounting\BankPayee\ClassifyBankOutgoing::OWN_BALANCE_TYPE)
+        ->and($arrival->match_state)->toBeNull()
+        ->and($arrival->match_data)->toBe(['paypal_withdrawal_id' => $stored['withdraw']->id])
+        ->and($otherIncoming->refresh()->provider_type)->toBe('TRANSFER');
 
     expect($stored['refund']->refresh()->out_category)->toBe(\App\Enums\Accounting\BankPayee\BankPayeeCategoryEnum::CUSTOMER_REFUNDS->value);
 
