@@ -45,6 +45,7 @@ class UpdateOrderPremiumDispatch extends OrgAction
     {
         return [
             'is_premium_dispatch' => ['required', 'boolean'],
+            'free'                => ['sometimes', 'boolean'],
         ];
     }
 
@@ -62,6 +63,9 @@ class UpdateOrderPremiumDispatch extends OrgAction
     {
         $this->initialisationFromShop($order->shop, $request);
 
-        $this->handle($order, $this->validatedData);
+        $modelData = $this->validatedData;
+        $isFree    = (bool) Arr::pull($modelData, 'free', false);
+
+        $this->handle($order, $modelData, charged: !$isFree);
     }
 }

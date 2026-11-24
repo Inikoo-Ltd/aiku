@@ -82,6 +82,7 @@ import {
     faCheck,
     faHandHoldingUsd,
     faInfoCircle,
+    faGift,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -113,7 +114,7 @@ import CustomsExportLink from "@/Components/Warehouse/DeliveryNotes/CustomsExpor
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle, faGift)
 
 const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
@@ -1027,14 +1028,15 @@ const updateOrderCharge = (
     val: boolean,
     loadingRef: typeof isLoadingPriorityDispatch,
     successText: string,
-    errorText: string
+    errorText: string,
+    extraData: Record<string, boolean> = {}
 ) => {
     const previousValue = chargeToggles.value[field]
     chargeToggles.value[field] = val
 
     router.patch(
         route(routeName, { order: props.data?.data?.id }),
-        { [field]: val },
+        { [field]: val, ...extraData },
         {
             preserveScroll: true,
             preserveState: true,
@@ -1071,6 +1073,18 @@ const onChangePriorityDispatch = (val: boolean) => {
         isLoadingPriorityDispatch,
         val ? ctrans("The order is changed to priority dispatch!") : ctrans("The order is no longer on priority dispatch."),
         ctrans("Failed to update priority dispatch, try again.")
+    )
+}
+
+const onGivePriorityDispatchFree = () => {
+    updateOrderCharge(
+        'grp.models.order.update_premium_dispatch',
+        'is_premium_dispatch',
+        true,
+        isLoadingPriorityDispatch,
+        ctrans("The order is changed to priority dispatch, free of charge."),
+        ctrans("Failed to update priority dispatch, try again."),
+        { free: true }
     )
 }
 
@@ -2763,7 +2777,19 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                     <span>{{ charge.data.label ?? charge.data.name }}</span>
                                     <span class="text-gray-400" :class="charge.active ? '' : 'opacity-60'">({{ locale.currencyFormat(charge.data.currency_code, charge.data.amount) }})</span>
                                 </dt>
-                                <dd class="flex items-center">
+                                <dd class="flex items-center gap-x-2">
+                                    <Button
+                                        v-if="charge.key === 'premium_dispatch' && !charge.active"
+                                        type="tertiary"
+                                        size="xxs"
+                                        :label="ctrans('Free')"
+                                        :disabled="charge.loading || !isChargeEditable"
+                                        v-tooltip="ctrans('Priority dispatch without the charge, as a goodwill gesture')"
+                                        @click="onGivePriorityDispatchFree">
+                                        <template #icon>
+                                            <FontAwesomeIcon icon="fal fa-gift" class="text-green-600" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
                                     <Toggle
                                         :modelValue="charge.active"
                                         :disabled="charge.loading || !isChargeEditable"

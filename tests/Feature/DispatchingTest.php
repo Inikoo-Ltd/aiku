@@ -8669,6 +8669,44 @@ test('premium dispatch added to an order after its delivery note was created rea
     expect($deliveryNote->refresh()->is_premium_dispatch)->toBeTrue();
 });
 
+test('customer services give priority dispatch free of charge from the order page (HELP-4920)', function () {
+    $deliveryNote = makeDeliveryNote($this);
+    $this->order->update(['is_premium_dispatch' => false]);
+    $deliveryNote->update(['is_premium_dispatch' => false]);
+
+    $premiumCharge = $this->order->shop->charges()
+        ->where('type', \App\Enums\Catalogue\Charge\ChargeTypeEnum::PREMIUM)
+        ->where('state', \App\Enums\Catalogue\Charge\ChargeStateEnum::ACTIVE)
+        ->first()
+        ?? \App\Actions\Billables\Charge\StoreCharge::make()->action($this->order->shop, [
+            'code'        => 'PREM-'.Str::random(4),
+            'name'        => 'Priority dispatch',
+            'description' => 'priority dispatch',
+            'state'       => \App\Enums\Catalogue\Charge\ChargeStateEnum::ACTIVE,
+            'type'        => \App\Enums\Catalogue\Charge\ChargeTypeEnum::PREMIUM,
+            'settings'    => ['amount' => 7.5],
+        ]);
+
+    $premiumLines = fn () => \App\Models\Ordering\Transaction::where('order_id', $this->order->id)
+        ->where('model_type', 'Charge')
+        ->where('model_id', $premiumCharge->id)
+        ->count();
+
+    patch(route('grp.models.order.update_premium_dispatch', $this->order->id), ['is_premium_dispatch' => true, 'free' => true])
+        ->assertSessionHasNoErrors();
+
+    expect($this->order->refresh()->is_premium_dispatch)->toBeTrue()
+        ->and($deliveryNote->refresh()->is_premium_dispatch)->toBeTrue()
+        ->and($premiumLines())->toBe(0);
+
+    patch(route('grp.models.order.update_premium_dispatch', $this->order->id), ['is_premium_dispatch' => false])
+        ->assertSessionHasNoErrors();
+    patch(route('grp.models.order.update_premium_dispatch', $this->order->id), ['is_premium_dispatch' => true])
+        ->assertSessionHasNoErrors();
+
+    expect($premiumLines())->toBe(1);
+});
+
 test('a label cannot be created while the order shipping cost is to be confirmed', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $order          = $deliveryNote->orders->first();
