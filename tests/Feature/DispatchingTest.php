@@ -9990,3 +9990,23 @@ test('dispatching backlog broadcasts only when a channel count changes', functio
     get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $this->warehouse->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('live_channel', 'grp.org.'.$this->organisation->id.'.dispatching-backlog')->etc());
 });
+
+test('backlog per day counts a new delivery note until it is dispatched', function () {
+    $today = fn () => collect(\App\Actions\UI\Dispatch\GetDispatchBacklogHistory::run($this->warehouse, '1m')['daily'])->last()['channels']['b2b'] ?? ['backlog' => 0, 'created' => 0, 'dispatched' => 0, 'cancelled' => 0];
+    $before = $today();
+
+    $deliveryNote = StoreDeliveryNote::make()->action($this->order, [
+        'reference'        => 'BKL'.Str::random(6),
+        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
+        'date'             => date('Y-m-d'),
+        'delivery_address' => new Address(Address::factory()->definition()),
+        'warehouse_id'     => $this->warehouse->id,
+    ]);
+
+    expect($today())->toMatchArray(['backlog' => $before['backlog'] + 1, 'created' => $before['created'] + 1]);
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED, 'dispatched_at' => now()]);
+
+    expect($today())->toMatchArray(['backlog' => $before['backlog'], 'dispatched' => $before['dispatched'] + 1])
+        ->and(\App\Actions\UI\Dispatch\GetDispatchBacklogHistory::run($this->warehouse, 'all')['interval'])->toBe('1m');
+});

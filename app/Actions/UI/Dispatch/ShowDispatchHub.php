@@ -116,6 +116,7 @@ class ShowDispatchHub extends OrgAction
                     'currency_type'     => $this->dashboardCurrencyTypeSettings($this->organisation, $userSettings),
                 ],
                 'delivery_note'   => fn () => DashboardDispatchHubDashboardResource::make(GetDispatchHubShowcase::make()->handle($warehouse)),
+                'backlog_history' => Inertia::defer(fn () => GetDispatchBacklogHistory::run($warehouse, (string) $request->query('backlog', GetDispatchBacklogHistory::DEFAULT_INTERVAL)), 'backlog_history'),
                 'live_channel'    => BroadcastDispatchingBacklogChanged::channelName($warehouse->organisation_id),
                 'picking_session' => fn () => $this->getPickingSessionStats($warehouse),
                 'pickers_current' => fn () => DispatchPersonnelCurrentWorkResource::collection($this->currentWork($warehouse, 'pickers', 'pickers_current')),

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link, router, usePage } from "@inertiajs/vue3"
+import { Deferred, Head, Link, router, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -25,6 +25,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useSessionStorage, useThrottleFn } from "@vueuse/core"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import DispatchBacklogHistory from "@/Components/Warehouse/DispatchBacklogHistory.vue"
 
 library.add(faHandsHelping, faBan, faCheckCircle, faList, faCheck, faPersonCarry, faChartLine, faDolly, faIndustry, faClipboardListCheck, faSave, faLock, faChevronDown)
 
@@ -60,6 +61,7 @@ const props = defineProps<{
     can_edit?: boolean
     reports_route?: { name: string; parameters: Record<string, string> }
     gate_route?: { name: string; parameters: Record<string, string> } | null
+    backlog_history?: any
     intervals: any
     settings: any
 }>()
@@ -315,4 +317,11 @@ const trolleyRoute = (trolley: { slug: string }) =>
         :tab="currentTab"
         :data="currentTab === 'picking_session' ? picking_session : delivery_note"
     ></component>
+
+    <Deferred v-if="currentTab === 'delivery_note'" data="backlog_history">
+        <template #fallback>
+            <div class="m-4 h-80 animate-pulse rounded-lg bg-gray-100" />
+        </template>
+        <DispatchBacklogHistory v-if="backlog_history" :history="backlog_history" />
+    </Deferred>
 </template>
