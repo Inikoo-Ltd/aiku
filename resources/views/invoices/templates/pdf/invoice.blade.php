@@ -182,6 +182,9 @@
         </td>
     </tr>
 </table>
+@if($goesAsEInvoice ?? false)
+    <div style="font-family: sans-serif; margin-top: 10px; font-size: 9pt"><b>{{ __('This document was also sent as a Peppol e-invoice. Do not book it twice.') }}</b></div>
+@endif
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
         <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">

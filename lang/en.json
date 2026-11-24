@@ -21602,6 +21602,7 @@
     "This invoice is already in the costing, change the costs in the checklist": "This invoice is already in the costing, change the costs in the checklist",
     "This invoice is already in the service invoices": "This invoice is already in the service invoices",
     "This invoice replaces the estimate of :typed typed for :cost.": "This invoice replaces the estimate of :typed typed for :cost.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "This document was also sent as a Peppol e-invoice. Do not book it twice.",
     "This invoice was read again since you opened it, review it again": "This invoice was read again since you opened it, review it again",
     "This invoice was read before readings were checked: read it again.": "This invoice was read before readings were checked: read it again.",
     "This invoice: :invoiced.": "This invoice: :invoiced.",

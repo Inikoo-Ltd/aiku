@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\Accounting\EInvoice\IsInvoiceInEInvoiceScope;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
@@ -438,6 +439,7 @@ trait WithInvoicesExport
             'dispatch_total_skos'     => $deliveryNote?->total_skos > 0 ? $deliveryNote->total_skos : null,
             'dispatch_total_units'    => $deliveryNote?->total_units > 0 ? $deliveryNote->total_units : null,
             'dispatch_total_quantity' => $transactions->sum(fn ($t) => $t->quantity ?? 0),
+            'goesAsEInvoice'          => IsInvoiceInEInvoiceScope::make()->goesAsEInvoice($invoice),
         ], [], $config);
 
         return [$pdf, $filename];

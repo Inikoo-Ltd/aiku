@@ -505,3 +505,23 @@ test('SOFTIP answers a send with a message in status, as it did on the first rea
         ->and($transmission->final_at)->toBeNull()
         ->and(\App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice::isSent($this->invoice))->toBeTrue();
 });
+
+test('the PDF says it was also sent as an e-invoice only when it is sent, or in scope and reachable on Peppol', function () {
+    $scope = new IsInvoiceInEInvoiceScope();
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => []]])]);
+    $this->invoice->update(['address_id' => $this->customer->address_id, 'tax_number' => 'SK2021344160', 'tax_number_valid' => true]);
+    expect(BuildUblInvoice::buyerParticipantId($this->invoice->fresh()))->not->toBeNull()
+        ->and($scope->goesAsEInvoice($this->invoice->fresh()))->toBeFalse();
+
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => [$this->invoice->fresh()->address->country_code]]])]);
+    $this->invoice->customer->update(['company_name' => 'flexity s.r.o.', 'peppol_id' => null]);
+    expect($scope->goesAsEInvoice($this->invoice->fresh()))->toBeTrue();
+
+    $this->invoice->update(['tax_number_valid' => false]);
+    expect($scope->goesAsEInvoice($this->invoice->fresh()))->toBeFalse();
+
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['e_invoicing' => ['countries' => []]])]);
+    softipFake(['/api/v1/document/send' => Http::response(['transactionId' => '9401', 'status' => 'NEW', 'checksum' => 'abc'])]);
+    SendEInvoice::make()->handle($this->invoice->fresh());
+    expect($scope->goesAsEInvoice($this->invoice->fresh()))->toBeTrue();
+});

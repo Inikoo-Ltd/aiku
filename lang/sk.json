@@ -20693,6 +20693,7 @@
     "This invoice is already in the costing, change the costs in the checklist": "Táto faktúra je už v kalkulácii nákladov, zmeňte náklady v kontrolnom zozname",
     "This invoice is already in the service invoices": "Táto faktúra je už medzi faktúrami za služby",
     "This invoice replaces the estimate of :typed typed for :cost.": "Táto faktúra nahrádza odhad :typed zadaný pre :cost.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Tento doklad bol odoslaný aj ako elektronická faktúra (Peppol). Neúčtujte ho dvakrát.",
     "This invoice was read again since you opened it, review it again": "Táto faktúra sa od otvorenia prečítala znova, skontrolujte ju znova",
     "This invoice was read before readings were checked: read it again.": "Táto faktúra bola prečítaná pred kontrolou čítaní: prečítajte ju znova.",
     "This invoice: :invoiced.": "Táto faktúra: :invoiced.",

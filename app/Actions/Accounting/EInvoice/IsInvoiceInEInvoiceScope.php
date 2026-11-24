@@ -34,4 +34,13 @@ class IsInvoiceInEInvoiceScope
             || strlen(preg_replace('/\D/', '', (string)$invoice->identity_document_number)) >= 8
             || trim((string)$invoice->customer?->company_name) !== '';
     }
+
+    /**
+     * Already sent, or in scope and addressable on Peppol, so it will be sent right after it is finalised.
+     */
+    public function goesAsEInvoice(Invoice $invoice): bool
+    {
+        return EnsureInvoiceNotSentAsEInvoice::isSent($invoice)
+            || ($this->handle($invoice) && BuildUblInvoice::buyerParticipantId($invoice) !== null);
+    }
 }
