@@ -103,6 +103,18 @@ const problemClass: Record<Problem, string> = {
 	low: "bg-amber-100 text-amber-700",
 	dead: "bg-gray-200 text-gray-600",
 }
+const organisationChipTooltip = (organisation: { code: string; sold: number; stock: number; problem: Problem | null }, figure: "sold" | "stock") => {
+	const name = props.sales?.organisations.find((candidate) => candidate.code === organisation.code)?.name ?? organisation.code
+	const amount = figure === "stock"
+		? ctrans(":amount in stock in :organisation", { amount: money(organisation.stock), organisation: name })
+		: ctrans(":amount sold in :organisation in the last 12 months", { amount: money(organisation.sold), organisation: name })
+	const problemLabel: Record<Problem, string> = {
+		out: ctrans("Out of stock here: nothing left to sell"),
+		low: ctrans("About to run out here: the stock will not last until a new order can arrive"),
+		dead: ctrans("In stock here but not selling"),
+	}
+	return organisation.problem ? `${amount}. ${problemLabel[organisation.problem]}` : amount
+}
 
 const formatMoney = (amount: number, options: Intl.NumberFormatOptions) =>
 	new Intl.NumberFormat(undefined, { style: "currency", currency: props.sales?.currency ?? "GBP", currencyDisplay: "narrowSymbol", ...options })
@@ -580,6 +592,7 @@ const rankings = computed(() =>
 											:key="organisation.code"
 											class="rounded px-1.5 py-0.5 text-xs tabular-nums"
 											:class="organisation.problem ? problemClass[organisation.problem] : 'bg-gray-100 text-gray-600'"
+											v-tooltip="organisationChipTooltip(organisation, ranking.figure)"
 										>
 											{{ organisation.code }} {{ shortMoney(organisation[ranking.figure]) }}
 										</span>
