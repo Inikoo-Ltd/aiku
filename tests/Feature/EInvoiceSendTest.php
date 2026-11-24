@@ -490,3 +490,18 @@ test('the invoice page of a sent e-invoice has no Edit or Delete and shows the s
     expect($labels($page))->toContain('Delete')
         ->and($page['props']['pageHead']['iconRight'])->toBeNull();
 });
+
+test('SOFTIP answers a send with a message in status, as it did on the first real send, so the transmission is kept as NEW', function () {
+    softipFake(['/api/v1/document/send' => Http::response([
+        'transactionId' => 977,
+        'status'        => 'Dokument bol úspešne prijatý na odoslanie. Kontrolný súčet súboru: ULLwVRpZ05E31R6T8z10t0lFHnwilaqVNDO5GGB3//I=',
+        'checksum'      => 'ULLwVRpZ05E31R6T8z10t0lFHnwilaqVNDO5GGB3//I=',
+    ])]);
+
+    $transmission = SendEInvoice::make()->handle($this->invoice);
+
+    expect($transmission->status)->toBe('NEW')
+        ->and($transmission->transaction_id)->toBe('977')
+        ->and($transmission->final_at)->toBeNull()
+        ->and(\App\Actions\Accounting\EInvoice\EnsureInvoiceNotSentAsEInvoice::isSent($this->invoice))->toBeTrue();
+});

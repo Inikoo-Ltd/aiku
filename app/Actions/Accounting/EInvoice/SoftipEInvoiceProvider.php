@@ -44,9 +44,11 @@ class SoftipEInvoiceProvider implements EInvoiceProvider
             ['idempotency_key' => $idempotencyKey, 'tag' => $tag, 'file_sha256' => hash('sha256', $xml), 'file_bytes' => strlen($xml)]
         );
 
+        $status = (string)($body['status'] ?? '');
+
         return [
             'transaction_id' => (string)$body['transactionId'],
-            'status'         => strtoupper((string)$body['status']),
+            'status'         => preg_match('/^[A-Za-z_]+$/', $status) ? strtoupper($status) : 'NEW',
             'checksum'       => $body['checksum'] ?? null,
         ];
     }
