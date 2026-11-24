@@ -65,6 +65,53 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
 
     public function handle(MasterAsset $masterAsset): void
     {
+        $perOrg = $this->costsByOrganisation($masterAsset);
+
+        if (!$perOrg) {
+            if ($masterAsset->effective_cost !== null) {
+                $masterAsset->updateQuietly(['effective_cost' => null]);
+            }
+
+            return;
+        }
+
+        $weightedCost = $this->weightedCost($perOrg);
+        if ($weightedCost === null) {
+            return;
+        }
+
+        $effectiveCost = round($weightedCost, 4);
+
+        if ((float) $masterAsset->effective_cost !== $effectiveCost) {
+            $masterAsset->updateQuietly(['effective_cost' => $effectiveCost]);
+        }
+    }
+
+    /**
+     * The effective cost once one stock is bought at a new price: its share of the cost moves by
+     * the price change and the rest stays, so a bundle moves by that component's part only.
+     */
+    public function costWithStockPriceChange(MasterAsset $masterAsset, int $stockId, float $priceRatio): ?float
+    {
+        if ($masterAsset->effective_cost === null) {
+            return null;
+        }
+
+        $currentCost = $this->weightedCost($this->costsByOrganisation($masterAsset));
+        $newCost     = $this->weightedCost($this->costsByOrganisation($masterAsset, $stockId, $priceRatio));
+
+        if (!$currentCost || $newCost === null) {
+            return null;
+        }
+
+        return round((float) $masterAsset->effective_cost * $newCost / $currentCost, 4);
+    }
+
+    /**
+     * @return array<int, array{cost: float, availability: array<int, float>, weight: float}>
+     */
+    private function costsByOrganisation(MasterAsset $masterAsset, ?int $repricedStockId = null, float $priceRatio = 1): array
+    {
         $perOrg = [];
 
         foreach ($masterAsset->tradeUnits as $tradeUnit) {
@@ -80,6 +127,10 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
                 }
                 if ($skuCost <= 0) {
                     continue;
+                }
+
+                if ($repricedStockId !== null && $orgStock->stock_id === $repricedStockId) {
+                    $skuCost *= $priceRatio;
                 }
 
                 $unitCost = $skuCost / (float) ($orgStock->packed_in ?: 1);
@@ -100,14 +151,14 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         }
         unset($orgData);
 
-        if (!$perOrg) {
-            if ($masterAsset->effective_cost !== null) {
-                $masterAsset->updateQuietly(['effective_cost' => null]);
-            }
+        return $perOrg;
+    }
 
-            return;
-        }
-
+    /**
+     * @param  array<int, array{cost: float, availability: array<int, float>, weight: float}>  $perOrg
+     */
+    private function weightedCost(array $perOrg): ?float
+    {
         $weightedSum = 0;
         $totalWeight = 0;
         $plainSum    = 0;
@@ -128,14 +179,10 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         }
 
         if (!$orgCount) {
-            return;
+            return null;
         }
 
-        $effectiveCost = round($totalWeight > 0 ? $weightedSum / $totalWeight : $plainSum / $orgCount, 4);
-
-        if ((float) $masterAsset->effective_cost !== $effectiveCost) {
-            $masterAsset->updateQuietly(['effective_cost' => $effectiveCost]);
-        }
+        return $totalWeight > 0 ? $weightedSum / $totalWeight : $plainSum / $orgCount;
     }
 
     private function getOrgToGroupRate(int $organisationId): ?float

@@ -4102,6 +4102,59 @@ test('the agent asks the organisation about a new supplier price and confirms on
     actingAs($this->adminGuest->getUser());
 });
 
+test('the goods price request dialog shows the master product cost and margin at the asked, then the accepted, supplier price', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $orgAgent = createFreshOrgAgent($this);
+    $order    = UpdatePurchaseOrderStateToSubmitted::make()->action(createAgentPurchaseOrders($this, $orgAgent, 1)[0]->refresh())->refresh();
+    $line     = $order->purchaseOrderTransactions()->firstOrFail();
+    $orgStock = $line->orgStock;
+    $stock    = $orgStock->stock;
+
+    $masterShop = \App\Actions\Masters\MasterShop\StoreMasterShop::make()->action($this->group, [
+        'type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::B2B,
+        'code' => 'PRQ-'.uniqid(),
+        'name' => 'Price request master shop',
+    ]);
+    $masterDepartment = \App\Actions\Masters\MasterProductCategory\StoreMasterDepartment::make()->action($masterShop, ['code' => 'PRQ-DEP-'.uniqid(), 'name' => 'Price request department']);
+    $masterFamily     = \App\Actions\Masters\MasterProductCategory\StoreMasterFamily::make()->action($masterDepartment, ['code' => 'PRQ-FAM-'.uniqid(), 'name' => 'Price request family']);
+    $masterAsset      = \App\Actions\Masters\MasterAsset\StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRQ-AST-'.uniqid(),
+        'name'    => 'Price request asset',
+        'is_main' => true,
+        'type'    => \App\Enums\Masters\MasterAsset\MasterAssetTypeEnum::PRODUCT,
+        'price'   => 50,
+        'stocks'  => [],
+    ]);
+
+    $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    $masterAsset->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+    $masterAsset->stocks()->sync([$stock->id => ['quantity' => 2]]);
+    $tradeUnit->orgStocks()->syncWithoutDetaching([$orgStock->id => ['quantity' => 1]]);
+    $orgStock->updateQuietly(['lpp_per_sku' => 4, 'packed_in' => 1, 'quantity_available' => 10]);
+    \App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::run($masterAsset->refresh());
+    $effectiveCost = (float) $masterAsset->refresh()->effective_cost;
+
+    $oldUnitCost  = (float) $line->unit_cost;
+    $newUnitCost  = round($oldUnitCost * 1.1, 2);
+    $expectedCost = round(round($effectiveCost * $newUnitCost / $oldUnitCost, 4), 2);
+    $dialog       = fn () => $this->getJson(route('grp.goods.products.price_requests', $stock))->assertOk()->json();
+    $dialogAsset  = fn (array $dialog) => collect($dialog['master_products'])->firstWhere('id', $masterAsset->id);
+
+    AskPurchaseOrderTransactionPriceChange::make()->action($line, ['unit_cost' => $newUnitCost]);
+    $asked = $dialog();
+    expect($asked['new_price'])->toMatchArray(['state' => 'pending', 'purchase_order' => $order->reference])
+        ->and($asked['new_price']['unit_cost'])->toEqual($newUnitCost)
+        ->and($dialogAsset($asked)['cost'])->toEqual(round($effectiveCost, 2))
+        ->and($dialogAsset($asked)['cost_at_new_price'])->toEqual($expectedCost);
+
+    AnswerPurchaseOrderTransactionPriceChange::make()->action($line->refresh(), ['answer' => PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value]);
+    $accepted = $dialog();
+    expect($accepted['new_price'])->toMatchArray(['state' => 'accepted', 'purchase_order' => $order->reference])
+        ->and((float) $masterAsset->refresh()->effective_cost)->toEqual($effectiveCost)
+        ->and($dialogAsset($accepted)['cost_at_new_price'])->toEqual($expectedCost)
+        ->and(collect($accepted['requests'])->pluck('id'))->not->toContain($line->id);
+});
+
 test('the agent asks the organisation for a new quantity and confirms only once it is answered', function () {
     \Illuminate\Support\Facades\Notification::fake();
     $orgAgent = createFreshOrgAgent($this);
