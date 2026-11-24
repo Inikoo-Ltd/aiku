@@ -10,6 +10,7 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Actions\UI\Profile\DeleteProfileApiToken;
 use App\Actions\UI\Profile\StoreProfileApiToken;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
 use App\Http\Resources\SysAdmin\User\UserShowcaseResource;
 use App\Listeners\ForgetWildcardPermissionIndex;
@@ -20,6 +21,11 @@ use App\Models\SysAdmin\Role;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 beforeAll(function () {
     loadDB();
@@ -115,6 +121,39 @@ describe('profile api tokens', function () {
         expect($showcase['mcp']['enabled'])->toBeTrue()
             ->and($showcase['mcp']['number_queries'])->toBeGreaterThanOrEqual(1)
             ->and($showcase['mcp']['last_used_at'])->not()->toBeNull();
+    });
+
+    test('only group admins switch on what a person\'s AI assistant may do', function () {
+        $newUser = fn () => StoreGuest::make()->action(
+            $this->group,
+            array_merge(Guest::factory()->definition(), ['positions' => []])
+        )->getUser();
+
+        $target = $newUser();
+        $target->update(['can_use_mcp' => true]);
+        $editor = $newUser();
+
+        actingAsUserWithOnlyPermissions($editor, ['sysadmin.view', 'sysadmin.edit']);
+        $this->withoutVite();
+
+        patch(route('grp.models.user.update', [$target->id]), ['can_use_mcp_discontinue' => true])->assertForbidden();
+        patch(route('grp.models.user.update', [$target->id]), ['contact_name' => 'Renamed by sysadmin'])->assertSessionHasNoErrors();
+        get(route('grp.sysadmin.users.edit', [$target]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->missing('formData.blueprint.0.fields.can_use_mcp')
+                ->missing('formData.blueprint.0.fields.can_use_mcp_discontinue'));
+
+        expect($target->refresh()->can_use_mcp_discontinue)->toBeFalse()
+            ->and($target->contact_name)->toBe('Renamed by sysadmin');
+
+        expect($this->user->hasRole(RolesEnum::GROUP_ADMIN->value))->toBeTrue();
+        actingAs($this->user);
+
+        get(route('grp.sysadmin.users.edit', [$target]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('formData.blueprint.0.fields.can_use_mcp_discontinue'));
+        patch(route('grp.models.user.update', [$target->id]), ['can_use_mcp_discontinue' => true])->assertSessionHasNoErrors();
+
+        expect($target->refresh()->can_use_mcp_discontinue)->toBeTrue();
     });
 });
 

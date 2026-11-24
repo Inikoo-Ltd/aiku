@@ -100,7 +100,16 @@ class UpdateUser extends OrgAction
             return true;
         }
 
+        if ($this->changesAiAssistantAccess($request) && !$this->canChangeAiAssistantAccess($request->user())) {
+            return false;
+        }
+
         return $this->canEditUser($request->user(), $this->user);
+    }
+
+    private function changesAiAssistantAccess(ActionRequest $request): bool
+    {
+        return collect($request->keys())->contains(fn (string $key) => str_starts_with($key, 'can_use_mcp'));
     }
 
     public function rules(): array

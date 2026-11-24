@@ -9,6 +9,7 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\SysAdmin\User;
 
 trait WithUserPermissionsEditAuthorisation
@@ -27,5 +28,16 @@ trait WithUserPermissionsEditAuthorisation
     protected function canEditUser(User $editor, User $user): bool
     {
         return $editor->authTo('sysadmin.edit') || $this->canEditUserAsHumanResources($editor, $user);
+    }
+
+    /**
+     * What a person's own AI assistant may do in Aiku is decided by group administrators only:
+     * not by HR of one organisation, nor by anyone else who can edit users.
+     */
+    protected function canChangeAiAssistantAccess(User $editor): bool
+    {
+        setPermissionsTeamId($editor->group_id);
+
+        return $editor->status && $editor->hasRole(RolesEnum::GROUP_ADMIN->value);
     }
 }
