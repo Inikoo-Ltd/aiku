@@ -45,10 +45,14 @@ class CalculateInvoiceTotals extends OrgAction
         $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
         $packagingGross = $transactions->whereIn('model_type', ['Packaging', 'Leaflet'])->sum('gross_amount');
 
-        $taxBreakdown = $this->getTaxBreakdown(
-            $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment', 'Packaging', 'Leaflet']),
-            $invoice->amount_off
-        );
+        $taxedLines = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental', 'Product', 'Service', 'ShippingZone', 'Charge', 'Adjustment', 'Packaging', 'Leaflet']);
+
+        /** HELP-4853. A pre-order invoiced with its basket keeps the VAT its own order charged: rounding the
+         * two orders' tax together can differ by a cent from what the customer paid */
+        $linesByOrder = $taxedLines->groupBy(fn ($line) => $line->order_id ?? $invoice->order_id);
+        $taxBreakdown = $linesByOrder->count() > 1
+            ? $linesByOrder->map(fn ($lines, $orderId) => $this->getTaxBreakdown($lines, $orderId == $invoice->order_id ? $invoice->amount_off : 0))->flatten(1)->all()
+            : $this->getTaxBreakdown($taxedLines, $invoice->amount_off);
 
         $netAmount   = round(array_sum(array_column($taxBreakdown, 'net_amount')), 2);
         $grossAmount = $rentalGross + $goodsGross + $serviceGross + $shippingGross + $chargeGross + $packagingGross;

@@ -22,7 +22,6 @@ use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateBackToFinalised;
 use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -197,7 +196,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
         }
 
         $order   = $deliveryNote->orders->first();
-        $invoice = $order?->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first();
+        $invoice = $order?->billingInvoice();
 
         if (!$invoice) {
             return false;
@@ -214,7 +213,7 @@ class UpdateDeliveryNoteStatePacked extends OrgAction
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    protected function ensurePicksMatchInvoice(DeliveryNote $deliveryNote, Order $order, Invoice $invoice): void
+    public function ensurePicksMatchInvoice(DeliveryNote $deliveryNote, Order $order, Invoice $invoice): void
     {
         $transactions = $order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get();
 

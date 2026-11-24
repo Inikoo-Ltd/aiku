@@ -34,6 +34,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Catalogue\Product;
@@ -41,6 +42,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\PreOrder;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -146,46 +148,8 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
 
-            $storeInvoiceTransaction = StoreInvoiceTransaction::make();
-            $storedLineIds           = [];
+            $this->storeLines($invoice, $transactions, $deliveryNote);
 
-            foreach ($transactions as $transaction) {
-                $data = [
-                    'tax_category_id' => $transaction->tax_category_id,
-                    'quantity'        => $transaction->quantity_ordered ?? 0,
-                    'gross_amount'    => $transaction->gross_amount,
-                    'net_amount'      => $transaction->net_amount,
-                ];
-
-                if ($transaction->model_type == 'Adjustment') {
-                    /** @var Adjustment $adjustment */
-                    $adjustment = Adjustment::find($transaction->model_id);
-
-                    StoreInvoiceTransactionFromAdjustment::make()->action($invoice, $adjustment, $data);
-                } elseif ($transaction->model_type == 'Charge') {
-                    StoreInvoiceTransactionFromCharge::make()->action(
-                        invoice: $invoice,
-                        charge: $transaction->model,
-                        modelData: $data
-                    );
-                } elseif ($transaction->model_type == 'ShippingZone') {
-                    StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
-                } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
-                    $storedLineIds[] = $storeInvoiceTransaction->action($invoice, $transaction, $data, taxCategoryChecked: true, dispatchJobs: false)->id;
-                } else {
-                    $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
-                    $storedLineIds[] = $storeInvoiceTransaction->action($invoice, $transaction, $invoiceTransactionData, taxCategoryChecked: true, dispatchJobs: false)->id;
-                    $transaction->update(
-                        [
-                            'quantity_picked' => $invoiceTransactionData['quantity'],
-                        ]
-                    );
-                }
-            }
-
-            if ($storedLineIds) {
-                ProcessStoredInvoiceTransactions::dispatch($storedLineIds)->afterCommit()->delay(5);
-            }
 
             /**
              * The header is a function of the lines that were actually stored, never of a parallel
@@ -199,6 +163,12 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'tax_amount'   => $invoice->tax_amount,
                 'total_amount' => $invoice->total_amount,
             ]);
+            $orderInvoicedAmount = (float)$invoice->total_amount;
+
+            $preOrderOrder = $shop->hasPreOrders() ? $this->paidPreOrderToInvoiceWith($order) : null;
+            if ($preOrderOrder) {
+                $this->addPreOrderLines($invoice, $preOrderOrder);
+            }
 
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->sum('payments.amount');
 
@@ -206,7 +176,7 @@ class GenerateInvoiceFromOrder extends OrgAction
              * invoice still needs once the money received is known against the final total */
             $absorbedBankFees = $order->absorbedBankFeePayments();
             $totalPaid -= $absorbedBankFees->sum('amount');
-            $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
+            $amountToCredit = round($totalPaid - $orderInvoicedAmount, 2);
             $bankFeeStillNeeded = round(min((float)$absorbedBankFees->sum('amount'), max(0, -$amountToCredit)), 2);
 
             if ($absorbedBankFees->isNotEmpty() && $bankFeeStillNeeded < round((float)$absorbedBankFees->sum('amount'), 2)) {
@@ -266,7 +236,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             }
             $order->refresh();
 
-            foreach ($order->payments as $payment) {
+            foreach ($order->payments->merge($preOrderOrder?->payments ?? []) as $payment) {
                 $isCancelledBankFee = $payment->state === PaymentStateEnum::CANCELLED && $payment->paymentAccount->type === PaymentAccountTypeEnum::BANK_FEE;
                 if ($payment->status == PaymentStatusEnum::SUCCESS && !$isCancelledBankFee) {
                     $invoice->payments()->attach($payment);
@@ -280,6 +250,103 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             return $invoice;
         });
+    }
+
+    /**
+     * @param  EloquentCollection<int, Transaction>  $transactions
+     *
+     * @return array<int, int>
+     */
+    private function storeLines(Invoice $invoice, EloquentCollection $transactions, ?DeliveryNote $deliveryNote, bool $isPreOrder = false): array
+    {
+        $storeInvoiceTransaction = StoreInvoiceTransaction::make();
+        $storedLineIds           = [];
+
+        foreach ($transactions as $transaction) {
+            $data = [
+                'tax_category_id' => $transaction->tax_category_id,
+                'quantity'        => $transaction->quantity_ordered ?? 0,
+                'gross_amount'    => $transaction->gross_amount,
+                'net_amount'      => $transaction->net_amount,
+            ];
+            if ($isPreOrder) {
+                $data['order_id']       = $transaction->order_id;
+                $data['transaction_id'] = $transaction->id;
+            }
+
+            if ($transaction->model_type == 'Adjustment') {
+                /** @var Adjustment $adjustment */
+                $adjustment = Adjustment::find($transaction->model_id);
+
+                StoreInvoiceTransactionFromAdjustment::make()->action($invoice, $adjustment, $data);
+            } elseif ($transaction->model_type == 'Charge') {
+                StoreInvoiceTransactionFromCharge::make()->action(
+                    invoice: $invoice,
+                    charge: $transaction->model,
+                    modelData: $data
+                );
+            } elseif ($transaction->model_type == 'ShippingZone') {
+                StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
+            } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
+                $storedLineIds[] = $storeInvoiceTransaction->action($invoice, $transaction, $data, taxCategoryChecked: true, dispatchJobs: false)->id;
+            } else {
+                $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
+                $storedLineIds[]        = $storeInvoiceTransaction->action($invoice, $transaction, $invoiceTransactionData, taxCategoryChecked: true, dispatchJobs: false)->id;
+                if (!$isPreOrder) {
+                    $transaction->update([
+                        'quantity_picked' => $invoiceTransactionData['quantity'],
+                    ]);
+                }
+            }
+        }
+
+        if ($storedLineIds) {
+            ProcessStoredInvoiceTransactions::dispatch($storedLineIds)->afterCommit()->delay(5);
+        }
+
+        return $storedLineIds;
+    }
+
+    /**
+     * HELP-4853. The accountant: a basket paid in one go is invoiced in full the first time, not
+     * once now and again when the pre-order arrives. So the pre-order split off this order goes on
+     * its invoice, at the price it was sold at, when it is paid in full and nothing about its price
+     * is still to come (no balance, no pallet quote). Anything else keeps its own invoice at dispatch.
+     */
+    public function paidPreOrderToInvoiceWith(Order $order): ?Order
+    {
+        $preOrder = PreOrder::where('parent_order_id', $order->id)
+            ->whereIn('state', PreOrderStateEnum::open())
+            ->where('has_pallet_delivery', false)
+            ->lockForUpdate()
+            ->first();
+
+        $preOrderOrder = $preOrder ? Order::whereKey($preOrder->order_id)->lockForUpdate()->first() : null;
+        if (!$preOrderOrder
+            || (float)$preOrder->deferred_amount > 0
+            || round((float)$preOrderOrder->payment_amount - (float)$preOrderOrder->total_amount, 2) < 0
+            || $preOrderOrder->billingInvoice()) {
+            return null;
+        }
+
+        return $preOrderOrder;
+    }
+
+    private function addPreOrderLines(Invoice $invoice, Order $preOrderOrder): void
+    {
+        $this->applyLineTaxCategories($preOrderOrder);
+        $preOrderOrder->unsetRelation('transactions');
+
+        $transactions = $this->loadTransactions($preOrderOrder, null);
+        $this->checkTaxCategories($transactions);
+
+        $this->storeLines($invoice, $transactions, null, isPreOrder: true);
+
+        CalculateInvoiceTotals::make()->action($invoice);
+        $invoice->refresh();
+        $invoice->update(collect(['shipping_amount', 'charges_amount', 'insurance_amount', 'packaging_amount', 'leaflet_amount'])
+            ->mapWithKeys(fn (string $column) => [$column => (float)$invoice->{$column} + (float)$preOrderOrder->{$column}])
+            ->all());
     }
 
     /**
@@ -549,6 +616,12 @@ class GenerateInvoiceFromOrder extends OrgAction
     public function asController(Order $order, ActionRequest $request): Invoice
     {
         $this->initialisationFromShop($order->shop, $request);
+
+        if ($billingInvoice = $order->billingInvoice()) {
+            throw ValidationException::withMessages([
+                'invoice' => __('This order is already invoiced on :invoice.', ['invoice' => $billingInvoice->reference]),
+            ]);
+        }
 
         return $this->handle($order);
     }

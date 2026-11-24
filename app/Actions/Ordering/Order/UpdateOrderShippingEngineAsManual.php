@@ -164,6 +164,8 @@ class UpdateOrderShippingEngineAsManual extends OrgAction
             $validator->errors()->add('message', __('Shipping can not be changed once order is cancelled.'));
         } elseif (in_array($this->order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED]) && $this->order->invoices()->exists()) {
             $validator->errors()->add('message', __('Shipping can not be changed once order is invoiced.'));
+        } elseif ($this->order->sharedBillingInvoice()) {
+            $validator->errors()->add('message', __('Shipping can not be changed once order is invoiced.'));
         }
     }
 

@@ -12,6 +12,10 @@ use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\Ordering\PreOrder\HydratePreOrderReservedStock;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Invoice\StoreRefund;
+use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
+use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
@@ -40,6 +44,8 @@ use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
@@ -137,6 +143,11 @@ class CancelOrder extends OrgAction
                 AttachPaymentToOrder::make()->action($order, $payment, [
                     'amount' => $payment->amount
                 ]);
+
+                $sharedInvoice = $order->sharedBillingInvoice();
+                if ($sharedInvoice) {
+                    $this->creditSharedInvoice($order, $sharedInvoice, $payment);
+                }
             }
 
             /** Cancelled from the order itself rather than its pre-order panel: the goods kept for it go back on sale */
@@ -268,6 +279,41 @@ class CancelOrder extends OrgAction
             'refund_to_original_payment' => ['sometimes', 'boolean'],
             ...($this->asAction ? ['refund_amount' => ['sometimes', 'numeric', 'min:0']] : []),
         ];
+    }
+
+    /**
+     * HELP-4853. A pre-order invoiced with the rest of its basket comes off that invoice with a
+     * credit note for exactly the money given back, settled by that money. The note belongs to the
+     * pre-order's order, so the in-stock order and its payments are untouched.
+     */
+    private function creditSharedInvoice(Order $order, Invoice $invoice, Payment $moneyBack): void
+    {
+        $refundAmount = round(abs((float)$moneyBack->amount), 2);
+        $ratio        = (float)$order->total_amount > 0 ? min(1, $refundAmount / (float)$order->total_amount) : 1;
+
+        $refund = StoreRefund::make()->action($invoice, []);
+        $refund->update([
+            'order_id' => $order->id,
+            'data'     => array_merge($refund->data ?? [], ['credit_note_amount' => $refundAmount]),
+        ]);
+
+        $lines     = $invoice->invoiceTransactions()->where('order_id', $order->id)->orderBy('id')->get();
+        $target    = round((float)$lines->sum('net_amount') * $ratio, 2);
+        $credited  = 0.0;
+        $lastIndex = $lines->keys()->last();
+        foreach ($lines as $index => $invoiceTransaction) {
+            $netAmount = $index === $lastIndex
+                ? round($target - $credited, 2)
+                : round((float)$invoiceTransaction->net_amount * $ratio, 2);
+            $credited  = round($credited + $netAmount, 2);
+            if (abs($netAmount) >= 0.01) {
+                StoreRefundInvoiceTransaction::make()->action($refund, $invoiceTransaction, ['net_amount' => $netAmount]);
+            }
+        }
+
+        $refund = FinaliseRefund::make()->action($refund->refresh(), []);
+        $refund->payments()->attach($moneyBack);
+        UpdateInvoicePaymentState::run($refund);
     }
 
     public function afterValidator(Validator $validator): void

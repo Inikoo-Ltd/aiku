@@ -25,6 +25,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
@@ -194,6 +195,10 @@ class UpdateTransaction extends OrgAction
 
         if ($transaction->trashed()) {
             return $transaction;
+        }
+
+        if ($invoice = $transaction->order->sharedBillingInvoice()) {
+            throw ValidationException::withMessages(['message' => __('This pre-order is already on invoice :invoice with the rest of the customer\'s order, so its lines can not be changed. Cancel the pre-order instead.', ['invoice' => $invoice->reference])]);
         }
 
         return $this->handle($transaction, $this->validatedData);

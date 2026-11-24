@@ -14,7 +14,6 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -55,7 +54,7 @@ class PayOrder extends OrgAction
 
             AttachPaymentToOrder::make()->action($order, $payment, []);
 
-            $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+            $invoice = $order->billingInvoice();
             if ($invoice) {
                 AttachPaymentToInvoice::make()->action($invoice, $payment, []);
             }

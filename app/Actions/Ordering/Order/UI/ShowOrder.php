@@ -320,6 +320,7 @@ class ShowOrder extends OrgAction
             && !$preOrderLocked
             && in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
             && !$order->invoices()->exists()
+            && !$order->sharedBillingInvoice()
             && !UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)
             && $request->user()->authTo("accounting.{$order->organisation_id}.edit")) {
             $actions[] = [

@@ -541,6 +541,28 @@ class Order extends Model implements HasMedia, Auditable
     }
 
     /**
+     * The invoice that bills this order: its own, or the in-stock order's when this paid pre-order
+     * was invoiced together with it at its dispatch (HELP-4853).
+     */
+    public function billingInvoice(): ?Invoice
+    {
+        return $this->invoices()->where('type', InvoiceTypeEnum::INVOICE)->first() ?? $this->sharedBillingInvoice();
+    }
+
+    public function sharedBillingInvoice(): ?Invoice
+    {
+        $parentOrderId = $this->preOrder?->parent_order_id;
+        if (!$parentOrderId) {
+            return null;
+        }
+
+        return Invoice::where('type', InvoiceTypeEnum::INVOICE)
+            ->where('order_id', $parentOrderId)
+            ->whereHas('invoiceTransactions', fn (Builder $query) => $query->where('order_id', $this->id))
+            ->first();
+    }
+
+    /**
      * The pre-order split off this order at submit, when the basket mixed in-stock and pre-order items.
      */
     public function splitPreOrder(): HasOne
@@ -624,7 +646,8 @@ class Order extends Model implements HasMedia, Auditable
     public function canChangeTaxCategory(): bool
     {
         return !in_array($this->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])
-            && !$this->invoices()->exists();
+            && !$this->invoices()->exists()
+            && !$this->sharedBillingInvoice();
     }
 
     public function deliveryAddress(): BelongsTo

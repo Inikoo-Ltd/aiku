@@ -67,7 +67,7 @@ class UpdateOrderReCalculateVAT extends OrgAction
             $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on a closed order.'));
         }
 
-        if ($this->order->invoices()->count() > 0) {
+        if ($this->order->invoices()->count() > 0 || $this->order->sharedBillingInvoice()) {
             $validator->errors()->add('message', __('Unable to re-calculate VAT Charge on an invoiced order.'));
         }
 

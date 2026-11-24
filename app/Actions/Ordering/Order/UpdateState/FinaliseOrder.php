@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStatePacked;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
@@ -46,7 +47,15 @@ class FinaliseOrder extends OrgAction
             if ($currentInvoicesInOrder > 0) {
                 throw ValidationException::withMessages(['status' => 'You can not change the status to finalized, because there are invoices in this order']);
             }
-            GenerateInvoiceFromOrder::make()->action($order);
+            $sharedInvoice = $order->sharedBillingInvoice();
+            if ($sharedInvoice) {
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
+                if ($deliveryNote) {
+                    UpdateDeliveryNoteStatePacked::make()->ensurePicksMatchInvoice($deliveryNote, $order, $sharedInvoice);
+                }
+            } else {
+                GenerateInvoiceFromOrder::make()->action($order);
+            }
         });
 
         $data = [

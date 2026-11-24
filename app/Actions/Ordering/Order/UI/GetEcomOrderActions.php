@@ -208,7 +208,7 @@ class GetEcomOrderActions
 
                 OrderStateEnum::PACKED => [
 
-                    ($isReadyToInvoice && $order->invoices()->count() == 0) ?
+                    ($isReadyToInvoice && $order->invoices()->count() == 0 && !$order->sharedBillingInvoice()) ?
                         [
                             'type'    => 'button',
                             'style'   => '',
@@ -317,6 +317,7 @@ class GetEcomOrderActions
                     OrderStateEnum::FINALISED
                 ])
                 || $order->invoices()->count() > 0
+                || $order->sharedBillingInvoice()
                 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0
                 || in_array($order->preOrder?->state, PreOrderStateEnum::open(), true)) {
                 $showCancel = false;

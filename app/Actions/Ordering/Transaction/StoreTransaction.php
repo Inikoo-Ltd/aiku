@@ -27,6 +27,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderEditAuthorisation;
 
@@ -250,6 +251,11 @@ class StoreTransaction extends OrgAction
         $this->order         = $order;
         $this->historicAsset = $historicAsset;
         $this->initialisationFromShop($order->shop, $request);
+
+        if ($invoice = $order->sharedBillingInvoice()) {
+            throw ValidationException::withMessages(['message' => __('This pre-order is already on invoice :invoice with the rest of the customer\'s order, so its lines can not be changed. Cancel the pre-order instead.', ['invoice' => $invoice->reference])]);
+        }
+
         $this->handle($order, $historicAsset, $this->validatedData);
     }
 

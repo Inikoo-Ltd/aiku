@@ -282,7 +282,7 @@ class UpdateOrder extends OrgAction
                 'sometimes',
                 'boolean',
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    if ($this->order->invoices()->exists()) {
+                    if ($this->order->invoices()->exists() || $this->order->sharedBillingInvoice()) {
                         $fail(__('Recargo de equivalencia cannot be changed once the order has been invoiced'));
                     }
                 }

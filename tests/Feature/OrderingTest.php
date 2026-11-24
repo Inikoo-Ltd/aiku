@@ -6886,6 +6886,55 @@ describe('pre-orders (HELP-3432)', function () {
             ->and((float) $preOrderLine->quantity_bonus)->toBe(0.0);
     });
 
+    test('a pre-order paid in full goes on the first invoice of the basket, is not invoiced again, and comes off it with a credit note when cancelled (HELP-4853)', function () {
+        $inStock = ($this->preOrderProduct)([]);
+        DB::table('products')->where('id', $inStock->id)->update(['status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 100]);
+        $inStock->orgStocks()->update(['quantity_available' => 100]);
+        $backOrder = ($this->preOrderProduct)(['is_back_order' => true]);
+
+        $basket = StoreOrder::make()->action(($this->fundedCustomer)(10000), Order::factory()->definition());
+        StoreTransaction::make()->action($basket, $inStock->fresh()->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+        StoreTransaction::make()->action($basket, $backOrder->currentHistoricProduct, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+        \App\Actions\Ordering\PreOrder\AcceptBasketPreOrderTerms::run($basket->fresh(), false);
+        PayRetinaOrderWithBalance::make()->handle($basket->fresh());
+
+        $parent   = $basket->fresh();
+        $preOrder = $parent->splitPreOrder;
+        if ((float) $preOrder->order->payment_amount < (float) $preOrder->order->total_amount) {
+            PayOrderWithCustomerBalance::make()->handle($preOrder->order->fresh());
+        }
+        $preOrder->refresh()->update(['state' => \App\Enums\Ordering\PreOrder\PreOrderStateEnum::WAITING_FOR_GOODS, 'deferred_amount' => 0]);
+        $child = $preOrder->order->fresh();
+        expect((float) $child->payment_amount)->toBe((float) $child->total_amount);
+
+        $preOrder->update(['deferred_amount' => 1]);
+        expect(GenerateInvoiceFromOrder::make()->paidPreOrderToInvoiceWith($parent))->toBeNull();
+        $preOrder->update(['deferred_amount' => 0]);
+
+        DB::table('delivery_note_items')->whereIn('delivery_note_id', $parent->deliveryNotes()->pluck('delivery_notes.id'))->update(['quantity_picked' => DB::raw('quantity_required')]);
+        $invoice = GenerateInvoiceFromOrder::make()->action($parent);
+
+        expect($invoice->invoiceTransactions()->where('order_id', $child->id)->where('model_type', 'Product')->count())->toBe(1)
+            ->and((float) $invoice->total_amount)->toBe(round((float) $parent->fresh()->total_amount + (float) $child->total_amount, 2))
+            ->and((float) $parent->fresh()->total_amount)->toBe((float) $parent->total_amount)
+            ->and((float) $invoice->tax_amount)->toBe(round((float) $parent->fresh()->tax_amount + (float) $child->tax_amount, 2))
+            ->and($invoice->pay_status->value)->toBe('paid')
+            ->and($child->billingInvoice()->id)->toBe($invoice->id)
+            ->and($child->sharedBillingInvoice()->id)->toBe($invoice->id)
+            ->and($parent->sharedBillingInvoice())->toBeNull()
+            ->and($child->canChangeTaxCategory())->toBeFalse()
+            ->and(GenerateInvoiceFromOrder::make()->paidPreOrderToInvoiceWith($parent))->toBeNull();
+
+        \App\Actions\Ordering\PreOrder\CancelPreOrder::run($preOrder->fresh(), \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY);
+        $creditNote = Invoice::where('original_invoice_id', $invoice->id)->where('type', InvoiceTypeEnum::REFUND)->firstOrFail();
+
+        expect($creditNote->order_id)->toBe($child->id)
+            ->and($creditNote->in_process)->toBeFalse()
+            ->and((float) $creditNote->total_amount)->toBe(-(float) $child->total_amount)
+            ->and($creditNote->refresh()->pay_status->value)->toBe('paid')
+            ->and((float) $parent->fresh()->payment_amount)->toBe((float) $parent->total_amount);
+    });
+
     test('customers only read "Pre-order", partly in-stock lines say what is sent now, and every text can be rewritten per shop language (HELP-3678)', function () {
         $backOrder = ($this->preOrderProduct)(['is_back_order' => true, 'available_quantity' => 2]);
         $backOrder->orgStocks()->update(['quantity_available' => 2]);
