@@ -93,8 +93,8 @@ class SlackChannel extends Model
 
     /**
      * Public channels are open to every member of the Slack workspace, so an active aiku user linked to an active
-     * Slack person may read them. The link counts only when both hold the same email, as anyone can type a Slack id
-     * into their own profile, and never for a Slack guest. Engineers see them without a Slack account, as they build and
+     * Slack person may read them. The link counts only when both hold the same email or an engineer confirmed it by hand
+     * (slack:link-users), as anyone can type a Slack id into their own profile, and never for a Slack guest. Engineers see them without a Slack account, as they build and
      * review these screens. To open them to all staff instead, delete the condition in the brackets.
      */
     public static function userMayReadPublicChannels(User $user): bool
@@ -107,7 +107,7 @@ class SlackChannel extends Model
     public static function linkedSlackPerson(User $user): ?SlackUser
     {
         return SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
-            ->whereRaw('lower(email) = ?', [strtolower((string) $user->email)])
+            ->where(fn (Builder $query) => $query->whereNotNull('link_confirmed_at')->orWhereRaw('lower(email) = ?', [strtolower((string) $user->email)]))
             ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
             ->first();
     }

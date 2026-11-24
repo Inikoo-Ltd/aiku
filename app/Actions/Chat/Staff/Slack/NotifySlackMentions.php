@@ -132,7 +132,7 @@ class NotifySlackMentions
                 ->whereIn('slack_users.slack_id', $slackIds)
                 ->where('slack_users.is_bot', false)
                 ->where('slack_users.is_deleted', false)
-                ->whereRaw('lower(slack_users.email) = lower(users.email)')
+                ->where(fn ($link) => $link->whereNotNull('slack_users.link_confirmed_at')->orWhereRaw('lower(slack_users.email) = lower(users.email)'))
                 ->whereRaw("coalesce((slack_users.data->>'is_restricted')::boolean, false) = false"))
             ->orderBy('id')
             ->get();

@@ -43,7 +43,7 @@ class StoreSlackUser
             'data'         => $member,
         ]);
 
-        $user                = $this->matchingUser($slackId, $slackUser->is_bot ? null : $slackUser->email);
+        $user                = $slackUser->link_confirmed_at ? $slackUser->user : $this->matchingUser($slackId, $slackUser->is_bot ? null : $slackUser->email);
         $slackUser->user_id  = $user?->id;
         $slackUser->save();
 
