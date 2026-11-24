@@ -411,9 +411,11 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
         </div>
 
         <IrisWebsiteDialog />
-        <CookieConsent v-if="layout.iris?.own_cookie_banner" />
 
     </div>
+
+    <!-- Outside .editor-class, whose h2, p and table styles would otherwise restyle the banner -->
+    <CookieConsent v-if="layout.iris?.own_cookie_banner" />
 
     <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
         :pauseOnHover="true">
