@@ -8,12 +8,12 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Rules\StaffPassword;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,15 +32,15 @@ class UpdateUserPasswordViaEmail
     }
 
 
-    public static function passwordRule(): ?PasswordRule
+    public static function passwordRule(?User $user = null): StaffPassword
     {
-        return app()->isLocal() || app()->environment('testing') ? null : PasswordRule::min(8);
+        return new StaffPassword($user, app()->isLocal() || app()->environment('testing'));
     }
 
     public function rules(): array
     {
         return [
-            'password' => ['required', self::passwordRule()],
+            'password' => ['required', self::passwordRule(User::where('email', request()->input('email'))->first())],
             'token'    => ['required', 'string'],
             'email'    => ['required', 'email']
         ];

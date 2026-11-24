@@ -41,6 +41,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Passkeys\Contracts\PasskeyUser;
+use Illuminate\Support\Facades\DB;
 use Laravel\Passkeys\PasskeyAuthenticatable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -86,6 +87,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $legacy_password source password
  * @property string|null $google2fa_secret
  * @property bool $is_two_factor_required
+ * @property array<int, string> $password_history
  * @property array<array-key, mixed> $bookmarks
  * @property int|null $employed_in_organisation_id
  * @property bool $is_bot
@@ -190,6 +192,7 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         'auth_type'                   => UserAuthTypeEnum::class,
         'password'                    => 'hashed',
         'employed_in_organisation_id' => 'integer',
+        'password_history'            => 'array',
     ];
 
 
@@ -197,8 +200,39 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
         'data'      => '{}',
         'settings'  => '{}',
         'sources'   => '{}',
-        'bookmarks' => '{}'
+        'bookmarks' => '{}',
+        'password_history' => '[]',
     ];
+
+    public const int PASSWORD_HISTORY_SIZE = 4;
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            if (!$user->isDirty('password')) {
+                return;
+            }
+
+            $previousHash = $user->getOriginal('password');
+            if ($previousHash) {
+                $user->password_history = array_slice([$previousHash, ...($user->password_history ?? [])], 0, self::PASSWORD_HISTORY_SIZE - 1);
+            }
+        });
+    }
+
+    public function shouldSetUpSecondFactor(): bool
+    {
+        if ($this->google2fa_secret || $this->passkeys()->exists()) {
+            return false;
+        }
+
+        return DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('model_has_roles.model_type', 'User')
+            ->where('model_has_roles.model_id', $this->id)
+            ->where('roles.name', '~', '^(group-admin|org-admin-\\d+|accounting-clerk-\\d+|accounting-supervisor-\\d+)$')
+            ->exists();
+    }
 
     public function getPasskeyUsername(): string
     {

@@ -9,6 +9,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Rules\StaffPassword;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithHumanResourcesEditAuthorisation;
 use App\Models\HumanResources\Employee;
@@ -18,7 +19,6 @@ use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreUserFromEmployee extends OrgAction
@@ -58,7 +58,7 @@ class StoreUserFromEmployee extends OrgAction
                 ),
                 Rule::notIn(['export', 'create'])
             ],
-            'password'                  => ['required', app()->isLocal() || app()->environment('testing') || !$this->strict ? Password::min(3) : Password::min(8)],
+            'password'                  => ['required', new StaffPassword(lenient: app()->isLocal() || app()->environment('testing') || !$this->strict)],
             'password_confirmation'     => ['required', 'same:password']
         ];
 

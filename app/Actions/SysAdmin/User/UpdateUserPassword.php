@@ -11,17 +11,19 @@ namespace App\Actions\SysAdmin\User;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\SysAdmin\User;
+use App\Rules\StaffPassword;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rules\Password;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateUserPassword extends OrgAction
 {
     use WithActionUpdate;
+
+    private ?User $user = null;
 
     public function handle(User $user, array $modelData): User
     {
@@ -36,7 +38,7 @@ class UpdateUserPassword extends OrgAction
         return [
             'password' => [
                 'required',
-                app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
+                new StaffPassword($this->user, app()->isLocal() || app()->environment('testing'))
             ],
         ];
     }
@@ -44,6 +46,7 @@ class UpdateUserPassword extends OrgAction
 
     public function asController(ActionRequest $request): User
     {
+        $this->user = $request->user();
         $this->initialisationFromGroup($request->user()->group, $request);
 
         return $this->handle($request->user(), $this->validatedData);
@@ -52,6 +55,7 @@ class UpdateUserPassword extends OrgAction
     public function action(User $user, $objectData): User
     {
         $this->asAction = true;
+        $this->user     = $user;
         $this->initialisationFromGroup($user->group, $objectData);
 
         return $this->handle($user, $this->validatedData);
