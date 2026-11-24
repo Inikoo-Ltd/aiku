@@ -32,10 +32,11 @@ class FixMiscalculatedTransactionAmounts
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
             $qtyOrdered          = $transaction->quantity_ordered;
-            $historicPrice       = $transaction->historicAsset->price;
-            $grossAmountExpected = round($qtyOrdered * $historicPrice, 2);
-            $netAmountExpected   = round($qtyOrdered * $historicPrice, 2)
-                - discountAmountOffGross(round($qtyOrdered * $historicPrice, 2), $transaction->current_discount_factor);
+            $unitPriceExpected   = $transaction->agreed_unit_price ?? $transaction->historicAsset->price;
+            $grossAmountExpected = round($qtyOrdered * $unitPriceExpected, 2);
+            $netAmountExpected   = $transaction->agreed_unit_price !== null
+                ? $grossAmountExpected
+                : $grossAmountExpected - discountAmountOffGross($grossAmountExpected, $transaction->current_discount_factor);
 
             $diffGross = abs($grossAmountExpected - $transaction->gross_amount);
             $diffNet   = abs($netAmountExpected - $transaction->net_amount);
@@ -62,7 +63,8 @@ class FixMiscalculatedTransactionAmounts
                     'gross_amount_expected'   => $grossAmountExpected,
                     'net_amount_expected'     => $netAmountExpected,
                     'quantity_ordered'        => $qtyOrdered,
-                    'historic_price'          => $historicPrice,
+                    'historic_price'          => $transaction->historicAsset->price,
+                    'agreed_unit_price'       => $transaction->agreed_unit_price,
                     'offer_data'              => $transaction->offers_data,
                     'current_discount_factor' => $transaction->current_discount_factor,
                     'diff_gross'              => $diffGross,

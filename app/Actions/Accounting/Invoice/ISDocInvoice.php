@@ -93,14 +93,14 @@ class ISDocInvoice extends OrgAction
 
         $isDocInvoice->taxPointDate = $invoice->tax_liability_at;
 
-        $transactions = $invoice->invoiceTransactions;
+        $transactions = $invoice->invoiceTransactions()->with(['taxCategory', 'historicAsset', 'transaction:id,agreed_unit_price'])->get();
 
 
         foreach ($transactions as $transaction) {
             $trTaxCategory = $transaction->taxCategory;
 
             $taxAmount             = $transaction->net_amount * $trTaxCategory->rate;
-            $unitPrice             = $transaction->historicAsset?->price ?? $transaction->net_amount;
+            $unitPrice             = $transaction->transaction?->agreed_unit_price ?? $transaction->historicAsset?->price ?? $transaction->net_amount;
             $taxAmountPerUnitPrice = $unitPrice * $trTaxCategory->rate;
             $amountAfterTax        = $transaction->net_amount + $taxAmount;
             $unitPriceAfterTax     = $unitPrice + $taxAmountPerUnitPrice;

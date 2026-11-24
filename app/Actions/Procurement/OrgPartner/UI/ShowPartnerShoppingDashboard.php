@@ -113,7 +113,7 @@ class ShowPartnerShoppingDashboard extends OrgAction
     public function handle(OrgPartner $orgPartner): array
     {
         $orderCapacity  = GetPartnerOrderCapacity::run($orgPartner);
-        $estimatedTotal = $orderCapacity['list']['value'];
+        $estimatedTotal = $orderCapacity['list']['buyer_value'];
 
         $priorityBreakdown = PartnerShoppingListItem::query()
             ->where('org_partner_id', $orgPartner->id)
@@ -153,12 +153,13 @@ class ShowPartnerShoppingDashboard extends OrgAction
 
     public function htmlResponse(array $data, ActionRequest $request): Response
     {
-        $exchange = $this->orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $exchange           = $this->orgPartner->exchangeToOrgCurrency();
+        $listPriceExchange  = $exchange * GetPartnerBuyingPriceFactor::run($this->orgPartner);
 
         $data['estimated_total'] = round($data['estimated_total'] * $exchange, 2);
-        $data['order_capacity']['list']['value'] = round($data['order_capacity']['list']['value'] * $exchange, 2);
+        $data['order_capacity']['list']['value'] = round($data['order_capacity']['list']['buyer_value'] * $exchange, 2);
         if ($data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] !== null) {
-            $data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] = round($data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] * $exchange, 2);
+            $data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] = round($data['order_capacity']['partner_capacity']['delivers_to_us_per_30d'] * $listPriceExchange, 2);
         }
 
         return Inertia::render(

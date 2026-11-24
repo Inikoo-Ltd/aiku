@@ -61,6 +61,7 @@ const props = defineProps<{
     pricingMajorCurrencies?: string[]
     pricingCurrencies?: Record<string, any>
     pricingCostRates?: Record<string, number | null>
+    partnerPricingMeta?: Record<string, any> | null
     productStats?: { total: number, active: number, discontinued: number, incomplete: number } | null
 }>()
 
@@ -84,7 +85,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 // loads directly on the pricing tab) — fetch them once when the tab is first opened
 watch(currentTab, (tab) => {
     if (tab === 'pricing' && !props.pricingCurrencies) {
-        router.reload({ only: ['pricingCurrencies', 'pricingCostRates'] })
+        router.reload({ only: ['pricingCurrencies', 'pricingCostRates', 'partnerPricingMeta'] })
     }
 })
 
@@ -301,6 +302,7 @@ watch(() => currentTab.value, () => {
         :pricingCurrencies="pricingCurrencies"
         :bulkEditField="pricingBulkField"
         :pricingCostRates="pricingCostRates"
+        :partnerPricingMeta="partnerPricingMeta"
         @bulkEditHandled="pricingBulkField = null"
         :masterProductCategoryId="masterProductCategoryId"
         :variant-slugs="variantSlugs"

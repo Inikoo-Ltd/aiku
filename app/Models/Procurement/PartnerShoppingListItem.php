@@ -423,6 +423,17 @@ class PartnerShoppingListItem extends Model
      *
      * @param  array<int, int>  $shopIds  the seller's shops in order of preference (GetPartnerSellingShopIds)
      */
+    public static function buyerPricePerSkoSql(OrgPartner $orgPartner): string
+    {
+        return PartnerSkoPrice::buyerPricePerSkoSql(
+            "(select sos.id from org_stocks sos
+                where sos.stock_id = partner_shopping_list_items.stock_id
+                    and sos.organisation_id = partner_shopping_list_items.partner_organisation_id
+                limit 1)",
+            $orgPartner
+        );
+    }
+
     public static function pricePerSkoSql(array $shopIds): string
     {
         return PartnerSkoPrice::pricePerSkoSql(

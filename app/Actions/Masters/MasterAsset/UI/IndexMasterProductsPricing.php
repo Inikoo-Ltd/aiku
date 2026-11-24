@@ -200,6 +200,13 @@ class IndexMasterProductsPricing extends OrgAction
             $masterAsset->price_outlier = GetMasterAssetPriceOutlier::run($masterAsset->price, $masterAsset->units, $masterAsset->family_unit_price_median);
         });
 
+        $partnerPricing = GetMasterAssetsPartnerPricing::run($masterShop, $masterAssets->getCollection());
+        if ($partnerPricing) {
+            $masterAssets->getCollection()->each(function (MasterAsset $masterAsset) use ($partnerPricing) {
+                $masterAsset->partner_pricing = $partnerPricing['rows'][$masterAsset->id] ?? null;
+            });
+        }
+
         return $masterAssets;
     }
 
@@ -231,7 +238,16 @@ class IndexMasterProductsPricing extends OrgAction
 
             $table
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')
-                ->column(key: 'rrp', label: __('RRP').'/'.($masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right')
+                ->column(key: 'rrp', label: __('RRP').'/'.($masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right');
+
+            if (GetMasterAssetsPartnerPricing::appliesTo($masterShop)) {
+                $table
+                    ->column(key: 'partner_prices', label: __('Partners pay'))
+                    ->column(key: 'sibling_price', label: __('Partners sell at'))
+                    ->column(key: 'sibling_rrp', label: __('Partners RRP/Unit'));
+            }
+
+            $table
                 ->column(key: 'price_tip', label: '', sortable: true, align: 'right')
                 ->defaultSort('-price_tip');
         };

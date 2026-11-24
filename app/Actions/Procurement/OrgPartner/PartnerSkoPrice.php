@@ -80,6 +80,46 @@ final class PartnerSkoPrice
     }
 
     /**
+     * What the partner pays for one SKO, in the seller's currency: the price agreed for the product's
+     * master (master_asset_partner_prices, kept in the partner's currency) when there is one, otherwise
+     * the product price times the partner's buying factor. Same product choice as pricePerSkoSql, so
+     * screens pricing with it match the order the seller makes. Callers convert with the partner's
+     * exchangeToOrgCurrency() and never apply the buying factor again.
+     */
+    public static function buyerPricePerSkoSql(string $orgStockIdExpression, OrgPartner $orgPartner): string
+    {
+        $shopIds        = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
+        $factor         = sprintf('%.6F', GetPartnerBuyingPriceFactor::run($orgPartner));
+        $exchange       = $orgPartner->exchangeToOrgCurrency();
+        $partnerToOurs  = sprintf('%.10F', $exchange > 0 ? 1 / $exchange : 1);
+
+        return "(select coalesce(agreed.price * $partnerToOurs, pr.price * $factor) / nullif(phos.quantity, 0)
+            from product_has_org_stocks phos
+            join products pr on pr.id = phos.product_id and pr.state = '".ProductStateEnum::ACTIVE->value."' and pr.shop_id in (".implode(',', array_map(intval(...), $shopIds)).")
+            left join master_asset_partner_prices agreed on agreed.master_asset_id = pr.master_product_id and agreed.org_partner_id = ".((int) $orgPartner->id)."
+            where phos.org_stock_id = ".$orgStockIdExpression."
+                and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
+                and ".self::notOtherCustomersExclusiveSql('pr', (string) $orgPartner->id)."
+            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", ".self::packPreferenceSql('phos.quantity').", ".self::ownCodeFirstSql('pr.code', 'phos.org_stock_id').", pr.price
+            limit 1)";
+    }
+
+    /**
+     * The product price to multiply by the partner's buying factor and exchange rate: the agreed price
+     * brought back to the seller's currency and divided by the factor when there is one, so code that
+     * prices with "price × exchangeToOrgCurrency() × factor" lands on the agreed price.
+     */
+    public static function factoredProductPriceSql(string $productAlias, OrgPartner $orgPartner): string
+    {
+        $factor   = GetPartnerBuyingPriceFactor::run($orgPartner);
+        $exchange = $orgPartner->exchangeToOrgCurrency();
+        $scale    = sprintf('%.10F', 1 / (($exchange > 0 ? $exchange : 1) * ($factor > 0 ? $factor : 1)));
+
+        return "coalesce((select agreed.price from master_asset_partner_prices agreed
+                where agreed.master_asset_id = $productAlias.master_product_id and agreed.org_partner_id = ".((int) $orgPartner->id).") * $scale, $productAlias.price)";
+    }
+
+    /**
      * The seller's SKO is off limits to the partner when every product selling it is another
      * customer's private label: the partner never sees it nor can put it on its list or orders.
      */

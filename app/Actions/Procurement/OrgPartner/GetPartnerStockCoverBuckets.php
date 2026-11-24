@@ -200,7 +200,7 @@ class GetPartnerStockCoverBuckets
 
         $counts = $items->groupBy('bucket')->map($this->bucketTotals(...));
 
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $exchange = $orgPartner->exchangeToOrgCurrency();
         $leftOut  = $withLeftOut ? $this->leftOut($orgPartner, $leadTime['days']) : null;
 
         $defaultCounts = $counts->only(self::DEFAULT_ORDER_BUCKETS);
@@ -388,7 +388,7 @@ class GetPartnerStockCoverBuckets
             return [];
         }
 
-        $toOurMoney = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $toOurMoney = $orgPartner->exchangeToOrgCurrency();
 
         return $this->rescueItems($orgPartner, $leadDays)
             ->whereRaw($this->bucketExpression($leadDays)." in ('".implode("', '", $buckets)."')")
@@ -422,10 +422,9 @@ class GetPartnerStockCoverBuckets
 
     private function partnerSkoPriceSql(OrgPartner $orgPartner): string
     {
-        $shopIds = GetPartnerSellingShopIds::run($orgPartner->partner) ?: [0];
-        $landed  = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
+        $landed = GetPartnerLandedCost::appliesTo($orgPartner) ? GetPartnerLandedCost::perSkoSql('p.id').', ' : '';
 
-        return "coalesce($landed".PartnerSkoPrice::pricePerSkoSql('p.id', $shopIds, (string) $orgPartner->id).', 0)';
+        return "coalesce($landed".PartnerSkoPrice::buyerPricePerSkoSql('p.id', $orgPartner).', 0)';
     }
 
     /**

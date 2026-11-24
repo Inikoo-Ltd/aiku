@@ -111,6 +111,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             ->where('t.order_id', $order->id)
             ->where('t.quantity_ordered', '>', 0)
             ->where('t.model_type', 'Product')
+            ->whereNull('t.agreed_unit_price')
             ->leftJoin('products as p', 't.model_id', 'p.id')
             ->whereNull('t.deleted_at')
             ->get()
@@ -131,6 +132,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             ->where('t.order_id', $order->id)
             ->where('quantity_bonus', '>', 0)
             ->where('t.model_type', 'Product')
+            ->whereNull('t.agreed_unit_price')
             ->leftJoin('products as p', 't.model_id', 'p.id')
             ->whereNull('t.deleted_at')
             ->get()
@@ -274,6 +276,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         foreach (
             $order->transactions()
                 ->where('has_discount_when_submitted', true)
+                ->whereNull('agreed_unit_price')
                 ->whereRaw("submitted_offers_data <> '{}'::jsonb")
                 ->whereRaw('submitted_discount_factor <> current_discount_factor')
                 ->get() as $transactionWithSubmittedDiscount

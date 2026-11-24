@@ -8,10 +8,8 @@
 
 namespace App\Actions\Procurement\PartnerShoppingListItem\UI;
 
-use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Inventory\OrgStock\GetOrgStocksQuarterlyUsage;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
@@ -96,14 +94,14 @@ class IndexPartnerShoppingListOrgStocks extends OrgAction
                     ->whereRaw('started.id is distinct from editable_line.id'),
                 'quantity_started'
             )
-            ->selectRaw(PartnerSkoPrice::pricePerSkoSql('org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id).' as price_per_sko')
+            ->selectRaw(PartnerSkoPrice::buyerPricePerSkoSql('org_stocks.id', $orgPartner).' as price_per_sko')
             ->defaultSort('org_stocks.code')
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(null, 25, tableName: request()->route()->getName())
             ->withQueryString();
 
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $exchange = $orgPartner->exchangeToOrgCurrency();
 
         $paginator->getCollection()->transform(function ($row) use ($exchange) {
             $row->price_per_sko        = $row->price_per_sko === null ? null : round((float) $row->price_per_sko * $exchange, 4);

@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import { computed } from 'vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
+import FlashOnChange from '@/Components/Utils/FlashOnChange.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink, faUnlink } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -26,6 +27,7 @@ const props = defineProps<{
     placeholder?: string
     units?: number
     perUnits?: number
+    flashMarginChanges?: boolean
     impact?: {
         dirty: boolean
         delta: number | null
@@ -121,12 +123,14 @@ const outerPrice = computed(() => {
                 <span v-if="impact && impact.marginAfter !== null" class="text-gray-400">
                     {{ ctrans('M:') }}
                     <template v-if="impact.marginBefore !== null">{{ impact.marginBefore }}% → </template>
-                    <span
-                        v-if="impact.dirty"
-                        class="font-medium"
-                        :class="impact.marginBefore === null || impact.marginAfter >= impact.marginBefore ? 'text-green-600' : 'text-red-600'"
-                    >{{ impact.marginAfter }}%</span>
-                    <span v-else class="font-medium text-gray-500">{{ impact.marginAfter }}%</span>
+                    <FlashOnChange :value="impact.marginAfter" :enabled="!!flashMarginChanges">
+                        <span
+                            v-if="impact.dirty || impact.marginBefore !== null"
+                            class="font-medium"
+                            :class="impact.marginBefore === null || impact.marginAfter >= impact.marginBefore ? 'text-green-600' : 'text-red-600'"
+                        >{{ impact.marginAfter }}%</span>
+                        <span v-else class="font-medium text-gray-500">{{ impact.marginAfter }}%</span>
+                    </FlashOnChange>
                 </span>
             </span>
         </div>

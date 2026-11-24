@@ -53,6 +53,7 @@ import ListSelectorTradeUnit from "@/Components/Forms/Fields/ListSelectorTradeUn
 const FreeGift = defineAsyncComponent(() => import('@/Components/Forms/Fields/FreeGift.vue'))
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
 const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
+const PartnerPrices = defineAsyncComponent(() => import('@/Components/Forms/Fields/PartnerPrices.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
 const Language = defineAsyncComponent(() => import("@/Components/Forms/Fields/Language.vue"))
 const WebRegistrations = defineAsyncComponent(() => import('@/Components/Forms/Fields/WebRegistrations.vue'))
@@ -276,6 +277,7 @@ export const componentsList: { [key: string]: Component } = {
     'banned-countries': BannedCountries,
 	field_group: FieldGroup,
     'multiple_price_currency' : MultiplePriceCurrency,
+    'partner_prices' : PartnerPrices,
     'master_shop_price_exchanges' : MasterShopPriceExchanges,
     'contact_options_panel' : ContactOptionsPanel,
     'whatsapp_phone_status' : WhatsappPhoneStatus,

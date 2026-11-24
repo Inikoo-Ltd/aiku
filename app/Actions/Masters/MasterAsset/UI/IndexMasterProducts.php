@@ -698,6 +698,9 @@ class IndexMasterProducts extends OrgAction
                             })
                     )
                     : null,
+                'partnerPricingMeta'      => $hasPricing && GetMasterAssetsPartnerPricing::appliesTo($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop)
+                    ? $this->wrapPricingSupportProp(fn () => GetMasterAssetsPartnerPricing::run($this->parent instanceof MasterShop ? $this->parent : $this->parent->masterShop, collect())['meta'] ?? null)
+                    : null,
                 'editable_table'          => false,
                 'shopsData'               => $shopsData,
                 'hide_bulk_edit'          => false,

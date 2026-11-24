@@ -37,7 +37,7 @@ class GetPartnerOrderCapacity
      *
      * @return array{
      *     partner_capacity: array{delivers_to_us_per_30d: float|null, source: 'measured'|'estimate', samples: int},
-     *     list: array{value: float, lines: int},
+     *     list: array{value: float, buyer_value: float, lines: int},
      *     warehouse: array{total_locations: int, empty_locations: int, free_ratio: float|null, inbound_open_po_lines: int, partner_share_used: int, partner_share_limit: int},
      *     blocked: array{at_capacity: bool, warehouse_full: bool}
      * }
@@ -150,11 +150,13 @@ class GetPartnerOrderCapacity
             ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->selectRaw('count(*) as lines, coalesce(sum(quantity * coalesce('.$this->pricePerSkoSubQuery($orgPartner).', 0)), 0) as value')
+            ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner).', 0)), 0) as buyer_value')
             ->first();
 
         return [
-            'value' => (float) $row->value,
-            'lines' => (int) $row->lines,
+            'value'       => (float) $row->value,
+            'buyer_value' => (float) $row->buyer_value,
+            'lines'       => (int) $row->lines,
         ];
     }
 

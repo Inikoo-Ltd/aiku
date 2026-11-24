@@ -69,10 +69,13 @@ class UpdateTransaction extends OrgAction
                 data_set($modelData, 'estimated_weight', $estimatedWeight);
             }
 
-            $historicAsset = $transaction->historicAsset;
-
-            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            $net   = $gross - discountAmountOffGross($gross, $transaction->current_discount_factor);
+            if ($transaction->agreed_unit_price !== null) {
+                $gross = (float) $transaction->agreed_unit_price * Arr::get($modelData, 'quantity_ordered');
+                $net   = $gross;
+            } else {
+                $gross = $transaction->historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+                $net   = $gross - discountAmountOffGross($gross, $transaction->current_discount_factor);
+            }
 
             data_set($modelData, 'gross_amount', $gross);
             data_set($modelData, 'net_amount', $net);

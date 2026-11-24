@@ -14,9 +14,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
-use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\WithPartnerShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -432,7 +430,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                     where stock_deliveries.delivery_note_id = ".self::LATEST_DELIVERY_NOTE_ID_SQL." and stock_deliveries.deleted_at is null
                     order by stock_deliveries.id desc limit 1) as stock_delivery_at"),
             ])
-            ->selectRaw(PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).' as price_per_sko');
+            ->selectRaw(PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner).' as price_per_sko');
     }
 
     /** An open line still waiting for the hub's shelf counts against the free stock, so its own quantity is given back to it. */
@@ -455,7 +453,7 @@ class IndexPartnerShoppingListItems extends OrgAction
         }
 
         $orgStocks       = OrgStock::with(['tradeUnits.image', 'stats', 'stock.stockFamily'])->whereIn('id', $orgStockIds)->get()->keyBy('id');
-        $exchange        = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $exchange        = $orgPartner->exchangeToOrgCurrency();
         $quarterlyUsage  = GetOrgStocksQuarterlyUsage::run($orgStockIds);
         $stockDeliveries = GetOrgStocksStockDeliveries::run($orgStockIds);
         $leadTimeDays    = GetPartnerLeadTime::run($orgPartner)['days'];
@@ -887,10 +885,10 @@ class IndexPartnerShoppingListItems extends OrgAction
             ->whereIn('state', $this->statesInView())
             ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
-            ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
+            ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner).', 0)), 0) as value')
             ->value('value');
 
-        return round((float) $value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2);
+        return round((float) $value * $orgPartner->exchangeToOrgCurrency(), 2);
     }
 
     public function getBreadcrumbs(OrgPartner $orgPartner, array $routeParameters): array

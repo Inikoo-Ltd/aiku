@@ -14,7 +14,7 @@ use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatche
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPrices;
 use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\PartnerSkoPrice;
@@ -103,6 +103,8 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->tap(fn ($query) => PartnerSkoPrice::scopeToPricingProducts($query, GetPartnerSellingShopIds::run($this->orgPartner->partner), $this->orgPartner->id))
             ->select([
                 'product_has_org_stocks.org_stock_id',
+                'products.id',
+                'products.master_product_id',
                 'products.web_images',
                 'products.price',
                 'product_has_org_stocks.quantity',
@@ -141,7 +143,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
             ->selectRaw('partner_shopping_list_items.stock_id, sum(partner_shopping_list_items.quantity) as total')
             ->pluck('total', 'stock_id');
 
-        $priceFactor = GetPartnerBuyingPriceFactor::run($this->orgPartner);
+        $buyingPrices = GetPartnerBuyingPrices::run($this->orgPartner, $products->values());
         $landedCosts = GetPartnerLandedCost::appliesTo($this->orgPartner) ? GetPartnerLandedCost::run($sellerOrgStockIds->all()) : [];
         $quanta      = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStockIds->all());
         $freeSkos    = RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, $paginator->getCollection()->pluck('stock_id')->unique()->values()->all());
@@ -151,7 +153,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
         $stockDeliveries  = $buyerOrgStockIds->isEmpty() ? collect() : GetOrgStocksStockDeliveries::run($buyerOrgStockIds);
         $leadTimeDays     = GetPartnerLeadTime::run($this->orgPartner)['days'];
 
-        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $priceFactor, $landedCosts, $quanta, $freeSkos, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
+        $paginator->getCollection()->transform(function (OrgStock $orgStock) use ($products, $buyerOrgStocks, $openItems, $sentQuantities, $buyingPrices, $landedCosts, $quanta, $freeSkos, $quarterlyUsage, $stockDeliveries, $leadTimeDays) {
             $quantum       = $quanta[$orgStock->id] ?? 1;
             $product       = $products->get($orgStock->id);
             $webImages     = $product ? json_decode($product->web_images ?? 'null', true) : null;
@@ -179,7 +181,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'price'                 => isset($landedCosts[$orgStock->id]) && (float) $orgStock->packed_in > 0
                     ? round($landedCosts[$orgStock->id] * $this->orgPartner->exchangeToOrgCurrency() / (float) $orgStock->packed_in, 4)
                     : ($product && $product->price !== null && $unitsPerSko
-                    ? round((float) $product->price * $priceFactor * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
+                    ? round($buyingPrices[$product->id]['price'] * $this->orgPartner->exchangeToOrgCurrency() / $unitsPerSko, 4)
                     : null),
                 'shopping_list_item_id' => $openItem?->id,
                 'ordered_quantity'      => $openItem ? (float) $openItem->quantity : 0,

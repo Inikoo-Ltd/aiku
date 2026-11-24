@@ -56,6 +56,9 @@ const props = defineProps<{
     inputPlaceholder?: string
     counterpartRecord?: Record<string, CurrencyPrice> | null
     costs?: Record<string, number | null> | null
+    flashMarginChanges?: boolean
+    baselineCosts?: Record<string, number | null> | null
+    baselineCounterpartRecord?: Record<string, CurrencyPrice> | null
 }>()
 
 // DB stores values per outer; when perUnits is set the user edits per unit,
@@ -255,32 +258,35 @@ const impactFor = (code: string): RowImpact | null => {
 
     if (props.type_input === 'price') {
         // price margin is against the effective cost: (price − cost) / price
-        const cost = Number(props.costs?.[code] ?? 0)
-        if (cost > 0) {
-            const margin = (price: number): number | null =>
-                price > 0 ? Math.round(((price - cost) / price) * 100) : null
+        const cost       = Number(props.costs?.[code] ?? 0)
+        const costBefore = Number(props.baselineCosts?.[code] ?? props.costs?.[code] ?? 0)
+        const margin = (price: number, against: number): number | null =>
+            price > 0 && against > 0 ? Math.round(((price - against) / price) * 100) : null
 
-            marginAfter  = currentStored > 0 ? margin(currentStored) : null
-            marginBefore = originalStored > 0 ? margin(originalStored) : null
-        }
+        marginAfter  = currentStored > 0 ? margin(currentStored, cost) : null
+        marginBefore = originalStored > 0 ? margin(originalStored, costBefore) : null
     } else {
         // rrp margin is the retail markup against the price
-        const counterpart = Number(props.counterpartRecord?.[code]?.value ?? 0)
-        if (counterpart > 0) {
-            const margin = (rrp: number): number | null =>
-                rrp > 0 ? Math.round(((rrp - counterpart) / rrp) * 100) : null
+        const counterpart       = Number(props.counterpartRecord?.[code]?.value ?? 0)
+        const counterpartBefore = Number(props.baselineCounterpartRecord?.[code]?.value ?? props.counterpartRecord?.[code]?.value ?? 0)
+        const margin = (rrp: number, against: number): number | null =>
+            rrp > 0 && against > 0 ? Math.round(((rrp - against) / rrp) * 100) : null
 
-            marginAfter  = currentStored > 0 ? margin(currentStored) : null
-            marginBefore = originalStored > 0 ? margin(originalStored) : null
-        }
+        marginAfter  = currentStored > 0 ? margin(currentStored, counterpart) : null
+        marginBefore = originalStored > 0 ? margin(originalStored, counterpartBefore) : null
     }
 
     if (delta === null && marginAfter === null) {
         return null
     }
 
-    // Static view (not dirty): only the current margin, no before/after arrow
+    // Static view (not dirty): only the current margin, unless a baseline shows it moved
     if (!dirty) {
+        const hasBaseline = props.baselineCosts != null || props.baselineCounterpartRecord != null
+        if (hasBaseline && marginBefore !== null && marginBefore !== marginAfter) {
+            return { dirty, delta: null, marginBefore, marginAfter }
+        }
+
         return { dirty, delta: null, marginBefore: null, marginAfter }
     }
 
@@ -606,6 +612,7 @@ const saveRebel = async (rebel: PriceRebel) => {
             <PriceCurrencyRow
                 v-model="prices[baseCurrency.code]"
                 :impact="impactFor(baseCurrency.code)"
+                :flashMarginChanges="flashMarginChanges"
                 :placeholder="inputPlaceholder"
                 :units="units"
                 :perUnits="perUnits"
@@ -669,6 +676,7 @@ const saveRebel = async (rebel: PriceRebel) => {
             <PriceCurrencyRow
                 v-model="prices[currency.code]"
                 :impact="impactFor(currency.code)"
+                :flashMarginChanges="flashMarginChanges"
                 :placeholder="inputPlaceholder"
                 :units="units"
                 :perUnits="perUnits"
@@ -694,6 +702,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                 <PriceCurrencyRow
                     v-model="prices[currency.code]"
                     :impact="impactFor(currency.code)"
+                :flashMarginChanges="flashMarginChanges"
                     :placeholder="inputPlaceholder"
                     :units="units"
                     :perUnits="perUnits"
@@ -771,6 +780,7 @@ const saveRebel = async (rebel: PriceRebel) => {
                     <PriceCurrencyRow
                         v-model="prices[currency.code]"
                         :impact="impactFor(currency.code)"
+                :flashMarginChanges="flashMarginChanges"
                         :placeholder="inputPlaceholder"
                         :units="units"
                         :perUnits="perUnits"

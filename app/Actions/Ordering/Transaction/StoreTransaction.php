@@ -55,7 +55,18 @@ class StoreTransaction extends OrgAction
                 OrderStateEnum::CREATING,
                 OrderStateEnum::SUBMITTED
             ])) {
-                $transaction = $order->transactions()->where('model_type', 'Product')->where('model_id', $historicAsset->asset->model_id)->where('is_gift', false)->orderBy('id')->first();
+                $agreedUnitPrice = Arr::get($modelData, 'agreed_unit_price');
+                $transaction     = $order->transactions()
+                    ->where('model_type', 'Product')
+                    ->where('model_id', $historicAsset->asset->model_id)
+                    ->where('is_gift', false)
+                    ->when(
+                        $agreedUnitPrice === null,
+                        fn ($query) => $query->whereNull('agreed_unit_price'),
+                        fn ($query) => $query->where('agreed_unit_price', $agreedUnitPrice)
+                    )
+                    ->orderBy('id')
+                    ->first();
                 if ($transaction) {
                     return UpdateTransaction::make()->action($transaction, [
                         'quantity_ordered' => (float)$transaction->quantity_ordered + (float)data_get($modelData, 'quantity_ordered', 0)
@@ -70,8 +81,9 @@ class StoreTransaction extends OrgAction
 
 
         if (Arr::get($modelData, 'model_type') == 'Product') {
-            $net   = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
-            $gross = $historicAsset->price * Arr::get($modelData, 'quantity_ordered');
+            $unitPrice = Arr::get($modelData, 'agreed_unit_price') ?? $historicAsset->price;
+            $net       = $unitPrice * Arr::get($modelData, 'quantity_ordered');
+            $gross     = $unitPrice * Arr::get($modelData, 'quantity_ordered');
 
             /** @var Product $product */
             $product = $historicAsset->model;
@@ -194,6 +206,7 @@ class StoreTransaction extends OrgAction
             'commission_amount'       => ['sometimes', 'numeric'],
             'is_gift'                 => ['sometimes', 'boolean'],
             'is_follow_on'            => ['sometimes', 'boolean'],
+            'agreed_unit_price'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'marketplace_id'          => [
                 'sometimes',
                 Rule::unique('transactions', 'marketplace_id')->where(function ($query) {
@@ -203,7 +216,7 @@ class StoreTransaction extends OrgAction
         ];
 
         if (!$this->asAction) {
-            unset($rules['is_gift'], $rules['is_follow_on']);
+            unset($rules['is_gift'], $rules['is_follow_on'], $rules['agreed_unit_price']);
         }
 
         if (!$this->strict) {

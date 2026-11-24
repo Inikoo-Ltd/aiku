@@ -9,7 +9,6 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
-use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgAgent\GetAgentLeadTimes;
 use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
@@ -43,7 +42,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerLandedCost;
 
 class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
@@ -277,10 +275,10 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
             });
         });
 
-        $pricePerSko       = PartnerSkoPrice::pricePerSkoSql('seller_org_stocks.id', GetPartnerSellingShopIds::run($orgPartner->partner), (string) $orgPartner->id);
+        $pricePerSko       = PartnerSkoPrice::buyerPricePerSkoSql('seller_org_stocks.id', $orgPartner);
         $buyingPricePerSko = GetPartnerLandedCost::appliesTo($orgPartner)
             ? 'coalesce('.GetPartnerLandedCost::perSkoSql('seller_org_stocks.id').", $pricePerSko)"
-            : "$pricePerSko * ".GetPartnerBuyingPriceFactor::run($orgPartner);
+            : $pricePerSko;
 
         $paginator = QueryBuilder::for(OrgStock::class)
             ->join('org_stocks as seller_org_stocks', function ($join) use ($orgPartner) {

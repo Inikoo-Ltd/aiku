@@ -209,7 +209,7 @@ class SuggestPartnerShoppingList extends OrgAction
                 'org_stocks.quantity_available as partner_available',
                 'buyer_org_stocks.id as buyer_org_stock_id',
                 'buyer_org_stocks.quantity_available as buyer_available',
-                'products.price as product_price',
+                DB::raw(PartnerSkoPrice::factoredProductPriceSql('products', $orgPartner).' as product_price'),
                 'product_has_org_stocks.quantity as skos_per_product_unit',
                 'buyer_org_stocks.health_rank as buyer_health_rank',
                 'buyer_stats.days_of_cover as buyer_days_of_cover',

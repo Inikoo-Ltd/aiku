@@ -655,3 +655,33 @@ function deliveryNoteTakenOverByDispatcher(\App\Models\Dispatching\DeliveryNote 
 
     return $dispatcher;
 }
+
+/**
+ * A price the partner agreed for the product, set on a bare master asset the product now points at.
+ */
+function agreePartnerPrice(\App\Models\Procurement\OrgPartner $orgPartner, \App\Models\Catalogue\Product $product, float $price, ?\App\Models\Helpers\Currency $currency = null): \App\Models\Masters\MasterAssetPartnerPrice
+{
+    if (!$product->master_product_id) {
+        $code          = 'APP-'.Str::upper(Str::random(8));
+        $masterAssetId = DB::table('master_assets')->insertGetId([
+            'group_id'   => $product->group_id,
+            'type'       => 'product',
+            'slug'       => Str::lower($code),
+            'code'       => $code,
+            'units'      => 1,
+            'data'       => '{}',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $product->updateQuietly(['master_product_id' => $masterAssetId]);
+    }
+
+    return \App\Models\Masters\MasterAssetPartnerPrice::updateOrCreate(
+        ['master_asset_id' => $product->master_product_id, 'org_partner_id' => $orgPartner->id],
+        [
+            'group_id'    => $product->group_id,
+            'currency_id' => ($currency ?? $product->shop->currency)->id,
+            'price'       => $price,
+        ]
+    );
+}

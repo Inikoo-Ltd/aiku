@@ -345,6 +345,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->hasMany(Product::class, 'master_product_id');
     }
 
+    public function partnerPrices(): HasMany
+    {
+        return $this->hasMany(MasterAssetPartnerPrice::class);
+    }
+
     public function masterProductVariants(): HasMany
     {
         return $this->hasMany(MasterAsset::class, 'main_master_product_id');

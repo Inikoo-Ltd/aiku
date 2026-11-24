@@ -251,6 +251,30 @@ class EditMasterProduct extends OrgAction
             'type_input'        => 'rrp'
         ];
 
+        $pricingFields = [
+            'master_prices' => $masterPricesField,
+            'master_rrps'   => $masterRRPsField,
+        ];
+
+        $partnerPricing = GetMasterAssetsPartnerPricing::run($masterShop, collect([$masterProduct]));
+        if ($partnerPricing) {
+            $pricingFields['partner_prices'] = [
+                'type'         => 'partner_prices',
+                'label'        => __('Partner prices'),
+                'full'         => true,
+                'noSaveButton' => true,
+                'value'        => null,
+                'masterAsset'     => $masterProduct->id,
+                'masterAssetCode' => $masterProduct->code,
+                'meta'         => $partnerPricing['meta'],
+                'row'          => $partnerPricing['rows'][$masterProduct->id],
+                'updateRoute'  => [
+                    'name'       => 'grp.models.master_asset.partner_prices.update',
+                    'parameters' => ['masterAsset' => $masterProduct->id],
+                ],
+            ];
+        }
+
         return [
             // [
             //     'label'  => __('Id'),
@@ -398,10 +422,7 @@ class EditMasterProduct extends OrgAction
             [
                 'label'  => __('Pricing'),
                 'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'master_prices' => $masterPricesField,
-                    'master_rrps'   => $masterRRPsField,
-                ]
+                'fields' => $pricingFields
             ],
             [
                 'label'  => __('Properties'),

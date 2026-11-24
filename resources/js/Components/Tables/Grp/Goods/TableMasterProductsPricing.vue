@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, inject, onUnmounted, ref, watch } from "vue"
+import { computed, defineAsyncComponent, inject, onUnmounted, ref, watch } from "vue"
 import { onClickOutside, useEventListener } from "@vueuse/core"
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
@@ -21,8 +21,10 @@ import Image from "@common/Components/Image.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureMultiplePriceCurrency from "@/Components/Pure/PureMultiplePriceCurrency.vue"
 import { useForm, router } from "@inertiajs/vue3"
-import { faPencil, faSave } from "@fal"
+import { faPencil, faSave, faLink } from "@fal"
 library.add(faExclamationTriangle, faSpinnerThird, faPencil, faSave)
+
+const PartnerPricesTable = defineAsyncComponent(() => import("@/Components/Masters/PartnerPricesTable.vue"))
 
 interface CurrencyValue {
     value: string | number | null
@@ -65,6 +67,42 @@ interface MasterProductPricing {
     sales_ly: string | number | null
     price_tip: { id: number, label: string, reason: string } | null
     price_tip_note: string | null
+    partner_pricing?: PartnerPricingRow | null
+}
+
+interface PartnerPricingPartner {
+    org_partner_id: number
+    code: string
+    name: string
+    currency_code: string
+    currency_symbol: string
+    from_base_rate: number
+    shop_currencies: string[]
+}
+
+interface PartnerPricingMeta {
+    seller_code: string
+    rates_from_base: Record<string, number>
+    base_currency: { code: string, symbol: string }
+    partner_discount: number
+    partners: PartnerPricingPartner[]
+}
+
+interface PartnerPricingRow {
+    list_price: number
+    cost: number | null
+    prices: Record<string, number | null>
+    sibling: {
+        id: number
+        code: string
+        master_shop: string
+        units: number
+        master_prices: Record<string, CurrencyValue> | null
+        master_rrps: Record<string, CurrencyValue> | null
+        currencies: Record<string, { is_major?: boolean }>
+        costs: Record<string, number | null> | null
+        update_route: { name: string, parameters: Record<string, string | number> }
+    } | null
 }
 
 interface SalesFigures {
@@ -82,7 +120,66 @@ const props = defineProps<{
     masterProductCategoryId?: number
     bulkEditField?: 'master_prices' | 'master_rrps' | null
     pricingCostRates?: Record<string, number | null>
+    partnerPricingMeta?: PartnerPricingMeta | null
 }>()
+
+const partnerEditingId = ref<number | null>(null)
+const partnerEditing = computed(() =>
+    (((props.data as any)?.data ?? []) as MasterProductPricing[]).find(row => row.id === partnerEditingId.value) ?? null
+)
+
+const partnerDefaultPrice = (row: PartnerPricingRow, partner: PartnerPricingPartner): number =>
+    Math.round(row.list_price * (1 - (props.partnerPricingMeta?.partner_discount ?? 0)) * partner.from_base_rate * 100) / 100
+
+const partnerPaid = (row: PartnerPricingRow, partner: PartnerPricingPartner): number =>
+    row.prices[partner.org_partner_id] ?? partnerDefaultPrice(row, partner)
+
+const partnerSellerMargin = (row: PartnerPricingRow, partner: PartnerPricingPartner): string => {
+    const paidInBase = partnerPaid(row, partner) / (partner.from_base_rate || 1)
+    if (row.cost === null || !paidInBase) {
+        return ''
+    }
+
+    return Math.round(((paidInBase - row.cost) / paidInBase) * 100) + '%'
+}
+
+const partnerIsAboveList = (row: PartnerPricingRow, partner: PartnerPricingPartner): boolean =>
+    row.prices[partner.org_partner_id] != null && partnerPaid(row, partner) / (partner.from_base_rate || 1) > row.list_price + 0.005
+
+const siblingMajors = (row: PartnerPricingRow): string[] =>
+    Object.entries(row.sibling?.currencies ?? {}).filter(([, rate]) => rate.is_major).map(([code]) => code)
+
+const siblingMinors = (row: PartnerPricingRow): string[] =>
+    Object.entries(row.sibling?.currencies ?? {}).filter(([, rate]) => !rate.is_major).map(([code]) => code)
+
+const siblingPartnerCost = (row: PartnerPricingRow, code: string): number | null => {
+    const rate = props.partnerPricingMeta?.rates_from_base?.[code]
+    const paidByPartners = (props.partnerPricingMeta?.partners ?? [])
+        .filter(partner => rate && partner.shop_currencies?.includes(code))
+        .map(partner => partnerPaid(row, partner) / (partner.from_base_rate || 1) * rate!)
+
+    return paidByPartners.length ? Math.max(...paidByPartners) : (row.sibling?.costs?.[code] ?? null)
+}
+
+const siblingPriceMargin = (row: PartnerPricingRow, code: string): string => {
+    const price = Number(row.sibling?.master_prices?.[code]?.value ?? 0)
+    const cost = siblingPartnerCost(row, code)
+    if (!price || cost === null) {
+        return ''
+    }
+
+    return Math.round(((price - cost) / price) * 100) + '%'
+}
+
+const siblingRrpMargin = (row: PartnerPricingRow, code: string): string => {
+    const price = Number(row.sibling?.master_prices?.[code]?.value ?? 0)
+    const rrp = Number(row.sibling?.master_rrps?.[code]?.value ?? 0)
+    if (!price || !rrp) {
+        return ''
+    }
+
+    return Math.round(((rrp - price) / rrp) * 100) + '%'
+}
 
 const emits = defineEmits<{
     (e: 'selectedRow', value: Record<string, boolean>): void
@@ -620,7 +717,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             />
                             <button
                                 type="button"
-                                class="text-sm text-gray-400 hover:text-[--app-accent]"
+                                class="text-sm text-gray-400 hover:text-[var(--app-accent)]"
                                 v-tooltip="ctrans('Edit prices')"
                                 @click="openEdit(masterProduct, 'master_prices')"
                             >
@@ -659,6 +756,92 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
             <span v-else class="tabular-nums">{{ formatMoney(masterProduct.price, masterProduct.currency_code) }}</span>
         </template>
 
+        <template #cell(partner_prices)="{ item: masterProduct }">
+            <div v-if="masterProduct.partner_pricing && partnerPricingMeta" class="flex items-start gap-x-2">
+                <button type="button" class="text-sm text-gray-400 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Edit partner prices')" @click="partnerEditingId = masterProduct.id">
+                    <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+                </button>
+                <div class="grid grid-cols-[auto_auto_auto_auto] items-center gap-x-2 gap-y-0.5 whitespace-nowrap">
+                    <template v-for="partner in partnerPricingMeta.partners" :key="partner.org_partner_id">
+                        <span class="text-xs font-semibold text-gray-500">{{ partner.code }}</span>
+                        <span class="text-right text-xs tabular-nums text-gray-400" v-tooltip="ctrans(':seller margin', { seller: partnerPricingMeta.seller_code })">{{ partnerSellerMargin(masterProduct.partner_pricing, partner) }}</span>
+                        <span class="text-right tabular-nums" :class="masterProduct.partner_pricing.prices[partner.org_partner_id] == null ? 'text-gray-400' : ''">
+                            {{ formatMoney(partnerPaid(masterProduct.partner_pricing, partner), partner.currency_code) }}
+                        </span>
+                        <FontAwesomeIcon
+                            v-if="masterProduct.partner_pricing.prices[partner.org_partner_id] == null"
+                            :icon="faLink"
+                            class="text-xs text-[var(--app-accent)]"
+                            v-tooltip="ctrans('Not a custom amount: Price / Outer less :discount%', { discount: Math.round(partnerPricingMeta.partner_discount * 100) })"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                        <FontAwesomeIcon
+                            v-else-if="partnerIsAboveList(masterProduct.partner_pricing, partner)"
+                            :icon="faExclamationTriangle"
+                            class="text-xs text-amber-500"
+                            v-tooltip="ctrans('Higher than Price / Outer. Default: :default', { default: formatMoney(partnerDefaultPrice(masterProduct.partner_pricing, partner), partner.currency_code) })"
+                            fixed-width
+                            aria-hidden="true"
+                        />
+                        <span v-else />
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <template #cell(sibling_price)="{ item: masterProduct }">
+            <div v-if="masterProduct.partner_pricing?.sibling" class="flex items-start gap-x-2">
+                <button type="button" class="text-sm text-gray-400 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Edit :code in :class', { code: masterProduct.partner_pricing.sibling.code, class: masterProduct.partner_pricing.sibling.master_shop })" @click="partnerEditingId = masterProduct.id">
+                    <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+                </button>
+                <div class="grid grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-0.5 whitespace-nowrap">
+                    <template v-for="code in siblingMajors(masterProduct.partner_pricing)" :key="code">
+                        <span class="text-xs font-semibold text-gray-500">{{ code }}</span>
+                        <span class="text-right text-xs tabular-nums text-gray-400" v-tooltip="ctrans('Partner margin over what it pays :seller', { seller: partnerPricingMeta?.seller_code ?? '' })">{{ siblingPriceMargin(masterProduct.partner_pricing, code) }}</span>
+                        <span class="text-right tabular-nums">{{ formatMoney(masterProduct.partner_pricing.sibling.master_prices?.[code]?.value ?? null, code) }}</span>
+                    </template>
+                    <button v-if="siblingMinors(masterProduct.partner_pricing).length" type="button" class="col-span-3 text-left text-xs text-gray-400 hover:text-gray-600" @click="toggleMinors(`${masterProduct.id}-sibling-price`)">
+                        {{ ctrans('Minor currencies') }} ({{ siblingMinors(masterProduct.partner_pricing).length }})
+                    </button>
+                    <template v-if="expandedMinors[`${masterProduct.id}-sibling-price`]">
+                        <template v-for="code in siblingMinors(masterProduct.partner_pricing)" :key="code">
+                            <span class="text-xs text-gray-400">{{ code }}</span>
+                            <span />
+                            <span class="text-right tabular-nums text-gray-400">{{ formatMoney(masterProduct.partner_pricing.sibling.master_prices?.[code]?.value ?? null, code) }}</span>
+                        </template>
+                    </template>
+                </div>
+            </div>
+            <span v-else-if="masterProduct.partner_pricing" class="text-xs text-gray-400">{{ ctrans('No sibling') }}</span>
+        </template>
+
+        <template #cell(sibling_rrp)="{ item: masterProduct }">
+            <div v-if="masterProduct.partner_pricing?.sibling" class="flex items-start gap-x-2">
+                <button type="button" class="text-sm text-gray-400 hover:text-[var(--app-accent)]" v-tooltip="ctrans('Edit :code in :class', { code: masterProduct.partner_pricing.sibling.code, class: masterProduct.partner_pricing.sibling.master_shop })" @click="partnerEditingId = masterProduct.id">
+                    <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+                </button>
+                <div class="grid grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-0.5 whitespace-nowrap">
+                    <template v-for="code in siblingMajors(masterProduct.partner_pricing)" :key="code">
+                        <span class="text-xs font-semibold text-gray-500">{{ code }}</span>
+                        <span class="text-right text-xs tabular-nums text-gray-400" v-tooltip="ctrans('Margin vs price')">{{ siblingRrpMargin(masterProduct.partner_pricing, code) }}</span>
+                        <span class="text-right tabular-nums">{{ formatRrpPerUnit(masterProduct.partner_pricing.sibling.master_rrps?.[code]?.value ?? null, code, masterProduct.partner_pricing.sibling.units) }}</span>
+                    </template>
+                    <button v-if="siblingMinors(masterProduct.partner_pricing).length" type="button" class="col-span-3 text-left text-xs text-gray-400 hover:text-gray-600" @click="toggleMinors(`${masterProduct.id}-sibling-rrp`)">
+                        {{ ctrans('Minor currencies') }} ({{ siblingMinors(masterProduct.partner_pricing).length }})
+                    </button>
+                    <template v-if="expandedMinors[`${masterProduct.id}-sibling-rrp`]">
+                        <template v-for="code in siblingMinors(masterProduct.partner_pricing)" :key="code">
+                            <span class="text-xs text-gray-400">{{ code }}</span>
+                            <span />
+                            <span class="text-right tabular-nums text-gray-400">{{ formatRrpPerUnit(masterProduct.partner_pricing.sibling.master_rrps?.[code]?.value ?? null, code, masterProduct.partner_pricing.sibling.units) }}</span>
+                        </template>
+                    </template>
+                </div>
+            </div>
+            <span v-else-if="masterProduct.partner_pricing" class="text-xs text-gray-400">{{ ctrans('No sibling') }}</span>
+        </template>
+
         <template #cell(price_tip)="{ item: masterProduct }">
             <button
                 v-if="masterProduct.price_tip"
@@ -688,7 +871,7 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                             </span>
                             <button
                                 type="button"
-                                class="text-sm text-gray-400 hover:text-[--app-accent]"
+                                class="text-sm text-gray-400 hover:text-[var(--app-accent)]"
                                 v-tooltip="ctrans('Edit RRPs')"
                                 @click="openEdit(masterProduct, 'master_rrps')"
                             >
@@ -767,6 +950,21 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                     ? bulkCounterpart
                     : (editingField === 'master_prices' ? editingProduct?.master_rrps : editingProduct?.master_prices)"
                 :costs="costsFor(bulkMode ? bulkEffectiveCost : editingProduct?.effective_cost ?? null)"
+            />
+        </div>
+    </Modal>
+
+    <Modal :isOpen="!!partnerEditing && !!partnerEditing.partner_pricing && !!partnerPricingMeta" @onClose="partnerEditingId = null" width="w-full max-w-7xl">
+        <div v-if="partnerEditing?.partner_pricing && partnerPricingMeta">
+            <div class="mb-3 text-sm font-medium text-gray-700">
+                {{ partnerEditing.code }} — {{ ctrans('Partner prices') }}
+                <span class="ml-1 font-normal text-gray-400">{{ partnerEditing.name }}</span>
+            </div>
+            <PartnerPricesTable
+                :meta="partnerPricingMeta"
+                :row="partnerEditing.partner_pricing"
+                :masterAssetCode="partnerEditing.code"
+                :updateRoute="{ name: 'grp.models.master_asset.partner_prices.update', parameters: { masterAsset: partnerEditing.id } }"
             />
         </div>
     </Modal>

@@ -538,6 +538,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetsPricesFromList;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetMainPrices;
+use App\Actions\Masters\MasterAsset\UpdateMasterAssetPartnerPrices;
 use App\Actions\Masters\Competitor\RefreshCompetitorIntel;
 use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
 use App\Actions\Masters\Competitor\StoreCompetitor;
@@ -1164,6 +1165,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::patch('update', UpdateMasterAsset::class)->name('update');
     Route::patch('update-prices', UpdateMasterAssetPrices::class)->name('prices.update');
     Route::patch('update-main-prices', UpdateMasterAssetMainPrices::class)->name('main_prices.update');
+    Route::patch('partner-prices', UpdateMasterAssetPartnerPrices::class)->name('partner_prices.update');
     Route::patch('repair-trade-units', RepairMasterAssetTradeUnitsToChildren::class)->name('repair_mismatch_trade_units');
     Route::post('fix-anomalies', FixMasterAssetAnomaliesFromMaster::class)->name('fix_anomalies');
     Route::patch('information', UpdateMasterProductInformation::class)->name('information.update');

@@ -432,7 +432,9 @@ class GenerateInvoiceFromOrder extends OrgAction
             $quantityPicked = $quantityOrdered * $this->getPickedFraction($parts, $isIndivisible);
         }
 
-        $gross = $historicAsset->price * $quantityPicked;
+        $agreedUnitPrice = $transaction->agreed_unit_price;
+
+        $gross = ($agreedUnitPrice ?? $historicAsset->price) * $quantityPicked;
 
         /**
          * A submitted line is not priced again, it is read back. Submission records the whole
@@ -463,7 +465,9 @@ class GenerateInvoiceFromOrder extends OrgAction
          */
         $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0) + (float)$transaction->quantity_bonus;
 
-        if ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
+        if ($agreedUnitPrice !== null) {
+            $net = $gross;
+        } elseif ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
             && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor
             && (float)$sale->submitted_quantity_ordered === (float)$transaction->quantity_ordered) {
             $net = round((float)$sale->submitted_net_amount / $submittedQuantity * $quantityPicked, 2);

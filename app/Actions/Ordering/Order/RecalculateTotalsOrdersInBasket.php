@@ -99,7 +99,7 @@ class RecalculateTotalsOrdersInBasket implements ShouldBeUnique
 
         $oldTotal = $order->total_amount;
         foreach ($order->transactions as $transaction) {
-            if ($transaction->model instanceof Product) {
+            if ($transaction->model instanceof Product && $transaction->agreed_unit_price === null) {
                 /** @var Product $product */
                 $product = $transaction->model;
 

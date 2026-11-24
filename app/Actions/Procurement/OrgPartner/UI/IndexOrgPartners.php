@@ -9,9 +9,7 @@
 namespace App\Actions\Procurement\OrgPartner\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
-use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -73,7 +71,7 @@ class IndexOrgPartners extends OrgAction
             'stats'         => $partner->is_manufacturing_hub
                 ? [
                     'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
-                    'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
+                    'open_shopping_list_items_value' => $this->openShoppingListValue($orgPartner),
                     'rescuable'                      => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit, withLeftOut: false),
                     'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
                     'production'                     => GetPartnerProductionLanes::run($orgPartner),
@@ -134,15 +132,31 @@ class IndexOrgPartners extends OrgAction
      * The hub's shopping list as two rows: the drafts staff are still preparing and the lines
      * submitted to the hub, each linking to the list filtered to them.
      */
+    public function openShoppingListValue(OrgPartner $orgPartner): float
+    {
+        $value = DB::table('partner_shopping_list_items')
+            ->where('org_partner_id', $orgPartner->id)
+            ->whereIn('state', [
+                ShoppingListItemStateEnum::DRAFT->value,
+                ShoppingListItemStateEnum::OPEN->value,
+                ShoppingListItemStateEnum::DISMISS_PROPOSED->value,
+            ])
+            ->whereNull('deleted_at')
+            ->selectRaw('coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner).', 0)), 0) as total')
+            ->value('total');
+
+        return round((float) $value * $orgPartner->exchangeToOrgCurrency(), 2);
+    }
+
     public function shoppingListRows(OrgPartner $orgPartner): Collection
     {
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $exchange = $orgPartner->exchangeToOrgCurrency();
         $byState  = DB::table('partner_shopping_list_items')
             ->where('org_partner_id', $orgPartner->id)
             ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
             ->whereNull('deleted_at')
             ->groupBy('state')
-            ->selectRaw('state, count(*) as lines, min(created_at) as since, coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner)).', 0)), 0) as value')
+            ->selectRaw('state, count(*) as lines, min(created_at) as since, coalesce(sum(quantity * coalesce('.PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner).', 0)), 0) as value')
             ->get()
             ->keyBy('state');
 

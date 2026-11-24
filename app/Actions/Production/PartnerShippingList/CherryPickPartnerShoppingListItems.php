@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
+use App\Actions\Masters\MasterAsset\GetPartnerAgreedUnitPrice;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Ordering\Transaction\StoreTransaction;
@@ -110,16 +111,18 @@ class CherryPickPartnerShoppingListItems extends OrgAction
             if ($skosPerProductUnit <= 0) {
                 $skosPerProductUnit = 1;
             }
-            $productUnits = round($quantityPicked / $skosPerProductUnit, 6);
-            $amount       = round($productUnits * (float) $product->price, 2);
+            $productUnits    = round($quantityPicked / $skosPerProductUnit, 6);
+            $agreedUnitPrice = $seller->is_manufacturing_hub ? GetPartnerAgreedUnitPrice::run($product, $item->orgPartner) : null;
+            $amount          = round($productUnits * ($agreedUnitPrice ?? (float) $product->price), 2);
 
             $transaction = StoreTransaction::make()->action(
                 $order,
                 $product->historicAsset,
                 [
-                    'quantity_ordered' => $productUnits,
-                    'gross_amount'     => $amount,
-                    'net_amount'       => $amount,
+                    'quantity_ordered'  => $productUnits,
+                    'gross_amount'      => $amount,
+                    'net_amount'        => $amount,
+                    'agreed_unit_price' => $agreedUnitPrice,
                 ]
             );
 
@@ -153,7 +156,7 @@ class CherryPickPartnerShoppingListItems extends OrgAction
                 ]);
             }
 
-            if ($seller->is_manufacturing_hub) {
+            if ($seller->is_manufacturing_hub && $agreedUnitPrice === null) {
                 $transaction->update([
                     'discretionary_offer'       => GetPartnerBuyingPriceFactor::hubPartnerDiscount($seller),
                     'discretionary_offer_label' => __('Intercompany partner discount'),

@@ -8,9 +8,7 @@
 
 namespace App\Actions\Procurement\OrgPartner\UI;
 
-use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
-use App\Actions\Procurement\OrgPartner\GetPartnerSellingShopIds;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -27,8 +25,8 @@ class GetPartnerMiniCart
 
     public function handle(OrgPartner $orgPartner): array
     {
-        $priceSql = PartnerShoppingListItem::pricePerSkoSql(GetPartnerSellingShopIds::run($orgPartner->partner));
-        $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
+        $priceSql = PartnerShoppingListItem::buyerPricePerSkoSql($orgPartner);
+        $exchange = $orgPartner->exchangeToOrgCurrency();
 
         $basket  = $this->summary($orgPartner, ShoppingListItemStateEnum::DRAFT, $priceSql);
         $ordered = $this->summary($orgPartner, ShoppingListItemStateEnum::OPEN, $priceSql);

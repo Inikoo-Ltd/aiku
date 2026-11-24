@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\OrgPartner\UI;
 use App\Actions\Procurement\PartnerShoppingListItem\RoundPartnerQuantityToBatches;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPrices;
 use App\Actions\Procurement\OrgPartner\GetPartnerProductionLanes;
 use App\Actions\Procurement\OrgPartner\GetPartnerIntercompanyCustomer;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
@@ -191,6 +192,7 @@ class ShowPartnerBrowse extends OrgAction
             'products.name',
             'products.web_images',
             'products.price',
+            'products.master_product_id',
             'products.available_quantity',
             'products.units',
         ]);
@@ -301,11 +303,12 @@ class ShowPartnerBrowse extends OrgAction
 
             $orderHistory = $this->orderHistory($buyerOrgStocks->keys()->all());
 
-            $exchange = $this->orgPartner->exchangeToOrgCurrency();
+            $exchange      = $this->orgPartner->exchangeToOrgCurrency();
+            $buyingPrices  = GetPartnerBuyingPrices::run($this->orgPartner, $products->getCollection());
             $quanta   = RoundPartnerQuantityToBatches::make()->quanta($this->orgPartner, $sellerOrgStocks->filter()->pluck('id')->all());
             $freeSkos = RoundPartnerQuantityToBatches::freeSkosByStockId($this->orgPartner, $sellerOrgStocks->filter()->pluck('stock_id')->unique()->values()->all());
 
-            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $quanta, $freeSkos) {
+            $products->getCollection()->transform(function (Product $product) use ($sellerOrgStocks, $buyerOrgStocks, $usage, $openItems, $orderHistory, $exchange, $buyingPrices, $quanta, $freeSkos) {
                 $sellerOrgStock = $sellerOrgStocks[$product->id] ?? null;
                 $quantum        = $sellerOrgStock ? ($quanta[$sellerOrgStock->id] ?? 1) : 1;
                 $buyerOrgStock  = $sellerOrgStock ? $buyerOrgStocks->get($sellerOrgStock->stock_id) : null;
@@ -318,7 +321,8 @@ class ShowPartnerBrowse extends OrgAction
                     'code'              => $product->code,
                     'name'              => $product->name,
                     'image'             => Arr::get($product->web_images, 'main.gallery') ?? Arr::get($product->web_images, 'main.thumbnail'),
-                    'price'             => round((float) $product->price * $exchange * $this->priceFactor, 2),
+                    'price'             => round($buyingPrices[$product->id]['price'] * $exchange, 2),
+                    'is_agreed_price'   => $buyingPrices[$product->id]['agreed'],
                     'available_quantity' => $product->available_quantity,
                     'units'             => $product->units,
                     'org_stock_slug'    => $sellerOrgStock?->slug,
