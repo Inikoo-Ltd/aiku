@@ -9,7 +9,7 @@ import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-type Item = { code: string | null; name: string | null; quantity: number; expected_amount: number; invoice_quantity: number | null; invoice_amount: number | null; amount_differs: boolean }
+type Item = { code: string | null; name: string | null; quantity: number; ordered_quantity?: number; expected_amount: number; invoice_quantity: number | null; invoice_amount: number | null }
 type Line = { code: string | null; description: string | null; amount: number | null }
 type Reason = { text: string; amount: number | null }
 
@@ -41,7 +41,7 @@ const explanation = computed(() => {
 
     const items = reading.items
     const isMissing = (item: Item) => item.invoice_amount == null
-    const quantityDifference = (item: Item) => (item.invoice_quantity ?? 0) - item.quantity
+    const quantityDifference = (item: Item) => (item.invoice_quantity ?? 0) - (item.ordered_quantity ?? item.quantity)
     const amountDifference = (item: Item) => (item.invoice_amount ?? 0) - item.expected_amount
     const codes = (rows: Item[]) => rows.map((item) => item.code).join(", ")
 
@@ -58,10 +58,10 @@ const explanation = computed(() => {
 
     const reasons: Reason[] = []
     if (more.length) {
-        reasons.push({ text: ctrans(":count products invoiced in larger quantities than in the delivery (:codes)", { count: String(more.length), codes: codes(more) }), amount: sum(more.map(amountDifference)) })
+        reasons.push({ text: ctrans(":count products invoiced in larger quantities than ordered (:codes)", { count: String(more.length), codes: codes(more) }), amount: sum(more.map(amountDifference)) })
     }
     if (fewer.length) {
-        reasons.push({ text: ctrans(":count products invoiced in smaller quantities than in the delivery (:codes)", { count: String(fewer.length), codes: codes(fewer) }), amount: sum(fewer.map(amountDifference)) })
+        reasons.push({ text: ctrans(":count products invoiced in smaller quantities than ordered (:codes)", { count: String(fewer.length), codes: codes(fewer) }), amount: sum(fewer.map(amountDifference)) })
     }
     if (repriced.length) {
         reasons.push({ text: ctrans(":count products at a different price than ordered (:codes)", { count: String(repriced.length), codes: codes(repriced) }), amount: sum(repriced.map(amountDifference)) })

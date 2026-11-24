@@ -5329,3 +5329,55 @@ test('a purchase order line keeps the currency its amount is in, so the order it
     expect($amounts())->toBe($bothEqual(999))
         ->and($order->number_purchase_order_transactions)->toBe(3);
 });
+
+test('the Aura box on a delivery explains the invoice aiku holds, never a pro-forma or one file of an invoice split in two (HELP-4877)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AURA-'.Str::upper(Str::random(6)), [10, 10]);
+    $currency      = $stockDelivery->currency->code;
+    $itemIds       = $stockDelivery->items()->orderBy('id')->pluck('id')->all();
+    $reading       = fn (string $number, float $total, array $amounts) => [
+        'state'             => 'read',
+        'is_invoice'        => true,
+        'invoice_number'    => $number,
+        'currency'          => $currency,
+        'currency_mismatch' => false,
+        'total'             => $total,
+        'charges_total'     => 0.0,
+        'unmatched'         => [],
+        'not_in_delivery'   => [],
+        'items'             => array_map(fn (int $id, ?float $amount) => [
+            'id'               => $id,
+            'code'             => "C$id",
+            'name'             => null,
+            'quantity'         => 8.0,
+            'ordered_quantity' => 10.0,
+            'expected_amount'  => 100.0,
+            'invoice_quantity' => $amount === null ? null : 10.0,
+            'invoice_amount'   => $amount,
+        ], $itemIds, $amounts),
+    ];
+    $file      = fn (array $reading, string $scope = 'Invoice') => ['scope' => $scope, 'reading' => $reading];
+    $explained = fn (array ...$files) => GetStockDeliveryInvoiceCosting::make()->explained($stockDelivery->fresh(), $files);
+
+    $proforma = $reading('26019', 200, [100, 100]);
+    $final    = $reading('26019', 150, [100, 50]);
+    $first    = $reading('26F02102', 100, [100, null]);
+    $second   = $reading('26F02229', 50, [null, 50]);
+
+    expect($explained($file($final))['total'])->toBe(150.0)
+        ->and($explained($file($proforma, 'Proforma'), $file($final))['total'])->toBe(150.0)
+        ->and($explained($file($first), $file($second)))->toBeNull()
+        ->and($explained($file($proforma, 'Proforma')))->toBeNull();
+
+    StoreActualStockDeliveryInvoice::make()->handle($stockDelivery, ['reference' => '26019', 'date' => '2026-11-01', 'goods_amount' => 150, 'charges' => []]);
+
+    $split = $explained($file($first), $file($second));
+
+    expect($explained($file($proforma)))->toBeNull()
+        ->and($explained($file($proforma), $file($final))['total'])->toBe(150.0)
+        ->and($split['total'])->toBe(150.0)
+        ->and(array_column($split['items'], 'invoice_amount'))->toBe([100.0, 50.0])
+        ->and(array_column($split['items'], 'ordered_quantity'))->toBe([10.0, 10.0])
+        ->and($explained($file($first), $file($first)))->toBeNull()
+        ->and($explained($file([...$proforma, 'applied_at' => now()->toIso8601String()])))->toBeNull()
+        ->and($explained($file([...$final, 'applied_at' => now()->toIso8601String()]))['total'])->toBe(150.0);
+});

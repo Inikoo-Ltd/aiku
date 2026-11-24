@@ -246,6 +246,7 @@ class ShowStockDelivery extends OrgAction
 
         $canAddItemNotOnPurchaseOrder = $this->canBookIn && !$this->viewedByAgent && AddItemNotOnPurchaseOrderToStockDelivery::acceptsItems($stockDelivery);
         $title      = $agentNamed ? $stockDelivery->agent_reference : $stockDelivery->reference;
+        $invoiceCosting = $this->viewedByAgent || $this->goodsIn ? [] : GetStockDeliveryInvoiceCosting::run($stockDelivery);
 
         return Inertia::render(
             'Procurement/StockDelivery',
@@ -289,7 +290,8 @@ class ShowStockDelivery extends OrgAction
                 ] : null,
                 'products_not_on_purchase_order' => $canAddItemNotOnPurchaseOrder ? Inertia::optional(fn () => $this->getProductsNotOnPurchaseOrder($stockDelivery)) : null,
                 'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
-                'invoice_costing'  => $this->viewedByAgent || $this->goodsIn ? [] : GetStockDeliveryInvoiceCosting::run($stockDelivery),
+                'invoice_costing'  => $invoiceCosting,
+                'invoice_differences' => $invoiceCosting ? GetStockDeliveryInvoiceCosting::make()->explained($stockDelivery, $invoiceCosting) : null,
                 'service_invoices' => $this->goodsIn ? null : $this->getServiceInvoices($stockDelivery),
                 'agreed_term_differences' => $this->viewedByAgent || $this->goodsIn ? null : CheckAgainstAgreedTerms::make()->forPage($stockDelivery),
                 'agentInvoice'     => !$this->goodsIn && $stockDelivery->agent_id && $stockDelivery->agent_id === $this->getOrganisationAgent($this->organisation)?->id

@@ -1282,6 +1282,7 @@ test('UI show stock delivery pending and done item tabs', function () {
             ->where('pageHead.edit', false)
             ->where('costing', null)
             ->where('invoice_costing', [])
+            ->where('invoice_differences', null)
             ->where('service_invoices', null)
             ->has('tabs.navigation.'.StockDeliveryTabsEnum::PENDING_ITEMS->value)
             ->has('tabs.navigation.'.StockDeliveryTabsEnum::DONE_ITEMS->value)

@@ -262,6 +262,7 @@ const props = defineProps<{
 	attachments?: {}
 	attachmentScopes: { name: string; code: string }[]
 	invoice_costing: InstanceType<typeof StockDeliveryInvoiceCosting>["$props"]["invoices"]
+	invoice_differences?: InstanceType<typeof StockDeliveryInvoiceDifferences>["$props"]["reading"] | null
 	agentInvoice?: InstanceType<typeof AgentContainerInvoicePanel>["$props"]["data"] | null
 	service_invoices: InstanceType<typeof StockDeliveryServiceInvoices>["$props"]["data"] | null
 	agreed_term_differences?: InstanceType<typeof AgreedTermDifferences>["$props"]["differences"] | null
@@ -791,11 +792,6 @@ const saveEstimatedDeliveryDate = () => {
 
 const startCostingLoading = ref(false)
 
-const invoiceReading = computed(() => {
-	const read = (props.invoice_costing ?? []).map((invoice) => invoice.reading).filter((reading) => reading?.state === "read" && reading.items)
-	return read.find((reading) => reading?.applied_at) ?? read[0] ?? null
-})
-
 const confirmStartStockDeliveryCosting = (action: any) => {
 	confirm.require({
 		group: "stock-delivery",
@@ -1120,7 +1116,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 
 	<AgreedTermDifferences v-if="agreed_term_differences" :differences="agreed_term_differences" class="m-4" />
 
-	<StockDeliveryInvoiceDifferences v-if="invoiceReading" :reading="invoiceReading" class="m-4 text-sm" />
+	<StockDeliveryInvoiceDifferences v-if="invoice_differences" :reading="invoice_differences" class="m-4 text-sm" />
 
 	<AgentContainerInvoicePanel v-if="agentInvoice" :data="agentInvoice" :currencyCode="box_stats.third_block.currency ?? ''" class="mb-4" />
 

@@ -171,6 +171,7 @@ class GetStockDeliveryInvoiceCosting
                 'code'             => $item->supplierProduct?->code,
                 'name'             => $item->supplierProduct?->name,
                 'quantity'         => $quantity,
+                'ordered_quantity' => (float) $item->unit_quantity,
                 'expected_amount'  => $expected,
                 'current_cost'     => (float) ($item->cost_items ?? $item->net_amount),
                 'invoice_quantity' => $invoice['quantity'] ?? null,
@@ -239,6 +240,79 @@ class GetStockDeliveryInvoiceCosting
             'needs_manual_check'    => !$checks['text_available'] || $checks['mentions_delivery'] === null,
             'delivery_confirmation' => $checks['mentions_delivery'] === false && !$applied ? GetStockDeliveryServiceInvoiceReadings::deliveryConfirmation($stockDelivery, $reading) : null,
             'can_apply'             => !$problems && !$applied,
+        ];
+    }
+
+    /**
+     * The reading the delivery page explains against the order: always the invoice aiku holds. Once an invoice is
+     * entered, the read file whose total is that invoice (an applied reading too: the invoice may have been changed
+     * since), else every read invoice file together when they add up to it (an invoice split in two files); a
+     * pro-forma, or a file that adds up to something else, is never explained. Before an invoice is entered, the
+     * read invoice file when there is only one.
+     *
+     * @param  array<int, array<string, mixed>>  $invoices  as handle() returns them
+     * @return array{total: float, currency: string, currency_mismatch: bool, charges_total: float, items: array<int, array<string, mixed>>, unmatched: array<int, array<string, mixed>>, not_in_delivery: array<int, array<string, mixed>>}|null
+     */
+    public function explained(StockDelivery $stockDelivery, array $invoices): ?array
+    {
+        $readings = collect($invoices)
+            ->filter(fn (array $invoice) => $invoice['scope'] === PurchaseOrderAttachmentScopeEnum::INVOICE->value)
+            ->pluck('reading')
+            ->filter(fn (?array $reading) => Arr::get($reading, 'state') === 'read'
+                && isset($reading['items'])
+                && Arr::get($reading, 'is_invoice')
+                && !$reading['currency_mismatch']
+                && $reading['total'] !== null)
+            ->values();
+
+        $recorded = ($stockDelivery->agent_id ? $stockDelivery->agentInvoice() : $stockDelivery->supplierInvoice())->with('currency')->first();
+
+        if (!$recorded || $recorded->source === StockDeliveryInvoiceSourceEnum::ESTIMATED) {
+            return $readings->count() === 1 ? self::explanationOf($readings) : null;
+        }
+
+        $readings = $readings->filter(fn (array $reading) => $reading['currency'] === $recorded->currency->code)->values();
+        $isRecorded = fn (float $total) => abs($total - (float) $recorded->total_amount) <= self::TOLERANCE;
+
+        if ($same = $readings->first(fn (array $reading) => $isRecorded((float) $reading['total']))) {
+            return self::explanationOf(collect([$same]));
+        }
+
+        $numbers = $readings->map(fn (array $reading) => StockDeliveryDocumentChecks::normalise($reading['invoice_number']));
+
+        return $readings->count() > 1 && $numbers->unique()->count() === $readings->count() && $isRecorded($readings->sum('total'))
+            ? self::explanationOf($readings)
+            : null;
+    }
+
+    /**
+     * One or more reviewed readings as a single invoice: what each delivery line was invoiced across them.
+     *
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $readings
+     * @return array<string, mixed>
+     */
+    private static function explanationOf(\Illuminate\Support\Collection $readings): array
+    {
+        $invoicedLines = fn (int $itemId) => $readings
+            ->map(fn (array $reading) => collect($reading['items'])->firstWhere('id', $itemId))
+            ->filter(fn (?array $line) => $line && $line['invoice_amount'] !== null);
+
+        return [
+            'total'             => round($readings->sum('total'), 2),
+            'currency'          => $readings->first()['currency'],
+            'currency_mismatch' => false,
+            'charges_total'     => round($readings->sum('charges_total'), 2),
+            'items'             => collect($readings->first()['items'])->map(function (array $item) use ($invoicedLines) {
+                $lines = $invoicedLines($item['id']);
+
+                return [
+                    ...Arr::only($item, ['id', 'code', 'name', 'quantity', 'ordered_quantity', 'expected_amount']),
+                    'invoice_quantity' => $lines->isEmpty() ? null : $lines->sum('invoice_quantity'),
+                    'invoice_amount'   => $lines->isEmpty() ? null : round($lines->sum('invoice_amount'), 2),
+                ];
+            })->all(),
+            'unmatched'         => $readings->flatMap(fn (array $reading) => $reading['unmatched'])->values()->all(),
+            'not_in_delivery'   => $readings->flatMap(fn (array $reading) => $reading['not_in_delivery'])->values()->all(),
         ];
     }
 
