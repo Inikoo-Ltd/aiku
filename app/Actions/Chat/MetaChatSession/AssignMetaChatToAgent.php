@@ -9,6 +9,7 @@ namespace App\Actions\Chat\MetaChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Events\BroadcastMetaChatListEvent;
@@ -18,6 +19,7 @@ use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class AssignMetaChatToAgent
@@ -40,7 +42,7 @@ class AssignMetaChatToAgent
         return $assignment;
     }
 
-    public function handle(MetaChatSession $metaChatSession, ChatAgent $agent, string $note): MetaChatAssignment
+    public function handle(MetaChatSession $metaChatSession, ChatAgent $agent, string $note, ?ChatAssignmentClaimedViaEnum $claimedVia = null): MetaChatAssignment
     {
         $activeAssignment = $this->getActiveAssignment($metaChatSession);
 
@@ -49,6 +51,7 @@ class AssignMetaChatToAgent
                 'chat_agent_id' => $agent->id,
                 'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
                 'note'          => $note,
+                'claimed_via'   => $claimedVia,
                 'assigned_at'   => now(),
             ]);
         } else {
@@ -59,6 +62,7 @@ class AssignMetaChatToAgent
                 'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
                 'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
                 'note'            => $note,
+                'claimed_via'     => $claimedVia,
                 'assigned_at'     => now(),
             ]);
         }
@@ -96,11 +100,11 @@ class AssignMetaChatToAgent
             ], 409);
         }
 
-        return $this->respond($metaChatSession, $agent, $activeAssignment, 'self_assign');
+        return $this->respond($metaChatSession, $agent, $activeAssignment, 'self_assign', ChatAssignmentClaimedViaEnum::ASSIGN_BUTTON);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function takeOver(string $organisation, MetaChatSession $metaChatSession): JsonResponse
+    public function takeOver(string $organisation, MetaChatSession $metaChatSession, Request $request): JsonResponse
     {
         $agent = $this->getCurrentAgent($metaChatSession);
 
@@ -111,14 +115,21 @@ class AssignMetaChatToAgent
             ], 403);
         }
 
-        return $this->respond($metaChatSession, $agent, $this->getActiveAssignment($metaChatSession), 'take_over');
+        return $this->respond(
+            $metaChatSession,
+            $agent,
+            $this->getActiveAssignment($metaChatSession),
+            'take_over',
+            $request->input('via') === 'lock' ? ChatAssignmentClaimedViaEnum::TAKE_OVER_LOCK : ChatAssignmentClaimedViaEnum::TAKE_OVER_BAR
+        );
     }
 
     protected function respond(
         MetaChatSession $metaChatSession,
         ChatAgent $agent,
         ?MetaChatAssignment $activeAssignment,
-        string $actionType
+        string $actionType,
+        ChatAssignmentClaimedViaEnum $claimedVia
     ): JsonResponse {
         if ($activeAssignment && $activeAssignment->chat_agent_id === $agent->id) {
             return response()->json([
@@ -139,7 +150,8 @@ class AssignMetaChatToAgent
             $assignment = $this->handle(
                 $metaChatSession,
                 $agent,
-                $actionType === 'take_over' ? 'Taken over by agent' : 'Assigned via assign-to-self'
+                $actionType === 'take_over' ? 'Taken over by agent' : 'Assigned via assign-to-self',
+                $claimedVia
             );
         } catch (UniqueConstraintViolationException) {
             return response()->json([

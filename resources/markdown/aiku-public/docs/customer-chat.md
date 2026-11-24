@@ -1,7 +1,7 @@
 ---
 title: Talking to customers in Chat
 summary: One inbox for the website chat, WhatsApp and the shop's email - take a conversation, answer with the customer's orders at your side, log a phone call, raise a ticket, and see how the desk is doing.
-date: 2026-10-01
+date: 2026-11-24
 tags: crm, chat
 category: help-desk
 help_routes: grp.org.shops.show.chat
@@ -35,7 +35,11 @@ The rail on the left lists your shops with what is <b>waiting</b> and <b>active<
 
 ## Taking a conversation
 
-The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. <b>Assign to me</b> makes a waiting conversation yours; <b>Take Over</b> takes one from a colleague who has gone to lunch.
+The inbox has two lists, each with its count: <b>My Chats</b> and <b>Colleagues' Chats</b>, the ones somebody else is holding on a shop you also work. Within them, <b>Waiting</b> is what nobody has picked up, <b>Active</b> is in hand and <b>Closed</b> is what was closed today. Answering a waiting conversation makes it yours, so working alone you never need a button. Where several of you share a shop, <b>Assign to me</b> at the top right takes it before you start, so colleagues see it is yours while you read and look things up.
+
+Whoever holds a conversation shows at the top right, next to <b>End chat</b>: a green <b>You</b> with a lock when it is yours, a yellow capsule with your colleague's name and a lock when it is theirs. Click your own <b>You</b> to give the conversation back to the queue at once. Click a colleague's capsule to take it over, for when they are away or on holiday and the customer is still waiting; check with them first if they are working today. <b>Take Over</b> at the bottom of the conversation does the same.
+
+While a colleague has a conversation open, a strip under its name says so: amber while they are reading, red while they are writing a reply, and their name shows on the conversation in the list in the same colour. If you start typing in a conversation a colleague is already answering, your message box turns red too. On WhatsApp, your own <b>You</b> cannot give the conversation back yet.
 
 Then it works like any messenger: type and send, add an emoji, attach images and documents, up to 30 files at a time (see <a href="/docs/answering-emails-in-chat">Answering emails in Chat</a> for which files). <b>Translate</b> lets you read the customer in your language and answer in theirs.
 
@@ -105,7 +109,9 @@ Because reply time is measured against working hours, each agent's hours in thei
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
-<li><b>Answer customers:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; a conversation under <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Answer customers:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; a conversation under <b>Waiting</b> &rarr; type your reply, or <b>Assign to me</b> first when colleagues share the shop.</li>
+<li><b>Give a conversation back:</b> click your green <b>You</b> at the top right.</li>
+<li><b>Take over from a colleague:</b> click their yellow name capsule at the top right &rarr; <b>Take over</b>.</li>
 <li><b>Link a guest:</b> open the conversation &rarr; side panel &rarr; <b>Confirm</b> or <b>Not them</b>, or <b>Find account</b>.</li>
 <li><b>See everything else the customer wrote:</b> side panel &rarr; <b>Chats</b>.</li>
 <li><b>Merge two WhatsApp conversations:</b> side panel &rarr; <b>Merge into this one</b>.</li>

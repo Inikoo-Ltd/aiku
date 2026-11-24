@@ -12,6 +12,7 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
@@ -340,6 +341,7 @@ class AssignChatToAgent
                 'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
                 'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
                 'note'          => 'Assigned via assign-to-self',
+                'claimed_via'   => ChatAssignmentClaimedViaEnum::ASSIGN_BUTTON,
                 'assigned_at'   => now(),
             ]);
 
@@ -376,8 +378,10 @@ class AssignChatToAgent
         }
     }
 
-    public function takeOver(string $organisation, ChatSession $chatSession): JsonResponse
+    public function takeOver(string $organisation, ChatSession $chatSession, Request $request): JsonResponse
     {
+        $claimedVia = $request->input('via') === 'lock' ? ChatAssignmentClaimedViaEnum::TAKE_OVER_LOCK : ChatAssignmentClaimedViaEnum::TAKE_OVER_BAR;
+
         $agent = $this->getCurrentAgent($chatSession);
 
         if (!$agent) {
@@ -408,6 +412,7 @@ class AssignChatToAgent
                     'chat_agent_id' => $agent->id,
                     'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
                     'note'          => 'Taken over by agent',
+                    'claimed_via'   => $claimedVia,
                     'assigned_at'   => now(),
                 ]);
             } else {
@@ -418,6 +423,7 @@ class AssignChatToAgent
                     'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
                     'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
                     'note'          => 'Taken over by agent',
+                    'claimed_via'   => $claimedVia,
                     'assigned_at'   => now(),
                 ]);
             }

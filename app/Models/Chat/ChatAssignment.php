@@ -9,6 +9,7 @@
 namespace App\Models\Chat;
 
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +48,7 @@ class ChatAssignment extends Model
     protected $casts = [
        'status' => ChatAssignmentStatusEnum::class,
        'assigned_by' => ChatAssignmentAssignedByEnum::class,
+       'claimed_via' => ChatAssignmentClaimedViaEnum::class,
        'assigned_at' => 'datetime',
        'resolved_at' => 'datetime',
        'created_at' => 'datetime',

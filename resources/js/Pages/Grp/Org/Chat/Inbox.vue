@@ -2999,6 +2999,14 @@ const onAssignSelfSuccess = async () => {
     } as SessionAPI
 }
 
+/** Giving a conversation back: it waits for anybody again, still open here. */
+const onReleased = async () => {
+    const prev = selectedSession.value
+    await reloadContacts()
+    await nextTick()
+    selectedSession.value = { ...(prev as SessionAPI), status: "waiting", assigned_agent: null } as SessionAPI
+}
+
 const updateUrl = (ulid: string) => {
     // The address follows the conversation that is open, not the sidebar: in a mixed list the
     // two disagree, and a WhatsApp chat deep-linked as a website one does not reopen.
@@ -4249,7 +4257,7 @@ onUnmounted(() => {
                     :can-create-template="inboxes.find((inbox) => inbox.id === selectedSession?.shop?.id)?.can_create_template === true"
                     :read-only="isReadOnly" :show-shop="crossShopView"
                     @back="leaveConversation" @messages-read="onMessagesRead"
-                    @assign-self-success="onAssignSelfSuccess"
+                    @assign-self-success="onAssignSelfSuccess" @released="onReleased"
                     @close-session="closeSession"
                     @spam-success="onSpamFromThread"
                     @task-created="reloadContactsSoon"
@@ -4260,7 +4268,7 @@ onUnmounted(() => {
                     @close-session="closeSession" @view-history="showHistoryPanel"
                     @view-user-profile="showProfilePanel" @view-session-info="openSidePanelOn('log')"
                     @transfer-agent-success="onTransferAgentSuccess"
-                    @assign-self-success="onAssignSelfSuccess" @messages-read="onMessagesRead"
+                    @assign-self-success="onAssignSelfSuccess" @released="onReleased" @messages-read="onMessagesRead"
                     @open-slack-settings="onOpenSlackSettings"
                     @spam-success="onSpamFromThread"
                     @view-tickets="showTicketsPanel"

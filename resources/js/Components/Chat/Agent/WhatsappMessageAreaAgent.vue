@@ -35,6 +35,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
+import { faUserCheck } from "@fal"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
@@ -52,6 +53,10 @@ import ChatFilesDialog from "@/Components/Chat/ChatFilesDialog.vue"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import WhatsappCallBar from "@/Components/Chat/WhatsappCallBar.vue"
 import { useWhatsappCall } from "@/Composables/useWhatsappCall"
+import { chatWriterOn, noteChatDrafting, noteChatViewing, stopChatDrafting } from "@/Composables/useChatDrafting"
+import ChatColleaguesBanner from "@/Components/Chat/ChatColleaguesBanner.vue"
+import ChatColleagueWritingAlert from "@/Components/Chat/ChatColleagueWritingAlert.vue"
+import ChatHolderLock from "@/Components/Chat/ChatHolderLock.vue"
 
 type SelectedFile = { file: File; previewUrl: string | null; kind: "image" | "video" | "file" }
 
@@ -112,7 +117,7 @@ const lastMessageStamp = computed(() => {
     return { time: formatChatTime(stamp), age: formatChatAge(stamp) }
 })
 
-const emit = defineEmits(["back", "messages-read", "assign-self-success", "close-session", "view-profile", "spam-success", "task-created"])
+const emit = defineEmits(["back", "messages-read", "assign-self-success", "released", "close-session", "view-profile", "spam-success", "task-created"])
 
 const isSpamMarking = ref(false)
 
@@ -207,14 +212,15 @@ const claimChat = async (
     routeName: string,
     method: "post" | "patch",
     flag: { value: boolean },
-    errorText: string
+    errorText: string,
+    body: Record<string, string> = {}
 ) => {
     if (!chatSession.value?.ulid || flag.value) return
     flag.value = true
     try {
         await axios[method](
             route(routeName, [props.organisationSlug, chatSession.value.ulid]),
-            {},
+            body,
             { withCredentials: true }
         )
         emit("assign-self-success")
@@ -225,12 +231,36 @@ const claimChat = async (
     }
 }
 
-const takeoverChat = () =>
+/** HELP-4896: optional; replying still takes the conversation, so somebody working alone never needs it. */
+const isClaiming = ref(false)
+const claimForMe = () => claimChat("grp.org.chat.agents.whatsapp.assign.self", "post", isClaiming, ctrans("This conversation could not be taken. Try again."))
+
+/** HELP-4896: your own lock gives the conversation back to the queue, no questions asked. */
+const isReleasing = ref(false)
+const canRelease = computed(() => !props.readOnly && !isClosed.value && !isWaiting.value && isMyChat.value)
+const releaseChat = async () => {
+    if (!chatSession.value?.ulid || isReleasing.value) return
+    isReleasing.value = true
+    composerError.value = null
+    try {
+        await axios.patch(route("grp.org.chat.agents.whatsapp.sessions.release", [props.organisationSlug, chatSession.value.ulid]), {}, { withCredentials: true })
+        ;(chatSession.value as any).assigned_agent = null
+        emit("released")
+    } catch (e: any) {
+        composerError.value = e?.response?.data?.message ?? ctrans("Failed to give this conversation back")
+    } finally {
+        isReleasing.value = false
+    }
+}
+
+/** via "lock" counts a take-over from the header lock apart from the bar at the bottom (HELP-4896). */
+const takeoverChat = (via?: unknown) =>
     claimChat(
         "grp.org.chat.agents.whatsapp.takeover",
         "patch",
         isTakingOver,
-        ctrans("Failed to assign chat")
+        ctrans("Failed to assign chat"),
+        via === "lock" ? { via: "lock" } : {}
     )
 
 const reopenChat = () =>
@@ -279,6 +309,21 @@ const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
 
 useComposerDraft(() => props.session?.ulid, newMessage)
+
+/** HELP-4896: colleagues see this conversation open, and written to once the agent types; Aiku's draft placed in the box does not count. */
+const usedAiDraftText = ref<string | null>(null)
+const isOwnTextInBox = computed(() => !!newMessage.value.trim() && newMessage.value !== usedAiDraftText.value)
+const announcePresence = () => {
+    if (props.readOnly) return
+    const shopId = chatSession.value?.shop?.id
+    if (isOwnTextInBox.value) {
+        noteChatDrafting(shopId, chatSession.value?.ulid)
+    } else {
+        noteChatViewing(shopId, chatSession.value?.ulid)
+    }
+}
+watch(newMessage, announcePresence)
+const colleagueWriting = computed(() => chatWriterOn(chatSession.value?.ulid))
 
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 const messagesContainer = ref<HTMLDivElement>()
@@ -1097,7 +1142,10 @@ const initSocket = () => {
 
 watch(
     () => chatSession.value?.ulid,
-    async () => {
+    async (_ulid, previousUlid) => {
+        stopChatDrafting(previousUlid)
+        usedAiDraftText.value = null
+        announcePresence()
         messagesLocal.value = []
         composerError.value = null
         windowClosesAt.value = null
@@ -1110,12 +1158,14 @@ watch(
 )
 
 onMounted(() => {
+    announcePresence()
     initSocket()
     getMessages()
     document.addEventListener("click", handleClickOutsideEmoji)
 })
 
 onUnmounted(() => {
+    stopChatDrafting(chatSession.value?.ulid)
     stopSocket()
     document.removeEventListener("click", handleClickOutsideEmoji)
 })
@@ -1141,7 +1191,7 @@ onUnmounted(() => {
                 <FontAwesomeIcon v-else :icon="faUser" class="text-sm" fixed-width />
             </button>
 
-            <div class="flex-1 min-w-0 cursor-pointer" @click="emit('view-profile')">
+            <div class="flex-1 min-w-0 cursor-pointer overflow-hidden" @click="emit('view-profile')">
                 <div class="text-sm font-semibold truncate hover:text-green-700 transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
@@ -1209,6 +1259,12 @@ onUnmounted(() => {
                 {{ ctrans("Spam") }}
             </button>
 
+            <Button v-if="isWaiting && !readOnly && !isClosed" type="tertiary" size="xs" :label="ctrans('Assign to me')" :loading="isClaiming"
+                v-tooltip="ctrans('Take this conversation so colleagues see it is yours. Optional: replying takes it too.')" @click.stop="claimForMe">
+                <template #icon><FontAwesomeIcon :icon="faUserCheck" class="text-green-600" fixed-width aria-hidden="true" /></template>
+            </Button>
+            <ChatHolderLock v-if="session?.assigned_agent" :name="session.assigned_agent.name" :is-mine="isMyChat && !isClosed && !readOnly"
+                :can-take-over="!readOnly && !isClosed" :is-taking-over="isTakingOver" :can-release="canRelease" :is-releasing="isReleasing" @take-over="takeoverChat('lock')" @release="releaseChat" />
             <ModalConfirmationDelete v-if="!isClosed && !readOnly" :routeDelete="{
                 name: 'grp.org.chat.agents.whatsapp.sessions.close',
                 parameters: [organisationSlug, session?.ulid],
@@ -1228,6 +1284,7 @@ onUnmounted(() => {
                 </template>
             </ModalConfirmationDelete>
         </header>
+        <ChatColleaguesBanner v-if="!readOnly" :session-ulid="chatSession?.ulid" />
 
         <div v-if="!readOnly" class="px-3 pt-2 empty:hidden">
             <WhatsappCallBar :organisation="props.organisationSlug" />
@@ -1277,7 +1334,7 @@ onUnmounted(() => {
             </template>
             <ChatAiDraftBox v-if="readOnly" whatsapp :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
-            <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => { usedAiDraftText = text; newMessage = text }" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest :target="messagesContainer" />
         </div>
 
@@ -1312,6 +1369,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Footer: closed banner -->
+        <ChatColleagueWritingAlert v-if="!readOnly && !isClosed" :session-ulid="chatSession?.ulid" :is-writing-too="isOwnTextInBox" />
         <footer v-if="readOnly" class="px-3 py-3 bg-white border-t">
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
                 <FontAwesomeIcon :icon="faEye" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -1391,7 +1449,8 @@ onUnmounted(() => {
             </div>
 
 
-            <div class="rounded-xl border border-gray-200 bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow">
+            <div class="rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
+                :class="colleagueWriting && isOwnTextInBox ? 'border-red-500 focus-within:border-red-500 ring-2 ring-red-200' : 'border-gray-200'">
                 <div v-if="hasTemplate"
                     class="flex items-center gap-2 mx-3 mt-2 px-2 py-1 rounded-lg bg-green-50 text-green-700 text-[11px]">
                     <FontAwesomeIcon :icon="faFileLines" class="text-[10px]" fixed-width />

@@ -1,8 +1,8 @@
 ---
 title: Rozhovor so zákazníkmi v Chate
 summary: Jedna schránka pre webový chat, WhatsApp aj e-mail obchodu - prevezmite konverzáciu, odpovedajte s objednávkami zákazníka po ruke, zaznamenajte telefonát, založte ticket a sledujte, ako si vedie pult.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-11-24
+source_date: 2026-11-24
 tags: crm, chat
 category: help-desk
 series: Chat
@@ -35,7 +35,11 @@ Lišta vľavo zobrazuje vaše obchody s tým, čo <b>čaká</b> (Waiting) a čo 
 
 ## Prevzatie konverzácie
 
-Schránka má dva zoznamy, každý so svojím počtom: <b>My Chats</b> (moje chaty) a <b>Colleagues' Chats</b> (chaty kolegov), teda tie, ktoré drží niekto iný na obchode, ktorý máte tiež na starosti. V rámci nich <b>Waiting</b> (čaká) je to, čo si nikto neprevzal, <b>Active</b> (aktívne) je v riešení a <b>Closed</b> (zatvorené) je to, čo bolo zatvorené dnes. <b>Assign to me</b> (prideliť mne) urobí čakajúcu konverzáciu vašou; <b>Take Over</b> (prevziať) vezme konverzáciu kolegovi, ktorý odišiel na obed.
+Schránka má dva zoznamy, každý so svojím počtom: <b>My Chats</b> (moje chaty) a <b>Colleagues' Chats</b> (chaty kolegov), teda tie, ktoré drží niekto iný na obchode, ktorý máte tiež na starosti. V rámci nich <b>Waiting</b> (čaká) je to, čo si nikto neprevzal, <b>Active</b> (aktívne) je v riešení a <b>Closed</b> (zatvorené) je to, čo bolo zatvorené dnes. Keď odpoviete na čakajúcu konverzáciu, stane sa vašou, takže ak pracujete sami, tlačidlo nepotrebujete. Tam, kde sa o obchod delíte viacerí, <b>Assign to me</b> (prideliť mne) vpravo hore konverzáciu prevezme ešte pred tým, než začnete, aby kolegovia videli, že je vaša, kým ju čítate a hľadáte podklady.
+
+Kto konverzáciu drží, ukazuje vpravo hore vedľa <b>End chat</b>: zelené <b>You</b> (vy) so zámkom, keď je vaša, a žltá kapsula s menom kolegu a zámkom, keď je jeho. Kliknutím na vlastné <b>You</b> vrátite konverzáciu hneď do fronty. Kliknutím na kapsulu kolegu ju prevezmete, keď je preč alebo na dovolenke a zákazník stále čaká; ak dnes pracuje, najprv sa s ním dohodnite. <b>Take Over</b> (prevziať) dole v konverzácii robí to isté.
+
+Kým má kolega konverzáciu otvorenú, pás pod jej názvom to hovorí: jantárový, keď číta, červený, keď píše odpoveď, a jeho meno sa v tej istej farbe zobrazí pri konverzácii v zozname. Ak začnete písať do konverzácie, na ktorú už kolega odpovedá, aj vaše pole správy sčervenie. Na WhatsApp zatiaľ vlastné <b>You</b> konverzáciu vrátiť nemôže.
 
 Potom to funguje ako každý messenger: píšte a posielajte, pridajte emoji, priložte obrázky a dokumenty, najviac 30 súborov naraz (ktoré súbory, nájdete v <a href="/docs/answering-emails-in-chat-sk">Odpovedanie na e-maily v Chate</a>). <b>Translate</b> (preložiť) vám dovolí čítať zákazníka vo svojom jazyku a odpovedať v jeho.
 
@@ -105,7 +109,9 @@ Keďže čas odpovede sa meria voči pracovnej dobe, hodiny každého agenta v j
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
-<li><b>Odpovedať zákazníkom:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; konverzácia v zozname <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Odpovedať zákazníkom:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; konverzácia v zozname <b>Waiting</b> &rarr; napíšte odpoveď, alebo najprv <b>Assign to me</b>, ak sa o obchod delíte s kolegami.</li>
+<li><b>Vrátiť konverzáciu:</b> kliknite na zelené <b>You</b> vpravo hore.</li>
+<li><b>Prevziať od kolegu:</b> kliknite na jeho žltú kapsulu s menom vpravo hore &rarr; <b>Take over</b>.</li>
 <li><b>Prepojiť hosťa:</b> otvorte konverzáciu &rarr; bočný panel &rarr; <b>Confirm</b> alebo <b>Not them</b>, alebo <b>Find account</b>.</li>
 <li><b>Pozrieť všetko ostatné, čo zákazník napísal:</b> bočný panel &rarr; <b>Chats</b>.</li>
 <li><b>Zlúčiť dve konverzácie WhatsApp:</b> bočný panel &rarr; <b>Merge into this one</b>.</li>

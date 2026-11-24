@@ -51,6 +51,7 @@ use App\Actions\Chat\MetaChatSession\SetMetaChatSessionPriority;
 use App\Actions\Chat\MetaChatSession\ToggleMetaChatSessionHighlight;
 use App\Actions\Chat\MetaChatSession\TrashMetaChatSession;
 use App\Actions\Chat\MetaChatSession\UnmarkMetaChatSessionAsSpam;
+use App\Actions\Chat\MetaChatSession\ReleaseMetaChatSession;
 use App\Actions\Chat\MetaChatSession\ReopenMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SendMetaChatMessage;
 use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
@@ -85,6 +86,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.assign.self');
     Route::patch('/whatsapp/{metaChatSession:ulid}/takeover', [AssignMetaChatToAgent::class, 'takeOver'])
         ->name('whatsapp.takeover');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/release', ReleaseMetaChatSession::class)
+        ->name('whatsapp.sessions.release');
     Route::patch('/whatsapp/{metaChatSession:ulid}/close', CloseMetaChatSession::class)
         ->name('whatsapp.sessions.close');
     Route::patch('/whatsapp/{metaChatSession:ulid}/reopen', ReopenMetaChatSession::class)

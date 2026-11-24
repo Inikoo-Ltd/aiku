@@ -15,7 +15,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
 import type { Contact } from "@/types/Chat/chat"
-import { chatDrafters } from "@/Composables/useChatDrafting"
+import { chatColleaguesOn } from "@/Composables/useChatDrafting"
+import { faPen, faEye as faEyeSolid } from "@fortawesome/free-solid-svg-icons"
 
 /**
  * One conversation in the Customer Inbox list, its own component so a change elsewhere on the page
@@ -28,6 +29,9 @@ defineProps<{
 }>()
 
 const ctx = inject<Record<string, any>>("chatInboxRow")!
+
+/** HELP-4896: the colleague who has this conversation open, a writer before a reader. */
+const colleagueOn = (ulid: string) => chatColleaguesOn(ulid)[0]
 
 /** Time-based labels read the page's minute clock, as Vue does not track the time itself. */
 const waitingLabel = (at: string) => ctx.minuteClock && waitingLeft(at)
@@ -101,12 +105,14 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
                     {{ ctrans("Unanswered") }}
                 </span>
-                <span v-if="chatDrafters[c.ulid]" :data-tooltip="ctrans(':name is writing a reply to this conversation', { name: chatDrafters[c.ulid].name })"
-                    class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
-                    ✎ {{ chatDrafters[c.ulid].name }}
+                <span v-if="colleagueOn(c.ulid)" :data-tooltip="colleagueOn(c.ulid)!.mode === 'writing' ? ctrans(':name is writing a reply to this conversation', { name: colleagueOn(c.ulid)!.name }) : ctrans(':name has this conversation open', { name: colleagueOn(c.ulid)!.name })"
+                    class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
+                    :class="colleagueOn(c.ulid)!.mode === 'writing' ? 'bg-red-600 text-white' : 'bg-amber-300 text-gray-900'">
+                    <FontAwesomeIcon :icon="colleagueOn(c.ulid)!.mode === 'writing' ? faPen : faEyeSolid" class="text-[10px]" :class="{ 'animate-pulse': colleagueOn(c.ulid)!.mode === 'writing' }" fixed-width aria-hidden="true" />
+                    {{ colleagueOn(c.ulid)!.name }}
                 </span>
                 <span v-else-if="c.reply_draft" :data-tooltip="ctrans(':name started a reply and has not sent it yet', { name: c.reply_draft.name })"
-                    class="shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-medium text-gray-600">
+                    class="inline-flex shrink-0 items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
                     ✎ {{ ctrans("Draft: :name", { name: c.reply_draft.name }) }}
                 </span>
                 <span v-for="label in c.labels ?? []" :key="label.id"
@@ -213,12 +219,14 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     </span>
                 </div>
                 <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-gray-400">
-                    <span v-if="chatDrafters[c.ulid]" :data-tooltip="ctrans(':name is writing a reply to this conversation', { name: chatDrafters[c.ulid].name })"
-                        class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
-                        ✎ {{ chatDrafters[c.ulid].name }}
+                    <span v-if="colleagueOn(c.ulid)" :data-tooltip="colleagueOn(c.ulid)!.mode === 'writing' ? ctrans(':name is writing a reply to this conversation', { name: colleagueOn(c.ulid)!.name }) : ctrans(':name has this conversation open', { name: colleagueOn(c.ulid)!.name })"
+                        class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
+                        :class="colleagueOn(c.ulid)!.mode === 'writing' ? 'bg-red-600 text-white' : 'bg-amber-300 text-gray-900'">
+                        <FontAwesomeIcon :icon="colleagueOn(c.ulid)!.mode === 'writing' ? faPen : faEyeSolid" class="text-[10px]" :class="{ 'animate-pulse': colleagueOn(c.ulid)!.mode === 'writing' }" fixed-width aria-hidden="true" />
+                        {{ colleagueOn(c.ulid)!.name }}
                     </span>
                     <span v-else-if="c.reply_draft" :data-tooltip="ctrans(':name started a reply and has not sent it yet', { name: c.reply_draft.name })"
-                        class="shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-medium text-gray-600">
+                        class="inline-flex shrink-0 items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
                         ✎ {{ ctrans("Draft: :name", { name: c.reply_draft.name }) }}
                     </span>
                     <span v-for="label in c.labels ?? []" :key="label.id"
