@@ -58,7 +58,7 @@ enum LeaveCalculator {
     static func rangeLabel(start: String?, end: String?) -> String {
         guard let start, let first = ClockingMapper.parseDay(start) else { return "—" }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = L10n.dateLocale
         formatter.timeZone = TimeZone(identifier: "UTC")!
         formatter.dateFormat = "EEE dd MMM yyyy"
         let startText = formatter.string(from: first)

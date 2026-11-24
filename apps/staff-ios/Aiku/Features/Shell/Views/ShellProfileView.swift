@@ -153,7 +153,7 @@ struct ShellProfileView: View {
                     Text(session.profile.name)
                         .font(.aiku(17, .bold))
                         .foregroundStyle(AikuColor.text)
-                    Text("\(session.profile.username) · \(session.profile.role)")
+                    Text(verbatim: "\(session.profile.username) · \(L10n.text(session.profile.role))")
                         .font(.aiku(13))
                         .foregroundStyle(AikuColor.text3)
                     if let organisation {

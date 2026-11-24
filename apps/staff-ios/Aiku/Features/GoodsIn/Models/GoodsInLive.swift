@@ -80,7 +80,7 @@ enum GoodsInText {
     static func date(_ value: String?, timeZone: TimeZone = .current) -> String? {
         guard let value, !value.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
         if let date = InventoryLive.date(value) {
-            return date.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).locale(Locale(identifier: "en_GB")))
+            return date.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).locale(L10n.dateLocale))
         }
         let day = String(value.prefix(10))
         let parser = DateFormatter()
@@ -89,7 +89,7 @@ enum GoodsInText {
         parser.dateFormat = "yyyy-MM-dd"
         guard let date = parser.date(from: day) else { return nil }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = L10n.dateLocale
         formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.dateFormat = "d MMM yyyy"
         return formatter.string(from: date)
@@ -97,7 +97,7 @@ enum GoodsInText {
 
     static func moment(_ value: String?, timeZone: TimeZone = .current) -> String? {
         guard let date = InventoryLive.date(value) else { return date(value, timeZone: timeZone) }
-        return date.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(Locale(identifier: "en_GB")))
+        return date.formatted(Date.FormatStyle(timeZone: timeZone).day(.defaultDigits).month(.abbreviated).hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(L10n.dateLocale))
     }
 
     static func deliveryTone(_ state: String) -> Tone {
@@ -1262,7 +1262,7 @@ final class GoodsInFeeds {
 
 enum GoodsInDates {
     static func dayMonth(_ date: Date) -> String {
-        date.formatted(.dateTime.day(.twoDigits).month(.abbreviated).locale(Locale(identifier: "en_GB")))
+        date.formatted(.dateTime.day(.twoDigits).month(.abbreviated).locale(L10n.dateLocale))
     }
 }
 

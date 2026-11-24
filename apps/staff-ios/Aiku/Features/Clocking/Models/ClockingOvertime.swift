@@ -53,9 +53,9 @@ enum OvertimeCalculator {
         guard let minutes, minutes > 0 else { return "—" }
         let hours = minutes / 60
         let rest = minutes % 60
-        if hours > 0 && rest > 0 { return "\(hours)h \(rest)m" }
-        if hours > 0 { return "\(hours)h" }
-        return "\(rest)m"
+        if hours > 0 && rest > 0 { return L10n.formatInSavedLanguage("%1$lldh %2$lldm", hours, rest) }
+        if hours > 0 { return L10n.formatInSavedLanguage("%lldh", hours) }
+        return L10n.formatInSavedLanguage("%lldm", rest)
     }
 
     static func timeLabel(_ minutes: Int) -> String {

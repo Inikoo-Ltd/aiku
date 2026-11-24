@@ -82,7 +82,7 @@ struct LocationsAuditSheet: View {
                     Text(slot.skoReference)
                         .font(.aiku(15, .bold))
                         .foregroundStyle(AikuColor.text)
-                    Text(difference == 0 ? "was \(slot.quantity)" : "was \(slot.quantity) · \(difference.signedChange)")
+                    Text(difference == 0 ? L10n.format("was %lld", slot.quantity) : L10n.format("was %lld · %@", slot.quantity, difference.signedChange))
                         .font(.aiku(13))
                         .foregroundStyle(difference == 0 ? AikuColor.text3 : (difference < 0 ? AikuColor.danger : AikuColor.success))
                 }

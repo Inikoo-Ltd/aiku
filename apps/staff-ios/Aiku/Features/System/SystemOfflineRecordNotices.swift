@@ -13,7 +13,7 @@ struct OfflineRecordNotices: View {
             InlineAlert(
                 tone: .warn,
                 icon: .offline,
-                title: "Offline · saved copy from \(copyAt.formatted(date: .abbreviated, time: .shortened))",
+                title: L10n.format("Offline · saved copy from %@", copyAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(L10n.dateLocale))),
                 message: OfflineRecordText.keptOnPhone
             )
         }

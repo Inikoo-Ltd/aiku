@@ -161,7 +161,7 @@ struct HomeView: View {
                     } label: {
                         VStack(spacing: 6) {
                             IconTile(shortcut.icon, tone: .info, size: 40, radius: 10)
-                            Text(shortcut.title)
+                            Text(L10n.text(shortcut.title))
                                 .font(.aiku(12, .semibold))
                                 .foregroundStyle(AikuColor.text2)
                                 .lineLimit(1)
@@ -180,7 +180,7 @@ struct HomeView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(shortcut.badge.map { "\(shortcut.title), \($0)" } ?? shortcut.title)
+                    .accessibilityLabel(shortcut.badge.map { "\(L10n.text(shortcut.title)), \($0)" } ?? L10n.text(shortcut.title))
                     .accessibilityIdentifier("shell.home.shortcut.\(shortcut.id)")
                 }
             }
@@ -234,7 +234,7 @@ struct HomeView: View {
                     HStack(spacing: 14) {
                         IconTile(module.icon, tone: .info, size: 44, radius: 10)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(module.title)
+                            Text(L10n.text(module.title))
                                 .font(.aiku(16, .bold))
                                 .foregroundStyle(AikuColor.text)
                             if module.subtitle.isEmpty {

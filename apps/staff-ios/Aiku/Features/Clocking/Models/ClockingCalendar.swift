@@ -56,7 +56,25 @@ struct CalendarGridDay: Identifiable, Hashable, Sendable {
 }
 
 enum CalendarGrid {
-    static let weekdayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+    static let englishWeekdayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+
+    static var weekdayLabels: [String] {
+        let locale = L10n.dateLocale
+        guard locale.language.languageCode?.identifier != "en" else { return englishWeekdayLabels }
+        return mondayFirst(CalendarText.formatter(locale).shortStandaloneWeekdaySymbols) ?? englishWeekdayLabels
+    }
+
+    static func narrowWeekday(_ englishShort: String) -> String {
+        let fallback = String(englishShort.prefix(1))
+        guard let index = ClockingWeek.weekdays.firstIndex(of: englishShort),
+              let symbols = mondayFirst(CalendarText.formatter(L10n.dateLocale).veryShortStandaloneWeekdaySymbols) else { return fallback }
+        return symbols[index]
+    }
+
+    private static func mondayFirst(_ symbols: [String]?) -> [String]? {
+        guard let symbols, symbols.count == 7 else { return nil }
+        return Array(symbols[1...]) + [symbols[0]]
+    }
 
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -173,12 +191,17 @@ struct CalendarHolidaySummary: Hashable, Sendable {
 
 enum CalendarText {
     static func format(_ pattern: String, _ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
-        formatter.calendar = CalendarGrid.calendar
-        formatter.timeZone = TimeZone(identifier: "UTC")!
+        let formatter = formatter(L10n.dateLocale)
         formatter.dateFormat = pattern
         return formatter.string(from: date)
+    }
+
+    static func formatter(_ locale: Locale) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = CalendarGrid.calendar
+        formatter.timeZone = TimeZone(identifier: "UTC")!
+        return formatter
     }
 
     static func isPending(_ leave: CalendarResponse.Leave) -> Bool {

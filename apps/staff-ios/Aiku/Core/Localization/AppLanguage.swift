@@ -196,4 +196,9 @@ enum L10n {
         let template = texts?.localizedString(forKey: key, value: key, table: nil) ?? key
         return String(format: template, locale: language.locale, arguments: arguments)
     }
+
+    static var dateLocale: Locale {
+        let id = LanguageStore.savedLanguageID() ?? AppLanguages.defaultID
+        return id == AppLanguages.defaultID ? Locale(identifier: "en_GB") : AppLanguages.language(id: id).locale
+    }
 }

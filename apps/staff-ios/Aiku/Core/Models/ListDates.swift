@@ -50,7 +50,7 @@ enum ListDates {
 
     static func text(_ date: Date, in timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = L10n.dateLocale
         formatter.timeZone = timeZone
         formatter.dateFormat = "d MMM yyyy"
         return formatter.string(from: date)
@@ -62,8 +62,8 @@ enum ListDates {
         switch (from, to) {
         case let (start?, end?) where start == end: return start
         case let (start?, end?): return "\(start) – \(end)"
-        case let (start?, nil): return "From \(start)"
-        case let (nil, end?): return "Until \(end)"
+        case let (start?, nil): return L10n.formatInSavedLanguage("From %@", start)
+        case let (nil, end?): return L10n.formatInSavedLanguage("Until %@", end)
         default: return nil
         }
     }

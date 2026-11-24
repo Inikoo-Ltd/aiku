@@ -118,8 +118,8 @@ enum ClockingMapper {
         let last = first.addingTimeInterval(6 * 86_400)
         let utc = TimeZone(identifier: "UTC")!
         let sameMonth = formatter("MM", utc).string(from: first) == formatter("MM", utc).string(from: last)
-        let firstText = formatter(sameMonth ? "dd" : "dd MMM", utc).string(from: first)
-        return "\(firstText) – \(formatter("dd MMM yyyy", utc).string(from: last))"
+        let firstText = formatter(sameMonth ? "dd" : "dd MMM", utc, locale: L10n.dateLocale).string(from: first)
+        return "\(firstText) – \(formatter("dd MMM yyyy", utc, locale: L10n.dateLocale).string(from: last))"
     }
 
     static func method(_ value: String) -> ClockingMethod? {
@@ -145,9 +145,9 @@ enum ClockingMapper {
         return String(text.prefix(5))
     }
 
-    private static func formatter(_ format: String, _ timeZone: TimeZone) -> DateFormatter {
+    private static func formatter(_ format: String, _ timeZone: TimeZone, locale: Locale = Locale(identifier: "en_GB")) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_GB")
+        formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = timeZone
         formatter.dateFormat = format

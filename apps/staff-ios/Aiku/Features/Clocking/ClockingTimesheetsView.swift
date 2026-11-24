@@ -131,7 +131,7 @@ struct ClockingTimesheetsView: View {
             UnevenRoundedRectangle(topLeadingRadius: 4, topTrailingRadius: 4)
                 .fill(barColor(day))
                 .frame(height: max(3, 52 * fraction))
-            Text(String(weekday.prefix(1)))
+            Text(CalendarGrid.narrowWeekday(weekday))
                 .font(.aiku(11))
                 .foregroundStyle(AikuColor.text3)
         }
@@ -153,7 +153,7 @@ struct ClockingTimesheetsView: View {
         } label: {
             HStack(spacing: 12) {
                 VStack(spacing: 0) {
-                    Text(day.weekday.uppercased())
+                    Text(day.weekdayTitle.uppercased(with: L10n.dateLocale))
                         .font(.aiku(11, .bold))
                         .foregroundStyle(AikuColor.text3)
                     Text(day.dayOfMonth)

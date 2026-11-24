@@ -39,7 +39,7 @@ struct SystemOnlineOnlyView: View {
     }
 
     private var waitingLabel: String {
-        OfflineTexts.count(offline.waitingCount, "action waiting", "actions waiting")
+        L10n.format("%lld actions waiting", offline.waitingCount)
     }
 
     private var progress: some View {

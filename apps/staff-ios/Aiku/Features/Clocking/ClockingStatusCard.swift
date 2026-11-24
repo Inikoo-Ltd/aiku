@@ -116,7 +116,7 @@ struct ClockingStatusCard: View {
                 timeColumn("Clock in", ClockingFormat.time(tracker.inAt))
                 timeColumn("Clock out", tracker.outAt.map(ClockingFormat.time) ?? "—")
             }
-            Text(tracker.isOpen ? "Ongoing" : "Duration \(ClockingFormat.duration(tracker.duration(now: nil)))")
+            Text(tracker.isOpen ? L10n.text("Ongoing") : L10n.format("Duration %@", ClockingFormat.duration(tracker.duration(now: nil))))
                 .font(.aiku(12, .semibold))
                 .foregroundStyle(tracker.isOpen ? AikuColor.ink : AikuColor.success)
                 .multilineTextAlignment(.trailing)

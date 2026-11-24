@@ -86,8 +86,4 @@ enum OfflineTexts {
         case .void: Chip("Undone")
         }
     }
-
-    nonisolated static func count(_ count: Int, _ one: String, _ many: String) -> String {
-        count == 1 ? "1 \(one)" : "\(count) \(many)"
-    }
 }

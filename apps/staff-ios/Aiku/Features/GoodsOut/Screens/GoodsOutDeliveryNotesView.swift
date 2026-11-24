@@ -152,7 +152,7 @@ struct GoodsOutDeliveryNotesView: View {
         let open = { router.open(GoodsOutRoute.deliveryNote(reference: note.reference)) }
         if note.state == .todo, note.remote?.canAddToPickingSession ?? true {
             let isSelected = store.selectedForSession.contains(note.reference)
-            let selectionLabel = isSelected ? "Deselect \(note.reference)" : "Select \(note.reference) for a picking session"
+            let selectionLabel = isSelected ? L10n.format("Deselect %@", note.reference) : L10n.format("Select %@ for a picking session", note.reference)
             RecordRow(note.reference, date: note.recordDate, party: note.customer, badges: rowChips(note), details: details, action: open) {
                 Button {
                     store.toggleSessionSelection(note.reference)

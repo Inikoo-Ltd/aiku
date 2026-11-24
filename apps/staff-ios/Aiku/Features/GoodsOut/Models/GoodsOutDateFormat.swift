@@ -14,7 +14,7 @@ enum GoodsOutDateFormat {
         date.formatted(
             Date.VerbatimFormatStyle(
                 format: "\(day: .defaultDigits) \(month: .abbreviated) \(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)",
-                locale: Locale(identifier: "en_GB"),
+                locale: L10n.dateLocale,
                 timeZone: timeZone,
                 calendar: Calendar(identifier: .gregorian)
             )
@@ -24,7 +24,7 @@ enum GoodsOutDateFormat {
     static func time(_ date: Date) -> String {
         date.formatted(
             Date.FormatStyle(timeZone: timeZone)
-                .locale(Locale(identifier: "en_GB"))
+                .locale(L10n.dateLocale)
                 .hour(.twoDigits(amPM: .omitted))
                 .minute(.twoDigits)
                 .second(.twoDigits)
@@ -35,7 +35,7 @@ enum GoodsOutDateFormat {
         date.formatted(
             Date.VerbatimFormatStyle(
                 format: "\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased)):\(minute: .twoDigits)",
-                locale: Locale(identifier: "en_GB"),
+                locale: L10n.dateLocale,
                 timeZone: timeZone,
                 calendar: Calendar(identifier: .gregorian)
             )

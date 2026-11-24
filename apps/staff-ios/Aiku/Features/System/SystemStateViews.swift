@@ -39,7 +39,7 @@ struct SystemOfflineView: View {
                     }
                     .foregroundStyle(AikuColor.text2)
                     Spacer(minLength: 8)
-                    Text(OfflineTexts.count(offline.waitingCount, "action", "actions"))
+                    Text(L10n.format("%lld actions", offline.waitingCount))
                         .fontWeight(.bold)
                         .foregroundStyle(AikuColor.text)
                 }

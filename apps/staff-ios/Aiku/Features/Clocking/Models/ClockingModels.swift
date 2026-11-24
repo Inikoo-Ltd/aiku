@@ -91,8 +91,13 @@ struct ClockingDay: Identifiable, Hashable, Sendable {
     var timesheetID: Int?
 
     var id: String { date }
-    var title: String { "\(weekday) \(dayOfMonth) \(monthYear)" }
-    var shortTitle: String { "\(weekday) \(dayOfMonth) \(monthYear.split(separator: " ").first.map(String.init) ?? "")" }
+    var title: String { formatted("EEE dd MMM yyyy") ?? "\(weekday) \(dayOfMonth) \(monthYear)" }
+    var shortTitle: String { formatted("EEE dd MMM") ?? "\(weekday) \(dayOfMonth) \(monthYear.split(separator: " ").first.map(String.init) ?? "")" }
+    var weekdayTitle: String { formatted("EEE") ?? weekday }
+
+    private func formatted(_ pattern: String) -> String? {
+        ClockingMapper.parseDay(date).map { CalendarText.format(pattern, $0) }
+    }
 
     var trackers: [ClockingTracker] {
         var result: [ClockingTracker] = []

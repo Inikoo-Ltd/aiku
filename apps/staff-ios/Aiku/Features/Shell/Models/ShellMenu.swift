@@ -61,8 +61,9 @@ struct ShellMenuClocking: Hashable, Sendable {
 enum ShellClockingText {
     static let module = "Clocking & Attendance"
 
+    @MainActor
     static func kicker(_ organisation: String) -> String {
-        organisation.isEmpty ? module : "\(module) · \(organisation)"
+        organisation.isEmpty ? L10n.text(module) : L10n.format("%@ · %@", L10n.text(module), organisation)
     }
 }
 

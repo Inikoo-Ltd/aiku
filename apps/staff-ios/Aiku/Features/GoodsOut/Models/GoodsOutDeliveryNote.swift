@@ -192,9 +192,9 @@ struct GoodsOutDeliveryNote: Identifiable, Hashable, Sendable {
         }
         if let listItemCount {
             if shipper == .collection {
-                parts.append("Collection")
+                parts.append(L10n.text("Collection"))
             }
-            parts.append("\(listItemCount) \(listItemCount == 1 ? "item" : "items")")
+            parts.append(L10n.format("%lld items", listItemCount))
             if weightKg > 0 {
                 parts.append(weightText)
             }

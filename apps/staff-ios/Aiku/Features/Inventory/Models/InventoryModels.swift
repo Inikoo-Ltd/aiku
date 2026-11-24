@@ -206,10 +206,10 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
 
     static func levels(minimum: String?, maximum: String?, replenish: String?) -> String? {
         switch (minimum, maximum) {
-        case let (min?, max?): return "min \(min) · max \(max)"
-        case let (min?, nil): return "min \(min)"
-        case let (nil, max?): return "max \(max)"
-        default: return replenish.map { "replenish \($0)" }
+        case let (min?, max?): return L10n.formatInSavedLanguage("min %@ · max %@", min, max)
+        case let (min?, nil): return L10n.formatInSavedLanguage("min %@", min)
+        case let (nil, max?): return L10n.formatInSavedLanguage("max %@", max)
+        default: return replenish.map { L10n.formatInSavedLanguage("replenish %@", $0) }
         }
     }
 }

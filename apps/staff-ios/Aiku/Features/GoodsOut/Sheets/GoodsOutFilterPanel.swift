@@ -94,8 +94,8 @@ struct GoodsOutFilterPanel: View {
     }
 
     private var showText: String {
-        guard let count = resultCount else { return "Show results" }
-        return count == 1 ? "Show 1 result" : "Show \(count) results"
+        guard let count = resultCount else { return L10n.text("Show results") }
+        return L10n.format("Show %lld results", count)
     }
 
     private func toggled<Value: Hashable>(_ selection: Set<Value>, _ value: Value) -> Set<Value> {
