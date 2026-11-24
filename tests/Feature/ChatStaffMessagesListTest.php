@@ -72,7 +72,7 @@ function slackListFor(User $user, string $url, ?array &$queries = null): array
 
 test('one list: the conversations page opens with the same queries as before for people with and without Slack; the Slack list comes after it as one deferred group, INI-447', function () {
     foreach ([$this->viewer, $this->plain] as $person) {
-        foreach ([route('grp.chat.staff.index') => 7, route('grp.chat.staff.show', $this->conversation->ulid) => 12] as $url => $ceiling) {
+        foreach ([route('grp.chat.staff.index') => 9, route('grp.chat.staff.show', $this->conversation->ulid) => 14] as $url => $ceiling) {
             actingAs($person)->get($url)->assertOk();
             $page    = null;
             $queries = queriesWhile(function () use ($person, $url, &$page) {
@@ -139,7 +139,7 @@ test('one list: inactive, agent-only, Slack guest, other-email, bot and deleted 
     expect(queriesWhile(function () use ($inactive, &$props) {
         $props = \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->listProps($this->group, $inactive, deferred: true);
     }))->toBe([])
-        ->and($props)->toBe(['slack_channels' => [], 'slack_live_channel' => null]);
+        ->and($props)->toBe(['slack_channels' => [], 'slack_live_channel' => null, 'desk_starred' => []]);
 
     $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CLISTPRIV{$this->s}", 'name' => "private-{$this->s}", 'is_public' => false]);
     $deleted = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CLISTDEL{$this->s}", 'name' => "deleted-{$this->s}", 'deleted_in_slack_at' => now()]);

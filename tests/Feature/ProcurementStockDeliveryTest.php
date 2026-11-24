@@ -1229,7 +1229,7 @@ test('UI show stock delivery', function () {
                     ->etc()
             )
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value)
-            ->has('queryBuilderProps.items.columns', 9)
+            ->has('queryBuilderProps.items.columns', 10)
             ->has(
                 'queryBuilderProps.items.columns.0',
                 fn (AssertableInertia $page) => $page
@@ -1238,8 +1238,9 @@ test('UI show stock delivery', function () {
                     ->etc()
             )
             ->where('queryBuilderProps.items.columns.4.key', 'purchase_orders')
+            ->where('queryBuilderProps.items.columns.7.key', 'unit_price')
             ->has(
-                'queryBuilderProps.items.columns.8',
+                'queryBuilderProps.items.columns.9',
                 fn (AssertableInertia $page) => $page
                     ->where('key', 'actions')
                     ->where('align', 'right')

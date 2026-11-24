@@ -303,6 +303,7 @@ class AppServiceProvider extends ServiceProvider
                 'Ingredient'                       => 'App\Models\Goods\Ingredient',
                 'MasterAsset'                      => 'App\Models\Masters\MasterAsset',
                 'MasterAssetPriceTip'              => 'App\Models\Masters\MasterAssetPriceTip',
+                'MasterAssetPartnerPrice'          => 'App\Models\Masters\MasterAssetPartnerPrice',
                 'MasterAssetCompetitorProduct'     => 'App\Models\Masters\MasterAssetCompetitorProduct',
                 'Competitor'                       => 'App\Models\Masters\Competitor',
                 'CompetitorPriceCheck'             => 'App\Models\Masters\CompetitorPriceCheck',

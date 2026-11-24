@@ -887,7 +887,8 @@ test('iris pages still receive announcements, dialogs and appointment types on f
         ->json('props');
 
     $expectedIris = array_merge($middleware->getIrisData($this->website->fresh(), $fullLoadProps['iris']['locale']), [
-        'google' => ['client_id' => config('services.google.client_id')],
+        'own_cookie_banner' => false,
+        'google'            => ['client_id' => config('services.google.client_id')],
     ]);
 
     expect(collect($expected['appointment_types'])->pluck('id'))->toContain($appointmentType->id)

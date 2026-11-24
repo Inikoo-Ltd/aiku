@@ -4,6 +4,8 @@
 
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
+use App\Actions\Goods\TradeUnit\StoreTradeUnit;
+use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductTradeUnits;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -13,6 +15,7 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\CRM\Prospect;
+use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\SupplierPortalContact;
@@ -154,13 +157,15 @@ test('a new product idea can be kept as a draft, and a submission we asked more 
 
 test('accepting a submission applies it in aiku: ticked company details, pictures, a prospect and a compliance document', function () {
     [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $tradeUnit                            = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+    SyncSupplierProductTradeUnits::run($supplierProduct, [$tradeUnit->id => ['quantity' => 1]]);
     Auth::logout();
 
     $this->post(route('grp.supplier_share.submit', [$token, 'company_details']), ['name' => 'Renamed Ltd', 'contact_name' => 'New Person', 'email' => 'new@supplier.test'])->assertSessionHasErrors('phone');
     $this->post(route('grp.supplier_share.submit', [$token, 'company_details']), ['name' => 'Renamed Ltd', 'contact_name' => 'New Person', 'email' => 'new@supplier.test', 'phone' => '+34 600 000 000', 'contact_website' => 'https://renamed.test'])->assertSessionHasNoErrors();
     $this->post(route('grp.supplier_share.submit', [$token, 'photos']), ['supplier_product_id' => $supplierProduct->id, 'picture_kind' => 'product', 'files' => [UploadedFile::fake()->image('front.jpg', 300, 300)]])->assertSessionHasNoErrors();
     $this->post(route('grp.supplier_share.submit', [$token, 'referral']), ['company_name' => 'Referred Ltd', 'country' => 'Spain', 'email' => 'referred-'.$supplier->id.'@shop.test', 'permission_confirmed' => 1])->assertSessionHasNoErrors();
-    $this->post(route('grp.supplier_share.submit', [$token, 'compliance_document']), ['document_type' => 'Certificate', 'expires_on' => now()->addDays(10)->toDateString(), 'files' => [UploadedFile::fake()->create('cert.pdf', 20, 'application/pdf')]])->assertSessionHasNoErrors();
+    $this->post(route('grp.supplier_share.submit', [$token, 'compliance_document']), ['document_type' => 'cpsr', 'supplier_product_id' => $supplierProduct->id, 'expires_on' => now()->addDays(10)->toDateString(), 'files' => [UploadedFile::fake()->create('cert.pdf', 20, 'application/pdf')]])->assertSessionHasNoErrors();
 
     $submission = fn (SupplierSubmissionTypeEnum $type) => SupplierSubmission::where('supplier_id', $supplier->id)->where('type', $type)->sole();
     $before     = $supplier->fresh()->only(['name', 'contact_name', 'email', 'contact_website']);
@@ -185,7 +190,7 @@ test('accepting a submission applies it in aiku: ticked company details, picture
         ->and($prospect->data['referred_by_supplier_id'])->toBe($supplier->id);
 
     $this->post(route('grp.models.supplier_submission.decide', $submission(SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT)->id), ['state' => 'accepted'])->assertSessionHasNoErrors();
-    expect($supplier->fresh()->attachments()->wherePivot('scope', 'Certificate')->count())->toBe(1);
+    expect($tradeUnit->fresh()->attachments()->wherePivot('scope', 'cpsr')->count())->toBe(1);
 
     $file = $submission(SupplierSubmissionTypeEnum::PHOTOS)->attachments->first();
     $this->get(route('grp.media.download', $file->ulid))->assertOk();
@@ -193,7 +198,7 @@ test('accepting a submission applies it in aiku: ticked company details, picture
 
     $this->get(route('grp.supplier_share.show', $token))
         ->assertInertia(fn ($page) => $page->loadDeferredProps('details', fn ($reload) => $reload
-            ->where('details.compliance.0.document_type', 'Certificate')
+            ->where('details.compliance.0.document_type', 'CPSR')
             ->where('details.compliance.0.expiring', true)
             ->where('details.submissions', fn ($rows) => collect($rows)->firstWhere('type', 'referral')['feedback'] === 'Thank you')));
 });
