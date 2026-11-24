@@ -37,8 +37,9 @@ class HoldJobOrder extends OrgAction
     }
 
     /**
-     * A hold is a note and a lock on receiving into stock, nothing else: steps, targets and pay
-     * carry on. Cleared holds stay in data.holds as the job's hold history.
+     * A hold takes the job off the artisans' floor (no new step can be started, HELP-4897) and locks
+     * receiving into stock; a session already open can still be closed. Cleared holds stay in
+     * data.holds as the job's hold history.
      */
     public function handle(JobOrder $jobOrder, array $modelData): JobOrder
     {

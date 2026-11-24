@@ -146,6 +146,7 @@ class ShowManufactureFloor extends OrgAction
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
+            ->whereRaw(JobOrder::NOT_ON_HOLD_SQL)
             ->when(!$this->canCombine, fn ($query) => $query->whereRaw('(not '.self::RESTRICTED_SQL.' or '.self::ALLOWED_SQL.')', [$this->employee?->id ?? 0]))
             ->where(function ($query) {
                 $query->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
@@ -753,6 +754,11 @@ class ShowManufactureFloor extends OrgAction
                 continue;
             }
             $group = $members->where('id', $combinedTaskId)->concat($members->where('id', '!=', $combinedTaskId))->values();
+
+            if ($group->contains(fn (JobOrderItemTask $member) => $member->state != JobOrderItemTaskStateEnum::DONE && $member->jobOrder->isOnHold())) {
+                array_push($hidden, ...$group->pluck('id')->all());
+                continue;
+            }
 
             $standsFor = $group->first(fn (JobOrderItemTask $member) => $member->state != JobOrderItemTaskStateEnum::DONE);
             $openTask  = $openTasks->firstWhere('id', $standsFor?->id);

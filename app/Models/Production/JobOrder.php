@@ -147,6 +147,13 @@ class JobOrder extends Model
         return (bool) ($this->data['trial_run'] ?? false);
     }
 
+    public const string NOT_ON_HOLD_SQL = "job_orders.data->'hold' is null";
+
+    public function isOnHold(): bool
+    {
+        return isset($this->data['hold']);
+    }
+
     public const string REQUESTED_BY_DEVELOPMENT_SQL = "jsonb_exists(coalesce(job_orders.data, '{}'::jsonb), 'product_development')";
 
     /**

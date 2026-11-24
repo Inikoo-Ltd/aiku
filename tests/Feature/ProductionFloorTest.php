@@ -2215,3 +2215,47 @@ test('a production that asks for them records the raw material batch codes and e
     expect($this->production->refresh()->recordsRawMaterialBatches())->toBeFalse()
         ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['open_session'])->toBeNull();
 });
+
+test('HELP-4897 a job order on hold leaves the floor and cannot be started, a step already open can still be closed', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+
+    $user         = $this->guest->getUser();
+    $jobOrder     = StoreJobOrder::make()->action($this->production, []);
+    $jobOrderItem = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $task = $jobOrderItem->tasks()->first();
+
+    $hold      = fn (bool $onHold) => \App\Actions\Production\JobOrder\HoldJobOrder::make()->action($jobOrder, ['on_hold' => $onHold, 'kind' => 'missing_label', 'reason' => 'No labels'], $user);
+    $floorHas  = fn () => collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->viewData('page')['props']['tasks'])->contains('id', $task->id);
+
+    $session = StartManufactureTaskSession::make()->action($user, $task);
+    $hold(true);
+    CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 2]);
+
+    expect($floorHas())->toBeFalse()
+        ->and(fn () => StartManufactureTaskSession::make()->action($user, $task))
+        ->toThrow(ValidationException::class, 'Job order '.$jobOrder->reference.' is on hold');
+
+    $hold(false);
+
+    expect($floorHas())->toBeTrue();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $task), ['quantity_made' => 3]);
+    expect($task->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    $otherJobOrder = StoreJobOrder::make()->action($this->production, []);
+    $otherTask     = StoreJobOrderItem::make()->action($otherJobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4])->tasks()->first();
+    $heldJobOrder  = StoreJobOrder::make()->action($this->production, []);
+    $heldTask      = StoreJobOrderItem::make()->action($heldJobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 4])->tasks()->first();
+    ConfirmJobOrder::make()->action($otherJobOrder);
+    ConfirmJobOrder::make()->action($heldJobOrder);
+    \App\Actions\Production\JobOrderItemTask\CombineJobOrderItemTasks::make()->action($this->production, [$otherTask->id, $heldTask->id]);
+    \App\Actions\Production\JobOrder\HoldJobOrder::make()->action($heldJobOrder, ['on_hold' => true, 'kind' => 'missing_label', 'reason' => 'No labels'], $user);
+
+    $floorIds = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['tasks'])->pluck('id');
+    expect($floorIds)->not->toContain($otherTask->id)->not->toContain($heldTask->id)
+        ->and(fn () => StartManufactureTaskSession::make()->action($user, $otherTask))
+        ->toThrow(ValidationException::class, 'Job order '.$heldJobOrder->reference.' is on hold');
+});
