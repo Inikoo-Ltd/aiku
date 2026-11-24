@@ -10010,3 +10010,27 @@ test('backlog per day counts a new delivery note until it is dispatched', functi
     expect($today())->toMatchArray(['backlog' => $before['backlog'], 'dispatched' => $before['dispatched'] + 1])
         ->and(\App\Actions\UI\Dispatch\GetDispatchBacklogHistory::run($this->warehouse, 'all')['interval'])->toBe('1m');
 });
+
+test('backlog forecast follows last year scaled by the last four weeks, with a band from its past misses', function () {
+    $forecast = \App\Actions\UI\Dispatch\ForecastDispatchBacklog::make();
+    $days     = 497;
+    $created  = array_map(fn (int $day) => $day % 7 < 5 ? 100 : 0, range(0, $days - 1));
+    $closed   = $created;
+
+    expect($forecast->projection($created, $closed, 500))->toHaveCount(28)
+        ->each->toMatchArray(['backlog' => 500, 'low' => 500, 'high' => 500]);
+
+    $doubled = $created;
+    $lastYearAhead = range($days - 364, $days - 337);
+    foreach ($lastYearAhead as $day) {
+        $doubled[$day] *= 2;
+    }
+    $workingDaysAhead = count(array_filter($lastYearAhead, fn (int $day) => $created[$day] > 0));
+    $grown            = $forecast->projection($doubled, $closed, 500);
+    expect($grown[27]['backlog'])->toBe(500 + 100 * $workingDaysAhead)
+        ->and($grown[27]['low'])->toBeLessThanOrEqual($grown[27]['backlog'])
+        ->and($grown[27]['high'])->toBeGreaterThanOrEqual($grown[27]['backlog']);
+
+    expect($forecast->projection(array_slice($created, 0, 300), array_slice($closed, 0, 300), 500))->toBe([])
+        ->and($forecast->projection($created, array_map(fn (int $count) => $count * 3, $closed), 50)[27]['backlog'])->toBe(0);
+});

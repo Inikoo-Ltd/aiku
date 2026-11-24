@@ -8,7 +8,6 @@
 
 namespace App\Actions\UI\Dispatch;
 
-use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -20,9 +19,15 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetDispatchBacklogHistory
 {
     use AsObject;
-    use WithDeliveryNotesChannel;
 
     public const string DEFAULT_INTERVAL = '1m';
+
+    public const string CLOSED_AT_SQL = "case delivery_notes.state when 'dispatched' then coalesce(delivery_notes.dispatched_at, delivery_notes.finalised_at, delivery_notes.packed_at, delivery_notes.picked_at, delivery_notes.handling_at, delivery_notes.queued_at, delivery_notes.created_at) when 'cancelled' then coalesce(delivery_notes.cancelled_at, delivery_notes.handling_at, delivery_notes.queued_at, delivery_notes.created_at) end";
+
+    public static function channelSql(): string
+    {
+        return "case when ".Shop::dispatchingChannelSql()." = '".ShopTypeEnum::EXTERNAL->value."' then '".ShopTypeEnum::B2B->value."' else ".Shop::dispatchingChannelSql()." end";
+    }
 
     public static function intervalOptions(): array
     {
@@ -39,7 +44,7 @@ class GetDispatchBacklogHistory
     }
 
     /**
-     * @return array{interval: string, channels: array<int, array{value: string, label: string}>, daily: array<int, array{date: string, channels: array<string, array{backlog: int, created: int, dispatched: int, cancelled: int}>}>}
+     * @return array{forecast: array<string, list<array{date: string, backlog: int, low: int, high: int}>>, interval: string, channels: array<int, array{value: string, label: string}>, daily: array<int, array{date: string, channels: array<string, array{backlog: int, created: int, dispatched: int, cancelled: int}>}>}
      */
     public function handle(Warehouse $warehouse, string $interval): array
     {
@@ -53,8 +58,8 @@ class GetDispatchBacklogHistory
             ? [now($timezone)->subMonths(18)->startOfDay()->utc(), now($timezone)->endOfDay()->utc()]
             : ShowTicketsReports::make()->range($interval, null, $timezone);
 
-        $closedAt = "case delivery_notes.state when 'dispatched' then coalesce(delivery_notes.dispatched_at, delivery_notes.finalised_at, delivery_notes.packed_at, delivery_notes.picked_at, delivery_notes.handling_at, delivery_notes.queued_at, delivery_notes.created_at) when 'cancelled' then coalesce(delivery_notes.cancelled_at, delivery_notes.handling_at, delivery_notes.queued_at, delivery_notes.created_at) end";
-        $channel  = "case when ".Shop::dispatchingChannelSql()." = '".ShopTypeEnum::B2B->value."' and exists (select 1 from org_partners where org_partners.partner_id = delivery_notes.organisation_id and org_partners.customer_id = delivery_notes.customer_id) then '".self::PARTNERS_CHANNEL."' else ".Shop::dispatchingChannelSql()." end";
+        $closedAt = self::CLOSED_AT_SQL;
+        $channel  = self::channelSql();
 
         $deliveryNotes = DB::table('delivery_notes')
             ->join('shops', 'delivery_notes.shop_id', '=', 'shops.id')
@@ -89,7 +94,7 @@ class GetDispatchBacklogHistory
         }
 
         $channels = collect(array_keys($opening + array_merge([], ...array_values($deltas))))
-            ->sortBy(fn (string $channel) => array_search($channel, ['b2b', self::PARTNERS_CHANNEL, 'external', 'b2c', 'dropshipping', 'fulfilment']))
+            ->sortBy(fn (string $channel) => array_search($channel, ['b2b', 'b2c', 'dropshipping', 'fulfilment']))
             ->values();
 
         $backlog = $opening;
@@ -112,7 +117,12 @@ class GetDispatchBacklogHistory
             $cursor->addDay();
         }
 
+        $today = now($timezone)->toDateString();
+
         return [
+            'forecast' => count($daily) > 1 && end($daily)['date'] === $today
+                ? ForecastDispatchBacklog::run($warehouse, array_map(fn (array $day) => $day['backlog'], $daily[count($daily) - 2]['channels']))
+                : [],
             'interval' => $interval,
             'options'  => self::intervalOptions(),
             'channels' => $channels->map(fn (string $channelKey) => ['value' => $channelKey, 'label' => $this->channelLabel($channelKey)])->all(),
@@ -123,9 +133,7 @@ class GetDispatchBacklogHistory
     private function channelLabel(string $channel): string
     {
         return match ($channel) {
-            ShopTypeEnum::B2B->value          => __('Wholesale'),
-            self::PARTNERS_CHANNEL            => __('Partners'),
-            ShopTypeEnum::EXTERNAL->value     => __('Marketplaces'),
+            ShopTypeEnum::B2B->value          => __('Wholesale, partners & marketplaces'),
             ShopTypeEnum::B2C->value          => __('B2C'),
             ShopTypeEnum::DROPSHIPPING->value => __('Dropshipping'),
             default                           => ucfirst($channel),

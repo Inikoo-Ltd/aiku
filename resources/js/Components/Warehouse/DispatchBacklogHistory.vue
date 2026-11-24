@@ -26,6 +26,7 @@ const props = defineProps<{
         options: Record<string, string>
         channels: { value: string; label: string }[]
         daily: { date: string; channels: Record<string, Day> }[]
+        forecast?: Record<string, { date: string; backlog: number; low: number; high: number }[]>
     }
 }>()
 
@@ -47,25 +48,38 @@ const days = computed(() =>
     })
 )
 
+const forecast = computed(() => props.history.forecast?.[channel.value] ?? [])
+
 const change = computed(() => (days.value.length ? days.value[days.value.length - 1].backlog - days.value[0].backlog : 0))
 
+const label = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })
+
 const chartData = computed(() => {
-    const pointRadius = days.value.length > 40 ? 0 : 2
-    return {
-        labels: days.value.map((day) => new Date(`${day.date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" })),
-        datasets: [
-            { label: ctrans("Backlog"), data: days.value.map((day) => day.backlog), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 2.5, pointRadius },
-            { label: ctrans("New"), data: days.value.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
-            { label: ctrans("Dispatched"), data: days.value.map((day) => day.dispatched), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
-        ],
+    const pointRadius = days.value.length + forecast.value.length > 40 ? 0 : 2
+    const ahead = forecast.value.slice(1).map(() => null)
+    const past = days.value.slice(0, -2).map(() => null)
+    const yesterday = days.value.at(-2)?.backlog ?? 0
+    const datasets: Record<string, unknown>[] = [
+        { label: ctrans("Backlog"), data: [...days.value.map((day) => day.backlog), ...ahead], borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 2.5, pointRadius },
+        { label: ctrans("New"), data: [...days.value.map((day) => day.created), ...ahead], borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
+        { label: ctrans("Dispatched"), data: [...days.value.map((day) => day.dispatched), ...ahead], borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
+    ]
+    if (forecast.value.length) {
+        datasets.push(
+            { label: ctrans("Forecast"), data: [...past, yesterday, ...forecast.value.map((day) => day.backlog)], borderColor: "#f59e0b", backgroundColor: "#f59e0b", borderDash: [6, 4], tension: 0, borderWidth: 2, pointRadius: 0 },
+            { label: ctrans("Likely low"), data: [...past, yesterday, ...forecast.value.map((day) => day.low)], borderColor: "transparent", backgroundColor: "transparent", pointRadius: 0, fill: false, band: true },
+            { label: ctrans("Likely high"), data: [...past, yesterday, ...forecast.value.map((day) => day.high)], borderColor: "transparent", backgroundColor: "rgba(245, 158, 11, 0.15)", pointRadius: 0, fill: "-1", band: true },
+        )
     }
+
+    return { labels: [...days.value.map((day) => label(day.date)), ...forecast.value.slice(1).map((day) => label(day.date))], datasets }
 })
 
 const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
-    plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 12, filter: (item: { datasetIndex: number }, data: { datasets: { band?: boolean }[] }) => !data.datasets[item.datasetIndex].band } } },
     scales: {
         x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0 } },
         y: { beginAtZero: true, ticks: { precision: 0 } },
@@ -90,6 +104,9 @@ const chartOptions = {
                     {{ days.at(-1)?.backlog ?? 0 }} {{ ctrans("now") }} ·
                     <span :class="change > 0 ? 'text-red-600' : change < 0 ? 'text-green-600' : ''">{{ change > 0 ? "+" : "" }}{{ change }}</span>
                     {{ ctrans("in this period") }}
+                    <template v-if="forecast.length">
+                        · {{ ctrans("about :backlog in 4 weeks (likely :low to :high)", { backlog: forecast.at(-1)!.backlog, low: forecast.at(-1)!.low, high: forecast.at(-1)!.high }) }}
+                    </template>
                 </span>
             </template>
             <div class="h-72">
