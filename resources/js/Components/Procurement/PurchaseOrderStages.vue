@@ -162,8 +162,18 @@ const groupGridClass = (count: number): string => {
 const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
 
 const zeroDate = computed(() => props.stages.find((stage) => stage.number === 1)?.date ?? null)
-const zeroOffset = (stage: Stage): number | null => zeroDate.value && stage.date && isComplete(stage) ? daysBetween(zeroDate.value, stage.date) : null
 const zeroOffsetLabel = (offset: number): string => offset < 0 ? `Z${offset}` : `Z+${offset}`
+const zDay = (date: string): string => zeroDate.value ? zeroOffsetLabel(daysBetween(zeroDate.value, date)) : ""
+const showsTarget = (stage: Stage): boolean => stage.number !== 1 && !!stage.planned
+const doneDate = (stage: Stage): string | null => isComplete(stage) && !stage.unpaid ? stage.date : null
+const doneDateClass = (stage: Stage): string => {
+    const done = doneDate(stage)
+    const difference = done && showsTarget(stage) ? daysBetween(stage.planned as string, done) : 0
+    if (difference === 0) {
+        return "text-gray-900"
+    }
+    return difference > 0 ? "text-red-600" : "text-green-700"
+}
 
 const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
@@ -562,6 +572,7 @@ function save() {
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required"><span class="text-green-700">{{ ctrans("Not required") }}</span></template>
                 <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
+                <template v-else-if="doneDate(stage)">{{ ctrans("Done") }}</template>
                 <template v-else-if="stage.date">{{ formatDate(stage.date) }}</template>
                 <template v-else-if="stage.reached">{{ ctrans("Not recorded") }}</template>
                 <template v-else>-</template>
@@ -806,7 +817,19 @@ function save() {
             </div>
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
-            <div v-if="zeroOffset(stage) !== null" class="mt-auto self-end pt-2 text-xs font-medium tabular-nums text-gray-500" v-tooltip="ctrans('Days since stage 1 (Z)')">{{ zeroOffsetLabel(zeroOffset(stage) as number) }}</div>
+            <div class="mt-auto pt-3">
+                <div class="border-t border-gray-200 pt-2 text-xs tabular-nums">
+                    <div class="flex min-h-4 flex-wrap items-baseline justify-between gap-x-2 text-gray-400" v-tooltip="showsTarget(stage) ? stage.planned_note : null">
+                        <template v-if="showsTarget(stage)">
+                            <span>{{ ctrans("Target") }}</span>
+                            <span class="whitespace-nowrap">{{ formatDate(stage.planned as string) }} {{ zDay(stage.planned as string) }}</span>
+                        </template>
+                    </div>
+                    <div class="mt-0.5 min-h-5 whitespace-nowrap text-right text-sm font-semibold" :class="doneDateClass(stage)" v-tooltip="doneDate(stage) ? ctrans('Done. Z is the day of stage 1') : null">
+                        <template v-if="doneDate(stage)">{{ formatDate(doneDate(stage)) }} {{ zDay(doneDate(stage) as string) }}</template>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>
     </div>
