@@ -578,7 +578,7 @@ onBeforeUnmount(() => {
     <Head v-if="!embedded" :title="capitalize(title)" />
     <PageHeading v-if="!embedded" :data="pageHead" />
 
-    <div v-if="!embedded" class="px-2 py-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div v-if="!embedded" class="px-2 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-gray-200">
         <IconField class="w-full sm:w-80">
             <InputIcon>
                 <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" fixed-width aria-hidden="true" />
