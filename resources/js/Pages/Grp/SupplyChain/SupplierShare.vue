@@ -24,12 +24,13 @@ import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue
 import { ctrans } from "@/Composables/useTrans"
 import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/SupplierPortalPurchaseOrderDialog.vue"
 import SupplierPortalOrderPlan, { type OrderPlan } from "@/Components/Procurement/SupplierPortalOrderPlan.vue"
+import SupplierPortalCompliance, { type SupplierComplianceProduct } from "@/Components/Procurement/SupplierPortalCompliance.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar, faCalendarAlt } from "@fal"
+import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar, faCalendarAlt, faClipboardCheck } from "@fal"
 
-library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar, faCalendarAlt)
+library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar, faCalendarAlt, faClipboardCheck)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -78,6 +79,7 @@ const props = defineProps<{
 	purchase_order_complete_route?: string
 	agreement?: PortalAgreement | null
 	order_plan?: OrderPlan
+	compliance?: { products: SupplierComplianceProduct[] }
 }>()
 
 const code = ref("")
@@ -127,7 +129,7 @@ const initials = (name: string) =>
 		.join("")
 		.toUpperCase()
 
-type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "order_plan" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "order_plan" | "compliance" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
 
 const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list", "price_changes"]
 
@@ -137,6 +139,7 @@ const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolea
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
 	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
 	{ key: "order_plan", label: ctrans("Plan for next orders"), icon: "fal fa-calendar-alt" },
+	{ key: "compliance", label: ctrans("Compliance"), icon: "fal fa-clipboard-check" },
 	{ key: "products", label: ctrans("Your Products"), icon: "fal fa-box" },
 	{ key: "price_changes", label: ctrans("Current prices/MOQ"), icon: "fal fa-tags" },
 	{ key: "feedback", label: ctrans("Delivery feedback"), icon: "fal fa-star" },
@@ -171,6 +174,9 @@ const startProduction = (purchaseOrderId: number) => {
 	startsProduction.value = true
 	openPurchaseOrderId.value = purchaseOrderId
 }
+
+const complianceSubmitUrl = computed(() => (props.preview ? null : props.forms?.submit?.compliance_document ?? null))
+const reloadCompliance = () => router.reload({ only: ["compliance", "order_plan", "details"] })
 
 const reloadPurchaseOrderStages = () => {
 	if (props.purchase_order_stages) {
@@ -318,7 +324,14 @@ onMounted(() => {
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
 
-				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" :forms="forms" @open="openPurchaseOrderId = $event" />
+				<SupplierPortalOrderPlan v-else-if="tab === 'order_plan'" :plan="order_plan" :accent="accent" :forms="forms" @open="openPurchaseOrderId = $event" @compliance="go('compliance')" />
+
+				<section v-else-if="tab === 'compliance'" class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+					<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("Compliance documents of your products") }}</h2>
+					<p class="mb-3 text-xs text-gray-500">{{ ctrans("The products on your open orders and in the plan for next orders. Click a document to see it or send a new file: AW Group reviews it before it is used.") }}</p>
+					<SupplierPortalCompliance v-if="compliance" :products="compliance.products" :submitUrl="complianceSubmitUrl" :fileRoute="submission_file_route" @sent="reloadCompliance" />
+					<div v-else class="skeleton h-40 rounded-lg" />
+				</section>
 
 				<SupplierPortalPriceChanges
 					v-else-if="tab === 'price_changes' && price_changes && forms"
@@ -343,7 +356,7 @@ onMounted(() => {
 			</div>
 		</main>
 
-		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" v-model:start-production="startsProduction" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" :deposit-route="purchase_order_deposit_route" :notes-route="purchase_order_notes_route" :documents-route="purchase_order_documents_route" :complete-route="purchase_order_complete_route" @agreement="go('agreement')" @production-saved="reloadPurchaseOrderStages" />
+		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" v-model:start-production="startsProduction" :purchase-order-route="purchase_order_route" :production-route="purchase_order_production_route" :deposit-route="purchase_order_deposit_route" :notes-route="purchase_order_notes_route" :documents-route="purchase_order_documents_route" :complete-route="purchase_order_complete_route" :compliance-submit-url="complianceSubmitUrl" :submission-file-route="submission_file_route" @agreement="go('agreement')" @production-saved="reloadPurchaseOrderStages" />
 
 		<footer class="fixed bottom-0 left-0 z-20 flex h-6 w-screen items-center justify-between gap-x-4 bg-black px-4 text-xs text-slate-400">
 			<a href="https://aiku.io/" target="_blank" rel="noopener" class="flex shrink-0 items-center gap-x-1.5 whitespace-nowrap hover:text-white">

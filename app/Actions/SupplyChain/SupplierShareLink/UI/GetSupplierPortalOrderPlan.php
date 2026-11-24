@@ -58,9 +58,11 @@ class GetSupplierPortalOrderPlan
     private const array IRREGULAR_SOURCES = ['croston'];
 
     /**
+     * Each product also says whether one of its compliance documents needs the supplier (GetSupplierPortalCompliance).
+     *
      * @return array{as_of: string|null, currency: string|null, horizon_days: int, months: array<int, array<string, mixed>>, products: array<int, array<string, mixed>>}
      */
-    public function handle(Supplier $supplier): array
+    public function handle(Supplier $supplier, bool $withCompliance = true): array
     {
         $today  = now()->startOfDay();
         $months = collect(range(0, (int) $today->copy()->startOfMonth()->diffInMonths($today->copy()->addDays(self::HORIZON_DAYS)->startOfMonth())))
@@ -70,6 +72,10 @@ class GetSupplierPortalOrderPlan
             ->flatMap(fn (OrgSupplier $orgSupplier) => $this->rows($orgSupplier, $today));
         $productIds = $rows->pluck('supplier_product_id')->unique()->all();
         $products   = $this->byProduct($rows, $months, $this->openOrders($supplier, $productIds), $this->planningNotes($supplier, $productIds));
+        if ($withCompliance) {
+            $needingAttention = GetSupplierPortalCompliance::make()->needingAttention($supplier, $products->pluck('id'));
+            $products         = $products->map(fn (array $product) => [...$product, 'compliance_attention' => $needingAttention->contains($product['id'])]);
+        }
 
         return [
             'as_of'        => $rows->max('forecast_at') ? Carbon::parse($rows->max('forecast_at'))->toDateString() : null,

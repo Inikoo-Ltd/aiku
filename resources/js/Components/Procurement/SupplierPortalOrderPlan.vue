@@ -60,6 +60,7 @@ export interface OrderPlanProduct {
 	organisations: { name: string; status: PlanStatus; reason: NoOrderReason | null; order_on: string | null; order_from: string | null; order_to: string | null; units_low: number; units_high: number }[]
 	open_orders: { id: number; reference: string; units: number }[]
 	planning_notes: PlanningNote[]
+	compliance_attention?: boolean
 }
 
 export interface PlanningNote extends EditedSubmission {
@@ -100,7 +101,7 @@ const planMaterials = (product: OrderPlanProduct, note: PlanningNote | null = nu
 	editingNote.value = note
 }
 
-const emit = defineEmits<{ open: [purchaseOrderId: number] }>()
+const emit = defineEmits<{ open: [purchaseOrderId: number]; compliance: [] }>()
 
 const locale = useLocaleStore()
 
@@ -384,6 +385,7 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 										<div class="min-w-0">
 											<div class="whitespace-nowrap font-medium text-gray-900">{{ product.code }}</div>
 											<div class="text-xs text-gray-500">{{ product.name }}</div>
+											<button v-if="product.compliance_attention" type="button" class="mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100" v-tooltip="ctrans('A compliance document expires soon, has expired or was sent back to you')" @click="emit('compliance')"><FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />{{ ctrans("Compliance needs attention") }}</button>
 											<div v-if="product.flags.length" class="mt-1 flex flex-wrap gap-1">
 												<span v-for="flag in product.flags" :key="flag" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-800">{{ flagLabels[flag] }}</span>
 											</div>
@@ -461,6 +463,7 @@ const organisationLine = (organisation: OrderPlanProduct["organisations"][number
 							<div class="min-w-0 flex-1">
 								<div class="whitespace-nowrap font-medium text-gray-900">{{ product.code }}</div>
 								<div class="text-xs text-gray-500">{{ product.name }}</div>
+								<button v-if="product.compliance_attention" type="button" class="mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100" v-tooltip="ctrans('A compliance document expires soon, has expired or was sent back to you')" @click="emit('compliance')"><FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />{{ ctrans("Compliance needs attention") }}</button>
 								<div class="mt-1 text-xs" :class="product.status === 'estimate' ? 'text-gray-700' : 'text-gray-400'">
 									{{ product.status === "estimate" ? `${ctrans("System estimate")} · ${ctrans("Not yet reviewed by AW")}` : `${ctrans("No order currently indicated")}${product.reason ? ` · ${reasonLabels[product.reason]}` : ""}` }}
 								</div>

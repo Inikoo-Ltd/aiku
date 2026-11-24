@@ -186,6 +186,7 @@ class NotifyOfSupplierComplianceDocument
     {
         $parts = array_filter([
             $submission->supplierProduct?->name,
+            Arr::get($submission->data, 'purchase_order_reference') ? __('For purchase order :reference', ['reference' => Arr::get($submission->data, 'purchase_order_reference')]) : null,
             $submission->expires_on ? __('Expires :date', ['date' => $submission->expires_on->toDateString()]) : null,
             Arr::get($submission->data, 'note'),
         ]);

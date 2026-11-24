@@ -94,6 +94,7 @@ const fieldLabels: Record<string, string> = {
 	dimensions: ctrans("Dimensions"),
 	packaging: ctrans("Packaging"),
 	document_type: ctrans("Document"),
+	purchase_order_reference: ctrans("Purchase order"),
 	effective_from: ctrans("From"),
 	effective_until: ctrans("Until"),
 	reason: ctrans("Why"),
@@ -122,7 +123,7 @@ const fieldValue = (field: string, value: unknown) => {
 	return value
 }
 
-const HIDDEN_FIELDS = ["plan", "escalated_for", "decisions"]
+const HIDDEN_FIELDS = ["plan", "escalated_for", "decisions", "purchase_order_id"]
 const shownData = computed(() => Object.fromEntries(Object.entries(props.submission.data).filter(([field]) => !HIDDEN_FIELDS.includes(field))))
 
 const plan = computed(() => props.submission.data.plan as { as_of: string; status: string; order_from: string | null; order_to: string | null; arrive_from: string | null; arrive_to: string | null; units_low: number; units_high: number; cartons_low: number | null; cartons_high: number | null } | undefined)

@@ -13,16 +13,20 @@ use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProduc
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderCompliance;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalOrderPlan;
+use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalPurchaseOrders;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use App\Models\SupplyChain\SupplierSubmission;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -68,6 +72,9 @@ class StoreSupplierPortalSubmission
 
         if ($type === SupplierSubmissionTypeEnum::MATERIAL_PLANNING) {
             $modelData['plan'] = $this->planOf($link, (int) $modelData['supplier_product_id']);
+        }
+        if ($type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT && Arr::get($modelData, 'purchase_order_id')) {
+            $modelData['purchase_order_reference'] = PurchaseOrder::find($modelData['purchase_order_id'])?->reference;
         }
 
         $fields = [
@@ -147,7 +154,7 @@ class StoreSupplierPortalSubmission
      */
     private function planOf(SupplierShareLink $link, int $supplierProductId): ?array
     {
-        $product = collect(GetSupplierPortalOrderPlan::make()->handle($link->supplier)['products'])->firstWhere('id', $supplierProductId);
+        $product = collect(GetSupplierPortalOrderPlan::make()->handle($link->supplier, withCompliance: false)['products'])->firstWhere('id', $supplierProductId);
         if (!$product) {
             return null;
         }
@@ -222,6 +229,16 @@ class StoreSupplierPortalSubmission
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => [
                 'document_type'       => ['required', Rule::in(array_keys(self::complianceDocumentTypes()))],
                 'supplier_product_id' => ['required', ...array_slice($product, 1)],
+                'purchase_order_id'   => ['nullable', 'integer', function (string $attribute, mixed $value, \Closure $fail) {
+                    $isOnOpenOrder = IndexSupplierPortalPurchaseOrders::make()->sent($this->link->supplier)
+                        ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::open())
+                        ->where('purchase_orders.id', $value)
+                        ->whereHas('purchaseOrderTransactions', fn ($query) => $query->where('supplier_product_id', request()->input('supplier_product_id')))
+                        ->exists();
+                    if (!$isOnOpenOrder) {
+                        $fail(__('This product is not on that open order.'));
+                    }
+                }],
                 'expires_on'          => ['nullable', 'date', 'after:today'],
                 'note'                => $text(2000),
                 ...$files('pdf,jpg,jpeg,png', true),
@@ -312,13 +329,17 @@ class StoreSupplierPortalSubmission
         return ['phone.required_without_all' => __('Change at least the phone, the website or the address.')];
     }
 
-    public function asController(string $token, string $type, Request $request): RedirectResponse
+    public function asController(string $token, string $type, Request $request): RedirectResponse|JsonResponse
     {
         $this->link = SupplierShareLink::findLiveByToken($token);
         $this->type = SupplierSubmissionTypeEnum::tryFrom($type) ?? abort(404);
         abort_if($this->link->needsCode(), 403);
 
-        $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate());
+        $submission = $this->handle($this->link, $this->type, Validator::make($request->all(), $this->submissionRules(), $this->submissionMessages())->validate());
+
+        if ($request->expectsJson() && !$request->header('X-Inertia')) {
+            return response()->json(['id' => $submission->id, 'state' => $submission->state->value]);
+        }
 
         return back()->with('submitted', $this->type->value);
     }

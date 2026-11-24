@@ -59,7 +59,7 @@ class ShowSupplierPortalPurchaseOrder
     ];
 
     /**
-     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, completion: array<string, mixed>, notes: array{note_list: list<array<string, mixed>>}, lines: list<array<string, mixed>>}
+     * @return array{order: array<string, mixed>, journey: array<string, mixed>|null, payments: array<string, mixed>, deposit: array<string, mixed>, production: array<string, mixed>, documents: array<string, mixed>, compliance: array{open: bool, products: list<array<string, mixed>>}, completion: array<string, mixed>, notes: array{note_list: list<array<string, mixed>>}, lines: list<array<string, mixed>>}
      */
     public function handle(Supplier $supplier, int $purchaseOrderId, ?string $token = null): array
     {
@@ -104,6 +104,13 @@ class ShowSupplierPortalPurchaseOrder
             'deposit'    => $this->deposit($purchaseOrder, $supplier),
             'production' => [...$this->production($purchaseOrder), 'production_days' => $this->productionDays($journey, $supplier)],
             'documents'  => $this->documents($purchaseOrder, $token),
+            'compliance' => [
+                'open'     => $open,
+                'products' => GetSupplierPortalCompliance::make()->forProducts(
+                    $supplier,
+                    $lines->reject(fn (PurchaseOrderTransaction $line) => $line->state === PurchaseOrderTransactionStateEnum::CANCELLED)->pluck('supplier_product_id')
+                ),
+            ],
             'completion' => $this->completion($purchaseOrder),
             'notes'      => GetPurchaseOrderNotes::run($purchaseOrder, GetPurchaseOrderNotes::VIEWER_SUPPLIER, true),
             'lines'      => $lines->map(fn (PurchaseOrderTransaction $line) => $this->line($line, $purchaseOrder))->values()->all(),

@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import SupplierPortalCompliance, { type SupplierComplianceProduct } from "@/Components/Procurement/SupplierPortalCompliance.vue"
 import { computed, ref, watch } from "vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
@@ -102,6 +103,10 @@ interface PurchaseOrderDetail {
 	notes: {
 		note_list: (PDRNotes & { placeholder?: string | null })[]
 	}
+	compliance?: {
+		open: boolean
+		products: SupplierComplianceProduct[]
+	}
 	documents: {
 		open: boolean
 		types: { value: string; label: string }[]
@@ -138,6 +143,8 @@ const props = defineProps<{
 	documentsRoute?: string
 	completeRoute?: string
 	notesRoute?: string
+	complianceSubmitUrl?: string | null
+	submissionFileRoute?: string | null
 }>()
 
 const purchaseOrderId = defineModel<number | null>({ required: true })
@@ -164,6 +171,17 @@ const isVisible = computed({
 		}
 	},
 })
+
+const reloadCompliance = async () => {
+	const id = purchaseOrderId.value
+	if (id === null) {
+		return
+	}
+	const { data } = await axios.get<PurchaseOrderDetail>(props.purchaseOrderRoute.replace(/\/0$/, `/${id}`))
+	if (purchaseOrderId.value === id && detail.value) {
+		detail.value.compliance = data.compliance
+	}
+}
 
 watch(purchaseOrderId, async (id) => {
 	detail.value = null
@@ -881,6 +899,21 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 					<Button v-if="documentsRoute && detail.documents.open" type="tertiary" size="xs" :label="ctrans('Upload documents')" @click="openDocumentsUpload">
 						<template #icon><FontAwesomeIcon icon="fal fa-upload" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 					</Button>
+				</div>
+			</section>
+
+			<section v-if="detail.compliance?.products.length" class="overflow-hidden rounded-lg border border-gray-200">
+				<div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Compliance documents") }}</div>
+				<div class="space-y-3 p-3">
+					<p class="text-xs text-gray-500">{{ ctrans("The compliance documents of the products on this order. Click a document to see it or send a new file for this order.") }}</p>
+					<SupplierPortalCompliance
+						:products="detail.compliance.products"
+						:submitUrl="detail.compliance.open ? complianceSubmitUrl : null"
+						:fileRoute="submissionFileRoute"
+						:purchaseOrderId="detail.order.id"
+						compact
+						@sent="reloadCompliance"
+					/>
 				</div>
 			</section>
 

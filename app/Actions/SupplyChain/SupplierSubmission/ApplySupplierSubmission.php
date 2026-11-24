@@ -227,8 +227,10 @@ class ApplySupplierSubmission
         $pivotData = json_encode(array_filter([
             'supplier_submission_id' => $supplierSubmission->id,
             'supplier_id'            => $supplierSubmission->supplier_id,
-            'supplier_code'          => $supplierSubmission->supplier->code,
-            'expires_on'             => $supplierSubmission->expires_on?->toDateString(),
+            'supplier_code'            => $supplierSubmission->supplier->code,
+            'expires_on'               => $supplierSubmission->expires_on?->toDateString(),
+            'purchase_order_id'        => Arr::get($supplierSubmission->data, 'purchase_order_id'),
+            'purchase_order_reference' => Arr::get($supplierSubmission->data, 'purchase_order_reference'),
         ]));
 
         $mediaIds = [];
