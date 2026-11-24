@@ -37,9 +37,13 @@ class StartSlackConnection
         return config('services.slack.client_id') && config('services.slack.client_secret') && config('services.slack.team_id');
     }
 
+    /**
+     * The callback on the app's own domain (app.aiku.io), from the route's fixed domain, never the request host.
+     * It must be listed verbatim under Redirect URLs in the Slack app; app.url is the bare domain and Slack refuses it.
+     */
     public static function redirectUri(): string
     {
-        return rtrim((string) config('app.url'), '/').'/'.ltrim((string) config('services.slack.connect_redirect_path'), '/');
+        return route('grp.chat.staff.slack.connect.callback');
     }
 
     public static function unavailableReason(User $user): ?string

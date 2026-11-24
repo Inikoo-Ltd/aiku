@@ -97,6 +97,8 @@ beforeEach(function () {
             ->and($query)->not->toHaveKey('scope')
             ->and($query['client_id'])->toBe('client-id-test')
             ->and($query['redirect_uri'])->toBe(StartSlackConnection::redirectUri())
+            ->and(parse_url($query['redirect_uri'], PHP_URL_HOST))->toBe(parse_url(route('grp.profile.edit'), PHP_URL_HOST))
+            ->and(parse_url($query['redirect_uri'], PHP_URL_PATH))->toBe('/chat/staff/slack-connect/callback')
             ->and($query['state'])->toBe(session(StartSlackConnection::STATE_KEY)['value']);
 
         return $query['state'];
