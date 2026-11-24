@@ -20,6 +20,8 @@ use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
 use App\Notifications\PurchaseOrderPriceChangeAnsweredNotification;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use Illuminate\Validation\ValidationException;
@@ -71,9 +73,48 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
         });
     }
 
+    /**
+     * The same product's other lines, in this organisation's other open orders, where the supplier also asks a new price
+     * that is still waiting for an answer: the buyer can accept them together.
+     *
+     * @return Collection<int, PurchaseOrderTransaction>
+     */
+    public static function pendingSiblings(PurchaseOrderTransaction $purchaseOrderTransaction): Collection
+    {
+        if ($purchaseOrderTransaction->supplier_product_id === null && $purchaseOrderTransaction->org_stock_id === null) {
+            return collect();
+        }
+
+        return PurchaseOrderTransaction::query()
+            ->with('purchaseOrder')
+            ->where('organisation_id', $purchaseOrderTransaction->organisation_id)
+            ->whereKeyNot($purchaseOrderTransaction->id)
+            ->when(
+                $purchaseOrderTransaction->supplier_product_id !== null,
+                fn ($query) => $query->where('supplier_product_id', $purchaseOrderTransaction->supplier_product_id),
+                fn ($query) => $query->where('org_stock_id', $purchaseOrderTransaction->org_stock_id)
+            )
+            ->where('price_query_state', PurchaseOrderTransactionPriceQueryStateEnum::PENDING)
+            ->whereIn('state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', PurchaseOrderStateEnum::open()))
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (PurchaseOrderTransaction $sibling) => AskPurchaseOrderTransactionPriceChange::isAskable($sibling))
+            ->values();
+    }
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         $this->addAnswerErrors($validator);
+
+        $siblingIds = $this->get('also_accept_transaction_ids', []);
+        if (!empty($siblingIds)) {
+            if ($this->get('answer') !== PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value) {
+                $validator->errors()->add('also_accept_transaction_ids', __('Only an accepted price can be accepted on other orders too'));
+            } elseif (array_diff($siblingIds, self::pendingSiblings($this->purchaseOrderTransaction)->pluck('id')->all())) {
+                $validator->errors()->add('also_accept_transaction_ids', __('The new price on another order is no longer waiting for an answer, reload the page'));
+            }
+        }
 
         if (!$this->asAction && $request->boolean('update_supplier_cost') && !$request->user()?->authTo('supply-chain.edit')) {
             $validator->errors()->add('update_supplier_cost', __('You do not have permission to change supplier prices'));
@@ -106,6 +147,8 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
             ])],
             'unit_cost'            => ['required_if:answer,adjusted', 'nullable', 'numeric', 'gt:0'],
             'update_supplier_cost' => ['sometimes', 'boolean'],
+            'also_accept_transaction_ids'   => ['sometimes', 'array'],
+            'also_accept_transaction_ids.*' => ['integer'],
         ];
     }
 
@@ -124,8 +167,24 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
         $this->purchaseOrderTransaction = $purchaseOrderTransaction;
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
-        $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction, $this->validatedData);
+        $siblings = self::pendingSiblings($purchaseOrderTransaction)->whereIn('id', $this->validatedData['also_accept_transaction_ids'] ?? []);
+
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrderTransaction, $siblings) {
+            $answered = $this->handle($purchaseOrderTransaction, Arr::except($this->validatedData, 'also_accept_transaction_ids'));
+
+            foreach ($siblings as $sibling) {
+                AnswerPurchaseOrderTransactionPriceChange::make()->action($sibling, [
+                    'answer' => PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value,
+                ]);
+            }
+
+            return $answered;
+        });
+
         $this->notifyAgent($purchaseOrder, $purchaseOrderTransaction, $request->user());
+        foreach ($siblings as $sibling) {
+            $this->notifyAgent($sibling->purchaseOrder, $sibling->refresh(), $request->user());
+        }
 
         return back();
     }

@@ -10,6 +10,8 @@ import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
+import Checkbox from "primevue/checkbox"
+import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faTags, faPen } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -27,9 +29,24 @@ type PriceQuery = {
 	asked_by: string | null
 }
 
+type PriceQuerySibling = {
+	id: number
+	purchase_order: string
+	purchase_order_url: string
+	net_currency: string | null
+	unit_cost: number | string | null
+	new_unit_cost: number | string
+	previous_unit_cost: number | string | null
+	note: string | null
+	asked_by: string | null
+}
+
 const props = defineProps<{
 	item: {
 		code: string
+		name?: string | null
+		image_thumbnail?: object | null
+		image_preview?: object | null
 		unit_cost: number | string
 		net_currency?: string
 		supplier_unit_cost?: number | string | null
@@ -37,6 +54,7 @@ const props = defineProps<{
 		price_query: PriceQuery | null
 		askPriceRoute: routeType | null
 		answerPriceRoute: routeType | null
+		price_query_siblings?: PriceQuerySibling[]
 	}
 	unitsPerLevel: number
 	costLabel: string
@@ -45,9 +63,13 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
-const money = (unitCost: number | string | null) => locale.currencyFormat(props.item.net_currency ?? "EUR", Number(unitCost ?? 0) * props.unitsPerLevel)
+const money = (unitCost: number | string | null, currency?: string | null) =>
+	locale.currencyFormatUnitCost(currency ?? props.item.net_currency ?? "EUR", Number(unitCost ?? 0) * props.unitsPerLevel)
+
+const siblings = computed(() => props.item.price_query_siblings ?? [])
+const alsoAcceptIds = ref<number[]>([])
 
 const query = computed(() => props.item.price_query)
 const isPending = computed(() => query.value?.state === "pending")
@@ -61,9 +83,43 @@ const stateStyles: Record<PriceQuery["state"], { icon: typeof faTags; iconClass:
 
 const stateStyle = computed(() => (query.value ? stateStyles[query.value.state] : null))
 
+const confirmLabel = computed(() => {
+	if (dialog.value === "ask") {
+		return ctrans("Ask the organisation")
+	}
+	if (dialog.value === "accept") {
+		return alsoAcceptIds.value.length
+			? ctrans("Accept on :count orders", { count: alsoAcceptIds.value.length + 1 })
+			: ctrans("Accept on this order only")
+	}
+
+	return ctrans("Save price")
+})
+
+function confirmDialog() {
+	if (dialog.value === "ask") {
+		ask()
+	} else if (dialog.value === "accept") {
+		answer("accepted")
+	} else {
+		answer("adjusted")
+	}
+}
+
+const dialogHeader = computed(() => {
+	if (dialog.value === "ask") {
+		return ctrans("New supplier price for :code", { code: props.item.code })
+	}
+	if (dialog.value === "accept") {
+		return ctrans("Accept the new price for :code", { code: props.item.code })
+	}
+
+	return ctrans("Your price for :code", { code: props.item.code })
+})
+
 const isWaitingForAnswer = computed(() => isPending.value && !!props.item.answerPriceRoute)
 
-const dialog = ref<"ask" | "adjust" | null>(null)
+const dialog = ref<"ask" | "adjust" | "accept" | null>(null)
 const answeringWith = ref<"accepted" | "rejected" | "adjusted" | null>(null)
 
 const form = useForm<{ price: number | null; note: string | null }>({
@@ -91,6 +147,17 @@ function askStartCost() {
 	}
 
 	return currentSupplierUnitCost.value ?? props.item.unit_cost
+}
+
+function onAccept() {
+	if (!siblings.value.length) {
+		answer("accepted")
+		return
+	}
+
+	form.clearErrors()
+	alsoAcceptIds.value = siblings.value.map((sibling) => sibling.id)
+	dialog.value = "accept"
 }
 
 function openDialog(kind: "ask" | "adjust") {
@@ -130,6 +197,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 			answer: answerValue,
 			update_supplier_cost: answerValue !== "rejected" && !!props.updateSupplierCost,
 			...(answerValue === "adjusted" ? { unit_cost: unitCost() } : {}),
+			...(answerValue === "accepted" && dialog.value === "accept" ? { also_accept_transaction_ids: alsoAcceptIds.value } : {}),
 		}))
 		.patch(route(answerRoute.name, answerRoute.parameters), {
 			preserveScroll: true,
@@ -172,7 +240,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 					:label="ctrans('Accept')"
 					:loading="answeringWith === 'accepted'"
 					:disabled="!!answeringWith && answeringWith !== 'accepted'"
-					@click="answer('accepted')"
+					@click="onAccept"
 				>
 					<template #icon>
 						<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
@@ -215,12 +283,58 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 		<Dialog
 			:visible="!!dialog"
 			modal
-			:header="dialog === 'ask' ? ctrans('New supplier price for :code', { code: item.code }) : ctrans('Your price for :code', { code: item.code })"
+			:header="dialogHeader"
 			:style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
 			:draggable="false"
 			@update:visible="(visible) => !visible && (dialog = null)"
 		>
-			<div class="space-y-3 text-sm">
+			<div v-if="dialog === 'accept' && query" class="space-y-3 text-sm">
+				<div class="flex items-center gap-3">
+					<div class="h-24 w-24 flex-none overflow-hidden rounded border border-gray-100">
+						<Image :src="item.image_preview ?? item.image_thumbnail" imageCover class="h-24 w-24" />
+					</div>
+					<div class="min-w-0">
+						<div class="whitespace-nowrap font-semibold">{{ item.code }}</div>
+						<div v-if="item.name" class="text-xs text-gray-600">{{ item.name }}</div>
+					</div>
+				</div>
+				<div class="rounded border border-green-200 bg-green-50 px-3 py-2">
+					<div class="text-xs font-medium text-gray-500">{{ ctrans("This order") }}</div>
+					<div class="tabular-nums">
+						{{ money(query.previous_unit_cost) }} → <span class="font-semibold">{{ money(query.unit_cost) }}</span>
+						<span class="text-xs text-gray-500">({{ costLabel }})</span>
+					</div>
+					<div v-if="query.note" class="text-xs italic text-gray-600">{{ ctrans("Reason: :note", { note: query.note }) }}</div>
+				</div>
+
+				<div class="space-y-1.5">
+					<p class="text-xs text-gray-600">{{ ctrans("The supplier also asks a new price for :code on other orders. Accept those too:", { code: item.code }) }}</p>
+					<label
+						v-for="sibling in siblings"
+						:key="sibling.id"
+						class="flex cursor-pointer items-start gap-2 rounded border px-3 py-2 hover:bg-gray-50"
+						:class="alsoAcceptIds.includes(sibling.id) ? 'border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)]' : 'border-gray-200'"
+					>
+						<Checkbox v-model="alsoAcceptIds" :value="sibling.id" class="mt-0.5" />
+						<div class="min-w-0 flex-1 space-y-0.5">
+							<a :href="sibling.purchase_order_url" target="_blank" class="whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline" @click.stop>
+								{{ sibling.purchase_order }}
+							</a>
+							<div class="tabular-nums">
+								{{ money(sibling.unit_cost ?? sibling.previous_unit_cost, sibling.net_currency) }} →
+								<span class="font-semibold">{{ money(sibling.new_unit_cost, sibling.net_currency) }}</span>
+								<span class="text-xs text-gray-500">({{ costLabel }})</span>
+							</div>
+							<div class="text-xs italic text-gray-600">
+								{{ sibling.note ? ctrans("Reason: :note", { note: sibling.note }) : ctrans("No reason given") }}
+							</div>
+							<div v-if="sibling.asked_by" class="text-xs text-gray-500">{{ ctrans("Asked by :name", { name: sibling.asked_by }) }}</div>
+						</div>
+					</label>
+				</div>
+				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
+			</div>
+			<div v-else class="space-y-3 text-sm">
 				<p class="text-gray-600">
 					{{ ctrans("Current price: :price", { price: money(item.unit_cost) }) }} <span class="text-gray-500">({{ costLabel }})</span>
 				</p>
@@ -238,22 +352,25 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<template #footer>
-				<Button type="tertiary" :label="ctrans('Cancel')" @click="dialog = null">
-					<template #icon>
-						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button
-					type="tertiary"
-					:label="dialog === 'ask' ? ctrans('Ask the organisation') : ctrans('Save price')"
-					:loading="form.processing"
-					:disabled="!form.price"
-					@click="dialog === 'ask' ? ask() : answer('adjusted')"
-				>
-					<template #icon>
-						<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="dialog = null">
+						<template #icon>
+							<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button
+						type="primary"
+						full
+						:label="confirmLabel"
+						:loading="form.processing"
+						:disabled="dialog !== 'accept' && !form.price"
+						@click="confirmDialog"
+					>
+						<template #icon>
+							<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</template>
 		</Dialog>
 	</div>

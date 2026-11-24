@@ -10,6 +10,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
@@ -127,7 +128,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'post',
             ] : null,
-            'answerPriceRoute'     => $this->canOrganisationAnswer($transaction, $request, $transaction->price_query_state === PurchaseOrderTransactionPriceQueryStateEnum::PENDING) ? [
+            'answerPriceRoute'     => ($canAnswerPrice = $this->canOrganisationAnswer($transaction, $request, $transaction->price_query_state === PurchaseOrderTransactionPriceQueryStateEnum::PENDING)) ? [
                 'name'       => 'grp.models.purchase-order.transaction.price_change.answer',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -135,6 +136,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ] : null,
+            'price_query_siblings' => $canAnswerPrice ? $this->priceQuerySiblings($transaction) : [],
             'quantity_query'       => $transaction->quantity_query_state ? [
                 'state'             => $transaction->quantity_query_state->value,
                 'label'             => $transaction->quantity_query_state->label(),
@@ -252,6 +254,23 @@ class PurchaseOrderTransactionResource extends JsonResource
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && in_array($transaction->purchaseOrder?->state, PurchaseOrderStateEnum::open())
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
+    }
+
+    private function priceQuerySiblings(PurchaseOrderTransaction $transaction): array
+    {
+        return AnswerPurchaseOrderTransactionPriceChange::pendingSiblings($transaction)
+            ->map(fn (PurchaseOrderTransaction $sibling) => [
+                'id'                  => $sibling->id,
+                'purchase_order'      => $sibling->purchaseOrder->reference,
+                'purchase_order_url'  => route('grp.org.procurement.purchase_orders.show', [$sibling->organisation->slug, $sibling->purchaseOrder->slug]),
+                'net_currency'        => $sibling->currencyCodeIn($sibling->purchaseOrder),
+                'unit_cost'           => $sibling->unit_cost,
+                'new_unit_cost'       => $sibling->price_query_unit_cost,
+                'previous_unit_cost'  => $sibling->price_query_previous_unit_cost,
+                'note'                => $sibling->price_query_note,
+                'asked_by'            => $sibling->priceQueriedBy?->contact_name ?: $sibling->priceQueriedBy?->username,
+            ])
+            ->all();
     }
 
     private function canOrganisationAnswer(PurchaseOrderTransaction $transaction, $request, bool $isQuestionPending): bool
