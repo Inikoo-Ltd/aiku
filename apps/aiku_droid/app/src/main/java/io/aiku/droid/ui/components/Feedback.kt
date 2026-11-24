@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -278,20 +279,49 @@ fun ConfirmDialog(
         ) {
             Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.text)
             Text(text = body, fontSize = 14.sp, lineHeight = 20.sp, color = colors.textTertiary)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AikuButton(text = dismissLabel, onClick = onDismiss, style = ButtonStyle.Outline, height = 44.dp, modifier = Modifier.weight(1f))
+            DialogButtons {
+                AikuButton(text = dismissLabel, onClick = onDismiss, style = ButtonStyle.Outline, height = 44.dp)
                 AikuButton(
                     text = confirmLabel,
                     onClick = onConfirm,
                     style = confirmLook.style,
                     icon = confirmLook.icon,
                     height = 44.dp,
-                    modifier = Modifier.weight(1f),
                 )
             }
         }
     }
 }
+
+@Composable
+private fun DialogButtons(content: @Composable () -> Unit) {
+    Layout(content = content, modifier = Modifier.fillMaxWidth()) { measurables, constraints ->
+        val gap = DIALOG_BUTTON_GAP.roundToPx()
+        val width = constraints.maxWidth
+        val half = (width - gap) / 2
+        val sideBySide = measurables.all { it.maxIntrinsicWidth(constraints.maxHeight) <= half }
+        if (sideBySide) {
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = half, maxWidth = half)) }
+            val height = placeables.maxOf { it.height }
+            layout(width, height) {
+                placeables.forEachIndexed { index, placeable -> placeable.placeRelative(index * (half + gap), 0) }
+            }
+        } else {
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = width, maxWidth = width)) }
+            val stacked = placeables.reversed()
+            val height = stacked.sumOf { it.height } + gap * (stacked.size - 1)
+            layout(width, height) {
+                var y = 0
+                stacked.forEach { placeable ->
+                    placeable.placeRelative(0, y)
+                    y += placeable.height + gap
+                }
+            }
+        }
+    }
+}
+
+private val DIALOG_BUTTON_GAP = 8.dp
 
 enum class EmptyTone { Neutral, Success, Info }
 

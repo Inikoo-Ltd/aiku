@@ -8,8 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -26,9 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -126,25 +134,47 @@ fun StateStepper(steps: List<Step>, modifier: Modifier = Modifier) {
     }
 }
 
+enum class NoteKind(val accent: Color, private val isBasic: Boolean) {
+    ShippingLabel(Color(0xFF93C5FD), false),
+    Customer(Color(0xFF599FF0), false),
+    Warehouse(Color(0xFFFCD34D), false),
+    FulfilmentCustomer(Color(0xFF009EFF), true),
+    FulfilmentPublic(Color(0xFFE6007E), true),
+    FulfilmentPrivate(Color(0xFF5000E6), true),
+    Plain(Color(0xFFAAAAAA), false),
+    ;
+
+    val header: Color get() = if (isBasic) lerp(accent, Color.White, BASIC_NOTE_WHITE_MIX) else accent
+}
+
+private val NOTE_HEADER_INK = Color(0xFF1F2937)
+private const val NOTE_BODY_ALPHA = 0x11 / 255f
+private const val BASIC_NOTE_WHITE_MIX = 0.6f
+
 @Composable
 fun NoteCard(
     title: String,
     text: String?,
     @DrawableRes icon: Int,
     modifier: Modifier = Modifier,
-    isWarning: Boolean = false,
     iconModifier: Modifier = Modifier,
+    kind: NoteKind? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
-    val (headerBackground, headerContent) = if (isWarning) colors.warnSoft to colors.warn else colors.soft to colors.link
+    val (headerBackground, headerContent) = when {
+        kind != null -> kind.header to NOTE_HEADER_INK
+        else -> colors.soft to colors.link
+    }
+    val bodyBackground = kind?.let { it.accent.copy(alpha = NOTE_BODY_ALPHA).compositeOver(colors.surface) } ?: colors.surface
+    val borderColor = kind?.header ?: colors.border
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(CardShape)
-            .background(colors.surface)
-            .border(1.dp, colors.border, CardShape)
+            .background(bodyBackground)
+            .border(1.dp, borderColor, CardShape)
             .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier),
     ) {
         Row(
@@ -171,35 +201,76 @@ fun NoteCard(
 
 data class TimelineEntry(val label: String, val date: String?)
 
+private val TIMELINE_STEP_MIN_WIDTH = 88.dp
+private val TIMELINE_SCROLL_STEP_WIDTH = 112.dp
+
 @Composable
 fun StateTimeline(entries: List<TimelineEntry>, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
 
-    Row(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .clip(CardShape)
             .background(colors.surface)
-            .border(1.dp, colors.border, CardShape)
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 10.dp),
+            .border(1.dp, colors.border, CardShape),
     ) {
-        entries.forEach { entry ->
-            val isDone = entry.date != null
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.width(104.dp),
-            ) {
-                Text(text = entry.label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = if (isDone) colors.text else colors.faint, textAlign = TextAlign.Center)
-                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(if (isDone) colors.success else colors.borderStrong))
-                Text(text = entry.date ?: "–", fontSize = 11.sp, color = colors.textTertiary, textAlign = TextAlign.Center)
+        val shared = maxWidth / entries.size.coerceAtLeast(1)
+        val stepWidth = if (shared >= TIMELINE_STEP_MIN_WIDTH) shared else TIMELINE_SCROLL_STEP_WIDTH
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 10.dp),
+        ) {
+            Row(modifier = Modifier.height(IntrinsicSize.Max)) {
+                entries.forEach { entry ->
+                    Box(
+                        contentAlignment = Alignment.BottomCenter,
+                        modifier = Modifier.width(stepWidth).fillMaxHeight().padding(horizontal = 6.dp),
+                    ) {
+                        Text(
+                            text = entry.label,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (entry.date != null) colors.text else colors.faint,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+            Row {
+                entries.forEachIndexed { index, entry ->
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.width(stepWidth).height(12.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(modifier = Modifier.weight(1f).height(2.dp).background(if (index > 0) colors.border else Color.Transparent))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Box(modifier = Modifier.weight(1f).height(2.dp).background(if (index < entries.lastIndex) colors.border else Color.Transparent))
+                        }
+                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(if (entry.date != null) colors.success else colors.borderStrong))
+                    }
+                }
+            }
+            Row {
+                entries.forEach { entry ->
+                    Text(
+                        text = entry.date ?: "–",
+                        fontSize = 11.sp,
+                        color = colors.textTertiary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.width(stepWidth),
+                    )
+                }
             }
         }
     }
 }
 
-data class DetailLine(@DrawableRes val icon: Int, val text: String)
+data class DetailLineAction(@DrawableRes val icon: Int, val description: String, val onClick: () -> Unit)
+
+data class DetailLine(@DrawableRes val icon: Int, val text: String, val action: DetailLineAction? = null)
 
 @Composable
 fun DetailCard(
@@ -230,6 +301,23 @@ fun DetailCard(
             ) {
                 Icon(painter = painterResource(line.icon), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(16.dp))
                 Text(text = line.text, fontSize = 14.sp, color = colors.textSecondary, modifier = Modifier.weight(1f))
+                line.action?.let { action ->
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(ChipShape)
+                            .clickable(role = Role.Button, onClickLabel = action.description, onClick = action.onClick)
+                            .semantics { contentDescription = action.description },
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(34.dp).clip(ChipShape).border(1.dp, colors.borderStrong, ChipShape),
+                        ) {
+                            Icon(painter = painterResource(action.icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
             }
         }
         if (actionLabel != null && onAction != null) {

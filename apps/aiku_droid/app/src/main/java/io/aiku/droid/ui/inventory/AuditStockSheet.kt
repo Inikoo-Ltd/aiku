@@ -15,14 +15,17 @@ fun AuditStockSheet(
     errorText: String?,
     onSave: (List<AuditCount>) -> Unit,
     onDismiss: () -> Unit,
+    locationOrgStockId: Long? = null,
 ) {
-    val lines = detail.locations.map { location ->
+    val audited = detail.locations.filter { locationOrgStockId == null || it.locationOrgStockId == locationOrgStockId }
+    val lines = audited.map { location ->
         AuditLine(
             locationOrgStockId = location.locationOrgStockId,
             title = location.location.code,
             subtitle = skoLocationChip(location),
             current = location.quantity,
             currentLabel = location.quantityLabel,
+            packedIn = detail.packedIn,
         )
     }
 
@@ -30,7 +33,9 @@ fun AuditStockSheet(
 
     AuditSheet(
         title = stringResource(R.string.inventory_audit_title, detail.code),
-        subtitle = stringResource(R.string.inventory_audit_subtitle, detail.name),
+        subtitle = audited.singleOrNull()?.takeIf { locationOrgStockId != null }
+            ?.let { stringResource(R.string.inventory_audit_one_subtitle, detail.name, it.location.code) }
+            ?: stringResource(R.string.inventory_audit_subtitle, detail.name),
         initialDraft = AuditDraft(lines = lines),
         reasons = state.reasons,
         reasonsProblem = state.reasonsProblem,

@@ -36,6 +36,7 @@ import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ChoiceRow
+import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
@@ -203,6 +204,7 @@ internal fun AuditSheet(
     var draft by remember { mutableStateOf(initialDraft) }
     var editing by remember { mutableStateOf(initialDraft.lines.singleOrNull()?.locationOrgStockId) }
     var showMissing by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<List<AuditCount>?>(null) }
     val missing = draft.linesNeedingReason
 
     AikuBottomSheet(title = title, subtitle = subtitle, onDismiss = onDismiss) {
@@ -262,13 +264,39 @@ internal fun AuditSheet(
                 if (counts == null) {
                     showMissing = true
                 } else {
-                    onSave(counts)
+                    pending = counts
                 }
             },
             onCancel = onDismiss,
             confirmLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_check),
             isWorking = isWorking,
         )
+    }
+
+    pending?.let { counts ->
+        ConfirmDialog(
+            title = stringResource(R.string.inventory_audit_confirm_title),
+            body = draft.lines.map { line -> auditSummaryLine(line, draft.countedOf(line)) }.joinToString("\n"),
+            confirmLabel = stringResource(R.string.inventory_audit_save),
+            confirmLook = ButtonLook(ButtonStyle.Primary, R.drawable.ic_ui_check),
+            onConfirm = {
+                pending = null
+                onSave(counts)
+            },
+            onDismiss = { pending = null },
+        )
+    }
+}
+
+internal fun countedText(line: AuditLine, counted: Double): String = stockText(counted, stockFractionLabel(counted, line.packedIn))
+
+@Composable
+private fun auditSummaryLine(line: AuditLine, counted: Double): String {
+    val was = stockText(line.current, line.currentLabel)
+    return if (counted == line.current) {
+        stringResource(R.string.inventory_audit_confirm_same, line.title, was)
+    } else {
+        stringResource(R.string.inventory_audit_confirm_change, line.title, was, countedText(line, counted))
     }
 }
 
@@ -297,7 +325,7 @@ private fun AuditCountRow(line: AuditLine, counted: Double, isEditing: Boolean, 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(text = line.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text)
                 Text(
-                    text = listOfNotNull(line.subtitle, stringResource(R.string.inventory_audit_was_counted, currentText, stockText(counted))).joinToString(LIST_SEPARATOR),
+                    text = listOfNotNull(line.subtitle, stringResource(R.string.inventory_audit_was_counted, currentText, if (counted == line.current) currentText else countedText(line, counted))).joinToString(LIST_SEPARATOR),
                     fontSize = 13.sp,
                     color = colors.textTertiary,
                 )
@@ -307,7 +335,7 @@ private fun AuditCountRow(line: AuditLine, counted: Double, isEditing: Boolean, 
         if (isEditing) {
             QuantityStepper(
                 value = counted,
-                valueText = stockText(counted),
+                valueText = if (counted == line.current) currentText else countedText(line, counted),
                 onValueChange = onCountedChange,
                 min = 0.0,
                 max = Double.MAX_VALUE,

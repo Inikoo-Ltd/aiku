@@ -45,6 +45,7 @@ import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.NoteCard
+import io.aiku.droid.ui.components.NoteKind
 import io.aiku.droid.ui.components.PlatformChip
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
@@ -66,6 +67,7 @@ import io.aiku.droid.ui.goodsout.extra.IncompleteSetNotice
 import io.aiku.droid.ui.goodsout.extra.UndoStep
 import io.aiku.droid.ui.goodsout.extra.UndoStepConfirmSheet
 import io.aiku.droid.ui.goodsout.extra.joinedWithAnd
+import io.aiku.droid.ui.inventory.fractionGlyphs
 import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
@@ -842,6 +844,7 @@ private fun DeliveryNoteNoteCards(note: DeliveryNote, onEdit: (NoteField) -> Uni
             title = stringResource(R.string.goodsout_note_shipping_label),
             text = notes.shipping.text,
             icon = if (notes.shipping.editable) R.drawable.ic_ui_edit else R.drawable.ic_ui_lock,
+            kind = NoteKind.ShippingLabel,
             onClick = if (notes.shipping.editable) ({ onEdit(NoteField.Shipping) }) else null,
         )
     }
@@ -850,6 +853,7 @@ private fun DeliveryNoteNoteCards(note: DeliveryNote, onEdit: (NoteField) -> Uni
             title = stringResource(R.string.goodsout_note_customer),
             text = notes.customer.text,
             icon = R.drawable.ic_ui_lock,
+            kind = NoteKind.Customer,
         )
     }
     if (!notes.warehouse.text.isNullOrBlank() || notes.warehouse.editable) {
@@ -857,7 +861,7 @@ private fun DeliveryNoteNoteCards(note: DeliveryNote, onEdit: (NoteField) -> Uni
             title = stringResource(R.string.goodsout_note_warehouse),
             text = notes.warehouse.text,
             icon = if (notes.warehouse.editable) R.drawable.ic_ui_edit else R.drawable.ic_ui_lock,
-            isWarning = !notes.warehouse.text.isNullOrBlank(),
+            kind = NoteKind.Warehouse,
             onClick = if (notes.warehouse.editable) ({ onEdit(NoteField.Warehouse) }) else null,
         )
     }
@@ -997,7 +1001,7 @@ private fun DeliveryNoteLineRow(line: DeliveryNoteLine, stage: DeliveryNoteStage
     val status = lineStatusOf(line, stage)
     val sko = line.orgStock
     val locations = line.locations.filter { it.code.isNotBlank() }.map { location ->
-        val stock = location.stockLabel?.takeIf { it.isNotBlank() } ?: location.stock?.let { quantityText(it) }
+        val stock = location.stock?.let { quantityText(it, location.stockLabel) } ?: location.stockLabel?.takeIf { it.isNotBlank() }?.let(::fractionGlyphs)
         if (stock == null) location.code else stringResource(R.string.goodsout_location_stock, location.code, stock)
     }.joinToString(", ")
     val subtitle = listOf(locations, sko?.name.orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")

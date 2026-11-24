@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Voorraad controleren</string>
     <string name="inventory_action_consume">Intern verbruik</string>
     <string name="inventory_action_move">Voorraad verplaatsen</string>
-    <string name="inventory_action_remove_locations">Locaties verwijderen</string>
     <string name="inventory_add_confirm">%1$s toevoegen</string>
     <string name="inventory_add_missing">Kies een locatie.</string>
     <string name="inventory_add_picking_hint">De andere picklocatie wordt een opslaglocatie</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Stel een aantal boven 0 in.</string>
     <string name="inventory_reasons_failed">De redenen konden niet worden geladen</string>
     <string name="inventory_recent_movements">Recente mutaties</string>
-    <string name="inventory_remove_missing">Kies minstens één locatie.</string>
-    <string name="inventory_remove_subtitle">Kies de locaties die je wilt verwijderen</string>
-    <string name="inventory_remove_title">Locaties verwijderen · %1$s</string>
-    <string name="inventory_remove_warning">Voorraad die op een verwijderde locatie achterblijft, wordt afgeboekt.</string>
     <string name="inventory_replenish">aanvullen %1$s</string>
     <string name="inventory_running">lopend %1$s</string>
     <string name="inventory_scan_no_sko">Geen SKO voor %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Stopgezet</string>
     <string name="inventory_state_discontinuing">Wordt stopgezet</string>
     <string name="inventory_state_in_process">In uitvoering</string>
-    <string name="inventory_stock_actions">Voorraadacties</string>
-    <string name="inventory_stock_actions_footnote">Voorraadacties vereisen rechten om voorraad te bewerken. Voorraad verplaatsen vereist minstens twee locaties.</string>
     <string name="inventory_stock_value_line">Voorraadwaarde %1$s</string>
     <string name="inventory_tile_abnormalities">Afwijkingen</string>
     <string name="inventory_tile_current_skos">Huidige SKO\'s</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">Verpakt per: %1$s eenheid per SKO</item>
         <item quantity="other">Verpakt per: %1$s eenheden per SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d locatie verwijderen</item>
-        <item quantity="other">%1$d locaties verwijderen</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d locatie verwijderd</item>
         <item quantity="other">%1$d locaties verwijderd</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">%1$s eenheden in totaal</item>
     </plurals>
     <string name="inventory_default_for">Standaard voor %1$s</string>
+    <string name="inventory_location_audit">Controleren</string>
+    <string name="inventory_location_open">Locatie openen</string>
+    <string name="inventory_location_remove">Locatie verwijderen</string>
+    <string name="inventory_remove_one_title">%1$s verwijderen?</string>
+    <string name="inventory_remove_one_writeoff">De %1$s die nog op %2$s ligt, wordt afgeboekt.</string>
+    <string name="inventory_remove_one_empty">%1$s is dan geen locatie meer van %2$s.</string>
+    <string name="inventory_audit_confirm_title">Deze telling opslaan?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, ongewijzigd</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s tellen</string>
+    <string name="inventory_move_confirm_title">Deze voorraad verplaatsen?</string>
+    <string name="inventory_move_confirm_body">%1$s van %2$s naar %3$s.</string>
+    <string name="inventory_count_all">Alle locaties tellen</string>
+    <string name="inventory_add_location_link">+ Locatie toevoegen</string>
+    <string name="inventory_show_barcode">Barcode tonen</string>
+    <string name="inventory_barcode_sko_title">SKO-barcode</string>
+    <string name="inventory_barcode_unit_title">Eenheidsbarcode</string>
+    <string name="inventory_barcode_description">Barcode %1$s</string>
+    <string name="inventory_barcode_unreadable">Deze code kan niet als barcode worden getekend. Typ hem in.</string>
+    <string name="inventory_remove_one_confirm">Verwijderen</string>
+    <string name="inventory_sko_status_heading">SKO-status</string>
+    <string name="inventory_quantity_status_heading">Hoeveelheidsstatus</string>
 </resources>

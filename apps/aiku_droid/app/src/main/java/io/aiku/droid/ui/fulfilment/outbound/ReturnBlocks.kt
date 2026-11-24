@@ -41,16 +41,17 @@ import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.NoteCard
+import io.aiku.droid.ui.components.NoteKind
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StateStepper
 import io.aiku.droid.ui.components.Step
 import io.aiku.droid.ui.components.StepStatus
 import io.aiku.droid.ui.fulfilment.dotJoined
+import io.aiku.droid.ui.goodsin.goodsInDate
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.organisationZone
-import io.aiku.droid.ui.goodsin.goodsInDate
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
@@ -233,13 +234,13 @@ internal fun ReturnDetails(palletReturn: PalletReturn) {
         DetailCard(title = stringResource(R.string.fulfilment_out_details), lines = lines)
     }
     listOf(
-        R.string.fulfilment_out_customer_notes to palletReturn.customerNotes,
-        R.string.fulfilment_out_public_notes to palletReturn.publicNotes,
-        R.string.fulfilment_out_internal_notes to palletReturn.internalNotes,
-        R.string.fulfilment_out_collection_notes to palletReturn.collectionNotes,
-    ).forEach { (title, text) ->
+        Triple(R.string.fulfilment_out_customer_notes, palletReturn.customerNotes, NoteKind.FulfilmentCustomer),
+        Triple(R.string.fulfilment_out_public_notes, palletReturn.publicNotes, NoteKind.FulfilmentPublic),
+        Triple(R.string.fulfilment_out_internal_notes, palletReturn.internalNotes, NoteKind.FulfilmentPrivate),
+        Triple(R.string.fulfilment_out_collection_notes, palletReturn.collectionNotes, NoteKind.Plain),
+    ).forEach { (title, text, kind) ->
         if (!text.isNullOrBlank()) {
-            NoteCard(title = stringResource(title), text = text, icon = R.drawable.ic_ui_document)
+            NoteCard(title = stringResource(title), text = text, icon = R.drawable.ic_ui_document, kind = kind)
         }
     }
 }

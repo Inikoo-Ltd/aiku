@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Audit stok</string>
     <string name="inventory_action_consume">Pemakaian internal</string>
     <string name="inventory_action_move">Pindahkan stok</string>
-    <string name="inventory_action_remove_locations">Hapus lokasi</string>
     <string name="inventory_add_confirm">Tambah %1$s</string>
     <string name="inventory_add_missing">Pilih lokasi.</string>
     <string name="inventory_add_picking_hint">Lokasi picking lainnya menjadi lokasi penyimpanan</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Atur kuantitas lebih dari 0.</string>
     <string name="inventory_reasons_failed">Tidak dapat memuat alasan</string>
     <string name="inventory_recent_movements">Pergerakan terbaru</string>
-    <string name="inventory_remove_missing">Pilih minimal satu lokasi.</string>
-    <string name="inventory_remove_subtitle">Pilih lokasi yang akan dihapus</string>
-    <string name="inventory_remove_title">Hapus lokasi · %1$s</string>
-    <string name="inventory_remove_warning">Stok yang tersisa di lokasi yang dihapus akan dihapusbukukan.</string>
     <string name="inventory_replenish">isi ulang %1$s</string>
     <string name="inventory_running">saldo berjalan %1$s</string>
     <string name="inventory_scan_no_sko">Tidak ada SKO untuk %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Dihentikan</string>
     <string name="inventory_state_discontinuing">Akan dihentikan</string>
     <string name="inventory_state_in_process">Dalam proses</string>
-    <string name="inventory_stock_actions">Tindakan stok</string>
-    <string name="inventory_stock_actions_footnote">Tindakan stok memerlukan hak edit stok. Pindahkan stok memerlukan minimal dua lokasi.</string>
     <string name="inventory_stock_value_line">Nilai stok %1$s</string>
     <string name="inventory_tile_abnormalities">Anomali</string>
     <string name="inventory_tile_current_skos">SKO Saat Ini</string>
@@ -2234,9 +2227,6 @@
     <plurals name="inventory_packed_in">
         <item quantity="other">Dikemas dalam: %1$s unit per SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="other">Hapus %1$d lokasi</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="other">%1$d lokasi dihapus</item>
     </plurals>
@@ -2353,4 +2343,26 @@
         <item quantity="other">total %1$s unit</item>
     </plurals>
     <string name="inventory_default_for">Default untuk %1$s</string>
+    <string name="inventory_location_audit">Audit</string>
+    <string name="inventory_location_open">Buka lokasi</string>
+    <string name="inventory_location_remove">Hapus lokasi</string>
+    <string name="inventory_remove_one_title">Hapus %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Stok %1$s yang masih ada di %2$s akan dihapusbukukan.</string>
+    <string name="inventory_remove_one_empty">%1$s tidak lagi menjadi lokasi %2$s.</string>
+    <string name="inventory_audit_confirm_title">Simpan hitungan ini?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, tidak berubah</string>
+    <string name="inventory_audit_one_subtitle">%1$s · hitung %2$s</string>
+    <string name="inventory_move_confirm_title">Pindahkan stok ini?</string>
+    <string name="inventory_move_confirm_body">%1$s dari %2$s ke %3$s.</string>
+    <string name="inventory_count_all">Hitung semua lokasi</string>
+    <string name="inventory_add_location_link">+ Tambah lokasi</string>
+    <string name="inventory_show_barcode">Tampilkan barcode</string>
+    <string name="inventory_barcode_sko_title">Barcode SKO</string>
+    <string name="inventory_barcode_unit_title">Barcode unit</string>
+    <string name="inventory_barcode_description">Barcode %1$s</string>
+    <string name="inventory_barcode_unreadable">Kode ini tidak bisa digambar sebagai barcode. Ketik secara manual.</string>
+    <string name="inventory_remove_one_confirm">Hapus</string>
+    <string name="inventory_sko_status_heading">Status SKO</string>
+    <string name="inventory_quantity_status_heading">Status kuantitas</string>
 </resources>

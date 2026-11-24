@@ -32,6 +32,7 @@ import io.aiku.droid.ui.components.FooterStatus
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.NoteCard
+import io.aiku.droid.ui.components.NoteKind
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.forConfirm
@@ -270,13 +271,13 @@ private fun DeliveryDetailCard(delivery: PalletDelivery) {
 @Composable
 private fun DeliveryNotes(delivery: PalletDelivery) {
     delivery.customerNotes?.takeIf { it.isNotBlank() }?.let {
-        NoteCard(title = stringResource(R.string.fulfilment_inbound_customer_notes), text = it, icon = R.drawable.ic_ui_lock)
+        NoteCard(title = stringResource(R.string.fulfilment_inbound_customer_notes), text = it, icon = R.drawable.ic_ui_lock, kind = NoteKind.FulfilmentCustomer)
     }
     delivery.publicNotes?.takeIf { it.isNotBlank() }?.let {
-        NoteCard(title = stringResource(R.string.fulfilment_inbound_public_notes), text = it, icon = R.drawable.ic_ui_lock)
+        NoteCard(title = stringResource(R.string.fulfilment_inbound_public_notes), text = it, icon = R.drawable.ic_ui_lock, kind = NoteKind.FulfilmentPublic)
     }
     delivery.internalNotes?.takeIf { it.isNotBlank() }?.let {
-        NoteCard(title = stringResource(R.string.fulfilment_inbound_internal_notes), text = it, icon = R.drawable.ic_ui_lock, isWarning = true)
+        NoteCard(title = stringResource(R.string.fulfilment_inbound_internal_notes), text = it, icon = R.drawable.ic_ui_lock, kind = NoteKind.FulfilmentPrivate)
     }
 }
 

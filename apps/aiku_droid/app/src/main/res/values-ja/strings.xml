@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">在庫を棚卸</string>
     <string name="inventory_action_consume">社内消費</string>
     <string name="inventory_action_move">在庫を移動</string>
-    <string name="inventory_action_remove_locations">ロケーションを削除</string>
     <string name="inventory_add_confirm">%1$sを追加</string>
     <string name="inventory_add_missing">ロケーションを選択してください。</string>
     <string name="inventory_add_picking_hint">他のピッキングロケーションは保管用になります</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">0より大きい数量を設定してください。</string>
     <string name="inventory_reasons_failed">理由を読み込めませんでした</string>
     <string name="inventory_recent_movements">最近の在庫移動</string>
-    <string name="inventory_remove_missing">ロケーションを1つ以上選択してください。</string>
-    <string name="inventory_remove_subtitle">削除するロケーションを選択</string>
-    <string name="inventory_remove_title">ロケーションを削除 · %1$s</string>
-    <string name="inventory_remove_warning">削除したロケーションに残っている在庫は除却されます。</string>
     <string name="inventory_replenish">補充 %1$s</string>
     <string name="inventory_running">累計 %1$s</string>
     <string name="inventory_scan_no_sko">%1$sのSKOはありません</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">廃番</string>
     <string name="inventory_state_discontinuing">廃番予定</string>
     <string name="inventory_state_in_process">処理中</string>
-    <string name="inventory_stock_actions">在庫操作</string>
-    <string name="inventory_stock_actions_footnote">在庫操作には在庫の編集権限が必要です。在庫移動には2つ以上のロケーションが必要です。</string>
     <string name="inventory_stock_value_line">在庫金額 %1$s</string>
     <string name="inventory_tile_abnormalities">異常</string>
     <string name="inventory_tile_current_skos">現在のSKO</string>
@@ -2234,9 +2227,6 @@
     <plurals name="inventory_packed_in">
         <item quantity="other">入数: SKOあたり%1$sユニット</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="other">ロケーション%1$d件を削除</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="other">ロケーション%1$d件を削除しました</item>
     </plurals>
@@ -2353,4 +2343,26 @@
         <item quantity="other">合計%1$s個</item>
     </plurals>
     <string name="inventory_default_for">%1$sの既定</string>
+    <string name="inventory_location_audit">棚卸</string>
+    <string name="inventory_location_open">ロケーションを開く</string>
+    <string name="inventory_location_remove">ロケーションを外す</string>
+    <string name="inventory_remove_one_title">%1$sを外しますか？</string>
+    <string name="inventory_remove_one_writeoff">%2$sに残っている%1$sは廃棄処理されます。</string>
+    <string name="inventory_remove_one_empty">%1$sは%2$sのロケーションではなくなります。</string>
+    <string name="inventory_audit_confirm_title">この棚卸を保存しますか？</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s（変更なし）</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$sを数える</string>
+    <string name="inventory_move_confirm_title">この在庫を移動しますか？</string>
+    <string name="inventory_move_confirm_body">%2$sから%3$sへ%1$s。</string>
+    <string name="inventory_count_all">すべてのロケーションを数える</string>
+    <string name="inventory_add_location_link">+ ロケーションを追加</string>
+    <string name="inventory_show_barcode">バーコードを表示</string>
+    <string name="inventory_barcode_sko_title">SKOバーコード</string>
+    <string name="inventory_barcode_unit_title">単品バーコード</string>
+    <string name="inventory_barcode_description">バーコード %1$s</string>
+    <string name="inventory_barcode_unreadable">このコードはバーコードとして表示できません。手入力してください。</string>
+    <string name="inventory_remove_one_confirm">外す</string>
+    <string name="inventory_sko_status_heading">SKOステータス</string>
+    <string name="inventory_quantity_status_heading">数量ステータス</string>
 </resources>

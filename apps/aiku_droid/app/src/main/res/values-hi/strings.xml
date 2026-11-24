@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">स्टॉक ऑडिट करें</string>
     <string name="inventory_action_consume">आंतरिक उपभोग</string>
     <string name="inventory_action_move">स्टॉक स्थानांतरित करें</string>
-    <string name="inventory_action_remove_locations">लोकेशन हटाएँ</string>
     <string name="inventory_add_confirm">%1$s जोड़ें</string>
     <string name="inventory_add_missing">एक लोकेशन चुनें।</string>
     <string name="inventory_add_picking_hint">इसकी दूसरी पिकिंग लोकेशन भंडारण बन जाती है</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">0 से अधिक मात्रा सेट करें।</string>
     <string name="inventory_reasons_failed">कारण लोड नहीं हो सके</string>
     <string name="inventory_recent_movements">हाल के मूवमेंट</string>
-    <string name="inventory_remove_missing">कम से कम एक लोकेशन चुनें।</string>
-    <string name="inventory_remove_subtitle">हटाने के लिए लोकेशन चुनें</string>
-    <string name="inventory_remove_title">लोकेशन हटाएँ · %1$s</string>
-    <string name="inventory_remove_warning">हटाई गई लोकेशन में बचा स्टॉक बट्टे खाते में डाल दिया जाता है।</string>
     <string name="inventory_replenish">पुनःपूर्ति %1$s</string>
     <string name="inventory_running">चालू कुल %1$s</string>
     <string name="inventory_scan_no_sko">%1$s के लिए कोई SKO नहीं</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">बंद किया गया</string>
     <string name="inventory_state_discontinuing">बंद किया जा रहा है</string>
     <string name="inventory_state_in_process">प्रक्रिया में</string>
-    <string name="inventory_stock_actions">स्टॉक कार्रवाइयाँ</string>
-    <string name="inventory_stock_actions_footnote">स्टॉक कार्रवाइयों के लिए स्टॉक संपादन अधिकार चाहिए। स्टॉक स्थानांतरित करने के लिए कम से कम दो लोकेशन चाहिए।</string>
     <string name="inventory_stock_value_line">स्टॉक मूल्य %1$s</string>
     <string name="inventory_tile_abnormalities">असामान्यताएं</string>
     <string name="inventory_tile_current_skos">वर्तमान SKOs</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">पैकिंग: प्रति SKO %1$s यूनिट</item>
         <item quantity="other">पैकिंग: प्रति SKO %1$s यूनिट</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d लोकेशन हटाएँ</item>
-        <item quantity="other">%1$d लोकेशन हटाएँ</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d लोकेशन हटाई गई</item>
         <item quantity="other">%1$d लोकेशन हटाई गईं</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">कुल %1$s यूनिट</item>
     </plurals>
     <string name="inventory_default_for">%1$s के लिए डिफ़ॉल्ट</string>
+    <string name="inventory_location_audit">ऑडिट</string>
+    <string name="inventory_location_open">लोकेशन खोलें</string>
+    <string name="inventory_location_remove">लोकेशन हटाएँ</string>
+    <string name="inventory_remove_one_title">%1$s हटाएँ?</string>
+    <string name="inventory_remove_one_writeoff">%2$s में बचा %1$s राइट-ऑफ़ हो जाएगा।</string>
+    <string name="inventory_remove_one_empty">%1$s अब %2$s की लोकेशन नहीं रहेगी।</string>
+    <string name="inventory_audit_confirm_title">यह गिनती सहेजें?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, कोई बदलाव नहीं</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s गिनें</string>
+    <string name="inventory_move_confirm_title">यह स्टॉक ले जाएँ?</string>
+    <string name="inventory_move_confirm_body">%2$s से %3$s तक %1$s।</string>
+    <string name="inventory_count_all">सभी लोकेशन गिनें</string>
+    <string name="inventory_add_location_link">+ लोकेशन जोड़ें</string>
+    <string name="inventory_show_barcode">बारकोड दिखाएँ</string>
+    <string name="inventory_barcode_sko_title">SKO बारकोड</string>
+    <string name="inventory_barcode_unit_title">यूनिट बारकोड</string>
+    <string name="inventory_barcode_description">बारकोड %1$s</string>
+    <string name="inventory_barcode_unreadable">यह कोड बारकोड के रूप में नहीं बन सकता। इसे टाइप करें।</string>
+    <string name="inventory_remove_one_confirm">हटाएँ</string>
+    <string name="inventory_sko_status_heading">SKO स्थिति</string>
+    <string name="inventory_quantity_status_heading">मात्रा स्थिति</string>
 </resources>

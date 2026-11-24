@@ -31,4 +31,12 @@ class SkoStockCardTest {
         assertEquals("12/11/2026", fractionGlyphs("12/11/2026"))
         assertEquals("31.5/46", fractionGlyphs("31.5/46"))
     }
+
+    @Test
+    fun `a changed count is shown as a web fraction, not a decimal`() {
+        val line = AuditLine(locationOrgStockId = 1, title = "W9C2", current = 32.75, currentLabel = "32 3/4", packedIn = 4.0)
+
+        assertEquals("33\u202F³⁄₄", countedText(line, 33.75))
+        assertEquals("34", countedText(line, 34.0))
+    }
 }

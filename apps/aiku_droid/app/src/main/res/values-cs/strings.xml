@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Audit zásob</string>
     <string name="inventory_action_consume">Interní spotřeba</string>
     <string name="inventory_action_move">Přesun zásob</string>
-    <string name="inventory_action_remove_locations">Odebrat lokace</string>
     <string name="inventory_add_confirm">Přidat %1$s</string>
     <string name="inventory_add_missing">Vyberte lokaci.</string>
     <string name="inventory_add_picking_hint">Jeho jiná lokace vychystávání se změní na skladovací</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Nastavte množství větší než 0.</string>
     <string name="inventory_reasons_failed">Důvody se nepodařilo načíst</string>
     <string name="inventory_recent_movements">Poslední pohyby</string>
-    <string name="inventory_remove_missing">Vyberte alespoň jednu lokaci.</string>
-    <string name="inventory_remove_subtitle">Vyberte lokace k odebrání</string>
-    <string name="inventory_remove_title">Odebrat lokace · %1$s</string>
-    <string name="inventory_remove_warning">Zásoby, které zůstanou na odebrané lokaci, se odepíšou.</string>
     <string name="inventory_replenish">doplnit %1$s</string>
     <string name="inventory_running">průběžný stav %1$s</string>
     <string name="inventory_scan_no_sko">Pro %1$s neexistuje SKO</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Vyřazeno</string>
     <string name="inventory_state_discontinuing">Vyřazuje se</string>
     <string name="inventory_state_in_process">V procesu</string>
-    <string name="inventory_stock_actions">Akce se zásobami</string>
-    <string name="inventory_stock_actions_footnote">Akce se zásobami vyžadují práva k úpravě zásob. Přesun zásob vyžaduje alespoň dvě lokace.</string>
     <string name="inventory_stock_value_line">Hodnota zásob %1$s</string>
     <string name="inventory_tile_abnormalities">Abnormality</string>
     <string name="inventory_tile_current_skos">Aktuální SKO</string>
@@ -2483,12 +2476,6 @@
         <item quantity="many">Balení: %1$s jednotky na SKO</item>
         <item quantity="other">Balení: %1$s jednotek na SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Odebrat %1$d lokaci</item>
-        <item quantity="few">Odebrat %1$d lokace</item>
-        <item quantity="many">Odebrat %1$d lokace</item>
-        <item quantity="other">Odebrat %1$d lokací</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">Odebrána %1$d lokace</item>
         <item quantity="few">Odebrány %1$d lokace</item>
@@ -2686,4 +2673,26 @@
         <item quantity="other">celkem %1$s kusů</item>
     </plurals>
     <string name="inventory_default_for">Výchozí pro %1$s</string>
+    <string name="inventory_location_audit">Audit</string>
+    <string name="inventory_location_open">Otevřít lokaci</string>
+    <string name="inventory_location_remove">Odebrat lokaci</string>
+    <string name="inventory_remove_one_title">Odebrat %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Zásoba %1$s, která je stále na %2$s, bude odepsána.</string>
+    <string name="inventory_remove_one_empty">%1$s už nebude lokací pro %2$s.</string>
+    <string name="inventory_audit_confirm_title">Uložit toto počítání?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, beze změny</string>
+    <string name="inventory_audit_one_subtitle">%1$s · spočítat %2$s</string>
+    <string name="inventory_move_confirm_title">Přesunout tuto zásobu?</string>
+    <string name="inventory_move_confirm_body">%1$s z %2$s na %3$s.</string>
+    <string name="inventory_count_all">Spočítat všechny lokace</string>
+    <string name="inventory_add_location_link">+ Přidat lokaci</string>
+    <string name="inventory_show_barcode">Zobrazit čárový kód</string>
+    <string name="inventory_barcode_sko_title">Čárový kód SKO</string>
+    <string name="inventory_barcode_unit_title">Čárový kód kusu</string>
+    <string name="inventory_barcode_description">Čárový kód %1$s</string>
+    <string name="inventory_barcode_unreadable">Tento kód nelze vykreslit jako čárový kód. Zadejte ho ručně.</string>
+    <string name="inventory_remove_one_confirm">Odebrat</string>
+    <string name="inventory_sko_status_heading">Stav SKO</string>
+    <string name="inventory_quantity_status_heading">Stav množství</string>
 </resources>

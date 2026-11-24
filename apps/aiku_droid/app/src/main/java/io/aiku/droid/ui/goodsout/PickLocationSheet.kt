@@ -88,7 +88,7 @@ internal fun PickLocationSheet(line: DeliveryNoteLine, selectedId: Long?, onChoo
                     title = location.code,
                     subtitle = if (picked > 0.0) stringResource(R.string.goodsout_location_picked_here, quantityText(picked)) else null,
                     badge = if (stock > 0.0) {
-                        stringResource(R.string.goodsout_location_in_stock, location.stockLabel?.takeIf { it.isNotBlank() } ?: quantityText(stock))
+                        stringResource(R.string.goodsout_location_in_stock, quantityText(stock, location.stockLabel))
                     } else {
                         stringResource(R.string.goodsout_location_empty)
                     },

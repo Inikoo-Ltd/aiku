@@ -7,16 +7,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -26,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.data.api.OrgStockLocation
+import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.StatusBadge
@@ -35,11 +43,58 @@ import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.locations.stockTypeLabel
 import io.aiku.droid.ui.locations.stockTypeTone
 import io.aiku.droid.ui.theme.LocalAikuColors
+import kotlinx.coroutines.launch
 
 private val IconShape = RoundedCornerShape(10.dp)
 
 @Composable
-internal fun SkoLocationCard(location: OrgStockLocation, packedIn: Double?, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+internal fun SkoLocationCard(
+    location: OrgStockLocation,
+    packedIn: Double?,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    onAudit: (() -> Unit)? = null,
+    onRemove: (() -> Unit)? = null,
+) {
+    if (onRemove == null) {
+        LocationCardBody(location = location, packedIn = packedIn, onClick = onClick, onAudit = onAudit, modifier = modifier)
+        return
+    }
+    val colors = LocalAikuColors.current
+    val scope = rememberCoroutineScope()
+    val state = rememberSwipeToDismissBoxState()
+
+    SwipeToDismissBox(
+        state = state,
+        modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        onDismiss = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onRemove()
+            }
+            scope.launch { state.reset() }
+        },
+        backgroundContent = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CardShape)
+                    .background(colors.danger)
+                    .padding(horizontal = 20.dp),
+            ) {
+                Icon(painter = painterResource(R.drawable.ic_fa_unlink), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                Text(text = stringResource(R.string.inventory_location_remove), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        },
+    ) {
+        LocationCardBody(location = location, packedIn = packedIn, onClick = onClick, onAudit = onAudit)
+    }
+}
+
+@Composable
+private fun LocationCardBody(location: OrgStockLocation, packedIn: Double?, onClick: (() -> Unit)?, onAudit: (() -> Unit)?, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
     val units = skoUnits(location.quantity, packedIn)
     val footer = listOfNotNull(defaultChannelsText(location), stockLevelsText(location))
@@ -55,17 +110,36 @@ internal fun SkoLocationCard(location: OrgStockLocation, packedIn: Double?, onCl
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp).clip(IconShape).background(colors.soft)) {
                 Icon(painter = painterResource(R.drawable.ic_ui_location), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(text = location.location.code, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = location.location.code,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    stockTypeLabel(location.stockType)?.let { label ->
+                        StatusBadge(text = stringResource(label), tone = stockTypeTone(location.stockType))
+                    }
+                }
                 Text(text = auditedText(location), fontSize = 13.sp, color = colors.textTertiary)
             }
-            stockTypeLabel(location.stockType)?.let { label ->
-                StatusBadge(text = stringResource(label), tone = stockTypeTone(location.stockType))
+            onAudit?.let {
+                AikuButton(
+                    text = stringResource(R.string.inventory_location_audit),
+                    onClick = it,
+                    style = ButtonStyle.Outline,
+                    icon = R.drawable.ic_fa_clipboard_check,
+                    height = 40.dp,
+                )
             }
         }
         RowDivider()

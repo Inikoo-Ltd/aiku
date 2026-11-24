@@ -537,6 +537,15 @@ data class FamilySummary(
     @Serializable(with = LenientInt::class) @SerialName("number_current_org_stocks") val numberCurrentOrgStocks: Int = 0,
     @Serializable(with = LenientDouble::class) @SerialName("stock_value") val stockValue: Double = 0.0,
     @SerialName("currency_code") val currencyCode: String? = null,
+    @SerialName("sko_status") val skoStatus: List<FamilyStatusCount> = emptyList(),
+    @SerialName("quantity_status") val quantityStatus: List<FamilyStatusCount> = emptyList(),
+)
+
+@Serializable
+data class FamilyStatusCount(
+    val key: String = "",
+    val label: String = "",
+    @Serializable(with = LenientInt::class) val count: Int = 0,
 )
 
 @Serializable
@@ -546,7 +555,9 @@ data class FamilySko(
     val name: String = "",
     val state: String = "",
     @Serializable(with = LenientDouble::class) @SerialName("quantity_available") val quantityAvailable: Double = 0.0,
+    @SerialName("quantity_available_label") val quantityAvailableLabel: String? = null,
     @Serializable(with = LenientDouble::class) @SerialName("quantity_in_locations") val quantityInLocations: Double = 0.0,
+    @SerialName("quantity_in_locations_label") val quantityInLocationsLabel: String? = null,
 )
 
 data class FamilySkoPage(val family: FamilySummary?, val skos: List<FamilySko>, val meta: ListMeta)

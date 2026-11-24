@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Inventarizēt krājumu</string>
     <string name="inventory_action_consume">Iekšējais patēriņš</string>
     <string name="inventory_action_move">Pārvietot krājumu</string>
-    <string name="inventory_action_remove_locations">Noņemt vietas</string>
     <string name="inventory_add_confirm">Pievienot %1$s</string>
     <string name="inventory_add_missing">Izvēlieties vietu.</string>
     <string name="inventory_add_picking_hint">Tā otra komplektēšanas vieta kļūst par uzglabāšanas vietu</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Iestatiet daudzumu, kas lielāks par 0.</string>
     <string name="inventory_reasons_failed">Neizdevās ielādēt iemeslus</string>
     <string name="inventory_recent_movements">Pēdējās kustības</string>
-    <string name="inventory_remove_missing">Izvēlieties vismaz vienu vietu.</string>
-    <string name="inventory_remove_subtitle">Izvēlieties noņemamās vietas</string>
-    <string name="inventory_remove_title">Noņemt vietas · %1$s</string>
-    <string name="inventory_remove_warning">Krājums, kas palicis noņemtā vietā, tiek norakstīts.</string>
     <string name="inventory_replenish">papildināt %1$s</string>
     <string name="inventory_running">atlikums %1$s</string>
     <string name="inventory_scan_no_sko">Nav SKO kodam %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Pārtraukts</string>
     <string name="inventory_state_discontinuing">Tiek pārtraukts</string>
     <string name="inventory_state_in_process">Procesā</string>
-    <string name="inventory_stock_actions">Krājumu darbības</string>
-    <string name="inventory_stock_actions_footnote">Krājumu darbībām nepieciešamas krājumu labošanas tiesības. Krājuma pārvietošanai vajadzīgas vismaz divas vietas.</string>
     <string name="inventory_stock_value_line">Krājumu vērtība %1$s</string>
     <string name="inventory_tile_abnormalities">Novirzes</string>
     <string name="inventory_tile_current_skos">Pašreizējie SKO</string>
@@ -2400,11 +2393,6 @@
         <item quantity="one">Iepakojumā: %1$s vienība vienā SKO</item>
         <item quantity="other">Iepakojumā: %1$s vienības vienā SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="zero">Noņemt %1$d vietas</item>
-        <item quantity="one">Noņemt %1$d vietu</item>
-        <item quantity="other">Noņemt %1$d vietas</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="zero">%1$d vietas noņemtas</item>
         <item quantity="one">%1$d vieta noņemta</item>
@@ -2575,4 +2563,26 @@
         <item quantity="other">kopā %1$s vienības</item>
     </plurals>
     <string name="inventory_default_for">Noklusējums: %1$s</string>
+    <string name="inventory_location_audit">Inventarizēt</string>
+    <string name="inventory_location_open">Atvērt vietu</string>
+    <string name="inventory_location_remove">Noņemt vietu</string>
+    <string name="inventory_remove_one_title">Noņemt %1$s?</string>
+    <string name="inventory_remove_one_writeoff">%2$s vēl esošie %1$s tiks norakstīti.</string>
+    <string name="inventory_remove_one_empty">%1$s vairs nebūs %2$s vieta.</string>
+    <string name="inventory_audit_confirm_title">Saglabāt šo skaitīšanu?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, bez izmaiņām</string>
+    <string name="inventory_audit_one_subtitle">%1$s · saskaitīt %2$s</string>
+    <string name="inventory_move_confirm_title">Pārvietot šos krājumus?</string>
+    <string name="inventory_move_confirm_body">%1$s no %2$s uz %3$s.</string>
+    <string name="inventory_count_all">Saskaitīt visas vietas</string>
+    <string name="inventory_add_location_link">+ Pievienot vietu</string>
+    <string name="inventory_show_barcode">Rādīt svītrkodu</string>
+    <string name="inventory_barcode_sko_title">SKO svītrkods</string>
+    <string name="inventory_barcode_unit_title">Vienības svītrkods</string>
+    <string name="inventory_barcode_description">Svītrkods %1$s</string>
+    <string name="inventory_barcode_unreadable">Šo kodu nevar attēlot kā svītrkodu. Ievadiet to manuāli.</string>
+    <string name="inventory_remove_one_confirm">Noņemt</string>
+    <string name="inventory_sko_status_heading">SKO statuss</string>
+    <string name="inventory_quantity_status_heading">Daudzuma statuss</string>
 </resources>

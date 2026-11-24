@@ -15,6 +15,7 @@ import io.aiku.droid.data.api.OrgStockDetail
 import io.aiku.droid.data.api.OrgStockWrite
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.ChoiceRow
+import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
@@ -28,6 +29,7 @@ fun MoveStockSheet(detail: OrgStockDetail, isWorking: Boolean, errorText: String
     val to = targets.firstOrNull { it.locationOrgStockId == toId }
     var quantity by remember { mutableDoubleStateOf(from?.quantity?.coerceAtMost(1.0) ?: 0.0) }
     var missing by remember { mutableStateOf<Int?>(null) }
+    var pending by remember { mutableStateOf<OrgStockWrite.Move?>(null) }
 
     AikuBottomSheet(
         title = stringResource(R.string.inventory_move_title, detail.code),
@@ -71,11 +73,24 @@ fun MoveStockSheet(detail: OrgStockDetail, isWorking: Boolean, errorText: String
                 when {
                     from == null || to == null -> missing = R.string.inventory_move_locations_missing
                     quantity <= 0.0 -> missing = R.string.inventory_quantity_missing
-                    else -> onMove(OrgStockWrite.Move(fromLocationOrgStockId = from.locationOrgStockId, targets = listOf(MoveTarget(to.locationOrgStockId, quantity))))
+                    else -> pending = OrgStockWrite.Move(fromLocationOrgStockId = from.locationOrgStockId, targets = listOf(MoveTarget(to.locationOrgStockId, quantity)))
                 }
             },
             onCancel = onDismiss,
             isWorking = isWorking,
+        )
+    }
+
+    pending?.let { move ->
+        ConfirmDialog(
+            title = stringResource(R.string.inventory_move_confirm_title),
+            body = stringResource(R.string.inventory_move_confirm_body, stockText(quantity), from?.location?.code.orEmpty(), to?.location?.code.orEmpty()),
+            confirmLabel = stringResource(R.string.inventory_move_confirm, stockText(quantity)),
+            onConfirm = {
+                pending = null
+                onMove(move)
+            },
+            onDismiss = { pending = null },
         )
     }
 }

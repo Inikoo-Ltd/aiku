@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">स्टक अडिट गर्नुहोस्</string>
     <string name="inventory_action_consume">आन्तरिक खपत</string>
     <string name="inventory_action_move">स्टक सार्नुहोस्</string>
-    <string name="inventory_action_remove_locations">लोकेसनहरू हटाउनुहोस्</string>
     <string name="inventory_add_confirm">%1$s थप्नुहोस्</string>
     <string name="inventory_add_missing">लोकेसन छान्नुहोस्।</string>
     <string name="inventory_add_picking_hint">यसको अर्को पिकिङ लोकेसन भण्डारण बन्छ</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">0 भन्दा बढी परिमाण सेट गर्नुहोस्।</string>
     <string name="inventory_reasons_failed">कारणहरू लोड गर्न सकिएन</string>
     <string name="inventory_recent_movements">हालका आवतजावत</string>
-    <string name="inventory_remove_missing">कम्तीमा एउटा लोकेसन छान्नुहोस्।</string>
-    <string name="inventory_remove_subtitle">हटाउने लोकेसनहरू छान्नुहोस्</string>
-    <string name="inventory_remove_title">लोकेसनहरू हटाउनुहोस् · %1$s</string>
-    <string name="inventory_remove_warning">हटाइएको लोकेसनमा बाँकी स्टक मिनाहा गरिन्छ।</string>
     <string name="inventory_replenish">पुनःपूर्ति %1$s</string>
     <string name="inventory_running">चालु जम्मा %1$s</string>
     <string name="inventory_scan_no_sko">%1$s को लागि कुनै SKO छैन</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">बन्द गरिएको</string>
     <string name="inventory_state_discontinuing">बन्द हुँदै</string>
     <string name="inventory_state_in_process">प्रक्रियामा</string>
-    <string name="inventory_stock_actions">स्टक कार्यहरू</string>
-    <string name="inventory_stock_actions_footnote">स्टक कार्यहरूका लागि स्टक सम्पादन अधिकार चाहिन्छ। स्टक सार्न कम्तीमा दुईवटा लोकेसन चाहिन्छ।</string>
     <string name="inventory_stock_value_line">स्टक मूल्य %1$s</string>
     <string name="inventory_tile_abnormalities">असामान्यताहरू</string>
     <string name="inventory_tile_current_skos">हालका SKO हरू</string>
@@ -2317,10 +2310,6 @@
         <item quantity="one">प्याकिङ: प्रति SKO %1$s युनिट</item>
         <item quantity="other">प्याकिङ: प्रति SKO %1$s युनिट</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">%1$d लोकेसन हटाउनुहोस्</item>
-        <item quantity="other">%1$d लोकेसन हटाउनुहोस्</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">%1$d लोकेसन हटाइयो</item>
         <item quantity="other">%1$d लोकेसन हटाइयो</item>
@@ -2464,4 +2453,26 @@
         <item quantity="other">जम्मा %1$s युनिट</item>
     </plurals>
     <string name="inventory_default_for">%1$s का लागि पूर्वनिर्धारित</string>
+    <string name="inventory_location_audit">अडिट</string>
+    <string name="inventory_location_open">लोकेसन खोल्नुहोस्</string>
+    <string name="inventory_location_remove">लोकेसन हटाउनुहोस्</string>
+    <string name="inventory_remove_one_title">%1$s हटाउने?</string>
+    <string name="inventory_remove_one_writeoff">%2$s मा बाँकी %1$s राइट-अफ हुनेछ।</string>
+    <string name="inventory_remove_one_empty">%1$s अब %2$s को लोकेसन रहने छैन।</string>
+    <string name="inventory_audit_confirm_title">यो गणना बचत गर्ने?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, कुनै परिवर्तन छैन</string>
+    <string name="inventory_audit_one_subtitle">%1$s · %2$s गन्नुहोस्</string>
+    <string name="inventory_move_confirm_title">यो स्टक सार्ने?</string>
+    <string name="inventory_move_confirm_body">%2$s बाट %3$s मा %1$s।</string>
+    <string name="inventory_count_all">सबै लोकेसन गन्नुहोस्</string>
+    <string name="inventory_add_location_link">+ लोकेसन थप्नुहोस्</string>
+    <string name="inventory_show_barcode">बारकोड देखाउनुहोस्</string>
+    <string name="inventory_barcode_sko_title">SKO बारकोड</string>
+    <string name="inventory_barcode_unit_title">युनिट बारकोड</string>
+    <string name="inventory_barcode_description">बारकोड %1$s</string>
+    <string name="inventory_barcode_unreadable">यो कोड बारकोडको रूपमा बनाउन सकिँदैन। टाइप गर्नुहोस्।</string>
+    <string name="inventory_remove_one_confirm">हटाउनुहोस्</string>
+    <string name="inventory_sko_status_heading">SKO स्थिति</string>
+    <string name="inventory_quantity_status_heading">परिमाण स्थिति</string>
 </resources>

@@ -1409,7 +1409,6 @@
     <string name="inventory_action_audit">Audyt zapasów</string>
     <string name="inventory_action_consume">Zużycie wewnętrzne</string>
     <string name="inventory_action_move">Przenieś zapasy</string>
-    <string name="inventory_action_remove_locations">Usuń lokalizacje</string>
     <string name="inventory_add_confirm">Dodaj %1$s</string>
     <string name="inventory_add_missing">Wybierz lokalizację.</string>
     <string name="inventory_add_picking_hint">Jego inna lokalizacja kompletacji stanie się lokalizacją przechowywania</string>
@@ -1501,10 +1500,6 @@
     <string name="inventory_quantity_missing">Ustaw ilość większą od 0.</string>
     <string name="inventory_reasons_failed">Nie udało się wczytać powodów</string>
     <string name="inventory_recent_movements">Ostatnie ruchy</string>
-    <string name="inventory_remove_missing">Wybierz co najmniej jedną lokalizację.</string>
-    <string name="inventory_remove_subtitle">Wybierz lokalizacje do usunięcia</string>
-    <string name="inventory_remove_title">Usuń lokalizacje · %1$s</string>
-    <string name="inventory_remove_warning">Zapas pozostały w usuniętej lokalizacji zostanie odpisany.</string>
     <string name="inventory_replenish">uzupełnij %1$s</string>
     <string name="inventory_running">stan %1$s</string>
     <string name="inventory_scan_no_sko">Brak SKO dla %1$s</string>
@@ -1534,8 +1529,6 @@
     <string name="inventory_state_discontinued">Wycofana</string>
     <string name="inventory_state_discontinuing">Wycofywana</string>
     <string name="inventory_state_in_process">W trakcie</string>
-    <string name="inventory_stock_actions">Działania na zapasach</string>
-    <string name="inventory_stock_actions_footnote">Działania na zapasach wymagają uprawnień do edycji zapasów. Przeniesienie zapasów wymaga co najmniej dwóch lokalizacji.</string>
     <string name="inventory_stock_value_line">Wartość zapasów %1$s</string>
     <string name="inventory_tile_abnormalities">Nieprawidłowości</string>
     <string name="inventory_tile_current_skos">Aktualne SKO</string>
@@ -2483,12 +2476,6 @@
         <item quantity="many">Opakowanie: %1$s sztuk na SKO</item>
         <item quantity="other">Opakowanie: %1$s sztuki na SKO</item>
     </plurals>
-    <plurals name="inventory_remove_confirm">
-        <item quantity="one">Usuń %1$d lokalizację</item>
-        <item quantity="few">Usuń %1$d lokalizacje</item>
-        <item quantity="many">Usuń %1$d lokalizacji</item>
-        <item quantity="other">Usuń %1$d lokalizacji</item>
-    </plurals>
     <plurals name="inventory_removed">
         <item quantity="one">Usunięto %1$d lokalizację</item>
         <item quantity="few">Usunięto %1$d lokalizacje</item>
@@ -2686,4 +2673,26 @@
         <item quantity="other">łącznie %1$s sztuki</item>
     </plurals>
     <string name="inventory_default_for">Domyślna dla %1$s</string>
+    <string name="inventory_location_audit">Audyt</string>
+    <string name="inventory_location_open">Otwórz lokalizację</string>
+    <string name="inventory_location_remove">Usuń lokalizację</string>
+    <string name="inventory_remove_one_title">Usunąć %1$s?</string>
+    <string name="inventory_remove_one_writeoff">Zapas %1$s, który jest jeszcze w %2$s, zostanie spisany.</string>
+    <string name="inventory_remove_one_empty">%1$s nie będzie już lokalizacją %2$s.</string>
+    <string name="inventory_audit_confirm_title">Zapisać to liczenie?</string>
+    <string name="inventory_audit_confirm_change">%1$s: %2$s → %3$s</string>
+    <string name="inventory_audit_confirm_same">%1$s: %2$s, bez zmian</string>
+    <string name="inventory_audit_one_subtitle">%1$s · policz %2$s</string>
+    <string name="inventory_move_confirm_title">Przenieść ten zapas?</string>
+    <string name="inventory_move_confirm_body">%1$s z %2$s do %3$s.</string>
+    <string name="inventory_count_all">Policz wszystkie lokalizacje</string>
+    <string name="inventory_add_location_link">+ Dodaj lokalizację</string>
+    <string name="inventory_show_barcode">Pokaż kod kreskowy</string>
+    <string name="inventory_barcode_sko_title">Kod kreskowy SKO</string>
+    <string name="inventory_barcode_unit_title">Kod kreskowy sztuki</string>
+    <string name="inventory_barcode_description">Kod kreskowy %1$s</string>
+    <string name="inventory_barcode_unreadable">Tego kodu nie da się narysować jako kodu kreskowego. Wpisz go ręcznie.</string>
+    <string name="inventory_remove_one_confirm">Usuń</string>
+    <string name="inventory_sko_status_heading">Status SKO</string>
+    <string name="inventory_quantity_status_heading">Status ilości</string>
 </resources>

@@ -35,6 +35,7 @@ import io.aiku.droid.ui.goodsout.extra.FieldLabel
 import io.aiku.droid.ui.goodsout.extra.PlainTextField
 import io.aiku.droid.ui.goodsout.extra.UndoPickingSheet
 import io.aiku.droid.ui.goodsout.extra.WaitingLineSheet
+import io.aiku.droid.ui.inventory.fractionGlyphs
 
 private enum class LineWrite { PickAll, Pick, NotPicked }
 
@@ -285,7 +286,7 @@ private fun PickAtLocation(
     val current = location.quantityPicked ?: 0.0
     val maximum = current + line.quantityToPick
     var amount by remember(location.locationOrgStockId, current, maximum) { mutableDoubleStateOf(current) }
-    val stock = location.stockLabel?.takeIf { it.isNotBlank() } ?: location.stock?.let { quantityText(it) }
+    val stock = location.stock?.let { quantityText(it, location.stockLabel) } ?: location.stockLabel?.takeIf { it.isNotBlank() }?.let(::fractionGlyphs)
     if (maximum <= 0.0) {
         return
     }
