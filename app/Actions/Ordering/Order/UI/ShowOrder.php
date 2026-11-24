@@ -954,6 +954,7 @@ class ShowOrder extends OrgAction
     private function getOrderBoxStatsWithMargins(Order $order): array
     {
         $boxStats = $this->getOrderBoxStats($order);
+        $boxStats['products']['excess_refund'] = \Illuminate\Support\Arr::get($order->data, 'excess_refund');
         $summary  = $this->getMarginSummary($order);
 
         if (!$summary) {

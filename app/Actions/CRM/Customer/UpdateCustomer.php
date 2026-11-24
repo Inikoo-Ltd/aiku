@@ -297,6 +297,12 @@ class UpdateCustomer extends OrgAction
             $customer->update(['settings' => $settings]);
         }
 
+        if (Arr::has($modelData, 'excess_refund_mode')) {
+            $settings = $customer->settings ?? [];
+            data_set($settings, 'excess_refund_mode', Arr::pull($modelData, 'excess_refund_mode'));
+            $customer->update(['settings' => $settings]);
+        }
+
         $oldRegisteredAt = $customer->registered_at;
 
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
@@ -447,6 +453,7 @@ class UpdateCustomer extends OrgAction
             'shop_type_source'                                      => ['sometimes', 'nullable', Rule::enum(CustomerShopTypeSourceEnum::class)],
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
+            'excess_refund_mode'                                    => ['sometimes', Rule::in(['shop', 'refund', 'credit'])],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'credit_limit'                                          => ['sometimes', 'numeric', 'min:0', 'max:1000000', Rule::prohibitedIf(fn () => !$this->canGrantCredit())],
             'payment_terms_days'                                    => ['sometimes', 'nullable', 'integer', 'min:0', 'max:365', Rule::prohibitedIf(fn () => !$this->canGrantCredit())],

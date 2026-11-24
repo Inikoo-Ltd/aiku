@@ -258,6 +258,11 @@ const props = defineProps<{
                 amount: number
                 route_to_add_balance?: routeType
             }
+            excess_refund?: {
+                state: 'pending' | 'unknown' | 'refunded' | 'kept_as_credit' | 'failed'
+                source: 'shop' | 'customer'
+                reason: string | null
+            } | null
             estimated_weight: number
         }
         order_summary: {}
@@ -2434,6 +2439,20 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                             <div v-if="Number(basket_customer_balance) > 0" class="mt-1 text-xs">{{ ctrans("Used first when this order is paid, charge only the rest") }}</div>
                         </div>
                     </dl>
+
+                    <p v-if="box_stats.products.excess_refund" class="mt-1 px-1 text-xs text-gray-600"
+                        :class="{ 'text-amber-600': box_stats.products.excess_refund.state === 'failed' }">
+                        <template v-if="['pending', 'unknown'].includes(box_stats.products.excess_refund.state)">
+                            {{ ctrans('Refund to card not confirmed: check it in Checkout.com before refunding again') }}
+                        </template>
+                        <template v-else-if="box_stats.products.excess_refund.state === 'failed'">
+                            {{ ctrans('Refund failed: :reason, kept as credit', { reason: box_stats.products.excess_refund.reason }) }}
+                        </template>
+                        <template v-else-if="box_stats.products.excess_refund.state === 'refunded' && box_stats.products.excess_refund.source === 'customer'">{{ ctrans('Refunded to card (customer setting)') }}</template>
+                        <template v-else-if="box_stats.products.excess_refund.state === 'refunded'">{{ ctrans('Refunded to card (shop setting)') }}</template>
+                        <template v-else-if="box_stats.products.excess_refund.source === 'customer'">{{ ctrans('Kept as credit (customer setting)') }}</template>
+                        <template v-else>{{ ctrans('Kept as credit (shop setting)') }}</template>
+                    </p>
 
 
                     <!-- Section: Delivery Notes -->

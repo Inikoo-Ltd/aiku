@@ -204,6 +204,15 @@ test('update shop', function (Shop $shop) {
         ->and($shop->organisation->catalogueStats->number_shops_state_open)->toBe(1);
 })->depends('create shop');
 
+test('a shop chooses what happens to money for items not shipped', function (Shop $shop) {
+    $shop = UpdateShop::make()->action($shop, ['excess_refund_mode' => 'refund']);
+    expect(data_get($shop->settings, 'excess_refund.mode'))->toBe('refund')
+        ->and(fn () => UpdateShop::make()->action($shop, ['excess_refund_mode' => 'sometimes']))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    $shop = UpdateShop::make()->action($shop, ['excess_refund_mode' => 'credit']);
+    expect(data_get($shop->settings, 'excess_refund.mode'))->toBe('credit');
+})->depends('create shop');
+
 test('update shop settings creates audit with dotted key', function (Shop $shop) {
     $shop = UpdateShop::make()->action($shop, ['reviews' => true]);
 

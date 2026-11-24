@@ -209,6 +209,17 @@ class EditCustomer extends OrgAction
                     'label' => __('Credit Customer'),
                     'value' => $customer->is_credit_customer,
                 ],
+                'excess_refund_mode'   => [
+                    'type'        => 'select',
+                    'label'       => __('Money for items not shipped'),
+                    'information' => __('Overrides the shop setting for this customer when an order is invoiced for less than was paid.'),
+                    'value'       => Arr::get($customer->settings, 'excess_refund_mode', 'shop'),
+                    'options'     => [
+                        ['label' => __('As the shop'), 'value' => 'shop'],
+                        ['label' => __('Refund to the card'), 'value' => 'refund'],
+                        ['label' => __('Keep as credit'), 'value' => 'credit'],
+                    ],
+                ],
                 'accounting_reference' => [
                     'type'     => 'input',
                     'label'    => __('Sage Customer Number'),

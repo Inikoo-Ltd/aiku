@@ -281,6 +281,11 @@ class RefundPaymentByApi extends OrgAction
             return max(0, round(min($topUp - self::refundedFromCredit([$payment->id]), $leftOnPayment), 2));
         }
 
+        if ($payment->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->exists()
+            && $payment->orders()->whereNotNull('orders.data->excess_refund')->exists()) {
+            return self::invoicedExcessLeft($payment, $leftOnPayment);
+        }
+
         if (!self::onlyCancelledOrders($payment)) {
             return 0;
         }
@@ -300,6 +305,38 @@ class RefundPaymentByApi extends OrgAction
             ->all();
 
         return max(0, round(min($creditedByCancel - self::refundedFromCredit($cardPaymentIds), $leftOnPayment), 2));
+    }
+
+    /**
+     * What invoicing put in the customer credit for items not shipped in the orders this payment paid (the
+     * FROM_EXCESS credit of their account refund payments), net of what card payments of those orders already
+     * sent back from the credit, and never more than is left on this payment.
+     */
+    private static function invoicedExcessLeft(Payment $payment, float $leftOnPayment): float
+    {
+        $orderIds = $payment->orders()->pluck('orders.id');
+        if ($orderIds->isEmpty()) {
+            return 0;
+        }
+
+        $excessPaymentIds = Payment::whereHas('orders', fn ($query) => $query->whereIn('orders.id', $orderIds))
+            ->where('type', PaymentTypeEnum::REFUND)
+            ->where('status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::ACCOUNT))
+            ->pluck('id');
+
+        $excess = (float) CreditTransaction::whereIn('payment_id', $excessPaymentIds)
+            ->where('type', CreditTransactionTypeEnum::FROM_EXCESS)
+            ->where('amount', '>', 0)
+            ->sum('amount');
+
+        $cardPaymentIds = Payment::whereHas('orders', fn ($query) => $query->whereIn('orders.id', $orderIds))
+            ->where('type', PaymentTypeEnum::PAYMENT)
+            ->pluck('id')
+            ->all();
+
+        return max(0, round(min($excess - self::refundedFromCredit($cardPaymentIds), $leftOnPayment), 2));
     }
 
     /**

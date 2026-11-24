@@ -307,6 +307,15 @@ test('a customer keeps a Peppol ID only in scheme:number form', function (Custom
     expect($customer->refresh()->peppol_id)->toBeNull();
 })->depends('create web user');
 
+test('a customer keeps its own setting for money for items not shipped', function (Customer $customer) {
+    UpdateCustomer::make()->action($customer, ['excess_refund_mode' => 'refund']);
+    expect(Arr::get($customer->refresh()->settings, 'excess_refund_mode'))->toBe('refund')
+        ->and(fn () => UpdateCustomer::make()->action($customer, ['excess_refund_mode' => 'anything']))->toThrow(Illuminate\Validation\ValidationException::class);
+
+    UpdateCustomer::make()->action($customer, ['excess_refund_mode' => 'shop']);
+    expect(Arr::get($customer->refresh()->settings, 'excess_refund_mode'))->toBe('shop');
+})->depends('create web user');
+
 test('customer email change leaves a web user whose email would collide with another web user of the website', function (Customer $customer) {
     $customer->refresh();
     $follower = $customer->webUsers()->where('email', $customer->email)->first()

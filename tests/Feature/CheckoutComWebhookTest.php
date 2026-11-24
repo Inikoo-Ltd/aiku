@@ -1378,3 +1378,157 @@ test('a cancel that kept part of the money caps the refund from credit, an API r
     expect($refundByApi::refundOptions($cancelledPayment))->toBeNull()
         ->and(fn () => $refundByApi::make()->handle($cancelledPayment, ['amount' => 1, 'from_credit' => true]))->toThrow(Illuminate\Validation\ValidationException::class, 'Only a successful payment');
 });
+
+function invoiceCapturedOrder($test, string $reference, int $cents, ?string $refundAction = 'act_test_excess_refund'): array
+{
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($test->organisation, $test->shop);
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($test->customer, $test->product, $paymentAccountShop);
+    ProcessCheckoutComPaymentGatewayLog::partialMock()->shouldReceive('getCheckOutPayment')
+        ->andReturn(['id' => $reference, 'status' => 'Captured', 'amount' => $cents, 'source' => ['type' => 'card']]);
+    PreProcessCheckoutComPaymentGatewayLog::run($test->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_'.$reference, $reference, $orderPaymentApiPoint, $cents),
+        'gateway' => 'checkout-com',
+    ]));
+
+    $deliveryNoteIds = $order->deliveryNotes()->pluck('delivery_notes.id');
+    if ($deliveryNoteIds->isNotEmpty()) {
+        DB::table('delivery_note_items')->whereIn('delivery_note_id', $deliveryNoteIds)->delete();
+        DB::table('delivery_notes')->whereIn('id', $deliveryNoteIds)->delete();
+        $order->update(['state' => OrderStateEnum::CREATING]);
+    }
+
+    $calls = new ArrayObject();
+    \App\Actions\Accounting\Payment\RefundPaymentByApi::partialMock()->shouldReceive('refundAtCheckout')
+        ->andReturnUsing(function ($payment, $amount) use ($calls, $refundAction) {
+            if ($refundAction === 'unknown') {
+                throw App\Exceptions\CheckoutRefundOutcomeUnknown::withMessages(['amount' => 'No answer from Checkout.com']);
+            }
+            if ($refundAction === null) {
+                throw Illuminate\Validation\ValidationException::withMessages(['amount' => 'Checkout.com refused the refund: refund_not_allowed']);
+            }
+            $calls->append([$payment->reference, $amount]);
+
+            return $refundAction.count($calls);
+        });
+
+    return [$order->refresh(), Payment::where('reference', $reference)->firstOrFail(), $calls];
+}
+
+function excessCredit(Order $order): float
+{
+    return round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)
+        ->where('type', \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::FROM_EXCESS)
+        ->whereIn('payment_id', $order->payments()->select('payments.id'))->sum('amount'), 2);
+}
+
+test('money for items not shipped stays in credit when no setting asks for a refund', function () {
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_off', 200000);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+
+    expect(excessCredit($order))->toBeGreaterThan(0)
+        ->and($calls->getArrayCopy())->toBe([])
+        ->and(Illuminate\Support\Arr::has($order->refresh()->data, 'excess_refund'))->toBeFalse()
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0);
+});
+
+test('a shop set to refund sends the money for items not shipped back to the card and records it once', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_shop', 200000);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+    $excess = excessCredit($order);
+    $ledger = round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2);
+
+    $record = $order->refresh()->data['excess_refund'];
+    expect($excess)->toBeGreaterThan(0)
+        ->and($record['state'])->toBe('refunded')
+        ->and($record['source'])->toBe('shop')
+        ->and($record['action_ids'])->toBe(['act_test_excess_refund1'])
+        ->and($calls->getArrayCopy())->toBe([['pay_test_excess_shop', $excess]])
+        ->and((float) $payment->refresh()->total_refund)->toBe($excess)
+        ->and(\App\Actions\Accounting\Payment\RefundPaymentByApi::creditRefundableLeft($payment))->toBe(0.0);
+
+    \App\Actions\Ordering\Order\RefundExcessToCard::make()->handle($order, $excess);
+    \App\Actions\Ordering\Order\RefundExcessToCard::make()->handle($order, $excess);
+
+    expect($calls)->toHaveCount(1)
+        ->and(round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2))->toBe($ledger);
+});
+
+test('a customer set to keep credit overrides a shop set to refund', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'credit']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_cust_credit', 200000);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+
+    expect($calls->getArrayCopy())->toBe([])
+        ->and(Illuminate\Support\Arr::has($order->refresh()->data, 'excess_refund'))->toBeFalse();
+});
+
+test('a customer set to refund overrides a shop set to keep credit', function () {
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'refund']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_cust_refund', 200000);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+
+    expect($calls)->toHaveCount(1)
+        ->and($order->refresh()->data['excess_refund']['source'])->toBe('customer')
+        ->and($order->data['excess_refund']['state'])->toBe('refunded');
+});
+
+test('a refused refund keeps the money in credit and records the failure', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    list($order, $payment) = invoiceCapturedOrder($this, 'pay_test_excess_refused', 200000, null);
+    $ledgerBefore = round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+    $excess = excessCredit($order);
+
+    $record = $order->refresh()->data['excess_refund'];
+    expect($record['state'])->toBe('failed')
+        ->and($record['reason'])->toContain('refund_not_allowed')
+        ->and(round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2))->toBe(round($ledgerBefore + $excess, 2))
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0);
+});
+
+test('only the part of the excess that was paid by card is refunded, the bank paid part stays in credit', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_mixed', 1000);
+
+    $bank = App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        ['code' => 'ACC'.mt_rand(1000, 9999), 'name' => 'Bank Account Excess Mixed']
+    );
+    App\Actions\Ordering\Order\PayOrder::make()->action($order, $bank, [
+        'amount' => 2000.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    $record = $order->refresh()->data['excess_refund'];
+    expect(excessCredit($order))->toBeGreaterThan(10.0)
+        ->and($calls->getArrayCopy())->toBe([['pay_test_excess_mixed', 10.0]])
+        ->and($record['state'])->toBe('refunded')
+        ->and((float) $record['refunded'])->toBe(10.0)
+        ->and($record['reason'])->not->toBeNull();
+});
+
+test('an unanswered refund is recorded as unknown, never retried and leaves the credit untouched', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_excess_unknown', 200000, 'unknown');
+
+    \App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order);
+    $excess = excessCredit($order);
+    \App\Actions\Ordering\Order\RefundExcessToCard::make()->handle($order, $excess);
+
+    expect($order->refresh()->data['excess_refund']['state'])->toBe('unknown')
+        ->and((float) $payment->refresh()->total_refund)->toBe(0.0)
+        ->and($excess)->toBeGreaterThan(0);
+});

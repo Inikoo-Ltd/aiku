@@ -233,6 +233,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                     'payment_id' => $creditPayment->id,
                     'date'       => now()
                 ]);
+                RefundExcessToCard::dispatchIfRefund($order, $amountToCredit);
             }
             $order->refresh();
 
