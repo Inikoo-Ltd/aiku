@@ -29,6 +29,8 @@ import { canShareScreen, pickScreen, useStaffCalls } from "@/Stores/staff-calls"
 import StaffMessageTicks from "@/Components/Messaging/StaffMessageTicks.vue"
 import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskMessageEditor.vue"
 import DeskMessageToolbar, { type DeskToolbarMenuItem } from "@/Components/Messaging/DeskMessageToolbar.vue"
+import { STAFF_MESSAGE_COUNT_SHOWN_FROM, STAFF_MESSAGE_MAX_CHARACTERS, staffMessageCharacters } from "@/Components/Messaging/staffMessageLimit"
+import { useLocaleStore } from "@/Stores/locale"
 import { faTasks } from "@fal"
 import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
 
@@ -209,6 +211,18 @@ const { members: taskMembers, onlineCount: taskOnlineCount } = useStaffTaskMembe
 )
 
 const newMessage = ref("")
+const locale = useLocaleStore()
+const messageCharacters = computed(() => staffMessageCharacters(newMessage.value))
+const isMessageTooLong = computed(() => messageCharacters.value > STAFF_MESSAGE_MAX_CHARACTERS)
+const showsMessageLength = computed(() => messageCharacters.value >= STAFF_MESSAGE_COUNT_SHOWN_FROM)
+const messageLengthId = computed(() => `staff-message-length-${props.conversation.ulid}`)
+const messageLengthText = computed(() => {
+    const replacements = { count: locale.number(messageCharacters.value), max: locale.number(STAFF_MESSAGE_MAX_CHARACTERS) }
+
+    return isMessageTooLong.value
+        ? ctrans("Too long to send: :count of :max characters. Shorten it or send it in parts.", replacements)
+        : ctrans(":count of :max characters. Longer messages cannot be sent.", replacements)
+})
 const mentionPeople = computed<DeskPerson[]>(() =>
     participants.value
         .filter((participant) => participant.id !== myId.value)
@@ -507,7 +521,7 @@ const clearReply = () => {
 
 const sendCurrent = async () => {
     const body = newMessage.value.trim()
-    if (!body && !pendingImage.value) return
+    if ((!body && !pendingImage.value) || isMessageTooLong.value) return
     newMessage.value = ""
     const image = pendingImage.value
     const parentId = parentMessage.value?.id ?? null
@@ -1076,6 +1090,7 @@ const onReactionPick = (emoji: string) => {
                     :placeholder="ctrans('Write a message…')"
                     :people="mentionPeople"
                     :can-send="!!pendingImage"
+                    :sending="isMessageTooLong"
                     :attach-label="ctrans('Attach a picture')"
                     @attach="pickImage"
                     @submit="sendCurrent"
@@ -1099,23 +1114,34 @@ const onReactionPick = (emoji: string) => {
                         ref="textarea"
                         v-model="newMessage"
                         rows="1"
-                        class="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[--app-accent]"
-                        :class="fullScreen ? 'min-h-[44px] text-base' : 'text-sm'"
+                        class="flex-1 resize-none border rounded-lg px-3 py-2 focus:outline-none focus:ring-1"
+                        :class="[fullScreen ? 'min-h-[44px] text-base' : 'text-sm', isMessageTooLong ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[var(--app-accent)]']"
                         :placeholder="ctrans('Write a message…')"
+                        :aria-invalid="isMessageTooLong"
+                        :aria-describedby="showsMessageLength ? messageLengthId : undefined"
                         @input="onTextareaInput"
                         @keydown="onTextareaKeydown"
                         @paste="onPaste"
                     />
                     <button
-                        class="shrink-0 rounded-full bg-[--app-accent] text-[--app-accent-text] flex items-center justify-center hover:bg-[--app-accent-strong] disabled:opacity-40"
+                        class="shrink-0 rounded-full bg-[var(--app-accent)] text-[var(--app-accent-text)] flex items-center justify-center hover:bg-[var(--app-accent-strong)] disabled:opacity-40"
                         :class="fullScreen ? 'h-11 w-11' : 'h-9 w-9'"
-                        :disabled="!newMessage.trim() && !pendingImage"
+                        :disabled="(!newMessage.trim() && !pendingImage) || isMessageTooLong"
                         @click="sendCurrent"
                     >
                         <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
                     </button>
                 </template>
             </div>
+
+            <p
+                v-if="showsMessageLength"
+                :id="messageLengthId"
+                class="-mt-1 flex items-start gap-1 px-1 pb-2 text-xs"
+                :class="isMessageTooLong ? 'font-medium text-red-600' : 'text-gray-500'">
+                <FontAwesomeIcon v-if="isMessageTooLong" icon="fal fa-exclamation-circle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                <span>{{ messageLengthText }}</span>
+            </p>
         </div>
 
         <StaffTaskDialog

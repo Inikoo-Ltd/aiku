@@ -187,6 +187,20 @@ describe('staff messaging', function () {
             ->assertForbidden();
     });
 
+    test('a message is accepted up to 5,000 characters counted as the chat box counts them, and refused above, INI-508', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        $send         = fn (string $body) => actingAs($this->user)
+            ->postJson(route('grp.chat.staff.conversations.messages.store', $conversation), ['body' => $body]);
+
+        $send(str_repeat('😀', 5000))->assertSuccessful();
+        $send('  '.str_repeat('a', 5000)."\n")->assertSuccessful();
+        $send(str_repeat('a', 5001))->assertUnprocessable()->assertJsonValidationErrors('body');
+
+        expect($conversation->messages()->count())->toBe(2);
+    });
+
     test('empty conversation is listed only for its creator until a message is sent', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
