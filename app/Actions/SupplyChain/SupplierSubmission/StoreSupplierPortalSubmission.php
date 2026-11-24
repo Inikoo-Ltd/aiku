@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\Procurement\OrgSupplierProducts\NotifyPurchasingOfSupplierProductAvailability;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderCompliance;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalOrderPlan;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
@@ -18,7 +19,7 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
-use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
 use App\Models\SupplyChain\SupplierSubmission;
@@ -38,6 +39,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * submission we asked more about can be completed and sent again, and a price change edited until we decide.
  * Material planning sent from the Plan for next orders page keeps the plan of its product as it was when sent, and
  * tells the product's buyers each time it is sent with something new; it never approves any compliance.
+ * A compliance document is always about one product; each time it is sent with something new the product's buyers,
+ * the compliance team and the supplier's owner (when another contact sent it) are told.
  */
 class StoreSupplierPortalSubmission
 {
@@ -99,8 +102,26 @@ class StoreSupplierPortalSubmission
         if ($type === SupplierSubmissionTypeEnum::MATERIAL_PLANNING && $isNews) {
             NotifyPurchasingOfSupplierPlanningNote::run($submission);
         }
+        if ($type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT && $isNews) {
+            NotifyOfSupplierComplianceDocument::run($submission);
+        }
 
         return $submission;
+    }
+
+    /**
+     * The documents a supplier sends for a product: the compliance documents kept on its trade unit, plus Other.
+     *
+     * @return array<string, string>
+     */
+    public static function complianceDocumentTypes(): array
+    {
+        $labels = TradeAttachmentScopeEnum::labels();
+
+        return collect(GetPurchaseOrderCompliance::DOCUMENTS)
+            ->push(TradeAttachmentScopeEnum::OTHER)
+            ->mapWithKeys(fn (TradeAttachmentScopeEnum $scope) => [$scope->value => $labels[$scope->value]])
+            ->all();
     }
 
     /**
@@ -113,7 +134,7 @@ class StoreSupplierPortalSubmission
                 'path'         => $file->getPathname(),
                 'originalName' => $file->getClientOriginalName(),
                 'extension'    => $file->guessExtension() ?? 'bin',
-                'scope'        => $type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? (string) Arr::get($submission->data, 'document_type', SupplyChainAttachmentScopeEnum::OTHER->value) : $type->value,
+                'scope'        => $type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? (string) Arr::get($submission->data, 'document_type', TradeAttachmentScopeEnum::OTHER->value) : $type->value,
                 'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             ]);
         }
@@ -199,8 +220,8 @@ class StoreSupplierPortalSubmission
                 ...$files('jpg,jpeg,png,webp,pdf', false),
             ],
             SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => [
-                'document_type'       => ['required', Rule::in(collect(SupplyChainAttachmentScopeEnum::cases())->map->value->diff(['Price list', 'Catalogue'])->values()->all())],
-                'supplier_product_id' => $product,
+                'document_type'       => ['required', Rule::in(array_keys(self::complianceDocumentTypes()))],
+                'supplier_product_id' => ['required', ...array_slice($product, 1)],
                 'expires_on'          => ['nullable', 'date', 'after:today'],
                 'note'                => $text(2000),
                 ...$files('pdf,jpg,jpeg,png', true),

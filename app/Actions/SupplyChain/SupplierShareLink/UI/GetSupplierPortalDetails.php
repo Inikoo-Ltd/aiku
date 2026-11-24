@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 
 use App\Actions\SupplyChain\SupplierSubmission\UI\ShowSupplierSubmission;
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermStateEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermTypeEnum;
@@ -227,7 +228,7 @@ class GetSupplierPortalDetails
             ->orderByRaw('expires_on nulls last')
             ->get()
             ->map(fn (SupplierSubmission $submission) => [
-                'document_type' => $submission->data['document_type'] ?? null,
+                'document_type' => TradeAttachmentScopeEnum::labels()[$submission->data['document_type'] ?? ''] ?? ($submission->data['document_type'] ?? null),
                 'product'       => $submission->supplierProduct?->code,
                 'expires_on'    => $submission->expires_on?->toDateString(),
                 'days_left'     => $submission->expires_on ? (int) now()->startOfDay()->diffInDays($submission->expires_on, false) : null,

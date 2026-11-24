@@ -19,7 +19,6 @@ use App\Actions\SupplyChain\SupplierSubmission\ImportSupplierPortalProductPropos
 use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
-use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
 use App\Exports\SupplyChain\SupplierProductProposalTemplateExport;
 use App\Http\Resources\GoodsIn\StockDeliveryFeedbackResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
@@ -210,7 +209,7 @@ class ShowSupplierShare
                 'products_per_request' => ImportSupplierPortalProductProposals::MAX_PRODUCTS_PER_REQUEST,
                 'columns'              => SupplierProductProposalTemplateExport::guide($currency),
             ],
-            'document_types'    => collect(SupplyChainAttachmentScopeEnum::labels())->except(['Price list', 'Catalogue'])->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+            'document_types'    => collect(StoreSupplierPortalSubmission::complianceDocumentTypes())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
             'max_files'         => StoreSupplierPortalSubmission::MAX_FILES,
             'max_file_mb'       => (int) (StoreSupplierPortalSubmission::MAX_FILE_KB / 1024),
             'designations'      => collect(SupplierPortalContactDesignationEnum::labels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),

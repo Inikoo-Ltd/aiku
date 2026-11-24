@@ -20,6 +20,8 @@ import { routeType } from "@/types/route"
 export type ComplianceChecklistFile = {
 	name: string
 	purchase_order_reference: string | null
+	supplier_code: string | null
+	expires_on: string | null
 	download_route: routeType
 }
 
@@ -64,6 +66,8 @@ onMounted(() => {
 
 const totalDocuments = computed(() => props.data?.products.reduce((total, product) => total + product.documents.length, 0) ?? 0)
 const checkedDocuments = computed(() => props.data?.products.reduce((total, product) => total + product.documents.filter((document) => document.checked).length, 0) ?? 0)
+
+const isExpiringSoon = (date: string): boolean => new Date(date).getTime() - Date.now() <= 30 * 86400000
 
 const rowKey = (product: ComplianceChecklistProduct, document: ComplianceChecklistDocument) => `${product.trade_unit_id}-${document.scope}`
 
@@ -181,6 +185,8 @@ const checkTooltip = (document: ComplianceChecklistDocument): string | undefined
 												<span class="truncate">{{ file.name }}</span>
 											</a>
 											<span v-if="file.purchase_order_reference" class="whitespace-nowrap text-gray-400">{{ ctrans("from PO :reference", { reference: file.purchase_order_reference }) }}</span>
+											<span v-if="file.supplier_code" class="whitespace-nowrap text-gray-400">{{ ctrans("from supplier :code", { code: file.supplier_code }) }}</span>
+											<span v-if="file.expires_on" class="whitespace-nowrap" :class="isExpiringSoon(file.expires_on) ? 'text-amber-600' : 'text-gray-400'">{{ ctrans("expires :date", { date: useFormatTime(file.expires_on) }) }}</span>
 										</li>
 									</ul>
 								</div>

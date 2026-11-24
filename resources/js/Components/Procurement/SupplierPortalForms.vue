@@ -338,7 +338,7 @@ const caption = "font-medium text-gray-700"
 
 			<template v-else-if="type === 'compliance_document'">
 				<label :class="label"><span :class="caption">{{ ctrans("Document") }} <span class="text-red-500">*</span></span><Select v-model="form.document_type" :options="forms.document_types" optionLabel="label" optionValue="value" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Product, if it is about one") }}</span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter showClear /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Product") }} <span class="text-red-500">*</span></span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Expires on") }}</span><DatePicker v-model="form.expires_on" dateFormat="dd M yy" showIcon /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
 			</template>
@@ -376,7 +376,7 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<div v-if="fieldsFor[type].includes('files')" class="flex flex-col gap-1 text-sm md:col-span-2">
-				<span :class="caption">{{ type === "photos" ? ctrans("Pictures") : type === "compliance_document" ? ctrans("Files") : type === "material_planning" ? ctrans("Sourcing documents") : ctrans("Pictures and documents") }}</span>
+				<span :class="caption">{{ type === "photos" ? ctrans("Pictures") : type === "compliance_document" ? ctrans("Files") : type === "material_planning" ? ctrans("Sourcing documents") : ctrans("Pictures and documents") }} <span v-if="(type === 'compliance_document' || type === 'photos') && !editing" class="text-red-500">*</span></span>
 				<FileUpload :key="fileKey" mode="basic" :auto="false" customUpload multiple :chooseLabel="ctrans('Choose files')" @select="(event) => (form.files = event.files)" />
 				<span class="text-xs text-gray-400">{{ ctrans("Up to :count files, :mb MB each. JPG, PNG or PDF.", { count: String(forms.max_files), mb: String(forms.max_file_mb) }) }}</span>
 				<progress v-if="form.progress" :value="form.progress.percentage" max="100" class="w-full">{{ form.progress.percentage }}%</progress>

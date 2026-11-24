@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\SupplierSubmission;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\CRM\Prospect\StoreProspect;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
@@ -15,10 +16,13 @@ use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
 use App\Actions\SupplyChain\SupplierPortalContact\SyncSupplierPortalContact;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Traits\WithAttachMediaToModel;
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductUnavailableReasonEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierProduct;
@@ -32,6 +36,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * name, main contact and email are staff-only, and who can sign in lives in the portal contacts. Pictures are added to
  * the supplier product, which keeps them for internal use, never on a website. A price change becomes the product cost and lifts the hold it put on the product.
  * A new contact becomes one more supplier email, which can sign in and gets the newsletter.
+ * A compliance document goes on the trade unit of its product, so every purchase order of it shows the document.
  * Returns what it did, kept on the submission.
  */
 class ApplySupplierSubmission
@@ -201,25 +206,50 @@ class ApplySupplierSubmission
     }
 
     /**
-     * @return array{media_ids: array<int, int>}
+     * The files go on the trade unit of the product, where the purchase orders read them, or on the trade unit it
+     * takes its substance documents from. Each keeps the supplier and submission it came from and when it expires.
+     *
+     * @return array{media_ids: array<int, int>, trade_unit_ids: array<int, int>}
      */
     private function complianceDocument(SupplierSubmission $supplierSubmission): array
     {
-        $supplier = $supplierSubmission->supplier;
-        $mediaIds = [];
+        $scope      = (string) Arr::get($supplierSubmission->data, 'document_type', TradeAttachmentScopeEnum::OTHER->value);
+        $tradeUnits = $supplierSubmission->supplierProduct?->tradeUnits()->with('documentsTradeUnit')->get()
+            ->map(fn (TradeUnit $tradeUnit) => $tradeUnit->documentsTradeUnit && in_array($scope, TradeAttachmentScopeEnum::substanceScopes(), true) ? $tradeUnit->documentsTradeUnit : $tradeUnit)
+            ->unique('id')
+            ->values() ?? collect();
 
-        foreach ($supplierSubmission->attachments as $attachment) {
-            if (!$supplier->attachments()->where('media_id', $attachment->id)->exists()) {
-                $supplier->attachments()->attach($attachment->id, [
-                    'group_id' => $supplier->group_id,
-                    'scope'    => $attachment->pivot->scope,
-                    'caption'  => trim($attachment->pivot->caption.($supplierSubmission->expires_on ? ' · '.__('expires :date', ['date' => $supplierSubmission->expires_on->toDateString()]) : '')),
-                    'data'     => '{}',
-                ]);
-            }
-            $mediaIds[] = $attachment->id;
+        if ($tradeUnits->isEmpty()) {
+            throw ValidationException::withMessages(['state' => __('This product has no trade unit yet, so the document has nowhere to go')]);
         }
 
-        return ['media_ids' => $mediaIds];
+        $pivotData = json_encode(array_filter([
+            'supplier_submission_id' => $supplierSubmission->id,
+            'supplier_id'            => $supplierSubmission->supplier_id,
+            'supplier_code'          => $supplierSubmission->supplier->code,
+            'expires_on'             => $supplierSubmission->expires_on?->toDateString(),
+        ]));
+
+        $mediaIds = [];
+        foreach ($tradeUnits as $tradeUnit) {
+            foreach ($supplierSubmission->attachments as $attachment) {
+                if (!$tradeUnit->attachments()->where('media_id', $attachment->id)->exists()) {
+                    $tradeUnit->attachments()->attach($attachment->id, [
+                        'group_id' => $tradeUnit->group_id,
+                        'scope'    => $scope,
+                        'caption'  => $attachment->pivot->caption,
+                        'data'     => $pivotData,
+                    ]);
+                }
+                $mediaIds[] = $attachment->id;
+            }
+
+            $tradeUnit->products()->get()
+                ->merge(in_array($scope, TradeAttachmentScopeEnum::substanceScopes(), true) ? $tradeUnit->productsOfDocumentsSharers() : [])
+                ->unique('id')
+                ->each(fn (Product $product) => CloneProductAttachmentsFromTradeUnits::dispatch($product));
+        }
+
+        return ['media_ids' => array_values(array_unique($mediaIds)), 'trade_unit_ids' => $tradeUnits->pluck('id')->all()];
     }
 }

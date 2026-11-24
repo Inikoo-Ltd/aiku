@@ -10,9 +10,11 @@ namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\OrgAction;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SupplyChain\SupplierSubmission;
+use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +26,9 @@ use Lorisleiva\Actions\ActionRequest;
  * Staff move a submission along (under review, more information requested, accepted, not proceeding) with the
  * feedback the supplier reads on its page. Accepting applies it in aiku where it can be: the company details on the
  * supplier, pictures on the supplier product, a referral as a prospect of the shop chosen here, a compliance
- * document on the supplier, a price change as the product cost. A new product idea is never applied by itself. Not
- * proceeding with a price change lifts the hold it put on the product, at the cost it had.
+ * document on the trade unit of its product, a price change as the product cost. A new product idea is never applied by itself. Not
+ * proceeding with a price change lifts the hold it put on the product, at the cost it had. A compliance document is
+ * also decided by the compliance team or a buyer of its product (canReviewComplianceDocument).
  */
 class DecideSupplierSubmission extends OrgAction
 {
@@ -62,7 +65,33 @@ class DecideSupplierSubmission extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->asAction || $request->user()->authTo('supply-chain.edit');
+        return $this->asAction || self::canDecide($request->user(), $this->supplierSubmission);
+    }
+
+    public static function canDecide(User $user, SupplierSubmission $supplierSubmission): bool
+    {
+        if ($user->authTo('supply-chain.edit')) {
+            return true;
+        }
+
+        return $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT && self::canReviewComplianceDocument($user, $supplierSubmission);
+    }
+
+    /**
+     * A compliance document is reviewed by the compliance team or by a buyer of the product: anyone who edits
+     * procurement in an organisation that buys it.
+     */
+    public static function canReviewComplianceDocument(User $user, SupplierSubmission $supplierSubmission): bool
+    {
+        if ($user->authTo('compliance.edit')) {
+            return true;
+        }
+
+        $organisationIds = $supplierSubmission->supplierProduct?->orgSupplierProducts()
+            ->whereHas('organisation', fn ($query) => $query->where('type', '!=', OrganisationTypeEnum::AGENT))
+            ->pluck('organisation_id') ?? collect();
+
+        return $organisationIds->contains(fn (int $organisationId) => $user->authTo("procurement.$organisationId.edit"));
     }
 
     public function rules(): array

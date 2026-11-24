@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\SupplyChain\SupplierSubmission\ApplySupplierSubmission;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
@@ -26,7 +27,23 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowSupplierSubmission extends OrgAction
 {
-    use WithSupplyChainAuthorisation;
+    use WithSupplyChainAuthorisation {
+        authorize as supplyChainAuthorize;
+    }
+
+    private ?SupplierSubmission $supplierSubmission = null;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $canView = $this->supplyChainAuthorize($request);
+        if ($this->asAction || !$this->supplierSubmission) {
+            return $canView;
+        }
+
+        $this->canEdit = DecideSupplierSubmission::canDecide($request->user(), $this->supplierSubmission);
+
+        return $canView || $this->canEdit;
+    }
 
     public static function summary(SupplierSubmission $submission, ?string $productCode = null): string
     {
@@ -37,7 +54,11 @@ class ShowSupplierSubmission extends OrgAction
             SupplierSubmissionTypeEnum::PHOTOS => trim(($productCode ?? '').' '.Arr::get($data, 'picture_kind', '')),
             SupplierSubmissionTypeEnum::REFERRAL => trim(Arr::get($data, 'company_name', '').' · '.Arr::get($data, 'country', ''), ' ·'),
             SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL => (string) Arr::get($data, 'name', ''),
-            SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => trim(Arr::get($data, 'document_type', '').($submission->expires_on ? ' · '.__('expires :date', ['date' => $submission->expires_on->toDateString()]) : '')),
+            SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT => trim(implode(' · ', array_filter([
+                $productCode,
+                TradeAttachmentScopeEnum::labels()[Arr::get($data, 'document_type', '')] ?? Arr::get($data, 'document_type'),
+                $submission->expires_on ? __('expires :date', ['date' => $submission->expires_on->toDateString()]) : null,
+            ]))),
             SupplierSubmissionTypeEnum::PRICE_CHANGE => trim(($productCode ?? '').' → '.Arr::get($data, 'proposed_price', '')),
             SupplierSubmissionTypeEnum::CONTACT => trim(Arr::get($data, 'name', '').' · '.Arr::get($data, 'email', ''), ' ·'),
             SupplierSubmissionTypeEnum::MATERIAL_PLANNING => trim(($productCode ?? '').' · '.Arr::get($data, 'material', ''), ' ·'),
@@ -51,6 +72,7 @@ class ShowSupplierSubmission extends OrgAction
 
     public function asController(SupplierSubmission $supplierSubmission, ActionRequest $request): SupplierSubmission
     {
+        $this->supplierSubmission = $supplierSubmission;
         $this->initialisationFromGroup($supplierSubmission->group, $request);
 
         return $this->handle($supplierSubmission);
@@ -103,7 +125,9 @@ class ShowSupplierSubmission extends OrgAction
                 'type_label'   => SupplierSubmissionTypeEnum::labels()[$supplierSubmission->type->value],
                 'state'        => $supplierSubmission->state->value,
                 'state_label'  => SupplierSubmissionStateEnum::labels()[$supplierSubmission->state->value],
-                'data'         => $supplierSubmission->data,
+                'data'         => $supplierSubmission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT
+                    ? [...$supplierSubmission->data, 'document_type' => TradeAttachmentScopeEnum::labels()[Arr::get($supplierSubmission->data, 'document_type', '')] ?? Arr::get($supplierSubmission->data, 'document_type')]
+                    : $supplierSubmission->data,
                 'current'      => $current,
                 'feedback'     => $supplierSubmission->feedback,
                 'expires_on'   => $supplierSubmission->expires_on?->toDateString(),

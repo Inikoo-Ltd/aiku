@@ -91,7 +91,7 @@ class GetPurchaseOrderCompliance
     }
 
     /**
-     * @return array{documents: array<int, array{scope: string, label: string, count: int, files: array<int, array{name: string, purchase_order_reference: ?string, download_route: array{name: string, parameters: array<string, string>}}>, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
+     * @return array{documents: array<int, array{scope: string, label: string, count: int, files: array<int, array{name: string, purchase_order_reference: ?string, supplier_code: ?string, expires_on: ?string, download_route: array{name: string, parameters: array<string, string>}}>, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
      */
     public function documents(TradeUnit $tradeUnit): array
     {
@@ -99,7 +99,9 @@ class GetPurchaseOrderCompliance
             ->groupBy(fn (Media $attachment) => str_replace(['_private', 'msds'], ['', 'sds'], (string) $attachment->pivot->scope))
             ->map(fn (Collection $attachments) => $attachments->map(fn (Media $attachment) => [
                 'name'                     => $attachment->file_name,
-                'purchase_order_reference' => $this->uploadedFromPurchaseOrderReference($attachment),
+                'purchase_order_reference' => Arr::get($this->pivotData($attachment), 'purchase_order_reference'),
+                'supplier_code'            => Arr::get($this->pivotData($attachment), 'supplier_code'),
+                'expires_on'               => Arr::get($this->pivotData($attachment), 'expires_on'),
                 'download_route'           => [
                     'name'       => 'grp.media.download',
                     'parameters' => ['media' => $attachment->ulid],
@@ -128,7 +130,7 @@ class GetPurchaseOrderCompliance
      * Every product of the order with its compliance documents, each checked once it has a file or someone ticked it
      * as checked and OK for this order.
      *
-     * @return array<int, array{trade_unit_id: int, code: string, name: ?string, route: array{name: string, parameters: array<int, string>}, documents: array<int, array{scope: string, label: string, files: array<int, array{name: string, purchase_order_reference: ?string, download_route: array{name: string, parameters: array<string, string>}}>, has_files: bool, checked: bool, checked_by: ?string, checked_at: ?string}>}>
+     * @return array<int, array{trade_unit_id: int, code: string, name: ?string, route: array{name: string, parameters: array<int, string>}, documents: array<int, array{scope: string, label: string, files: array<int, array{name: string, purchase_order_reference: ?string, supplier_code: ?string, expires_on: ?string, download_route: array{name: string, parameters: array<string, string>}}>, has_files: bool, checked: bool, checked_by: ?string, checked_at: ?string}>}>
      */
     public function checklist(PurchaseOrder $purchaseOrder): array
     {
@@ -161,14 +163,19 @@ class GetPurchaseOrderCompliance
         ])->sortBy('code')->values()->all();
     }
 
-    private function uploadedFromPurchaseOrderReference(Media $attachment): ?string
+    /**
+     * Where an attachment came from: the order it was uploaded from, or the supplier that sent it and when it expires.
+     *
+     * @return array{purchase_order_reference?: string, supplier_code?: string, expires_on?: string}
+     */
+    private function pivotData(Media $attachment): array
     {
         $data = $attachment->pivot->data ?? null;
         if (is_string($data)) {
             $data = json_decode($data, true);
         }
 
-        return Arr::get($data ?? [], 'purchase_order_reference');
+        return is_array($data) ? $data : [];
     }
 
     /**

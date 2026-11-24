@@ -16,6 +16,8 @@ library.add(faCheck, faUpload, faExclamationTriangle, faDownload)
 interface DocumentFile {
     name: string
     purchase_order_reference: string | null
+    supplier_code: string | null
+    expires_on: string | null
     download_route: routeType
 }
 
@@ -134,7 +136,11 @@ async function upload(tradeUnitId: number, document: Document, event: Event) {
                             <FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
                             <span class="truncate">{{ file.name }}</span>
                         </a>
-                        <p v-if="file.purchase_order_reference" class="-mt-1 pb-1.5 pl-6 text-xs text-gray-400">{{ ctrans("from PO :reference", { reference: file.purchase_order_reference }) }}</p>
+                        <p v-if="file.purchase_order_reference || file.supplier_code || file.expires_on" class="-mt-1 pb-1.5 pl-6 text-xs text-gray-400">
+                            <template v-if="file.purchase_order_reference">{{ ctrans("from PO :reference", { reference: file.purchase_order_reference }) }}</template>
+                            <template v-else-if="file.supplier_code">{{ ctrans("from supplier :code", { code: file.supplier_code }) }}</template>
+                            <template v-if="file.expires_on"> · {{ ctrans("expires :date", { date: useFormatTime(file.expires_on) }) }}</template>
+                        </p>
                     </li>
                 </ul>
             </div>
