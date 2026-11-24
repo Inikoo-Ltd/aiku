@@ -49,7 +49,7 @@ export const deskShortcutList = () => {
     const mod = isMac ? "⌘" : "Ctrl"
     const alt = isMac ? "⌥" : "Alt"
     return [
-        { keys: [mod, "K"], label: ctrans("Jump to a channel or person") },
+        { keys: [mod, "J"], label: ctrans("Jump to a channel or person") },
         { keys: ["↑"], label: ctrans("Edit your last message (in an empty message box)") },
         { keys: ["Esc"], label: ctrans("Mark the current channel as read") },
         { keys: ["Shift", "Esc"], label: ctrans("Mark all messages as read") },
@@ -65,7 +65,7 @@ export function useDeskShortcuts(handlers: DeskShortcutHandlers) {
     const onCapture = (event: KeyboardEvent) => {
         overlayAtKeydown = hasOverlayOpen()
         const mod = isMac ? event.metaKey : event.ctrlKey
-        if (mod && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "k") {
+        if (mod && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "j") {
             event.preventDefault()
             event.stopPropagation()
             if (!overlayAtKeydown) handlers.jump()
