@@ -15,7 +15,9 @@ use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Middleware\SetWebUserLocale;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use Illuminate\Validation\Rule;
@@ -53,14 +55,42 @@ class StoreCustomerSalesChannel extends OrgAction
         return $customerSalesChannel;
     }
 
+    public const string NEW_CHANNEL_LANGUAGE_SESSION_KEY = 'retina_new_channel_language_id';
+
     /**
-     * The language of the customer's main web user, when the shop offers it.
+     * The language the customer picked on the create channel page, else the language they are reading the site in
+     * (a ?locale they opened /app with, else their main web user's language), when the shop offers it.
      */
     public function customerLanguageId(Customer $customer): ?int
     {
+        $offeredLanguageIds = $customer->shop->languageIdsFor($customer);
+
+        foreach ($this->sessionLanguageIds() as $languageId) {
+            if (in_array($languageId, $offeredLanguageIds)) {
+                return $languageId;
+            }
+        }
+
         $languageId = $customer->webUsers()->orderByDesc('is_root')->orderBy('id')->value('language_id');
 
-        return in_array($languageId, $customer->shop->languageIdsFor($customer)) ? $languageId : null;
+        return in_array($languageId, $offeredLanguageIds) ? $languageId : null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function sessionLanguageIds(): array
+    {
+        if (!request()->hasSession()) {
+            return [];
+        }
+
+        $session = request()->session();
+
+        return array_values(array_filter([
+            (int) $session->get(self::NEW_CHANNEL_LANGUAGE_SESSION_KEY),
+            (int) Language::where('code', $session->get(SetWebUserLocale::ADDRESS_LOCALE_SESSION_KEY))->value('id'),
+        ]));
     }
 
     public function rules(): array

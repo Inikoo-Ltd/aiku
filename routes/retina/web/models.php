@@ -85,6 +85,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UnSuspendRetinaCustomer
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\RetranslateRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\DismissRetinaCustomerSalesChannelNotice;
+use App\Actions\Retina\Dropshipping\CustomerSalesChannel\SetRetinaNewChannelLanguage;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UpdateRetinaEbayCustomerSalesChannel;
 use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
@@ -371,6 +372,7 @@ Route::name('customer-client.')->prefix('customer-client')->group(function () {
 
 Route::post('fulfilment-customer-sales-channel-manual', StoreRetinaFulfilmentManualPlatform::class)->name('fulfilment.customer_sales_channel.manual.store')->withoutScopedBindings();
 Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->name('customer_sales_channel.manual.store')->withoutScopedBindings();
+Route::post('new-customer-sales-channel-language', SetRetinaNewChannelLanguage::class)->name('customer_sales_channel.new_language');
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->whereNumber('customerSalesChannel')->group(function () {

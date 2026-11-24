@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping;
 
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
+use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\ShopifyUser\ClaimShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\Wix\User\AuthenticateWixAccount;
@@ -18,6 +19,8 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\RetinaAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -52,6 +55,7 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     'icon_rotation' => 90,
                 ],
                 'shopify_url'        => '.'.config('shopify-app.my_shopify_domain'),
+                'channelLanguage'    => $this->channelLanguage($customer),
                 'unlinkRoute'        => [
                     'name'       => 'retina.dropshipping.platform.shopify_user.delete',
                     'parameters' => [],
@@ -148,6 +152,28 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array{options: array<int, array{value: int, label: string}>, value: int, route: array{name: string}}|null
+     */
+    public function channelLanguage(Customer $customer): ?array
+    {
+        $shop        = $customer->shop;
+        $languageIds = $shop->customersChooseChannelLanguage() ? $shop->languageIdsFor($customer) : [];
+
+        if (count($languageIds) < 2) {
+            return null;
+        }
+
+        return [
+            'options' => Language::whereIn('id', $languageIds)->orderBy('name')->get()->map(fn (Language $language) => [
+                'value' => $language->id,
+                'label' => $language->name,
+            ])->all(),
+            'value'   => StoreCustomerSalesChannel::make()->customerLanguageId($customer) ?? $shop->language_id,
+            'route'   => ['name' => 'retina.models.customer_sales_channel.new_language'],
+        ];
     }
 
     public function getBreadcrumbs($routeParameters): array
