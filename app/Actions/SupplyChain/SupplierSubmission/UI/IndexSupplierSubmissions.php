@@ -28,10 +28,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\AllowedSort;
 
 /**
- * The queue of what suppliers sent from their pages, the ones waiting for us first.
+ * The queue of what suppliers sent from their pages, the most recently sent first.
  */
 class IndexSupplierSubmissions extends OrgAction
 {
@@ -84,7 +83,7 @@ class IndexSupplierSubmissions extends OrgAction
         }
 
         return $query
-            ->defaultSort('waiting')
+            ->defaultSort('-submitted_at')
             ->select([
                 'supplier_submissions.id',
                 'supplier_submissions.type',
@@ -101,16 +100,12 @@ class IndexSupplierSubmissions extends OrgAction
                 'supplier_products.cost as supplier_product_cost',
                 'currencies.code as currency_code',
             ])
-            ->selectRaw("case when supplier_submissions.state in ('received', 'under_review') then 0 else 1 end as waiting")
             ->allowedSorts([
                 'submitted_at',
                 'supplier_code',
                 'supplier_product_code',
                 'type',
                 'state',
-                AllowedSort::callback('waiting', fn ($query, bool $descending) => $query
-                    ->orderByRaw("case when supplier_submissions.state in ('received', 'under_review') then 0 else 1 end ".($descending ? 'desc' : 'asc'))
-                    ->orderBy('supplier_submissions.submitted_at')),
             ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -138,7 +133,7 @@ class IndexSupplierSubmissions extends OrgAction
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true)
                 ->column(key: 'summary', label: __('What'), canBeHidden: false)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
-                ->defaultSort('waiting');
+                ->defaultSort('-submitted_at');
         };
     }
 
