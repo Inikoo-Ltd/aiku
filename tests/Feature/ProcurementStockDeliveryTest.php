@@ -908,7 +908,8 @@ test('purchase order submit availability follows its submittable items', functio
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('pageHead.actions', fn ($actions) => collect($actions)->contains(
                     fn ($action) => Arr::get($action, 'key') === 'submit_purchase_order'
-                ) === $expected)
+                        && blank(Arr::get($action, 'disabled_reason')) === $expected
+                ))
                 ->etc());
     };
 

@@ -1230,7 +1230,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 
 		<template #button-submit-purchase-order="{ action }">
+			<span v-if="action.disabled_reason" v-tooltip="action.disabled_reason" class="inline-flex cursor-not-allowed items-center gap-2">
+				<Button
+					:style="action.style"
+					:label="action.label"
+					:icon="action.icon"
+					disabled
+					class="pointer-events-none"
+				/>
+			</span>
 			<Button
+				v-else
 				:style="action.style"
 				:label="action.label"
 				:icon="action.icon"

@@ -699,9 +699,6 @@ class ShowPurchaseOrder extends OrgAction
                     'icon'    => 'fal fa-upload',
                     'key'     => 'upload_products',
                 ] : [],
-                $purchaseOrder->purchaseOrderTransactions()
-                    ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
-                    ->exists() ?
                 [
                     'label'   => __('Submit'),
                     'tooltip' => __('Submit Purchase Order'),
@@ -709,6 +706,9 @@ class ShowPurchaseOrder extends OrgAction
                     'style'   => 'save',
                     'icon'    => 'fal fa-paper-plane',
                     'key'     => 'submit_purchase_order',
+                    'disabled_reason' => $purchaseOrder->purchaseOrderTransactions()
+                        ->where('state', PurchaseOrderTransactionStateEnum::IN_PROCESS)
+                        ->exists() ? null : __('Add at least one product before submitting'),
                     'send_channels' => SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder) ? [] : SendPurchaseOrderToSupplier::channels($purchaseOrder),
                     'route'   => [
                         'method'     => 'patch',
@@ -717,7 +717,7 @@ class ShowPurchaseOrder extends OrgAction
                             'purchaseOrder' => $purchaseOrder->id,
                         ],
                     ],
-                ] : [],
+                ],
                 [
                     'label'   => __('Delete'),
                     'tooltip' => __('Delete Purchase Order'),
@@ -892,7 +892,7 @@ class ShowPurchaseOrder extends OrgAction
         $actions   = array_values(array_filter($actions));
         $isCancel  = fn (array $action) => Arr::get($action, 'key') === 'cancel_purchase_order';
         $isEdit    = fn (array $action) => Arr::get($action, 'style') === 'edit';
-        $hasSubmit = collect($actions)->contains(fn (array $action) => Arr::get($action, 'key') === 'submit_purchase_order');
+        $hasSubmit = collect($actions)->contains(fn (array $action) => Arr::get($action, 'key') === 'submit_purchase_order' && !Arr::get($action, 'disabled_reason'));
 
         return [
             ...array_filter($actions, $isCancel),
