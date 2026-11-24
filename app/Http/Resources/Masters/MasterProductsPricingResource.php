@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class MasterProductsPricingResource extends JsonResource
 {
@@ -21,7 +22,7 @@ class MasterProductsPricingResource extends JsonResource
             'name'          => $this->name,
             'units'         => (float) $this->units,
             'unit'          => $this->unit,
-            'image_thumbnail'   => $this->web_images,
+            'image_thumbnail'   => Arr::get($this->web_images, 'main.thumbnail'),
             'trade_units_label' => $this->trade_units_label,
             'price'         => $this->price,
             'rrp'           => $this->rrp,
