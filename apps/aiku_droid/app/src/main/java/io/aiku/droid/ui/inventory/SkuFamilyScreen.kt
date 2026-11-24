@@ -92,6 +92,7 @@ private fun SkuFamilyContent(state: SkoFamilyUiState, family: SkoFamilyViewModel
                         code = sko.code,
                         subtitle = sko.name,
                         chip = stateLabels[sko.state]?.takeIf { sko.state != ACTIVE_STATE },
+                        chipTone = skoStateTone(sko.state),
                         done = stockText(sko.quantityAvailable, sko.quantityAvailableLabel),
                         onClick = { navigator.open(SkuRoute(id = sko.id, code = sko.code)) },
                     )

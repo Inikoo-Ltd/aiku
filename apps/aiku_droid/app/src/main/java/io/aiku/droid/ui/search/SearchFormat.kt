@@ -10,14 +10,15 @@ import io.aiku.droid.ui.components.LabelCase
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.fulfilment.inbound.palletDeliveryTone
 import io.aiku.droid.ui.fulfilment.outbound.palletStateTone
+import io.aiku.droid.ui.fulfilment.outbound.returnStateTone as palletReturnStateTone
 import io.aiku.droid.ui.goodsin.deliveryStateTone
+import io.aiku.droid.ui.goodsin.returnStateTone as customerReturnStateTone
 import io.aiku.droid.ui.goodsout.pluralQuantity
 import io.aiku.droid.ui.goodsout.stageOf
 import io.aiku.droid.ui.goodsout.stageTone
+import io.aiku.droid.ui.inventory.skoStateTone
 import io.aiku.droid.ui.inventory.stockText
 import io.aiku.droid.ui.scan.ScanDestination
-import io.aiku.droid.ui.fulfilment.outbound.returnStateTone as palletReturnStateTone
-import io.aiku.droid.ui.goodsin.returnStateTone as customerReturnStateTone
 
 fun SearchRow.destination(): ScanDestination {
     val reference = code.ifBlank { title }
@@ -71,5 +72,6 @@ internal fun searchStateTone(row: SearchRow): Tone = when (row.type) {
     SearchType.Pallets -> palletStateTone(row.state)
     SearchType.PalletDeliveries -> palletDeliveryTone(row.state)
     SearchType.PalletReturns -> palletReturnStateTone(row.state)
-    SearchType.Skos, SearchType.SkoFamilies, SearchType.Locations -> Tone.Neutral
+    SearchType.Skos -> skoStateTone(row.state)
+    SearchType.SkoFamilies, SearchType.Locations -> Tone.Neutral
 }

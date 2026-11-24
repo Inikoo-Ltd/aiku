@@ -367,7 +367,7 @@ private fun SkuSummary(detail: OrgStockDetail) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (detail.stateLabel.isNotBlank()) {
-                    StatusBadge(text = detail.stateLabel, tone = if (detail.state == ACTIVE_STATE) Tone.Success else Tone.Warn)
+                    StatusBadge(text = detail.stateLabel, tone = skoStateTone(detail.state))
                 }
                 if (detail.isOnDemand) {
                     StatusBadge(text = stringResource(R.string.inventory_on_demand), tone = Tone.Primary)
