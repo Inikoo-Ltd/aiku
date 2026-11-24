@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -72,6 +73,11 @@ const stateClass: Record<string, string> = {
 		</template>
 		<template #cell(state)="{ item }: { item: SupplierSubmissionRow }">
 			<span class="whitespace-nowrap" :class="stateClass[item.state]">{{ item.state_label }}</span>
+		</template>
+		<template #cell(action)="{ item }: { item: SupplierSubmissionRow }">
+			<Link :href="route('grp.supply-chain.supplier_submissions.show', [item.id])">
+				<Button type="tertiary" size="xs" :label="ctrans('See detail')" />
+			</Link>
 		</template>
 	</Table>
 </template>

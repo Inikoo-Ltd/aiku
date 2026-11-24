@@ -133,6 +133,7 @@ class IndexSupplierSubmissions extends OrgAction
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true)
                 ->column(key: 'summary', label: __('What'), canBeHidden: false)
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
+                ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('-submitted_at');
         };
     }
