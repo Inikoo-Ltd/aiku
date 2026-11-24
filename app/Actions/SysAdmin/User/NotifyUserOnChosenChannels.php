@@ -29,7 +29,7 @@ class NotifyUserOnChosenChannels
     {
         $channels = $event->deliverTo($user);
 
-        $notification->byEmail = in_array('email', $channels, true) && (bool) $user->email;
+        $notification->byEmail = in_array('email', $channels, true) && (bool) $user->notificationEmail();
         $user->notify($notification);
 
         if (in_array('slack', $channels, true) && $user->slack_user_id) {

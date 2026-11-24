@@ -70,7 +70,7 @@ class EditProfile
                                 "information" => __("You always get the notification inside Aiku; pick where else you want it"),
                                 "events"      => UserNotificationEnum::options(),
                                 "channels"    => [
-                                    ['value' => 'email', 'label' => __('Email'), 'available' => (bool) $user->email, 'unavailable_reason' => __('Add your email above to use this')],
+                                    ['value' => 'email', 'label' => __('Email'), 'available' => (bool) $user->notificationEmail(), 'unavailable_reason' => __('Add your email above to use this')],
                                     ['value' => 'slack', 'label' => __('Slack'), 'available' => (bool) $user->slack_user_id, 'unavailable_reason' => __('Add your Slack ID above to use this')],
                                     [
                                         'value'         => 'browser',

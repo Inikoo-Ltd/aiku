@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -301,6 +302,24 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
+    }
+
+    /**
+     * Many staff, agent employees among them, have no address on their login, only a work address on their
+     * employee record. A personal address is never used.
+     */
+    public function notificationEmail(): ?string
+    {
+        return $this->email ?: $this->employees()->whereNotNull('work_email')->where('work_email', '!=', '')->value('work_email');
+    }
+
+    public function routeNotificationForMail(Notification $notification): array|string|null
+    {
+        if (!app()->isProduction()) {
+            return config('mail.testing_mail_to');
+        }
+
+        return $this->notificationEmail();
     }
 
     public function routeNotificationForFcm(): array

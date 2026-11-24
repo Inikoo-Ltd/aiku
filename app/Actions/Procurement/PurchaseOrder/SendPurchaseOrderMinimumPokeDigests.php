@@ -60,7 +60,7 @@ class SendPurchaseOrderMinimumPokeDigests
                 ];
             })->values()->all();
 
-            if (in_array('email', $channels, true) && $recipient->email) {
+            if (in_array('email', $channels, true) && $recipient->notificationEmail()) {
                 $recipient->notify(new PurchaseOrderMinimumPokeDigestNotification($requests));
             }
 

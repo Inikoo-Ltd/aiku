@@ -75,7 +75,7 @@ class NotifySlackMentions
         $channels               = UserNotificationEnum::SLACK_MENTION->deliverTo($user);
         $notification           = new SlackMentionNotification($message, $title, $body, $url);
         $notification->id       = $id;
-        $notification->byEmail  = in_array('email', $channels, true) && (bool) $user->email;
+        $notification->byEmail  = in_array('email', $channels, true) && (bool) $user->notificationEmail();
         $user->notify($notification);
 
         if (in_array('slack', $channels, true) && $user->slack_user_id) {

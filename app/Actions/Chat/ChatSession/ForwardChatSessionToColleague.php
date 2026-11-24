@@ -123,7 +123,7 @@ class ForwardChatSessionToColleague
      */
     private function workEmail(User $user): ?string
     {
-        return $user->email ?: $user->employees()->whereNotNull('work_email')->value('work_email');
+        return $user->notificationEmail();
     }
 
     private function title(ChatSession $chatSession): string
