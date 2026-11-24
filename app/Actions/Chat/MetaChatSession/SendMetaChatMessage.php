@@ -14,7 +14,9 @@ use App\Actions\Chat\Whatsapp\NormaliseWhatsappVideo;
 use App\Actions\Chat\Whatsapp\StoreMetaTrackingEvent;
 use App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags;
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithTimeSinceTaken;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatSessionStatusEnum;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
@@ -48,6 +50,7 @@ class SendMetaChatMessage
     use AsAction;
     use WithWhatsappTemplatePayload;
     use WithChatAgentAuthorisation;
+    use WithTimeSinceTaken;
 
     /**
      * What a phone records, not what WhatsApp plays: every one of these is converted to an
@@ -317,7 +320,11 @@ class SendMetaChatMessage
         $metaMessageId = Arr::get($response->json(), 'messages.0.id');
 
         $metadata['wa_status'] = 'sent';
-        $metadata = [...$metadata, ...AnswerShoppingAssistantTeamQuestion::measuredTime(Arr::only($modelData, ['writing_seconds', 'typing_seconds']))];
+        $metadata = [
+            ...$metadata,
+            ...AnswerShoppingAssistantTeamQuestion::measuredTime(Arr::only($modelData, ['writing_seconds', 'typing_seconds'])),
+            ...$this->timeSinceTaken($metaChatSession, $agent->id),
+        ];
 
         $metaChatMessage = StoreMetaChatMessage::run($metaChatSession, [
             'meta_message_id' => $metaMessageId,
@@ -438,6 +445,7 @@ class SendMetaChatMessage
                 'status'          => ChatAssignmentStatusEnum::ACTIVE->value,
                 'assigned_by'     => ChatAssignmentAssignedByEnum::AGENT->value,
                 'note'            => 'Claimed by replying',
+                'claimed_via'     => ChatAssignmentClaimedViaEnum::REPLY,
                 'assigned_at'     => now(),
             ]);
         } catch (UniqueConstraintViolationException) {

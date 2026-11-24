@@ -22,6 +22,7 @@ use App\Actions\Chat\ChatSession\UpdateChatSession;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -1170,4 +1171,81 @@ test('staff replies are collected as reply examples, campaign mails sent long af
         ->and(\App\Actions\Chat\ChatSession\FindChatReplyExamples::run($this->shop, '  '))->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\FindChatReplyExamples::withoutCustomerDetails("Kedves Ádám,\n\nThe credit for HU13181 is on your profile, write to anna.k@gmail.com if not.\nRegards"))
         ->toBe("The credit for [ref] is on your profile, write to [email] if not.\nRegards");
+});
+
+test('how a conversation was taken is kept, and the first reply after a button take says how long the customer waited', function () {
+    actingAs($this->user);
+    makeChatWorker($this->user, $this->shop);
+
+    $agent = ChatAgent::firstOrCreate(
+        ['user_id' => $this->user->id],
+        ['is_online' => true, 'max_concurrent_chats' => 100, 'current_chat_count' => 0]
+    );
+
+    $colleague = ChatAgent::create([
+        'user_id'              => User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true])->id,
+        'max_concurrent_chats' => 10,
+        'is_available'         => true,
+    ]);
+
+    $waiting = fn (): ChatSession => ChatSession::create([
+        'ulid'     => Str::ulid(),
+        'status'   => ChatSessionStatusEnum::WAITING->value,
+        'shop_id'  => $this->shop->id,
+        'priority' => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $heldByColleague = function () use ($waiting, $colleague): ChatSession {
+        $session = $waiting();
+        $session->assignments()->create([
+            'chat_agent_id' => $colleague->id,
+            'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
+            'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
+            'assigned_at'   => now(),
+        ]);
+        $session->update(['status' => ChatSessionStatusEnum::ACTIVE->value]);
+
+        return $session;
+    };
+
+    $reply = fn (ChatSession $session, string $text) => $this->postJson(route('grp.org.chat.agents.messages.send', [$this->organisation->slug, $session->ulid]), [
+        'message_text' => $text,
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+    ])->assertSuccessful();
+
+    $claimedVia = fn (ChatSession $session) => $session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->first()?->claimed_via;
+
+    $assigned = $waiting();
+    $this->postJson(route('grp.org.chat.agents.assign.self', [$this->organisation->slug, $assigned->ulid]))->assertSuccessful();
+    expect($claimedVia($assigned))->toBe(ChatAssignmentClaimedViaEnum::ASSIGN_BUTTON);
+
+    $this->travel(10)->minutes();
+    $reply($assigned, 'First answer after taking it');
+    $reply($assigned, 'A second answer');
+
+    $agentReplies = $assigned->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->orderBy('id')->get();
+    expect($agentReplies->first()->metadata['taken_via'] ?? null)->toBe('assign_button')
+        ->and($agentReplies->first()->metadata['seconds_since_taken'] ?? null)->toBeGreaterThanOrEqual(600)
+        ->and($agentReplies->last()->metadata)->not->toHaveKey('seconds_since_taken');
+
+    $fromLock = $heldByColleague();
+    $this->patchJson(route('grp.org.chat.agents.takeover', [$this->organisation->slug, $fromLock->ulid]), ['via' => 'lock'])->assertSuccessful();
+    expect($claimedVia($fromLock))->toBe(ChatAssignmentClaimedViaEnum::TAKE_OVER_LOCK);
+
+    $fromBar = $heldByColleague();
+    $this->patchJson(route('grp.org.chat.agents.takeover', [$this->organisation->slug, $fromBar->ulid]))->assertSuccessful();
+    expect($claimedVia($fromBar))->toBe(ChatAssignmentClaimedViaEnum::TAKE_OVER_BAR);
+
+    $byReply = $waiting();
+    $reply($byReply, 'Picked up by answering');
+    expect($claimedVia($byReply))->toBe(ChatAssignmentClaimedViaEnum::REPLY)
+        ->and($byReply->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->first()->metadata)->not->toHaveKey('seconds_since_taken');
+
+    foreach ([$assigned, $fromLock, $fromBar, $byReply] as $session) {
+        $session->messages()->delete();
+        $session->assignments()->forceDelete();
+        $session->forceDelete();
+    }
+    $colleague->forceDelete();
 });

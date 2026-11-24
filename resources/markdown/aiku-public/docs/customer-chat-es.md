@@ -1,8 +1,8 @@
 ---
 title: Hablar con clientes en Chat
 summary: Una sola bandeja para el chat de la web, WhatsApp y el correo de la tienda - toma una conversación, responde con los pedidos del cliente a tu lado, registra una llamada, abre un ticket y consulta cómo va el equipo.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-11-24
+source_date: 2026-11-24
 tags: crm, chat
 category: help-desk
 series: Chat
@@ -35,7 +35,11 @@ La columna de la izquierda enumera tus tiendas con lo que está <b>waiting</b> (
 
 ## Tomar una conversación
 
-La bandeja tiene dos listas, cada una con su contador: <b>My Chats</b> (Mis chats) y <b>Colleagues' Chats</b> (Chats de compañeros), los que lleva otra persona en una tienda en la que también trabajas. Dentro de ellas, <b>Waiting</b> (Esperando) es lo que nadie ha recogido, <b>Active</b> (Activo) está en mano y <b>Closed</b> (Cerrado) es lo que se cerró hoy. <b>Assign to me</b> (Asignarme) hace tuya una conversación en espera; <b>Take Over</b> (Hacerse cargo) te la traspasa de un compañero que se ha ido a comer.
+La bandeja tiene dos listas, cada una con su contador: <b>My Chats</b> (Mis chats) y <b>Colleagues' Chats</b> (Chats de compañeros), los que lleva otra persona en una tienda en la que también trabajas. Dentro de ellas, <b>Waiting</b> (Esperando) es lo que nadie ha recogido, <b>Active</b> (Activo) está en mano y <b>Closed</b> (Cerrado) es lo que se cerró hoy. Si respondes a una conversación en espera, pasa a ser tuya, así que si trabajas solo nunca necesitas un botón. Cuando varios compartís una tienda, <b>Assign to me</b> (Asignarme), arriba a la derecha, la toma antes de que empieces, para que tus compañeros vean que es tuya mientras lees y consultas datos.
+
+Quien lleva una conversación aparece arriba a la derecha, junto a <b>End chat</b>: un <b>You</b> (Tú) verde con un candado cuando es tuya, una cápsula amarilla con el nombre de tu compañero y un candado cuando es suya. Haz clic en tu propio <b>You</b> para devolver la conversación a la cola al instante. Haz clic en la cápsula de un compañero para hacerte cargo, por si está ausente o de vacaciones y el cliente sigue esperando; si hoy trabaja, consúltalo antes. <b>Take Over</b> (Hacerse cargo), al pie de la conversación, hace lo mismo.
+
+Mientras un compañero tiene una conversación abierta, una franja bajo su nombre lo indica: ámbar mientras la lee, roja mientras escribe una respuesta, y su nombre aparece en la conversación de la lista con el mismo color. Si empiezas a escribir en una conversación que un compañero ya está respondiendo, tu cuadro de mensaje también se pone rojo. En WhatsApp, tu propio <b>You</b> todavía no puede devolver la conversación.
 
 Después funciona como cualquier mensajería: escribe y envía, añade un emoji, adjunta imágenes y documentos, hasta 30 archivos a la vez (consulta <a href="/docs/answering-emails-in-chat-es">Responder correos en Chat</a> para ver qué archivos). <b>Translate</b> (Traducir) te deja leer al cliente en tu idioma y responder en el suyo.
 
@@ -105,7 +109,9 @@ Como el tiempo de respuesta se mide contra el horario de trabajo, las horas de c
 
 <aside class="wayfinder"><strong>Dónde hacer clic en aiku</strong>
 <ul>
-<li><b>Responder a clientes:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; una conversación en <b>Waiting</b> &rarr; <b>Assign to me</b>.</li>
+<li><b>Responder a clientes:</b> <b>Chat &rarr; Customer Inbox</b> &rarr; una conversación en <b>Waiting</b> &rarr; escribe tu respuesta, o antes <b>Assign to me</b> cuando varios compartís la tienda.</li>
+<li><b>Devolver una conversación:</b> haz clic en tu <b>You</b> verde, arriba a la derecha.</li>
+<li><b>Hacerte cargo de la conversación de un compañero:</b> haz clic en su cápsula amarilla con el nombre, arriba a la derecha &rarr; <b>Take over</b>.</li>
 <li><b>Vincular a un invitado:</b> abre la conversación &rarr; panel lateral &rarr; <b>Confirm</b> o <b>Not them</b>, o <b>Find account</b>.</li>
 <li><b>Ver todo lo demás que escribió el cliente:</b> panel lateral &rarr; <b>Chats</b>.</li>
 <li><b>Unir dos conversaciones de WhatsApp:</b> panel lateral &rarr; <b>Merge into this one</b>.</li>

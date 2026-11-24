@@ -10,6 +10,7 @@ namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\Agent\Hydrators\ChatAgentHydrateChats;
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Chat\WithTimeSinceTaken;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
@@ -22,6 +23,7 @@ use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -55,6 +57,7 @@ class SendChatMessage
 {
     use WithTrustedChatWebUser;
     use WithChatAgentAuthorisation;
+    use WithTimeSinceTaken;
     use AsAction;
 
     public const ATTACHMENT_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt', 'pptx', 'zip', 'mp4', 'mov'];
@@ -119,7 +122,7 @@ class SendChatMessage
             'original_text'   => $sanitizedMessage,
             'original_language_id' => $ownLanguage['original_language_id'] ?? null,
             'is_read'         => false,
-            'metadata'        => $this->withActiveTime($ownLanguage['metadata'] ?? $this->pageMetadata($chatSession, $modelData), $modelData),
+            'metadata'        => $this->withTimeSinceTaken($chatSession, $this->withActiveTime($ownLanguage['metadata'] ?? $this->pageMetadata($chatSession, $modelData), $modelData), $modelData),
             'created_at'      => now(),
             'updated_at'      => now(),
         ];
@@ -250,6 +253,17 @@ class SendChatMessage
      * What the inbox measured while staff worked on this reply (useActiveTime.ts), for the staff time
      * of the AI Assistant report. Only a staff reply carries it.
      */
+    private function withTimeSinceTaken(ChatSession $chatSession, ?array $metadata, array $modelData): ?array
+    {
+        if (($modelData['sender_type'] ?? null) !== ChatSenderTypeEnum::AGENT->value) {
+            return $metadata;
+        }
+
+        $sinceTaken = $this->timeSinceTaken($chatSession, isset($modelData['sender_id']) ? (int) $modelData['sender_id'] : null);
+
+        return $sinceTaken ? [...($metadata ?? []), ...$sinceTaken] : $metadata;
+    }
+
     private function withActiveTime(?array $metadata, array $modelData): ?array
     {
         if (($modelData['sender_type'] ?? null) !== ChatSenderTypeEnum::AGENT->value || empty($modelData['active_time'])) {
@@ -673,6 +687,7 @@ class SendChatMessage
                 'status'        => ChatAssignmentStatusEnum::ACTIVE->value,
                 'assigned_by'   => ChatAssignmentAssignedByEnum::AGENT->value,
                 'note'          => 'Claimed by replying',
+                'claimed_via'   => ChatAssignmentClaimedViaEnum::REPLY,
                 'assigned_at'   => now(),
             ]);
         } catch (UniqueConstraintViolationException) {

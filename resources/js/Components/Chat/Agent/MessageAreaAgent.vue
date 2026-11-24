@@ -4,7 +4,10 @@ import { useElementSize, useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { chatAutoTranslate, readsLanguage } from "@/Composables/useChatTranslation"
-import { chatDrafters, noteChatDrafting, stopChatDrafting } from "@/Composables/useChatDrafting"
+import { chatWriterOn, noteChatDrafting, noteChatViewing, stopChatDrafting } from "@/Composables/useChatDrafting"
+import ChatColleaguesBanner from "@/Components/Chat/ChatColleaguesBanner.vue"
+import ChatColleagueWritingAlert from "@/Components/Chat/ChatColleagueWritingAlert.vue"
+import ChatHolderLock from "@/Components/Chat/ChatHolderLock.vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { readComposerFiles, useComposerAttachmentDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
 import { useChatReplyDraft } from "@/Composables/useChatReplyDraft"
@@ -91,6 +94,7 @@ import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChat
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { followPointer } from "@/Composables/followPointer"
+import { faUserCheck } from "@fal"
 import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight, faExclamationTriangle as faExclamationTriangleLight, faChevronLeft as faChevronLeftLight } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
@@ -141,6 +145,7 @@ const emit = defineEmits([
     "view-message-details",
     "transfer-agent-success",
     "assign-self-success",
+    "released",
     "messages-read",
     "open-slack-settings",
     "spam-success",
@@ -158,14 +163,15 @@ const isMyChat = computed(() => {
 })
 
 const isTakingOver = ref(false)
-const takeoverChat = async () => {
+/** via "lock" counts a take-over from the header lock apart from the bar at the bottom (HELP-4896). */
+const takeoverChat = async (via?: unknown) => {
     if (!props.session?.ulid || isTakingOver.value) return
     isTakingOver.value = true
     try {
         const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
         await axios.patch(
             route("grp.org.chat.agents.takeover", [organisation, props.session.ulid]),
-            {},
+            via === "lock" ? { via: "lock" } : {},
             { withCredentials: true }
         )
         props.session.status = "active"
@@ -178,6 +184,29 @@ const takeoverChat = async () => {
         showNotice(ctrans("Failed to take over chat"), "error")
     } finally {
         isTakingOver.value = false
+    }
+}
+
+/**
+ * HELP-4896: optional, for shops where several people answer: taking a waiting conversation before
+ * writing tells colleagues it is yours. Replying still takes it, so somebody working alone never needs it.
+ */
+const isClaiming = ref(false)
+const claimForMe = async () => {
+    if (!props.session?.ulid || isClaiming.value) return
+    isClaiming.value = true
+    composerError.value = null
+    try {
+        const organisation = (route().params as Record<string, any>)?.organisation ?? "aw"
+        await axios.post(route("grp.org.chat.agents.assign.self", [organisation, props.session.ulid]), {}, { withCredentials: true })
+        const session = props.session as any
+        session.status = "active"
+        session.assigned_agent = { ...(session.assigned_agent ?? {}), user_id: layout?.user?.id, name: layout?.user?.contact_name ?? "" }
+        emit("assign-self-success")
+    } catch (e: any) {
+        composerError.value = e?.response?.data?.message ?? ctrans("This conversation could not be taken. Try again.")
+    } finally {
+        isClaiming.value = false
     }
 }
 
@@ -233,7 +262,7 @@ const releaseChat = async () => {
         if (props.session.assigned_agent) {
             props.session.assigned_agent = null
         }
-        emit("assign-self-success")
+        emit("released")
         showNotice(ctrans("Anybody can pick this up now"), "success")
     } catch (e: any) {
         showNotice(e?.response?.data?.message ?? ctrans("Failed to give this conversation back"), "error")
@@ -1164,9 +1193,9 @@ const onEditorInput = (text: string) => {
     handleTyping()
 
     if (text.trim()) {
-        noteChatDrafting((props.session as any)?.shop?.id ?? (props.session as any)?.shop_id, chatSession.value?.ulid)
+        noteChatDrafting(presenceShopId.value, chatSession.value?.ulid)
     } else {
-        stopChatDrafting(chatSession.value?.ulid)
+        announceViewing()
     }
 }
 
@@ -1381,7 +1410,7 @@ const sendMessage = async () => {
     }
 
     sendTypingStatus(false)
-    stopChatDrafting(props.session?.ulid)
+    announceViewing()
     isTyping.value = false
 
     const tempId = `tmp-${Date.now()}`
@@ -1890,6 +1919,7 @@ watch(
     async (_ulid, previousUlid) => {
         typingUser.value = null
         stopChatDrafting(previousUlid)
+        announceViewing()
         stopSocket()
         messagesLocal.value = []
         await getMessages()
@@ -1933,7 +1963,15 @@ const selectedLanguageId = computed(() =>
     getLanguageIdByCode(selectedLanguage.value)
 )
 
+const presenceShopId = computed(() => (props.session as any)?.shop?.id ?? (props.session as any)?.shop_id)
+const announceViewing = () => {
+    if (props.readOnly) return
+    noteChatViewing(presenceShopId.value, chatSession.value?.ulid)
+}
+const colleagueWriting = computed(() => chatWriterOn(chatSession.value?.ulid))
+
 onMounted(async () => {
+    announceViewing()
     await getMessages()
     await fetchLanguages()
     initSocket()
@@ -1972,7 +2010,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <FontAwesomeIcon :icon="faArrowLeft" class="text-gray-400" fixed-width />
             </button>
 
-            <div class="flex flex-1 min-w-0 cursor-pointer items-center gap-2" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
+            <div class="flex flex-1 min-w-0 cursor-pointer items-center gap-2 overflow-hidden" :class="{ '-order-2': isHeaderStacked }" @click="onViewMessageDetails">
                 <div class="max-w-[40%] shrink-0 text-sm font-semibold truncate primary-text hover:primary-text-hover transition-colors">
                     {{ session?.guest_identifier || session?.contact_name }}
                 </div>
@@ -1984,12 +2022,6 @@ const handleClickOutside = (e: MouseEvent) => {
                         class="text-[10px] font-medium capitalize rounded-full px-1.5 py-0.5"
                         :class="statusBadgeClass">
                         {{ session.status }}
-                    </span>
-                    <span v-if="!isMyChat && session?.assigned_agent?.name" class="inline-flex shrink-0 items-center gap-1 rounded-full bg-yellow-300 px-2 py-0.5 text-[11px] font-semibold text-gray-900"
-                        v-tooltip="ctrans(':agent has this chat. Take it over at the bottom of the chat to answer, end, ignore or spam it', { agent: session.assigned_agent.name })">
-                        <FontAwesomeIcon :icon="fasHeadset" class="text-[10px]" fixed-width aria-hidden="true" />
-                        {{ session.assigned_agent.name }}
-                        <FontAwesomeIcon :icon="fasLock" class="text-[9px]" fixed-width aria-hidden="true" />
                     </span>
                     <span class="shrink-0 text-[9px] px-1 py-0.5 border leading-none"
                         :class="isCustomer ? 'border-green-300 text-green-500' : 'border-blue-300 text-blue-400'"
@@ -2031,6 +2063,12 @@ const handleClickOutside = (e: MouseEvent) => {
                  row on its own is also what pushes the buttons onto the second one. -->
             <div v-if="isHeaderStacked && hasHeaderActions" class="basis-[calc(100%+1.5rem)] -mx-3 h-px bg-gray-200" />
 
+            <Button v-if="isWaiting && !readOnly && !isClosed && !isTrashed" type="tertiary" size="xs" :label="ctrans('Assign to me')" :loading="isClaiming"
+                v-tooltip="ctrans('Take this conversation so colleagues see it is yours. Optional: replying takes it too.')" @click.stop="claimForMe">
+                <template #icon><FontAwesomeIcon :icon="faUserCheck" class="text-green-600" fixed-width aria-hidden="true" /></template>
+            </Button>
+            <ChatHolderLock v-if="session?.assigned_agent" :name="session.assigned_agent.name" :is-mine="isMyChat && !isWaiting && !isClosed && !isTrashed && !readOnly"
+                :can-take-over="!readOnly && !isClosed && !isTrashed" :is-taking-over="isTakingOver" :can-release="canRelease" :is-releasing="isReleasing" @take-over="takeoverChat('lock')" @release="releaseChat" />
             <ModalConfirmationDelete v-if="canEndChat" :routeDelete="{
                 name: 'grp.org.chat.agents.sessions.close',
                 parameters: [session?.organisation.id, session?.ulid],
@@ -2237,6 +2275,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 </div>
             </div>
         </header>
+        <ChatColleaguesBanner v-if="!readOnly" :session-ulid="chatSession?.ulid" :unsent-draft="colleagueDraft" />
 
         <div v-if="actionNotice" role="status" class="flex items-start gap-2 border-b px-3 py-1.5 text-xs"
             :class="actionNotice.tone === 'success' ? 'border-green-100 bg-green-50 text-green-700' : actionNotice.tone === 'warning' ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-red-100 bg-red-50 text-red-700'">
@@ -2337,12 +2376,9 @@ const handleClickOutside = (e: MouseEvent) => {
             <div v-if="isEmailChat" v-show="!(isLoadingThread && !messagesLocal.length)" :id="replySlotId" ref="replySlot" class="!mt-2" />
         </div>
         <Teleport defer :to="`#${replySlotId}`" :disabled="!isEmailChat">
-        <div v-if="chatSession?.ulid && chatDrafters[chatSession.ulid]"
-            class="mx-3 mb-1 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
-            ✎ {{ ctrans(":name is writing a reply to this conversation", { name: chatDrafters[chatSession.ulid].name }) }}
-        </div>
-        <div v-if="colleagueDraft && !readOnly" class="mx-3 mb-1 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
-            <div class="font-medium text-gray-700">
+        <ChatColleagueWritingAlert v-if="!readOnly" :session-ulid="chatSession?.ulid" :is-writing-too="!!newMessage.trim() && !aiDraftInEditor" />
+        <div v-if="colleagueDraft && !readOnly" class="mx-3 mb-1 rounded-lg border-2 border-orange-400 bg-orange-50 px-3 py-2 text-xs">
+            <div class="text-sm font-semibold text-orange-800">
                 ✎ {{ ctrans(":name started a reply and has not sent it yet", { name: colleagueDraft.name }) }}
             </div>
             <p class="mt-1 line-clamp-3 whitespace-pre-line text-gray-600">{{ stripPictureTokens(colleagueDraft.text) }}</p>
@@ -2494,7 +2530,7 @@ const handleClickOutside = (e: MouseEvent) => {
             <div :class="isEmailChat ? 'flex flex-wrap items-start gap-x-4 gap-y-2' : ''">
             <div class="flex min-w-0 flex-1 basis-[28rem] flex-col">
             <div class="relative flex min-w-0 flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
-                :class="aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
+                :class="colleagueWriting && newMessage.trim() && !aiDraftInEditor ? 'border-red-500 focus-within:border-red-500 ring-2 ring-red-200' : aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
                 <div v-if="isEmailChat" role="separator" aria-orientation="horizontal"
                     v-tooltip="ctrans('Drag to resize, double-click to reset')"
                     class="group/resize absolute inset-x-0 -top-1.5 z-10 flex h-3 cursor-row-resize justify-center"

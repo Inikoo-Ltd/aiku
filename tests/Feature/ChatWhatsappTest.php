@@ -19,6 +19,7 @@ use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\UI\GetMetaChatSessions;
 use App\Actions\Chat\MetaChatSession\UpdateMetaChatSession;
 use App\Enums\CRM\Livechat\ChatAssignmentAssignedByEnum;
+use App\Enums\CRM\Livechat\ChatAssignmentClaimedViaEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
@@ -1997,4 +1998,43 @@ test('the Tracking Parcels tag numbers every parcel and adds a link only where t
 
     expect(mb_strlen($many))->toBeLessThanOrEqual(\App\Actions\Chat\Whatsapp\Templates\ResolveWhatsappTemplateTags::TRACKING_PARCELS_MAX_LENGTH + 30)
         ->and($many)->toMatch('/and \d+ more parcels$/');
+});
+
+test('a whatsapp conversation taken with assign to me can be given back by its holder, not by a colleague', function () {
+    $channel   = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $otherUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    actingAs($this->user);
+    makeChatWorker($this->user, $this->shop);
+    $mine = ChatAgent::where('user_id', $this->user->id)->first()
+        ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+
+    $session = MetaChatSession::create([
+        'ulid'            => (string)Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+628777000333',
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+
+    $this->postJson(route('grp.org.chat.agents.whatsapp.assign.self', [$this->organisation->slug, $session->ulid]))->assertSuccessful();
+    $held = fn () => $session->assignments()->where('status', ChatAssignmentStatusEnum::ACTIVE->value)->first();
+    expect($held()?->chat_agent_id)->toBe($mine->id)
+        ->and($held()?->claimed_via)->toBe(ChatAssignmentClaimedViaEnum::ASSIGN_BUTTON);
+
+    actingAs($otherUser);
+    makeChatWorker($otherUser, $this->shop);
+    $this->patchJson(route('grp.org.chat.agents.whatsapp.sessions.release', [$this->organisation->slug, $session->ulid]))->assertForbidden();
+    expect($held()?->chat_agent_id)->toBe($mine->id);
+
+    actingAs($this->user);
+    $this->patchJson(route('grp.org.chat.agents.whatsapp.sessions.release', [$this->organisation->slug, $session->ulid]))->assertSuccessful();
+    expect($held())->toBeNull()
+        ->and($session->events()->where('event_type', ChatEventTypeEnum::RELEASED->value)->exists())->toBeTrue();
+
+    $session->events()->delete();
+    $session->assignments()->forceDelete();
+    $session->forceDelete();
 });
