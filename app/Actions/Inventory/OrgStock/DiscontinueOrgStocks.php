@@ -8,10 +8,19 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\Hydrators\FamilyHydrateProducts;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\ReopenWebpage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -27,14 +36,17 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use Throwable;
 use OwenIt\Auditing\Events\AuditCustom;
 
 /**
  * Changes the state of an organisation stock and, by default, of every sibling that carries the
  * same stock in the other organisations. Named organisations may be given a different target state.
  *
- * The state itself goes through UpdateOrgStock so the existing cascade (stock, trade units,
- * products, warehouses) keeps running. On top of it every org stock gets one custom audit entry
+ * The state itself goes through UpdateOrgStock, which hydrates stock, trade units, products and
+ * warehouses but never changes a product's state: the products of an org stock set back to active
+ * are reactivated only when the caller passes them in reactivate_products (see
+ * GetProductsToReactivateWithOrgStocks for which ones are allowed). On top of it every org stock gets one custom audit entry
  * with the scope, the reason, the effective date and where the request came from, so the history
  * says who asked, why and how, not only that a column moved.
  *
@@ -51,7 +63,7 @@ class DiscontinueOrgStocks extends OrgAction
     private ?User $user = null;
 
     /**
-     * @return array{changed: int, unchanged: int, scheduled: int}
+     * @return array{changed: int, unchanged: int, scheduled: int, reactivation?: array<string, array<int, array<string, mixed>>>}
      */
     public function handle(Collection $orgStocks, array $modelData): array
     {
@@ -64,9 +76,13 @@ class DiscontinueOrgStocks extends OrgAction
 
         $stats = ['changed' => 0, 'unchanged' => 0, 'scheduled' => 0];
 
-        $set = Arr::get($modelData, 'scope', 'group') === 'group' ? $this->groupSet($orgStocks) : $orgStocks->load('organisation');
+        $reactivateProductIds = $scheduled || $targetState !== OrgStockStateEnum::ACTIVE ? [] : Arr::get($modelData, 'reactivate_products', []);
 
-        DB::transaction(function () use ($set, $overrides, $targetState, $effectiveAt, $scheduled, $modelData, &$stats): void {
+        $set = Arr::get($modelData, 'scope', 'group') === 'group' ? self::groupSet($orgStocks) : $orgStocks->load('organisation');
+
+        $activatedIds = [];
+
+        DB::transaction(function () use ($set, $overrides, $targetState, $effectiveAt, $scheduled, $modelData, &$stats, &$activatedIds): void {
             foreach ($set as $orgStock) {
                 $organisationCode = $orgStock->organisation->code;
                 $state            = OrgStockStateEnum::from(Arr::get($overrides, $organisationCode, $targetState->value));
@@ -95,6 +111,10 @@ class DiscontinueOrgStocks extends OrgAction
                     $orgStock->update(['data' => Arr::except($orgStock->data, [self::SCHEDULED_KEY])]);
                 }
 
+                if ($state === OrgStockStateEnum::ACTIVE) {
+                    $activatedIds[] = $orgStock->id;
+                }
+
                 if ($orgStock->state === $state) {
                     $stats['unchanged']++;
                     continue;
@@ -106,9 +126,99 @@ class DiscontinueOrgStocks extends OrgAction
             }
         });
 
+        if ($reactivateProductIds) {
+            $stats['reactivation'] = $this->reactivateProducts(OrgStock::whereIn('id', $activatedIds)->get(), $reactivateProductIds);
+        }
+
         Cache::forget(ShowGoodsDashboard::cacheKey($this->organisation->group_id));
 
         return $stats;
+    }
+
+    /**
+     * Every product is independent: one that fails (a page url already taken, for instance) is
+     * reported and the others still come back. The families touched are always hydrated, and a
+     * family that is active again gets its closed page reopened here, not in UpdateProductCategory,
+     * because that action also runs in bulk hydrations where a closed page may be deliberate.
+     *
+     * @param  Collection<int, OrgStock>  $orgStocks
+     * @param  array<int, int>  $productIds
+     * @return array{reactivated: array<int, array<string, mixed>>, refused: array<int, array<string, mixed>>, failed: array<int, array<string, mixed>>, families_reopened: array<int, array<string, mixed>>}
+     */
+    private function reactivateProducts(Collection $orgStocks, array $productIds): array
+    {
+        $allowed    = collect(GetProductsToReactivateWithOrgStocks::run($orgStocks)['reactivate'])->keyBy('id');
+        $allowedIds = $allowed->keys()->intersect($productIds);
+
+        $refused = collect($productIds)
+            ->unique()
+            ->diff($allowedIds)
+            ->map(fn (int $id) => ['id' => $id, 'reason' => __('Not in the list of products that can come back with these SKOs')])
+            ->values()
+            ->all();
+
+        $reactivated = [];
+        $failed      = [];
+        $families    = [];
+
+        foreach (Product::whereIn('id', $allowedIds)->with(['shop.website', 'webpage', 'family'])->get() as $product) {
+            try {
+                $webpageBefore = $product->webpage?->state?->value;
+                $product       = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE, 'is_for_sale' => true]);
+                $webpageAction = null;
+
+                if (!$product->webpage && $product->shop->website) {
+                    if ($product->is_main) {
+                        $webpage = StoreProductWebpage::run($product);
+                        PublishWebpage::make()->action($webpage, ['comment' => 'reactivated with SKO']);
+                        $webpageAction = 'created';
+                    } else {
+                        $webpageAction = 'not_created_not_main_product';
+                    }
+                } elseif ($webpageBefore === 'closed' && $product->webpage?->refresh()->state?->value !== 'closed') {
+                    $webpageAction = 'reopened';
+                }
+
+                $reactivated[] = [
+                    'id'        => $product->id,
+                    'code'      => $product->code,
+                    'shop_code' => $product->shop->code,
+                    'webpage'   => $webpageAction,
+                ];
+            } catch (Throwable $exception) {
+                report($exception);
+                $failed[] = [
+                    'id'        => $product->id,
+                    'code'      => $product->code,
+                    'shop_code' => $product->shop?->code,
+                    'error'     => $exception instanceof ValidationException ? implode(' ', $exception->validator->errors()->all()) : $exception->getMessage(),
+                ];
+            }
+
+            if ($product->family) {
+                $families[$product->family->id] = $product->family;
+            }
+        }
+
+        $familiesReopened = [];
+
+        foreach ($families as $family) {
+            try {
+                FamilyHydrateProducts::run($family);
+
+                $family = $family->refresh();
+                $page   = $family->webpage;
+
+                if ($family->state === ProductCategoryStateEnum::ACTIVE && $page && $page->state === WebpageStateEnum::CLOSED) {
+                    ReopenWebpage::run($page);
+                    $familiesReopened[] = ['id' => $family->id, 'code' => $family->code];
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
+        return ['reactivated' => $reactivated, 'refused' => $refused, 'failed' => $failed, 'families_reopened' => $familiesReopened];
     }
 
     /**
@@ -141,7 +251,7 @@ class DiscontinueOrgStocks extends OrgAction
     /**
      * @return Collection<int, OrgStock>
      */
-    private function groupSet(Collection $orgStocks): Collection
+    public static function groupSet(Collection $orgStocks): Collection
     {
         $stockIds = $orgStocks->pluck('stock_id')->filter()->unique();
 
@@ -195,6 +305,8 @@ class DiscontinueOrgStocks extends OrgAction
             'expected_updated_at.*' => ['date'],
             'source'                => ['sometimes', Rule::in(['ui', 'mcp', 'schedule'])],
             'request_text'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'reactivate_products'   => ['sometimes', 'array', 'max:500', 'prohibited_unless:state,'.OrgStockStateEnum::ACTIVE->value],
+            'reactivate_products.*' => ['integer'],
         ];
     }
 
@@ -236,9 +348,9 @@ class DiscontinueOrgStocks extends OrgAction
     {
         $this->user = $request->user();
         $this->initialisationFromWarehouse($warehouse, $request);
-        $this->handle($this->orgStocks, $this->validatedData);
+        $stats = $this->handle($this->orgStocks, $this->validatedData);
 
-        return back();
+        return back()->with('reactivation', $stats['reactivation'] ?? null);
     }
 
     public function action(Organisation $organisation, array $modelData, ?User $user = null): array

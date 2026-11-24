@@ -5,11 +5,10 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { notify } from "@kyvg/vue3-notification"
-import { router } from "@inertiajs/vue3"
+import { router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { computed, inject, ref, watch } from "vue"
-import { DatePicker, InputText, Popover, Select, Textarea } from "primevue"
+import { Checkbox, DatePicker, InputText, Popover, Select, Textarea } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
 import { faExpandAlt, faCompressAlt, faChevronDown, faInfoCircle, faSeedling, faCheck, faBan, faExclamationTriangle, faTimes, faClock, faHammer, faCheckCircle, faBroadcastTower, faSkull } from "@fal"
@@ -20,7 +19,24 @@ interface CountWithReferences {
     references: string[]
 }
 
+interface ReactivationProduct {
+    id: number
+    code: string
+    name: string | null
+    shop_code: string
+    has_webpage: boolean
+    webpage_state: string | null
+    will_create_webpage: boolean
+    reason: string | null
+}
+
+interface Reactivation {
+    reactivate: ReactivationProduct[]
+    skipped: ReactivationProduct[]
+}
+
 interface Preview {
+    reactivation: Reactivation
     id: number
     code: string
     name: string | null
@@ -71,6 +87,8 @@ const form = ref({
     effective_at: "",
     organisation_states: {} as Record<string, string>,
 })
+const selectedProductIds = ref<number[]>([])
+const outcomeProblems = ref<{ id: number; code?: string; shop_code?: string; message: string }[]>([])
 const isSubmitting = ref(false)
 const isFullscreen = ref(false)
 const submitError = ref<string | null>(null)
@@ -141,10 +159,31 @@ const canConfirm = computed(() =>
     !!props.discontinueRoute && previews.value.length > 0 && (form.value.state === "active" || form.value.reason.trim().length > 0)
 )
 
+const reactivation = computed<Reactivation>(() => previews.value[0]?.reactivation ?? { reactivate: [], skipped: [] })
+
+const isScheduled = computed(() => !!effectiveDate.value && effectiveDate.value.getTime() > Date.now())
+
+const showReactivation = computed(() => form.value.state === "active" && !isScheduled.value && (reactivation.value.reactivate.length > 0 || reactivation.value.skipped.length > 0))
+
+const groupByShop = (products: ReactivationProduct[]) => {
+    const groups: Record<string, ReactivationProduct[]> = {}
+    products.forEach((product) => (groups[product.shop_code] ??= []).push(product))
+    return Object.entries(groups)
+}
+
+const reactivateByShop = computed(() => groupByShop(reactivation.value.reactivate))
+
+const webpageNote = (product: ReactivationProduct) => {
+    if (product.will_create_webpage) return ctrans("A web page will be created")
+    if (product.has_webpage && product.webpage_state === "closed") return ctrans("Its closed web page reopens")
+    return ""
+}
+
 const onConfirm = () => {
     if (!props.discontinueRoute || !canConfirm.value) return
     isSubmitting.value = true
     submitError.value = null
+    outcomeProblems.value = []
     const organisation_states = canChangeGroup.value
         ? Object.fromEntries(Object.entries(form.value.organisation_states).filter(([, state]) => state))
         : {}
@@ -159,13 +198,21 @@ const onConfirm = () => {
             organisation_states,
             expected_updated_at: Object.fromEntries(previews.value.map((preview) => [preview.id, preview.updated_at])),
             source: "ui",
+            ...(showReactivation.value ? { reactivate_products: selectedProductIds.value } : {}),
         },
         {
             preserveScroll: true,
             onSuccess: () => {
-                notify({ title: ctrans("Done"), text: ctrans("SKO state updated"), type: "success" })
-                emits("onDone")
+                const outcome = usePage().props.flash?.reactivation as { refused: { id: number; reason: string }[]; failed: { id: number; code: string; shop_code: string; error: string }[] } | null
+                const problems = [
+                    ...(outcome?.refused ?? []).map((item) => ({ id: item.id, message: item.reason })),
+                    ...(outcome?.failed ?? []).map((item) => ({ id: item.id, code: item.code, shop_code: item.shop_code, message: item.error })),
+                ]
+                outcomeProblems.value = problems
                 router.reload()
+                if (!problems.length) {
+                    emits("onDone")
+                }
             },
             onError: (errors) => {
                 submitError.value = Object.values(errors).flat().join(" ")
@@ -193,6 +240,7 @@ const loadPreview = async () => {
             params: { org_stock_ids: props.orgStockIds },
         })
         previews.value = response.data
+        selectedProductIds.value = (previews.value[0]?.reactivation?.reactivate ?? []).map((product) => product.id)
         if (isFullscreen.value) {
             setAllExpanded(true)
         }
@@ -646,6 +694,32 @@ watch(isFullscreen, setAllExpanded)
                         <span v-else v-tooltip="ctrans('This is required')" class="cursor-help font-semibold text-red-600" :aria-label="ctrans('This is required')">*</span>
                     </span>
                     <Textarea v-model="form.reason" :rows="2" autoResize fluid :placeholder="ctrans('Why this SKO changes state')" class="!text-sm focus:!border-[--app-accent]" />
+                </div>
+                <div v-if="showReactivation" class="md:col-span-3 text-sm">
+                    <span class="block text-gray-500 mb-1">{{ ctrans("Products") }}</span>
+                    <p class="text-xs text-gray-400 mb-2">{{ ctrans("Setting a SKO to active does not bring its products back. Tick the discontinued products that should go back on sale with it; nothing changes unless you confirm.") }}</p>
+                    <div v-for="[shopCode, products] in reactivateByShop" :key="shopCode" class="mb-2">
+                        <div class="text-xs font-semibold text-gray-700 mb-1">{{ shopCode }}</div>
+                        <label v-for="product in products" :key="product.id" class="flex items-center gap-2 py-0.5 cursor-pointer">
+                            <Checkbox v-model="selectedProductIds" :value="product.id" :inputId="`reactivate-product-${product.id}`" />
+                            <span class="whitespace-nowrap font-medium text-gray-700">{{ product.code }}</span>
+                            <span class="truncate text-gray-500">{{ product.name }}</span>
+                            <span v-if="webpageNote(product)" class="whitespace-nowrap text-xs text-gray-400">{{ webpageNote(product) }}</span>
+                        </label>
+                    </div>
+                    <div v-if="reactivation.skipped.length" class="mt-2">
+                        <div class="text-xs font-semibold text-gray-700 mb-1">{{ ctrans("These stay discontinued") }}</div>
+                        <div v-for="product in reactivation.skipped" :key="product.id" class="flex items-baseline gap-2 py-0.5 text-gray-500">
+                            <span class="whitespace-nowrap font-medium">{{ product.shop_code }} {{ product.code }}</span>
+                            <span class="text-xs">{{ product.reason }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="outcomeProblems.length" class="md:col-span-3 text-sm text-red-600">
+                    <p class="font-medium">{{ ctrans("The SKOs were changed, but these products did not come back:") }}</p>
+                    <p v-for="problem in outcomeProblems" :key="problem.id" class="text-xs">
+                        <span class="whitespace-nowrap font-medium">{{ problem.shop_code }} {{ problem.code ?? problem.id }}</span> {{ problem.message }}
+                    </p>
                 </div>
                 <div v-if="submitError" class="md:col-span-3 text-sm text-red-600">{{ submitError }}</div>
             </div>

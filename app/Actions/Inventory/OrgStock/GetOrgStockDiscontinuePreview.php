@@ -45,7 +45,11 @@ class GetOrgStockDiscontinuePreview extends OrgAction
      */
     public function handle(Collection $orgStocks, ?User $user = null): array
     {
-        return $orgStocks->map(fn (OrgStock $orgStock) => $this->previewFor($orgStock, $user))->values()->all();
+        $reactivation = GetProductsToReactivateWithOrgStocks::run(
+            !$user || DiscontinueOrgStocks::canChangeGroupStatus($user) ? DiscontinueOrgStocks::groupSet($orgStocks) : $orgStocks
+        );
+
+        return $orgStocks->map(fn (OrgStock $orgStock) => $this->previewFor($orgStock, $user) + ['reactivation' => $reactivation])->values()->all();
     }
 
     private function previewFor(OrgStock $orgStock, ?User $user): array

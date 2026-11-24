@@ -154,7 +154,8 @@ class HandleInertiaGrpRequests extends Middleware
                 ],
                 'flash' => [
                     'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
+                    'modal'        => fn () => $request->session()->get('modal'),
+                    'reactivation' => fn () => $request->session()->get('reactivation'),
                 ],
                 'help' => fn () => BlogPosts::helpFor($routeName, $user?->language?->code),
                 'can_move_stock' => fn () => $this->canMoveStockInRouteWarehouse($request, $user),

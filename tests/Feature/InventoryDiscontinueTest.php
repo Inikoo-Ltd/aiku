@@ -14,11 +14,13 @@ use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
 use App\Actions\Goods\Stock\RepairStocksStateFromOrgStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\OrgStockDiscontinuePreviewTool;
 use App\Mcp\Tools\OrgStockDiscontinueTool;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use Config;
@@ -34,6 +36,13 @@ use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
 use App\Actions\Inventory\OrgStock\DiscontinueGroupOrgStocks;
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\GetOrgStockDiscontinuePreview;
+use App\Actions\Inventory\OrgStock\GetProductsToReactivateWithOrgStocks;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Actions\Inventory\OrgStock\SuggestOrgStockDiscontinue;
 use App\Models\Inventory\OrgStockDiscontinueSuggestion;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
@@ -642,5 +651,228 @@ describe('discontinue authorisation', function () {
 
         expect($orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
             ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE);
+    });
+
+    test('the mcp tools preview and reactivate products group wide and report refused ids', function () {
+        $this->authUser->update(['can_use_mcp_discontinue' => true]);
+
+        [, , $shop] = createShop();
+        $shop->update(['state' => ShopStateEnum::OPEN]);
+        [, $product] = createProduct($shop);
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $product->orgStocks()->sync([$otherOrgStock->id => ['quantity' => 1]]);
+        $product->update(['state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false]);
+        $orgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        $otherOrgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+
+        $stranger = $product->replicate();
+        $stranger->slug = $product->slug.'-stranger';
+        $stranger->code = $product->code.'-X';
+        $stranger->save();
+
+        $preview = AikuServer::actingAs($this->authUser)->tool(OrgStockDiscontinuePreviewTool::class, [
+            'organisation' => $this->organisation->code,
+            'codes'        => [$orgStock->code],
+        ]);
+        $preview->assertOk()->assertSee('products_to_reactivate')->assertSee($product->code);
+
+        AikuServer::actingAs($this->authUser)->tool(OrgStockDiscontinueTool::class, [
+            'organisation'        => $this->organisation->code,
+            'codes'               => [$orgStock->code],
+            'state'               => 'active',
+            'request_text'        => 'bring it back',
+            'reactivate_products' => [$product->id, $stranger->id],
+        ])->assertOk()->assertSee('refused')->assertSee((string) $stranger->id);
+
+        expect($product->refresh()->state)->toBe(ProductStateEnum::ACTIVE)
+            ->and($product->is_for_sale)->toBeTrue()
+            ->and($stranger->refresh()->state)->toBe(ProductStateEnum::DISCONTINUED)
+            ->and($otherOrgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and(\App\Models\SysAdmin\McpChange::where('tool', 'org-stock-discontinue-tool')->latest('id')->first()->data)->toHaveKey('reactivated_products');
+
+        $stranger->forceDelete();
+        $product->orgStocks()->detach($otherOrgStock->id);
+    });
+
+    test('a user without the group permission is offered only products of the caller organisation SKOs', function () {
+        [, , $shop] = createShop();
+        $shop->update(['state' => ShopStateEnum::OPEN]);
+        [, $product] = createProduct($shop);
+        $orgStock      = $this->authOrgStocks[0];
+        $otherOrgStock = $this->authOtherOrgStocks[0];
+
+        $product->orgStocks()->sync([$otherOrgStock->id => ['quantity' => 1]]);
+        $product->update(['state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false]);
+        $orgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        $otherOrgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+
+        $offered = fn ($user) => collect(GetOrgStockDiscontinuePreview::make()->action($this->organisation, [$orgStock->id], $user)[0]['reactivation']['reactivate'])->pluck('id')->all();
+
+        expect($offered($this->authUser))->toContain($product->id);
+
+        setPermissionsTeamId($this->authUser->group_id);
+        $this->authUser->syncRoles([]);
+        Cache::tags('auth-user:'.$this->authUser->id)->flush();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        expect($offered($this->authUser->refresh()))->not->toContain($product->id);
+
+        $product->orgStocks()->detach($otherOrgStock->id);
+    });
+});
+
+
+describe('reactivating products with their sko', function () {
+    beforeEach(function () {
+        ensureFirstWarehouseHasCountry($this->organisation);
+        list(, , $this->shop) = createShop();
+        list($this->orgStocks, $this->product) = createProduct($this->shop);
+        $this->orgStock = $this->orgStocks[0];
+        $this->product->orgStocks()->syncWithoutDetaching([$this->orgStock->id => ['quantity' => 1]]);
+        $this->product->update(['state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false]);
+        $this->orgStock->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        $this->shop->update(['state' => ShopStateEnum::OPEN]);
+    });
+
+    test('a discontinued product of an open shop is offered, one of a closed shop is skipped', function () {
+        $set = GetProductsToReactivateWithOrgStocks::run(collect([$this->orgStock]));
+        expect(collect($set['reactivate'])->pluck('id')->all())->toContain($this->product->id);
+
+        $this->shop->update(['state' => ShopStateEnum::CLOSED]);
+        $set = GetProductsToReactivateWithOrgStocks::run(collect([$this->orgStock]));
+
+        expect(collect($set['reactivate'])->pluck('id')->all())->not->toContain($this->product->id)
+            ->and(collect($set['skipped'])->firstWhere('id', $this->product->id)['reason'])->toBe(__('The shop is closed'));
+
+        $this->shop->update(['state' => ShopStateEnum::OPEN]);
+    });
+
+    test('a product with another sko that stays inactive is skipped and names it', function () {
+        $other = $this->orgStocks[1];
+        $this->product->orgStocks()->syncWithoutDetaching([$other->id => ['quantity' => 1]]);
+        $other->update(['state' => OrgStockStateEnum::SUSPENDED]);
+
+        $skipped = collect(GetProductsToReactivateWithOrgStocks::run(collect([$this->orgStock]))['skipped'])->firstWhere('id', $this->product->id);
+
+        expect($skipped['reason'])->toContain($other->code);
+
+        $this->product->orgStocks()->detach($other->id);
+    });
+
+    test('of two discontinued products with the same code only the one with the lowest id is offered', function () {
+        $duplicate = $this->product->replicate();
+        $duplicate->slug = $this->product->slug.'-dup';
+        $duplicate->code = strtolower($this->product->code);
+        $duplicate->save();
+        $duplicate->orgStocks()->syncWithoutDetaching([$this->orgStock->id => ['quantity' => 1]]);
+
+        $set = GetProductsToReactivateWithOrgStocks::run(collect([$this->orgStock]));
+
+        expect(collect($set['reactivate'])->pluck('id')->all())->toContain($this->product->id)->not->toContain($duplicate->id)
+            ->and(collect($set['skipped'])->firstWhere('id', $duplicate->id)['reason'])->toBe(__('Another product in this shop has the same code'));
+
+        $duplicate->orgStocks()->detach($this->orgStock->id);
+        $duplicate->forceDelete();
+    });
+
+    test('confirming reactivates only the submitted products that are allowed', function () {
+        $stranger = $this->product->replicate();
+        $stranger->slug = $this->product->slug.'-stranger';
+        $stranger->code = $this->product->code.'-X';
+        $stranger->save();
+
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$this->orgStock->id],
+            'state'               => OrgStockStateEnum::ACTIVE->value,
+            'reactivate_products' => [$this->product->id, $stranger->id],
+        ]);
+
+        expect($this->orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($this->product->refresh()->state)->toBe(ProductStateEnum::ACTIVE)
+            ->and($this->product->is_for_sale)->toBeTrue()
+            ->and($stranger->refresh()->state)->toBe(ProductStateEnum::DISCONTINUED);
+
+        $stranger->forceDelete();
+    });
+
+    test('without reactivate_products the products stay discontinued', function () {
+        DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids' => [$this->orgStock->id],
+            'state'         => OrgStockStateEnum::ACTIVE->value,
+        ]);
+
+        expect($this->product->refresh()->state)->toBe(ProductStateEnum::DISCONTINUED);
+    });
+
+    test('an abnormal sibling sko blocks the product like any other non-active one', function () {
+        $other = $this->orgStocks[1];
+        $this->product->orgStocks()->syncWithoutDetaching([$other->id => ['quantity' => 1]]);
+        $other->update(['state' => OrgStockStateEnum::ABNORMALITY]);
+
+        $skipped = collect(GetProductsToReactivateWithOrgStocks::run(collect([$this->orgStock]))['skipped'])->firstWhere('id', $this->product->id);
+
+        expect($skipped['reason'])->toContain($other->code);
+
+        $this->product->orgStocks()->detach($other->id);
+    });
+
+    test('a product that fails does not stop the others and is reported', function () {
+        $second = $this->product->replicate();
+        $second->slug = $this->product->slug.'-second';
+        $second->code = $this->product->code.'-S';
+        $second->save();
+        $second->orgStocks()->syncWithoutDetaching([$this->orgStock->id => ['quantity' => 1]]);
+
+        $failingId = $this->product->id;
+        $mock      = Mockery::mock(UpdateProduct::class);
+        $mock->shouldReceive('action')->andReturnUsing(function (Product $target, array $data) use ($failingId) {
+            if ($target->id === $failingId) {
+                throw new RuntimeException('url taken');
+            }
+            $target->update($data);
+
+            return $target;
+        });
+        app()->instance(UpdateProduct::class, $mock);
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$this->orgStock->id],
+            'state'               => OrgStockStateEnum::ACTIVE->value,
+            'reactivate_products' => [$this->product->id, $second->id],
+        ]);
+
+        expect(collect($stats['reactivation']['failed'])->pluck('id')->all())->toBe([$failingId])
+            ->and($stats['reactivation']['failed'][0]['error'])->toBe('url taken')
+            ->and(collect($stats['reactivation']['reactivated'])->pluck('id')->all())->toBe([$second->id])
+            ->and($this->orgStock->refresh()->state)->toBe(OrgStockStateEnum::ACTIVE)
+            ->and($second->refresh()->state)->toBe(ProductStateEnum::ACTIVE)
+            ->and($this->product->refresh()->state)->toBe(ProductStateEnum::DISCONTINUED);
+
+        app()->forgetInstance(UpdateProduct::class);
+        $second->orgStocks()->detach($this->orgStock->id);
+        $second->forceDelete();
+    });
+
+    test('the closed page of a family is reopened only through reactivation', function () {
+        if (!$this->shop->website) {
+            createWebsite($this->shop);
+            $this->shop->refresh();
+        }
+        $family = $this->product->family;
+        $page   = $family->webpage ?? StoreProductCategoryWebpage::make()->action($family);
+        $page->update(['state' => WebpageStateEnum::CLOSED]);
+        $family->update(['state' => ProductCategoryStateEnum::DISCONTINUED]);
+
+        $stats = DiscontinueOrgStocks::make()->action($this->organisation, [
+            'org_stock_ids'       => [$this->orgStock->id],
+            'state'               => OrgStockStateEnum::ACTIVE->value,
+            'reactivate_products' => [$this->product->id],
+        ]);
+
+        expect($family->refresh()->state)->toBe(ProductCategoryStateEnum::ACTIVE)
+            ->and($page->refresh()->state)->toBe(WebpageStateEnum::LIVE)
+            ->and(collect($stats['reactivation']['families_reopened'])->pluck('id')->all())->toBe([$family->id]);
     });
 });

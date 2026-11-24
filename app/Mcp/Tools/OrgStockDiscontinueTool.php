@@ -17,7 +17,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Changes the state of SKOs (organisation stock) after org-stock-discontinue-preview-tool has been shown to the user and they confirmed in their own words. Group wide by default: every organisation carrying the same stock moves together; organisation_states keeps named organisations on a different state. A reason is required unless going back to active. effective_at in the future schedules the change instead of applying it. Pass expected_updated_at from the preview so a SKO that moved since is refused. Every change is audited with the user, the reason and request_text. Only for users enrolled to discontinue SKOs through their assistant.')]
+#[Description('Changes the state of SKOs (organisation stock) after org-stock-discontinue-preview-tool has been shown to the user and they confirmed in their own words. Group wide by default: every organisation carrying the same stock moves together; organisation_states keeps named organisations on a different state. A reason is required unless going back to active. effective_at in the future schedules the change instead of applying it. Pass expected_updated_at from the preview so a SKO that moved since is refused. Every change is audited with the user, the reason and request_text. Setting SKOs back to active does NOT bring their products back: after the preview, show the user the discontinued products that can come back and those that stay discontinued with the reason, per shop, ask which to bring back (default: all in the reactivate list) and pass reactivate_products only after they confirm in their own words; closed shops never get products back. The result lists the reactivated products, created or reopened pages and refused ids. Only for users enrolled to discontinue SKOs through their assistant.')]
 class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
 {
     use WithMcpChangeLog;
@@ -36,6 +36,8 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
             'organisation_states.*' => ['in:active,discontinuing,discontinued,suspended'],
             'expected_updated_at'   => ['sometimes', 'array'],
             'expected_updated_at.*' => ['date'],
+            'reactivate_products'   => ['sometimes', 'array', 'max:500', 'prohibited_unless:state,active'],
+            'reactivate_products.*' => ['integer'],
         ]);
 
         $denied = $this->denied($request);
@@ -75,12 +77,24 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
                 'effective_at'        => $request->get('effective_at'),
                 'organisation_states' => $request->get('organisation_states'),
                 'expected_updated_at' => $expected,
+                'reactivate_products' => $request->get('reactivate_products'),
                 'source'              => 'mcp',
                 'request_text'        => $request->string('request_text')->toString(),
             ], fn ($value) => $value !== null), $request->user())
             );
         } catch (ValidationException $exception) {
             return Response::error(implode(' ', $exception->validator->errors()->all()).' Nothing was changed; preview again.');
+        }
+
+        $reactivation = $stats['reactivation'] ?? null;
+
+        if ($reactivation && $this->mcpChange) {
+            $this->mcpChange->update(['data' => array_merge($this->mcpChange->data, [
+                'reactivated_products' => $reactivation['reactivated'],
+                'refused_products'     => $reactivation['refused'],
+                'failed_products'      => $reactivation['failed'],
+                'families_reopened'    => $reactivation['families_reopened'],
+            ])]);
         }
 
         return Response::json([
@@ -105,6 +119,7 @@ class OrgStockDiscontinueTool extends AikuOrgStockDiscontinueTool
             'request_text'        => $schema->string()->description('The user\'s request, verbatim, kept in the audit')->required(),
             'effective_at'        => $schema->string()->description('Date (Y-m-d); a future date schedules the change'),
             'organisation_states' => $schema->object()->description('Exceptions per organisation code, e.g. {"sk": "active"}'),
+            'reactivate_products' => $schema->array()->items($schema->integer())->description('Only with state active: ids of discontinued products to bring back, taken from the preview products_to_reactivate.reactivate list. Setting SKOs to active does not bring products back. Pass only after the user confirmed which ones in their own words; ids outside that list are refused and closed shops never get products back.'),
             'expected_updated_at' => $schema->object()->description('updated_at per SKO code as returned by the preview; a SKO that moved since is refused'),
         ];
     }
