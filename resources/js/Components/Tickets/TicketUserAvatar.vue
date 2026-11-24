@@ -12,7 +12,8 @@ const props = withDefaults(defineProps<{
     name: string | null
     avatar?: Record<string, string> | null
     size?: "xs" | "sm" | "md" | "lg" | "xl"
-}>(), { avatar: null, size: "md" })
+    square?: boolean
+}>(), { avatar: null, size: "md", square: false })
 
 const hasLoaded = ref(false)
 
@@ -44,7 +45,7 @@ const sizeClass = computed(() => sizeClasses[props.size])
 </script>
 
 <template>
-    <span class="relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 font-medium text-gray-600" :class="sizeClass">
+    <span class="relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-gray-200 font-medium text-gray-600" :class="[sizeClass, square ? 'rounded-[22%]' : 'rounded-full']">
         <span v-show="!hasLoaded" aria-hidden="true">{{ initials }}</span>
         <img
             v-if="avatar?.original"
