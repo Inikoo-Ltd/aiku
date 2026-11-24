@@ -25,6 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * The live websites selling one of the supplier's products: through the SKOs the supplier product is linked to, each
  * website's product made from them, with the link to its product page and to its family page when they are live.
+ * Starter packs, coded with a -ST suffix, are left out: they mix in other suppliers' products.
  */
 class GetSupplierPortalProductWebsites
 {
@@ -46,6 +47,7 @@ class GetSupplierPortalProductWebsites
 
         $products = Product::query()
             ->whereIn('id', DB::table('product_has_org_stocks')->whereIn('org_stock_id', $orgStockIds)->select('product_id'))
+            ->whereNot('code', 'ilike', '%-st')
             ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
             ->whereHas('shop.website', fn (Builder $query) => $query->where('state', WebsiteStateEnum::LIVE))
             ->with(['shop.website', 'webpage.website', 'family.webpage.website'])
