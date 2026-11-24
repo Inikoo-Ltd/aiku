@@ -39,6 +39,7 @@ class GetSupplierShowcase
                 'currency'   => $supplier->currency,
                 'address'    => AddressResource::make($supplier->address)->getArray(),
                 'photo'      => $supplier->imageSources(320, 320),
+                'photo_large' => $supplier->imageSources(1200, 1200),
                 'supplierInfo' => $this->supplierInfo($supplier),
             ],
         ];
