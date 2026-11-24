@@ -22,7 +22,7 @@ interface FacetOption {
     count: number
 }
 
-type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
+type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status" | "attention"
 type Tab = "open" | "in_process" | "submitted" | "confirmed" | "needs_action" | "import" | "completed"
 type Sort = "needs_action" | "newest" | "oldest" | "value" | "lowest_value"
 
@@ -101,7 +101,8 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
     { group: "status", label: ctrans("Status") },
     { group: "supplier", label: ctrans("Supplier") },
     { group: "journey", label: ctrans("Journey") },
-    { group: "type", label: ctrans("PO type") }
+    { group: "type", label: ctrans("PO type") },
+    { group: "attention", label: ctrans("Attention") }
 ])
 
 const tabs = computed<{ key: Tab; label: string; count: number; tooltip?: string }[]>(() => !summary.value ? [] : [
@@ -264,7 +265,7 @@ function showFilter(group: FilterGroup): boolean {
     if (group === "country" && active.value.agent !== null) {
         return false
     }
-    return filters.value[group].length > 1
+    return filters.value[group].length > (group === "attention" ? 0 : 1)
 }
 
 function openMark(ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEvent): void {

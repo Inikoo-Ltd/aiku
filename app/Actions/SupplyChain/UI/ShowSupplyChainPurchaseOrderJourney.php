@@ -43,7 +43,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array STATUSES = ['overdue', 'at_risk', 'on_track', 'completed'];
 
-    private const array FILTER_GROUPS = ['organisation', 'journey', 'agent', 'supplier', 'buyer', 'type', 'country', 'stage', 'status'];
+    private const array FILTER_GROUPS = ['organisation', 'journey', 'agent', 'supplier', 'buyer', 'type', 'country', 'stage', 'status', 'attention'];
 
     /** @var array<string, float> units of each currency per pivot currency */
     private array $rates = [];
@@ -638,6 +638,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'country'      => $ribbon['country_code'] ? [$ribbon['country_code'] => $ribbon['country_name']] : [],
             'stage'        => $ribbon['current_stage'] ? [$ribbon['current_stage'] => PurchaseOrderJourneyStageEnum::labels()[$ribbon['current_stage']]] : [],
             'status'       => [$ribbon['status'] => $this->statusLabels()[$ribbon['status']]],
+            'attention'    => $ribbon['pending_price_changes'] > 0 ? ['price_change' => __('Price change requested')] : [],
             default        => [],
         };
     }
