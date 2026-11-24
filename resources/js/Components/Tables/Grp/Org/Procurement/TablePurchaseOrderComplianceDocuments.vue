@@ -15,6 +15,7 @@ library.add(faCheck, faUpload, faExclamationTriangle, faDownload)
 
 interface DocumentFile {
     name: string
+    purchase_order_reference: string | null
     download_route: routeType
 }
 
@@ -133,6 +134,7 @@ async function upload(tradeUnitId: number, document: Document, event: Event) {
                             <FontAwesomeIcon icon="fal fa-download" fixed-width aria-hidden="true" />
                             <span class="truncate">{{ file.name }}</span>
                         </a>
+                        <p v-if="file.purchase_order_reference" class="-mt-1 pb-1.5 pl-6 text-xs text-gray-400">{{ ctrans("from PO :reference", { reference: file.purchase_order_reference }) }}</p>
                     </li>
                 </ul>
             </div>

@@ -20,7 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Anyone working an order, the buyer or the agent, uploads a product's compliance document from it; the document is
- * kept on the product's trade unit, so it counts for every order of that product.
+ * kept on the product's trade unit, so it counts for every order of that product, and remembers the order it was
+ * uploaded from.
  */
 class AttachPurchaseOrderComplianceDocument extends OrgAction
 {
@@ -39,11 +40,15 @@ class AttachPurchaseOrderComplianceDocument extends OrgAction
         return $agentOrganisationId && $request->user()->authTo("procurement.$agentOrganisationId.edit");
     }
 
-    public function handle(TradeUnit $tradeUnit, array $modelData): void
+    public function handle(PurchaseOrder $purchaseOrder, TradeUnit $tradeUnit, array $modelData): void
     {
         AttachAttachmentToModel::make()->action($tradeUnit, [
             'attachments' => $modelData['attachments'],
             'scope'       => $modelData['scope'],
+            'data'        => [
+                'purchase_order_id'        => $purchaseOrder->id,
+                'purchase_order_reference' => $purchaseOrder->reference,
+            ],
         ]);
     }
 
@@ -69,6 +74,6 @@ class AttachPurchaseOrderComplianceDocument extends OrgAction
         $this->tradeUnit     = $tradeUnit;
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        $this->handle($tradeUnit, $this->validatedData);
+        $this->handle($purchaseOrder, $tradeUnit, $this->validatedData);
     }
 }

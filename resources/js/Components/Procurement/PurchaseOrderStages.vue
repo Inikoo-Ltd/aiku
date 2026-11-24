@@ -902,7 +902,7 @@ function save() {
         :visible="!!openedCheck"
         modal
         :header="openedCheck?.label"
-        :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :style="{ width: openedCheck?.key === 'compliance' ? '44rem' : '32rem', maxWidth: 'calc(100vw - 2rem)' }"
         :draggable="false"
         @update:visible="(visible: boolean) => !visible && (openedCheck = null)"
     >

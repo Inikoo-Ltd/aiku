@@ -14,6 +14,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -90,15 +91,16 @@ class GetPurchaseOrderCompliance
     }
 
     /**
-     * @return array{documents: array<int, array{scope: string, label: string, count: int, files: array<int, array{name: string, download_route: array{name: string, parameters: array<string, string>}}>, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
+     * @return array{documents: array<int, array{scope: string, label: string, count: int, files: array<int, array{name: string, purchase_order_reference: ?string, download_route: array{name: string, parameters: array<string, string>}}>, required: bool, supplier_only: bool}>, missing: string[], missing_supplier_only: string[]}
      */
     public function documents(TradeUnit $tradeUnit): array
     {
         $filesByScope = $tradeUnit->attachmentsWithSharedDocuments()
             ->groupBy(fn (Media $attachment) => str_replace(['_private', 'msds'], ['', 'sds'], (string) $attachment->pivot->scope))
             ->map(fn (Collection $attachments) => $attachments->map(fn (Media $attachment) => [
-                'name'           => $attachment->file_name,
-                'download_route' => [
+                'name'                     => $attachment->file_name,
+                'purchase_order_reference' => $this->uploadedFromPurchaseOrderReference($attachment),
+                'download_route'           => [
                     'name'       => 'grp.media.download',
                     'parameters' => ['media' => $attachment->ulid],
                 ],
@@ -120,6 +122,53 @@ class GetPurchaseOrderCompliance
             'missing'               => $documents->filter(fn (array $document) => $document['required'] && !$document['count'])->pluck('label')->values()->all(),
             'missing_supplier_only' => $documents->filter(fn (array $document) => $document['supplier_only'] && !$document['count'])->pluck('label')->values()->all(),
         ];
+    }
+
+    /**
+     * Every product of the order with its compliance documents, each checked once it has a file or someone ticked it
+     * as checked and OK for this order.
+     *
+     * @return array<int, array{trade_unit_id: int, code: string, name: ?string, route: array{name: string, parameters: array<int, string>}, documents: array<int, array{scope: string, label: string, files: array<int, array{name: string, purchase_order_reference: ?string, download_route: array{name: string, parameters: array<string, string>}}>, has_files: bool, checked: bool, checked_by: ?string, checked_at: ?string}>}>
+     */
+    public function checklist(PurchaseOrder $purchaseOrder): array
+    {
+        $checks    = Arr::get($purchaseOrder->data, 'compliance_checks', []);
+        $userNames = User::whereIn('id', collect($checks)->flatten(1)->pluck('user_id')->filter()->unique())
+            ->get()
+            ->mapWithKeys(fn (User $user) => [$user->id => $user->chatName()]);
+
+        return $this->tradeUnits($purchaseOrder)->map(fn (TradeUnit $tradeUnit) => [
+            'trade_unit_id' => $tradeUnit->id,
+            'code'          => $tradeUnit->code,
+            'name'          => $tradeUnit->name,
+            'route'         => [
+                'name'       => 'grp.trade_units.units.show',
+                'parameters' => [$tradeUnit->slug],
+            ],
+            'documents'     => collect($this->documents($tradeUnit)['documents'])->map(function (array $document) use ($checks, $tradeUnit, $userNames) {
+                $check = Arr::get($checks, $tradeUnit->id.'.'.$document['scope']);
+
+                return [
+                    'scope'      => $document['scope'],
+                    'label'      => $document['label'],
+                    'files'      => $document['files'],
+                    'has_files'  => $document['count'] > 0,
+                    'checked'    => $document['count'] > 0 || $check !== null,
+                    'checked_by' => $check ? $userNames->get(Arr::get($check, 'user_id')) : null,
+                    'checked_at' => $check ? Arr::get($check, 'at') : null,
+                ];
+            })->values()->all(),
+        ])->sortBy('code')->values()->all();
+    }
+
+    private function uploadedFromPurchaseOrderReference(Media $attachment): ?string
+    {
+        $data = $attachment->pivot->data ?? null;
+        if (is_string($data)) {
+            $data = json_decode($data, true);
+        }
+
+        return Arr::get($data ?? [], 'purchase_order_reference');
     }
 
     /**

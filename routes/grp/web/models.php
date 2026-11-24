@@ -628,6 +628,7 @@ use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
 use App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest;
 use App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest;
 use App\Actions\Procurement\PurchaseOrder\AttachPurchaseOrderComplianceDocument;
+use App\Actions\Procurement\PurchaseOrder\CheckPurchaseOrderComplianceDocument;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateFromCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
@@ -2206,6 +2207,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('undo-close-old', UndoCloseOldPurchaseOrder::class)->name('undo_close_old');
     Route::post('chase', StorePurchaseOrderChase::class)->name('chase.store');
     Route::post('compliance/{tradeUnit:id}', AttachPurchaseOrderComplianceDocument::class)->name('compliance.attach')->withoutScopedBindings();
+    Route::patch('compliance/{tradeUnit:id}/check', CheckPurchaseOrderComplianceDocument::class)->name('compliance.check')->withoutScopedBindings();
     Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::post('payment', ConfirmPurchaseOrderPayment::class)->name('payment.confirm');
     Route::delete('payment/{depositPayment:id}', UndoPurchaseOrderPayment::class)->name('payment.undo');

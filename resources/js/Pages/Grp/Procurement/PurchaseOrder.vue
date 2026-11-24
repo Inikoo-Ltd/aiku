@@ -56,6 +56,7 @@ import PurchaseOrderReferenceTitle, { type RenameReference } from "@/Components/
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import PurchaseOrderStageContainers from "@/Components/Procurement/PurchaseOrderStageContainers.vue"
 import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components/Procurement/PurchaseOrderReadyCheckItems.vue"
+import PurchaseOrderComplianceChecklist, { type ComplianceChecklist } from "@/Components/Procurement/PurchaseOrderComplianceChecklist.vue"
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
@@ -157,6 +158,7 @@ const props = defineProps < {
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
     compliance?: object
     compliance_summary?: InstanceType<typeof TablePurchaseOrderComplianceDocuments>["$props"]["compliance"]
+    compliance_checklist?: ComplianceChecklist | null
     deposits?: object | null
     payments?: PurchaseOrderPaymentsData | null
     agent_money?: AgentPurchaseOrderMoneyData | null
@@ -459,6 +461,9 @@ const moneyTable = computed(() => {
 })
 
 const currentTab = ref(props.tabs.current)
+
+const loadComplianceChecklist = () => router.reload({ only: ["compliance_checklist"], preserveScroll: true })
+const reloadAfterComplianceChange = () => router.reload({ only: currentTab.value === "compliance" ? ["compliance_checklist", "compliance", "compliance_summary"] : ["compliance_checklist"], preserveScroll: true })
 const isModalUploadExcel = ref(false)
 const isPullLinesDialogOpen = ref(false)
 const isChangeSupplierDialogOpen = ref(false)
@@ -1383,6 +1388,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 		<template v-if="ready_checks" #check-qc="{ close }">
 			<PurchaseOrderReadyCheckItems check="qc" :data="ready_checks.qc" @done="close" />
+		</template>
+		<template #check-compliance>
+			<PurchaseOrderComplianceChecklist :data="compliance_checklist" @load="loadComplianceChecklist" @changed="reloadAfterComplianceChange" />
 		</template>
 		<template v-if="stage_containers" #stage-arrived>
 			<PurchaseOrderStageContainers :containers="stage_containers.containers" :itemsToAdd="stage_containers.items_to_add" />

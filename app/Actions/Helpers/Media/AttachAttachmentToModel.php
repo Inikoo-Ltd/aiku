@@ -87,7 +87,8 @@ class AttachAttachmentToModel extends OrgAction
                 'originalName' => $file->getClientOriginalName(),
                 'scope'        => Arr::get($modelData, 'scope', 'Other'),
                 'caption'      => Arr::get($modelData, 'caption') ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'extension'    => $file->getClientOriginalExtension()
+                'extension'    => $file->getClientOriginalExtension(),
+                'data'         => Arr::get($modelData, 'data'),
             ];
 
             SaveModelAttachment::make()->action($model, $attachmentData);
@@ -137,7 +138,7 @@ class AttachAttachmentToModel extends OrgAction
             return AttachStoredItemManual::rules();
         }
 
-        return [
+        $rules = [
             'attachments' => ['required', 'array'],
             'attachments.*' => ['required', 'file', 'max:50000'],
             'scope'      => [
@@ -146,6 +147,12 @@ class AttachAttachmentToModel extends OrgAction
             ],
             'caption'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
+
+        if ($this->asAction) {
+            $rules['data'] = ['sometimes', 'nullable', 'array'];
+        }
+
+        return $rules;
     }
 
     public function action(Employee|TradeUnit|Agent|Supplier|Customer|PurchaseOrder|StockDelivery|Order|Invoice|PalletDelivery|PalletReturn|StoredItem|Product|TradeUnitFamily|ProductCategory $model, array $modelData): void

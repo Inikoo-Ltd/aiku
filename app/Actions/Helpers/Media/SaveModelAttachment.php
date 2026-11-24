@@ -69,12 +69,13 @@ class SaveModelAttachment extends OrgAction
 
         data_forget($modelData, 'originalName');
         data_forget($modelData, 'extension');
+        $pivotExtraData = Arr::pull($modelData, 'data');
 
         $pivotData = array_merge(
             $modelData,
             [
                 'group_id' => $model->group_id,
-                'data'     => '{}'
+                'data'     => $pivotExtraData ? json_encode($pivotExtraData) : '{}'
             ]
         );
 
@@ -125,6 +126,10 @@ class SaveModelAttachment extends OrgAction
             'extension'    => ['sometimes', 'nullable', 'string'],
 
         ];
+
+        if ($this->asAction) {
+            $rules['data'] = ['sometimes', 'nullable', 'array'];
+        }
 
         if (!$this->strict) {
             $rules['fetched_at']      = ['sometimes', 'date'];

@@ -486,6 +486,7 @@ class ShowPurchaseOrder extends OrgAction
                 'compliance_summary' => $this->tab == PurchaseOrderTabsEnum::COMPLIANCE->value
                     ? fn () => $this->getComplianceSummary($purchaseOrder)
                     : Inertia::optional(fn () => $this->getComplianceSummary($purchaseOrder)),
+                'compliance_checklist' => Inertia::optional(fn () => $this->getComplianceChecklist($purchaseOrder)),
 
                 PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
@@ -940,10 +941,32 @@ class ShowPurchaseOrder extends OrgAction
         return $purchaseOrder->isAgentOrder() && $this->hasActiveStockDelivery($purchaseOrder);
     }
 
+    private function canChangeCompliance(PurchaseOrder $purchaseOrder): bool
+    {
+        return ($this->canEdit && $purchaseOrder->organisation_id === $this->organisation->id) || $this->agentCanEdit;
+    }
+
+    public function getComplianceChecklist(PurchaseOrder $purchaseOrder): array
+    {
+        $canChange = $this->canChangeCompliance($purchaseOrder);
+
+        return [
+            'products'     => GetPurchaseOrderCompliance::make()->checklist($purchaseOrder),
+            'upload_route' => $canChange ? [
+                'name'       => 'grp.models.purchase-order.compliance.attach',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ] : null,
+            'check_route'  => $canChange ? [
+                'name'       => 'grp.models.purchase-order.compliance.check',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ] : null,
+        ];
+    }
+
     public function getComplianceSummary(PurchaseOrder $purchaseOrder): array
     {
         $compliance = GetPurchaseOrderCompliance::run($purchaseOrder);
-        $canUpload  = ($this->canEdit && $purchaseOrder->organisation_id === $this->organisation->id) || $this->agentCanEdit;
+        $canUpload  = $this->canChangeCompliance($purchaseOrder);
 
         return [
             'eta'          => $compliance['eta'],
