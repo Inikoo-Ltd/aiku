@@ -6,6 +6,7 @@ import { debounce } from "lodash-es"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import Popover from "primevue/popover"
+import Dialog from "primevue/dialog"
 import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -20,10 +21,21 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faImage, faPen, faSearch } from "@fal"
+import { faBarcodeRead, faImage, faPen, faSearch, faFileAlt, faDownload } from "@fal"
 import { routeType } from "@/types/route"
 
-library.add(faBarcodeRead, faImage, faPen, faSearch)
+library.add(faBarcodeRead, faImage, faPen, faSearch, faFileAlt, faDownload)
+
+interface ComplianceDetail {
+	document: string | null
+	product_code: string | null
+	product_name: string | null
+	expires_on: string | null
+	note: string | null
+	decided_at: string | null
+	decided_by: string | null
+	files: { name: string; ulid: string }[]
+}
 
 interface Product {
 	id: number
@@ -55,7 +67,7 @@ interface Details {
 	products: { id: number; code: string; name: string; price: number }[]
 	terms: { term: string; product: string | null; value_type: string; amount: number | null; currency: string | null; text: string | null; agreed_on: string | null; valid_to: string | null }[]
 	buyers: { organisations: string[]; name: string | null; email: string | null }[]
-	submissions: (EditedSubmission & { type_label: string; state_label: string; summary: string; sent_at: string | null; created_at: string; editable: boolean })[]
+	submissions: (EditedSubmission & { type_label: string; state_label: string; summary: string; sent_at: string | null; created_at: string; editable: boolean; feedback?: string | null; detail?: ComplianceDetail | null })[]
 	compliance: { document_type: string | null; product: string | null; expires_on: string | null; days_left: number | null; expiring: boolean }[]
 }
 
@@ -68,6 +80,7 @@ const props = defineProps<{
 	initialSearch?: string
 	productsRoute?: string
 	productWebsitesRoute?: string
+	submissionFileRoute?: string | null
 	labelsPrint?: {
 		plan_route: routeType
 		pdf_route: routeType
@@ -208,6 +221,16 @@ const stateClass: Record<string, string> = {
 	accepted: "text-green-700",
 	not_proceeding: "text-red-600",
 }
+
+type SentSubmission = Details["submissions"][number]
+const openedSubmission = ref<SentSubmission | null>(null)
+const openSubmission = (submission: SentSubmission) => {
+	if (submission.detail) {
+		openedSubmission.value = submission
+	}
+}
+const fileUrl = (submission: SentSubmission, ulid: string): string | null =>
+	props.submissionFileRoute ? props.submissionFileRoute.replace("/submissions/0/", `/submissions/${submission.id}/`).replace("/files/MEDIA", `/files/${ulid}`) : null
 
 const sentHere = computed(() => props.details.submissions.filter((submission) => submission.type !== "price_change"))
 
@@ -418,7 +441,13 @@ const edit = (submission: EditedSubmission) => {
 			<h2 class="text-sm font-semibold text-gray-700">{{ ctrans("What you sent us") }}</h2>
 			<p v-if="!sentHere.length" class="py-4 text-center text-xs text-gray-400">{{ ctrans("Nothing yet") }}</p>
 			<ul v-else class="mt-2 divide-y divide-gray-100 md:hidden">
-				<li v-for="submission in sentHere" :key="submission.id" class="space-y-1 py-3 text-sm">
+				<li
+					v-for="submission in sentHere"
+					:key="submission.id"
+					class="space-y-1 py-3 text-sm"
+					:class="submission.detail ? 'cursor-pointer hover:bg-gray-50' : ''"
+					@click="openSubmission(submission)"
+				>
 					<div class="flex items-baseline justify-between gap-2">
 						<span class="font-semibold text-gray-900">{{ submission.type_label }}</span>
 						<span :class="stateClass[submission.state]">{{ submission.state_label }}</span>
@@ -426,7 +455,7 @@ const edit = (submission: EditedSubmission) => {
 					<div v-if="submission.summary" class="text-gray-600">{{ submission.summary }}</div>
 					<div class="text-xs text-gray-400">{{ useFormatTime(submission.sent_at ?? submission.created_at) }}</div>
 					<div v-if="submission.feedback" class="rounded bg-gray-50 p-2 text-gray-700">{{ submission.feedback }}</div>
-					<Button v-if="submission.editable" type="tertiary" size="xs" :label="submission.state === 'draft' ? ctrans('Continue') : ctrans('Reply')" @click="edit(submission)">
+					<Button v-if="submission.editable" type="tertiary" size="xs" :label="submission.state === 'draft' ? ctrans('Continue') : ctrans('Reply')" @click.stop="edit(submission)">
 						<template #icon><FontAwesomeIcon icon="fal fa-pen" fixed-width aria-hidden="true" /></template>
 					</Button>
 				</li>
@@ -443,7 +472,13 @@ const edit = (submission: EditedSubmission) => {
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-100 text-gray-700">
-						<tr v-for="submission in sentHere" :key="submission.id">
+						<tr
+							v-for="submission in sentHere"
+							:key="submission.id"
+							:class="submission.detail ? 'cursor-pointer hover:bg-gray-50' : ''"
+							v-tooltip="submission.detail ? ctrans('See what you sent') : undefined"
+							@click="openSubmission(submission)"
+						>
 							<td class="whitespace-nowrap py-1.5 pr-3">{{ useFormatTime(submission.sent_at ?? submission.created_at) }}</td>
 							<td class="py-1.5 pr-3">
 								{{ submission.type_label }}<span v-if="submission.summary" class="text-xs text-gray-400"> · {{ submission.summary }}</span>
@@ -451,7 +486,7 @@ const edit = (submission: EditedSubmission) => {
 							<td class="whitespace-nowrap py-1.5 pr-3" :class="stateClass[submission.state]">{{ submission.state_label }}</td>
 							<td class="py-1.5 pr-3 text-xs text-gray-600">{{ submission.feedback ?? "" }}</td>
 							<td class="py-1.5 text-right">
-								<Button v-if="submission.editable" type="tertiary" size="xxs" :label="submission.state === 'draft' ? ctrans('Continue') : ctrans('Reply')" @click="edit(submission)">
+								<Button v-if="submission.editable" type="tertiary" size="xxs" :label="submission.state === 'draft' ? ctrans('Continue') : ctrans('Reply')" @click.stop="edit(submission)">
 									<template #icon><FontAwesomeIcon icon="fal fa-pen" fixed-width aria-hidden="true" /></template>
 								</Button>
 							</td>
@@ -460,6 +495,63 @@ const edit = (submission: EditedSubmission) => {
 				</table>
 			</div>
 		</section>
+		<Dialog
+			:visible="!!openedSubmission"
+			modal
+			:header="openedSubmission?.type_label"
+			:style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
+			:draggable="false"
+			@update:visible="(visible: boolean) => !visible && (openedSubmission = null)"
+		>
+			<div v-if="openedSubmission?.detail" class="space-y-3 text-sm">
+				<dl class="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1.5">
+					<dt class="text-gray-500">{{ ctrans("Document") }}</dt>
+					<dd class="text-gray-800">{{ openedSubmission.detail.document ?? "-" }}</dd>
+					<dt class="text-gray-500">{{ ctrans("Product") }}</dt>
+					<dd class="text-gray-800">
+						<span class="whitespace-nowrap font-medium">{{ openedSubmission.detail.product_code ?? "-" }}</span>
+						<span v-if="openedSubmission.detail.product_name" class="text-gray-500"> · {{ openedSubmission.detail.product_name }}</span>
+					</dd>
+					<dt class="text-gray-500">{{ ctrans("Expires on") }}</dt>
+					<dd class="text-gray-800">{{ openedSubmission.detail.expires_on ? useFormatTime(openedSubmission.detail.expires_on) : "-" }}</dd>
+					<dt class="text-gray-500">{{ ctrans("Sent") }}</dt>
+					<dd class="text-gray-800">{{ useFormatTime(openedSubmission.sent_at ?? openedSubmission.created_at) }}</dd>
+					<dt class="text-gray-500">{{ ctrans("Status") }}</dt>
+					<dd :class="stateClass[openedSubmission.state]">
+						{{ openedSubmission.state_label }}<span v-if="openedSubmission.detail.decided_at" class="text-xs text-gray-400"> · {{ openedSubmission.detail.decided_by ? ctrans(":date by :user", { date: useFormatTime(openedSubmission.detail.decided_at), user: openedSubmission.detail.decided_by }) : useFormatTime(openedSubmission.detail.decided_at) }}</span>
+					</dd>
+					<template v-if="openedSubmission.detail.note">
+						<dt class="text-gray-500">{{ ctrans("Your note") }}</dt>
+						<dd class="whitespace-pre-line text-gray-800">{{ openedSubmission.detail.note }}</dd>
+					</template>
+				</dl>
+
+				<div v-if="openedSubmission.feedback" class="rounded bg-gray-50 p-2">
+					<p class="text-xs font-medium text-gray-500">{{ ctrans("Our reply") }}</p>
+					<p class="whitespace-pre-line text-gray-700">{{ openedSubmission.feedback }}</p>
+				</div>
+
+				<div>
+					<p class="mb-1 text-xs font-medium text-gray-500">{{ ctrans("Files") }}</p>
+					<p v-if="!openedSubmission.detail.files.length" class="text-xs text-gray-400">{{ ctrans("No files") }}</p>
+					<ul v-else class="divide-y divide-gray-100 rounded-md border border-gray-200">
+						<li v-for="file in openedSubmission.detail.files" :key="file.ulid" class="flex items-center gap-2 px-3 py-1.5">
+							<FontAwesomeIcon :icon="faFileAlt" class="text-gray-400" fixed-width aria-hidden="true" />
+							<span class="min-w-0 flex-1 truncate text-gray-700">{{ file.name }}</span>
+							<a
+								v-if="fileUrl(openedSubmission, file.ulid)"
+								:href="fileUrl(openedSubmission, file.ulid) as string"
+								class="text-gray-400 hover:text-[var(--app-accent)]"
+								v-tooltip="ctrans('Download')"
+							>
+								<FontAwesomeIcon :icon="faDownload" fixed-width aria-hidden="true" />
+							</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</Dialog>
+
 		<Popover ref="reasonPopover" @hide="isReasonPinned = false">
 			<p class="max-w-xs whitespace-pre-line text-xs text-gray-700">{{ shownReason }}</p>
 		</Popover>

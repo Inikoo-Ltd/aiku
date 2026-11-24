@@ -150,6 +150,9 @@ class ShowSupplierShare
             'product_websites_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.product_websites', [$supplier, 'supplierProductId' => 0])
                 : route('grp.supplier_share.product_websites', ['token' => $token, 'supplierProduct' => 0]),
+            'submission_file_route' => $token === null
+                ? null
+                : route('grp.supplier_share.submission.file', ['token' => $token, 'submission' => 0, 'media' => 'MEDIA']),
             'purchase_order_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.purchase_order', [$supplier, 'purchaseOrderId' => 0])
                 : route('grp.supplier_share.purchase_order', ['token' => $token, 'purchaseOrder' => 0]),

@@ -17,6 +17,7 @@ use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermValueTypeEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
+use App\Models\Helpers\Media;
 use App\Models\Procurement\SupplierAgreedTerm;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
@@ -194,7 +195,7 @@ class GetSupplierPortalDetails
         $states = SupplierSubmissionStateEnum::labels();
 
         return SupplierSubmission::where('supplier_id', $supplier->id)
-            ->with('supplierProduct:id,code')
+            ->with(['supplierProduct:id,code,name', 'attachments', 'decidedBy:id,contact_name,username'])
             ->latest('id')
             ->limit(100)
             ->get()
@@ -210,8 +211,33 @@ class GetSupplierPortalDetails
                 'created_at'  => $submission->created_at,
                 'editable'    => $submission->state->isEditableBySupplier($submission->type),
                 'data'        => $submission->state->isEditableBySupplier($submission->type) ? $submission->data : null,
+                'detail'      => $submission->type === SupplierSubmissionTypeEnum::COMPLIANCE_DOCUMENT ? $this->complianceDetail($submission) : null,
             ])
             ->all();
+    }
+
+    /**
+     * What the supplier sent with a compliance document, to read again from its history.
+     *
+     * @return array{document: string|null, product_code: string|null, product_name: string|null, expires_on: string|null, note: string|null, decided_at: mixed, decided_by: string|null, files: list<array{name: string, ulid: string}>}
+     */
+    private function complianceDetail(SupplierSubmission $submission): array
+    {
+        $documentType = $submission->data['document_type'] ?? null;
+
+        return [
+            'document'     => TradeAttachmentScopeEnum::labels()[$documentType ?? ''] ?? $documentType,
+            'product_code' => $submission->supplierProduct?->code,
+            'product_name' => $submission->supplierProduct?->name,
+            'expires_on'   => $submission->expires_on?->toDateString(),
+            'note'         => $submission->data['note'] ?? null,
+            'decided_at'   => $submission->decided_at,
+            'decided_by'   => $submission->decidedBy?->contact_name ?: $submission->decidedBy?->username,
+            'files'        => $submission->attachments->map(fn (Media $media) => [
+                'name' => $media->pivot->caption ?: $media->file_name,
+                'ulid' => $media->ulid,
+            ])->values()->all(),
+        ];
     }
 
     /**

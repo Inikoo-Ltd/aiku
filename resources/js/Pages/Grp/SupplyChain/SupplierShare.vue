@@ -69,6 +69,7 @@ const props = defineProps<{
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 	products_route?: string
 	product_websites_route?: string
+	submission_file_route?: string | null
 	purchase_order_route?: string
 	purchase_order_production_route?: string
 	purchase_order_deposit_route?: string
@@ -335,7 +336,7 @@ onMounted(() => {
 
 				<template v-else>
 					<SupplierPortalAgreement v-if="tab === 'agreement' && agreement" :agreement="agreement" :preview="preview" />
-					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" :product-websites-route="product_websites_route" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" :product-websites-route="product_websites_route" :submission-file-route="submission_file_route" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 
