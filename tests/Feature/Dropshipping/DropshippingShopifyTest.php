@@ -72,6 +72,7 @@ use App\Models\Dropshipping\PlatformPortfolioLogs;
 use App\Helpers\PlatformResponseFormatter;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -3421,6 +3422,26 @@ test('a new channel gets the product language picked on the create channel page,
 
     UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
     expect(CreateRetinaDropshippingCustomerSalesChannel::make()->channelLanguage($customer->fresh()))->toBeNull();
+});
+
+test('a channel created in an oauth callback without the retina session still gets the picked product language', function () {
+    Queue::fake();
+    $language = channelTextsLanguage($this);
+    $this->shop = UpdateShop::make()->action($this->shop, ['enabled_languages' => [$language->id], 'channel_languages' => true]);
+
+    $customer = StoreCustomer::make()->action($this->shop, [...Customer::factory()->definition(), 'email' => Str::lower(Str::random(12)).'@shopify-test.com']);
+    retinaLanguageWebUser($this, $customer)->update(['language_id' => $this->shop->language_id]);
+
+    $this->postJson(route('retina.models.customer_sales_channel.new_language'), ['language_id' => $language->id])->assertSuccessful();
+
+    app()->instance('request', Request::create(route('webhooks.tiktok.callback')));
+    $tiktokPlatform = Platform::where('type', PlatformTypeEnum::TIKTOK)->firstOrFail();
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action($customer->fresh(), $tiktokPlatform, ['name' => 'TikTok callback']);
+
+    expect(request()->hasSession())->toBeFalse()
+        ->and($customerSalesChannel->language_id)->toBe($language->id);
+
+    UpdateShop::make()->action($this->shop, ['channel_languages' => false]);
 });
 
 test('re-translate replaces the texts of a live shopify product only when its owner presses it, and keeps its handle', function () {

@@ -14,7 +14,8 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Remembered for the session, so every platform's create flow (OAuth round trips included) gives the new channel this language.
+ * Remembered in the session and against the customer, so every platform's create flow, OAuth callbacks on the aiku domain included,
+ * gives the new channel this language.
  */
 class SetRetinaNewChannelLanguage extends RetinaAction
 {
@@ -34,6 +35,6 @@ class SetRetinaNewChannelLanguage extends RetinaAction
     {
         $this->initialisation($request);
 
-        $request->session()->put(StoreCustomerSalesChannel::NEW_CHANNEL_LANGUAGE_SESSION_KEY, $this->validatedData['language_id']);
+        StoreCustomerSalesChannel::rememberNewChannelLanguage($this->customer, $this->validatedData['language_id']);
     }
 }
