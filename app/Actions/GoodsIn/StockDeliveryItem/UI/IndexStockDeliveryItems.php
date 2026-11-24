@@ -320,6 +320,7 @@ class IndexStockDeliveryItems extends OrgAction
                     ->column(key: 'purchase_orders', label: __('Purchase orders'), canBeHidden: false)
                     ->column(key: 'checked_quantity', label: __('Checked'), canBeHidden: false)
                     ->column(key: 'placed_quantity', label: __('Placed'), canBeHidden: false)
+                    ->column(key: 'unit_price', label: __('Unit price'), canBeHidden: false, align: 'right')
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false)
                     ->defaultSort('code');
             } elseif (in_array($stockDelivery->state, $goodsInStates, true)) {
@@ -344,6 +345,7 @@ class IndexStockDeliveryItems extends OrgAction
                 $table
                     ->column(key: 'weight', label: __('Weight'), canBeHidden: false)
                     ->column(key: 'volume', label: __('CBM / in container'), canBeHidden: false)
+                    ->column(key: 'unit_price', label: __('Unit price'), canBeHidden: false, align: 'right')
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
 
                 if (in_array($stockDelivery->state, $itemActionStates, true)) {

@@ -349,6 +349,22 @@ function amount(item: any) {
     return `${net} (${locale.currencyFormat(item.org_currency ?? 'EUR', item.org_net_amount)})`
 }
 
+function unitPrice(item: any) {
+    const units = Number(item.unit_quantity)
+
+    if (!units) {
+        return null
+    }
+
+    const net = locale.currencyFormatUnitCost(item.net_currency ?? 'EUR', Number(item.net_amount ?? 0) / units)
+
+    if (item.org_net_amount === null || item.org_currency === item.net_currency) {
+        return net
+    }
+
+    return `${net} (${locale.currencyFormatUnitCost(item.org_currency ?? 'EUR', Number(item.org_net_amount) / units)})`
+}
+
 function supplierProductRoute(item: { slug?: string }) {
     if (!item.slug) {
         return ''
@@ -980,6 +996,10 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     />
                 </template>
             </div>
+        </template>
+
+        <template #cell(unit_price)="{ item }">
+            <span v-if="unitPrice(item) !== null" class="whitespace-nowrap tabular-nums">{{ unitPrice(item) }}</span>
         </template>
 
         <template #cell(amount)="{ item }">
