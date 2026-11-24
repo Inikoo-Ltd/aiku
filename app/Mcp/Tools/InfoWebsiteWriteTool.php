@@ -18,7 +18,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 
-#[Description('Saves a change to an info website that info-website-preview-tool prepared, exactly as previewed, after the user saw the summary, the edits and the preview and confirmed in their own words. Pass the change_id and their confirmation as request_text. Refused when the change belongs to someone else, has expired (a day), or the page or shared part changed after the preview: then preview again. Every page and shared part keeps a snapshot of each version in Aiku, and the change is logged in ai-changes-tool, where it can be reverted. Only for group administrators.')]
+#[Description('Saves a change to an info website that info-website-preview-tool prepared, exactly as previewed, after the user saw the summary, the edits and the preview and confirmed in their own words. Pass the change_id and their confirmation as request_text. Refused when the change belongs to someone else, has expired (a day), or the page or shared part changed after the preview: then preview again. Every page and shared part keeps a snapshot of each version in Aiku, and the change is logged in ai-changes-tool, where it can be reverted. Only for group administrators and group webmasters.')]
 class InfoWebsiteWriteTool extends AikuInfoWebsiteTool
 {
     use WithMcpChangeLog;

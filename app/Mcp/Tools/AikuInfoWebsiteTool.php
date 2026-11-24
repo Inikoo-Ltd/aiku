@@ -16,8 +16,8 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
 
 /**
- * Info website tools are for group administrators only for now; group webmasters are to follow by
- * widening User::can_use_mcp_info_websites.
+ * Info website tools are for group administrators and group webmasters (User::can_use_mcp_info_websites);
+ * starting a new info website stays with group administrators.
  */
 abstract class AikuInfoWebsiteTool extends Tool
 {
@@ -29,7 +29,7 @@ abstract class AikuInfoWebsiteTool extends Tool
             return null;
         }
 
-        return Response::error('Info websites can only be changed by group administrators for now. Do not retry; nothing was changed.');
+        return Response::error('Info websites can only be changed by group administrators and group webmasters. Do not retry; nothing was changed.');
     }
 
     protected function staticWebsite(Request $request): StaticWebsite|Response

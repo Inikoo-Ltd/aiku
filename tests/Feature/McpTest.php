@@ -4607,12 +4607,38 @@ describe('changing info websites through the assistant', function () {
         $this->user->removeRole(App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_ADMIN->value);
     });
 
-    it('is for group administrators only', function () {
+    it('is for group administrators and group webmasters only', function () {
         $guest = guestWithoutPositions($this->group);
         $guest->getUser()->update(['can_use_mcp' => true]);
 
         AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\InfoWebsitesTool::class, [])
-            ->assertHasErrors(['Info websites can only be changed by group administrators for now. Do not retry; nothing was changed.']);
+            ->assertHasErrors(['Info websites can only be changed by group administrators and group webmasters. Do not retry; nothing was changed.']);
+    });
+
+    it('lets group webmasters change pages but not start a new info website', function () {
+        $webmaster = guestWithoutPositions($this->group)->getUser();
+        $webmaster->update(['can_use_mcp' => true]);
+        setPermissionsTeamId($this->group->id);
+        $webmaster->assignRole(App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_WEBMASTER->value);
+
+        AikuServer::actingAs($webmaster)->tool(App\Mcp\Tools\InfoWebsitesTool::class, ['website' => $this->staticWebsite->domain])
+            ->assertOk()->assertSee('/about');
+
+        $preview = infoWebsiteToolJson(AikuServer::actingAs($webmaster)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website'   => $this->staticWebsite->domain,
+            'operation' => 'update_component',
+            'component' => 'header',
+            'edits'     => [['action' => 'replace', 'find' => '<a href="/about">About</a>', 'html' => '<a href="/about">Our story</a>']],
+        ]));
+        AikuServer::actingAs($webmaster)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $preview['change_id'], 'request_text' => 'yes'])
+            ->assertOk();
+        expect($this->staticWebsite->components()->where('code', 'header')->value('html'))->toContain('Our story');
+
+        AikuServer::actingAs($webmaster)->tool(App\Mcp\Tools\InfoWebsiteCreateTool::class, [
+            'domain'       => 'mcp-webmaster-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(8)).'.test',
+            'name'         => 'Not allowed',
+            'request_text' => 'yes',
+        ])->assertHasErrors(['A new info website can only be started by a group administrator. Do not retry; nothing was changed.']);
     });
 
     it('reads the pages and finds the exact html to quote', function () {

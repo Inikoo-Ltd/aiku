@@ -32,9 +32,8 @@ class InfoWebsiteCreateTool extends AikuInfoWebsiteTool
             'request_text' => ['required', 'string', 'max:4000'],
         ]);
 
-        $denied = $this->denied($request);
-        if ($denied) {
-            return $denied;
+        if (!$request->user()?->can_create_mcp_info_websites) {
+            return Response::error('A new info website can only be started by a group administrator. Do not retry; nothing was changed.');
         }
 
         $user = $request->user();

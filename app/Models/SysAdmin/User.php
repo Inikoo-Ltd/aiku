@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Audits\Redactors\PasswordRedactor;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Models\Analytics\UserRequest;
@@ -96,6 +97,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_use_mcp_discontinue
  * @property bool $can_use_mcp_web
  * @property-read bool $can_use_mcp_info_websites
+ * @property-read bool $can_create_mcp_info_websites
  * @property bool $can_use_mcp_procurement
  * @property bool $can_use_mcp_production
  * @property bool $can_use_mcp_place_orders
@@ -396,10 +398,19 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     private ?string $resolvedTimezoneName = null;
 
     /**
-     * Who may change info websites through their AI assistant. For now only group administrators;
-     * group webmasters are to follow, by widening this one rule.
+     * Who may read and change the pages and shared parts of info websites through their AI assistant:
+     * group administrators and group webmasters.
      */
     public function getCanUseMcpInfoWebsitesAttribute(): bool
+    {
+        return $this->can_create_mcp_info_websites
+            || $this->authTo(GroupPermissionsEnum::GROUP_WEBMASTER_EDIT->value);
+    }
+
+    /**
+     * Starting a new info website stays with group administrators.
+     */
+    public function getCanCreateMcpInfoWebsitesAttribute(): bool
     {
         setPermissionsTeamId($this->group_id);
 
