@@ -7,6 +7,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
+use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -169,6 +170,7 @@ trait WithSupplierEditFields
                         'value'   => Arr::get($supplier->settings, 'cooling_period'),
                         'options' => ['inputType' => 'number']
                     ],
+                    ...$this->relationshipContactEditField($supplier),
                 ]
             ],
             [
@@ -356,6 +358,29 @@ trait WithSupplierEditFields
                     'label'       => __("Convert the costs at today's exchange rate"),
                     'description' => __('Use this when the supplier really changed currency: every cost is recalculated from :currency.', ['currency' => $currencyCode]),
                 ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    protected function relationshipContactEditField(Supplier $supplier): array
+    {
+        if (!request()->user()?->authTo('supply-chain.edit')) {
+            return [];
+        }
+
+        return [
+            'relationship_contact_user_id' => [
+                'type'        => 'select',
+                'label'       => __('Relationship contact'),
+                'information' => __('Labelled Main among the contacts on the supplier portal'),
+                'placeholder' => __('Select a staff member'),
+                'options'     => SetSuppliersRelationshipContact::userOptions($supplier->group),
+                'value'       => $supplier->relationship_contact_user_id,
+                'searchable'  => true,
+                'mode'        => 'single',
             ],
         ];
     }

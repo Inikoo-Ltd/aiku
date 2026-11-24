@@ -5,12 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { computed, ref } from "vue"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { ctrans } from "@/Composables/useTrans"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import Icon from "@/Components/Icon.vue"
 import SupplierAgreementStatusBadge from "@/Components/Procurement/SupplierAgreementStatusBadge.vue"
+import SuppliersRelationshipContactButton from "@/Components/SupplyChain/SuppliersRelationshipContactButton.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPersonDolly, faPeopleArrows, faArchive } from "@fal"
@@ -27,6 +29,8 @@ interface Supplier {
     agent_slug: string | null
     agent_code: string | null
     agent_name: string | null
+    relationship_contact_user_id: number | null
+    relationship_contact_name: string | null
     location: object
     status_icon: object
     number_supplier_products: number
@@ -39,7 +43,15 @@ interface Supplier {
 defineProps<{
     data: {}
     tab?: string
+    relationshipContact?: { options: { value: number; label: string }[] } | null
 }>()
+
+const selectedRows = ref<Record<string, boolean>>({})
+const selectedSupplierIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
+
+function reloadData() {
+    router.reload({ only: ["data"] })
+}
 
 const locale = useLocaleStore()
 
@@ -75,7 +87,14 @@ function agentRoute(supplier: Supplier) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(relationshipContact)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+        <template v-if="relationshipContact" #add-on-button>
+            <SuppliersRelationshipContactButton
+                :selectedIds="selectedSupplierIds"
+                :options="relationshipContact.options"
+                @saved="reloadData"
+            />
+        </template>
         <template #cell(status)="{ item: supplier }">
             <Icon :data="supplier.status_icon" />
         </template>
@@ -111,6 +130,9 @@ function agentRoute(supplier: Supplier) {
         </template>
         <template #cell(number_stock_deliveries)="{ item: supplier }">
             {{ locale.number(supplier.number_stock_deliveries) }}
+        </template>
+        <template #cell(relationship_contact)="{ item: supplier }">
+            <span v-if="supplier.relationship_contact_name" class="whitespace-nowrap">{{ supplier.relationship_contact_name }}</span>
         </template>
         <template #cell(agreement)="{ item: supplier }">
             <SupplierAgreementStatusBadge v-if="supplier.agreement" :status="supplier.agreement" />

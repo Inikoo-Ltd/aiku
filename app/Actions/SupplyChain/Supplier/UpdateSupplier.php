@@ -51,7 +51,7 @@ class UpdateSupplier extends OrgAction
             return true;
         }
 
-        if ($request->has('agent_id')) {
+        if ($request->has('agent_id') || $request->has('relationship_contact_user_id')) {
             return $request->user()->authTo('supply-chain.edit');
         }
 
@@ -226,6 +226,7 @@ class UpdateSupplier extends OrgAction
                 'nullable',
                 Rule::exists('agents', 'id')->where('group_id', $this->group->id)->whereNull('deleted_at'),
             ],
+            'relationship_contact_user_id' => ['sometimes', 'nullable', 'integer', SetSuppliersRelationshipContact::userRule($this->group)],
         ];
 
         $rules = array_merge($rules, $this->supplierJsonFieldRules(), $this->packingRules($this->supplier));

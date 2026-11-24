@@ -15,6 +15,7 @@ use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
 use App\Models\Traits\HasAttachments;
@@ -100,6 +101,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, StockDelivery> $stockDeliveries
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierProduct> $supplierProducts
  * @property-read Collection<int, \App\Models\SupplyChain\SupplierTimeSeries> $timeSeries
+ * @property int|null $relationship_contact_user_id
+ * @property-read User|null $relationshipContact
  * @method static \Database\Factories\SupplyChain\SupplierFactory factory($count = null, $state = [])
  * @method static Builder<static>|Supplier newModelQuery()
  * @method static Builder<static>|Supplier newQuery()
@@ -300,6 +303,11 @@ class Supplier extends Model implements HasMedia, Auditable
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function relationshipContact(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'relationship_contact_user_id');
     }
 
     public function purchaseOrders(): HasMany

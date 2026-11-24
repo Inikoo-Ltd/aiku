@@ -24,6 +24,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $agent_slug
  * @property string|null $agent_code
  * @property string|null $agent_name
+ * @property int|null $relationship_contact_user_id
+ * @property string|null $relationship_contact_name
  * @property int $number_supplier_products
  * @property int $number_purchase_orders
  * @property int|null $number_open_purchase_orders
@@ -45,6 +47,8 @@ class SuppliersResource extends JsonResource
             'agent_slug'               => $this->agent_slug ?? null,
             'agent_code'               => $this->agent_code ?? null,
             'agent_name'               => $this->agent_name ?? null,
+            'relationship_contact_user_id' => $this->relationship_contact_user_id ?? null,
+            'relationship_contact_name'    => $this->relationship_contact_name ?? null,
             'location'                 => $this->location,
             'status_icon'              => $this->getStatusIcon(),
             'number_supplier_products' => $this->number_supplier_products,

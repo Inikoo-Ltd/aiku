@@ -17,11 +17,12 @@ defineProps<{
     pageHead: object
     title: string
     data: object
+    relationshipContact?: { options: { value: number; label: string }[] } | null
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <TableSuppliers :data="data" />
+    <TableSuppliers :data="data" :relationshipContact="relationshipContact" />
 </template>

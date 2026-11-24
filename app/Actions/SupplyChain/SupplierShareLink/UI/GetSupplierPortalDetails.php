@@ -132,9 +132,10 @@ class GetSupplierPortalDetails
     /**
      * The purchasing contacts of each organisation buying from the supplier, with the email to write to them: the staff
      * the organisation names in PURCHASING_CONTACT_USERNAMES, otherwise who placed its latest purchase order. A contact
-     * for several organisations is listed once, with all of them.
+     * for several organisations is listed once, with all of them. The supplier's relationship contact is flagged is_main,
+     * and added when no organisation lists them.
      *
-     * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null}>
+     * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null, is_main: bool}>
      */
     private function buyers(Supplier $supplier): array
     {
@@ -177,9 +178,36 @@ class GetSupplierPortalDetails
                 'country_code'  => $rows->first()->country_code,
                 'name'          => $rows->first()->name,
                 'email'         => $rows->first()->email,
+                'is_main'       => (int) $rows->first()->user_id === (int) $supplier->relationship_contact_user_id,
             ])
             ->values()
+            ->when(
+                $supplier->relationship_contact_user_id,
+                fn ($contacts) => $contacts->contains('is_main', true) ? $contacts : $contacts->push(...$this->relationshipContactOutsideBuyers($supplier))
+            )
             ->all();
+    }
+
+    /**
+     * The relationship contact when no organisation lists them, so the supplier still sees who is Main.
+     *
+     * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null, is_main: bool}>
+     */
+    private function relationshipContactOutsideBuyers(Supplier $supplier): array
+    {
+        $contact = DB::table('users')
+            ->where('id', $supplier->relationship_contact_user_id)
+            ->where('status', true)
+            ->selectRaw('users.contact_name as name, '.$this->emailSql().' as email')
+            ->first();
+
+        return $contact ? [[
+            'organisations' => [],
+            'country_code'  => null,
+            'name'          => $contact->name,
+            'email'         => $contact->email,
+            'is_main'       => true,
+        ]] : [];
     }
 
     /**

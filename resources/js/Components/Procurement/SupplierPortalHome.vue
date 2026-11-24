@@ -59,7 +59,7 @@ const props = defineProps<{
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
-	buyers?: { organisations: string[]; country_code: string | null; name: string | null; email: string | null }[]
+	buyers?: { organisations: string[]; country_code: string | null; name: string | null; email: string | null; is_main?: boolean }[]
 	contactsLoading?: boolean
 	summary?: PortalSummary
 	sales?: { products: number; selling: number }
@@ -406,8 +406,11 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 							<img v-if="buyer.country_code" :src="`/flags/${buyer.country_code.toLowerCase()}.png`" :alt="buyer.country_code" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-gray-200" />
 							<span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisations[0]) }}</span>
 							<div class="min-w-0 text-sm">
-								<p class="truncate font-semibold text-gray-900">{{ buyer.name }}</p>
-								<p class="text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisations.join(" · ") }) }}</p>
+								<p class="flex min-w-0 items-center gap-1.5">
+									<span class="truncate font-semibold text-gray-900">{{ buyer.name }}</span>
+									<span v-if="buyer.is_main" :title="ctrans('Your main contact at :group', { group })" class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide" :style="{ backgroundColor: accent.tint, color: accent.colour }">{{ ctrans("Main") }}</span>
+								</p>
+								<p class="text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisations.length ? buyer.organisations.join(" · ") : group }) }}</p>
 								<a v-if="buyer.email" :href="`mailto:${buyer.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ buyer.email }}</span></a>
 							</div>
 						</li>

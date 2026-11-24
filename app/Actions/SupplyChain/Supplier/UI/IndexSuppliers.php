@@ -15,6 +15,7 @@ use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
+use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
 use App\Actions\SupplyChain\Agent\WithAgentSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
@@ -183,7 +184,8 @@ class IndexSuppliers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Supplier::class)
             ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', 'suppliers.id')
-            ->leftJoin('agents', 'agents.id', 'suppliers.agent_id');
+            ->leftJoin('agents', 'agents.id', 'suppliers.agent_id')
+            ->leftJoin('users as relationship_contacts', 'relationship_contacts.id', 'suppliers.relationship_contact_user_id');
 
         if ($parent instanceof Agent) {
             $queryBuilder->where('suppliers.agent_id', $parent->id);
@@ -216,11 +218,13 @@ class IndexSuppliers extends OrgAction
                 'agents.slug as agent_slug',
                 'agents.code as agent_code',
                 'agents.name as agent_name',
+                'suppliers.relationship_contact_user_id',
                 'supplier_stats.number_supplier_products',
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
             ])
             ->selectRaw("coalesce(nullif(suppliers.company_name, ''), suppliers.contact_name, suppliers.name) as official_name")
+            ->selectRaw("coalesce(nullif(relationship_contacts.contact_name, ''), relationship_contacts.username) as relationship_contact_name")
             ->selectRaw(PurchaseOrderStateEnum::countFromStatsSql('supplier_stats', PurchaseOrderStateEnum::live()).' as number_open_purchase_orders')
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
             ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
@@ -228,6 +232,7 @@ class IndexSuppliers extends OrgAction
                 'code',
                 AllowedSort::field('name', 'official_name'),
                 'agent_code',
+                AllowedSort::field('relationship_contact', 'relationship_contact_name'),
                 'location',
                 'number_supplier_products',
                 'number_purchase_orders',
@@ -283,7 +288,8 @@ class IndexSuppliers extends OrgAction
                 ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right');
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'relationship_contact', label: __('Relationship contact'), canBeHidden: false, sortable: true);
 
             if (GetSupplierAgreementStatus::make()->requiredVersionNumber($parent->group_id ?? $parent->id) !== null) {
                 $table->column(key: 'agreement', label: __('Agreement'), canBeHidden: false);
@@ -475,6 +481,9 @@ class IndexSuppliers extends OrgAction
                     'actions'       => $actions,
                 ],
                 'data'        => SuppliersResource::collection($suppliers),
+                'relationshipContact' => $this->canEdit ? [
+                    'options' => SetSuppliersRelationshipContact::userOptions($this->parent instanceof Group ? $this->parent : $this->parent->group),
+                ] : null,
             ]
         )->table($this->tableStructure($this->parent));
     }

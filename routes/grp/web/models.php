@@ -755,6 +755,7 @@ use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseO
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PreviewSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
 use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
+use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
 use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\SupplyChain\SupplierPortalContact\StoreSupplierPortalEmail;
@@ -1894,6 +1895,7 @@ Route::post('/supplier-mailshots/{mailshot:id}/send', SendSupplierMailshot::clas
 Route::post('/supplier/{supplier:id}/change-request', StoreSupplierChangeRequest::class)->name('supplier.change_request.store');
 Route::patch('/supplier-change-request/{supplierChangeRequest:id}/decide', DecideSupplierChangeRequest::class)->name('supplier_change_request.decide');
 Route::patch('/supplier-products/state', BulkUpdateSupplierProductsState::class)->name('supplier-products.state.update');
+Route::patch('/suppliers/relationship-contact', SetSuppliersRelationshipContact::class)->name('suppliers.relationship_contact.update');
 Route::patch('/supplier-product/{supplierProduct:id}', UpdateSupplierProduct::class)->name('supplier-product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}', UpdateOrgSupplierProduct::class)->name('org_supplier_product.update');
 Route::patch('/org-supplier-product/{orgSupplierProduct:id}/minimum-carton-order', UpdateOrgSupplierProductMinimumCartonOrder::class)->name('org_supplier_product.minimum_carton_order.update');
