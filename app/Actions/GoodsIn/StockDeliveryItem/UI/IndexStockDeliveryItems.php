@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
@@ -46,6 +47,50 @@ class IndexStockDeliveryItems extends OrgAction
                 )->all(),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('stock_delivery_items.state', $elements);
+                },
+            ],
+        ];
+    }
+
+    protected function elementGroupsFor(StockDelivery $stockDelivery, ?string $prefix, bool $byProduct = false): array
+    {
+        $elementGroups = $this->getElementGroups($stockDelivery, $byProduct);
+
+        if ($prefix === StockDeliveryTabsEnum::PENDING_ITEMS->value) {
+            $elementGroups += $this->getQuantityElementGroups($stockDelivery);
+        }
+
+        return $elementGroups;
+    }
+
+    protected function getQuantityElementGroups(StockDelivery $stockDelivery): array
+    {
+        $conditions = [
+            'over'        => 'stock_delivery_items.checked_at is not null and stock_delivery_items.unit_quantity_checked > stock_delivery_items.unit_quantity',
+            'under'       => 'stock_delivery_items.checked_at is not null and stock_delivery_items.unit_quantity_checked < stock_delivery_items.unit_quantity',
+            'as_expected' => 'stock_delivery_items.checked_at is not null and stock_delivery_items.unit_quantity_checked = stock_delivery_items.unit_quantity',
+            'not_checked' => 'stock_delivery_items.checked_at is null',
+        ];
+
+        $counts = $stockDelivery->items()
+            ->selectRaw(collect($conditions)->map(fn (string $condition, string $key) => "count(*) filter (where $condition) as $key")->implode(', '))
+            ->first();
+
+        return [
+            'quantity' => [
+                'label'    => __('Checked quantity'),
+                'elements' => [
+                    'over'        => [__('Over'), (int) $counts->over],
+                    'under'       => [__('Under'), (int) $counts->under],
+                    'as_expected' => [__('As expected'), (int) $counts->as_expected],
+                    'not_checked' => [__('Not checked'), (int) $counts->not_checked],
+                ],
+                'engine'   => function ($query, $elements) use ($conditions) {
+                    $query->where(function ($query) use ($elements, $conditions) {
+                        foreach ($elements as $element) {
+                            $query->orWhereRaw($conditions[$element]);
+                        }
+                    });
                 },
             ],
         ];
@@ -92,7 +137,7 @@ class IndexStockDeliveryItems extends OrgAction
             }
         }
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+        foreach ($this->elementGroupsFor($parent, $prefix) as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -273,7 +318,7 @@ class IndexStockDeliveryItems extends OrgAction
 
             $byProduct = !$bookingIn && !($withCosting && $stockDelivery->state === StockDeliveryStateEnum::PLACED);
 
-            foreach ($this->getElementGroups($stockDelivery, $byProduct) as $key => $elementGroup) {
+            foreach ($this->elementGroupsFor($stockDelivery, $prefix, $byProduct) as $key => $elementGroup) {
                 $table->elementGroup(
                     key: $key,
                     label: $elementGroup['label'],

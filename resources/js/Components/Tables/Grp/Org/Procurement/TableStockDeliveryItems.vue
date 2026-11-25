@@ -722,6 +722,7 @@ async function savePackedInside(item: any, outerItemId: number | null) {
         ref="_table"
         :resource="data"
         :name="tab"
+        :elementsAsChips="tab === 'pending_items'"
         class="mt-5"
         :isCheckBox="hasSelectableRows"
         checkboxKey="id"

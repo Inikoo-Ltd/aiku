@@ -1298,6 +1298,15 @@ test('UI show stock delivery pending and done item tabs', function () {
             ->has(StockDeliveryTabsEnum::PENDING_ITEMS->value.'.data', 2);
     });
 
+    $items[0]->update(['unit_quantity_checked' => $items[0]->unit_quantity + 2, 'checked_at' => now()]);
+    $this->get($goodsInUrl.'?pending_items_elements[quantity]=over,under')->assertInertia(function (AssertableInertia $page) use ($items) {
+        $page
+            ->where('queryBuilderProps.'.StockDeliveryTabsEnum::PENDING_ITEMS->value.'.elementGroups.quantity.elements.over.1', 1)
+            ->where('queryBuilderProps.'.StockDeliveryTabsEnum::PENDING_ITEMS->value.'.elementGroups.quantity.elements.not_checked.1', 1)
+            ->has(StockDeliveryTabsEnum::PENDING_ITEMS->value.'.data', 1)
+            ->where(StockDeliveryTabsEnum::PENDING_ITEMS->value.'.data.0.id', $items[0]->id);
+    });
+
     $goodsInClerk = User::factory()->create(['group_id' => $warehouse->group_id]);
     $goodsInClerk->assignRole(RolesEnum::getRoleName(RolesEnum::GOODS_IN_CLERK->value, $warehouse));
     $this->actingAs($goodsInClerk)->get($goodsInUrl)->assertInertia(fn (AssertableInertia $page) => $page->where('costing', null));

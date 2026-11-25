@@ -270,6 +270,11 @@ const props = defineProps(
             default: false,
             required: false,
         },
+        elementsAsChips: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
         warning: {
             type: Object,
             default: () => {
@@ -800,6 +805,26 @@ const onElementFilterChanged = (key: 'elementFilter' | 'additionalElementFilter'
     }
 };
 
+const chipSelection = (groupKey: string): string[] => {
+    const selected = queryBuilderData.value.elementFilter?.[groupKey] ?? queryBuilderProps.value.elementGroups?.[groupKey]?.values ?? []
+    return (Array.isArray(selected) ? selected : String(selected).split(',')).filter(Boolean)
+}
+
+const setChipSelection = (groupKey: string, selected: string[]) => {
+    const elementFilter = Object.fromEntries(
+        Object.keys(queryBuilderProps.value.elementGroups ?? {}).map((key) => {
+            const keySelection = key === groupKey ? selected : chipSelection(key)
+            return [key, keySelection.length ? keySelection : '']
+        })
+    )
+    onElementFilterChanged('elementFilter', elementFilter, false, true)
+}
+
+const toggleChip = (groupKey: string, element: string) => {
+    const selected = chipSelection(groupKey)
+    setChipSelection(groupKey, selected.includes(element) ? selected.filter((value) => value !== element) : [...selected, element])
+}
+
 const inertiaListener = () => {
     updates.value++;
 };
@@ -1202,8 +1227,28 @@ const getSeverity = (type?: string) => {
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
 
+                <div v-if="elementsAsChips && Object.keys(queryBuilderProps?.elementGroups || {}).length" class="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-gray-200 px-4 py-2.5 text-sm">
+                    <div v-for="group in queryBuilderProps.elementGroups" :key="group.key" class="flex flex-wrap items-center gap-1.5">
+                        <span class="mr-1 whitespace-nowrap text-xs font-medium uppercase tracking-wide text-gray-400">{{ group.label }}</span>
+                        <template v-for="(element, elementKey) in group.elements" :key="elementKey">
+                            <button
+                                v-if="Number(element[1]) > 0 || chipSelection(group.key).includes(String(elementKey))"
+                                type="button"
+                                class="flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 transition"
+                                :class="chipSelection(group.key).includes(String(elementKey))
+                                    ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm'
+                                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                                @click="toggleChip(group.key, String(elementKey))">
+                                <span>{{ element[0] }}</span>
+                                <span class="rounded-full px-1.5 text-xs tabular-nums" :class="chipSelection(group.key).includes(String(elementKey)) ? 'bg-white/20' : 'bg-white text-gray-500'">{{ locale.number(Number(element[1])) }}</span>
+                            </button>
+                        </template>
+                        <button v-if="chipSelection(group.key).length" type="button" class="ml-2 text-xs text-gray-400 hover:text-gray-600" @click="setChipSelection(group.key, [])">× {{ ctrans('Clear') }}</button>
+                    </div>
+                </div>
+
                 <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
+                <div v-if="!elementsAsChips && Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-gray-300" :class="{
                     'border-b': !Object.keys(queryBuilderProps?.additionalElementGroups || [])?.length
                 }">
                     <TableElements :elements="queryBuilderProps.elementGroups"
