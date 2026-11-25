@@ -49,6 +49,7 @@ class SupplierProductsResource extends JsonResource
             'description'   => $this->description,
             'cost'          => $this->cost,
             'currency_code' => $this->currency_code,
+            'units_per_carton' => $this->whenHas('units_per_carton'),
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
         ];

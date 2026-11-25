@@ -37,6 +37,7 @@ const props = defineProps <{
     state_options?: { value: string, label: string }[] | null
     copy_products?: CopyProducts | null
     copy_targets?: CopyTarget[]
+    move_products?: { targets_route: routeType } | null
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -61,7 +62,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
     </PageHeading>
     <Tabs v-if="tabs" :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <UploadReports v-if="currentTab === 'uploads'" :data="uploads" tab="uploads" />
-    <TableSupplierProducts v-else :data="data" :labelsPrint="labels_print" :stateOptions="state_options" :copyProducts="copy_products" :copyTargets="copy_targets" />
+    <TableSupplierProducts v-else :data="data" :labelsPrint="labels_print" :stateOptions="state_options" :copyProducts="copy_products" :copyTargets="copy_targets" :moveProducts="move_products" />
     <UploadExcel
         v-model="isModalUploadOpen"
         scope="Supplier Product"

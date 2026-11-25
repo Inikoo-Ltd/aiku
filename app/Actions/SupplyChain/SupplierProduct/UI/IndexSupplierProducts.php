@@ -116,6 +116,7 @@ class IndexSupplierProducts extends OrgAction
                 'supplier_products.name',
                 'supplier_products.state',
                 'supplier_products.cost',
+                'supplier_products.units_per_carton',
                 'currencies.code as currency_code',
                 'suppliers.slug as supplier_slug',
                 'suppliers.name as supplier_name',
@@ -398,6 +399,7 @@ class IndexSupplierProducts extends OrgAction
                     'actions'       => $actions ?? null,
                 ],
                 'upload_spreadsheet' => $spreadsheetRoutes ?? null,
+                'move_products'      => $this->getMoveProductsProps($request),
                 'labels_print'       => [
                     'plan_route' => ['name' => 'grp.supply-chain.supplier_products.labels.plan'],
                     'pdf_route'  => ['name' => 'grp.supply-chain.supplier_products.labels'],
@@ -409,6 +411,29 @@ class IndexSupplierProducts extends OrgAction
                 ...($tabs ?? []),
             ],
         )->table($this->tableStructure($this->scope));
+    }
+
+    /**
+     * @return array{targets_route: array{name: string, parameters: array<string, int>}}|null
+     */
+    private function getMoveProductsProps(ActionRequest $request): ?array
+    {
+        $agent = match (true) {
+            $this->scope instanceof Agent    => $this->scope,
+            $this->scope instanceof Supplier => $this->scope->agent,
+            default                          => null,
+        };
+
+        if (!$agent || !CopySupplierProductsToSupplier::make()->getAccessibleAgents($request->user())->contains('id', $agent->id)) {
+            return null;
+        }
+
+        return [
+            'targets_route' => [
+                'name'       => 'grp.json.agent.supplier_products.move_targets',
+                'parameters' => ['agent' => $agent->id],
+            ],
+        ];
     }
 
     private function supplierProductUploads(Supplier $supplier): AnonymousResourceCollection

@@ -773,6 +773,7 @@ use App\Actions\SupplyChain\SupplierProduct\ImportSupplierProducts;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Actions\SupplyChain\SupplierProduct\BulkUpdateSupplierProductsState;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
+use App\Actions\SupplyChain\SupplierProduct\MoveSupplierProductsToSupplier;
 use App\Actions\SupplyChain\SupplierProduct\CheckSupplierProductForm;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProductFromForm;
 use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
@@ -2048,6 +2049,7 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('supplier-product/check-form', CheckSupplierProductForm::class)->name('supplier-product.check_form');
     Route::post('supplier-product/from-form', StoreSupplierProductFromForm::class)->name('supplier-product.store_from_form');
     Route::post('supplier-products/copy', [CopySupplierProductsToSupplier::class, 'inGroup'])->name('supplier_products.copy');
+    Route::post('supplier-products/move', MoveSupplierProductsToSupplier::class)->name('supplier_products.move');
     Route::post('purchase-orders/import/preview', PreviewSupplierPurchaseOrderImport::class)->name('purchase_orders.import.preview');
     Route::post('purchase-orders/import', ImportSupplierPurchaseOrders::class)->name('purchase_orders.import');
 });

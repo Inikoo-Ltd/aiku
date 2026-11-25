@@ -9,7 +9,7 @@ import {Link, router} from '@inertiajs/vue3';
 import { computed, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck } from "@fal"
+import { faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck, faExchange } from "@fal"
 import { bucketQuery } from "@/Composables/bucketQuery"
 import Table from '@/Components/Table/Table.vue';
 import Icon from "@/Components/Icon.vue"
@@ -18,12 +18,13 @@ import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProduc
 import SupplierProductsCopyActions from "@/Components/Procurement/SupplierProductsCopyActions.vue"
 import SupplierProductStateSelect from "@/Components/SupplyChain/SupplierProductStateSelect.vue"
 import SupplierProductsBulkStateButton from "@/Components/SupplyChain/SupplierProductsBulkStateButton.vue"
+import SupplierProductsMoveDialog from "@/Components/SupplyChain/SupplierProductsMoveDialog.vue"
 import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 import { ctrans } from "@/Composables/useTrans"
 import {SupplierProduct} from "@/types/supplier-product";
 import { routeType } from "@/types/route"
 
-library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck)
+library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, faCheck, faExchange)
 
 type SupplierProductRow = Omit<SupplierProduct, "state"> & {
     state: { value: string, label: string, icon: object } | null
@@ -58,6 +59,7 @@ const props = defineProps<{
     stateOptions?: { value: string, label: string }[] | null
     copyProducts?: CopyProducts | null
     copyTargets?: CopyTarget[]
+    moveProducts?: { targets_route: routeType } | null
 }>()
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
@@ -65,6 +67,13 @@ const _table = ref<InstanceType<typeof Table> | null>(null)
 const selectedRows = ref<Record<string, boolean>>({})
 const selectedSupplierProductIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 const isLabelsDialogOpen = ref(false)
+const isMoveDialogOpen = ref(false)
+const selectedSupplierProducts = computed(() => (props.data?.data ?? []).filter((supplierProduct) => selectedSupplierProductIds.value.includes(supplierProduct.id)))
+
+function onMoved() {
+    _table.value?.clearSelection()
+    reloadData()
+}
 
 function reloadData() {
     router.reload({ only: ["data"] })
@@ -116,8 +125,8 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
 
 <template>
     <div>
-        <Table ref="_table" :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint || copyProducts)" @onSelectRow="(rows) => selectedRows = { ...rows }">
-            <template v-if="labelsPrint || copyProducts" #add-on-button>
+        <Table ref="_table" :resource="data" :name="tab" class="mt-5" :isCheckBox="Boolean(labelsPrint || copyProducts || moveProducts)" @onSelectRow="(rows) => selectedRows = { ...rows }">
+            <template v-if="labelsPrint || copyProducts || moveProducts" #add-on-button>
                 <SupplierProductsCopyActions
                     v-if="copyProducts"
                     :copyProducts="copyProducts"
@@ -126,6 +135,18 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                     idsParameter="supplier_products"
                     @copied="_table?.clearSelection()"
                 />
+                <Button
+                    v-if="moveProducts"
+                    type="tertiary"
+                    :label="ctrans('Move to another supplier (:count)', { count: selectedSupplierProducts.length })"
+                    :disabled="!selectedSupplierProducts.length"
+                    :tooltip="selectedSupplierProducts.length ? undefined : ctrans('Tick the products to move')"
+                    @click="isMoveDialogOpen = true"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-exchange" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
                 <Button
                     v-if="labelsPrint"
                     type="tertiary"
@@ -193,6 +214,13 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 </div>
             </template>
         </Table>
+        <SupplierProductsMoveDialog
+            v-if="moveProducts && isMoveDialogOpen"
+            v-model:visible="isMoveDialogOpen"
+            :items="selectedSupplierProducts"
+            :targetsRoute="moveProducts.targets_route"
+            @moved="onMoved"
+        />
         <SupplierProductLabelsDialog
             v-if="labelsPrint"
             v-model:visible="isLabelsDialogOpen"
