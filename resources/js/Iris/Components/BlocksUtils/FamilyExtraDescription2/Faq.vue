@@ -3,6 +3,7 @@ import { ref, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons"
 import { getStyles } from "@/Composables/styles"
+import { answeredFaqs } from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/tabVisibility"
 
 const props = defineProps<{
 	fieldValue: any
@@ -16,12 +17,14 @@ const toggle = (index: number) => {
 	openIndex.value = openIndex.value === index ? null : index
 }
 
+const visibleFaqs = computed(() => answeredFaqs(props.faqs))
+
 const containerStyle = computed(() => getStyles(props.fieldValue?.faq?.container?.properties))
 </script>
 
 <template>
 	<div class="w-full">
-		<details v-for="(faq, index) in faqs" :key="index" class="group border-b border-[#A7ADB4]">
+		<details v-for="(faq, index) in visibleFaqs" :key="index" class="group border-b border-[#A7ADB4]">
 			<summary
 				class="flex cursor-pointer list-none items-center justify-between py-5 text-xl font-semibold text-[#0F1E2E]">
 				<span>{{ faq.question }}</span>

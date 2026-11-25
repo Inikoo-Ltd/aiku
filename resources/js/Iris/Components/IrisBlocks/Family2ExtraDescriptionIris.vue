@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from "vue"
-import { getStyles } from "@/Composables/styles"
+import { getStyles, splitBackgroundStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
 import About from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/About.vue"
 import MarketingMaterials from "@/Iris/Components/BlocksUtils/FamilyExtraDescription2/MarketingMaterials.vue"
@@ -48,9 +48,15 @@ watch(tabs, (visibleTabs) => {
 })
 
 
-const containerStyle = computed(() => ({
+const blockStyles = computed(() => splitBackgroundStyles({
   ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
-  ...getStyles(props.fieldValue?.container?.properties),
+  ...getStyles(props.fieldValue?.container?.properties, props.screenType),
+}))
+
+const sectionStyle = computed(() => blockStyles.value.background)
+
+const containerStyle = computed(() => ({
+  ...blockStyles.value.rest,
   width: "auto",
 }))
 
@@ -72,19 +78,6 @@ const component = (tab: string) => {
       return null
   }
 }
-
-const sectionStyle = computed(() => {
-  const bg = props.fieldValue?.container?.properties?.background[props.screenType]
-
-  return {
-    backgroundColor: bg?.color || undefined,
-    backgroundImage: bg?.image?.original
-      ? `url(${bg.image.original})`
-      : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }
-})
 
 const isMobile = computed(() => props.screenType === "mobile")
 

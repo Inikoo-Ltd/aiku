@@ -5,7 +5,7 @@ import { faCube, faLink, faInfoCircle } from "@fal"
 import { faStar, faCircle, faBadgePercent } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from "@far"
 import { ctrans } from "@/Composables/useTrans"
-import { getStyles } from "@/Composables/styles"
+import { getStyles, splitBackgroundStyles } from "@/Composables/styles"
 import About from "@/Components/CMS/Webpage/Family2ExtraDescription/AboutWorkshop.vue"
 import FaqWorkshop from "./FaqWorkshop.vue"
 import MarketingMaterialsWorkshop from "./MarketingMaterialsWorkshop.vue"
@@ -74,12 +74,15 @@ const sectionId = computed(
   () => props.modelValue?.id ?? `family-1-iris-${props.indexBlock}`
 )
 
+const blockStyles = computed(() => splitBackgroundStyles({
+  ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+  ...getStyles(props.modelValue?.container?.properties, props.screenType),
+}))
+
+const sectionStyle = computed(() => blockStyles.value.background)
+
 const containerStyle = computed(() => ({
-  ...getStyles(
-    layout?.app?.webpage_layout?.container?.properties,
-    props.screenType
-  ),
-  ...getStyles(props.modelValue?.container?.properties),
+  ...blockStyles.value.rest,
   width: "auto",
 }))
 
@@ -143,19 +146,6 @@ const tabButtonClass = computed(() => {
   }
 })
 
-const sectionStyle = computed(() => {
-  const bg = props.modelValue?.container?.properties?.background[props.screenType]
-
-  return {
-    backgroundColor: bg?.color || undefined,
-    backgroundImage: bg?.image?.original
-      ? `url(${bg.image.original})`
-      : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  }
-})
-
 </script>
 
 <template>
@@ -166,7 +156,7 @@ const sectionStyle = computed(() => {
      :style="sectionStyle"
   >
     <div
-      class="mx-auto w-full  bg-white editor-class"
+      class="mx-auto w-full editor-class"
       :class="containerClass"
       :style="containerStyle"
     >

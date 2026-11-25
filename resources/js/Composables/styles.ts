@@ -337,3 +337,13 @@ export const useDynamicCssVars = (prefix: string, properties: any, screen: 'mobi
     }
     return vars
 }
+const BACKGROUND_STYLE_KEYS = ["background", "backgroundSize", "backgroundRepeat", "backgroundPositionX", "backgroundPositionY"]
+
+export const splitBackgroundStyles = (styles: Record<string, string> | null) => {
+    const entries = Object.entries(styles ?? {})
+
+    return {
+        background: Object.fromEntries(entries.filter(([key]) => BACKGROUND_STYLE_KEYS.includes(key))),
+        rest: Object.fromEntries(entries.filter(([key]) => !BACKGROUND_STYLE_KEYS.includes(key))),
+    }
+}

@@ -25,6 +25,9 @@ export const hasRichTextContent = (html?: string | null): boolean =>
 			.replace(/&nbsp;/g, " ")
 	)
 
+export const answeredFaqs = (faqs: unknown): any[] =>
+	Array.isArray(faqs) ? faqs.filter((faq: any) => hasRichTextContent(faq?.question ?? faq?.label)) : []
+
 export const hasCustomisationOptions = (family: any): boolean => {
 	const options = family?.customize_option
 
@@ -68,7 +71,7 @@ export const isTabVisible = (
 			return isLoggedIn
 
 		case "faq":
-			return Array.isArray(family?.faq) && family.faq.length > 0
+			return answeredFaqs(family?.faq).length > 0
 
 		case "customisation":
 			return Boolean(family?.is_aroma_organisation) && hasCustomisationOptions(family)
