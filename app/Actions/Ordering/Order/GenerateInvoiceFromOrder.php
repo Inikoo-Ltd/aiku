@@ -107,9 +107,12 @@ class GenerateInvoiceFromOrder extends OrgAction
                 $updatedData = $this->recalculateTotals($order, $deliveryNote, $transactions);
             }
 
+            $orderNetAmount = Arr::get($updatedData, 'net_amount', $order->net_amount);
             $order->update([
-                'net_amount'   => Arr::get($updatedData, 'net_amount', $order->net_amount),
-                'total_amount' => Arr::get($updatedData, 'total_amount', $order->total_amount),
+                'net_amount'     => $orderNetAmount,
+                'org_net_amount' => $orderNetAmount * $order->org_exchange,
+                'grp_net_amount' => $orderNetAmount * $order->grp_exchange,
+                'total_amount'   => Arr::get($updatedData, 'total_amount', $order->total_amount),
                 'gross_amount' => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
                 'goods_amount' => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
             ]);
@@ -159,8 +162,10 @@ class GenerateInvoiceFromOrder extends OrgAction
             CalculateInvoiceTotals::make()->action($invoice);
             $invoice->refresh();
             $order->update([
-                'net_amount'   => $invoice->net_amount,
-                'tax_amount'   => $invoice->tax_amount,
+                'net_amount'     => $invoice->net_amount,
+                'org_net_amount' => $invoice->net_amount * $order->org_exchange,
+                'grp_net_amount' => $invoice->net_amount * $order->grp_exchange,
+                'tax_amount'     => $invoice->tax_amount,
                 'total_amount' => $invoice->total_amount,
             ]);
             $orderInvoicedAmount = (float)$invoice->total_amount;

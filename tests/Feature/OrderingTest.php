@@ -5873,6 +5873,23 @@ test('org and group amounts of orders and invoices use the whole exchange rate',
         ->and((float) $transaction->org_net_amount)->toBe(round((float) $transaction->net_amount * $orgExchange, 2));
 });
 
+test('invoicing an order brings its org and group net into line with the invoiced net', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action(freshCustomerLike($this->shop, $this->customer), $modelData);
+
+    StoreTransaction::make()->action($order, $this->product->historicAsset, Transaction::factory()->definition());
+    $order->updateQuietly(['org_exchange' => 0.5, 'grp_exchange' => 0.25, 'net_amount' => 999, 'org_net_amount' => 999, 'grp_net_amount' => 999]);
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    $order->refresh();
+
+    expect((float) $order->net_amount)->toBe((float) $invoice->net_amount)
+        ->and((float) $order->org_net_amount)->toBe(round((float) $invoice->net_amount * 0.5, 2))
+        ->and((float) $order->grp_net_amount)->toBe(round((float) $invoice->net_amount * 0.25, 2));
+});
+
 test('b2b dashboard insights show the customer order overview, their regular products, favourites and when each is due again', function () {
     $customer = freshCustomerLike($this->shop, $this->customer);
     [, $product] = createProduct($this->shop);
