@@ -3432,6 +3432,7 @@ test('SEO customer journey filters the tracked orders by source, visits, amount,
         ->and($beyondLastPage['currency_code'])->toBe($shop->currency->code)
         ->and(collect($beyondLastPage['orders'])->pluck('purchase_id')->all())->toBe([$returningPurchase, $singleVisitPurchase]);
 
+    $returningCustomer->update(['name' => 'Returning '.$token]);
     $byCustomer = GetWebsiteOrderJourneys::run($website, $from, now(), ['search' => $returningCustomer->name]);
     expect(collect($byCustomer['orders'])->pluck('purchase_id')->all())->toContain($returningPurchase)
         ->not->toContain($singleVisitPurchase);
