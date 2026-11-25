@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Nincs találat erre: „%1$s”</string>
     <string name="states_search_scan_instead">Inkább beolvasás</string>
     <string name="states_server_body">Az Aiku nem válaszolt. Az utolsó művelete nem lett mentve. Próbálja újra egy perc múlva.</string>
-    <string name="states_server_error_code">%1$d. hiba ·</string>
     <string name="states_server_title">Valami hiba történt</string>
     <string name="states_session_body">Biztonsági okokból hosszabb tétlenség után kijelentkeztettük. A folytatáshoz jelentkezzen be újra. Semmi sem veszett el, amit mentett.</string>
     <string name="states_session_sign_in">Újra bejelentkezés</string>
     <string name="states_session_title">A munkamenet lejárt</string>
-    <string name="states_tasks_empty_body">Nincs Önre váró szállítólevél. Az újak itt jelennek meg, amint hozzá vannak rendelve.</string>
-    <string name="states_tasks_empty_title">Minden kész</string>
-    <string name="states_tasks_pick_from_queue">Vissza a szállítólevelekhez</string>
     <string name="states_try_again">Próbálja újra</string>
     <string name="states_type_code">Írja be a kódot</string>
     <string name="stepper_decrease">Csökkentés</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Eltávolítás</string>
     <string name="inventory_sko_status_heading">SKO állapot</string>
     <string name="inventory_quantity_status_heading">Mennyiségi állapot</string>
+    <string name="goodsout_filter_date_overdue">Késésben</string>
+    <string name="errors_what_does_this_mean">Mit jelent ez?</string>
+    <string name="errors_support_reference">Támogatási azonosító: %1$s</string>
+    <string name="errors_support_reference_label">Aiku támogatási azonosító</string>
+    <string name="errors_support_reference_copied">Támogatási azonosító másolva</string>
+    <string name="errors_open_in_browser">Megnyitás böngészőben</string>
+    <string name="errors_page_failed_title">Nem sikerült betölteni a súgóoldalt</string>
+    <string name="errors_page_failed_body">Ellenőrizze a kapcsolatot, vagy nyissa meg az oldalt böngészőben.</string>
+    <string name="goodsin_next_stock_delivery">Következő beszállítás</string>
+    <string name="clocking_load_failed_timesheets">Nem sikerült betölteni a munkaidő-nyilvántartásokat</string>
+    <string name="clocking_load_failed_day">Nem sikerült betölteni ezt a napot</string>
+    <string name="clocking_load_failed_calendar">Nem sikerült betölteni a naptárat</string>
+    <string name="clocking_load_failed_leave">Nem sikerült betölteni a szabadságait</string>
+    <string name="clocking_load_failed_overtime">Nem sikerült betölteni a túlóráit</string>
+    <string name="clocking_load_failed_adjustments">Nem sikerült betölteni a munkaidő-javításokat</string>
 </resources>

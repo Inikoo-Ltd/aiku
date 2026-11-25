@@ -33,6 +33,7 @@ import io.aiku.droid.data.api.PickingType
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ItemRow
@@ -90,6 +91,7 @@ private fun CancelledContent(reference: String, note: DeliveryNote?, problem: Go
             AikuButton(
                 text = stringResource(R.string.goodsout_extra_back_to_delivery_notes),
                 onClick = { navigator.switchSection(DeliveryNotesRoute()) },
+                style = ButtonStyle.Outline,
                 icon = R.drawable.ic_ui_next,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),

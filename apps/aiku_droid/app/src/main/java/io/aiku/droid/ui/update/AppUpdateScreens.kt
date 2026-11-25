@@ -43,6 +43,8 @@ import io.aiku.droid.ui.components.ChipShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
+import io.aiku.droid.ui.states.ErrorCode
+import io.aiku.droid.ui.states.ErrorHelp
 import io.aiku.droid.ui.states.StatesBody
 import io.aiku.droid.ui.states.StatesButton
 import io.aiku.droid.ui.states.StatesFullScreen
@@ -91,6 +93,7 @@ fun UpdateRequiredScreen(update: AppUpdate.Required) {
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
+        ErrorHelp(code = ErrorCode.UpdateRequired, centered = true)
     }
 }
 

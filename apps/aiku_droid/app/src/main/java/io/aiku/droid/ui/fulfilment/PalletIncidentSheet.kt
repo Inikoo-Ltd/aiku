@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.FulfilmentInboundActionKey
 import io.aiku.droid.data.api.Pallet
 import io.aiku.droid.data.api.PalletIncidentState
 import io.aiku.droid.ui.components.AikuBottomSheet
@@ -39,6 +40,7 @@ import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.focusHalo
+import io.aiku.droid.ui.fulfilment.inbound.fulfilmentInboundActionLook
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -110,8 +112,8 @@ fun PalletIncidentSheet(
                 AikuButton(
                     text = stringResource(if (selected == PalletIncidentState.Lost) R.string.fulfilment_incident_set_lost else R.string.fulfilment_incident_set_damaged),
                     onClick = { onSave(selected, note) },
-                    style = ButtonStyle.Danger,
-                    icon = R.drawable.ic_ui_warning,
+                    style = fulfilmentInboundActionLook(selected.actionKey).style,
+                    icon = fulfilmentInboundActionLook(selected.actionKey).icon,
                     isLoading = isWorking,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
@@ -127,3 +129,7 @@ fun PalletIncidentSheet(
         }
     }
 }
+
+private val PalletIncidentState.actionKey: String
+    get() = if (this == PalletIncidentState.Lost) FulfilmentInboundActionKey.LOST else FulfilmentInboundActionKey.DAMAGED
+

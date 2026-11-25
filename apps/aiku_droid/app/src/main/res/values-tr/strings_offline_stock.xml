@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Bekleyen bir şey yok</string>
     <string name="offline_stock_queue_empty_body">Çevrimdışı yaptıkların senkronize edilene kadar burada görünür.</string>
     <string name="offline_stock_queue_note">Satır düzeyindeki işler (toplama, paketleme, yerleştirme, iadeler, taşıma ve sayımlar) çevrimdışıyken telefona kaydedilir ve senkronizasyonda Aiku tarafından kontrol edilir. Durum değişiklikleri bağlantı gerektirir.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">İrsaliye %1$s</string>
     <string name="offline_stock_record_return">İade %1$s</string>
     <string name="offline_stock_record_delivery">Stok teslimatı %1$s</string>

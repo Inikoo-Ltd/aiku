@@ -43,7 +43,7 @@ fun NotFoundScreen(barcode: String, onScanAgain: () -> Unit, modifier: Modifier 
             )
         },
         actions = {
-            StatesButton(text = stringResource(R.string.states_scan_again), onClick = onScanAgain, icon = R.drawable.ic_scan)
+            StatesButton(text = stringResource(R.string.states_scan_again), onClick = onScanAgain, style = ButtonStyle.Scan, icon = R.drawable.ic_scan)
             StatesButton(
                 text = stringResource(R.string.states_type_code),
                 onClick = { navigator.open(SearchRoute) },
@@ -67,6 +67,7 @@ fun NotFoundScreen(barcode: String, onScanAgain: () -> Unit, modifier: Modifier 
             color = colors.textTertiary,
             textAlign = TextAlign.Center,
         )
+        ErrorHelp(code = ErrorCode.BarcodeUnknown, centered = true)
     }
     if (isReportOpen) {
         ReportProblemSheet(onDismiss = { isReportOpen = false }, initialCategory = ReportProblemCategory.UnknownBarcode)
@@ -111,6 +112,7 @@ fun CameraBlockedScreen(modifier: Modifier = Modifier, kicker: String? = warehou
         StatesHeroIcon(icon = R.drawable.ic_scan_camera, container = colors.surfaceMuted, tint = colors.textTertiary)
         StatesTitle(text = stringResource(R.string.states_camera_title))
         StatesBody(text = AnnotatedString(stringResource(R.string.states_camera_body)))
+        ErrorHelp(code = ErrorCode.CameraBlocked, centered = true)
     }
 }
 

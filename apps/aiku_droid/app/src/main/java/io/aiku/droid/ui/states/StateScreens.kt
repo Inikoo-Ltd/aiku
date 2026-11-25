@@ -55,11 +55,10 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.ToastHost
 import io.aiku.droid.ui.components.ToastState
 import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.navigation.DeliveryNotesRoute
-import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PreviewWarehouse
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -171,6 +170,7 @@ fun OfflineScreen(onRetry: () -> Unit, onKeepWorking: (() -> Unit)? = null, onVi
         StatesHeroIcon(icon = R.drawable.ic_feedback_offline, container = colors.surfaceMuted, tint = colors.textTertiary)
         StatesTitle(text = stringResource(R.string.states_offline_title))
         StatesBody(text = AnnotatedString(stringResource(R.string.states_offline_body)))
+        ErrorHelp(code = ErrorCode.Unreachable, centered = true)
         if (onViewQueue != null) {
             SyncQueueCard(onClick = onViewQueue)
         }
@@ -244,7 +244,7 @@ fun ServerErrorScreen(onRetry: () -> Unit, statusCode: Int? = null) {
                 StatesHeroIcon(icon = R.drawable.ic_states_server, container = colors.dangerSoft, tint = colors.danger)
                 StatesTitle(text = stringResource(R.string.states_server_title))
                 StatesBody(text = AnnotatedString(stringResource(R.string.states_server_body)))
-                ServerErrorReference(statusCode = statusCode)
+                ErrorHelp(code = ErrorCode.forServerStatus(statusCode), centered = true)
             }
             ToastHost(
                 state = toasts,
@@ -261,31 +261,6 @@ fun ServerErrorScreen(onRetry: () -> Unit, statusCode: Int? = null) {
 }
 
 @Composable
-private fun ServerErrorReference(statusCode: Int?) {
-    val colors = LocalAikuColors.current
-
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        if (statusCode != null) {
-            Text(
-                text = stringResource(R.string.states_server_error_code, statusCode),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-                color = colors.textQuaternary,
-            )
-        }
-        Text(
-            text = STATES_SERVER_REFERENCE_SAMPLE,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Normal,
-            color = colors.textQuaternary,
-            modifier = Modifier
-                .fakeData(6.dp)
-                .padding(horizontal = 6.dp, vertical = 3.dp),
-        )
-    }
-}
-
-@Composable
 fun SessionExpiredScreen(onSignIn: () -> Unit) {
     val colors = LocalAikuColors.current
 
@@ -297,6 +272,7 @@ fun SessionExpiredScreen(onSignIn: () -> Unit) {
         StatesHeroIcon(icon = R.drawable.ic_states_lock, container = colors.soft, tint = colors.link)
         StatesTitle(text = stringResource(R.string.states_session_title))
         StatesBody(text = AnnotatedString(stringResource(R.string.states_session_body)))
+        ErrorHelp(code = ErrorCode.SessionExpired, centered = true)
     }
 }
 
@@ -320,7 +296,7 @@ fun NoAccessScreen(moduleName: String, missingPermission: String?, activeTab: Ma
             )
         },
         actions = {
-            StatesButton(text = stringResource(R.string.states_back_to_dashboard), onClick = { navigator.openTab(MainTab.Home) }, icon = R.drawable.ic_ui_home)
+            StatesButton(text = stringResource(R.string.states_back_to_dashboard), onClick = { navigator.openTab(MainTab.Home) }, style = ButtonStyle.Outline, icon = R.drawable.ic_ui_home)
             if (canChangeWarehouse) {
                 StatesButton(
                     text = stringResource(R.string.states_change_warehouse),
@@ -342,6 +318,7 @@ fun NoAccessScreen(moduleName: String, missingPermission: String?, activeTab: Ma
                 textAlign = TextAlign.Center,
             )
         }
+        ErrorHelp(code = ErrorCode.NoAccess, centered = true)
     }
 }
 
@@ -411,45 +388,6 @@ private fun SearchSuggestionChip(text: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun NoTasksState(modifier: Modifier = Modifier) {
-    val colors = LocalAikuColors.current
-    val navigator = LocalAppNavigator.current
-    val can = LocalWarehouse.current.can
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 40.dp),
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.padding(horizontal = 12.dp),
-        ) {
-            StatesHeroIcon(icon = R.drawable.ic_feedback_done, container = colors.successSoft, tint = colors.success)
-            StatesTitle(text = stringResource(R.string.states_tasks_empty_title))
-            StatesBody(text = AnnotatedString(stringResource(R.string.states_tasks_empty_body)))
-        }
-        Spacer(modifier = Modifier.height(32.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            if (can.viewGoodsOut && can.pickAndPack) {
-                StatesButton(
-                    text = stringResource(R.string.states_tasks_pick_from_queue),
-                    onClick = { navigator.open(DeliveryNotesRoute()) },
-                    icon = R.drawable.ic_ui_next,
-                )
-            }
-            StatesButton(
-                text = stringResource(R.string.states_back_to_dashboard),
-                onClick = { navigator.openTab(MainTab.Home) },
-                style = ButtonStyle.Outline,
-            )
-        }
-    }
-}
-
 @Preview(showSystemUi = true)
 @Composable
 private fun LoadingScreenPreview() {
@@ -504,12 +442,3 @@ private fun SearchEmptyStatePreview() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun NoTasksStatePreview() {
-    AikuDroidTheme {
-        Box(modifier = Modifier.background(LocalAikuColors.current.background).padding(16.dp)) {
-            NoTasksState()
-        }
-    }
-}

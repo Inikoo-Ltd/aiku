@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DeliveryNoteCounts
+import io.aiku.droid.data.api.DeliveryNoteCountsFilter
 import io.aiku.droid.data.api.DeliveryNoteQuery
 import io.aiku.droid.data.api.DeliveryNoteRow
 import io.aiku.droid.data.api.DeliveryNoteSort
@@ -25,6 +26,10 @@ import io.aiku.droid.ui.scan.ScanDestination
 import io.aiku.droid.ui.scan.ScanProblem
 import io.aiku.droid.ui.scan.destination
 import io.aiku.droid.ui.scan.scanProblem
+import io.aiku.droid.ui.states.ErrorCode
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,9 +37,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
 
 private const val PREVIEW_DEBOUNCE_MILLIS = 300L
 private const val LAST_WEEK_DAYS = 6L
@@ -43,12 +45,14 @@ enum class DateFilter {
     Today,
     Yesterday,
     LastSevenDays,
+    Overdue,
     ;
 
-    fun range(today: LocalDate): ClosedRange<LocalDate> = when (this) {
+    fun range(today: LocalDate): ClosedRange<LocalDate>? = when (this) {
         Today -> today..today
         Yesterday -> today.minusDays(1)..today.minusDays(1)
         LastSevenDays -> today.minusDays(LAST_WEEK_DAYS)..today
+        Overdue -> null
     }
 }
 
@@ -81,6 +85,8 @@ data class DeliveryNoteFilter(
 
     fun cleared(): DeliveryNoteFilter = DeliveryNoteFilter(bucket = bucket)
 
+    fun countsFilter(today: LocalDate): DeliveryNoteCountsFilter = query(today, page = 1, perPage = 1).countsFilter
+
     fun query(today: LocalDate, page: Int, perPage: Int): DeliveryNoteQuery {
         val quick = date?.range(today)
         return DeliveryNoteQuery(
@@ -89,6 +95,7 @@ data class DeliveryNoteFilter(
             search = search.trim().takeIf { it.isNotEmpty() },
             from = if (range.isSet) range.from else quick?.start,
             to = if (range.isSet) range.to else quick?.endInclusive,
+            overdue = !range.isSet && date == DateFilter.Overdue,
             picker = picker,
             sort = sort,
             page = page,
@@ -97,7 +104,12 @@ data class DeliveryNoteFilter(
     }
 }
 
-enum class GoodsOutProblem { Offline, ServerError, Forbidden, NotFound }
+enum class GoodsOutProblem(val errorCode: ErrorCode) {
+    Offline(ErrorCode.Unreachable),
+    ServerError(ErrorCode.ServerError),
+    Forbidden(ErrorCode.NoAccess),
+    NotFound(ErrorCode.NotFound),
+}
 
 internal fun GoodsOutResult<*>.problem(): GoodsOutProblem = when (this) {
     GoodsOutResult.Unreachable -> GoodsOutProblem.Offline
@@ -232,7 +244,8 @@ class DeliveryNotesViewModel(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(PREVIEW_DEBOUNCE_MILLIS)
-            mutableState.update { it.copy(list = DeliveryNoteList()) }
+            mutableState.update { it.copy(list = DeliveryNoteList(), counts = null) }
+            loadCounts()
             loadPage(1)
         }
     }
@@ -240,9 +253,9 @@ class DeliveryNotesViewModel(
     fun applyFilter(filter: DeliveryNoteFilter) {
         searchJob?.cancel()
         val previous = mutableState.value.filter
-        val isPickerChanged = filter.picker != previous.picker
-        mutableState.update { it.copy(filter = filter, list = DeliveryNoteList(), counts = if (isPickerChanged) null else it.counts) }
-        if (isPickerChanged) {
+        val isCountsFilterChanged = filter.countsFilter(today()) != previous.countsFilter(today())
+        mutableState.update { it.copy(filter = filter, list = DeliveryNoteList(), counts = if (isCountsFilterChanged) null else it.counts) }
+        if (isCountsFilterChanged) {
             loadCounts()
         }
         loadPage(1)
@@ -419,11 +432,11 @@ class DeliveryNotesViewModel(
 
     private fun loadCounts() {
         val token = currentToken() ?: return
-        val picker = mutableState.value.filter.picker
+        val countsFilter = mutableState.value.filter.countsFilter(today())
         countsJob?.cancel()
 
         countsJob = viewModelScope.launch {
-            when (val result = api.deliveryNoteCounts(token, warehouseId, picker)) {
+            when (val result = api.deliveryNoteCounts(token, warehouseId, countsFilter)) {
                 is GoodsOutResult.Loaded -> mutableState.update { it.copy(counts = result.value) }
                 GoodsOutResult.SessionExpired -> expireSession()
                 else -> Unit

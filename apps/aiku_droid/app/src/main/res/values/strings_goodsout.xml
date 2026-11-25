@@ -28,6 +28,7 @@
     <string name="goodsout_filter_date_today">Today</string>
     <string name="goodsout_filter_date_yesterday">Yesterday</string>
     <string name="goodsout_filter_date_last_7_days">Last 7 days</string>
+    <string name="goodsout_filter_date_overdue">Overdue</string>
     <string name="goodsout_filter_sort">Sort by</string>
     <string name="goodsout_filter_sort_oldest">Date (oldest first)</string>
     <string name="goodsout_filter_sort_newest">Date (newest first)</string>

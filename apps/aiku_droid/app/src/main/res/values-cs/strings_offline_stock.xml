@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Nic nečeká</string>
     <string name="offline_stock_queue_empty_body">Co uděláte offline, se tu zobrazí, dokud se to nesynchronizuje.</string>
     <string name="offline_stock_queue_note">Práce po řádcích (vychystávání, balení, naskladnění, vratky, přesuny a inventury) se offline ukládá v telefonu a Aiku ji při synchronizaci zkontroluje. Změny stavu vyžadují připojení.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Dodací list %1$s</string>
     <string name="offline_stock_record_return">Vratka %1$s</string>
     <string name="offline_stock_record_delivery">Dodávka zboží %1$s</string>

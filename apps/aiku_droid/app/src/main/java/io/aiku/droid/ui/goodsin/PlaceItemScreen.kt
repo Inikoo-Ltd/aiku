@@ -56,10 +56,12 @@ import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
+import io.aiku.droid.ui.goodsout.SetPickingLocationSheet
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.inventory.LocationPicker
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
@@ -285,7 +287,7 @@ private fun PlaceItemContent(viewModel: StockDeliveryViewModel, state: StockDeli
             SetAsPickingRow(checked = setAsPicking, onCheckedChange = { setAsPicking = it })
             HelperNote(text = stringResource(R.string.goodsin_set_as_picking_note))
         } else {
-            PickingDefaults(item = item)
+            PickingDefaults(item = item, onPickingLocationsChanged = viewModel::refresh)
         }
         HelperNote(text = stringResource(R.string.goodsin_place_note))
     }
@@ -310,7 +312,10 @@ private fun locationDetail(location: ItemLocation): String = listOfNotNull(
 ).joinToString(LIST_SEPARATOR)
 
 @Composable
-private fun PickingDefaults(item: StockDeliveryItem) {
+private fun PickingDefaults(item: StockDeliveryItem, onPickingLocationsChanged: () -> Unit) {
+    val can = LocalWarehouse.current.can
+    val sko = item.sko
+    var isChanging by remember(item.id) { mutableStateOf(false) }
     val wholesale = item.locations.firstOrNull { it.isDefaultWholesale }?.location?.code
     val dropshipping = item.locations.firstOrNull { it.isDefaultDropshipping }?.location?.code
     val lines = listOfNotNull(
@@ -326,6 +331,19 @@ private fun PickingDefaults(item: StockDeliveryItem) {
             title = stringResource(R.string.goodsin_picking_location),
             subtitle = lines.joinToString(LIST_SEPARATOR),
             tone = ActionTone.Primary,
+            onClick = if (can.moveStock && sko != null) ({ isChanging = true }) else null,
+        )
+    }
+    if (isChanging && sko != null) {
+        SetPickingLocationSheet(
+            orgStockId = sko.id,
+            code = sko.code,
+            name = sko.name.takeIf { it.isNotBlank() },
+            imageUrl = sko.imageUrl,
+            onDismiss = {
+                isChanging = false
+                onPickingLocationsChanged()
+            },
         )
     }
 }

@@ -17,7 +17,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
-import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.CheckResult
 import io.aiku.droid.data.api.DeliveryNoteAction
@@ -27,6 +26,7 @@ import io.aiku.droid.data.api.StockDelivery
 import io.aiku.droid.data.api.StockDeliveryItem
 import io.aiku.droid.data.api.StockDeliveryState
 import io.aiku.droid.data.api.StockDeliveryWrite
+import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
@@ -61,16 +61,17 @@ import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PlaceItemRoute
+import io.aiku.droid.ui.navigation.StockDeliveriesRoute
 import io.aiku.droid.ui.navigation.StockDeliveryScanRoute
 import io.aiku.droid.ui.scan.LocalScanController
+import io.aiku.droid.ui.scan.ScanEffect
+import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.sync.OfflineCopyNote
 import io.aiku.droid.ui.sync.QueueEventEffect
 import io.aiku.droid.ui.sync.QueuedActionsBlock
 import io.aiku.droid.ui.sync.QueuedRow
 import io.aiku.droid.ui.sync.doubleField
 import io.aiku.droid.ui.sync.longField
-import io.aiku.droid.ui.scan.ScanEffect
-import io.aiku.droid.ui.states.SessionExpiredScreen
 import java.time.ZoneId
 
 private sealed interface DeliverySheet {
@@ -205,6 +206,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             onReceive = viewModel::receive,
             onCheckAll = { openSheet(DeliverySheet.ConfirmCheckAll) },
             onPlace = openPlace,
+            onNextDelivery = { navigator.switchSection(StockDeliveriesRoute()) },
         ),
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
@@ -363,6 +365,7 @@ private fun deliveryFooter(
     onReceive: () -> Unit,
     onCheckAll: () -> Unit,
     onPlace: (StockDeliveryItem) -> Unit,
+    onNextDelivery: () -> Unit,
 ): (@Composable ColumnScope.() -> Unit)? {
     when (view) {
         DeliveryView.Items -> {
@@ -421,6 +424,15 @@ private fun deliveryFooter(
                     )
                 }
             }
+        }
+        DeliveryView.Done -> return {
+            AikuButton(
+                text = stringResource(R.string.goodsin_next_stock_delivery),
+                onClick = onNextDelivery,
+                icon = R.drawable.ic_ui_next,
+                height = 52.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         else -> return null
     }

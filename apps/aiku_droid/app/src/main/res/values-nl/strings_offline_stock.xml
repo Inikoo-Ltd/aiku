@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Niets wacht</string>
     <string name="offline_stock_queue_empty_body">Wat je offline doet, staat hier tot het gesynchroniseerd is.</string>
     <string name="offline_stock_queue_note">Werk per regel (picken, inpakken, wegzetten, retouren, verplaatsen en tellen) wordt offline op de telefoon opgeslagen en bij het synchroniseren door Aiku gecontroleerd. Statuswijzigingen hebben een verbinding nodig.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Pakbon %1$s</string>
     <string name="offline_stock_record_return">Retour %1$s</string>
     <string name="offline_stock_record_delivery">Voorraadlevering %1$s</string>

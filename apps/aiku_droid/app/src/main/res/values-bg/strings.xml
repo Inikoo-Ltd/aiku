@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Няма резултати за „%1$s“</string>
     <string name="states_search_scan_instead">Сканирай вместо това</string>
     <string name="states_server_body">Aiku не отговори. Последното ви действие не беше запазено. Опитайте отново след малко.</string>
-    <string name="states_server_error_code">Грешка %1$d ·</string>
     <string name="states_server_title">Нещо се обърка</string>
     <string name="states_session_body">От съображения за сигурност бяхте изведени след дълго време без активност. Влезте отново, за да продължите. Нищо запазено не е загубено.</string>
     <string name="states_session_sign_in">Влез отново</string>
     <string name="states_session_title">Сесията е изтекла</string>
-    <string name="states_tasks_empty_body">Няма стокови разписки, които ви чакат. Новите се показват тук веднага щом бъдат възложени.</string>
-    <string name="states_tasks_empty_title">Всичко е свършено</string>
-    <string name="states_tasks_pick_from_queue">Назад към стоковите разписки</string>
     <string name="states_try_again">Опитайте отново</string>
     <string name="states_type_code">Въведете кода</string>
     <string name="stepper_decrease">Намали</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Премахни</string>
     <string name="inventory_sko_status_heading">Статус на SKO</string>
     <string name="inventory_quantity_status_heading">Статус на количеството</string>
+    <string name="goodsout_filter_date_overdue">Просрочени</string>
+    <string name="errors_what_does_this_mean">Какво означава това?</string>
+    <string name="errors_support_reference">Референция за поддръжка: %1$s</string>
+    <string name="errors_support_reference_label">Референция за поддръжка на Aiku</string>
+    <string name="errors_support_reference_copied">Референцията за поддръжка е копирана</string>
+    <string name="errors_open_in_browser">Отвори в браузъра</string>
+    <string name="errors_page_failed_title">Страницата с помощ не можа да се зареди</string>
+    <string name="errors_page_failed_body">Проверете връзката или отворете страницата в браузъра.</string>
+    <string name="goodsin_next_stock_delivery">Следваща доставка на стока</string>
+    <string name="clocking_load_failed_timesheets">Отчетите за работно време не можаха да се заредят</string>
+    <string name="clocking_load_failed_day">Този ден не можа да се зареди</string>
+    <string name="clocking_load_failed_calendar">Календарът не можа да се зареди</string>
+    <string name="clocking_load_failed_leave">Отпуските ви не можаха да се заредят</string>
+    <string name="clocking_load_failed_overtime">Извънредният ви труд не можа да се зареди</string>
+    <string name="clocking_load_failed_adjustments">Корекциите на отчитането ви не можаха да се заредят</string>
 </resources>

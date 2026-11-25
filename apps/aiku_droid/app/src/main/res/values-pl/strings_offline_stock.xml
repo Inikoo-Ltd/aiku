@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Nic nie czeka</string>
     <string name="offline_stock_queue_empty_body">To, co zrobisz offline, pojawia się tutaj, dopóki się nie zsynchronizuje.</string>
     <string name="offline_stock_queue_note">Praca na pozycjach (pobieranie, pakowanie, rozkładanie, zwroty, przeniesienia i liczenia) jest zapisywana w telefonie offline i sprawdzana przez Aiku podczas synchronizacji. Zmiany statusu wymagają połączenia.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Dokument dostawy %1$s</string>
     <string name="offline_stock_record_return">Zwrot %1$s</string>
     <string name="offline_stock_record_delivery">Dostawa towaru %1$s</string>

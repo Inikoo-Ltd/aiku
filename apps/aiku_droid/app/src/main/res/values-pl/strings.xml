@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Brak wyników dla „%1$s”</string>
     <string name="states_search_scan_instead">Zamiast tego zeskanuj</string>
     <string name="states_server_body">Aiku nie odpowiada. Twoja ostatnia czynność nie została zapisana. Spróbuj ponownie za chwilę.</string>
-    <string name="states_server_error_code">Błąd %1$d ·</string>
     <string name="states_server_title">Coś poszło nie tak</string>
     <string name="states_session_body">Ze względów bezpieczeństwa zostałeś wylogowany po długim braku aktywności. Zaloguj się ponownie, aby kontynuować. Nic, co zapisałeś, nie przepadło.</string>
     <string name="states_session_sign_in">Zaloguj się ponownie</string>
     <string name="states_session_title">Sesja wygasła</string>
-    <string name="states_tasks_empty_body">Żadne dowody dostawy na Ciebie nie czekają. Nowe pojawią się tutaj, gdy tylko zostaną przypisane.</string>
-    <string name="states_tasks_empty_title">Wszystko zrobione</string>
-    <string name="states_tasks_pick_from_queue">Wróć do dowodów dostawy</string>
     <string name="states_try_again">Spróbuj ponownie</string>
     <string name="states_type_code">Wpisz kod</string>
     <string name="stepper_decrease">Zmniejsz</string>
@@ -2695,4 +2691,19 @@
     <string name="inventory_remove_one_confirm">Usuń</string>
     <string name="inventory_sko_status_heading">Status SKO</string>
     <string name="inventory_quantity_status_heading">Status ilości</string>
+    <string name="goodsout_filter_date_overdue">Opóźnione</string>
+    <string name="errors_what_does_this_mean">Co to oznacza?</string>
+    <string name="errors_support_reference">Numer referencyjny dla wsparcia: %1$s</string>
+    <string name="errors_support_reference_label">Numer referencyjny Aiku dla wsparcia</string>
+    <string name="errors_support_reference_copied">Skopiowano numer referencyjny</string>
+    <string name="errors_open_in_browser">Otwórz w przeglądarce</string>
+    <string name="errors_page_failed_title">Nie udało się wczytać strony pomocy</string>
+    <string name="errors_page_failed_body">Sprawdź połączenie lub otwórz stronę w przeglądarce.</string>
+    <string name="goodsin_next_stock_delivery">Następna dostawa zapasów</string>
+    <string name="clocking_load_failed_timesheets">Nie udało się wczytać kart czasu pracy</string>
+    <string name="clocking_load_failed_day">Nie udało się wczytać tego dnia</string>
+    <string name="clocking_load_failed_calendar">Nie udało się wczytać kalendarza</string>
+    <string name="clocking_load_failed_leave">Nie udało się wczytać urlopów</string>
+    <string name="clocking_load_failed_overtime">Nie udało się wczytać nadgodzin</string>
+    <string name="clocking_load_failed_adjustments">Nie udało się wczytać korekt rejestracji czasu pracy</string>
 </resources>

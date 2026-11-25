@@ -63,16 +63,18 @@ import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.LastUpdatedNote
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.QrCode
-import io.aiku.droid.ui.components.qrMatrixOf
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.SkeletonStatCard
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.qrMatrixOf
 import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.states.ErrorCode
+import io.aiku.droid.ui.states.ErrorHelp
 import io.aiku.droid.ui.theme.LocalAikuColors
 import java.time.Instant
 import java.time.LocalDate
@@ -159,14 +161,25 @@ fun ClockingScreen() {
 }
 
 @Composable
-internal fun ClockingLoadProblem(problem: ClockingProblem, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+internal fun ClockingLoadProblem(
+    problem: ClockingProblem,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.clocking_load_failed_title),
+) {
     InlineAlert(
-        title = stringResource(R.string.clocking_load_failed_title),
+        title = title,
         body = stringResource(if (problem == ClockingProblem.Offline) R.string.clocking_load_offline_body else R.string.clocking_load_server_body),
         tone = AlertTone.Warn,
         actionLabel = stringResource(R.string.clocking_error_try_again),
         onAction = onRetry,
         modifier = modifier,
+        footer = {
+            ErrorHelp(
+                code = if (problem == ClockingProblem.Offline) ErrorCode.Unreachable else ErrorCode.ServerError,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        },
     )
 }
 

@@ -3,7 +3,6 @@ package io.aiku.droid.ui.states
 internal const val STATES_SYNC_QUEUE_COUNT_SAMPLE = 3
 internal const val STATES_SYNC_QUEUE_SUMMARY_SAMPLE = "Picked 6 × SKO-00733 · Moved 10 × SKO-00412 · Adjustment −2 SKO-00953"
 
-internal const val STATES_SERVER_REFERENCE_SAMPLE = "Ref 7F3A-2C19 · 09:41"
 
 internal val statesSearchSuggestionsSample = listOf("rosemary", "SKO-0", "A-03")
 

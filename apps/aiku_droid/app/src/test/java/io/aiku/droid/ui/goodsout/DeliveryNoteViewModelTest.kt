@@ -5,6 +5,7 @@ import io.aiku.droid.data.api.DeliveryAddressFields
 import io.aiku.droid.data.api.DeliveryNote
 import io.aiku.droid.data.api.DeliveryNoteAction
 import io.aiku.droid.data.api.DeliveryNoteCounts
+import io.aiku.droid.data.api.DeliveryNoteCountsFilter
 import io.aiku.droid.data.api.DeliveryNoteLine
 import io.aiku.droid.data.api.DeliveryNotePage
 import io.aiku.droid.data.api.DeliveryNoteQuery
@@ -46,6 +47,8 @@ import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickedRoute
 import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
+import java.io.File
+import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -63,8 +66,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeliveryNoteViewModelTest {
@@ -773,7 +774,7 @@ class DeliveryNoteViewModelTest {
 
         override suspend fun deliveryNotes(token: String, warehouseId: Long, query: DeliveryNoteQuery): GoodsOutResult<DeliveryNotePage> = GoodsOutResult.Unreachable
 
-        override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts> = GoodsOutResult.Unreachable
+        override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, filter: DeliveryNoteCountsFilter): GoodsOutResult<DeliveryNoteCounts> = GoodsOutResult.Unreachable
 
         override suspend fun deliveryNote(token: String, deliveryNoteId: Long): GoodsOutResult<DeliveryNote> {
             noteLoads++

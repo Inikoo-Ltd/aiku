@@ -1,9 +1,11 @@
 package io.aiku.droid.ui.goodsout
 
 import io.aiku.droid.data.api.AttachmentDownload
+import io.aiku.droid.data.api.ChannelCounts
 import io.aiku.droid.data.api.DeliveryNote
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DeliveryNoteCounts
+import io.aiku.droid.data.api.DeliveryNoteCountsFilter
 import io.aiku.droid.data.api.DeliveryNotePage
 import io.aiku.droid.data.api.DeliveryNoteQuery
 import io.aiku.droid.data.api.DeliveryNoteRow
@@ -46,6 +48,9 @@ import io.aiku.droid.ui.components.DateRange
 import io.aiku.droid.ui.goodsout.extra.PickingSessionHandoff
 import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.scan.ScanProblem
+import java.io.File
+import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,9 +67,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import java.time.LocalDate
-import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeliveryNotesViewModelTest {
@@ -377,6 +379,52 @@ class DeliveryNotesViewModelTest {
     }
 
     @Test
+    fun `counts follow the date, search and overdue filters, and the chips count the chosen channel`() {
+        api.counts = DeliveryNoteCounts(
+            buckets = mapOf("unassigned" to 7),
+            channels = listOf(ChannelCounts(channel = "dropshipping", buckets = mapOf("unassigned" to 2))),
+        )
+        val viewModel = viewModel()
+        viewModel.onStart()
+
+        viewModel.applyFilter(DeliveryNoteFilter(date = DateFilter.Overdue))
+
+        assertTrue(api.queries.last().overdue)
+        assertNull(api.queries.last().from)
+        assertEquals(DeliveryNoteCountsFilter(overdue = true), api.countFilters.last())
+
+        viewModel.applyFilter(viewModel.state.value.filter.copy(channel = DispatchChannel.Dropshipping))
+
+        assertEquals(2, api.countFilters.size)
+        assertEquals(2, viewModel.state.value.counts?.count(DeliveryNoteBucket.Unassigned, DispatchChannel.Dropshipping))
+        assertEquals(7, viewModel.state.value.counts?.count(DeliveryNoteBucket.Unassigned, DispatchChannel.All))
+        assertEquals(0, viewModel.state.value.counts?.count(DeliveryNoteBucket.Unassigned, DispatchChannel.B2b))
+
+        viewModel.search("AR248")
+        dispatcher.scheduler.advanceTimeBy(301)
+
+        assertEquals(DeliveryNoteCountsFilter(search = "AR248", overdue = true), api.countFilters.last())
+    }
+
+    @Test
+    fun `offline the overdue filter uses the web rule, stepping back over the weekend`() {
+        val zone = ZoneOffset.UTC
+        val monday = java.time.Instant.parse("2026-03-16T10:00:00Z")
+        val rows = listOf(
+            DeliveryNoteRow(id = 1, reference = "THU", state = "unassigned", date = "2026-03-12T08:00:00Z"),
+            DeliveryNoteRow(id = 2, reference = "SAT", state = "unassigned", date = "2026-03-14T08:00:00Z"),
+            DeliveryNoteRow(id = 3, reference = "OLDSENT", state = "dispatched", date = "2026-03-02T08:00:00Z"),
+            DeliveryNoteRow(id = 4, reference = "OLDPACKED", state = "packed", date = "2026-03-02T08:00:00Z"),
+        )
+
+        assertEquals(java.time.Instant.parse("2026-03-13T10:00:00Z"), overdueCutoff(monday, zone))
+        assertEquals(
+            listOf("OLDPACKED", "THU"),
+            offlineDeliveryNotes(rows, DeliveryNoteQuery(bucket = DeliveryNoteBucket.All, overdue = true, sort = DeliveryNoteSort.Reference), zone, userId = null, now = monday).map { it.reference },
+        )
+    }
+
+    @Test
     fun `searching from the list row waits for typing to pause, then reloads from page 1`() {
         val viewModel = viewModel()
         viewModel.onStart()
@@ -489,6 +537,7 @@ class DeliveryNotesViewModelTest {
         var scanResult: GoodsOutResult<ScanLookup> = GoodsOutResult.Unreachable
         val queries = mutableListOf<DeliveryNoteQuery>()
         val countRequests = mutableListOf<PickerFilter?>()
+        val countFilters = mutableListOf<DeliveryNoteCountsFilter>()
         val scannedCodes = mutableListOf<String>()
 
         override suspend fun deliveryNotes(token: String, warehouseId: Long, query: DeliveryNoteQuery): GoodsOutResult<DeliveryNotePage> {
@@ -505,8 +554,9 @@ class DeliveryNotesViewModelTest {
             return GoodsOutResult.Loaded(DeliveryNotePage(notes = notes, canWorkInWarehouse = true, pagination = pagination))
         }
 
-        override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts> {
-            countRequests += picker
+        override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, filter: DeliveryNoteCountsFilter): GoodsOutResult<DeliveryNoteCounts> {
+            countRequests += filter.picker
+            countFilters += filter
             return failure ?: GoodsOutResult.Loaded(counts)
         }
 

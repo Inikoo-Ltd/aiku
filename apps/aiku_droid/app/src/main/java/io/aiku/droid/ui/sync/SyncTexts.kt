@@ -17,7 +17,7 @@ fun offlineOperationOf(wire: String): OfflineOperation? = OfflineOperation.entri
 
 @Composable
 fun recordTitle(record: OfflineRecordKey, reference: String?): String {
-    val shown = reference ?: stringResource(R.string.offline_stock_record_id, record.id)
+    val shown = reference.orEmpty()
     return stringResource(
         when (record.type) {
             OfflineRecordType.DELIVERY_NOTE -> R.string.offline_stock_record_note
@@ -27,7 +27,7 @@ fun recordTitle(record: OfflineRecordKey, reference: String?): String {
             OfflineRecordType.ORG_STOCK -> R.string.offline_stock_record_sko
         },
         shown,
-    )
+    ).trim()
 }
 
 @Composable

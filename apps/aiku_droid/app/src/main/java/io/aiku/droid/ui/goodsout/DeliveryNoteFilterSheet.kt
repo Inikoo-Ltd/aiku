@@ -50,6 +50,7 @@ internal fun dateLabel(date: DateFilter): Int = when (date) {
     DateFilter.Today -> R.string.goodsout_filter_date_today
     DateFilter.Yesterday -> R.string.goodsout_filter_date_yesterday
     DateFilter.LastSevenDays -> R.string.goodsout_filter_date_last_7_days
+    DateFilter.Overdue -> R.string.goodsout_filter_date_overdue
 }
 
 @StringRes

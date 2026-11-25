@@ -3,6 +3,7 @@ package io.aiku.droid.ui.goodsout
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.aiku.droid.data.api.DeliveryNoteCounts
+import io.aiku.droid.data.api.DeliveryNoteCountsFilter
 import io.aiku.droid.data.api.DispatchPerson
 import io.aiku.droid.data.api.DispatchRole
 import io.aiku.droid.data.api.GoodsOutApi
@@ -79,7 +80,7 @@ class GoodsOutBacklogViewModel(
         mutableState.update { it.copy(isLoading = true, isRefreshing = isPull, problem = null) }
 
         countsJob = viewModelScope.launch {
-            when (val result = api.deliveryNoteCounts(token, warehouseId, picker = null)) {
+            when (val result = api.deliveryNoteCounts(token, warehouseId, DeliveryNoteCountsFilter())) {
                 is GoodsOutResult.Loaded -> mutableState.update { it.copy(counts = result.value, isLoading = false, isRefreshing = false) }
                 GoodsOutResult.SessionExpired -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, isSessionExpired = true) }
                 else -> mutableState.update { it.copy(isLoading = false, isRefreshing = false, problem = result.problem()) }

@@ -36,6 +36,7 @@ import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.forConfirm
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.fulfilment.inbound.BookInPanel
 import io.aiku.droid.ui.fulfilment.inbound.DeliveryPalletList
 import io.aiku.droid.ui.fulfilment.inbound.InboundLoading
@@ -139,7 +140,13 @@ private fun BookInContent(viewModel: PalletDeliveryViewModel, state: PalletDeliv
         activeTab = MainTab.Menu,
         showBar = true,
         scrollState = scrollState,
-        footer = bookInFooter(delivery = delivery, progress = progress, working = state.working, onFinish = { confirm = BookInConfirm.Finish }),
+        footer = bookInFooter(
+            delivery = delivery,
+            progress = progress,
+            working = state.working,
+            onFinish = { confirm = BookInConfirm.Finish },
+            isPanelOpen = openPallet != null,
+        ),
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.fulfilment_inbound_delivery_refresh_failed), onRetry = viewModel::retry) }
@@ -210,6 +217,7 @@ private fun bookInFooter(
     progress: String,
     working: PalletDeliveryWrite?,
     onFinish: () -> Unit,
+    isPanelOpen: Boolean,
 ): (@Composable ColumnScope.() -> Unit)? {
     val finish = delivery.action(FulfilmentInboundActionKey.FINISH_BOOKING)
     val blocked = delivery.finishBookingBlocked?.takeIf { it.isNotBlank() }
@@ -218,7 +226,7 @@ private fun bookInFooter(
             AikuButton(
                 text = finish.label.ifBlank { stringResource(R.string.fulfilment_book_in_set_booked_in) },
                 onClick = onFinish,
-                style = fulfilmentInboundActionLook(finish.key).style,
+                style = fulfilmentInboundActionLook(finish.key).inFooter(isFirst = !isPanelOpen).style,
                 icon = fulfilmentInboundActionLook(finish.key).icon,
                 isLoading = working == PalletDeliveryWrite.FinishBooking,
                 height = 52.dp,

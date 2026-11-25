@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Нищо не чака</string>
     <string name="offline_stock_queue_empty_body">Това, което правиш офлайн, се показва тук, докато се синхронизира.</string>
     <string name="offline_stock_queue_note">Работата по редове (взимане, опаковане, поставяне, връщания, премествания и броене) се запазва на телефона офлайн и Aiku я проверява при синхронизиране. Промените на статус изискват връзка.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Стокова разписка %1$s</string>
     <string name="offline_stock_record_return">Връщане %1$s</string>
     <string name="offline_stock_record_delivery">Доставка на стока %1$s</string>

@@ -1,6 +1,5 @@
 package io.aiku.droid.ui.components
 
-import androidx.annotation.PluralsRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -70,7 +69,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import io.aiku.droid.R
 import io.aiku.droid.ui.theme.LocalAikuColors
-import kotlin.math.roundToInt
 
 data class FilterSheetOption(val label: String, val dot: Color? = null)
 
@@ -93,36 +91,10 @@ data class FilterSheetSection(
     }
 }
 
-private const val RESULT_SHRINK_PER_FILTER = 0.9f
 private const val PANEL_WIDTH_FRACTION = 0.88f
 private val PanelMaxWidth = 420.dp
 private val PanelShape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
 private const val SORT_MENU_WIDTH_FRACTION = 0.78f
-
-@Composable
-fun FilterSheet(
-    title: String,
-    sections: List<FilterSheetSection>,
-    sampleTotal: Int,
-    @PluralsRes showLabel: Int,
-    onDismiss: () -> Unit,
-) {
-    var selection by remember(sections) { mutableStateOf(sections.map { it.initiallySelected }) }
-    val filterCount = selection.zip(sections).sumOf { (selected, section) -> if (section.isSingleChoice) 0 else selected.size }
-    val results = maxOf(1, (sampleTotal / (1 + filterCount * RESULT_SHRINK_PER_FILTER)).roundToInt())
-
-    FilterSheet(
-        title = title,
-        sections = sections,
-        selection = selection,
-        onSelectionChange = { selection = it },
-        activeFilterCount = filterCount,
-        showText = pluralStringResource(showLabel, results, results),
-        onShow = onDismiss,
-        onReset = { selection = sections.map { if (it.isSingleChoice) setOf(0) else emptySet() } },
-        onDismiss = onDismiss,
-    )
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

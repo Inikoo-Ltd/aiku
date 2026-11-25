@@ -28,6 +28,7 @@ import io.aiku.droid.data.api.OkHttpWarehouseDashboardApi
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.SearchApi
 import io.aiku.droid.data.api.StaffChatApi
+import io.aiku.droid.data.api.SupportReferenceInterceptor
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehouseDashboardApi
 import io.aiku.droid.data.cache.ScreenCache
@@ -101,6 +102,7 @@ class AppContainer(context: Context) {
         acceptLanguage = { language.acceptLanguage },
     )
         .newBuilder()
+        .addInterceptor(SupportReferenceInterceptor())
         .addInterceptor(ScreenCacheInterceptor(cache = { screenCache }))
         .addInterceptor(OfflineDownloadInterceptor(downloads = { offlineDownloads }, prefetcher = { offlinePrefetcher }))
         .addInterceptor(

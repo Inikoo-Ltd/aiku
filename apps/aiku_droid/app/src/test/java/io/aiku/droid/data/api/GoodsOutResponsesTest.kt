@@ -116,8 +116,16 @@ class GoodsOutResponsesTest {
             listOf("bucket" to "unassigned", "channel" to "all", "page" to "1", "per_page" to "50"),
             GoodsOutResponses.deliveryNotesParameters(DeliveryNoteQuery(search = " ")),
         )
-        assertEquals(listOf("picker" to "me"), GoodsOutResponses.countsParameters(PickerFilter.Me))
-        assertEquals(emptyList<Pair<String, String>>(), GoodsOutResponses.countsParameters(null))
+        assertEquals(listOf("picker" to "me"), GoodsOutResponses.countsParameters(DeliveryNoteCountsFilter(picker = PickerFilter.Me)))
+        assertEquals(emptyList<Pair<String, String>>(), GoodsOutResponses.countsParameters(DeliveryNoteCountsFilter(search = " ")))
+        assertEquals(
+            listOf("search" to "AR248", "from" to "2026-11-02", "to" to "2026-11-09", "overdue" to "1"),
+            GoodsOutResponses.countsParameters(DeliveryNoteCountsFilter(search = " AR248 ", from = LocalDate.of(2026, 11, 2), to = LocalDate.of(2026, 11, 9), overdue = true)),
+        )
+        assertEquals(
+            listOf("bucket" to "all", "channel" to "all", "overdue" to "1", "page" to "1", "per_page" to "50"),
+            GoodsOutResponses.deliveryNotesParameters(DeliveryNoteQuery(bucket = DeliveryNoteBucket.All, overdue = true)),
+        )
     }
 
     @Test

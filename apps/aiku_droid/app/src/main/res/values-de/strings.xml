@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Keine Ergebnisse für „%1$s“</string>
     <string name="states_search_scan_instead">Stattdessen scannen</string>
     <string name="states_server_body">Aiku hat nicht geantwortet. Ihre letzte Aktion wurde nicht gespeichert. Versuchen Sie es gleich noch einmal.</string>
-    <string name="states_server_error_code">Fehler %1$d ·</string>
     <string name="states_server_title">Da ist etwas schiefgelaufen</string>
     <string name="states_session_body">Aus Sicherheitsgründen wurden Sie nach längerer Inaktivität abgemeldet. Melden Sie sich erneut an, um fortzufahren. Nichts Gespeichertes geht verloren.</string>
     <string name="states_session_sign_in">Erneut anmelden</string>
     <string name="states_session_title">Sitzung abgelaufen</string>
-    <string name="states_tasks_empty_body">Keine Lieferscheine warten auf Sie. Neue erscheinen hier, sobald sie zugewiesen werden.</string>
-    <string name="states_tasks_empty_title">Alles auf dem neuesten Stand</string>
-    <string name="states_tasks_pick_from_queue">Zurück zu den Lieferscheinen</string>
     <string name="states_try_again">Erneut versuchen</string>
     <string name="states_type_code">Code eingeben</string>
     <string name="stepper_decrease">Verringern</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Entfernen</string>
     <string name="inventory_sko_status_heading">SKO-Status</string>
     <string name="inventory_quantity_status_heading">Mengenstatus</string>
+    <string name="goodsout_filter_date_overdue">Überfällig</string>
+    <string name="errors_what_does_this_mean">Was bedeutet das?</string>
+    <string name="errors_support_reference">Support-Referenz: %1$s</string>
+    <string name="errors_support_reference_label">Aiku-Support-Referenz</string>
+    <string name="errors_support_reference_copied">Support-Referenz kopiert</string>
+    <string name="errors_open_in_browser">Im Browser öffnen</string>
+    <string name="errors_page_failed_title">Die Hilfeseite konnte nicht geladen werden</string>
+    <string name="errors_page_failed_body">Prüfen Sie die Verbindung oder öffnen Sie die Seite im Browser.</string>
+    <string name="goodsin_next_stock_delivery">Nächste Lagerlieferung</string>
+    <string name="clocking_load_failed_timesheets">Ihre Stundenzettel konnten nicht geladen werden</string>
+    <string name="clocking_load_failed_day">Dieser Tag konnte nicht geladen werden</string>
+    <string name="clocking_load_failed_calendar">Der Kalender konnte nicht geladen werden</string>
+    <string name="clocking_load_failed_leave">Ihr Urlaub konnte nicht geladen werden</string>
+    <string name="clocking_load_failed_overtime">Ihre Überstunden konnten nicht geladen werden</string>
+    <string name="clocking_load_failed_adjustments">Ihre Korrekturen der Zeiterfassung konnten nicht geladen werden</string>
 </resources>

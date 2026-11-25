@@ -32,11 +32,12 @@ internal fun <T> HrPagedList(
     @DrawableRes emptyIcon: Int,
     emptyTitle: String,
     emptyBody: String,
+    problemTitle: String,
     onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     row: @Composable (T) -> Unit,
 ) {
-    list.firstPageProblem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = onRetry) }
+    list.firstPageProblem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = onRetry, title = problemTitle) }
     when {
         list.items.isNotEmpty() -> ListGroup {
             list.items.forEachIndexed { index, item ->

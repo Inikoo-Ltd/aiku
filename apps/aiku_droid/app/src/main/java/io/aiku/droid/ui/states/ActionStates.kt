@@ -1,6 +1,5 @@
 package io.aiku.droid.ui.states
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
@@ -47,29 +45,6 @@ import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 data class ConflictChange(val label: String, val detail: String)
-
-@Composable
-fun ActionFailedSheet(
-    title: String,
-    errorTitle: String,
-    errorBody: String,
-    retryLabel: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-    @DrawableRes icon: Int? = null,
-    context: String? = null,
-    fields: @Composable ColumnScope.() -> Unit,
-) {
-    AikuBottomSheet(title = title, onDismiss = onDismiss, icon = icon, context = context) {
-        ActionFailedContent(
-            errorTitle = errorTitle,
-            errorBody = errorBody,
-            retryLabel = retryLabel,
-            onRetry = onRetry,
-            fields = fields,
-        )
-    }
-}
 
 @Composable
 fun ActionFailedContent(

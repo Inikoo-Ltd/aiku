@@ -200,36 +200,6 @@ internal fun BoardFootnote(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun StockActionButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    @DrawableRes icon: Int? = null,
-    isDanger: Boolean = false,
-) {
-    val colors = LocalAikuColors.current
-    val content = if (isDanger) colors.danger else colors.textSecondary
-    val border = if (isDanger) colors.dangerButtonBorder else colors.borderStrong
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .heightIn(min = 52.dp)
-            .clip(ControlShape)
-            .background(colors.surface)
-            .border(if (isDanger) 1.5.dp else 1.dp, border, ControlShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 6.dp),
-    ) {
-        if (icon != null) {
-            Icon(painter = painterResource(icon), contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
-        }
-        Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = content, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
 internal fun SheetGroupLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),

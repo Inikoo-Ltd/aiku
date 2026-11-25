@@ -22,6 +22,12 @@
     <string name="clocking_summary_unavailable">Clocking status unavailable</string>
 
     <string name="clocking_load_failed_title">Couldn’t load your clocking</string>
+    <string name="clocking_load_failed_timesheets">Couldn’t load your timesheets</string>
+    <string name="clocking_load_failed_day">Couldn’t load this day</string>
+    <string name="clocking_load_failed_calendar">Couldn’t load the calendar</string>
+    <string name="clocking_load_failed_leave">Couldn’t load your leave</string>
+    <string name="clocking_load_failed_overtime">Couldn’t load your overtime</string>
+    <string name="clocking_load_failed_adjustments">Couldn’t load your clocking adjustments</string>
     <string name="clocking_load_offline_body">There is no connection. Check Wi-Fi and try again.</string>
     <string name="clocking_load_server_body">Aiku didn’t respond. Try again in a moment.</string>
 

@@ -502,7 +502,7 @@ private fun CurrentItemPanel(
                 )
             }
         }
-        AikuButton(text = stringResource(R.string.goodsin_done_back), onClick = onDone, icon = R.drawable.ic_ui_check, height = 52.dp, modifier = Modifier.fillMaxWidth())
+        AikuButton(text = stringResource(R.string.goodsin_done_back), onClick = onDone, style = ButtonStyle.Outline, icon = R.drawable.ic_ui_check, height = 52.dp, modifier = Modifier.fillMaxWidth())
     }
 }
 
