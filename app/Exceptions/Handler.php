@@ -62,7 +62,10 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             if (app()->bound('sentry')) {
-                app('sentry')->captureException($e);
+                $eventId = app('sentry')->captureException($e);
+                if ($eventId !== null && app()->bound('request')) {
+                    request()->attributes->set('sentry_event_id', (string) $eventId);
+                }
             }
         });
     }
@@ -91,6 +94,14 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e): Response|JsonResponse|\Symfony\Component\HttpFoundation\Response|RedirectResponse
     {
         $response = parent::render($request, $e);
+
+        if ($response instanceof JsonResponse
+            && $response->getStatusCode() >= 500
+            && $request->routeIs('grp.api.mobile.*')
+            && $request->attributes->has('sentry_event_id')
+        ) {
+            $response->setData([...$response->getData(true), 'reference' => $request->attributes->get('sentry_event_id')]);
+        }
 
 
         if (!app()->environment(['local', 'testing'])

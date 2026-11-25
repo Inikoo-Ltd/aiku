@@ -10,7 +10,6 @@
 namespace App\Actions\Api\Group\GoodsOut;
 
 use App\Actions\Api\Group\Locations\WithMobileLocationsAccess;
-use App\Actions\Api\Group\WithMobileDateRange;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
@@ -24,7 +23,6 @@ use Lorisleiva\Actions\Concerns\AsController;
 class GetMobileDeliveryNotes
 {
     use AsController;
-    use WithMobileDateRange;
     use WithMobileDeliveryNotes;
     use WithMobileLocationsAccess;
 
@@ -48,7 +46,7 @@ class GetMobileDeliveryNotes
             picker: $filters['picker'] ?? null,
             user: $user
         );
-        $this->whereWithinDays($query, 'delivery_notes.date', $warehouse, $filters['from'] ?? null, $filters['to'] ?? null);
+        $this->whereListFilters($query, $warehouse, $filters);
 
         return $this->withRowColumns($query)->paginate(
             perPage: (int) ($filters['per_page'] ?? self::DEFAULT_PER_PAGE),
@@ -61,12 +59,8 @@ class GetMobileDeliveryNotes
      */
     private function useWebDeliveryNotesParameters(array $filters): void
     {
-        $search = trim((string) ($filters['search'] ?? ''));
-
-        request()->merge(array_filter([
-            'sort'   => $filters['sort'] ?? null,
-            'filter' => $search === '' ? null : ['global' => $search],
-        ]));
+        request()->merge(array_filter(['sort' => $filters['sort'] ?? null]));
+        $this->useWebDeliveryNotesSearch($filters['search'] ?? null);
     }
 
     public function asController(Warehouse $warehouse, ActionRequest $request): JsonResponse
@@ -82,6 +76,7 @@ class GetMobileDeliveryNotes
             'channel'  => ['sometimes', 'nullable', Rule::in(self::CHANNELS)],
             'search'   => ['sometimes', 'nullable', 'string', 'max:255'],
             ...$this->dateRangeRules($request->query()),
+            'overdue'  => ['sometimes', 'boolean'],
             'picker'   => ['sometimes', 'nullable', Rule::in(self::PICKER_FILTERS)],
             'sort'     => ['sometimes', 'nullable', Rule::in($sorts)],
             'page'     => ['sometimes', 'nullable', 'integer', 'min:1'],
