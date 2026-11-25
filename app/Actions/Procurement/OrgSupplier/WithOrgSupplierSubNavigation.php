@@ -38,8 +38,9 @@ trait WithOrgSupplierSubNavigation
                 'key'    => 'purchase-order-organisation',
                 'button' => $selection->rows->map(fn (OrgSupplier $row) => [
                     ...$this->purchaseOrderAction($row),
-                    'label'   => __('Purchase Order').' '.$row->organisation->code,
-                    'tooltip' => __('New purchase order for :organisation', ['organisation' => $row->organisation->name]),
+                    'label'             => __('Purchase Order').' '.$row->organisation->code,
+                    'organisation_name' => $row->organisation->name,
+                    'tooltip'           => __('New purchase order for :organisation', ['organisation' => $row->organisation->name]),
                 ])->values()->all(),
             ];
         }

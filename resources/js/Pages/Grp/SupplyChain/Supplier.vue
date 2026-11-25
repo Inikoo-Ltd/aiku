@@ -6,8 +6,7 @@
 
 <script setup lang="ts">
 import ProductDevelopmentRelatedList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRelatedList.vue"
-import { Head, router } from '@inertiajs/vue3'
-import Dialog from 'primevue/dialog'
+import { Head } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { computed, ref } from 'vue'
@@ -21,9 +20,7 @@ import {
     faPersonDolly,
     faTruckContainer,
     faFileSignature,
-    faArchive,
-    faBoxOpen,
-    faTimes
+    faArchive
 } from '@fal'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
@@ -36,6 +33,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
 import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.vue'
+import SupplierArchiveButton from '@/Components/SupplyChain/SupplierArchiveButton.vue'
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
@@ -72,34 +70,6 @@ const props = defineProps<{
     }
 }>()
 
-const isArchiveDialogOpen = ref(false)
-const isArchiveSaving = ref(false)
-const archiveError = ref<string | null>(null)
-
-const openArchiveDialog = () => {
-    archiveError.value = null
-    isArchiveDialogOpen.value = true
-}
-
-const submitArchive = () => {
-    router.patch(route(props.archive.route.name, props.archive.route.parameters), {}, {
-        preserveScroll: true,
-        onStart: () => {
-            isArchiveSaving.value = true
-            archiveError.value = null
-        },
-        onSuccess: () => {
-            isArchiveDialogOpen.value = false
-        },
-        onError: (errors) => {
-            archiveError.value = Object.values(errors).join(' ') || ctrans('Something went wrong')
-        },
-        onFinish: () => {
-            isArchiveSaving.value = false
-        },
-    })
-}
-
 const currentTab = ref(props.tabs.current)
 const isModalUploadAttachmentOpen = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
@@ -130,11 +100,7 @@ const component = computed(() => {
         </template>
         <template #other>
             <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
-            <Button v-if="archive.can_archive" type="tertiary" :label="archive.is_archived ? ctrans('Unarchive') : ctrans('Archive')" :tooltip="archive.is_archived ? ctrans('Make this supplier active again in the organisations it was archived from') : ctrans('Stop using this supplier in every organisation. Its products stay active')" @click="openArchiveDialog">
-                <template #icon>
-                    <FontAwesomeIcon :icon="archive.is_archived ? faBoxOpen : faArchive" :class="archive.is_archived ? 'text-green-600' : 'text-amber-500'" fixed-width aria-hidden="true" />
-                </template>
-            </Button>
+            <SupplierArchiveButton :archive="archive" />
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -160,33 +126,4 @@ const component = computed(() => {
         withCaption
     />
 
-    <Dialog v-model:visible="isArchiveDialogOpen" modal :header="archive.is_archived ? ctrans('Unarchive supplier') : ctrans('Archive supplier?')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
-        <div class="space-y-3 text-sm text-gray-700">
-            <p v-if="archive.is_archived">{{ ctrans(':name will be active again in the organisations it was archived from.', { name: archive.supplier_name }) }}</p>
-            <template v-else>
-                <p>{{ ctrans(':name will be archived in every organisation. Its history is kept.', { name: archive.supplier_name }) }}</p>
-                <p class="text-gray-500">{{ ctrans('Its products are not changed and stay active.') }}</p>
-            </template>
-            <p v-if="archiveError" class="text-xs text-red-600">{{ archiveError }}</p>
-        </div>
-        <template #footer>
-            <div class="flex w-full gap-2">
-                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isArchiveDialogOpen = false">
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
-                <Button v-if="archive.is_archived" type="primary" full :label="ctrans('Unarchive')" :loading="isArchiveSaving" @click="submitArchive">
-                    <template #icon>
-                        <FontAwesomeIcon :icon="faBoxOpen" fixed-width aria-hidden="true" />
-                    </template>
-                </Button>
-                <Button v-else type="red" :icon="faArchive" full :label="ctrans('Yes, archive')" :loading="isArchiveSaving" @click="submitArchive">
-                    <!-- <template #icon>
-                        <FontAwesomeIcon class="text-amber-500" fixed-width aria-hidden="true" />
-                    </template> -->
-                </Button>
-            </div>
-        </template>
-    </Dialog>
 </template>

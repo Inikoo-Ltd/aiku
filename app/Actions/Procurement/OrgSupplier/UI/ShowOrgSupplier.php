@@ -24,6 +24,8 @@ use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
+use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\GetSupplierDeclarations;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
@@ -119,6 +121,8 @@ class ShowOrgSupplier extends OrgAction
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
                     fn () => GetOrgSupplierShowcase::run($orgSupplier)
                     : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
+
+                'archive' => $selection ? $this->agentArchive($supplier, $request) : null,
 
                 'agreement' => GetAgreement::run($supplier, $agreementOrganisation, $request->user(), $forAgent)
                     + ['print_route' => $forAgent ? null : ['name' => 'grp.org.procurement.org_suppliers.show.agreement.pdf', 'parameters' => [$this->organisation->slug, $orgSupplier->slug]]]
@@ -339,11 +343,36 @@ class ShowOrgSupplier extends OrgAction
         return [
             $this->getOrgSupplierPurchaseOrderAction($selection->pageRow),
             $request->user()->authTo("procurement.{$this->organisation->id}.edit") ? [
+                'key'   => 'edit',
                 'type'  => 'button',
                 'style' => 'edit',
                 'label' => __('Edit'),
                 'route' => $selection->route('grp.org.procurement.org_suppliers.edit', $parameters),
             ] : false,
+        ];
+    }
+
+    /**
+     * On the agent's page only the agent's Org Administrator archives the supplier, next to Edit.
+     *
+     * @return array{is_archived: bool, supplier_name: string, archived_at: mixed, can_archive: bool, route: array<string, mixed>}|null
+     */
+    private function agentArchive(Supplier $supplier, ActionRequest $request): ?array
+    {
+        if ($supplier->agent?->organisation_id !== $this->organisation->id || !DeactivateSupplier::isAgentOrgAdmin($request->user(), $supplier)) {
+            return null;
+        }
+
+        return [
+            'is_archived'   => !$supplier->status,
+            'supplier_name' => $supplier->name,
+            'archived_at'   => $supplier->archived_at,
+            'can_archive'   => !ReactivateSupplier::wasMerged($supplier),
+            'route'         => [
+                'name'       => $supplier->status ? 'grp.models.supplier.archive' : 'grp.models.supplier.unarchive',
+                'parameters' => ['supplier' => $supplier->id],
+                'method'     => 'patch',
+            ],
         ];
     }
 
