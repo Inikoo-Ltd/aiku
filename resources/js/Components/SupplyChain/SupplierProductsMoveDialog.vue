@@ -28,6 +28,7 @@ type TargetSupplier = {
 	slug: string
 	code: string
 	name: string
+	nickname: string | null
 	company_name: string | null
 	contact_name: string | null
 	currency: string | null
@@ -86,8 +87,8 @@ const supplierOptions = computed(() =>
 		.sort((first, second) => second.products_count - first.products_count)
 		.map((target) => ({
 			...target,
-			label: `${target.code} ${target.name}`,
-			search: [target.code, target.name, target.company_name, target.contact_name].filter(Boolean).join(" "),
+			label: [target.code, target.company_name, target.contact_name, target.nickname].filter(Boolean).join(" · "),
+			search: [target.code, target.company_name, target.contact_name, target.nickname, target.name].filter(Boolean).join(" "),
 		}))
 )
 
@@ -210,6 +211,7 @@ function submit() {
 					:filterFields="['search']"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"
+					:filterPlaceholder="ctrans('Search code, company, nickname or contact')"
 					:emptyMessage="isFetching
 						? ctrans('Loading…')
 						: onlySuppliersWithProducts
@@ -221,8 +223,13 @@ function submit() {
 					<template #option="{ option }">
 						<div class="flex w-full min-w-0 items-center gap-2">
 							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
-							<span class="truncate text-gray-500">{{ option.name }}</span>
-							<span v-if="option.company_name && option.company_name !== option.name" class="truncate text-xs text-gray-400">{{ option.company_name }}</span>
+							<span v-if="option.company_name" v-tooltip="ctrans('Company name')" class="truncate text-gray-600">{{ option.company_name }}</span>
+							<span v-if="option.contact_name" v-tooltip="ctrans('Contact name')" class="truncate text-xs text-gray-400">{{ option.contact_name }}</span>
+							<span
+								v-if="option.nickname"
+								v-tooltip="ctrans('Nickname')"
+								class="shrink-0 whitespace-nowrap rounded bg-[var(--app-accent-soft)] px-1.5 py-0.5 text-xs text-[var(--app-accent-deep)]"
+							>{{ option.nickname }}</span>
 							<span
 								v-if="sellsEveryProduct(option)"
 								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
