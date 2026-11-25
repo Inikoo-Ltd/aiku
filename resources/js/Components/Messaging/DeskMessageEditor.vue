@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue"
 import { EditorContent, useEditor } from "@tiptap/vue-3"
 import { Extension } from "@tiptap/core"
 import StarterKit from "@tiptap/starter-kit"
@@ -22,8 +22,7 @@ import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { DESK_EMOJI_NAMES } from "@/Components/Messaging/deskEmojiNames"
 import { deskDocToSlackText } from "@/Components/Messaging/deskMarkup"
-
-const EmojiPicker = defineAsyncComponent(() => import("@/Components/Messaging/EmojiPicker.vue"))
+import EmojiPicker from "@/Components/Messaging/EmojiPicker.vue"
 
 library.add(faAt, faBracketsCurly, faCode, faPaperPlane, faPlus, faQuoteRight, faSmile)
 
@@ -230,6 +229,7 @@ const extraButtons = [
 ]
 
 const emojiPopover = ref()
+const realignEmojiPopoverOnceRendered = () => nextTick(() => emojiPopover.value?.alignOverlay())
 const insertEmoji = (emoji: string) => {
     emojiPopover.value?.hide()
     editor.value?.chain().focus().insertContent(emoji).run()
@@ -330,7 +330,7 @@ defineExpose({
             </div>
         </div>
 
-        <Popover ref="emojiPopover">
+        <Popover ref="emojiPopover" @show="realignEmojiPopoverOnceRendered">
             <EmojiPicker @pick="insertEmoji" />
         </Popover>
     </div>
