@@ -3227,3 +3227,13 @@ test('a new postage policy takes the shop handling days', function () {
 
     expect(json_decode(sentEbayRequest('POST', '/sell/account/v1/fulfillment_policy')->body(), true)['handlingTime']['value'])->toBe(4);
 });
+
+test('our postage policy named after an earlier channel of the same eBay account is ours too', function () {
+    $earlier  = ebayChannel($this);
+    $ebayUser = ebayChannel($this);
+    fakeEbay($this, [
+        '/sell/account/v1/fulfillment_policy/fp-1' => fn (Request $request) => $request->method() === 'PUT' ? Http::response(['fulfillmentPolicyId' => 'fp-1']) : Http::response(ebayPostagePolicy($ebayUser, 1, $earlier->ownFulfilmentPolicyName())),
+    ]);
+
+    expect(SetEbayHandlingDays::make()->handle($ebayUser, 4, 3))->toBe('updated');
+});

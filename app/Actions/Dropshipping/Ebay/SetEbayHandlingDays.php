@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Ebay;
 
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -39,7 +40,7 @@ class SetEbayHandlingDays
             return 'failed: '.$error;
         }
 
-        if (Arr::get($policy, 'name') !== $ebayUser->ownFulfilmentPolicyName()) {
+        if (!$this->isOurPolicy((string) Arr::get($policy, 'name'), $ebayUser)) {
             return 'seller_policy';
         }
 
@@ -70,6 +71,18 @@ class SetEbayHandlingDays
         UpdateEbayUser::run($ebayUser, ['settings' => $settings]);
 
         return 'updated';
+    }
+
+    /**
+     * A seller who reconnects the same eBay account keeps the policy we created for their earlier channel, named after its slug.
+     */
+    private function isOurPolicy(string $name, EbayUser $ebayUser): bool
+    {
+        if ($name === $ebayUser->ownFulfilmentPolicyName()) {
+            return true;
+        }
+
+        return str_starts_with($name, 'Shipping-') && CustomerSalesChannel::where('slug', substr($name, strlen('Shipping-')))->exists();
     }
 
     /**
