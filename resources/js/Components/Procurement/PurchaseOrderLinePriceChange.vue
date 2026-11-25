@@ -18,6 +18,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 
 type PriceQuery = {
@@ -27,6 +28,7 @@ type PriceQuery = {
 	previous_unit_cost: number | string | null
 	note: string | null
 	asked_by: string | null
+	asked_at: string | null
 }
 
 type PriceQuerySibling = {
@@ -230,7 +232,15 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 					<span class="font-normal text-gray-500">({{ costLabel }})</span>
 				</div>
 				<div v-if="query.note" class="italic opacity-60">{{ query.note }}</div>
-				<div v-if="query.asked_by" class="text-gray-500">{{ ctrans("Asked by :name", { name: query.asked_by }) }}</div>
+				<div v-if="query.asked_by || query.asked_at" class="text-gray-500">
+					<span v-if="query.asked_by">{{ ctrans("Asked by :name", { name: query.asked_by }) }}</span>
+					{{ " " }}
+					<span v-if="query.asked_at" v-tooltip="useFormatTime(query.asked_at, { formatTime: 'hm' })">{{
+						query.asked_by
+							? ctrans("on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+							: ctrans("Asked on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+					}}</span>
+				</div>
 			</div>
 
 			<div v-if="item.answerPriceRoute" class="flex flex-wrap items-center gap-1.5">

@@ -18,6 +18,7 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 import { useLocaleStore } from "@/Stores/locale"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { routeType } from "@/types/route"
 
 type QuantityQuery = {
@@ -27,6 +28,7 @@ type QuantityQuery = {
 	previous_quantity: number | string | null
 	note: string | null
 	asked_by: string | null
+	asked_at: string | null
 }
 
 const props = defineProps<{
@@ -177,8 +179,16 @@ function answer(answerValue: "accepted" | "rejected") {
 						: ctrans("The agent asks for :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) }) }}
 				</div>
 				<div v-if="query.note" class="italic opacity-60">{{ query.note }}</div>
-				<div v-if="query.asked_by" class="text-gray-500">
-					{{ isChangedByBuyer ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}
+				<div v-if="query.asked_by || query.asked_at" class="text-gray-500">
+					<span v-if="query.asked_by">{{ isChangedByBuyer ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}</span>
+					{{ " " }}
+					<span v-if="query.asked_at" v-tooltip="useFormatTime(query.asked_at, { formatTime: 'hm' })">{{
+						query.asked_by
+							? ctrans("on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+							: isChangedByBuyer
+								? ctrans("Changed on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+								: ctrans("Asked on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+					}}</span>
 				</div>
 			</div>
 
