@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer;
 
+use Closure;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
@@ -90,6 +91,13 @@ class UpdateCustomer extends OrgAction
         $staleData = $staleData->toArray();
 
         $updateCurrentOrders = (bool) Arr::pull($modelData, 'update_current_orders', true);
+
+        if (Arr::has($modelData, 'peppol_dic')) {
+            $dic = preg_replace('/\D/', '', (string)Arr::pull($modelData, 'peppol_dic'));
+            if (!$customer->peppol_id || str_starts_with($customer->peppol_id, BuildUblInvoice::PEPPOL_SCHEME.':')) {
+                $modelData['peppol_id'] = $dic !== '' ? BuildUblInvoice::PEPPOL_SCHEME.':'.$dic : null;
+            }
+        }
 
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
@@ -461,6 +469,17 @@ class UpdateCustomer extends OrgAction
             'gr_extended_until'                                     => ['sometimes', 'nullable', 'date'],
             'fiscal_name'                                           => ['sometimes', 'nullable', 'string', 'max:255'],
             'peppol_id'                                             => BuildUblInvoice::peppolIdRules(),
+            'peppol_dic'                                            => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    $dic = preg_replace('/\D/', '', (string)$value);
+                    if ($dic !== '' && !BuildUblInvoice::isSlovakDic($dic)) {
+                        $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                    }
+                },
+            ],
             'is_vip'                                                => ['sometimes', 'boolean'],
             'as_employee_id'                                        => [
                 'sometimes',

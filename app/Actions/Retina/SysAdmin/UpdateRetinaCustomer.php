@@ -12,6 +12,7 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -46,9 +47,8 @@ class UpdateRetinaCustomer extends RetinaAction
     }
 
     /**
-     * Only Slovak business customers (company name or company number) of an e-invoicing organisation without a validated
-     * VAT number (their DIČ is taken from it) are asked for their DIČ, or those who already gave one. A Peppol ID staff
-     * entered in another scheme is never shown or overwritten here.
+     * Slovak business customers (company name or company number) of a Slovak company have a DIČ, where their e-invoices go,
+     * as do those who already gave one. A Peppol ID staff entered in another scheme is never shown or overwritten as a DIČ.
      */
     public static function needsPeppolDic(Customer $customer): bool
     {
@@ -56,12 +56,32 @@ class UpdateRetinaCustomer extends RetinaAction
             return str_starts_with($customer->peppol_id, BuildUblInvoice::PEPPOL_SCHEME.':');
         }
 
-        $countryCode = $customer->address?->country_code;
-
-        return $countryCode === 'SK'
-            && in_array($countryCode, Arr::get($customer->organisation->settings, 'e_invoicing.countries') ?? [], true)
-            && !($customer->taxNumber?->valid && $customer->taxNumber->country_code === 'SK')
+        return $customer->address?->country_code === 'SK'
+            && $customer->organisation->country?->code === 'SK'
             && (trim((string)$customer->company_name) !== '' || strlen(preg_replace('/\D/', '', (string)$customer->identity_document_number)) >= 8);
+    }
+
+    /**
+     * A Slovak business customer of an organisation that e-invoices Slovakia, with no DIČ to send its e-invoices to:
+     * staff are told on its orders so the DIČ is fixed before invoicing and the e-invoice still goes out the same day.
+     */
+    public static function lacksDicForEInvoices(Customer $customer): bool
+    {
+        return in_array('SK', Arr::get($customer->organisation->settings, 'e_invoicing.countries') ?? [], true)
+            && self::needsPeppolDic($customer)
+            && self::dicFor($customer) === null;
+    }
+
+    /**
+     * The DIČ e-invoices go to, in the order BuildUblInvoice uses: a validated Slovak VAT number first, else the one stored.
+     */
+    public static function dicFor(Customer $customer): ?string
+    {
+        $fromVat = $customer->taxNumber?->valid && $customer->taxNumber->country_code === 'SK'
+            ? BuildUblInvoice::participantId('SK'.preg_replace('/^SK/i', '', (string)$customer->taxNumber->number))['id'] ?? null
+            : null;
+
+        return $fromVat ?? ($customer->peppol_id && str_starts_with($customer->peppol_id, BuildUblInvoice::PEPPOL_SCHEME.':') ? Str::after($customer->peppol_id, ':') : null);
     }
 
     public function authorize(ActionRequest $request): bool

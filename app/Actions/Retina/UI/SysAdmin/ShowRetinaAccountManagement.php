@@ -12,7 +12,6 @@ use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
-use Illuminate\Support\Str;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -160,9 +159,9 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     'peppol_dic' => [
                                         'type'        => 'input',
                                         'hidden'      => !UpdateRetinaCustomer::needsPeppolDic($customer),
-                                        'label'       => __('DIČ for e-invoices'),
-                                        'information' => __('Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company.'),
-                                        'value'       => $customer->peppol_id ? Str::after($customer->peppol_id, ':') : null,
+                                        'label'       => __('DIČ'),
+                                        'information' => __('Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company. With a valid Slovak VAT number, the DIČ in it is used.'),
+                                        'value'       => UpdateRetinaCustomer::dicFor($customer),
                                     ],
                                 ]
                             ],

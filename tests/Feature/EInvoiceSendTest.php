@@ -319,20 +319,46 @@ test('Slovak business customers without a Peppol ID or a validated VAT number ar
     $this->invoice->update(['tax_number' => null, 'tax_number_valid' => null, 'identity_document_number' => '54018579']);
     $this->customer->address->update(['country_code' => 'SK']);
     $this->customer->taxNumber?->delete();
-    $this->customer->update(['company_name' => 'Obchod s.r.o.']);
+    $this->customer->update(['company_name' => 'Obchod s.r.o.', 'peppol_id' => null]);
+    $originalCountryId = $this->organisation->country_id;
+    $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')]);
     $customer = $this->customer->fresh();
 
     $listed = fn () => \App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId::make()->handle($this->organisation->fresh())->getCollection()->pluck('id');
     expect($listed())->toContain($customer->id)
-        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer))->toBeTrue();
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer))->toBeTrue()
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::lacksDicForEInvoices($customer))->toBeTrue();
 
     \App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::make()->handle($customer, ['peppol_dic' => '2121551498']);
 
     expect($customer->fresh()->peppol_id)->toBe('0245:2121551498')
-        ->and($listed())->not->toContain($customer->id);
+        ->and($listed())->not->toContain($customer->id)
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::lacksDicForEInvoices($customer->fresh()))->toBeFalse();
 
     expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_id' => '0245:2121551499']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_dic' => '2121551499']))
         ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_dic' => '2021 344 160']);
+    expect($customer->fresh()->peppol_id)->toBe('0245:2021344160')
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::dicFor($customer->fresh()))->toBe('2021344160');
+
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_dic' => '']);
+    expect($customer->fresh()->peppol_id)->toBeNull();
+
+    \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $customer->fresh(), modelData: ['number' => 'SK2021965990', 'country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')], strict: false);
+    $customer->fresh()->taxNumber->update(['valid' => true]);
+    $customer->update(['peppol_id' => '0245:2021344160']);
+    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::dicFor($customer->fresh()))->toBe('2021965990');
+
+    $customer->fresh()->taxNumber->delete();
+    $customer->update(['peppol_id' => '9930:DE123456789']);
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['peppol_dic' => '']);
+    expect($customer->fresh()->peppol_id)->toBe('9930:DE123456789');
+    $customer->update(['peppol_id' => null]);
+
+    $this->organisation->update(['country_id' => $originalCountryId]);
 });
 
 test('a transaction listed under another tag is never adopted as this invoice\'s', function () {

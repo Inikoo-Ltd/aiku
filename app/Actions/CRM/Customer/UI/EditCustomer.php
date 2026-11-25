@@ -13,6 +13,7 @@ use App\Models\HumanResources\Employee;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\OrgAction;
+use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
@@ -189,7 +190,14 @@ class EditCustomer extends OrgAction
             ]
         ];
 
-        if (Arr::get($customer->organisation->settings, 'e_invoicing.countries')) {
+        if (UpdateRetinaCustomer::needsPeppolDic($customer)) {
+            $identification['fields']['peppol_dic'] = [
+                'type'        => 'input',
+                'label'       => __('DIČ'),
+                'information' => __('10 digits, without SK. Peppol e-invoices go to it, so a wrong number sends them to another company. With a validated Slovak VAT number, the DIČ in it is used.'),
+                'value'       => UpdateRetinaCustomer::dicFor($customer),
+            ];
+        } elseif (Arr::get($customer->organisation->settings, 'e_invoicing.countries')) {
             $identification['fields']['peppol_id'] = [
                 'type'        => 'input',
                 'label'       => __('Peppol ID'),
