@@ -24,9 +24,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
-import { faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint } from "@fal"
+import { faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint, faArrowUp } from "@fal"
 
-library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink, faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint)
+library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink, faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint, faArrowUp)
 
 interface Hold {
     reason: string
@@ -108,6 +108,7 @@ interface Item {
     demand_skos: number | null
     loose_pieces: number
     suggested_quantity: number | null
+    whole_mixes: null | { mix_kg: number, pieces_per_mix: number, suggested_quantity: number | null, shared: boolean }
     update_route: null | { name: string, parameters: object }
     split_route: null | { name: string, parameters: object }
     delete_route: null | { name: string, parameters: object }
@@ -681,6 +682,15 @@ function receiveIntoStock() {
             <div v-if="item.update_route && item.suggested_quantity && item.suggested_quantity !== item.quantity" class="mt-2 text-sm text-amber-600">
                 {{ ctrans('Raised with a different batch size') }}: {{ item.demand_skos }} {{ ctrans('SKOs asked for') }} &rarr; {{ item.suggested_quantity }}
                 <button type="button" class="ml-2 font-medium underline" @click="saveQuantity(item, item.suggested_quantity)">{{ ctrans('Set to') }} {{ item.suggested_quantity }}</button>
+            </div>
+            <div v-else-if="item.whole_mixes?.suggested_quantity" class="mt-2 flex flex-wrap items-center gap-2 text-sm text-amber-600">
+                {{ ctrans(':quantity ordered, one :kg kg mix makes :pieces', { quantity: item.quantity, kg: item.whole_mixes.mix_kg, pieces: item.whole_mixes.pieces_per_mix }) }}
+                <Button type="tertiary" size="xs" :label="ctrans('Raise to :quantity', { quantity: item.whole_mixes.suggested_quantity })" @click="saveQuantity(item, item.whole_mixes.suggested_quantity)">
+                    <template #icon><FontAwesomeIcon icon="fal fa-arrow-up" class="text-amber-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
+            <div v-else-if="item.whole_mixes" class="mt-2 text-sm text-gray-500">
+                {{ ctrans('One :kg kg mix makes :pieces', { kg: item.whole_mixes.mix_kg, pieces: item.whole_mixes.pieces_per_mix }) }}<template v-if="item.whole_mixes.shared">, {{ ctrans('shared with other jobs') }}</template>
             </div>
             <div v-if="quantityErrors[item.id]" class="mt-1 text-right text-xs text-red-600">{{ quantityErrors[item.id] }}</div>
 

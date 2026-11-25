@@ -1192,9 +1192,10 @@ test('a mix with a batch size is asked and recorded in whole batches, rounded on
     expect($floorTask)->toMatchArray(['mix_batch_kg' => 50, 'quantity_required' => 94.1])
         ->and($floorTask['steps'][0])->toMatchArray(['unit' => 'kg', 'mix_batch_kg' => 50]);
 
-    $jobOrderMix = collect(get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $mixA->jobOrder->slug]))
-        ->viewData('page')['props']['items'])->first()['tasks'][0];
-    expect($jobOrderMix)->toMatchArray(['quantity_required' => 54.1, 'unit' => 'kg', 'mix_batch_kg' => 50]);
+    $jobOrderLine = collect(get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $mixA->jobOrder->slug]))
+        ->viewData('page')['props']['items'])->first();
+    expect($jobOrderLine['tasks'][0])->toMatchArray(['quantity_required' => 54.1, 'unit' => 'kg', 'mix_batch_kg' => 50])
+        ->and($jobOrderLine['whole_mixes'])->toBe(['mix_kg' => 50.0, 'pieces_per_mix' => 500, 'suggested_quantity' => null, 'shared' => true]);
 
     $session = StartManufactureTaskSession::make()->action($user, $mixA->refresh());
     expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 94.1]))->toThrow(ValidationException::class, 'whole batches of 50 kg');
