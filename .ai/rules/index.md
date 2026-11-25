@@ -9,6 +9,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/SupplyChain/AgentPayment/** | .ai/rules/agent-payment.md |
 | app/Actions/Dropshipping/Allegro/** | .ai/rules/allegro.md |
 | app/Actions/Dropshipping/Ankorstore/** | .ai/rules/ankorstore.md |
+| app/Actions/Dispatching/Shipment/ApiCalls/** | .ai/rules/api-calls.md |
 | apps/** | .ai/rules/apps.md |
 | app/Actions/Production/Artisan/** | .ai/rules/artisan.md |
 | config/blueprint/job_positions.php | .ai/rules/blueprint.md |

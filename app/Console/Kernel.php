@@ -16,6 +16,7 @@ use App\Actions\Accounting\Payment\CheckoutCom\SweepStuckCheckoutComPaymentApiPo
 use App\Actions\Catalogue\Shop\NotifyShopStockArrivals;
 use App\Actions\Catalogue\RebuildCatalogueRankings;
 use App\Actions\Dispatching\DeliveryNote\SweepStrandedDeliveryNotes;
+use App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint;
 use App\Actions\Dispatching\Shipment\ApiCalls\TrackGlsEsShipments;
 use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
 use App\Actions\Inventory\OrgStock\ApplyScheduledOrgStockStateChanges;
@@ -112,6 +113,7 @@ use App\Actions\Web\Website\SaveWebsitesSitemap;
 use App\Models\Comms\WhatsappOutbox;
 use App\Traits\LoggableSchedule;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -146,6 +148,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('currency:warm')->everyFourHours()->onOneServer()->withoutOverlapping(30);
         $schedule->command('currency:fill-today')->dailyAt('23:30')->timezone('UTC')->onOneServer()->withoutOverlapping(30);
         $schedule->command('cloudflare:reload')->daily()->onOneServer();
+        $schedule->command('packeta:refresh_pickup_points')->dailyAt('02:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->runInBackground();
+        $schedule->command('packeta:refresh_pickup_points')->hourlyAt(50)->when(fn () => !Cache::has(FindPacketaPickupPoint::CACHE_KEY))->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('repair:eu-tax-numbers')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();
         $schedule->command('epr:build-flow-lines')->dailyAt('03:15')->timezone('UTC')->onOneServer()->withoutOverlapping();

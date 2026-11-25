@@ -2791,6 +2791,122 @@ test('packeta refuses a pick-up point it cannot book instead of booking home del
         ->and($client->packetAttributes)->toBe([]);
 });
 
+function fakePacketaPickupPointFeeds(array $boxes, array $branches): void
+{
+    $filler = array_map(fn (int $id) => ['id' => (string) (900000 + $id), 'name' => "Z-BOX Filler $id", 'street' => "Filler $id", 'city' => 'Filler', 'zip' => '000 00', 'country' => 'hu', 'maxWeight' => '15'], range(1, 10000));
+    \Illuminate\Support\Facades\Http::fake([
+        'pickup-point.api.packeta.com/v5/*/box/json*'    => \Illuminate\Support\Facades\Http::response([...$boxes, ...$filler]),
+        'pickup-point.api.packeta.com/v5/*/branch/json*' => \Illuminate\Support\Facades\Http::response($branches),
+    ]);
+}
+
+function packetaPickupPointDeliveryNote(object $testCase, string $countryCode, array $address, array $noteAttributes = []): DeliveryNote
+{
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($testCase);
+    $country        = \App\Models\Helpers\Country::where('code', $countryCode)->firstOrFail();
+    \App\Actions\Dispatching\DeliveryNote\StoreDeliveryNoteAddress::make()->action($deliveryNote, ['address' => new Address(array_merge(Address::factory()->definition(), [
+        'address_line_2' => null,
+        'country_id'     => $country->id,
+        'country_code'   => $countryCode,
+    ], $address))]);
+    $deliveryNote->update(array_merge([
+        'is_cash_on_delivery' => false,
+        'parcels'             => [['weight' => 1.2, 'dimensions' => [30, 20, 10]]],
+        'shipping_notes'      => null,
+        'customer_notes'      => null,
+    ], $noteAttributes));
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test', 'api_key' => 'key'])]);
+    fakePacketaPickupPointFeeds([
+        ['id' => '34611', 'name' => 'Z-BOX Bratislava, Budatínska 24', 'street' => 'Budatínska 24', 'city' => 'Bratislava', 'zip' => '851 06', 'country' => 'sk', 'maxWeight' => '15'],
+        ['id' => '31693', 'name' => 'Z-BOX Banská Bystrica, Hronské predmestie 12', 'street' => 'Hronské predmestie 12', 'city' => 'Banská Bystrica', 'zip' => '974 01', 'country' => 'sk', 'maxWeight' => '15'],
+        ['id' => '38321', 'name' => 'Z-BOX Zlín, Vejvanovská 1394', 'street' => 'Vejvanovská 1394', 'city' => 'Zlín', 'zip' => '760 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '35338', 'name' => 'Z-BOX Mladá Boleslav, Jana Palacha 1297', 'street' => 'Jana Palacha 1297', 'city' => 'Mladá Boleslav', 'zip' => '293 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '50001', 'name' => 'Z-BOX Tábor, Husova 1 (Lidl)', 'street' => 'Husova 1', 'city' => 'Tábor', 'zip' => '390 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '50002', 'name' => 'Z-BOX Tábor, Husova 1 (Billa)', 'street' => 'Husova 1', 'city' => 'Tábor', 'zip' => '390 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '60001', 'name' => 'Z-BOX Kolín, Malá 3', 'street' => 'Malá 3', 'city' => 'Kolín', 'zip' => '280 02', 'country' => 'cz', 'maxWeight' => '5'],
+    ], [
+        ['id' => '155', 'name' => 'Praha 5, Plzeňská 10', 'street' => 'Plzeňská 10', 'city' => 'Praha', 'zip' => '150 00', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '14137', 'name' => 'Chrast, U Pošty 395', 'street' => 'U Pošty 395', 'city' => 'Chrast', 'zip' => '538 51', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '39124', 'name' => 'Mladá Boleslav, Jana Palacha 1297 (pasáž Trio, Traficon 121)', 'street' => 'Jana Palacha 1297', 'city' => 'Mladá Boleslav', 'zip' => '293 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '7943', 'name' => 'Cífer, Námestie Andreja Hlinku 33', 'street' => 'Námestie Andreja Hlinku 33', 'city' => 'Cífer', 'zip' => '919 43', 'country' => 'sk', 'maxWeight' => '15'],
+    ]);
+    \App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->refresh(new \App\Models\Dispatching\Shipper());
+
+    return $deliveryNote->refresh();
+}
+
+test('packeta sends the delivery to the Packeta point or Z-BOX written in the notes or the address', function (string $countryCode, array $address, array $noteAttributes, int $expectedPoint) {
+    $deliveryNote = packetaPickupPointDeliveryNote($this, $countryCode, $address, $noteAttributes);
+    $client       = fakePacketaSoapClient(false);
+    $action       = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote, new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('success')
+        ->and($client->packetAttributes['addressId'])->toBe($expectedPoint)
+        ->and($client->packetAttributes)->not->toHaveKey('carrierPickupPoint')
+        ->and($response['modelData']['delivery_type'])->toBe(\App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT)
+        ->and($response['modelData']['pickup_point_code'])->toBe((string) $expectedPoint);
+})->with([
+    'number in brackets'         => ['SK', ['address_line_1' => 'Hronské predmestie 12', 'locality' => 'Banská Bystrica', 'postal_code' => '974 01'], ['shipping_notes' => 'Banská Bystrica [31693], Hronské predmestie 12 - Z-BOX'], 31693],
+    'shopify packeta app note'   => ['CZ', ['address_line_1' => 'Vejvanovska 517', 'locality' => 'Zlin', 'postal_code' => '760 01'], ['customer_notes' => 'Výdejní místo Zásilkovny: Z-BOX Zlín, Vejvanovská 1394 (ID: 38321)'], 38321],
+    'number in the address'      => ['SK', ['address_line_1' => 'PACKETA ID 7943/ NALE TABAK, Námestie Andreja Hlinku 33', 'locality' => 'Cífer', 'postal_code' => '919 43'], [], 7943],
+    'point name and street only' => ['CZ', ['address_line_1' => 'Budovatelská 726', 'locality' => 'Chrast', 'postal_code' => '538 51'], ['shipping_notes' => 'Zásilkovna – Chrast, U Pošty 395'], 14137],
+    'full name picks the z-box'  => ['CZ', ['address_line_1' => 'Semice 156', 'locality' => 'Semice', 'postal_code' => '294 21'], ['shipping_notes' => 'Z-BOX Mladá Boleslav, Jana Palacha 1297'], 35338],
+    'number alone from staff'    => ['CZ', ['address_line_1' => 'Husova 8', 'locality' => 'Tábor', 'postal_code' => '390 01'], ['shipping_notes' => ' Z-BOX 50002 ', 'customer_notes' => 'Z-BOX Tábor, Husova 1'], 50002],
+]);
+
+test('packeta refuses a Packeta point it cannot be sure of or that cannot take the parcel', function (string $countryCode, array $address, array $noteAttributes, bool $listLoaded, string $expectedMessage) {
+    $deliveryNote = packetaPickupPointDeliveryNote($this, $countryCode, $address, $noteAttributes);
+    if (!$listLoaded) {
+        \Illuminate\Support\Facades\Cache::forget(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::CACHE_KEY);
+    }
+    $client = fakePacketaSoapClient(false);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote, new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain($expectedMessage)
+        ->and($client->packetAttributes)->toBe([]);
+})->with([
+    'two z-boxes fit the note' => ['CZ', ['address_line_1' => 'Husova 8', 'locality' => 'Tábor', 'postal_code' => '390 01'], ['shipping_notes' => 'Z-BOX Tábor, Husova 1'], true, 'more than one Packeta pickup point: 50001'],
+    'too heavy for the z-box'  => ['CZ', ['address_line_1' => 'Velká 1', 'locality' => 'Kolín', 'postal_code' => '280 02'], ['shipping_notes' => 'Z-BOX Kolín, Malá 3', 'parcels' => [['weight' => 8, 'dimensions' => [30, 20, 10]]]], true, 'takes at most 5 kg'],
+    'point not in the list'    => ['CZ', ['address_line_1' => 'Husova 8', 'locality' => 'Tábor', 'postal_code' => '390 01'], ['shipping_notes' => 'Z-BOX Tábor, Nádražní 9'], true, 'cannot find in the Packeta list'],
+    'postcode is not a point'  => ['CZ', ['address_line_1' => 'Vltavská 3', 'locality' => 'Praha', 'postal_code' => '155 00'], ['shipping_notes' => 'Z-BOX, 155 00 Praha 5'], true, 'cannot find in the Packeta list'],
+    'staff number of another country' => ['SK', ['address_line_1' => 'Hlavná 5', 'locality' => 'Bratislava', 'postal_code' => '811 01'], ['shipping_notes' => 'Z-BOX 38321'], true, 'cannot find in the Packeta list'],
+    'point list not loaded'    => ['SK', ['address_line_1' => 'Hronské predmestie 12', 'locality' => 'Banská Bystrica', 'postal_code' => '974 01'], ['shipping_notes' => 'Banská Bystrica [31693] - Z-BOX'], false, 'not loaded yet'],
+]);
+
+test('packeta books home delivery when the notes only name Packeta', function (string $countryCode, array $address, array $noteAttributes) {
+    $deliveryNote = packetaPickupPointDeliveryNote($this, $countryCode, $address, $noteAttributes);
+    $client       = fakePacketaSoapClient(false);
+    $action       = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote, new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('success')
+        ->and($client->packetAttributes['addressId'])->toBe($action->getAddressIdByCountryCode($countryCode, 1.2))
+        ->and($response['modelData'])->not->toHaveKey('pickup_point_code');
+})->with([
+    'home address is also a point'   => ['CZ', ['address_line_1' => 'Jana Palacha 1297', 'locality' => 'Mladá Boleslav', 'postal_code' => '293 01'], ['shipping_notes' => 'poslat přes Packeta na adresu']],
+    'order number next to packeta'   => ['SK', ['address_line_1' => 'Hlavná 5', 'locality' => 'Bratislava', 'postal_code' => '811 01'], ['shipping_notes' => 'poslať cez Packeta, order ID 34611']],
+    'zasilkovna home delivery'       => ['CZ', ['address_line_1' => 'Husova 8', 'locality' => 'Tábor', 'postal_code' => '390 01'], ['shipping_notes' => 'Doprava: Zásilkovna – doručení na adresu']],
+]);
+
+test('the Packeta point list is kept when Packeta sends too few points', function () {
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test', 'api_key' => 'key'])]);
+    \Illuminate\Support\Facades\Cache::put(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::CACHE_KEY, ['1' => ['id' => '1']]);
+    \Illuminate\Support\Facades\Http::fake(['pickup-point.api.packeta.com/*' => \Illuminate\Support\Facades\Http::response([['id' => '2', 'name' => 'Z-BOX X', 'street' => 'X 1', 'city' => 'X', 'country' => 'cz']])]);
+
+    expect(fn () => \App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->refresh(new \App\Models\Dispatching\Shipper()))->toThrow(\RuntimeException::class)
+        ->and(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->getPoints())->toBe(['1' => ['id' => '1']]);
+});
+
 test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->customer->update(['email' => 'dropshipper@example.com']);

@@ -99,16 +99,36 @@ class CallApiPacketaShipping extends OrgAction
             $parent->shipping_notes,
             $parent->customer_notes,
         ]);
-        if (!$isBoxNow && !$lockerCode && $parent instanceof DeliveryNote && GetShipmentDeliveryType::run($parent)['delivery_type'] === ShipmentDeliveryTypeEnum::PICKUP_POINT) {
+        $packetaPoint = null;
+        if (!$isBoxNow && !$lockerCode) {
+            $packetaPointSearch = FindPacketaPickupPoint::run($countryCode, [
+                Arr::get($parentResource, 'to_company_name'),
+                Arr::get($parentResource, 'to_address.address_line_1'),
+                Arr::get($parentResource, 'to_address.address_line_2'),
+                Arr::get($parentResource, 'to_address.locality'),
+            ], [
+                $parent->shipping_notes,
+                $parent->customer_notes,
+            ]);
+            $packetaPoint = $packetaPointSearch['point'];
+            if ($refusal = $this->refusePacketaPoint($packetaPointSearch, $weight)) {
+                return [
+                    'status'    => 'fail',
+                    'errorData' => ['message' => $refusal],
+                    'modelData' => [],
+                ];
+            }
+        }
+        if (!$isBoxNow && !$lockerCode && !$packetaPoint && $parent instanceof DeliveryNote && GetShipmentDeliveryType::run($parent)['delivery_type'] === ShipmentDeliveryTypeEnum::PICKUP_POINT) {
             return [
                 'status'    => 'fail',
                 'errorData' => [
-                    'message' => 'This delivery goes to a pick-up point that Packeta cannot book automatically (only Polish InPost parcel lockers under 15 kg are supported). Book it manually with the pick-up point.',
+                    'message' => 'This delivery goes to a pick-up point that Packeta cannot book automatically (Packeta points and Z-BOXes, and Polish InPost parcel lockers under 15 kg are supported). Book it manually with the pick-up point, or write the Packeta point number in the shipping notes (e.g. Z-BOX 31693).',
                 ],
                 'modelData' => [],
             ];
         }
-        $addressId   = $lockerCode ? self::PL_INPOST_PACZKOMATY_BOX : $this->getAddressIdByCountryCode($countryCode, $weight);
+        $addressId   = $lockerCode ? self::PL_INPOST_PACZKOMATY_BOX : ($packetaPoint ? (int) $packetaPoint['id'] : $this->getAddressIdByCountryCode($countryCode, $weight));
         if (is_null($addressId)) {
             return [
                 'status'    => 'fail',
@@ -190,9 +210,9 @@ class CallApiPacketaShipping extends OrgAction
 
             $modelData['tracking'] = $apiResponse->id;
 
-            if ($lockerCode) {
+            if ($lockerCode || $packetaPoint) {
                 $modelData['delivery_type']     = ShipmentDeliveryTypeEnum::PICKUP_POINT;
-                $modelData['pickup_point_code'] = $lockerCode;
+                $modelData['pickup_point_code'] = $lockerCode ?: $packetaPoint['id'];
             }
         } catch (SoapFault $e) {
             $status = 'fail';
@@ -204,6 +224,10 @@ class CallApiPacketaShipping extends OrgAction
                 }
 
                 foreach ($faults as $fault) {
+                    if ($fault->name === 'addressId' && $packetaPoint) {
+                        $errorData['others'] = "Packeta does not take parcels for pickup point {$packetaPoint['id']} {$packetaPoint['name']} now ($fault->fault). Write the number of another point in the shipping notes (e.g. Z-BOX 31693), or book it manually.";
+                        continue;
+                    }
                     if (in_array($fault->name, ['eshop', 'eshop_id'])) {
                         $errorData['sender'] = 'Sender "'.$packetAttributes['eshop'].'" was not found in Packeta or does not match the Indication of any sender in the Packeta client portal.';
                         continue;
@@ -255,6 +279,31 @@ class CallApiPacketaShipping extends OrgAction
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
+    }
+
+    /**
+     * @param  array{mentioned: bool, point: array<string, mixed>|null, candidates: array<int, array<string, mixed>>, unavailable: bool, asks_for_point: bool}  $search
+     */
+    public function refusePacketaPoint(array $search, float $weight): ?string
+    {
+        $point = $search['point'];
+        if ($point && $point['max_weight'] && $weight > $point['max_weight']) {
+            return "The parcel weighs $weight kg and Packeta pickup point {$point['id']} {$point['name']} takes at most {$point['max_weight']} kg. Ask the customer for home delivery or another point.";
+        }
+
+        if (!$point && $search['candidates']) {
+            return 'The notes fit more than one Packeta pickup point: '.collect($search['candidates'])->map(fn (array $candidate) => $candidate['id'].' '.$candidate['name'])->implode('; ').'. Write the number of the one the customer chose in the shipping notes (e.g. Z-BOX 31693).';
+        }
+
+        if (!$point && $search['unavailable'] && $search['asks_for_point']) {
+            return 'The notes mention a Packeta pickup point but the list of Packeta points is not loaded yet, so it cannot be checked. Try again later or book it manually.';
+        }
+
+        if (!$point && $search['asks_for_point']) {
+            return 'The notes ask for a Packeta pickup point or Z-BOX that aiku cannot find in the Packeta list. Write its number in the shipping notes (e.g. Z-BOX 31693), or book it manually.';
+        }
+
+        return null;
     }
 
     public function soapClient(string $url): SoapClient
