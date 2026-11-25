@@ -139,9 +139,9 @@ const makeInvoice = () =>
 const confirmRemakeInvoice = () =>
 	confirm.require({
 		group: "stock-delivery",
-		message: ctrans("The goods lines are taken again from the container as it stands now. The invoice number is kept, and the charges follow your ledger."),
-		header: ctrans("Make the invoice again?"),
-		acceptLabel: ctrans("Make again"),
+		message: ctrans("No new invoice is made. This invoice keeps its number, takes the goods lines again from the container as it stands now, and is dated today. The charges follow your ledger and payments already recorded stay."),
+		header: ctrans("Recalculate this invoice from the container?"),
+		acceptLabel: ctrans("Recalculate invoice"),
 		rejectLabel: ctrans("Cancel"),
 		accept: makeInvoice,
 	})
@@ -163,7 +163,7 @@ const deposits = computed(() => props.data.invoice?.advance_payments.filter(paym
 					<FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" />
 					{{ ctrans("Download PDF") }}
 				</a>
-				<Button v-if="data.is_open" type="tertiary" size="xs" :label="ctrans('Make again from the container')" :loading="invoiceLoading" @click="confirmRemakeInvoice" />
+				<Button v-if="data.is_open" type="tertiary" size="xs" :label="ctrans('Recalculate from the container')" :loading="invoiceLoading" @click="confirmRemakeInvoice" />
 			</div>
 		</div>
 
