@@ -38,6 +38,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Enums/Comms/Outbox/** | .ai/rules/outbox.md |
 | app/Actions/Dispatching/PartnerShipment/** | .ai/rules/partner-shipment.md |
 | app/Actions/Procurement/PartnerShoppingListItem/**, app/Actions/Procurement/OrgPartner/** | .ai/rules/partner-shopping-list-item.md |
+| app/Actions/Retina/Dropshipping/Portfolio/ZentradaWebApi.php | .ai/rules/portfolio.md |
 | resources/js/Components/Procurement/** | .ai/rules/procurement.md |
 | app/Actions/Goods/ProductDevelopment/** | .ai/rules/product-development.md |
 | app/Actions/Production/** | .ai/rules/production.md |
