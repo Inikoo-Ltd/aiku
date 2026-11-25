@@ -49,7 +49,7 @@ async function startEditing() {
         const response = await axios.get(route("grp.json.suppliers.relationship_contact_options"), { params: { suppliers: [props.data.supplier_id] } })
         options.value = response.data.options
     } catch (exception: any) {
-        error.value = exception?.response?.data?.message ?? ctrans("Failed to load the contacts")
+        error.value = exception?.response?.data?.message || ctrans("Failed to load the contacts")
     } finally {
         isLoading.value = false
     }
@@ -70,7 +70,7 @@ async function save(relationshipContactUserId: number | null) {
         isEditing.value = false
         router.reload({ only: ["showcase"] })
     } catch (exception: any) {
-        error.value = exception?.response?.data?.message ?? ctrans("Failed to set the relationship contact")
+        error.value = exception?.response?.data?.message || ctrans("Failed to set the relationship contact")
     } finally {
         isSaving.value = false
     }

@@ -36,6 +36,7 @@ class KeepAgentStaffInTheirOrganisation
         'grp.json.org-supplier.',
         'grp.json.org_supplier_products.',
         'grp.json.org_suppliers.',
+        'grp.json.suppliers.relationship_contact_options',
         'grp.json.purchase_order.reference_availability',
         'grp.json.purchase_order.open_agent_containers',
         'grp.json.crm_return_badge',
