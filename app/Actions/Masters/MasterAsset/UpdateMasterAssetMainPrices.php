@@ -12,6 +12,7 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,7 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Saves the price and RRP of a master product in its main currencies only. Every other currency of the
  * master shop follows its main currency by the shop exchange rate and rounding, unless it was set by
- * hand, which is left alone, the same way the master prices tool saves.
+ * hand, which is left alone, the same way the master prices tool saves. The RRP per unit can also be
+ * copied to other single-stock master products selling the same stock, in the main currencies they share.
  */
 class UpdateMasterAssetMainPrices extends OrgAction
 {
@@ -43,7 +45,53 @@ class UpdateMasterAssetMainPrices extends OrgAction
             return $masterAsset;
         }
 
-        return UpdateMasterAssetPrices::make()->action($masterAsset, $payload);
+        $masterAsset = UpdateMasterAssetPrices::make()->action($masterAsset, $payload);
+
+        $copiedRrps = array_filter($modelData['master_rrps'] ?? [], fn ($value) => $value !== null);
+        if ($copiedRrps && !empty($modelData['copy_rrps_to'])) {
+            $this->copyRrpsPerUnit($masterAsset, $copiedRrps, $modelData['copy_rrps_to']);
+        }
+
+        return $masterAsset;
+    }
+
+    /**
+     * @param  array<string, float|int|string>  $rrps  RRP per outer of the saved master product by main currency code
+     * @param  array<int, int>  $masterAssetIds
+     */
+    private function copyRrpsPerUnit(MasterAsset $masterAsset, array $rrps, array $masterAssetIds): void
+    {
+        $units    = (float) $masterAsset->units ?: 1;
+        $stockIds = $masterAsset->stocks()->pluck('stocks.id');
+
+        if ($stockIds->count() !== 1) {
+            return;
+        }
+
+        MasterAsset::query()
+            ->whereIn('id', $masterAssetIds)
+            ->where('id', '!=', $masterAsset->id)
+            ->where('group_id', $masterAsset->group_id)
+            ->whereHas('stocks', fn (Builder $query) => $query->whereIn('stocks.id', $stockIds))
+            ->has('stocks', '=', 1)
+            ->with('masterShop')
+            ->get()
+            ->each(function (MasterAsset $otherMasterAsset) use ($rrps, $units) {
+                $otherMainCurrencies = collect($otherMasterAsset->masterShop?->price_exchanges ?? [])
+                    ->filter(fn (array $exchange) => $exchange['is_major'] ?? false)
+                    ->keys()
+                    ->all();
+                $otherUnits = (float) $otherMasterAsset->units ?: 1;
+
+                $otherRrps = collect($rrps)
+                    ->only($otherMainCurrencies)
+                    ->map(fn ($rrp) => round((float) $rrp / $units * $otherUnits, 2))
+                    ->all();
+
+                if ($otherRrps) {
+                    $this->handle($otherMasterAsset, ['master_rrps' => $otherRrps]);
+                }
+            });
     }
 
     /**
@@ -82,6 +130,8 @@ class UpdateMasterAssetMainPrices extends OrgAction
             'master_prices.*' => ['nullable', 'numeric', 'gt:0'],
             'master_rrps'     => ['sometimes', 'array'],
             'master_rrps.*'   => ['nullable', 'numeric', 'gt:0'],
+            'copy_rrps_to'    => ['sometimes', 'array'],
+            'copy_rrps_to.*'  => ['integer'],
         ];
     }
 

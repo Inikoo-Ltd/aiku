@@ -17,6 +17,7 @@ import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube, 
 import { faStar } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -109,6 +110,7 @@ const masterForms = reactive<Record<number, { prices: Record<string, number | nu
 const savingMasterId = ref<number | null>(null)
 const masterErrors = reactive<Record<number, string | null>>({})
 const savedMasterId = ref<number | null>(null)
+const copyRrps = reactive<Record<number, boolean>>({})
 
 function rrpsPerUnit(masterProduct: MasterProduct): Record<string, number | null> {
     const units = masterProduct.units || 1
@@ -308,8 +310,43 @@ function marginTooltip(masterProduct: MasterProduct, currency: string): string {
     return `${formula}: ${ctrans("(:price − :cost) ÷ :price", { price: money(currency, price), cost: money(currency, cost * exchange) })}`
 }
 
+interface RrpCopy {
+    masterProduct: MasterProduct
+    currencies: string[]
+}
+
+function changedRrpCurrencies(masterProduct: MasterProduct): string[] {
+    const form = masterForms[masterProduct.id]
+    const savedRrps = rrpsPerUnit(masterProduct)
+
+    return masterProduct.main_currencies.filter((currency) => form?.rrps[currency] && form.rrps[currency] !== savedRrps[currency])
+}
+
+function rrpCopies(masterProduct: MasterProduct): RrpCopy[] {
+    if (!data.value?.can_edit_master_prices || masterProduct.stocks_in_product > 1) {
+        return []
+    }
+
+    const changedCurrencies = changedRrpCurrencies(masterProduct)
+
+    return data.value.master_products
+        .filter((other) => other.id !== masterProduct.id && other.stocks_in_product <= 1)
+        .map((other) => ({ masterProduct: other, currencies: changedCurrencies.filter((currency) => other.main_currencies.includes(currency)) }))
+        .filter((copy) => copy.currencies.length)
+}
+
+function copiedRrpPerUnit(masterProduct: MasterProduct, currency: string): number | null {
+    for (const source of data.value?.master_products ?? []) {
+        if (copyRrps[source.id] && rrpCopies(source).some((copy) => copy.masterProduct.id === masterProduct.id && copy.currencies.includes(currency))) {
+            return masterForms[source.id].rrps[currency] ?? null
+        }
+    }
+
+    return null
+}
+
 function rrpPerOuter(masterProduct: MasterProduct, currency: string): number | null {
-    const rrpPerUnit = masterForms[masterProduct.id]?.rrps[currency]
+    const rrpPerUnit = copiedRrpPerUnit(masterProduct, currency) ?? masterForms[masterProduct.id]?.rrps[currency]
 
     return rrpPerUnit ? rrpPerUnit * (masterProduct.units || 1) : null
 }
@@ -362,12 +399,14 @@ function saveMaster(masterProduct: MasterProduct): void {
         {
             master_prices: changedValues(form.prices, masterProduct.prices),
             master_rrps: rrpsPerOuter(changedValues(form.rrps, rrpsPerUnit(masterProduct)), masterProduct.units),
+            copy_rrps_to: copyRrps[masterProduct.id] ? rrpCopies(masterProduct).map((copy) => copy.masterProduct.id) : [],
         },
         {
             preserveState: true,
             preserveScroll: true,
             only: props.reloadProps,
             onSuccess: async () => {
+                copyRrps[masterProduct.id] = false
                 await fetchData()
                 savedMasterId.value = masterProduct.id
             },
@@ -602,6 +641,25 @@ function saveMaster(masterProduct: MasterProduct): void {
                             </tr>
                             </template>
                         </tbody>
+                        <tfoot v-if="rrpCopies(masterProduct).length">
+                            <tr>
+                                <td colspan="3" />
+                                <td colspan="2" class="pt-1">
+                                    <label class="flex w-full cursor-pointer items-start gap-2 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-1.5 text-xs text-gray-700">
+                                        <Checkbox v-model="copyRrps[masterProduct.id]" binary size="small" class="mt-0.5" />
+                                        <span class="space-y-0.5">
+                                            <span class="block">{{ ctrans("Also set the same RRP per unit on") }}</span>
+                                            <span v-for="copy in rrpCopies(masterProduct)" :key="copy.masterProduct.id" class="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                                <span class="whitespace-nowrap font-semibold">{{ copy.masterProduct.master_shop?.toUpperCase() }} {{ copy.masterProduct.code }}</span>
+                                                <span v-for="currency in copy.currencies" :key="currency" class="whitespace-nowrap text-gray-600">
+                                                    {{ ctrans(":old → :new", { old: money(currency, rrpsPerUnit(copy.masterProduct)[currency] ?? null), new: money(currency, masterForms[masterProduct.id].rrps[currency] ?? null) }) }}
+                                                </span>
+                                            </span>
+                                        </span>
+                                    </label>
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
 
                     <div v-if="data.can_edit_master_prices" class="flex flex-wrap items-center gap-2">
@@ -612,19 +670,21 @@ function saveMaster(masterProduct: MasterProduct): void {
                             <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                             {{ ctrans("Saved, shops following the master pick it up in the next minutes") }}
                         </span>
-                        <Button
-                            type="tertiary"
-                            size="xs"
-                            class="ml-auto"
-                            :label="ctrans('Save price and RRP')"
-                            :loading="savingMasterId === masterProduct.id"
-                            :disabled="!isMasterChanged(masterProduct) || savingMasterId !== null"
-                            @click="saveMaster(masterProduct)"
-                        >
-                            <template #icon>
-                                <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-                            </template>
-                        </Button>
+                        <span class="relative ml-auto">
+                            <Button
+                                type="tertiary"
+                                size="xs"
+                                :label="ctrans('Save price and RRP')"
+                                :loading="savingMasterId === masterProduct.id"
+                                :disabled="!isMasterChanged(masterProduct) || savingMasterId !== null"
+                                @click="saveMaster(masterProduct)"
+                            >
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <PingIcon v-if="isMasterChanged(masterProduct) && savingMasterId !== masterProduct.id" class="pointer-events-none !absolute -right-0.5 -top-0.5 text-[7px] text-orange-500" aria-hidden="true" />
+                        </span>
                     </div>
                     <p v-if="masterErrors[masterProduct.id]" class="text-xs text-red-600">{{ masterErrors[masterProduct.id] }}</p>
                 </div>
