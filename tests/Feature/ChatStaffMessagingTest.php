@@ -2025,3 +2025,41 @@ test('Slack channels are read in the staff chat by linked staff only: the list, 
         ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channels', []));
     actingAs($stranger)->get(route('grp.chat.staff.slack.show', $channel->id))->assertForbidden();
 });
+
+test('Verba lives at /vx, /chat/staff redirects there permanently keeping the path and query, and the menus are Channels, DM, Reports, INI-559', function () {
+    expect(route('grp.chat.staff.index', [], false))->toBe('/vx')
+        ->and(route('grp.chat.staff.slack.index', [], false))->toBe('/vx/slack');
+
+    actingAs($this->user)->get(route('grp.chat.staff.index'))->assertOk();
+
+    $ulid = (string) Str::ulid();
+    $base = route('grp.chat.staff.index');
+    actingAs($this->user)->get(str_replace('/vx', '/chat/staff', $base).'/c/'.$ulid.'?x=1')->assertStatus(301)->assertRedirect($base.'/c/'.$ulid.'?x=1');
+    actingAs($this->user)->get(str_replace('/vx', '/chat/staff', $base))->assertStatus(301)->assertRedirect($base);
+
+    $navigation = App\Actions\UI\Grp\Layout\GetGroupNavigation::make()->handle($this->user);
+    $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
+    $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
+
+    expect($verba)->toBe(['V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
+        ->and($chat)->not->toContain(__('Verba'));
+});
+
+test('a named group is a Verbration: it is never merged into the DM with the same person, lives on its own tab, and its plain link moves there', function () {
+    $other = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    $dm    = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$other->id]]);
+
+    $response = actingAs($this->user)->postJson(route('grp.chat.staff.conversations.store'), ['user_ids' => [$other->id], 'name' => 'Buying team'])->assertSuccessful();
+    $group    = \App\Models\Chat\StaffConversation::where('ulid', $response->json('data.ulid'))->firstOrFail();
+
+    expect($group->id)->not->toBe($dm->id)
+        ->and($group->type)->toBe('group')
+        ->and($group->isVerbration())->toBeTrue()
+        ->and($dm->isVerbration())->toBeFalse()
+        ->and($group->participants()->pluck('users.id')->sort()->values()->all())->toBe(collect([$this->user->id, $other->id])->sort()->values()->all());
+
+    actingAs($this->user)->get(route('grp.chat.staff.groups.index'))->assertOk();
+    actingAs($this->user)->get(route('grp.chat.staff.show', $group->ulid))->assertRedirect(route('grp.chat.staff.groups.show', $group->ulid));
+    actingAs($this->user)->get(route('grp.chat.staff.groups.show', $group->ulid))->assertOk();
+    actingAs($this->user)->get(route('grp.chat.staff.groups.show', $dm->ulid))->assertRedirect(route('grp.chat.staff.show', $dm->ulid));
+});

@@ -264,6 +264,14 @@ Route::middleware(
         ->name("chat.")
         ->group(__DIR__."/chat.php");
 
+    Route::get("chat/staff/{path?}", \App\Actions\Chat\Staff\UI\RedirectLegacyStaffChat::class)
+        ->where("path", ".*")
+        ->name("chat.staff.legacy");
+
+    Route::prefix("vx")
+        ->name("chat.")
+        ->group(__DIR__."/verba.php");
+
     Route::prefix("tickets")
         ->name("tickets.")
         ->group(__DIR__."/tickets.php");

@@ -4,17 +4,23 @@ import { useLayoutStore } from "@/Stores/layout";
 import { capitalize } from "@/Composables/capitalize";
 import { ctrans } from "@/Composables/useTrans";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import { faClock as falClock, faPencil as falPencil } from "@fal";
+import { faClock as falClock, faPencil as falPencil, faDrawSquare, faTvRetro } from "@fal";
 import { faDotCircle } from "@fas";
 import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog } from "@fal";
 import { faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank } from "@fal";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { library, type IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog, faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank);
+const faSquareCompass = {
+    prefix: "fac",
+    iconName: "square-compass",
+    icon: [512, 512, [], "", "M256 30L420 470L380 470L256 120L132 470L92 470Z M20 250L80 250L256 426L432 250L492 250L256 486Z M212 248Q256 192 300 248Q256 304 212 248Z M230 248Q256 268 282 248Q256 228 230 248Z M243 248a13 13 0 1 0 26 0a13 13 0 1 0 -26 0Z"],
+} as unknown as IconDefinition
+
+library.add(faSquareCompass, faTvRetro, falClock, falPencil, faDrawSquare, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog, faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank);
 
 const layoutStore = useLayoutStore();
 
@@ -105,7 +111,7 @@ const getTooltip = (subSection: SubSection) => {
             </FontAwesomeLayers>
             <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-5 lg:h-3.5 w-auto group-hover:opacity-100 opacity-70" aria-hidden="true" />
             <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-5 lg:h-3.5" aria-hidden="true" />
-            <span v-if="subSection.label" class="hidden lg:inline whitespace-nowrap">{{ subSection.label }}</span>
+            <span v-if="subSection.label" class="hidden lg:inline whitespace-nowrap">{{ subSection.label }}<span v-if="subSection.note" class="ml-1 text-xs text-gray-400">{{ subSection.note }}<FontAwesomeIcon v-if="subSection.noteIcon" :icon="subSection.noteIcon" class="ml-1" aria-hidden="true" /></span></span>
             <span v-if="badgeCount(subSection) > 0" class="absolute top-1.5 right-1.5">
                 <PingIcon v-tooltip="ctrans(':count waiting', { count: badgeCount(subSection) })" class="text-[7px] text-amber-500 self-start" aria-hidden="true" />
             </span>

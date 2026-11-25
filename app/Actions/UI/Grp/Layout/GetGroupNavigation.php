@@ -366,8 +366,10 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label'   => __('Channels'),
-                        'tooltip' => __('Channels'),
+                        'label'   => 'V·Desks',
+                        'note'     => __('Public channels'),
+                        'noteIcon' => ['fal', 'fa-tv-retro'],
+                        'tooltip' => 'V·Desks',
                         'icon'    => ['fal', 'fa-hashtag'],
                         'root'    => 'grp.chat.staff.slack.',
                         'route'   => [
@@ -375,8 +377,20 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label'   => __('DM'),
-                        'tooltip' => __('Direct messages and group chats'),
+                        'label'   => 'Verbrations',
+                        'note'     => __('Private groups'),
+                        'noteIcon' => ['fac', 'square-compass'],
+                        'tooltip' => __('Verbrations: private groups, only the people invited see them'),
+                        'icon'    => ['fal', 'fa-draw-square'],
+                        'root'    => 'grp.chat.staff.groups.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.groups.index',
+                        ],
+                    ],
+                    [
+                        'label'   => 'V·Ds',
+                        'note'    => __('Direct messages'),
+                        'tooltip' => __('Verba directs: direct messages and group chats'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
                         'roots'   => ['grp.chat.staff.show'],
@@ -385,8 +399,8 @@ class GetGroupNavigation
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
-                        'label'   => __('Reports'),
-                        'tooltip' => __('Reports'),
+                        'label'   => __('Stats'),
+                        'tooltip' => __('Verba stats: messages, calls and people'),
                         'icon'    => ['fal', 'fa-chart-line'],
                         'root'    => 'grp.chat.staff.reports',
                         'route'   => [

@@ -27,7 +27,7 @@ class StoreStaffConversation
     public function handle(User $creator, array $modelData): StaffConversation
     {
         $userIds = array_values(array_unique(array_merge([$creator->id], $modelData['user_ids'])));
-        $isDm    = count($userIds) === 2 && empty($modelData['context_type']);
+        $isDm    = count($userIds) === 2 && empty($modelData['context_type']) && empty($modelData['name']);
 
         $dmKey = $isDm ? StaffConversation::dmKey($userIds) : null;
 

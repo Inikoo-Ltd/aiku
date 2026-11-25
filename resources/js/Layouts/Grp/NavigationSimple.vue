@@ -73,8 +73,8 @@ onUnmounted(() => {
 		@finish="() => (isLoading = false)"
 		:aria-current="navKey === layout.currentModule ? 'page' : undefined"
 		v-tooltip="{
-			content: capitalize(nav.tooltip),
-			delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
+			content: layout.leftSidebar.show ? '' : capitalize(nav.tooltip),
+			delay: { show: 100, hide: 100 },
 		}">
 		<LoadingIcon v-if="isLoading" class="flex-shrink-0 h-4 w-4" />
 		<FontAwesomeIcon

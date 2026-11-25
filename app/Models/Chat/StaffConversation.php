@@ -161,6 +161,14 @@ class StaffConversation extends Model
     }
 
     /**
+     * A named group about no record: a private group that only the people invited see, shown on its own Verba tab.
+     */
+    public function isVerbration(): bool
+    {
+        return $this->type === 'group' && $this->context_type === null && filled($this->name);
+    }
+
+    /**
      * Supervisors read and write in any task thread without joining it, so they are not notified unless they subscribe.
      */
     public function canBeAccessedBy(User $user): bool

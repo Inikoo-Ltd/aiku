@@ -9,7 +9,7 @@ import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
@@ -18,9 +18,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 
-library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard)
+library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare)
 
 const layout = inject("layout", layoutStructure)
 
@@ -107,7 +106,7 @@ const allBottomLinks = computed(() => [
     isEngineer.value ? devopsLink.value : tasksLink.value,
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring", problems: 0 },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt", problems: 0 },
-    { route: "grp.chat.staff.index", parameters: {}, root: "grp.chat.staff.", label: ctrans("Verba"), tooltip: ctrans("Verba: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
+    { route: "grp.chat.staff.index", parameters: {}, root: "grp.chat.staff.", label: "V·X", tooltip: ctrans("V·X: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
 ])
 
 const loadingRoute = ref<string | null>(null)
@@ -174,13 +173,13 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
                     class="relative w-full group flex items-center px-2 text-sm gap-x-2"
                     :class="isNavigationActive(layout.currentRoute, link.root) && !(link.icon !== 'desk' && isNavigationActive(layout.currentRoute, 'grp.chat.staff.')) ? 'navigationActive' : 'navigation'"
                     v-tooltip="{
-						content: link.tooltip,
-						delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 },
+						content: layout.leftSidebar.show ? '' : link.label,
+						delay: { show: 100, hide: 100 },
 					}"
                     @start="() => (loadingRoute = link.route)"
                     @finish="() => (loadingRoute = null)">
                     <LoadingIcon v-if="loadingRoute === link.route" class="flex-shrink-0 h-4 w-4" />
-                    <DeskIcon v-else-if="link.icon === 'desk'" class="flex-shrink-0 h-4 w-4" />
+                    <FontAwesomeIcon v-else-if="link.icon === 'desk'" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width icon="fal fa-draw-square" />
                     <FontAwesomeIcon
                         v-else
                         aria-hidden="true"
@@ -198,7 +197,8 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
 									? 'truncate block md:block'
 									: 'block md:hidden',
 							]">
-							{{ link.label }}
+							<span v-if="link.icon === 'desk'" class="inline-flex items-baseline font-semibold"><span>V</span><span class="-mx-[0.2em] relative z-10">·</span><span>X</span></span>
+                            <template v-else>{{ link.label }}</template>
 						</span>
                         <span v-else class="leading-none whitespace-nowrap block md:hidden">
 							{{ link.label }}

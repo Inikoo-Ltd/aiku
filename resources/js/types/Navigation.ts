@@ -12,6 +12,8 @@ export interface DropdownLink {
 
 export interface SubSection {
     label: string | null
+    note?: string
+    noteIcon?: string | string[]
     icon?: string | string[]
     tooltip?: string
     root: string
