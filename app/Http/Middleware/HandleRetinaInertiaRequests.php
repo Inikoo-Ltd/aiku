@@ -134,6 +134,7 @@ class HandleRetinaInertiaRequests extends Middleware
                             ->exists(),
                 ],
                 'iris'        => array_merge($this->getIrisData($website), [
+                    'own_cookie_banner' => (bool) Arr::get($website->settings, 'own_cookie_banner', false),
                     'google' => [
                         'client_id' => config('services.google.client_id'),
                     ],
