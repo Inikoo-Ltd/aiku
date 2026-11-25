@@ -85,7 +85,7 @@ class PurchaseOrderHydrateDeliveryState implements ShouldBeUnique
 
         $lines = $purchaseOrder->purchaseOrderTransactions()
             ->whereNotIn('state', [PurchaseOrderTransactionStateEnum::CANCELLED, PurchaseOrderTransactionStateEnum::NOT_RECEIVED])
-            ->select('purchase_order_transactions.id', 'purchase_order_transactions.quantity_ordered', 'purchase_order_transactions.delivery_state')
+            ->select('purchase_order_transactions.id', 'purchase_order_transactions.state', 'purchase_order_transactions.quantity_ordered', 'purchase_order_transactions.quantity_kept_at_agent', 'purchase_order_transactions.delivery_state')
             ->selectRaw('('.$quantityOnDelivery->toSql().') as quantity_on_delivery', $quantityOnDelivery->getBindings())
             ->selectRaw('('.$itemStates->toSql().') as item_states', $itemStates->getBindings())
             ->get();
@@ -134,7 +134,7 @@ class PurchaseOrderHydrateDeliveryState implements ShouldBeUnique
 
     private function lineState(PurchaseOrderTransaction $line): ?PurchaseOrderTransactionDeliveryStateEnum
     {
-        if ((float) $line->quantity_ordered - (float) $line->getAttribute('quantity_on_delivery') > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE) {
+        if ((float) $line->quantity_ordered - (float) $line->getAttribute('quantity_on_delivery') - (float) $line->quantity_kept_at_agent > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE) {
             return PurchaseOrderTransactionDeliveryStateEnum::IN_PROCESS;
         }
 
@@ -148,6 +148,11 @@ class PurchaseOrderHydrateDeliveryState implements ShouldBeUnique
 
             return max(self::STOCK_DELIVERY_STATE_RANKS[$itemState] ?? 0, self::STOCK_DELIVERY_STATE_RANKS[$deliveryState] ?? 0);
         }, $itemStates);
+
+        if ((float) $line->quantity_kept_at_agent > 0 && $line->state === PurchaseOrderTransactionStateEnum::SETTLED) {
+            $arrivedRanks = array_filter($ranks, fn (int $rank) => $rank >= self::STOCK_DELIVERY_STATE_RANKS['received']);
+            $ranks        = $arrivedRanks ?: $ranks;
+        }
 
         return self::PROGRESSION[min($ranks)];
     }

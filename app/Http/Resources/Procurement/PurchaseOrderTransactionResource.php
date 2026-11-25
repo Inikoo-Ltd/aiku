@@ -13,6 +13,8 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\KeepPurchaseOrderTransactionAtAgent;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoKeepPurchaseOrderTransactionAtAgent;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoCancelPurchaseOrderTransaction;
@@ -301,19 +303,30 @@ class PurchaseOrderTransactionResource extends JsonResource
 
         $packable = (float) $transaction->getAttribute('quantity_packable');
         $packed   = (float) $transaction->getAttribute('quantity_packed');
-        $awaiting = max(0, (float) $transaction->getAttribute('quantity_awaiting_delivery'));
-        $onContainers = max(0, (float) $transaction->quantity_ordered - $awaiting);
+        $notOnContainers = max(0, (float) $transaction->getAttribute('quantity_awaiting_delivery'));
+        $onContainers    = max(0, (float) $transaction->quantity_ordered - $notOnContainers);
+        $kept            = (float) $transaction->quantity_kept_at_agent;
+        $heldAtAgent     = min($kept, $notOnContainers);
+        $awaiting        = max(0, round($notOnContainers - $kept, 3));
 
         $canEdit = (bool) $user?->authTo("procurement.$transaction->organisation_id.edit");
 
         $readyToShip = $purchaseOrder && StoreStockDeliveryFromPurchaseOrder::shipsFromAgentWarehouse($purchaseOrder)
-            ? max(0, min($awaiting, (float) $transaction->getAttribute('quantity_received_at_agent_warehouse') - $onContainers))
-            : $awaiting;
+            ? max(0, min($notOnContainers, (float) $transaction->getAttribute('quantity_received_at_agent_warehouse') - $onContainers))
+            : $notOnContainers;
+        if ($transaction->state === PurchaseOrderTransactionStateEnum::SETTLED) {
+            $readyToShip = min($readyToShip, $heldAtAgent);
+        }
 
-        $canAddToContainer = $purchaseOrder?->state->isAgreed()
-            && $transaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED
+        $isShippable = ($purchaseOrder?->state->isAgreed() && $transaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED)
+            || ($purchaseOrder?->state === PurchaseOrderStateEnum::SETTLED && $transaction->state === PurchaseOrderTransactionStateEnum::SETTLED && $heldAtAgent > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE);
+
+        $canAddToContainer = $isShippable
             && $readyToShip > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
             && ($isAgentEditing || $canEdit);
+
+        $canKeep  = $purchaseOrder && KeepPurchaseOrderTransactionAtAgent::userCanKeep($purchaseOrder, $user);
+        $keepable = $canKeep ? KeepPurchaseOrderTransactionAtAgent::keepableQuantity($transaction, $onContainers) : 0;
 
         return [
             'quantity_received'                => (float) $transaction->getAttribute('quantity_received_at_agent_warehouse'),
@@ -321,8 +334,27 @@ class PurchaseOrderTransactionResource extends JsonResource
             'quantity_to_check'                => (float) $transaction->getAttribute('quantity_to_check'),
             'quantity_packed'                  => $packed,
             'quantity_awaiting_delivery'       => $awaiting,
+            'quantity_not_on_containers'       => $notOnContainers,
             'quantity_ready_to_ship'           => $readyToShip,
             'quantity_packed_not_on_container' => max(0, round($packed - $onContainers, 3)),
+            'keep_at_agent'                    => $keepable > 0 ? [
+                'quantity'        => $keepable,
+                'min_note_length' => KeepPurchaseOrderTransactionAtAgent::MIN_NOTE_LENGTH,
+                'route'           => [
+                    'name'       => 'grp.models.purchase-order.transaction.keep_at_agent',
+                    'parameters' => ['purchaseOrder' => $transaction->purchase_order_id, 'purchaseOrderTransaction' => $transaction->id],
+                    'method'     => 'post',
+                ],
+            ] : null,
+            'kept_at_agent'                    => $heldAtAgent > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE ? [
+                'quantity'   => round($heldAtAgent, 3),
+                'note'       => Arr::get(collect(Arr::get($transaction->data, 'kept_at_agent', []))->whereNull('undone_at')->last(), 'note'),
+                'undo_route' => $canKeep && UndoKeepPurchaseOrderTransactionAtAgent::isUndoable($transaction) ? [
+                    'name'       => 'grp.models.purchase-order.transaction.keep_at_agent.undo',
+                    'parameters' => ['purchaseOrder' => $transaction->purchase_order_id, 'purchaseOrderTransaction' => $transaction->id],
+                    'method'     => 'delete',
+                ] : null,
+            ] : null,
             'pack_route'                       => $isAgentEditing && $packable > 0 ? [
                 'name'       => 'grp.models.purchase-order.transaction.pack',
                 'parameters' => [

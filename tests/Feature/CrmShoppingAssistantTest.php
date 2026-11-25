@@ -5030,3 +5030,22 @@ test('the page the customer asks from reaches the prompt only when it is a live 
     expect($onPage->refresh()->webpage_id)->toBeNull()
         ->and($onPage->trail_webpage_ids)->toBeNull();
 });
+
+test('polling the conversation does not use up the Talk to our team button', function () {
+    $website = shoppingAssistantStorefront($this);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $webUser      = shoppingAssistantWebUser($customer);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+    AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'My buyer wants to return order 677488');
+    $offer = $conversation->messages()->create(['role' => 'assistant', 'body' => 'Our team will need to help you with that.', 'hand_over_offer' => 'order_question', 'model' => 'test']);
+
+    $base = 'http://'.$website->domain.'/json/shopping-assistant/';
+    foreach (range(1, 8) as $poll) {
+        $this->actingAs($webUser, 'retina')->getJson($base.$conversation->ulid)->assertOk();
+    }
+
+    $this->actingAs($webUser, 'retina')->postJson($base.'hand-over', ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id])
+        ->assertOk()
+        ->assertJsonPath('conversation', $conversation->ulid);
+});

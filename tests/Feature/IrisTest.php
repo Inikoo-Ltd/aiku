@@ -45,7 +45,7 @@ use App\Actions\CRM\Appointment\StoreAppointment;
 use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\Iris\Appointment\ShowIrisAppointment;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use Illuminate\Routing\Middleware\ThrottleRequests;
+use App\Http\Middleware\ThrottleRequestsPerRoute;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
@@ -1186,7 +1186,7 @@ test('a visitor on another website books an appointment through the widget', fun
 
 test('a visitor moves and cancels their appointment from the link in their email', function () {
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
-    $this->withoutMiddleware(ThrottleRequests::class);
+    $this->withoutMiddleware(ThrottleRequestsPerRoute::class);
 
     $appointmentType = StoreAppointmentType::make()->action($this->shop, [
         'name'                => 'Managed visit '.Str::random(6),
@@ -1280,7 +1280,7 @@ test('data feeds are rebuilt hourly only while someone reads them', function () 
 
 test('a customer rates their order and its products from the stars in the review reminder email', function () {
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
-    $this->withoutMiddleware(ThrottleRequests::class);
+    $this->withoutMiddleware(ThrottleRequestsPerRoute::class);
     Queue::fake();
 
     [, $product] = createProduct($this->shop);

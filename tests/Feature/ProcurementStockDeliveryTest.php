@@ -37,6 +37,9 @@ use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\PdfStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
+use App\Actions\Procurement\PurchaseOrderTransaction\KeepPurchaseOrderTransactionAtAgent;
+use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentKeptAtAgent;
 use App\Exports\GoodsIn\StockDeliveryItemsExport;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreAgentStockDelivery;
@@ -87,6 +90,8 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
@@ -4961,4 +4966,97 @@ test('an order whose ready to roll checks were all done before it was agreed is 
 
     expect($order->refresh()->handed_over_at)->not->toBeNull()
         ->and(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($order))->toBeTrue();
+});
+
+test('INI-525 the rest of an agent line kept at the agent lets the order settle with the container that took the rest, and still ships later without reopening it', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $order = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 400);
+    $line  = $order->purchaseOrderTransactions()->firstOrFail();
+
+    $keepRoute = fn () => route('grp.models.purchase-order.transaction.keep_at_agent', ['purchaseOrder' => $order->id, 'purchaseOrderTransaction' => $line->id]);
+    $undoRoute = fn () => route('grp.models.purchase-order.transaction.keep_at_agent.undo', ['purchaseOrder' => $order->id, 'purchaseOrderTransaction' => $line->id]);
+
+    $first = StoreStockDeliveryFromPurchaseOrder::make()->action($order->refresh(), [
+        'purchase_order_transaction_ids' => [$line->id],
+        'unit_quantities'                => [$line->id => 370],
+    ]);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($this->orgAgent->agent->organisation, 'agt-keep-hr-'.Str::lower(Str::random(6)), 'hr-c'));
+    $this->postJson($keepRoute(), ['quantity' => 30, 'note' => 'Stays at agent'])->assertForbidden();
+
+    actingAs(agentOrganisationAdmin($this->orgAgent->agent->organisation, 'agt-keep-'.Str::lower(Str::random(6))));
+
+    expect(KeepPurchaseOrderTransactionAtAgent::keepableQuantity($line->refresh()))->toBe(30.0);
+
+    $this->postJson($keepRoute(), ['quantity' => 30, 'note' => '  ok  '])->assertJsonValidationErrors('note');
+    $this->postJson($keepRoute(), ['quantity' => 31, 'note' => 'Stays at agent'])->assertJsonValidationErrors('quantity');
+    $this->postJson($keepRoute(), ['quantity' => 30, 'note' => 'Stays at agent'])->assertRedirect();
+    $this->deleteJson($undoRoute())->assertRedirect();
+
+    expect((float) $line->refresh()->quantity_kept_at_agent)->toBe(0.0)
+        ->and(StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($order)->exists())->toBeTrue();
+
+    $this->postJson($keepRoute(), ['quantity' => 30, 'note' => 'Stays at agent'])->assertRedirect();
+
+    $shippable = StoreStockDeliveryFromPurchaseOrder::withQuantityReadyToShip(StoreStockDeliveryFromPurchaseOrder::whereShippable($order->purchaseOrderTransactions()), true)->firstOrFail();
+
+    expect((float) $line->refresh()->quantity_kept_at_agent)->toBe(30.0)
+        ->and($line->data['kept_at_agent'][1]['note'])->toBe('Stays at agent')
+        ->and($line->data['kept_at_agent'][0]['undone_at'])->not->toBeNull()
+        ->and(StoreStockDeliveryFromPurchaseOrder::transactionsAwaitingDelivery($order)->exists())->toBeFalse()
+        ->and((float) $shippable->quantity_ready_to_ship)->toBe(30.0)
+        ->and(IndexAgentKeptAtAgent::query($this->orgAgent->agent)->pluck('purchase_order_transactions.id')->all())->toBe([$line->id]);
+
+    $first->items()->update(['state' => StockDeliveryItemStateEnum::DISPATCHED]);
+    $first->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($first->refresh());
+
+    expect($line->refresh()->delivery_state)->toBe(PurchaseOrderTransactionDeliveryStateEnum::DISPATCHED)
+        ->and($order->refresh()->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED)
+        ->and($order->state)->not->toBe(PurchaseOrderStateEnum::SETTLED);
+
+    $first->items()->update(['state' => StockDeliveryItemStateEnum::RECEIVED]);
+    $first->update(['state' => StockDeliveryStateEnum::RECEIVED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($first->refresh());
+
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+        ->and($order->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::RECEIVED);
+
+    $this->deleteJson($undoRoute())->assertJsonValidationErrors('kept_at_agent');
+
+    expect(fn () => StoreStockDeliveryFromPurchaseOrder::make()->action($order->refresh(), [
+        'purchase_order_transaction_ids' => [$line->id],
+        'unit_quantities'                => [$line->id => 31],
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $later = StoreStockDeliveryFromPurchaseOrder::make()->action($order->refresh(), [
+        'purchase_order_transaction_ids' => [$line->id],
+        'unit_quantities'                => [$line->id => 30],
+    ]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($later->refresh());
+
+    expect((float) $later->items()->sum('unit_quantity'))->toBe(30.0)
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+        ->and(IndexAgentKeptAtAgent::query($this->orgAgent->agent)->exists())->toBeFalse()
+        ->and($order->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::RECEIVED);
+
+    expect($later->items()->firstOrFail()->data['kept_at_agent_units'])->toEqual(30);
+
+    $later->items()->update(['state' => StockDeliveryItemStateEnum::RECEIVED]);
+    $later->update(['state' => StockDeliveryStateEnum::RECEIVED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($later->refresh());
+
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+
+    $first->items()->update(['state' => StockDeliveryItemStateEnum::DISPATCHED]);
+    $first->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($first->refresh());
+
+    expect($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($order->refresh()->state)->not->toBe(PurchaseOrderStateEnum::SETTLED);
+
+    actingAs($this->adminGuest->getUser());
 });

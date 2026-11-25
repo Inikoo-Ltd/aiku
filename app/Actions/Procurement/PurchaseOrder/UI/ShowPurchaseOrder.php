@@ -1580,7 +1580,7 @@ class ShowPurchaseOrder extends OrgAction
 
         $tolerance   = StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE;
         $notShipped  = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery >= (float) $line->quantity_ordered - $tolerance)->count();
-        $shipped     = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery <= $tolerance)->count();
+        $shipped     = $lines->filter(fn ($line) => (float) $line->quantity_awaiting_delivery - (float) $line->quantity_kept_at_agent <= $tolerance)->count();
         $partShipped = $lines->count() - $notShipped - $shipped;
 
         if ($partShipped === 0 && ($notShipped === 0 || $shipped === 0)) {
