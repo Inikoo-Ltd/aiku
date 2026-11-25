@@ -25,7 +25,7 @@ use NumberFormatter;
 use Spatie\Permission\Models\Permission;
 
 /**
- * Tells the order's buyer and the purchasing leads of the ordering organisation, as for a price change, plus the
+ * Tells the order's buyer, David Hardy, Tomas Belan and the purchasing leads of the ordering organisation, as for a price change, plus the
  * agent's purchasing leads and staff who edit its orders, when the supplier asks for a deposit from its portal. Agent
  * users open the agent's copy of the order. The portal has no signed-in user, so nothing set the permission team:
  * the order's group is set before reading roles, or role-held permissions (agent manager) find nobody.
@@ -34,6 +34,11 @@ class NotifyPurchasingOfSupplierDepositRequest
 {
     use AsAction;
     use Localizable;
+
+    /**
+     * David Hardy and Tomas Belan are told of every deposit request, whatever their roles (Vika, 25 Nov 2026).
+     */
+    public const array ALWAYS_TOLD_USERNAMES = ['david', 'tomas'];
 
     /**
      * @var array<int, string>
@@ -103,6 +108,9 @@ class NotifyPurchasingOfSupplierDepositRequest
 
         $agentOrganisation = $purchaseOrder->isAgentOrder() ? $purchaseOrder->agent?->organisation : null;
         $clientUsers       = $this->users(["org-supervisor.$purchaseOrder->organisation_id.procurement"], $purchaseOrder->buyer_id);
+        $clientUsers       = $clientUsers->concat(
+            User::where('group_id', $purchaseOrder->group_id)->where('status', true)->whereIn('username', self::ALWAYS_TOLD_USERNAMES)->whereNotIn('id', $clientUsers->pluck('id'))->get()
+        );
         $agentUsers        = $agentOrganisation
             ? $this->users(["org-supervisor.$agentOrganisation->id.procurement", "procurement.$agentOrganisation->id.edit"], null)->whereNotIn('id', $clientUsers->pluck('id'))
             : collect();
