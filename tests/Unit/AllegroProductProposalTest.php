@@ -84,6 +84,25 @@ test('a product proposal sends the shipping weight and real dimensions in the un
     ]);
 });
 
+test('a German description reaches Allegro with its umlauts, ß and dashes intact', function () {
+    $product = allegroTestProduct(['code' => 'WCS-14']);
+    $product->setRelation('family', null);
+
+    $portfolio = allegroTestPortfolio($product, [
+        'customer_product_name' => 'Dubai Schlagsahne Seife - Smaragdtrüffel 120g',
+        'customer_description'  => '<p><strong>luxuriöse Textur, auffälliges Aussehen</strong> – Größe & Duft<br>Schön grün</p>',
+    ]);
+
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->shouldReceive('proposeProduct')->once()->andReturnUsing(fn (array $productData) => $productData);
+
+    $proposal = ProposeAllegroProduct::run($allegroUser, $portfolio, ['category_id' => '99']);
+
+    expect($proposal['description']['sections'][0]['items'][0]['content'])
+        ->toBe('<p><b>luxuriöse Textur, auffälliges Aussehen</b> – Größe &amp; Duft Schön grün</p>')
+        ->and($proposal['name'])->toBe('Dubai Schlagsahne Seife - Smaragdtrüffel 120g');
+});
+
 function proposeAllegroProductWithParameters(Product $product, array $parameters): array
 {
     $portfolio = allegroTestPortfolio($product, ['customer_product_name' => 'Wall Lamp', 'customer_description' => 'Lamp']);

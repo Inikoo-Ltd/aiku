@@ -112,7 +112,7 @@ trait WithAllegroApiServices
     {
         $dom = new DOMDocument();
         libxml_use_internal_errors(true);
-        $dom->loadHTML('<div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NOIMPLIED);
+        $dom->loadHTML('<?xml encoding="UTF-8"><div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_HTML_NOIMPLIED);
         libxml_clear_errors();
 
         // Get the inner content of the wrapping div
