@@ -27223,5 +27223,8 @@
     "We will credit :amount to your balance.": "Na váš zůstatek připíšeme :amount.",
     "What happened?": "Co se stalo?",
     "What would you like us to do?": "Co si přejete, abychom udělali?",
-    "Which items went wrong?": "Se kterým zbožím byl problém?"
+    "Which items went wrong?": "Se kterým zbožím byl problém?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Objednávky doručené do :place fakturujeme bez DPH, protože vaše DIČ je platné (přenesená daňová povinnost).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Objednávky doručené do :place fakturujeme bez DPH, za produkty i za dopravu. Případné dovozní daně nebo cla na místě neúčtujeme.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Objednávky doručené do :place fakturujeme s :tax, za produkty i za dopravu."
 }

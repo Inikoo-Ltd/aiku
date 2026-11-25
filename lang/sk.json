@@ -27135,5 +27135,8 @@
     "No DIČ and nothing to look it up by: ask the customer": "Bez DIČ a bez údaja na vyhľadanie: opýtajte sa zákazníka",
     "Slovak e-invoices: DIČ of business customers": "Slovenské e-faktúry: DIČ firemných zákazníkov",
     "Show all customers": "Zobraziť všetkých zákazníkov",
-    "DIČ status of Slovak business customers": "Stav DIČ slovenských firemných zákazníkov"
+    "DIČ status of Slovak business customers": "Stav DIČ slovenských firemných zákazníkov",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Objednávky doručené do :place fakturujeme bez DPH, pretože vaše IČ DPH je platné (prenesenie daňovej povinnosti).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Objednávky doručené do :place fakturujeme bez DPH, za produkty aj za dopravu. Prípadné dovozné dane alebo clá na mieste neúčtujeme.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Objednávky doručené do :place fakturujeme s :tax, za produkty aj za dopravu."
 }

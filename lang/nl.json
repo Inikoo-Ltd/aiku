@@ -10095,5 +10095,8 @@
     "What happened?": "Wat is er gebeurd?",
     "What would you like us to do?": "Wat wilt u dat wij doen?",
     "Which items went wrong?": "Met welke artikelen is iets mis?",
-    "of :count": "van :count"
+    "of :count": "van :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Bestellingen geleverd in :place worden zonder btw gefactureerd, omdat uw btw-nummer geldig is (btw verlegd).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Bestellingen geleverd in :place worden zonder btw gefactureerd, op de producten en op de verzending. Eventuele invoerbelastingen of douanerechten daar worden niet door ons in rekening gebracht.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Bestellingen geleverd in :place worden gefactureerd met :tax, op de producten en op de verzending."
 }

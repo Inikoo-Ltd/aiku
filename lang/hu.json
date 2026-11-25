@@ -9296,5 +9296,8 @@
     "What happened?": "Mi történt?",
     "What would you like us to do?": "Mit tegyünk?",
     "Which items went wrong?": "Mely termékek hibásak?",
-    "of :count": "/ :count"
+    "of :count": "/ :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "A(z) :place címre szállított rendeléseket áfa nélkül számlázzuk, mert az adószáma érvényes (fordított adózás).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "A(z) :place címre szállított rendeléseket áfa nélkül számlázzuk, a termékekre és a szállításra is. Az ott esetleg felmerülő importadókat vagy vámokat nem mi számítjuk fel.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "A(z) :place címre szállított rendeléseket :tax felszámításával számlázzuk, a termékekre és a szállításra is."
 }

@@ -27015,5 +27015,8 @@
     "We will credit :amount to your balance.": "Wir schreiben Ihrem Guthaben :amount gut.",
     "What happened?": "Was ist passiert?",
     "What would you like us to do?": "Was sollen wir tun?",
-    "Which items went wrong?": "Welche Artikel sind betroffen?"
+    "Which items went wrong?": "Welche Artikel sind betroffen?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Bestellungen mit Lieferung nach :place werden ohne MwSt. berechnet, weil Ihre USt-IdNr. gültig ist (Reverse-Charge).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Bestellungen mit Lieferung nach :place werden ohne MwSt. berechnet, auf die Produkte und den Versand. Einfuhrsteuern oder Zölle dort werden nicht von uns berechnet.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Bestellungen mit Lieferung nach :place werden mit :tax berechnet, auf die Produkte und den Versand."
 }

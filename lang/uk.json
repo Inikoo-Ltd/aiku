@@ -7362,5 +7362,8 @@
     "What happened?": "Що сталося?",
     "What would you like us to do?": "Що ви бажаєте, щоб ми зробили?",
     "Which items went wrong?": "З якими товарами проблема?",
-    "of :count": "з :count"
+    "of :count": "з :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Замовлення з доставкою до :place виставляються без ПДВ, тому що ваш номер платника ПДВ дійсний (зворотне нарахування).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Замовлення з доставкою до :place виставляються без ПДВ, на товари та на доставку. Можливі ввізні податки чи мита там ми не стягуємо.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Замовлення з доставкою до :place виставляються з :tax, на товари та на доставку."
 }

@@ -126,7 +126,7 @@ class AnswerShoppingAssistantTeamQuestion
 
         $shop = Shop::find(data_get($task->data, 'shop_id'));
         $kept = self::withoutGreeting($answer);
-        if ($keepForEveryone && $shop && $kept !== '' && !IsAboutOneCustomer::run($question, $kept) && IsGeneralAnswer::run($question, $kept)) {
+        if ($keepForEveryone && $shop && $kept !== '' && !ChatKnowledgeEntry::statesTaxTreatment($question.'. '.$kept) && !IsAboutOneCustomer::run($question, $kept) && IsGeneralAnswer::run($question, $kept)) {
             $note = UpdateShopChatKnowledgeNote::make()->handle($shop, null, ['title' => self::noteTitle($question), 'body' => mb_substr($kept, 0, 2000)], $user);
             $task->update(['data' => [...$task->data, 'kept_note_id' => $note->id]]);
             dispatch(fn () => HydrateChatKnowledge::make()->embedMissing($shop));

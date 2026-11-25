@@ -1649,6 +1649,52 @@ test('dispatch times and shipping cost are answered with a sentence built from o
     Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
 });
 
+test('vat is answered live from the tax rules the invoice uses, so Canarias pays no IVA and the mainland pays it, never from a stored text (PRE-139)', function () {
+    shoppingAssistantStorefront($this);
+    $customer  = shoppingAssistantCustomer($this->shop);
+    $countryId = $this->organisation->country_id;
+    $this->organisation->update(['country_id' => App\Models\Helpers\Country::where('code', 'ES')->value('id')]);
+
+    try {
+        $conversation = StartShoppingAssistantConversation::run($customer->fresh(), ShoppingAssistantEntryPointEnum::COMMAND);
+        $tools        = GetShoppingAssistantTools::make();
+        $locale       = $conversation->language_code;
+        $canarias     = $tools->execute($conversation, 'vat', ['country_code' => 'ES', 'postcode' => '35320']);
+        $mainland     = $tools->execute($conversation, 'vat', ['country_code' => 'es', 'postcode' => '28001']);
+        $noPostcode   = $tools->execute($conversation, 'vat', ['country_code' => 'ES']);
+        $place        = fn (string $postcode) => Locale::getDisplayRegion('-ES', $locale).' ('.$postcode.')';
+
+        expect($canarias['fact'])->toBe(__('Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.', ['place' => $place('35320')], $locale))
+            ->and($mainland['fact'])->toBe(__('Orders delivered to :place are invoiced with :tax, on the products and on the shipping.', ['place' => $place('28001'), 'tax' => App\Models\Helpers\TaxCategory::where('label', 'ES-SR')->where('status', true)->value('name')], $locale))
+            ->and(json_encode([$canarias['content'], $mainland['content'], $noPostcode['content']]))->not->toMatch('/\d/')
+            ->and($noPostcode)->not->toHaveKey('fact')
+            ->and($noPostcode['content']['available'])->toBeFalse()
+            ->and($tools->execute($conversation, 'vat', ['country_code' => 'XX'])['error'])->not->toBeNull();
+
+        Http::fake(['*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('vat', ['country_code' => 'ES', 'postcode' => '35320'])]], 'tool_calls'))
+            ->push(shoppingAssistantModelReply(['content' => 'Here is how tax works for that delivery.'], 'stop'))]);
+
+        expect(AskShoppingAssistant::run($conversation, 'Do you charge IVA on shipping to Canarias?')['reply'])->toBe("Here is how tax works for that delivery.\n\n".$canarias['fact']);
+    } finally {
+        $this->organisation->update(['country_id' => $countryId]);
+    }
+});
+
+test('a text that states a tax rate or who pays tax is never kept as knowledge, a price threshold before VAT is (PRE-139)', function (string $text, bool $statesTax) {
+    expect(App\Models\Chat\ChatKnowledgeEntry::statesTaxTreatment($text))->toBe($statesTax);
+})->with([
+    ['VAT (21% ES-SR) is charged on the shipping too.', true],
+    ['Customers in the Canary Islands do not pay VAT at checkout.', true],
+    ['Tenga en cuenta que al envío también se le aplica el 21 % de IVA.', true],
+    ['Ceuta y Melilla: envíos sin IVA', true],
+    ['orders get the outside-tax category, so no Spanish IVA is charged', true],
+    ['Orders over 750€+IVA qualify for free shipping.', false],
+    ['31% off orders from €150 + IVA gross', false],
+    ['Shipping for Z1 is 6.50 EUR (goods before VAT)', false],
+    ['We ship to the Canary Islands using Correos Express.', false],
+]);
+
 test('a question about a range is answered from the family description, with no products and a link to the family page', function () {
     $website  = shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);

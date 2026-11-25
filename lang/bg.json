@@ -9687,5 +9687,8 @@
     "What happened?": "Какво се случи?",
     "What would you like us to do?": "Какво желаете да направим?",
     "Which items went wrong?": "Кои артикули са с проблем?",
-    "of :count": "от :count"
+    "of :count": "от :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Поръчките с доставка до :place се фактурират без ДДС, защото вашият ДДС номер е валиден (обратно начисляване).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Поръчките с доставка до :place се фактурират без ДДС, за продуктите и за доставката. Евентуални вносни данъци или мита там не се начисляват от нас.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Поръчките с доставка до :place се фактурират с :tax, за продуктите и за доставката."
 }

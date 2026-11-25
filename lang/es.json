@@ -27093,5 +27093,8 @@
     "We will credit :amount to your balance.": "Abonaremos :amount a su saldo.",
     "What happened?": "¿Qué ha pasado?",
     "What would you like us to do?": "¿Qué desea que hagamos?",
-    "Which items went wrong?": "¿Qué artículos llegaron mal?"
+    "Which items went wrong?": "¿Qué artículos llegaron mal?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Los pedidos entregados en :place se facturan sin IVA, porque su número de IVA es válido (inversión del sujeto pasivo).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Los pedidos entregados en :place se facturan sin IVA, en los productos y en el envío. Los impuestos o aranceles de importación que haya allí no los cobramos nosotros.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Los pedidos entregados en :place se facturan con :tax, en los productos y en el envío."
 }

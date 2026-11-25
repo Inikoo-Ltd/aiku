@@ -348,7 +348,7 @@ class LearnChatKnowledge
     /**
      * Staff do not review proposed rules (INI-402: 1,302 waited, most shops never opened them), so a
      * strong rule goes live by itself: told to STRONG_CUSTOMERS customers, seen lately, nothing about
-     * one customer, a general answer anyone could use, and contradicting nothing active, checked
+     * one customer, no tax rate or treatment (PRE-139), a general answer anyone could use, and contradicting nothing active, checked
      * again now because a stronger rule activated earlier in the same run may say otherwise.
      * Strongest first, so the most repeated wording wins. A refused rule is asked again only once
      * more customers have been told it, so a borderline one is not re-scored nightly until a lucky
@@ -358,7 +358,7 @@ class LearnChatKnowledge
      */
     private function activateStrong(Shop $shop, ChatKnowledgeEntry $rule): bool
     {
-        if (IsAboutOneCustomer::run($rule->title, $rule->body) || !IsGeneralAnswer::run($rule->title, $rule->body)) {
+        if (ChatKnowledgeEntry::statesTaxTreatment($rule->title.'. '.$rule->body) || IsAboutOneCustomer::run($rule->title, $rule->body) || !IsGeneralAnswer::run($rule->title, $rule->body)) {
             $rule->update(['evidence' => [...(array) $rule->evidence, 'auto_refused_at_customers' => $rule->customers_count]]);
 
             return false;

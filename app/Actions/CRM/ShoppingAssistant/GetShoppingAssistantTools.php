@@ -64,6 +64,10 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
+use App\Models\Helpers\Address;
+use App\Models\Helpers\TaxCategory;
+use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Enums\Helpers\TaxCategories\TaxCategoryTypeEnum;
 use App\Models\Discounts\Offer;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Helpers\DimensionsFormatter;
@@ -72,6 +76,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Number;
+use Locale;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -142,7 +147,7 @@ use Throwable;
  * B2B shop that checkout uses that credit first (ShowRetinaEcomCheckout pays by balance before any
  * other method): INI-386, customers asked a guru when they registered and how to spend their credit.
  *
- * dispatch_times, shipping_cost and account_details never give the model a figure: each returns a `fact`, a sentence
+ * dispatch_times, shipping_cost, vat and account_details never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
  * model's reply. Shipping is read from the customer's own basket, where the system has already
  * worked it out; nothing is estimated.
@@ -434,6 +439,14 @@ class GetShoppingAssistantTools
                 []
             ),
             $this->tool(
+                'vat',
+                'The VAT (or other sales tax) we charge on an order delivered to a place, worked out live by the same rules as the checkout and the invoice: the customer\'s VAT number, recargo de equivalencia and special areas (Canarias, Ceuta, Melilla, Madeira, Azores). Use it for every question about VAT, IVA or tax: whether it is charged, the rate, on shipping, exemptions. With no country it answers for the customer\'s current basket, else their own address. The sentence is added under your reply by the system; you get no figure and never state a rate or exemption yourself. Returns no products.',
+                [
+                    'country_code' => ['type' => 'string', 'description' => 'Two-letter ISO code of the delivery country the customer asks about, when it is not simply their own address.'],
+                    'postcode'     => ['type' => 'string', 'description' => 'The delivery postcode, or its first digits: needed for Spain (Canarias 35 and 38, Ceuta 51, Melilla 52) and Portugal (Madeira and Azores start with 9).'],
+                ]
+            ),
+            $this->tool(
                 'on_order_not_listed',
                 'Tell the customer that what they asked for is on order with our supplier and not on the website yet. Use it only when search_products returned on_order_not_listed with an item that is the same kind of item the customer asked for. The system adds the sentence under your reply. Returns no products.',
                 ['query' => ['type' => 'string', 'description' => 'The same query you gave search_products.']],
@@ -522,7 +535,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'shop_information',
-                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products; for a question with two parts (delivery cost and VAT), call it once per part. Returns up to 6 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
+                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products; for a question with two parts (delivery cost and returns), call it once per part. VAT and tax questions go to vat, never here. Returns up to 6 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
                 [
                     'question'            => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
                     'question_in_english' => ['type' => 'string', 'description' => 'The same question in one sentence in English, when the customer did not write in English.'],
@@ -615,6 +628,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'vat'                            => $this->vat($customer, $arguments, $conversation->language_code),
                 'on_order_not_listed'            => $this->onOrderNotListed($customer, $arguments, $conversation->language_code),
                 'sister_shop_products'           => $this->sisterShopProducts($conversation, $arguments),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
@@ -1220,7 +1234,7 @@ class GetShoppingAssistantTools
         return [
             'content'  => [
                 'texts' => $sources->map(fn (array $source) => ['id' => $source['id'], 'title' => $source['title'], 'text' => $source['body'], 'checked_by_staff' => $source['checked']])->all(),
-                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. Never repeat anything about one specific customer (a name, contact, address, order, invoice or payment number, an amount refunded or owed, or a deal made only for them): skip that part, it is not for this customer. Dispatch times written in these texts (such as a number of working days) can be out of date in busy weeks: never repeat one; how long dispatch takes now comes only from dispatch_times. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. The text with id 0 comes from the shop\'s delivery settings, which the checkout enforces: it is the answer to whether we deliver to a country. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. Never repeat anything about one specific customer (a name, contact, address, order, invoice or payment number, an amount refunded or owed, or a deal made only for them): skip that part, it is not for this customer. Dispatch times written in these texts (such as a number of working days) can be out of date in busy weeks: never repeat one; how long dispatch takes now comes only from dispatch_times. Never repeat a VAT or tax rate, exemption or who pays tax from these texts: it changes and depends on the delivery address, so it comes only from vat. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
             ],
             'products' => [],
             'error'    => null,
@@ -1845,6 +1859,76 @@ class GetShoppingAssistantTools
 
         return [
             'content'  => ['available' => true, 'note' => 'A sentence with the real shipping cost of the current basket is added under your reply. Write one short lead-in without any amount.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $fact,
+        ];
+    }
+
+    /**
+     * PRE-139: the tax we charge, worked out by GetTaxCategory like the order and the invoice, never
+     * read from shop texts, which go stale when a rate changes and missed that Canarias pays no IVA.
+     * An explicit destination is asked about as is; otherwise the current basket's own tax category,
+     * else the customer's delivery address. Spain and Portugal need the postcode for their special areas.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function vat(Customer $customer, array $arguments, string $locale): array
+    {
+        $countryCode = strtoupper(trim(is_string($arguments['country_code'] ?? null) ? $arguments['country_code'] : ''));
+        $postcode    = trim(is_string($arguments['postcode'] ?? null) ? $arguments['postcode'] : '');
+        $billing     = $customer->address;
+        $basket      = $countryCode === '' ? Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->latest('id')->first() : null;
+
+        if ($basket?->taxCategory && $basket->taxableDeliveryAddress()) {
+            return $this->vatFact($basket->taxCategory, $basket->taxableDeliveryAddress(), $locale);
+        }
+
+        if ($countryCode !== '') {
+            $country = Country::where('code', $countryCode)->first();
+            if (!$country) {
+                return $this->error('country_code must be a two-letter ISO country code.');
+            }
+            if (in_array($countryCode, ['ES', 'PT'], true) && $postcode === '') {
+                return ['content' => ['available' => false, 'note' => 'The tax depends on the area of this country. Ask the customer for the delivery postcode (or the island or region), then call vat again with it. Do not say whether tax is charged.'], 'products' => [], 'error' => null];
+            }
+            $delivery = new Address(['country_id' => $country->id, 'country_code' => $country->code, 'postal_code' => $postcode]);
+        } else {
+            $delivery = $customer->deliveryAddress ?? $billing;
+        }
+
+        if (!$billing || !$delivery?->country_id) {
+            return ['content' => ['available' => false, 'note' => 'We do not know where the order goes. Ask the customer for the delivery country (and the postcode for Spain or Portugal), then call vat again. Do not say whether tax is charged.'], 'products' => [], 'error' => null];
+        }
+
+        $category = GetTaxCategory::run(
+            country: $customer->organisation->country,
+            taxNumber: $customer->taxNumber,
+            billingAddress: $billing,
+            deliveryAddress: $delivery,
+            isRe: (bool) $customer->is_re,
+        );
+
+        return $this->vatFact($category, $delivery, $locale);
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: null, fact: string}
+     */
+    private function vatFact(TaxCategory $category, Address $delivery, string $locale): array
+    {
+        $place = (Locale::getDisplayRegion('-'.$delivery->country_code, $locale) ?: $delivery->country_code).($delivery->postal_code ? ' ('.$delivery->postal_code.')' : '');
+
+        $fact = match (true) {
+            $category->type === TaxCategoryTypeEnum::EU_VTC  => __('Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).', ['place' => $place], $locale),
+            $category->type === TaxCategoryTypeEnum::OUTSIDE => __('Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.', ['place' => $place], $locale),
+            default                                          => __('Orders delivered to :place are invoiced with :tax, on the products and on the shipping.', ['place' => $place, 'tax' => $category->name], $locale),
+        };
+
+        return [
+            'content'  => ['available' => true, 'note' => 'A sentence with the tax we charge on that delivery is added under your reply. Write one short lead-in without any rate, figure or exemption.'],
             'products' => [],
             'error'    => null,
             'fact'     => $fact,

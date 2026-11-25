@@ -9293,5 +9293,8 @@
     "What happened?": "Što se dogodilo?",
     "What would you like us to do?": "Što želite da učinimo?",
     "Which items went wrong?": "Koji artikli imaju problem?",
-    "of :count": "od :count"
+    "of :count": "od :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Narudžbe dostavljene u :place fakturiramo bez PDV-a jer je vaš PDV broj valjan (prijenos porezne obveze).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Narudžbe dostavljene u :place fakturiramo bez PDV-a, na proizvode i na dostavu. Eventualne uvozne poreze ili carine ondje ne naplaćujemo mi.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Narudžbe dostavljene u :place fakturiramo s :tax, na proizvode i na dostavu."
 }

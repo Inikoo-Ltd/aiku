@@ -26285,5 +26285,8 @@
     "We will credit :amount to your balance.": "Dodamy :amount do Państwa salda.",
     "What happened?": "Co się stało?",
     "What would you like us to do?": "Co mamy zrobić?",
-    "Which items went wrong?": "Z którymi produktami był problem?"
+    "Which items went wrong?": "Z którymi produktami był problem?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Zamówienia dostarczane do :place są fakturowane bez VAT, ponieważ Twój numer VAT jest ważny (odwrotne obciążenie).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Zamówienia dostarczane do :place są fakturowane bez VAT, na produkty i na wysyłkę. Ewentualnych podatków ani ceł importowych na miejscu nie pobieramy.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Zamówienia dostarczane do :place są fakturowane z :tax, na produkty i na wysyłkę."
 }

@@ -26227,5 +26227,8 @@
     "We will credit :amount to your balance.": "Vom credita :amount în soldul dumneavoastră.",
     "What happened?": "Ce s-a întâmplat?",
     "What would you like us to do?": "Ce doriți să facem?",
-    "Which items went wrong?": "Ce produse au probleme?"
+    "Which items went wrong?": "Ce produse au probleme?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Comenzile livrate în :place sunt facturate fără TVA, deoarece codul dvs. de TVA este valid (taxare inversă).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Comenzile livrate în :place sunt facturate fără TVA, la produse și la transport. Eventualele taxe sau taxe vamale de import de acolo nu sunt percepute de noi.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Comenzile livrate în :place sunt facturate cu :tax, la produse și la transport."
 }

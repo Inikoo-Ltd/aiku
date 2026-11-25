@@ -27174,5 +27174,8 @@
     "We will credit :amount to your balance.": "Nous créditerons :amount sur votre solde.",
     "What happened?": "Que s'est-il passé ?",
     "What would you like us to do?": "Que souhaitez-vous que nous fassions ?",
-    "Which items went wrong?": "Quels articles posent problème ?"
+    "Which items went wrong?": "Quels articles posent problème ?",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Les commandes livrées à :place sont facturées sans TVA, car votre numéro de TVA est valide (autoliquidation).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Les commandes livrées à :place sont facturées sans TVA, sur les produits et sur la livraison. Les taxes ou droits d'importation éventuels sur place ne sont pas facturés par nous.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Les commandes livrées à :place sont facturées avec :tax, sur les produits et sur la livraison."
 }

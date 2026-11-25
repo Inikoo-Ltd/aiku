@@ -62,6 +62,23 @@ class ChatKnowledgeEntry extends Model
         'embedding'    => 'array',
     ];
 
+    private const string TAX_WORD = '(?:vat|iva|igic|dph|mwst|tva|btw|áfa|ddv|pdv|ptu|alv|moms|tax(?:es)?|recargo de equivalencia)';
+
+    private const string RATE = '\d+(?:[.,]\d+)? ?%';
+
+    private const string TAX_TREATMENT = 'exempt|exent[oa]s?|reverse|outside|without|not charged|no charge|charged|appl(?:y|ies|ied)|se aplica|aplica|sin';
+
+    /**
+     * Whether a text states a tax rate or who is charged tax ("Canarias is exempt", "21% IVA on
+     * shipping"), PRE-139: such a sentence is answered live by the shopping assistant's vat tool,
+     * never kept as knowledge, because it goes stale when a rate changes and is wrong for a
+     * destination it did not think of. "From 150 € + IVA" is only a price threshold and passes.
+     */
+    public static function statesTaxTreatment(string $text): bool
+    {
+        return (bool) preg_match('/\b'.self::TAX_WORD.'\b[^.;\n]{0,80}?(?:'.self::RATE.'|\b(?:'.self::TAX_TREATMENT.')\b)|'.self::RATE.' ?(?:de |of )?'.self::TAX_WORD.'\b|\b(?:'.self::TAX_TREATMENT.'|no|not pay|pays?|paid)\b[^.;\n]{0,30}?\b'.self::TAX_WORD.'\b|\btax categor/iu', $text);
+    }
+
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);

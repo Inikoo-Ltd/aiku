@@ -86,13 +86,18 @@ class RememberVerifiedChatFact
     }
 
     /**
-     * Why a fact may not be stored: staff removed it, or it mostly repeats what the customer wrote
-     * in this chat, which is how an instruction hidden in a message would try to become a rule.
+     * Why a fact may not be stored: staff removed it, it states a tax rate or who pays tax (PRE-139),
+     * or it mostly repeats what the customer wrote in this chat, which is how an instruction hidden
+     * in a message would try to become a rule.
      */
     public static function refusal(ChatSession|MetaChatSession $chatSession, string $title, string $fact): ?string
     {
         if (self::facts($chatSession->shop)->whereRaw('lower(title) = ?', [mb_strtolower($title)])->where('status', 'removed')->exists()) {
             return 'Staff removed this fact from Verified facts; it cannot be stored again from here.';
+        }
+
+        if (ChatKnowledgeEntry::statesTaxTreatment($title.'. '.$fact)) {
+            return 'Tax rates and who is charged VAT are never stored as facts: they change and depend on the delivery address. Read the tax category of the customer\'s order instead.';
         }
 
         $customerWrote = $chatSession->messages()->whereIn('sender_type', [ChatSenderTypeEnum::GUEST, ChatSenderTypeEnum::USER])->latest('id')->limit(50)

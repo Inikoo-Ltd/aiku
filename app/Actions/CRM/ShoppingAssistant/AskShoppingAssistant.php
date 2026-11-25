@@ -823,6 +823,7 @@ class AskShoppingAssistant
     {
         return match ($name) {
             'dispatch_times', 'shipping_cost', 'account_details', 'clear_conversation', 'save_shop_type', 'better_price_options' => true,
+            'vat'           => (bool) data_get($result, 'content.available'),
             'add_to_basket' => $result['error'] === null
                 && !empty($result['content']['added'])
                 && empty($result['content']['could_not_add'])

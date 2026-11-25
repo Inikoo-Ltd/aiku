@@ -10130,5 +10130,8 @@
     "What happened?": "Vad hände?",
     "What would you like us to do?": "Vad vill du att vi ska göra?",
     "Which items went wrong?": "Vilka artiklar blev det fel med?",
-    "of :count": "av :count"
+    "of :count": "av :count",
+    "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Beställningar som levereras till :place faktureras utan moms, eftersom ditt momsregistreringsnummer är giltigt (omvänd skattskyldighet).",
+    "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Beställningar som levereras till :place faktureras utan moms, på produkterna och på frakten. Eventuella importskatter eller tullar där tar vi inte ut.",
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Beställningar som levereras till :place faktureras med :tax, på produkterna och på frakten."
 }
