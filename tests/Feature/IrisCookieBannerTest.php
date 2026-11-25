@@ -38,3 +38,15 @@ test('own cookie banner and its Consent Mode defaults only show on websites that
     expect(fn () => UpdateWebsite::make()->action($this->website, ['own_cookie_banner' => 'maybe']))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
+
+test('the customer area (/app login and register) gets the same Consent Mode defaults when the setting is on', function () {
+    $login = fn () => $this->withoutVite()->followingRedirects()->get('http://'.$this->website->domain.'/app/login')->assertOk();
+
+    $login()->assertDontSee('window.gtag("consent", "default"', false);
+
+    UpdateWebsite::make()->action($this->website, ['own_cookie_banner' => true]);
+
+    $login()
+        ->assertSee('window.gtag("consent", "default"', false)
+        ->assertSee('own_cookie_banner', false);
+});

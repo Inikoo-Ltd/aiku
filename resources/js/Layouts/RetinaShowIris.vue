@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CookieConsent from "@/Layouts/Iris/CookieConsent.vue"
 import Notification from '@/Components/Utils/Notification.vue'
 import IrisHeader from '@/Layouts/Iris/Header.vue'
 
@@ -116,6 +117,9 @@ onMounted(() => {
     </notifications> 
 
       <ChatButton data="null" v-if="useChat" />
+
+    <!-- Own cookie banner (INI-513): /app pages need the banner and Cookie settings button too -->
+    <CookieConsent v-if="usePage().props?.iris?.own_cookie_banner" />
 </template>
 
 <style lang="scss">
