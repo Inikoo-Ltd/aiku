@@ -2270,3 +2270,35 @@ test('maintenance shows only for job orders of flagged products, needs one of th
 
     $this->travelBack();
 });
+
+test('HELP-4937 a job raised after its mix was recorded counts the kg already recorded on it and does not ask for another mix', function () {
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+
+    $suffix  = rand(10000, 99999);
+    $mixTask = StoreManufactureTask::make()->action($this->production, [
+        'code'              => 'MXR'.$suffix,
+        'name'              => 'Mixing '.$suffix,
+        'is_piece_rate'     => false,
+        'is_recorded_in_kg' => true,
+    ]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BR'.$suffix, 'name' => 'Bath bomb '.$suffix]);
+    $artefact->manufactureTasks()->sync([$mixTask->id => ['position' => 1, 'units_per_artefact' => 0.135]]);
+    \Pest\Laravel\post(route('grp.models.artefact.manufacture-task.attach', ['artefact' => $artefact->id]), ['manufacture_task_id' => $mixTask->id, 'position' => 1, 'units_per_artefact' => 0.135, 'mix_batch_kg' => 50])
+        ->assertSessionHasNoErrors();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 200]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $mix = $item->tasks()->first();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mix), ['quantity_made' => 100]);
+    expect((float) $mix->refresh()->quantity_made)->toBe(27.0);
+
+    \App\Actions\Production\JobOrderItem\UpdateJobOrderItem::make()->action($item->refresh(), ['quantity' => 740]);
+
+    expect((float) $mix->refresh()->quantity_required)->toBe(99.9)
+        ->and((float) $mix->quantity_made)->toBe(99.9)
+        ->and($mix->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+});
