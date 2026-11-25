@@ -20,8 +20,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
 /**
- * Checks a Slovak business customer's DIČ against the Finančná správa register of income tax subjects (ds_dsrdp), looked
- * up by the customer's IČO, and keeps the result in data.dic_verification. A customer without a DIČ gets the registered
+ * Checks a Slovak business customer's DIČ against the Finančná správa registers: the income tax subjects (ds_dsrdp) by the
+ * customer's IČO, or without an IČO the VAT payers (ds_dphs) by its Slovak VAT number, which also gives a missing IČO. The
+ * result is kept in data.dic_verification. A customer without a DIČ gets the registered
  * one only on its first check and when the registered name is the customer's name, so a DIČ staff cleared stays empty;
  * anything else is left for staff to decide.
  */
@@ -52,7 +53,28 @@ class VerifyCustomerDic
 
     public static function appliesTo(Customer $customer): bool
     {
-        return UpdateRetinaCustomer::needsPeppolDic($customer) && self::ico($customer) !== null;
+        return UpdateRetinaCustomer::needsPeppolDic($customer) && self::lookupKey($customer) !== null;
+    }
+
+    /**
+     * The IČO, searched in the register of income tax subjects; without one, a Slovak VAT number, searched in the list of
+     * VAT payers (which also gives the IČO).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public static function lookupKey(Customer $customer): ?array
+    {
+        if ($ico = self::ico($customer)) {
+            return ['ico', $ico];
+        }
+
+        $taxNumber = $customer->taxNumber;
+        if ($taxNumber?->country_code !== 'SK') {
+            return null;
+        }
+        $number = preg_replace('/^SK/', '', strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', (string)$taxNumber->number)));
+
+        return BuildUblInvoice::isSlovakDic($number) ? ['ic_dph', 'SK'.$number] : null;
     }
 
     public static function dispatchIfApplies(Customer $customer): void
@@ -83,12 +105,12 @@ class VerifyCustomerDic
             return null;
         }
 
-        $ico        = self::ico($customer);
-        $registered = $this->lookupByIco($ico);
+        $key        = self::lookupKey($customer);
+        $registered = $key[0] === 'ico' ? $this->lookupByIco($key[1]) : $this->lookupByVatNumber($key[1]);
 
-        return DB::transaction(function () use ($customer, $ico, $registered) {
+        return DB::transaction(function () use ($customer, $key, $registered) {
             $customer = Customer::lockForUpdate()->find($customer->id);
-            if (!$customer || !self::appliesTo($customer) || self::ico($customer) !== $ico) {
+            if (!$customer || !self::appliesTo($customer) || self::lookupKey($customer) !== $key) {
                 return null;
             }
 
@@ -99,7 +121,7 @@ class VerifyCustomerDic
             $status = match (true) {
                 $registered === null => self::NOT_FOUND,
                 $dic !== null => $dic === $registered['dic'] ? self::MATCHED : self::MISMATCH,
-                !$canBeFilled || !self::sameName($registered['name'], (string)($customer->company_name ?: $customer->name)) => self::NAME_DIFFERS,
+                !$canBeFilled || !self::isTheirs($customer, $registered) => self::NAME_DIFFERS,
                 $firstCheck => self::FILLED,
                 default => self::NOT_REFILLED,
             };
@@ -107,11 +129,15 @@ class VerifyCustomerDic
             if ($status === self::FILLED) {
                 $customer->peppol_id = BuildUblInvoice::PEPPOL_SCHEME.':'.$registered['dic'];
             }
+            if (in_array($status, [self::MATCHED, self::FILLED], true) && $key[0] === 'ic_dph' && preg_match('/^\d{6,8}$/', $registered['ico']) && blank($customer->identity_document_number)) {
+                $customer->identity_document_number = str_pad($registered['ico'], 8, '0', STR_PAD_LEFT);
+            }
 
             $verification = [
                 'status'        => $status,
                 'checked_at'    => now()->toIso8601String(),
-                'ico'           => $ico,
+                'ico'           => $key[0] === 'ico' ? $key[1] : ($registered['ico'] ?? null),
+                'vat_number'    => $key[0] === 'ic_dph' ? $key[1] : null,
                 'register_dic'  => $registered['dic'] ?? null,
                 'register_name' => $registered['name'] ?? null,
             ];
@@ -127,21 +153,7 @@ class VerifyCustomerDic
      */
     public function lookupByIco(string $ico): ?array
     {
-        $response = Http::baseUrl(rtrim((string)config('services.financna_sprava.url'), '/'))
-            ->withHeaders(['key' => (string)config('services.financna_sprava.api_key')])
-            ->acceptJson()
-            ->timeout(20)
-            ->retry(1, 0, throw: false)
-            ->get('/data/ds_dsrdp/search', ['page' => 1, 'column' => 'ico', 'search' => $ico]);
-
-        if ($response->status() === 404) {
-            return null;
-        }
-        if (!$response->successful()) {
-            throw new RuntimeException("Finančná správa register lookup for IČO $ico failed with HTTP {$response->status()}");
-        }
-
-        $subject = collect($response->json('data') ?? [])->first(fn (array $row) => str_pad((string)Arr::get($row, 'ico'), 8, '0', STR_PAD_LEFT) === $ico);
+        $subject = collect($this->search('ds_dsrdp', 'ico', $ico))->first(fn (array $row) => str_pad((string)Arr::get($row, 'ico'), 8, '0', STR_PAD_LEFT) === $ico);
 
         return $subject && Arr::get($subject, 'dic') ? [
             'dic'  => (string)$subject['dic'],
@@ -151,8 +163,66 @@ class VerifyCustomerDic
     }
 
     /**
+     * @return array{dic: string, ico: string, name: string}|null null when no VAT payer has this IČ DPH
+     */
+    public function lookupByVatNumber(string $vatNumber): ?array
+    {
+        $subject = collect($this->search('ds_dphs', 'ic_dph', $vatNumber))->first(fn (array $row) => strtoupper((string)Arr::get($row, 'ic_dph')) === $vatNumber);
+
+        return $subject ? [
+            'dic'  => substr($vatNumber, 2),
+            'ico'  => (string)Arr::get($subject, 'ico'),
+            'name' => (string)Arr::get($subject, 'nazov_ds'),
+        ] : null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>> the matching rows, empty when the register has none
+     */
+    private function search(string $list, string $column, string $value): array
+    {
+        $response = Http::baseUrl(rtrim((string)config('services.financna_sprava.url'), '/'))
+            ->withHeaders(['key' => (string)config('services.financna_sprava.api_key')])
+            ->acceptJson()
+            ->timeout(20)
+            ->retry(1, 0, throw: false)
+            ->get("/data/$list/search", ['page' => 1, 'column' => $column, 'search' => $value]);
+
+        if ($response->status() === 404) {
+            return [];
+        }
+        if (!$response->successful()) {
+            throw new RuntimeException("Finančná správa $list lookup for $column $value failed with HTTP {$response->status()}");
+        }
+
+        return $response->json('data') ?? [];
+    }
+
+    /**
      * Names compared without accents, case, punctuation and legal form, so "Obchod, s. r. o." is "OBCHOD s.r.o.".
      */
+    /**
+     * The registered subject is the customer's when its name is the customer's company or contact name (a sole trader is
+     * registered under the person's name), or when the DIČ the customer typed as its tax number is the registered one.
+     *
+     * @param array{dic: string, ico: string, name: string} $registered
+     */
+    public static function isTheirs(Customer $customer, array $registered): bool
+    {
+        $typedDic = preg_replace('/^SK/', '', strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', (string)$customer->taxNumber?->number)));
+        if ($typedDic !== '' && $typedDic === $registered['dic']) {
+            return true;
+        }
+
+        foreach ([$customer->company_name, $customer->contact_name, $customer->name] as $name) {
+            if (trim((string)$name) !== '' && self::sameName($registered['name'], (string)$name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function sameName(string $registered, string $ours): bool
     {
         $normalise = fn (string $name) => trim((string)preg_replace(
@@ -196,7 +266,7 @@ class VerifyCustomerDic
 
         Customer::where('organisation_id', $organisation->id)
             ->whereNull('deleted_at')
-            ->whereNotNull('identity_document_number')
+            ->whereHas('address', fn ($query) => $query->where('country_code', 'SK'))
             ->where(fn ($query) => $query->whereNull('data->dic_verification->checked_at')
                 ->orWhere('data->dic_verification->checked_at', '<', now()->subDays(self::RECHECK_AFTER_DAYS)->toIso8601String()))
             ->lazyById(500)

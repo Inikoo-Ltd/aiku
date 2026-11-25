@@ -186,7 +186,8 @@ class UpdateCustomer extends OrgAction
             $this->basketsFollowTheDefaultDeliveryAddress($customer, $previousDeliveryChecksum);
         }
 
-        if (Arr::hasAny($modelData, ['tax_number', 'mark_tax_number_valid'])) {
+        $taxNumberChanged = Arr::hasAny($modelData, ['tax_number', 'mark_tax_number_valid']);
+        if ($taxNumberChanged) {
             if (Arr::has($modelData, 'tax_number')) {
                 if ($this->strict) {
                     $taxNumberData = [];
@@ -318,7 +319,7 @@ class UpdateCustomer extends OrgAction
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($changes, ['peppol_id', 'identity_document_number', 'company_name'])) {
+        if ($taxNumberChanged || Arr::hasAny($changes, ['peppol_id', 'identity_document_number', 'company_name'])) {
             VerifyCustomerDic::dispatchIfApplies($customer);
         }
 

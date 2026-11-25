@@ -86,14 +86,15 @@ class EditCustomer extends OrgAction
 
         $checkedOn = Carbon::parse($verification['checked_at'])->format('j M Y');
         $register  = $verification['register_dic'] ? $verification['register_dic'].' ('.$verification['register_name'].')' : '';
+        $searched  = ($verification['ico'] ?? null) ?: ($verification['vat_number'] ?? '');
 
         return match ($verification['status']) {
             VerifyCustomerDic::MATCHED      => __('Finančná správa register, :date: matches :register.', ['date' => $checkedOn, 'register' => $register]),
             VerifyCustomerDic::FILLED       => __('Finančná správa register, :date: filled from :register.', ['date' => $checkedOn, 'register' => $register]),
-            VerifyCustomerDic::MISMATCH     => __('Finančná správa register, :date: DIFFERENT, the register has :register for IČO :ico.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
-            VerifyCustomerDic::NAME_DIFFERS => __('Finančná správa register, :date: IČO :ico is :register, a different name, so it was not filled.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
-            VerifyCustomerDic::NOT_REFILLED => __('Finančná správa register, :date: IČO :ico is :register, not filled again as the DIČ was cleared.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
-            default                         => __('Finančná správa register, :date: no subject with IČO :ico.', ['date' => $checkedOn, 'ico' => $verification['ico']]),
+            VerifyCustomerDic::MISMATCH     => __('Finančná správa register, :date: DIFFERENT, the register has :register for IČO :ico.', ['date' => $checkedOn, 'register' => $register, 'ico' => $searched]),
+            VerifyCustomerDic::NAME_DIFFERS => __('Finančná správa register, :date: IČO :ico is :register, a different name, so it was not filled.', ['date' => $checkedOn, 'register' => $register, 'ico' => $searched]),
+            VerifyCustomerDic::NOT_REFILLED => __('Finančná správa register, :date: IČO :ico is :register, not filled again as the DIČ was cleared.', ['date' => $checkedOn, 'register' => $register, 'ico' => $searched]),
+            default                         => __('Finančná správa register, :date: no subject with IČO or VAT number :ico.', ['date' => $checkedOn, 'ico' => $searched]),
         };
     }
 

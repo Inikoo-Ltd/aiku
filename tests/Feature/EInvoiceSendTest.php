@@ -642,3 +642,58 @@ test('a Slovak business customer\'s DIČ is checked against the Finančná sprá
 
     $this->organisation->update(['country_id' => $originalCountryId]);
 });
+
+test('a Slovak business customer without an IČO is checked by its VAT number in the list of VAT payers, which also gives its IČO', function () {
+    config(['services.financna_sprava.url' => 'https://register.test/api', 'services.financna_sprava.api_key' => 'register-key']);
+    $originalCountryId = $this->organisation->country_id;
+    $slovakiaId        = \App\Models\Helpers\Country::where('code', 'SK')->value('id');
+    $this->organisation->update(['country_id' => $slovakiaId]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->fresh()->update(['company_name' => 'Iris SH, s. r. o.', 'identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $this->customer->fresh(), modelData: ['number' => 'SK2020094637', 'country_id' => $slovakiaId], strict: false);
+    softipFake(['/data/ds_dphs/search' => Http::response(['page' => 1, 'pages' => 1, 'itemsCount' => 1, 'itemsPerPage' => 1000, 'data' => [
+        ['ic_dph' => 'SK2020094637', 'ico' => '36046205', 'nazov_ds' => 'IRIS SH, s.r.o.'],
+    ]])]);
+
+    expect(VerifyCustomerDic::lookupKey($this->customer->fresh()))->toBe(['ic_dph', 'SK2020094637']);
+
+    $verification = VerifyCustomerDic::make()->handle($this->customer->fresh());
+
+    expect($verification)->toMatchArray(['status' => VerifyCustomerDic::FILLED, 'register_dic' => '2020094637', 'ico' => '36046205', 'vat_number' => 'SK2020094637'])
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:2020094637')
+        ->and($this->customer->fresh()->identity_document_number)->toBe('36046205');
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/data/ds_dphs/search') && str_contains($request->url(), 'column=ic_dph'));
+
+    $this->customer->fresh()->taxNumber?->delete();
+    $this->customer->fresh()->update(['identity_document_number' => null, 'peppol_id' => null]);
+    $this->organisation->update(['country_id' => $originalCountryId]);
+});
+
+test('a sole trader is registered under the person\'s name: its DIČ is filled when the contact name or the DIČ typed as its tax number is the registered one', function () {
+    config(['services.financna_sprava.url' => 'https://register.test/api', 'services.financna_sprava.api_key' => 'register-key']);
+    $originalCountryId = $this->organisation->country_id;
+    $slovakiaId        = \App\Models\Helpers\Country::where('code', 'SK')->value('id');
+    $this->organisation->update(['country_id' => $slovakiaId]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->fresh()->update(['company_name' => 'Jan Novak - J N Servis', 'contact_name' => 'Ján Novák', 'identity_document_number' => '41917430', 'peppol_id' => null, 'data' => []]);
+    softipFake(['/data/ds_dsrdp/search' => Http::response(['page' => 1, 'pages' => 1, 'itemsCount' => 1, 'itemsPerPage' => 1000, 'data' => [
+        ['dic' => '1075530467', 'ico' => '41917430', 'nazov_ds' => 'Ján Novák'],
+    ]])]);
+
+    expect(VerifyCustomerDic::make()->handle($this->customer->fresh())['status'])->toBe(VerifyCustomerDic::FILLED)
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:1075530467');
+
+    $this->customer->fresh()->update(['contact_name' => 'Someone Else', 'peppol_id' => null, 'data' => []]);
+    expect(VerifyCustomerDic::make()->handle($this->customer->fresh())['status'])->toBe(VerifyCustomerDic::NAME_DIFFERS);
+
+    \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $this->customer->fresh(), modelData: ['number' => '1075530467', 'country_id' => $slovakiaId], strict: false);
+    $this->customer->fresh()->update(['data' => []]);
+    expect(VerifyCustomerDic::make()->handle($this->customer->fresh())['status'])->toBe(VerifyCustomerDic::FILLED)
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:1075530467');
+
+    $this->customer->fresh()->taxNumber?->delete();
+    $this->customer->fresh()->update(['identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    $this->organisation->update(['country_id' => $originalCountryId]);
+});
