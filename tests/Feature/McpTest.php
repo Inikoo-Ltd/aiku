@@ -4733,6 +4733,42 @@ describe('changing info websites through the assistant', function () {
             ->and($this->staticWebsite->webpages()->whereRaw('position(? in html) > 0', ['<!--aiku:component:announcement-->'])->count())->toBe(0)
             ->and($this->staticWebsite->webpages()->where('path', '/christmas')->exists())->toBeFalse();
     });
+    it('adds an image given in the chat to the website files, optimised, for a page to show', function () {
+        $picture = imagecreatetruecolor(3000, 1500);
+        ob_start();
+        imagepng($picture);
+        $png = ob_get_clean();
+        Illuminate\Support\Facades\Http::fake([
+            'https://93.184.215.14/hero.png'  => Illuminate\Support\Facades\Http::response($png),
+            'https://93.184.215.14/notes.txt' => Illuminate\Support\Facades\Http::response('not an image'),
+        ]);
+        $add = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteImageTool::class, array_merge(['website' => $this->staticWebsite->domain], $arguments));
+
+        expect((new App\Mcp\Tools\InfoWebsiteImageTool())->toArray()['_meta'])->toBe(['openai/fileParams' => ['image']]);
+
+        $chatImage = ['image' => ['download_url' => 'https://93.184.215.14/hero.png', 'file_id' => 'file_1', 'file_name' => 'Spring Hero.png']];
+        $image     = infoWebsiteToolJson($add($chatImage));
+
+        expect($image['src'])->toMatch('#^/_assets/spring-hero-[0-9a-f]{12}\.webp$#')
+            ->and([$image['width'], $image['height'], $image['already_stored']])->toBe([2400, 1200, false])
+            ->and(App\Models\Web\StaticWebsite::assetDisk()->exists($this->staticWebsite->assetStoragePath($image['name'])))->toBeTrue()
+            ->and(infoWebsiteToolJson($add($chatImage))['already_stored'])->toBeTrue();
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website' => $this->staticWebsite->domain, 'operation' => 'update_page', 'page' => '/',
+            'edits'   => [['action' => 'insert_after', 'find' => '<h1>Welcome</h1>', 'html' => '<img src="'.$image['src'].'" alt="Spring" width="2400" height="1200">']],
+        ])->assertOk();
+
+        $uploadId = (string) Illuminate\Support\Str::ulid();
+        App\Models\Web\StaticWebsite::assetDisk()->put(App\Actions\Helpers\Ticket\StoreTicketUpload::path($this->user->id, $uploadId).'/Logo.png', $png);
+        expect(infoWebsiteToolJson($add(['upload_id' => $uploadId]))['src'])->toStartWith('/_assets/logo-')
+            ->and(App\Actions\Helpers\Ticket\StoreTicketUpload::find($this->user->id, $uploadId))->toBeNull();
+        $add(['upload_id' => $uploadId])->assertHasErrors();
+
+        $add(['image_url' => 'https://93.184.215.14/notes.txt'])->assertHasErrors(['Only JPG, PNG and WebP images can be added. Nothing was stored.']);
+        $add(['image_url' => 'https://127.0.0.1/hero.png'])->assertHasErrors();
+        $add(['image_url' => 'http://93.184.215.14/hero.png'])->assertHasErrors();
+    });
 });
 
 describe('product packaging tool', function () {

@@ -16,7 +16,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Gives a one-use upload link for attaching a local file (a screenshot, a PDF) to a ticket comment without passing its bytes through the tool call. Upload the file with: curl -sf -F file=@/path/to/file.png "<upload_url>". The link works for 30 minutes and takes one file (images, PDF, Word, Excel, CSV, video, archives; 50 MB). Then pass the upload_id in uploads on ticket-write-tool.')]
+#[Description('Gives a one-use upload link for attaching a local file (a screenshot, a PDF) to a ticket comment, or an image for an info website, without passing its bytes through the tool call. Upload the file with: curl -sf -F file=@/path/to/file.png "<upload_url>". The link works for 30 minutes and takes one file (images, PDF, Word, Excel, CSV, video, archives; 50 MB). Then pass the upload_id in uploads on ticket-write-tool, or as upload_id on info-website-image-tool to put an image on an info website.')]
 class TicketUploadLinkTool extends Tool
 {
     public function shouldRegister(Request $request): bool
