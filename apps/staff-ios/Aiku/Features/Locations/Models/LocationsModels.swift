@@ -98,7 +98,7 @@ enum LocationsOccupancy: Hashable, Sendable {
 struct LocationsSlot: Identifiable, Hashable, Sendable {
     var skoReference: String
     var name: String
-    var quantity: Int
+    var quantity: Double
     var type: LocationsSlotType
     var roles: Set<LocationsPickingRole> = []
     var minStock = 0
@@ -115,9 +115,9 @@ struct LocationsSlot: Identifiable, Hashable, Sendable {
     var id: String { skoReference }
     var isEmpty: Bool { quantity <= 0 }
     var quantityText: String { quantityLabel.map { FractionGlyphs.apply($0) } ?? quantity.locationsGrouped }
-    var weightKg: Double { Double(max(quantity, 0)) * unitWeightKg }
-    var volumeM3: Double { Double(max(quantity, 0)) * unitVolumeM3 }
-    var stockValue: Double { Double(max(quantity, 0)) * unitValue }
+    var weightKg: Double { max(quantity, 0) * unitWeightKg }
+    var volumeM3: Double { max(quantity, 0) * unitVolumeM3 }
+    var stockValue: Double { max(quantity, 0) * unitValue }
 
     var settings: LocationsSlotSettings {
         LocationsSlotSettings(type: type, roles: roles, minStock: minStock, maxStock: maxStock, replenishment: replenishment, note: note)
@@ -168,7 +168,7 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
     var usedWeightKg: Double { slots.map(\.weightKg).reduce(0, +) }
     var usedVolumeM3: Double { slots.map(\.volumeM3).reduce(0, +) }
     var stockValue: Double { usesRemoteSummary ? remote?.stockValue ?? 0 : slots.map(\.stockValue).reduce(0, +) }
-    var totalUnits: Int { slots.map { max($0.quantity, 0) }.reduce(0, +) }
+    var totalUnits: Double { slots.map { max($0.quantity, 0) }.reduce(0, +) }
 
     var occupancy: LocationsOccupancy {
         if stockedSlotCount == 0, palletCount == 0 {
@@ -379,4 +379,8 @@ enum LocationsFormat {
 
 extension Int {
     var locationsGrouped: String { formatted(.number.locale(LocationsFormat.locale)) }
+}
+
+extension Double {
+    var locationsGrouped: String { formatted(.number.precision(.fractionLength(0...3)).locale(LocationsFormat.locale)) }
 }

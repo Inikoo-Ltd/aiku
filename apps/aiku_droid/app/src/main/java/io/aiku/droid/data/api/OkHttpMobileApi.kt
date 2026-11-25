@@ -225,8 +225,8 @@ class OkHttpMobileApi(
             ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseDeliveryNotes(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 
-    override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts> =
-        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/delivery-notes/counts", GoodsOutResponses.countsParameters(picker)), token))
+    override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, filter: DeliveryNoteCountsFilter): GoodsOutResult<DeliveryNoteCounts> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/delivery-notes/counts", GoodsOutResponses.countsParameters(filter)), token))
             ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseCounts(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 

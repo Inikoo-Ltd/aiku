@@ -79,6 +79,7 @@ fun LeaveScreen() {
             list = state.list,
             emptyIcon = R.drawable.ic_ui_clipboard,
             emptyTitle = stringResource(R.string.clocking_leave_empty_title),
+            problemTitle = stringResource(R.string.clocking_load_failed_leave),
             emptyBody = stringResource(R.string.clocking_leave_empty_body),
             onRetry = controller::load,
             onLoadMore = controller::loadMore,

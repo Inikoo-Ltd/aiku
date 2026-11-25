@@ -254,6 +254,50 @@ struct QuantityStepper: View {
     }
 }
 
+struct DecimalQuantityStepper: View {
+    @Binding var value: Double
+    let valueText: String
+    var range: ClosedRange<Double> = 0...99999
+
+    var body: some View {
+        FieldBox {
+            stepButton("−", label: "Decrease", isEnabled: value > range.lowerBound) {
+                value = Self.clean(min(range.upperBound, max(range.lowerBound, value - 1)))
+            }
+            Rectangle().fill(AikuColor.border).frame(width: 1)
+            Text(valueText)
+                .font(.aiku(18, .semibold))
+                .foregroundStyle(AikuColor.text)
+                .monospacedDigit()
+                .frame(maxWidth: .infinity)
+                .accessibilityLabel(L10n.format("Quantity %@", valueText))
+            Rectangle().fill(AikuColor.border).frame(width: 1)
+            stepButton("+", label: "Increase", isEnabled: value < range.upperBound) {
+                value = Self.clean(min(range.upperBound, max(range.lowerBound, value + 1)))
+            }
+        }
+    }
+
+    static func clean(_ value: Double) -> Double {
+        (value * 1_000_000).rounded() / 1_000_000
+    }
+
+    private func stepButton(_ symbol: String, label: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(symbol)
+                .font(.aiku(22))
+                .foregroundStyle(isEnabled ? AikuColor.text2 : AikuColor.faint)
+                .frame(width: 56)
+                .frame(maxHeight: .infinity)
+                .background(AikuColor.surface2)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .accessibilityLabel(L10n.text(label))
+    }
+}
+
 struct RadioCard<Trailing: View>: View {
     let title: String
     var subtitle: String?

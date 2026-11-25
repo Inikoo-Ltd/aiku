@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Tidak ada hasil untuk “%1$s”</string>
     <string name="states_search_scan_instead">Pindai saja</string>
     <string name="states_server_body">Aiku tidak merespons. Tindakan terakhir Anda tidak disimpan. Coba lagi sebentar lagi.</string>
-    <string name="states_server_error_code">Kesalahan %1$d ·</string>
     <string name="states_server_title">Terjadi kesalahan</string>
     <string name="states_session_body">Demi keamanan, Anda dikeluarkan setelah lama tidak ada aktivitas. Masuk lagi untuk melanjutkan. Tidak ada data tersimpan yang hilang.</string>
     <string name="states_session_sign_in">Masuk lagi</string>
     <string name="states_session_title">Sesi berakhir</string>
-    <string name="states_tasks_empty_body">Tidak ada surat jalan yang menunggu Anda. Surat jalan baru akan muncul di sini segera setelah ditugaskan.</string>
-    <string name="states_tasks_empty_title">Semua sudah beres</string>
-    <string name="states_tasks_pick_from_queue">Kembali ke surat jalan</string>
     <string name="states_try_again">Coba lagi</string>
     <string name="states_type_code">Ketik kode</string>
     <string name="stepper_decrease">Kurangi</string>
@@ -2365,4 +2361,19 @@
     <string name="inventory_remove_one_confirm">Hapus</string>
     <string name="inventory_sko_status_heading">Status SKO</string>
     <string name="inventory_quantity_status_heading">Status kuantitas</string>
+    <string name="goodsout_filter_date_overdue">Terlambat</string>
+    <string name="errors_what_does_this_mean">Apa artinya ini?</string>
+    <string name="errors_support_reference">Referensi dukungan: %1$s</string>
+    <string name="errors_support_reference_label">Referensi dukungan Aiku</string>
+    <string name="errors_support_reference_copied">Referensi dukungan disalin</string>
+    <string name="errors_open_in_browser">Buka di browser</string>
+    <string name="errors_page_failed_title">Tidak dapat memuat halaman bantuan</string>
+    <string name="errors_page_failed_body">Periksa koneksi, atau buka halaman di browser.</string>
+    <string name="goodsin_next_stock_delivery">Penerimaan stok berikutnya</string>
+    <string name="clocking_load_failed_timesheets">Tidak dapat memuat lembar waktu Anda</string>
+    <string name="clocking_load_failed_day">Tidak dapat memuat data hari tersebut</string>
+    <string name="clocking_load_failed_calendar">Tidak dapat memuat kalender</string>
+    <string name="clocking_load_failed_leave">Tidak dapat memuat cuti Anda</string>
+    <string name="clocking_load_failed_overtime">Tidak dapat memuat lembur Anda</string>
+    <string name="clocking_load_failed_adjustments">Tidak dapat memuat koreksi absensi Anda</string>
 </resources>

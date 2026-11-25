@@ -30,10 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -54,15 +49,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.theme.AikuDroidTheme
-import io.aiku.droid.ui.theme.Appearance
 import io.aiku.droid.ui.theme.LocalAikuColors
-import io.aiku.droid.ui.theme.ThemeMode
 
 private const val DARK_PHOTO_ALPHA = 0.85f
 private const val SCAN_PANEL_CHANGE_MILLIS = 180
@@ -206,7 +197,7 @@ fun ScanPanel(
                 ScanPanelCloseButton(onClick = onClose)
             }
         }
-        AikuButton(text = allLabel, onClick = onAll, icon = R.drawable.ic_ui_check_double, height = 52.dp, isLoading = isWorking, modifier = Modifier.fillMaxWidth())
+        AikuButton(text = allLabel, onClick = onAll, style = ButtonStyle.Soft, icon = R.drawable.ic_ui_check_double, height = 52.dp, isLoading = isWorking, modifier = Modifier.fillMaxWidth())
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             StepButton(symbol = "−", description = stringResource(R.string.stepper_decrease), enabled = amount > 1, shape = stepShape) { onAmountChange(amount - 1) }
             Text(
@@ -218,7 +209,7 @@ fun ScanPanel(
                 modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
             )
             StepButton(symbol = "+", description = stringResource(R.string.stepper_increase), enabled = amount < maxAmount, shape = stepShape) { onAmountChange(amount + 1) }
-            AikuButton(text = amountLabel, onClick = onAmount, style = ButtonStyle.Outline, height = 52.dp, modifier = Modifier.weight(1.4f))
+            AikuButton(text = amountLabel, onClick = onAmount, style = ButtonStyle.Primary, height = 52.dp, modifier = Modifier.weight(1.4f))
         }
         Text(text = hint, fontSize = 11.sp, color = colors.textQuaternary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
@@ -300,58 +291,3 @@ fun ChoiceRow(
     }
 }
 
-private object ScanPanelPreviewSample {
-    const val CODE = "SKO-00733"
-    const val NAME = "Bath bomb – rose 180g"
-    const val LOCATION = "A-03-02"
-    const val PICKED = 1
-    const val REMAINING = 23
-    const val AMOUNT = 6
-}
-
-@Composable
-private fun ScanPanelSample() {
-    var picked by remember { mutableIntStateOf(ScanPanelPreviewSample.PICKED) }
-    var remaining by remember { mutableIntStateOf(ScanPanelPreviewSample.REMAINING) }
-    var amount by remember { mutableIntStateOf(ScanPanelPreviewSample.AMOUNT) }
-
-    fun pick(count: Int) {
-        val taken = count.coerceAtMost(remaining)
-        picked += taken
-        remaining -= taken
-        amount = amount.coerceIn(1, maxOf(1, remaining))
-    }
-
-    Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.background(LocalAikuColors.current.background).padding(top = 24.dp)) {
-        ScanPanel(
-            item = ScanPanelItem(code = ScanPanelPreviewSample.CODE, name = ScanPanelPreviewSample.NAME, location = ScanPanelPreviewSample.LOCATION),
-            countLabel = stringResource(R.string.goodsout_scan_picked_chip, picked),
-            remainingLabel = pluralStringResource(R.plurals.goodsout_left_on_item, remaining, remaining),
-            allLabel = pluralStringResource(R.plurals.goodsout_pick_all, remaining, remaining),
-            onAll = { pick(remaining) },
-            amount = amount,
-            onAmountChange = { amount = it.coerceIn(1, maxOf(1, remaining)) },
-            amountLabel = stringResource(R.string.goodsout_pick_amount, amount),
-            onAmount = { pick(amount) },
-            hint = stringResource(R.string.goodsout_scan_panel_hint),
-            maxAmount = maxOf(1, remaining),
-            modifier = Modifier.fakeData(cornerRadius = 16.dp),
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun ScanPanelPreview() {
-    AikuDroidTheme(appearance = Appearance(mode = ThemeMode.Light)) {
-        ScanPanelSample()
-    }
-}
-
-@Preview
-@Composable
-private fun ScanPanelDarkPreview() {
-    AikuDroidTheme(appearance = Appearance(mode = ThemeMode.Dark)) {
-        ScanPanelSample()
-    }
-}

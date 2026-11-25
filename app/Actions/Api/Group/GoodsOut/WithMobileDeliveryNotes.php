@@ -9,6 +9,8 @@
 
 namespace App\Actions\Api\Group\GoodsOut;
 
+use App\Actions\Api\Group\WithMobileDateRange;
+use App\Actions\Dispatching\Capacity\GetWarehouseCapacity;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -22,6 +24,8 @@ use Illuminate\Support\Carbon;
 
 trait WithMobileDeliveryNotes
 {
+    use WithMobileDateRange;
+
     public const array BUCKETS = [
         'unassigned'       => 'unassigned',
         'queued'           => 'queued',
@@ -52,6 +56,30 @@ trait WithMobileDeliveryNotes
         };
 
         return $query;
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     */
+    protected function whereListFilters(QueryBuilder $query, Warehouse $warehouse, array $filters): void
+    {
+        $this->whereWithinDays($query, 'delivery_notes.date', $warehouse, $filters['from'] ?? null, $filters['to'] ?? null);
+
+        if ($filters['overdue'] ?? false) {
+            $overdueStates = [...GetWarehouseCapacity::WAITING_TO_BE_PICKED, ...GetWarehouseCapacity::WAITING_TO_BE_PACKED, ...GetWarehouseCapacity::WAITING_TO_BE_SHIPPED];
+            $timezone      = $warehouse->organisation->timezone?->name ?? config('app.timezone');
+
+            $query->whereIn('delivery_notes.state', array_map(fn (DeliveryNoteStateEnum $state) => $state->value, $overdueStates))
+                ->where('delivery_notes.date', '<', GetWarehouseCapacity::lateCutoff(now(), $timezone)->utc()->toDateTimeString());
+        }
+    }
+
+    protected function useWebDeliveryNotesSearch(?string $search): void
+    {
+        $search = trim((string) $search);
+        if ($search !== '') {
+            request()->merge(['filter' => ['global' => $search]]);
+        }
     }
 
     protected function withRowColumns(QueryBuilder $query): QueryBuilder

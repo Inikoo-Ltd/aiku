@@ -693,7 +693,14 @@ test('the waiting notice queues a check that asks the warehouse only when the pe
     $task = CheckMobileOfflineWaitingNotice::make()->handle($this->device, $absent->id, $this->user->id, 3, null, $noticedAt);
     expect($task)->not->toBeNull()
         ->and($task->department)->toBe('warehouse')
-        ->and($task->requester_id)->toBe($this->user->id);
+        ->and($task->requester_id)->toBe($this->user->id)
+        ->and($task->subject)->toStartWith('Offline actions of ')
+        ->and($task->description)->toContain(' left 3 actions unsent on a shared phone, the oldest done ');
+
+    $single = CheckMobileOfflineWaitingNotice::make()->handle($this->device, $absent->id, $this->user->id, 1, null, $noticedAt);
+    expect($single->subject)->toStartWith('An offline action of ')
+        ->and($single->description)->toContain(' left 1 action unsent on a shared phone, done ')
+        ->and($single->description)->toContain('It is sent only when ');
 
     DB::table('mobile_offline_devices')->insert([
         'device_uuid' => $this->device, 'user_id' => $absent->id, 'group_id' => $this->group->id, 'platform' => 'android', 'last_sequence' => 3,

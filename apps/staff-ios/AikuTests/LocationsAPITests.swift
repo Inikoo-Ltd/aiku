@@ -694,6 +694,23 @@ struct LocationsAPITests {
         #expect(count["note"] as? String == "Broken box")
     }
 
+    @Test func aFractionOfAnSkoInALocationKeepsItsExactQuantity() async throws {
+        var responses = Self.responses
+        responses["mobile/locations/7"] = Self.responses["mobile/locations/7"]!.replacingOccurrences(of: #""quantity":"30""#, with: #""quantity":"13.7","quantity_label":"13 7/10""#)
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client(responses))
+        await store.loadLocation(code: "A-03-02", apiClient: client(responses))
+
+        let slot = try #require(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733"))
+        #expect(slot.quantity == 13.7)
+
+        let request = client().makeRequest(for: .mobileLocationAudit(id: 7, counts: [
+            MobileLocationAuditCount(locationOrgStockId: 11, quantity: slot.quantity, reason: LocationsAuditReason.unchangedRemoteValue, note: nil),
+        ]))
+        let body = String(data: try #require(request.httpBody), encoding: .utf8) ?? ""
+        #expect(body.contains(#""quantity":13.7"#))
+    }
+
     @Test func remoteAuditUsesRecountWhenNothingChangedAndShowsTheNewCount() async throws {
         let store = await detailedStore()
 

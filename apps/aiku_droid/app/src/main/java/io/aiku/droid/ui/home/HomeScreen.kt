@@ -21,8 +21,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +47,7 @@ import io.aiku.droid.ui.clocking.LocalClocking
 import io.aiku.droid.ui.clocking.clockingSummaryLines
 import io.aiku.droid.ui.clocking.clockingWeekTotal
 import io.aiku.droid.ui.clocking.rememberClockingNow
+import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.AvatarButton
 import io.aiku.droid.ui.components.CardShape
@@ -251,18 +252,7 @@ private fun ClockingCard(summary: ClockingSummaryLines?, weekTotal: String?, las
                 }
             }
         }
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .heightIn(min = 44.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(colors.primary)
-                .border(1.dp, colors.primaryBorder, RoundedCornerShape(8.dp))
-                .clickable(role = Role.Button, onClick = onOpen)
-                .padding(horizontal = 14.dp),
-        ) {
-            Text(text = stringResource(R.string.home_clocking), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onPrimary)
-        }
+        AikuButton(text = stringResource(R.string.home_clocking), onClick = onOpen, height = 44.dp)
     }
 }
 

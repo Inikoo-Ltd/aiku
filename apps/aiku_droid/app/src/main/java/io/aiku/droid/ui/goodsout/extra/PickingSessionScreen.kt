@@ -100,6 +100,7 @@ private sealed interface SessionSheet {
     data object AttachTrolley : SessionSheet
     data class DetachTrolley(val trolley: TrolleyRef) : SessionSheet
     data class BackToPicking(val action: DeliveryNoteAction) : SessionSheet
+    data class RemoveNotes(val ids: List<Long>) : SessionSheet
 }
 
 @Composable
@@ -256,7 +257,7 @@ private fun PickingSessionContent(viewModel: PickingSessionViewModel, state: Pic
                 RemoveNotesFooter(
                     count = chosen.size,
                     isWorking = state.working is PickingSessionWrite.RemoveDeliveryNotes,
-                    onRemove = { viewModel.act(PickingSessionWrite.RemoveDeliveryNotes(chosen.toList())) },
+                    onRemove = { openSheet(SessionSheet.RemoveNotes(chosen.toList())) },
                     onCancel = { removing = null },
                 )
             } else {
@@ -310,11 +311,22 @@ private fun PickingSessionContent(viewModel: PickingSessionViewModel, state: Pic
             title = stringResource(R.string.goodsout_extra_session_detach_title, shown.trolley.name),
             subtitle = stringResource(R.string.goodsout_extra_session_kicker, session.reference),
             confirmLabel = stringResource(R.string.goodsout_trolley_remove),
-            confirmLook = ButtonLook(ButtonStyle.DangerStrong, R.drawable.ic_ui_trash),
+            confirmLook = ButtonLook(ButtonStyle.Caution),
             hint = stringResource(R.string.goodsout_extra_session_detach_hint),
             isWorking = state.isWorking,
             problem = sheetProblem,
             onConfirm = { viewModel.act(PickingSessionWrite.DetachTrolley(shown.trolley.id)) },
+            onDismiss = closeSheet,
+        )
+        is SessionSheet.RemoveNotes -> ActionConfirmSheet(
+            title = pluralStringResource(R.plurals.goodsout_extra_session_remove, shown.ids.size, shown.ids.size),
+            subtitle = stringResource(R.string.goodsout_extra_session_kicker, session.reference),
+            confirmLabel = pluralStringResource(R.plurals.goodsout_extra_session_remove, shown.ids.size, shown.ids.size),
+            confirmLook = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).forConfirm(),
+            hint = stringResource(R.string.goodsout_extra_session_remove_body),
+            isWorking = state.working is PickingSessionWrite.RemoveDeliveryNotes,
+            problem = sheetProblem,
+            onConfirm = { viewModel.act(PickingSessionWrite.RemoveDeliveryNotes(shown.ids)) },
             onDismiss = closeSheet,
         )
         is SessionSheet.BackToPicking -> ActionConfirmSheet(
@@ -384,8 +396,8 @@ private fun RemoveNotesFooter(count: Int, isWorking: Boolean, onRemove: () -> Un
         AikuButton(
             text = pluralStringResource(R.plurals.goodsout_extra_session_remove, count, count),
             onClick = onRemove,
-            style = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).forConfirm().style,
-            icon = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).forConfirm().icon,
+            style = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).style,
+            icon = goodsOutActionLook(SessionActionKey.REMOVE_DELIVERY_NOTES).icon,
             isLoading = isWorking,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),

@@ -210,7 +210,7 @@ struct InventorySkoLocation: Identifiable, Hashable, Sendable {
     let code: String
     var type: InventoryLocationType
     var channel: InventoryChannel?
-    var quantity: Int
+    var quantity: Double
     var minimum: Int?
     var maximum: Int?
     var replenish: Int?
@@ -352,7 +352,7 @@ struct InventorySko: Identifiable, Hashable, Sendable {
 
     var id: String { reference }
 
-    var stock: Int { locations.reduce(0) { $0 + $1.quantity } }
+    var stock: Double { locations.reduce(0) { $0 + $1.quantity } }
 
     var stockValue: Decimal { unitValue * Decimal(stock) }
 
@@ -364,9 +364,9 @@ struct InventorySko: Identifiable, Hashable, Sendable {
         let total = stock
         if hasNegativeStock || total < 0 { return .error }
         if total == 0 { return .outOfStock }
-        if total <= criticalAt { return .critical }
-        if total <= lowAt { return .low }
-        if total >= excessAt { return .excess }
+        if total <= Double(criticalAt) { return .critical }
+        if total <= Double(lowAt) { return .low }
+        if total >= Double(excessAt) { return .excess }
         return .ideal
     }
 

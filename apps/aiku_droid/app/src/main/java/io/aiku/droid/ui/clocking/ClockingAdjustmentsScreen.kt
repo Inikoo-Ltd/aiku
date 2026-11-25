@@ -83,6 +83,7 @@ fun ClockingAdjustmentsScreen() {
             list = state.list,
             emptyIcon = R.drawable.ic_ui_clock,
             emptyTitle = stringResource(R.string.clocking_adjustments_empty_title),
+            problemTitle = stringResource(R.string.clocking_load_failed_adjustments),
             emptyBody = stringResource(R.string.clocking_adjustments_empty_body),
             onRetry = controller::load,
             onLoadMore = controller::loadMore,

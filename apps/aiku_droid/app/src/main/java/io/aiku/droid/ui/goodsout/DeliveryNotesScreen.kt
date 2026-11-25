@@ -8,6 +8,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -73,6 +74,8 @@ import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
 import io.aiku.droid.ui.scan.ScanProblem
+import io.aiku.droid.ui.states.ErrorCode
+import io.aiku.droid.ui.states.ErrorHelp
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 import kotlinx.coroutines.flow.first
@@ -108,7 +111,7 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
     val problemTexts = GoodsOutProblem.entries.associateWith { problemText(it) }
     val stateOptions = stageBuckets.map { (stage, bucket) ->
         val label = stringResource(stage.label)
-        val count = state.counts?.count(bucket)
+        val count = state.counts?.count(bucket, filter.channel)
         FilterOption(label = if (count == null) label else stringResource(R.string.goodsout_state_count, label, count))
     }
     val selectedStateIndex = stageBuckets.indexOfFirst { it.second == filter.bucket }
@@ -154,7 +157,7 @@ private fun DeliveryNotesContent(state: DeliveryNotesUiState, notes: DeliveryNot
             description = stringResource(R.string.goodsout_search_and_filter),
             onClick = { showFilter = true },
             filled = true,
-            badgeCount = filter.activeFilterCount,
+            badgeCount = filter.panelCount,
         )
     }
 
@@ -364,6 +367,7 @@ internal fun GoodsOutLoadProblem(problem: GoodsOutProblem, title: String, onRetr
         actionLabel = if (problem == GoodsOutProblem.Forbidden) null else stringResource(R.string.goodsout_try_again),
         onAction = onRetry,
         modifier = modifier,
+        footer = { ErrorHelp(code = problem.errorCode, modifier = Modifier.padding(top = 4.dp)) },
     )
 }
 

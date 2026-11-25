@@ -82,6 +82,7 @@ fun InlineAlert(
     tone: AlertTone = AlertTone.Warn,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    footer: (@Composable () -> Unit)? = null,
 ) {
     val colors = LocalAikuColors.current
     val palette = alertColors(tone)
@@ -115,6 +116,7 @@ fun InlineAlert(
                         .padding(vertical = 4.dp),
                 )
             }
+            footer?.invoke()
         }
     }
 }

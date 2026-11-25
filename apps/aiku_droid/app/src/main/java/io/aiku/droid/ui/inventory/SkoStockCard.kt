@@ -54,7 +54,7 @@ internal fun unitsTotalText(units: Double): String = pluralStringResource(R.plur
 
 data class SkoStockFigure(val label: String, val value: String)
 
-data class SkoStockAction(val label: String, @DrawableRes val icon: Int, val onClick: () -> Unit)
+data class SkoStockAction(val label: String, @DrawableRes val icon: Int, val onClick: () -> Unit, val style: ButtonStyle = ButtonStyle.Outline)
 
 @Composable
 internal fun SkoStockCard(
@@ -94,7 +94,7 @@ internal fun SkoStockCard(
                         AikuButton(
                             text = action.label,
                             onClick = action.onClick,
-                            style = ButtonStyle.Outline,
+                            style = action.style,
                             icon = action.icon,
                             height = 40.dp,
                             modifier = Modifier.fillMaxWidth(),

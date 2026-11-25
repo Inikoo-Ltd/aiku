@@ -36,7 +36,6 @@
 
     <string name="states_server_title">Something went wrong</string>
     <string name="states_server_body">Aiku didn’t respond. Your last action was not saved. Try again in a moment.</string>
-    <string name="states_server_error_code">Error %1$d ·</string>
     <string name="states_report_problem">Report problem</string>
 
     <string name="states_camera_title">Camera access is off</string>
@@ -48,9 +47,6 @@
     <string name="states_search_empty_body" tools:ignore="TypographyDashes">Try a SKO reference (SKO-00412), a location code (A-03-02) or a shorter word.</string>
     <string name="states_search_scan_instead">Scan instead</string>
 
-    <string name="states_tasks_empty_title">All caught up</string>
-    <string name="states_tasks_empty_body">No delivery notes are waiting for you. New ones appear here as soon as they are assigned.</string>
-    <string name="states_tasks_pick_from_queue">Back to delivery notes</string>
 
     <string name="states_conflict_reload_now">Reload now</string>
     <string name="states_conflict_what_changed">What changed</string>
@@ -89,4 +85,11 @@
     <string name="states_preview_clocking_location">Clocking · location blocked</string>
     <string name="states_preview_clocking_pin">Clocking · no PIN yet</string>
     <string name="states_preview_clocking_offline">Clocking · no connection</string>
+    <string name="errors_what_does_this_mean">What does this mean?</string>
+    <string name="errors_support_reference">Support reference: %1$s</string>
+    <string name="errors_support_reference_label">Aiku support reference</string>
+    <string name="errors_support_reference_copied">Support reference copied</string>
+    <string name="errors_open_in_browser">Open in browser</string>
+    <string name="errors_page_failed_title">Couldn’t load the help page</string>
+    <string name="errors_page_failed_body">Check the connection, or open the page in the browser.</string>
 </resources>

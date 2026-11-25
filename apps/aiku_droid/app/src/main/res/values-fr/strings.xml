@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Aucun résultat pour « %1$s »</string>
     <string name="states_search_scan_instead">Scanner plutôt</string>
     <string name="states_server_body">Aiku n\'a pas répondu. Votre dernière action n\'a pas été enregistrée. Réessayez dans un instant.</string>
-    <string name="states_server_error_code">Erreur %1$d ·</string>
     <string name="states_server_title">Un problème est survenu</string>
     <string name="states_session_body">Par sécurité, vous avez été déconnecté après une longue période d\'inactivité. Reconnectez-vous pour continuer. Rien de ce que vous avez enregistré n\'est perdu.</string>
     <string name="states_session_sign_in">Se reconnecter</string>
     <string name="states_session_title">Session expirée</string>
-    <string name="states_tasks_empty_body">Aucun bon de livraison ne vous attend. Les nouveaux apparaissent ici dès qu\'ils sont attribués.</string>
-    <string name="states_tasks_empty_title">Tout est à jour</string>
-    <string name="states_tasks_pick_from_queue">Retour aux bons de livraison</string>
     <string name="states_try_again">Réessayer</string>
     <string name="states_type_code">Saisissez le code</string>
     <string name="stepper_decrease">Diminuer</string>
@@ -2585,4 +2581,19 @@
     <string name="inventory_remove_one_confirm">Retirer</string>
     <string name="inventory_sko_status_heading">Statut des SKO</string>
     <string name="inventory_quantity_status_heading">Statut des quantités</string>
+    <string name="goodsout_filter_date_overdue">En retard</string>
+    <string name="errors_what_does_this_mean">Qu’est-ce que cela signifie ?</string>
+    <string name="errors_support_reference">Référence support : %1$s</string>
+    <string name="errors_support_reference_label">Référence support Aiku</string>
+    <string name="errors_support_reference_copied">Référence support copiée</string>
+    <string name="errors_open_in_browser">Ouvrir dans le navigateur</string>
+    <string name="errors_page_failed_title">Impossible de charger la page d’aide</string>
+    <string name="errors_page_failed_body">Vérifiez la connexion ou ouvrez la page dans le navigateur.</string>
+    <string name="goodsin_next_stock_delivery">Livraison de stock suivante</string>
+    <string name="clocking_load_failed_timesheets">Impossible de charger vos feuilles de temps</string>
+    <string name="clocking_load_failed_day">Impossible de charger cette journée</string>
+    <string name="clocking_load_failed_calendar">Impossible de charger le calendrier</string>
+    <string name="clocking_load_failed_leave">Impossible de charger vos congés</string>
+    <string name="clocking_load_failed_overtime">Impossible de charger vos heures supplémentaires</string>
+    <string name="clocking_load_failed_adjustments">Impossible de charger vos corrections de pointage</string>
 </resources>

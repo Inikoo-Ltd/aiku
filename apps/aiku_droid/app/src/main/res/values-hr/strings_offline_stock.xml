@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Ništa ne čeka</string>
     <string name="offline_stock_queue_empty_body">Ono što radite izvan mreže prikazuje se ovdje dok se ne sinkronizira.</string>
     <string name="offline_stock_queue_note">Rad po stavkama (prikupljanje, pakiranje, smještanje, povrati, premještanja i brojanja) sprema se na telefon izvan mreže, a Aiku ga provjerava pri sinkronizaciji. Promjene statusa zahtijevaju vezu.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Otpremnica %1$s</string>
     <string name="offline_stock_record_return">Povrat %1$s</string>
     <string name="offline_stock_record_delivery">Isporuka robe %1$s</string>

@@ -654,6 +654,8 @@ use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSources
 use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSourceLines;
 use App\Actions\Procurement\PurchaseOrderTransaction\PullPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\KeepPurchaseOrderTransactionAtAgent;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoKeepPurchaseOrderTransactionAtAgent;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\UnpackPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
@@ -2257,6 +2259,8 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('transactions/{purchaseOrderTransaction:id}/pack', PackPurchaseOrderTransaction::class)->name('transaction.pack')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/unpack', UnpackPurchaseOrderTransaction::class)->name('transaction.unpack')->withoutScopedBindings();
     Route::patch('transactions/pack', PackPurchaseOrderTransactions::class)->name('transaction.pack_many');
+    Route::post('transactions/{purchaseOrderTransaction:id}/keep-at-agent', KeepPurchaseOrderTransactionAtAgent::class)->name('transaction.keep_at_agent')->withoutScopedBindings();
+    Route::delete('transactions/{purchaseOrderTransaction:id}/keep-at-agent', UndoKeepPurchaseOrderTransactionAtAgent::class)->name('transaction.keep_at_agent.undo')->withoutScopedBindings();
     Route::post('new-container', AddPurchaseOrderItemsToNewAgentContainer::class)->name('new_container');
 });
 

@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">“%1$s” के लिए कोई परिणाम नहीं</string>
     <string name="states_search_scan_instead">इसके बजाय स्कैन करें</string>
     <string name="states_server_body">Aiku ने जवाब नहीं दिया। आपकी अंतिम कार्रवाई सहेजी नहीं गई। थोड़ी देर में फिर से प्रयास करें।</string>
-    <string name="states_server_error_code">त्रुटि %1$d ·</string>
     <string name="states_server_title">कुछ गलत हो गया</string>
     <string name="states_session_body">सुरक्षा के लिए, लंबे समय तक निष्क्रिय रहने के बाद आपको साइन आउट कर दिया गया। जारी रखने के लिए फिर से साइन इन करें। आपने जो कुछ सहेजा है, वह खोया नहीं है।</string>
     <string name="states_session_sign_in">फिर से साइन इन करें</string>
     <string name="states_session_title">सत्र समाप्त हो गया</string>
-    <string name="states_tasks_empty_body">कोई डिलीवरी नोट आपकी प्रतीक्षा में नहीं है। नए नोट असाइन होते ही यहाँ दिखते हैं।</string>
-    <string name="states_tasks_empty_title">सब निपट गया</string>
-    <string name="states_tasks_pick_from_queue">डिलीवरी नोट्स पर वापस</string>
     <string name="states_try_again">फिर से प्रयास करें</string>
     <string name="states_type_code">कोड टाइप करें</string>
     <string name="stepper_decrease">घटाएँ</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">हटाएँ</string>
     <string name="inventory_sko_status_heading">SKO स्थिति</string>
     <string name="inventory_quantity_status_heading">मात्रा स्थिति</string>
+    <string name="goodsout_filter_date_overdue">विलंबित</string>
+    <string name="errors_what_does_this_mean">इसका क्या मतलब है?</string>
+    <string name="errors_support_reference">सहायता संदर्भ: %1$s</string>
+    <string name="errors_support_reference_label">Aiku सहायता संदर्भ</string>
+    <string name="errors_support_reference_copied">सहायता संदर्भ कॉपी किया गया</string>
+    <string name="errors_open_in_browser">ब्राउज़र में खोलें</string>
+    <string name="errors_page_failed_title">सहायता पेज लोड नहीं हो सका</string>
+    <string name="errors_page_failed_body">कनेक्शन जाँचें, या पेज को ब्राउज़र में खोलें।</string>
+    <string name="goodsin_next_stock_delivery">अगली स्टॉक डिलीवरी</string>
+    <string name="clocking_load_failed_timesheets">आपकी टाइमशीट लोड नहीं हो सकीं</string>
+    <string name="clocking_load_failed_day">यह दिन लोड नहीं हो सका</string>
+    <string name="clocking_load_failed_calendar">कैलेंडर लोड नहीं हो सका</string>
+    <string name="clocking_load_failed_leave">आपकी छुट्टियाँ लोड नहीं हो सकीं</string>
+    <string name="clocking_load_failed_overtime">आपका ओवरटाइम लोड नहीं हो सका</string>
+    <string name="clocking_load_failed_adjustments">आपकी हाज़िरी के सुधार लोड नहीं हो सके</string>
 </resources>

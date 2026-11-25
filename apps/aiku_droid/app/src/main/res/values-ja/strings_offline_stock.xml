@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">待機中の作業はありません</string>
     <string name="offline_stock_queue_empty_body">オフラインで行った作業は、同期されるまでここに表示されます。</string>
     <string name="offline_stock_queue_note">明細単位の作業（ピック、梱包、格納、返品、移動、棚卸）はオフライン中に端末へ保存され、同期時に Aiku が確認します。ステータスの変更には接続が必要です。</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">納品書 %1$s</string>
     <string name="offline_stock_record_return">返品 %1$s</string>
     <string name="offline_stock_record_delivery">入荷 %1$s</string>

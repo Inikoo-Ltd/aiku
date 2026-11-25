@@ -4,11 +4,11 @@ struct InventoryMoveSheet: View {
     let sko: InventorySko
     var showsReasons = true
     let onCancel: () -> Void
-    let onSave: (String, String, Int, InventoryMoveReason) async throws -> String
+    let onSave: (String, String, Double, InventoryMoveReason) async throws -> String
     let onDone: (String) -> Void
     @State private var source: String
     @State private var destination: String
-    @State private var quantity: Int
+    @State private var quantity: Double
     @State private var reason: InventoryMoveReason = .warehouseTransfer
     @State private var error: String?
     @State private var isSaving = false
@@ -18,7 +18,7 @@ struct InventoryMoveSheet: View {
         sko: InventorySko,
         showsReasons: Bool = true,
         onCancel: @escaping () -> Void,
-        onSave: @escaping (String, String, Int, InventoryMoveReason) async throws -> String,
+        onSave: @escaping (String, String, Double, InventoryMoveReason) async throws -> String,
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
@@ -31,7 +31,7 @@ struct InventoryMoveSheet: View {
             ?? sko.locations.first { $0.code != from?.code }
         _source = State(initialValue: from?.code ?? "")
         _destination = State(initialValue: to?.code ?? "")
-        _quantity = State(initialValue: min(12, max(1, from?.quantity ?? 1)))
+        _quantity = State(initialValue: min(1, max(0, from?.quantity ?? 0)))
     }
 
     var body: some View {
@@ -49,9 +49,9 @@ struct InventoryMoveSheet: View {
                     error = nil
                 }
             }
-            InventoryQuantityField(title: "Quantity", value: $quantity, range: 1...max(1, available))
+            InventoryQuantityField(title: "Quantity", value: $quantity, range: 0...max(0, available), packedIn: sko.packedIn)
             if available > 0, quantity != available {
-                LinkButton(L10n.format("Move all %@", String(available))) {
+                LinkButton(L10n.format("Move all %@", StockConfirmText.quantityLabel(available, packedIn: sko.packedIn))) {
                     quantity = available
                 }
                 .frame(minHeight: 44)
@@ -89,7 +89,7 @@ struct InventoryMoveSheet: View {
         L10n.format("Move %@", StockConfirmText.quantityLabel(quantity, packedIn: sko.packedIn))
     }
 
-    private var available: Int {
+    private var available: Double {
         sko.location(source)?.quantity ?? 0
     }
 
@@ -102,7 +102,7 @@ struct InventoryMoveSheet: View {
         if destination == location.code {
             destination = sko.locations.first { $0.code != location.code }?.code ?? ""
         }
-        quantity = min(quantity, max(1, location.quantity))
+        quantity = min(quantity, max(0, location.quantity))
         error = nil
     }
 

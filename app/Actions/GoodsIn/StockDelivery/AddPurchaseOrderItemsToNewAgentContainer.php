@@ -69,7 +69,7 @@ class AddPurchaseOrderItemsToNewAgentContainer extends OrgAction
     {
         $orgAgent = $this->purchaseOrder->isAgentOrder() ? $this->purchaseOrder->orgAgentOfOrder() : null;
 
-        if (!$orgAgent || !$this->purchaseOrder->state->isAgreed()) {
+        if (!$orgAgent || !in_array($this->purchaseOrder->state, StoreStockDeliveryFromPurchaseOrder::shippingStates(), true)) {
             $validator->errors()->add('items', __('Only the items of a confirmed agent order go in a container'));
         } elseif ($orgAgent->agent->organisation->currency_id !== $this->purchaseOrder->currency_id) {
             $validator->errors()->add('items', __('A new container is in the agent\'s currency, and this order is in another one'));

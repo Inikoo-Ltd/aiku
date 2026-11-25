@@ -3,12 +3,12 @@ import SwiftUI
 struct InventoryAuditSheet: View {
     let sko: InventorySko
     var onlyLocation: String?
-    let reasonChoices: (Int) -> [InventoryReasonChoice]
+    let reasonChoices: (Double) -> [InventoryReasonChoice]
     let reasonsError: String?
     let onCancel: () -> Void
-    let onSave: ([String: Int], [String: String]) async throws -> String
+    let onSave: ([String: Double], [String: String]) async throws -> String
     let onDone: (String) -> Void
-    @State private var counts: [String: Int]
+    @State private var counts: [String: Double]
     @State private var reasons: [String: String] = [:]
     @State private var error: String?
     @State private var isSaving = false
@@ -17,10 +17,10 @@ struct InventoryAuditSheet: View {
     init(
         sko: InventorySko,
         onlyLocation: String? = nil,
-        reasonChoices: @escaping (Int) -> [InventoryReasonChoice],
+        reasonChoices: @escaping (Double) -> [InventoryReasonChoice],
         reasonsError: String? = nil,
         onCancel: @escaping () -> Void,
-        onSave: @escaping ([String: Int], [String: String]) async throws -> String,
+        onSave: @escaping ([String: Double], [String: String]) async throws -> String,
         onDone: @escaping (String) -> Void
     ) {
         self.sko = sko
@@ -30,7 +30,7 @@ struct InventoryAuditSheet: View {
         self.onCancel = onCancel
         self.onSave = onSave
         self.onDone = onDone
-        _counts = State(initialValue: Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, max(0, $0.quantity)) }))
+        _counts = State(initialValue: Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, $0.quantity) }))
     }
 
     var body: some View {
@@ -82,15 +82,15 @@ struct InventoryAuditSheet: View {
         return sko.locations.filter { $0.code == onlyLocation }
     }
 
-    private var countedValues: [String: Int] {
+    private var countedValues: [String: Double] {
         Dictionary(uniqueKeysWithValues: auditedLocations.map { ($0.code, counted($0)) })
     }
 
-    private func counted(_ location: InventorySkoLocation) -> Int {
-        counts[location.code] ?? max(0, location.quantity)
+    private func counted(_ location: InventorySkoLocation) -> Double {
+        counts[location.code] ?? location.quantity
     }
 
-    private func change(_ location: InventorySkoLocation) -> Int {
+    private func change(_ location: InventorySkoLocation) -> Double {
         counted(location) - location.quantity
     }
 
@@ -130,7 +130,7 @@ struct InventoryAuditSheet: View {
                     StatusChip(InventoryStockMovement.signed(change), tone: change < 0 ? .warn : .success)
                 }
             }
-            QuantityStepper(value: countBinding(location), range: 0...99999)
+            DecimalQuantityStepper(value: countBinding(location), valueText: StockConfirmText.quantityLabel(counted(location), packedIn: sko.packedIn))
                 .accessibilityLabel(L10n.format("Counted in %@", location.code))
         }
         .padding(.horizontal, 14)
@@ -150,7 +150,7 @@ struct InventoryAuditSheet: View {
         }
     }
 
-    private func countBinding(_ location: InventorySkoLocation) -> Binding<Int> {
+    private func countBinding(_ location: InventorySkoLocation) -> Binding<Double> {
         Binding {
             counted(location)
         } set: { newValue in

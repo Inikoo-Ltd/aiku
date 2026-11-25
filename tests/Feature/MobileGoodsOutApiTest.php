@@ -30,6 +30,12 @@ use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Carbon;
+use App\Actions\Api\Group\GoodsOut\GetMobileDeliveryNoteCounts;
+use Sentry\EventId;
+use Sentry\State\HubInterface;
+use RuntimeException;
+use Mockery;
 
 require_once __DIR__.'/../Support/MobileApiHelpers.php';
 require_once __DIR__.'/../Support/MobileGoodsOutHelpers.php';
@@ -204,6 +210,60 @@ test('mobile delivery note counts match the list, per bucket and per channel', f
         ->assertJsonPath('data.buckets.handling', 1)
         ->assertJsonPath('data.buckets.unassigned', 0)
         ->assertJsonPath('data.buckets.in_warehouse', 1);
+});
+
+test('mobile delivery note counts follow the list date range, search and overdue filters', function () {
+    actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+    $this->travelTo(Carbon::parse('2026-03-11 10:00:00'));
+
+    $old           = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-09 08:00:00']);
+    $recent        = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-11 08:00:00']);
+    $oldPacked     = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-09 08:00:00', 'state' => DeliveryNoteStateEnum::PACKED]);
+    $oldDispatched = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-09 08:00:00', 'state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes.counts', $this->warehouse->id, ['from' => '2026-03-11', 'to' => '2026-03-11'])
+        ->assertOk()
+        ->assertJsonPath('data.buckets.unassigned', 1)
+        ->assertJsonPath('data.buckets.packed', 0)
+        ->assertJsonPath('data.buckets.dispatched', 0)
+        ->assertJsonPath('data.channels.0.buckets.unassigned', 1);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes.counts', $this->warehouse->id, ['search' => $recent->reference])
+        ->assertJsonPath('data.buckets.unassigned', 1)
+        ->assertJsonPath('data.buckets.in_warehouse', 1);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes.counts', $this->warehouse->id, ['overdue' => 1])
+        ->assertJsonPath('data.buckets.unassigned', 1)
+        ->assertJsonPath('data.buckets.packed', 1)
+        ->assertJsonPath('data.buckets.dispatched', 0)
+        ->assertJsonPath('data.buckets.in_warehouse', 2);
+
+    expect(goodsOutReferences($this->warehouse, ['bucket' => 'all', 'overdue' => 1, 'sort' => 'reference']))->toEqualCanonicalizing([$old->reference, $oldPacked->reference])
+        ->and(goodsOutReferences($this->warehouse, ['bucket' => 'all', 'overdue' => 1]))->not->toContain($oldDispatched->reference);
+
+    $this->travelTo(Carbon::parse('2026-03-16 10:00:00'));
+    $thursday = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-12 08:00:00']);
+    $saturday = goodsOutDeliveryNote($this->order, $this->warehouse, ['date' => '2026-03-14 08:00:00']);
+
+    expect(goodsOutReferences($this->warehouse, ['overdue' => 1]))->toContain($thursday->reference)
+        ->not->toContain($saturday->reference);
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes.counts', $this->warehouse->id, ['overdue' => 'soon', 'from' => '11-03-2026'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['overdue', 'from']);
+});
+
+test('a mobile server error carries the error report id as its support reference', function () {
+    actingAsGoodsOutUser($this->group, $this->warehouse, [RolesEnum::DISPATCH_CLERK]);
+    $eventId = EventId::generate();
+    $sentry  = Mockery::mock(HubInterface::class)->shouldIgnoreMissing();
+    $sentry->shouldReceive('captureException')->andReturn($eventId);
+    app()->instance('sentry', $sentry);
+    $this->partialMock(GetMobileDeliveryNoteCounts::class, fn ($mock) => $mock->shouldReceive('handle')->andThrow(new RuntimeException('Counts failed.')));
+
+    getGoodsOut('grp.api.mobile.warehouses.delivery_notes.counts', $this->warehouse->id)
+        ->assertServerError()
+        ->assertJsonPath('reference', (string) $eventId);
 });
 
 test('mobile delivery note page sends the header and the lines in walk order while handling', function () {

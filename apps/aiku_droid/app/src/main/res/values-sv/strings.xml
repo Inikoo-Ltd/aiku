@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Inga resultat för ”%1$s”</string>
     <string name="states_search_scan_instead">Skanna i stället</string>
     <string name="states_server_body">Aiku svarade inte. Din senaste åtgärd sparades inte. Försök igen om en stund.</string>
-    <string name="states_server_error_code">Fel %1$d ·</string>
     <string name="states_server_title">Något gick fel</string>
     <string name="states_session_body">Av säkerhetsskäl loggades du ut efter lång tids inaktivitet. Logga in igen för att fortsätta. Inget du har sparat har gått förlorat.</string>
     <string name="states_session_sign_in">Logga in igen</string>
     <string name="states_session_title">Sessionen har gått ut</string>
-    <string name="states_tasks_empty_body">Inga följesedlar väntar på dig. Nya visas här så snart de tilldelas.</string>
-    <string name="states_tasks_empty_title">Allt är klart</string>
-    <string name="states_tasks_pick_from_queue">Tillbaka till följesedlar</string>
     <string name="states_try_again">Försök igen</string>
     <string name="states_type_code">Skriv koden</string>
     <string name="stepper_decrease">Minska</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Ta bort</string>
     <string name="inventory_sko_status_heading">SKO-status</string>
     <string name="inventory_quantity_status_heading">Kvantitetsstatus</string>
+    <string name="goodsout_filter_date_overdue">Försenade</string>
+    <string name="errors_what_does_this_mean">Vad betyder det här?</string>
+    <string name="errors_support_reference">Supportreferens: %1$s</string>
+    <string name="errors_support_reference_label">Aiku-supportreferens</string>
+    <string name="errors_support_reference_copied">Supportreferensen har kopierats</string>
+    <string name="errors_open_in_browser">Öppna i webbläsaren</string>
+    <string name="errors_page_failed_title">Det gick inte att läsa in hjälpsidan</string>
+    <string name="errors_page_failed_body">Kontrollera anslutningen eller öppna sidan i webbläsaren.</string>
+    <string name="goodsin_next_stock_delivery">Nästa lagerleverans</string>
+    <string name="clocking_load_failed_timesheets">Det gick inte att läsa in dina tidrapporter</string>
+    <string name="clocking_load_failed_day">Det gick inte att läsa in den här dagen</string>
+    <string name="clocking_load_failed_calendar">Det gick inte att läsa in kalendern</string>
+    <string name="clocking_load_failed_leave">Det gick inte att läsa in din ledighet</string>
+    <string name="clocking_load_failed_overtime">Det gick inte att läsa in din övertid</string>
+    <string name="clocking_load_failed_adjustments">Det gick inte att läsa in dina stämplingskorrigeringar</string>
 </resources>

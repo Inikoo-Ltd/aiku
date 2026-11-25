@@ -74,15 +74,26 @@ data class DeliveryNoteQuery(
     val search: String? = null,
     val from: LocalDate? = null,
     val to: LocalDate? = null,
+    val overdue: Boolean = false,
     val picker: PickerFilter? = null,
     val sort: DeliveryNoteSort? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
 ) {
+    val countsFilter: DeliveryNoteCountsFilter get() = DeliveryNoteCountsFilter(picker = picker, search = search, from = from, to = to, overdue = overdue)
+
     companion object {
         const val DEFAULT_PER_PAGE = 50
     }
 }
+
+data class DeliveryNoteCountsFilter(
+    val picker: PickerFilter? = null,
+    val search: String? = null,
+    val from: LocalDate? = null,
+    val to: LocalDate? = null,
+    val overdue: Boolean = false,
+)
 
 @Serializable
 data class GoodsOutPagination(
@@ -156,6 +167,9 @@ data class DeliveryNoteCounts(
     val channels: List<ChannelCounts> = emptyList(),
 ) {
     fun count(bucket: DeliveryNoteBucket): Int = buckets[bucket.key] ?: 0
+
+    fun count(bucket: DeliveryNoteBucket, channel: DispatchChannel): Int =
+        if (channel == DispatchChannel.All) count(bucket) else channels.firstOrNull { it.channel == channel.key }?.count(bucket) ?: 0
 }
 
 @Serializable
@@ -850,7 +864,7 @@ sealed interface GoodsOutResult<out T> {
 interface GoodsOutApi {
     suspend fun deliveryNotes(token: String, warehouseId: Long, query: DeliveryNoteQuery): GoodsOutResult<DeliveryNotePage>
 
-    suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts>
+    suspend fun deliveryNoteCounts(token: String, warehouseId: Long, filter: DeliveryNoteCountsFilter): GoodsOutResult<DeliveryNoteCounts>
 
     suspend fun deliveryNote(token: String, deliveryNoteId: Long): GoodsOutResult<DeliveryNote>
 

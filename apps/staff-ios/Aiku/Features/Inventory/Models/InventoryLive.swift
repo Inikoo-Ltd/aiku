@@ -167,7 +167,7 @@ enum InventoryLive {
             code: link.location.code,
             type: type,
             channel: type == .picking ? channel : nil,
-            quantity: wholeQuantity(link.quantity.value),
+            quantity: link.quantity.value,
             minimum: link.minStock?.value.map(wholeQuantity),
             maximum: link.maxStock?.value.map(wholeQuantity),
             replenish: link.replenishmentStock?.value.map(wholeQuantity),
@@ -258,17 +258,17 @@ enum InventoryLive {
         return value > 0 ? "+\(magnitude)" : value < 0 ? "−\(magnitude)" : "0"
     }
 
-    static func auditCounts(for sko: InventorySko, counted: [String: Int], reasons: [String: String]) -> [MobileOrgStockAuditCount] {
+    static func auditCounts(for sko: InventorySko, counted: [String: Double], reasons: [String: String]) -> [MobileOrgStockAuditCount] {
         sko.locations.compactMap { location in
             guard let link = location.link, let count = counted[location.code] else { return nil }
             if count == location.quantity {
                 return MobileOrgStockAuditCount(locationOrgStockId: link.linkID, quantity: link.exactQuantity)
             }
-            return MobileOrgStockAuditCount(locationOrgStockId: link.linkID, quantity: Double(count), reason: reasons[location.code])
+            return MobileOrgStockAuditCount(locationOrgStockId: link.linkID, quantity: count, reason: reasons[location.code])
         }
     }
 
-    static func reasonChoices(_ reasons: MobileStockMovementReasons, change: Int) -> [InventoryReasonChoice] {
+    static func reasonChoices(_ reasons: MobileStockMovementReasons, change: Double) -> [InventoryReasonChoice] {
         let options = change < 0 ? reasons.decrease : change > 0 ? reasons.increase : []
         return options.map { InventoryReasonChoice(id: $0.value, title: $0.label) }
     }
@@ -538,11 +538,11 @@ final class InventorySkoFeed {
         }
     }
 
-    func reasonChoices(change: Int) -> [InventoryReasonChoice] {
+    func reasonChoices(change: Double) -> [InventoryReasonChoice] {
         reasons.map { InventoryLive.reasonChoices($0, change: change) } ?? []
     }
 
-    func audit(counted: [String: Int], reasons chosen: [String: String]) async throws -> String {
+    func audit(counted: [String: Double], reasons chosen: [String: String]) async throws -> String {
         let (sko, id) = try current()
         let counts = InventoryLive.auditCounts(for: sko, counted: counted, reasons: chosen)
         guard !counts.isEmpty else { throw InventoryStockError.nothingSelected }
@@ -553,17 +553,17 @@ final class InventorySkoFeed {
         } fallback: { "Audit saved" }
     }
 
-    func move(from source: String, to destination: String, quantity: Int) async throws -> String {
+    func move(from source: String, to destination: String, quantity: Double) async throws -> String {
         let (sko, _) = try current()
         guard source != destination else { throw InventoryStockError.sameLocation }
         guard quantity > 0 else { throw InventoryStockError.quantityMustBePositive }
         let from = try link(source, in: sko)
         let to = try link(destination, in: sko)
-        let target = MobileOrgStockMoveTarget(locationOrgStockId: to.linkID, quantity: Double(quantity))
+        let target = MobileOrgStockMoveTarget(locationOrgStockId: to.linkID, quantity: quantity)
         let requestID = GoodsInText.newRequestID()
         let payload = StockOfflinePayloads.moveToRows(
             sourceLinkID: from.linkID,
-            moves: [StockOfflineMove(linkID: to.linkID, quantity: Double(quantity))],
+            moves: [StockOfflineMove(linkID: to.linkID, quantity: quantity)],
             clientRequestID: requestID
         )
         return try await write(.moveStock, payload: payload) {
@@ -571,11 +571,11 @@ final class InventorySkoFeed {
         } fallback: { "Stock moved" }
     }
 
-    func consume(location code: String, quantity: Int, note: String) async throws -> String {
+    func consume(location code: String, quantity: Double, note: String) async throws -> String {
         let (sko, _) = try current()
         guard quantity > 0 else { throw InventoryStockError.quantityMustBePositive }
         let link = try link(code, in: sko)
-        let body = MobileOrgStockConsumeBody(quantity: Double(quantity), note: InventoryLive.nonEmpty(note))
+        let body = MobileOrgStockConsumeBody(quantity: quantity, note: InventoryLive.nonEmpty(note))
         try await waitForOfflineWork()
         return try finish(await service.consume(link.linkID, body), fallback: "Consumption recorded")
     }

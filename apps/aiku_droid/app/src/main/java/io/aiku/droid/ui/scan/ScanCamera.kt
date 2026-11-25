@@ -151,7 +151,7 @@ fun ScannerReadyNotice(reason: ScannerReadyReason, onUseCamera: () -> Unit, modi
         AikuButton(
             text = stringResource(R.string.scan_ready_use_camera),
             onClick = onUseCamera,
-            style = ButtonStyle.Outline,
+            style = ButtonStyle.Scan,
             icon = R.drawable.ic_ui_camera,
             modifier = Modifier.fillMaxWidth(),
         )

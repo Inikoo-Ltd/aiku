@@ -197,7 +197,7 @@ struct MobileLocationMovementsPage: Decodable, Sendable, Equatable {
 
 struct MobileLocationAuditCount: Encodable, Sendable, Equatable {
     let locationOrgStockId: Int
-    let quantity: Int
+    let quantity: Double
     let reason: String
     let note: String?
 }
@@ -216,7 +216,7 @@ struct MobileMoveAllBody: Encodable, Sendable {
 
 struct MobileMovedOrgStock: Encodable, Sendable, Equatable {
     let orgStockId: Int
-    let quantity: Int
+    let quantity: Double
     let removeAfterMove: Bool
 }
 

@@ -67,6 +67,8 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use PragmaRX\Google2FAQRCode\Google2FA;
+use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
+use RuntimeException;
 
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\get;
@@ -1503,6 +1505,25 @@ test('mobile location audit records the web audit movement for each SKO counted'
         ->and($movement->note)->toBe('Counted in the app')
         ->and($movement->user_id)->toBe($user->id)
         ->and((float) $movement->quantity)->toBe(-5.0);
+});
+
+test('mobile location audit saves every count or none', function () {
+    [$user, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    [, $secondSko] = createMobileEmptyLocationLink($warehouse, $stocked);
+    $first  = $stocked->locationOrgStocks()->where('org_stock_id', '!=', $secondSko->id)->first();
+    $second = $stocked->locationOrgStocks()->where('org_stock_id', $secondSko->id)->first();
+
+    AuditLocationOrgStock::partialMock()->shouldReceive('action')->once()->passthru();
+    AuditLocationOrgStock::partialMock()->shouldReceive('action')->once()->andThrow(new RuntimeException('Count could not be saved.'));
+
+    postJson(route('grp.api.mobile.locations.audit', $stocked->id), ['counts' => [
+        ['location_org_stock_id' => $first->id, 'quantity' => 25, 'reason' => OrgStockMovementReasonEnum::COUNT_SHORT->value],
+        ['location_org_stock_id' => $second->id, 'quantity' => 4, 'reason' => OrgStockMovementReasonEnum::COUNT_SHORT->value],
+    ]], ['X-Aiku-App-Key' => 'mobile-test-key'])->assertServerError();
+
+    expect((float) $first->refresh()->quantity)->toBe(30.0)
+        ->and(OrgStockMovement::where('org_stock_id', $first->org_stock_id)->where('type', OrgStockMovementTypeEnum::AUDIT)->exists())->toBeFalse();
 });
 
 test('mobile location audit needs stock edit rights and SKOs of that location', function () {

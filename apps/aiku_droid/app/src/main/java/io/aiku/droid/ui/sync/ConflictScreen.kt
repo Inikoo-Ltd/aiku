@@ -36,6 +36,7 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonLook
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
@@ -49,18 +50,21 @@ import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.goodsout.problemText
 import io.aiku.droid.ui.goodsout.quantityText
-import io.aiku.droid.ui.inventory.momentText
 import io.aiku.droid.ui.inventory.fractionGlyphs
+import io.aiku.droid.ui.inventory.momentText
 import io.aiku.droid.ui.inventory.stockFractionLabel
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.SkuRoute
+import io.aiku.droid.ui.states.ErrorCode
+import io.aiku.droid.ui.states.ErrorHelp
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -121,6 +125,24 @@ private fun ConflictEvents(event: ConflictEvent?, onHandled: () -> Unit) {
     }
 }
 
+private val RESOLUTION_ORDER = listOf(
+    OfflineResolution.Retry,
+    OfflineResolution.Recount,
+    OfflineResolution.PutBack,
+    OfflineResolution.Done,
+    OfflineResolution.KeepCount,
+    OfflineResolution.Discard,
+)
+
+internal fun resolutionLook(resolution: OfflineResolution): ButtonLook = when (resolution) {
+    OfflineResolution.Retry -> ButtonLook(ButtonStyle.Primary, R.drawable.ic_states_retry)
+    OfflineResolution.Recount -> ButtonLook(ButtonStyle.Primary)
+    OfflineResolution.PutBack -> ButtonLook(ButtonStyle.Primary)
+    OfflineResolution.Done -> ButtonLook(ButtonStyle.Finish)
+    OfflineResolution.KeepCount -> ButtonLook(ButtonStyle.Caution)
+    OfflineResolution.Discard -> ButtonLook(ButtonStyle.Danger)
+}
+
 private fun conflictFooter(
     state: ConflictUiState,
     onResolve: (OfflineResolution) -> Unit,
@@ -137,12 +159,17 @@ private fun conflictFooter(
     if (resolutions.isEmpty() && !operation.canRollback) {
         return null
     }
+    val ordered = resolutions.sortedBy { RESOLUTION_ORDER.indexOf(it) }
+    val looks = ordered.map(::resolutionLook)
+    val mainIndex = looks.indexOfFirst { it.style == ButtonStyle.Primary || it.style == ButtonStyle.Finish }
     return {
-        resolutions.forEachIndexed { index, resolution ->
+        ordered.forEachIndexed { index, resolution ->
+            val look = looks[index].inFooter(isFirst = index == mainIndex)
             AikuButton(
                 text = resolutionLabel(resolution),
                 onClick = { onResolve(resolution) },
-                style = if (index == 0) ButtonStyle.Primary else ButtonStyle.Outline,
+                style = look.style,
+                icon = look.icon,
                 isLoading = state.working == resolution,
                 height = 52.dp,
                 modifier = Modifier.fillMaxWidth(),
@@ -177,6 +204,7 @@ private fun ConflictDetails(operation: OfflineOperationEntry, state: ConflictUiS
     GroupLabel(text = stringResource(R.string.conflict_whats_different))
     DifferenceTable(rows = conflictDifferences(operation), packedIn = operation.item?.packedIn, actionTitle = entryOperationLabel(operation))
     reasonText(operation.reason)?.let { Text(text = it, fontSize = 13.sp, lineHeight = 18.sp, color = colors.textSecondary, modifier = Modifier.padding(horizontal = 4.dp)) }
+    ErrorCode.forSyncReason(operation.reason)?.let { ErrorHelp(code = it, modifier = Modifier.padding(horizontal = 4.dp)) }
     operation.taskReference?.takeIf { it.isNotBlank() }?.let { Row { StatusBadge(text = stringResource(R.string.offline_stock_task, it), tone = Tone.Primary) } }
     operation.blockedBySequence?.let {
         Text(text = stringResource(R.string.offline_stock_blocked_by, it), fontSize = 13.sp, color = colors.textTertiary, modifier = Modifier.padding(horizontal = 4.dp))

@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Немає результатів для «%1$s»</string>
     <string name="states_search_scan_instead">Сканувати натомість</string>
     <string name="states_server_body">Aiku не відповів. Вашу останню дію не збережено. Спробуйте ще раз за мить.</string>
-    <string name="states_server_error_code">Помилка %1$d ·</string>
     <string name="states_server_title">Щось пішло не так</string>
     <string name="states_session_body">З міркувань безпеки ви вийшли із системи після тривалої бездіяльності. Увійдіть знову, щоб продовжити. Нічого зі збереженого не втрачено.</string>
     <string name="states_session_sign_in">Увійти знову</string>
     <string name="states_session_title">Сеанс завершився</string>
-    <string name="states_tasks_empty_body">На вас не чекає жодна накладна. Нові з\'являться тут, щойно їх буде призначено.</string>
-    <string name="states_tasks_empty_title">Усе виконано</string>
-    <string name="states_tasks_pick_from_queue">Назад до накладних</string>
     <string name="states_try_again">Спробувати ще раз</string>
     <string name="states_type_code">Введіть код</string>
     <string name="stepper_decrease">Зменшити</string>
@@ -2695,4 +2691,19 @@
     <string name="inventory_remove_one_confirm">Прибрати</string>
     <string name="inventory_sko_status_heading">Статус SKO</string>
     <string name="inventory_quantity_status_heading">Статус кількості</string>
+    <string name="goodsout_filter_date_overdue">Прострочені</string>
+    <string name="errors_what_does_this_mean">Що це означає?</string>
+    <string name="errors_support_reference">Номер для підтримки: %1$s</string>
+    <string name="errors_support_reference_label">Номер Aiku для підтримки</string>
+    <string name="errors_support_reference_copied">Номер для підтримки скопійовано</string>
+    <string name="errors_open_in_browser">Відкрити в браузері</string>
+    <string name="errors_page_failed_title">Не вдалося завантажити сторінку довідки</string>
+    <string name="errors_page_failed_body">Перевірте з’єднання або відкрийте сторінку в браузері.</string>
+    <string name="goodsin_next_stock_delivery">Наступна поставка товарів</string>
+    <string name="clocking_load_failed_timesheets">Не вдалося завантажити ваші табелі</string>
+    <string name="clocking_load_failed_day">Не вдалося завантажити цей день</string>
+    <string name="clocking_load_failed_calendar">Не вдалося завантажити календар</string>
+    <string name="clocking_load_failed_leave">Не вдалося завантажити ваші відпустки</string>
+    <string name="clocking_load_failed_overtime">Не вдалося завантажити ваші понаднормові</string>
+    <string name="clocking_load_failed_adjustments">Не вдалося завантажити виправлення вашого обліку часу</string>
 </resources>

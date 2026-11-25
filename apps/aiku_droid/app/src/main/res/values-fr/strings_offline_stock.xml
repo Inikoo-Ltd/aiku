@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Rien en attente</string>
     <string name="offline_stock_queue_empty_body">Ce que vous faites hors ligne s\'affiche ici jusqu\'à sa synchronisation.</string>
     <string name="offline_stock_queue_note">Le travail par ligne (prélèvements, emballage, rangement, retours, déplacements et comptages) est enregistré sur le téléphone hors ligne et vérifié par Aiku à la synchronisation. Les changements de statut nécessitent une connexion.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Bon de livraison %1$s</string>
     <string name="offline_stock_record_return">Retour %1$s</string>
     <string name="offline_stock_record_delivery">Livraison de stock %1$s</string>

@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Nekas negaida</string>
     <string name="offline_stock_queue_empty_body">Tas, ko dari bezsaistē, ir redzams šeit, līdz tiek sinhronizēts.</string>
     <string name="offline_stock_queue_note">Darbs ar rindām (paņemšana, iepakošana, novietošana, atgriešana, pārvietošana un skaitīšana) bezsaistē tiek saglabāts tālrunī, un Aiku to pārbauda sinhronizējot. Statusa maiņām vajadzīgs savienojums.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Pavadzīme %1$s</string>
     <string name="offline_stock_record_return">Atgriešana %1$s</string>
     <string name="offline_stock_record_delivery">Preču piegāde %1$s</string>

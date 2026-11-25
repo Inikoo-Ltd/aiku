@@ -35,7 +35,7 @@ data class InboxUiState(
     val cachedAt: Instant? = null,
 ) {
     val hasLoaded: Boolean get() = page > 0
-    val isEmpty: Boolean get() = hasLoaded && notifications.isEmpty() && problem == null
+    val isEmpty: Boolean get() = hasLoaded && notifications.isEmpty() && (problem == null || cachedAt != null)
     val canLoadMore: Boolean get() = hasLoaded && page < lastPage && loadingPage == null && problem == null
     val isLoadingMore: Boolean get() = (loadingPage ?: 0) > 1
     val firstPageProblem: GoodsOutProblem? get() = problem?.takeIf { failedPage == 1 }

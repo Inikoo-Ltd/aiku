@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Žádné výsledky pro „%1$s“</string>
     <string name="states_search_scan_instead">Raději skenovat</string>
     <string name="states_server_body">Aiku neodpovídá. Vaše poslední akce se neuložila. Zkuste to znovu za chvíli.</string>
-    <string name="states_server_error_code">Chyba %1$d ·</string>
     <string name="states_server_title">Něco se pokazilo</string>
     <string name="states_session_body">Z bezpečnostních důvodů jste byli po delší nečinnosti odhlášeni. Chcete-li pokračovat, přihlaste se znovu. Nic z uloženého se neztratilo.</string>
     <string name="states_session_sign_in">Přihlásit se znovu</string>
     <string name="states_session_title">Platnost relace vypršela</string>
-    <string name="states_tasks_empty_body">Nečekají na vás žádné dodací listy. Nové se zde zobrazí, jakmile vám budou přiřazeny.</string>
-    <string name="states_tasks_empty_title">Vše vyřízeno</string>
-    <string name="states_tasks_pick_from_queue">Zpět na dodací listy</string>
     <string name="states_try_again">Zkuste to znovu</string>
     <string name="states_type_code">Zadejte kód</string>
     <string name="stepper_decrease">Snížit</string>
@@ -2695,4 +2691,19 @@
     <string name="inventory_remove_one_confirm">Odebrat</string>
     <string name="inventory_sko_status_heading">Stav SKO</string>
     <string name="inventory_quantity_status_heading">Stav množství</string>
+    <string name="goodsout_filter_date_overdue">Po termínu</string>
+    <string name="errors_what_does_this_mean">Co to znamená?</string>
+    <string name="errors_support_reference">Reference pro podporu: %1$s</string>
+    <string name="errors_support_reference_label">Reference pro podporu Aiku</string>
+    <string name="errors_support_reference_copied">Reference pro podporu zkopírována</string>
+    <string name="errors_open_in_browser">Otevřít v prohlížeči</string>
+    <string name="errors_page_failed_title">Stránku nápovědy se nepodařilo načíst</string>
+    <string name="errors_page_failed_body">Zkontrolujte připojení nebo stránku otevřete v prohlížeči.</string>
+    <string name="goodsin_next_stock_delivery">Další dodávka zásob</string>
+    <string name="clocking_load_failed_timesheets">Výkazy hodin se nepodařilo načíst</string>
+    <string name="clocking_load_failed_day">Tento den se nepodařilo načíst</string>
+    <string name="clocking_load_failed_calendar">Kalendář se nepodařilo načíst</string>
+    <string name="clocking_load_failed_leave">Dovolenou se nepodařilo načíst</string>
+    <string name="clocking_load_failed_overtime">Přesčasy se nepodařilo načíst</string>
+    <string name="clocking_load_failed_adjustments">Opravy docházky se nepodařilo načíst</string>
 </resources>

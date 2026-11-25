@@ -80,6 +80,7 @@ fun ButtonStyle.tileTone(): Tone = when (this) {
 @DrawableRes
 private fun ButtonStyle.defaultIcon(): Int? = when (this) {
     ButtonStyle.Finish -> R.drawable.ic_ui_check
+    ButtonStyle.Caution -> R.drawable.ic_ui_undo
     ButtonStyle.Danger -> R.drawable.ic_ui_x_circle
     else -> null
 }

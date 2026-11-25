@@ -4,7 +4,6 @@ namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
@@ -82,7 +81,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
                 fn (Builder $query) => $query->whereNull('agent_id')->where('parent_id', $stockDelivery->parent_id),
                 fn (Builder $query) => $query->where('agent_id', $stockDelivery->agent_id)
             )
-            ->whereIn('state', PurchaseOrderStateEnum::agreed())
+            ->whereIn('state', StoreStockDeliveryFromPurchaseOrder::shippingStates())
             ->where('currency_id', $stockDelivery->currency_id)
             ->whereHas('purchaseOrderTransactions', $itemsAwaitingDelivery)
             ->whereDoesntHave('stockDeliveries', fn (Builder $deliveries) => $deliveries

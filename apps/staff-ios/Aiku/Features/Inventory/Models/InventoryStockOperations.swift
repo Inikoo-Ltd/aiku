@@ -2,7 +2,7 @@ import Foundation
 
 enum InventoryStockError: Error, Equatable, Sendable {
     case quantityMustBePositive
-    case notEnoughStock(available: Int)
+    case notEnoughStock(available: Double)
     case sameLocation
     case unknownLocation(String)
     case missingReason(String)
@@ -14,7 +14,7 @@ enum InventoryStockError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .quantityMustBePositive: L10n.text("Enter a quantity above 0.")
-        case .notEnoughStock(let available): L10n.format("Only %@ in location.", String(available))
+        case .notEnoughStock(let available): L10n.format("Only %@ in location.", available.grouped)
         case .sameLocation: L10n.text("Choose two different locations.")
         case .unknownLocation(let code): L10n.format("%@ is not a location of this SKO.", code)
         case .missingReason(let code): L10n.format("Choose a reason for %@.", code)
@@ -26,12 +26,12 @@ enum InventoryStockError: Error, Equatable, Sendable {
 }
 
 struct InventoryAuditDraft: Equatable, Sendable {
-    var counts: [String: Int]
+    var counts: [String: Double]
     var reasons: [String: InventoryAuditReason] = [:]
     var countedLocations: Set<String>?
 
     init(sko: InventorySko, only codes: Set<String>? = nil) {
-        counts = Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, max(0, $0.quantity)) })
+        counts = Dictionary(uniqueKeysWithValues: sko.locations.map { ($0.code, $0.quantity) })
         countedLocations = codes
     }
 
@@ -39,11 +39,11 @@ struct InventoryAuditDraft: Equatable, Sendable {
         countedLocations?.contains(location.code) ?? true
     }
 
-    func counted(_ location: InventorySkoLocation) -> Int {
+    func counted(_ location: InventorySkoLocation) -> Double {
         counts[location.code] ?? location.quantity
     }
 
-    func change(for location: InventorySkoLocation) -> Int {
+    func change(for location: InventorySkoLocation) -> Double {
         counted(location) - location.quantity
     }
 
@@ -69,28 +69,28 @@ struct InventoryAuditDraft: Equatable, Sendable {
 
 @MainActor
 enum StockConfirmText {
-    static func quantityLabel(_ quantity: Int, packedIn: Double?) -> String {
-        FractionGlyphs.apply(StockFraction.label(Double(quantity), packedIn: packedIn))
+    static func quantityLabel(_ quantity: Double, packedIn: Double?) -> String {
+        FractionGlyphs.apply(StockFraction.label(quantity, packedIn: packedIn))
     }
 
-    static func countedText(_ counted: Int, was quantity: Int, wasText: String, packedIn: Double?) -> String {
+    static func countedText(_ counted: Double, was quantity: Double, wasText: String, packedIn: Double?) -> String {
         counted == quantity ? wasText : quantityLabel(counted, packedIn: packedIn)
     }
 
-    static func auditLine(_ title: String, wasText: String, counted: Int, was quantity: Int, packedIn: Double?) -> String {
+    static func auditLine(_ title: String, wasText: String, counted: Double, was quantity: Double, packedIn: Double?) -> String {
         guard counted != quantity else { return L10n.format("%@: %@, no change", title, wasText) }
         return L10n.format("%@: %@ → %@", title, wasText, quantityLabel(counted, packedIn: packedIn))
     }
 
-    static func auditSummary(_ sko: InventorySko, counts: [String: Int]) -> String {
-        sko.locations.compactMap { location in
+    static func auditSummary(_ sko: InventorySko, counts: [String: Double]) -> String {
+        sko.locations.compactMap { location -> String? in
             guard let counted = counts[location.code] else { return nil }
             return auditLine(location.code, wasText: location.quantityText, counted: counted, was: location.quantity, packedIn: sko.packedIn)
         }
         .joined(separator: "\n")
     }
 
-    static func moveSummary(quantity: Int, from source: String, to destination: String, packedIn: Double?) -> String {
+    static func moveSummary(quantity: Double, from source: String, to destination: String, packedIn: Double?) -> String {
         L10n.format("%@ from %@ to %@.", quantityLabel(quantity, packedIn: packedIn), source, destination)
     }
 
@@ -140,7 +140,7 @@ enum InventoryStockOperations {
         movements = movements.map {
             InventoryStockMovement(
                 id: $0.id, skoReference: $0.skoReference, kind: $0.kind, quantity: $0.quantity,
-                summary: "\($0.summary) · running \(running)", todaySummary: $0.todaySummary
+                summary: "\($0.summary) · running \(running.grouped)", todaySummary: $0.todaySummary
             )
         }
         let net = movements.reduce(0) { $0 + $1.quantity }
@@ -152,7 +152,7 @@ enum InventoryStockOperations {
         _ sko: InventorySko,
         from source: String,
         to destination: String,
-        quantity: Int,
+        quantity: Double,
         reason: InventoryMoveReason,
         time: String
     ) throws -> InventoryOperationResult {
@@ -176,10 +176,10 @@ enum InventoryStockOperations {
             summary: "\(source) → \(destination) · \(reason.title) · you · \(time)",
             todaySummary: "\(source) → \(destination) · you · just now"
         )
-        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units moved to %@", quantity, destination))
+        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units moved to %@", Int(quantity.rounded()), destination))
     }
 
-    static func consume(_ sko: InventorySko, location code: String, quantity: Int, note: String, time: String) throws -> InventoryOperationResult {
+    static func consume(_ sko: InventorySko, location code: String, quantity: Double, note: String, time: String) throws -> InventoryOperationResult {
         guard let index = sko.locations.firstIndex(where: { $0.code == code }) else {
             throw InventoryStockError.unknownLocation(code)
         }
@@ -189,7 +189,7 @@ enum InventoryStockOperations {
         var updated = sko
         updated.locations[index].quantity -= quantity
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let summary = [code, "Internal consumption", trimmedNote.isEmpty ? nil : trimmedNote, "you", time, "running \(updated.stock)"]
+        let summary = [code, "Internal consumption", trimmedNote.isEmpty ? nil : trimmedNote, "you", time, "running \(updated.stock.grouped)"]
             .compactMap { $0 }
             .joined(separator: " · ")
         let movement = InventoryStockMovement(
@@ -199,7 +199,7 @@ enum InventoryStockOperations {
             summary: summary,
             todaySummary: "Internal consumption · \(code) · you · just now"
         )
-        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units consumed from %@", quantity, code))
+        return InventoryOperationResult(sko: updated, movements: [movement], message: L10n.format("%lld units consumed from %@", Int(quantity.rounded()), code))
     }
 
     static func addLocation(
@@ -252,7 +252,7 @@ enum InventoryStockOperations {
                     skoReference: sko.reference,
                     kind: .audit,
                     quantity: -location.quantity,
-                    summary: "\(location.code) · \(InventoryAuditReason.lostMissing.title) · you · \(time) · running \(running)",
+                    summary: "\(location.code) · \(InventoryAuditReason.lostMissing.title) · you · \(time) · running \(running.grouped)",
                     todaySummary: "\(InventoryAuditReason.lostMissing.title) · \(location.code) · you · just now"
                 ))
             }

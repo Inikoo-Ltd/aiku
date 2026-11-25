@@ -155,6 +155,7 @@ private fun LineActionsContent(
     val offers = lineOffers(note, line)
     var reason by remember { mutableStateOf(NotPickedReason.OutOfStock) }
     var notPickedNote by remember { mutableStateOf("") }
+    var isChoosingNotPicked by remember(line.id) { mutableStateOf(false) }
     var pending by remember { mutableStateOf<LineWrite?>(null) }
 
     AikuBottomSheet(
@@ -205,7 +206,16 @@ private fun LineActionsContent(
                 },
             )
         }
-        if (offers.notPicked) {
+        if (offers.notPicked && !isChoosingNotPicked) {
+            AikuButton(
+                text = stringResource(R.string.goodsout_line_not_picked),
+                onClick = { isChoosingNotPicked = true },
+                style = ButtonStyle.Danger,
+                height = 52.dp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (offers.notPicked && isChoosingNotPicked) {
             GroupLabel(text = stringResource(R.string.goodsout_not_picked_reason))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 NotPickedReason.entries.forEach { option ->

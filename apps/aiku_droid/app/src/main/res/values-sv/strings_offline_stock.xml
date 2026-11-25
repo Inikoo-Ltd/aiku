@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Inget väntar</string>
     <string name="offline_stock_queue_empty_body">Det du gör offline visas här tills det har synkats.</string>
     <string name="offline_stock_queue_note">Arbete på radnivå (plock, packning, inlagring, returer, flyttar och räkningar) sparas på telefonen offline och kontrolleras av Aiku vid synkning. Statusändringar kräver anslutning.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Följesedel %1$s</string>
     <string name="offline_stock_record_return">Retur %1$s</string>
     <string name="offline_stock_record_delivery">Lagerleverans %1$s</string>

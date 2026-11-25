@@ -2,7 +2,7 @@ import Foundation
 
 struct LocationsAuditCount: Hashable, Sendable {
     var skoReference: String
-    var counted: Int
+    var counted: Double
     var reason: LocationsAuditReason? = nil
     var note = ""
 }
@@ -30,7 +30,7 @@ enum LocationsAuditReason: String, CaseIterable, Hashable, Sendable {
 
     static let unchangedRemoteValue = "recount"
 
-    static func options(forChange change: Int) -> [LocationsAuditReason] {
+    static func options(forChange change: Double) -> [LocationsAuditReason] {
         if change < 0 {
             return [.countShortage, .damagedStock]
         }
@@ -104,7 +104,7 @@ struct LocationsWarehouse: Hashable, Sendable {
         }?.code
     }
 
-    func movedWeight(from source: String, quantities: [String: Int]) -> Double {
+    func movedWeight(from source: String, quantities: [String: Double]) -> Double {
         guard let location = location(code: source) else { return 0 }
         return quantities.reduce(0) { total, entry in
             guard let slot = location.slot(entry.key) else { return total }
@@ -112,7 +112,7 @@ struct LocationsWarehouse: Hashable, Sendable {
         }
     }
 
-    func movedVolume(from source: String, quantities: [String: Int]) -> Double {
+    func movedVolume(from source: String, quantities: [String: Double]) -> Double {
         guard let location = location(code: source) else { return 0 }
         return quantities.reduce(0) { total, entry in
             guard let slot = location.slot(entry.key) else { return total }
@@ -120,7 +120,7 @@ struct LocationsWarehouse: Hashable, Sendable {
         }
     }
 
-    func allQuantities(of code: String) -> [String: Int] {
+    func allQuantities(of code: String) -> [String: Double] {
         guard let location = location(code: code) else { return [:] }
         return Dictionary(uniqueKeysWithValues: location.slots.map { ($0.skoReference, max($0.quantity, 0)) })
     }
@@ -142,9 +142,9 @@ struct LocationsWarehouse: Hashable, Sendable {
     }
 
     @discardableResult
-    mutating func move(from source: String, to target: String, quantities: [String: Int], removeFromSource: Bool) -> Int {
+    mutating func move(from source: String, to target: String, quantities: [String: Double], removeFromSource: Bool) -> Double {
         guard let sourceIndex = index(of: source), let targetIndex = index(of: target), sourceIndex != targetIndex else { return 0 }
-        var moved = 0
+        var moved: Double = 0
         for (reference, requested) in quantities.sorted(by: { $0.key < $1.key }) {
             guard let slotIndex = locations[sourceIndex].slots.firstIndex(where: { $0.skoReference == reference }) else { continue }
             let available = max(locations[sourceIndex].slots[slotIndex].quantity, 0)

@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">「%1$s」の結果はありません</string>
     <string name="states_search_scan_instead">スキャンで探す</string>
     <string name="states_server_body">Aikuから応答がありません。最後の操作は保存されていません。しばらくしてからもう一度お試しください。</string>
-    <string name="states_server_error_code">エラー %1$d ·</string>
     <string name="states_server_title">問題が発生しました</string>
     <string name="states_session_body">長時間操作がなかったため、セキュリティ上の理由でログアウトしました。続けるにはもう一度ログインしてください。保存した内容は失われていません。</string>
     <string name="states_session_sign_in">もう一度ログイン</string>
     <string name="states_session_title">セッションの有効期限切れ</string>
-    <string name="states_tasks_empty_body">あなたを待っている出荷伝票はありません。新しい伝票は割り当てられるとすぐにここに表示されます。</string>
-    <string name="states_tasks_empty_title">すべて完了しました</string>
-    <string name="states_tasks_pick_from_queue">出荷伝票に戻る</string>
     <string name="states_try_again">再試行</string>
     <string name="states_type_code">コードを入力</string>
     <string name="stepper_decrease">減らす</string>
@@ -2365,4 +2361,19 @@
     <string name="inventory_remove_one_confirm">外す</string>
     <string name="inventory_sko_status_heading">SKOステータス</string>
     <string name="inventory_quantity_status_heading">数量ステータス</string>
+    <string name="goodsout_filter_date_overdue">遅延</string>
+    <string name="errors_what_does_this_mean">これはどういう意味ですか？</string>
+    <string name="errors_support_reference">サポート参照番号: %1$s</string>
+    <string name="errors_support_reference_label">Aiku サポート参照番号</string>
+    <string name="errors_support_reference_copied">サポート参照番号をコピーしました</string>
+    <string name="errors_open_in_browser">ブラウザで開く</string>
+    <string name="errors_page_failed_title">ヘルプページを読み込めませんでした</string>
+    <string name="errors_page_failed_body">接続を確認するか、ブラウザでページを開いてください。</string>
+    <string name="goodsin_next_stock_delivery">次の入荷</string>
+    <string name="clocking_load_failed_timesheets">勤務表を読み込めませんでした</string>
+    <string name="clocking_load_failed_day">この日を読み込めませんでした</string>
+    <string name="clocking_load_failed_calendar">カレンダーを読み込めませんでした</string>
+    <string name="clocking_load_failed_leave">休暇を読み込めませんでした</string>
+    <string name="clocking_load_failed_overtime">残業を読み込めませんでした</string>
+    <string name="clocking_load_failed_adjustments">打刻の修正を読み込めませんでした</string>
 </resources>

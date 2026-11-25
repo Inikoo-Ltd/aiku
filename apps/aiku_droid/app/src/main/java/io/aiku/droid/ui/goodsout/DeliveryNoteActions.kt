@@ -54,9 +54,9 @@ private val footerActionKeys = listOf(
     NoteActionKey.FINALISE,
     NoteActionKey.DISPATCH,
     NoteActionKey.PUT_BACK_INCOMPLETE_SETS,
-    NoteActionKey.TAKE_OVER,
     NoteActionKey.START_PICKING,
     NoteActionKey.RESUME_PICKING,
+    NoteActionKey.TAKE_OVER,
     NoteActionKey.SET_AS_PICKED,
     NoteActionKey.AUTO_FINISH_WAITING,
     NoteActionKey.BACK_TO_PICKING,
@@ -180,12 +180,12 @@ internal val goodsOutActionLooks: Map<String, ButtonLook> = mapOf(
 internal fun goodsOutActionLook(key: String): ButtonLook = goodsOutActionLooks[key] ?: neutral
 
 @Composable
-internal fun NoteFooterItems(items: List<FooterItem>, loadingKey: String?, onAction: (DeliveryNoteAction) -> Unit) {
+internal fun NoteFooterItems(items: List<FooterItem>, loadingKey: String?, onAction: (DeliveryNoteAction) -> Unit, hasMainElsewhere: Boolean = false) {
     items.forEach { item ->
         when (item) {
             is FooterItem.Notice -> DisabledActionNotice(action = item.action)
             is FooterItem.Button -> {
-                val look = goodsOutActionLook(item.action.key).inFooter(isFirst = item.isPrimary)
+                val look = goodsOutActionLook(item.action.key).inFooter(isFirst = item.isPrimary && !hasMainElsewhere)
                 AikuButton(
                     text = item.action.label,
                     onClick = { onAction(item.action) },

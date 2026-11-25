@@ -102,13 +102,20 @@ object GoodsOutResponses {
         query.search?.trim()?.takeIf { it.isNotEmpty() }?.let { "search" to it },
         query.from?.let { "from" to it.toString() },
         query.to?.let { "to" to it.toString() },
+        ("overdue" to "1").takeIf { query.overdue },
         query.picker?.let { "picker" to it.key },
         query.sort?.let { "sort" to it.key },
         "page" to query.page.toString(),
         "per_page" to query.perPage.toString(),
     )
 
-    fun countsParameters(picker: PickerFilter?): List<Pair<String, String>> = listOfNotNull(picker?.let { "picker" to it.key })
+    fun countsParameters(filter: DeliveryNoteCountsFilter): List<Pair<String, String>> = listOfNotNull(
+        filter.picker?.let { "picker" to it.key },
+        filter.search?.trim()?.takeIf { it.isNotEmpty() }?.let { "search" to it },
+        filter.from?.let { "from" to it.toString() },
+        filter.to?.let { "to" to it.toString() },
+        ("overdue" to "1").takeIf { filter.overdue },
+    )
 
     fun trolleysParameters(availableOnly: Boolean): List<Pair<String, String>> = if (availableOnly) listOf("available" to "1") else emptyList()
 

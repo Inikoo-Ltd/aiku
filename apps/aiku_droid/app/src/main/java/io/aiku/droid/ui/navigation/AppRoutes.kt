@@ -19,7 +19,6 @@ import kotlinx.serialization.Serializable
 @Serializable data class ConflictRoute(val id: Long, val title: String)
 @Serializable data class OnlineOnlyRoute(val reference: String)
 @Serializable data class StatePreviewRoute(val kind: String)
-@Serializable data class NotDesignedRoute(val title: String)
 @Serializable data object InventoryDashboardRoute
 @Serializable data object SkuFamiliesRoute
 @Serializable data class SkuFamilyRoute(val id: Long, val code: String)

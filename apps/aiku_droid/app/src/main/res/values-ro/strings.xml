@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Niciun rezultat pentru „%1$s”</string>
     <string name="states_search_scan_instead">Scanați în schimb</string>
     <string name="states_server_body">Aiku nu a răspuns. Ultima dvs. acțiune nu a fost salvată. Încercați din nou peste câteva momente.</string>
-    <string name="states_server_error_code">Eroare %1$d ·</string>
     <string name="states_server_title">Ceva nu a mers bine</string>
     <string name="states_session_body">Din motive de securitate ați fost deconectat după o perioadă lungă de inactivitate. Autentificați-vă din nou pentru a continua. Nimic din ce ați salvat nu s-a pierdut.</string>
     <string name="states_session_sign_in">Autentificați-vă din nou</string>
     <string name="states_session_title">Sesiune expirată</string>
-    <string name="states_tasks_empty_body">Nicio notă de livrare nu vă așteaptă. Cele noi apar aici imediat ce sunt atribuite.</string>
-    <string name="states_tasks_empty_title">Totul la zi</string>
-    <string name="states_tasks_pick_from_queue">Înapoi la notele de livrare</string>
     <string name="states_try_again">Încercați din nou</string>
     <string name="states_type_code">Introduceți codul</string>
     <string name="stepper_decrease">Micșorați</string>
@@ -2585,4 +2581,19 @@
     <string name="inventory_remove_one_confirm">Elimină</string>
     <string name="inventory_sko_status_heading">Starea SKO</string>
     <string name="inventory_quantity_status_heading">Starea cantității</string>
+    <string name="goodsout_filter_date_overdue">Întârziate</string>
+    <string name="errors_what_does_this_mean">Ce înseamnă asta?</string>
+    <string name="errors_support_reference">Referință pentru asistență: %1$s</string>
+    <string name="errors_support_reference_label">Referință Aiku pentru asistență</string>
+    <string name="errors_support_reference_copied">Referința pentru asistență a fost copiată</string>
+    <string name="errors_open_in_browser">Deschide în browser</string>
+    <string name="errors_page_failed_title">Pagina de ajutor nu a putut fi încărcată</string>
+    <string name="errors_page_failed_body">Verificați conexiunea sau deschideți pagina în browser.</string>
+    <string name="goodsin_next_stock_delivery">Următoarea livrare de stoc</string>
+    <string name="clocking_load_failed_timesheets">Foile de pontaj nu au putut fi încărcate</string>
+    <string name="clocking_load_failed_day">Această zi nu a putut fi încărcată</string>
+    <string name="clocking_load_failed_calendar">Calendarul nu a putut fi încărcat</string>
+    <string name="clocking_load_failed_leave">Concediile dvs. nu au putut fi încărcate</string>
+    <string name="clocking_load_failed_overtime">Orele suplimentare nu au putut fi încărcate</string>
+    <string name="clocking_load_failed_adjustments">Corecțiile pontajului dvs. nu au putut fi încărcate</string>
 </resources>

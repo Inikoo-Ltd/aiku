@@ -285,7 +285,7 @@ private fun SkuBlocks(detail: OrgStockDetail, state: SkoUiState, actions: List<S
             ),
         ),
         actions = listOfNotNull(
-            SkoStockAction(label = stringResource(R.string.inventory_action_consume), icon = R.drawable.ic_fa_box_open, onClick = { onSheet(SkuSheet.Action(SkoAction.Consume)) })
+            SkoStockAction(label = stringResource(R.string.inventory_action_consume), icon = R.drawable.ic_fa_box_open, onClick = { onSheet(SkuSheet.Action(SkoAction.Consume)) }, style = ButtonStyle.Caution)
                 .takeIf { SkoAction.Consume in actions },
             SkoStockAction(label = stringResource(R.string.inventory_action_move), icon = R.drawable.ic_fa_forklift, onClick = { onSheet(SkuSheet.Action(SkoAction.Move)) })
                 .takeIf { SkoAction.Move in actions },
@@ -417,16 +417,20 @@ private fun LocationActionsSheet(
         onDismiss = onDismiss,
     ) {
         if (SkoAction.Audit in actions) {
-            StockActionButton(
+            AikuButton(
                 text = stringResource(R.string.inventory_location_audit),
+                style = ButtonStyle.Outline,
+                height = 52.dp,
                 icon = R.drawable.ic_fa_clipboard_check,
                 onClick = { onSheet(SkuSheet.AuditLocation(location.locationOrgStockId)) },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
         if (can.viewLocations) {
-            StockActionButton(
+            AikuButton(
                 text = stringResource(R.string.inventory_location_open),
+                style = ButtonStyle.Outline,
+                height = 52.dp,
                 icon = R.drawable.ic_ui_location,
                 onClick = {
                     onDismiss()
@@ -436,10 +440,11 @@ private fun LocationActionsSheet(
             )
         }
         if (SkoAction.RemoveLocations in actions) {
-            StockActionButton(
+            AikuButton(
                 text = stringResource(R.string.inventory_location_remove),
+                style = ButtonStyle.Danger,
+                height = 52.dp,
                 icon = R.drawable.ic_fa_unlink,
-                isDanger = true,
                 onClick = { onSheet(SkuSheet.RemoveLocation(location.locationOrgStockId)) },
                 modifier = Modifier.fillMaxWidth(),
             )

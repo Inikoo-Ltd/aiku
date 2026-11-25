@@ -23,13 +23,13 @@ enum InventorySkoSheet: Identifiable {
 }
 
 struct InventorySkoActions {
-    var reasonChoices: (Int) -> [InventoryReasonChoice]
+    var reasonChoices: (Double) -> [InventoryReasonChoice]
     var reasonsError: () -> String? = { nil }
     var loadReasons: () async -> Void = {}
-    var audit: ([String: Int], [String: String]) async throws -> String
+    var audit: ([String: Double], [String: String]) async throws -> String
     var showsMoveReasons = true
-    var move: (String, String, Int, InventoryMoveReason) async throws -> String
-    var consume: (String, Int, String) async throws -> String
+    var move: (String, String, Double, InventoryMoveReason) async throws -> String
+    var consume: (String, Double, String) async throws -> String
     var locationOptions: (String) async throws -> [InventoryLocationOption]
     var addLocation: (InventoryLocationOption, InventoryLocationType) async throws -> String
     var removeLocations: (Set<String>) async throws -> String

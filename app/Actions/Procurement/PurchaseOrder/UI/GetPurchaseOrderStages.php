@@ -737,7 +737,7 @@ class GetPurchaseOrderStages
         )->selectSub($lastOnDelivery, 'last_on_delivery_at')->get();
 
         $allOnContainers = $lines->isNotEmpty()
-            && $lines->every(fn ($line) => (float) $line->quantity_awaiting_delivery <= StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE);
+            && $lines->every(fn ($line) => (float) $line->quantity_awaiting_delivery - (float) $line->quantity_kept_at_agent <= StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE);
 
         return $this->allOnContainersAt[$purchaseOrder->id] = $allOnContainers
             ? Carbon::parse($lines->max('last_on_delivery_at'))

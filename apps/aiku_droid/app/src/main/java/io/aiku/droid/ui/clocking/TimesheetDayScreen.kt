@@ -130,7 +130,7 @@ fun TimesheetDayScreen(date: String) {
             )
         },
     ) {
-        dayState?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { day?.let(clocking::loadDay) }) }
+        dayState?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { day?.let(clocking::loadDay) }, title = stringResource(R.string.clocking_load_failed_day)) }
         when {
             timesheet != null -> TimesheetDayContent(timesheet = timesheet, status = state.status, zone = state.zone, today = state.today, now = now)
             day != null && (dayState == null || dayState.isLoading && !dayState.isRefreshing) -> {

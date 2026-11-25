@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">केही प्रतीक्षामा छैन</string>
     <string name="offline_stock_queue_empty_body">अफलाइनमा गरेको काम सिङ्क नभएसम्म यहाँ देखिन्छ।</string>
     <string name="offline_stock_queue_note">लाइन तहको काम (पिक, प्याक, राख्ने, फिर्ता, सार्ने र गणना) अफलाइनमा फोनमा सुरक्षित हुन्छ र सिङ्क गर्दा Aiku ले जाँच्छ। स्थिति परिवर्तनका लागि जडान चाहिन्छ।</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">डेलिभरी नोट %1$s</string>
     <string name="offline_stock_record_return">फिर्ता %1$s</string>
     <string name="offline_stock_record_delivery">स्टक डेलिभरी %1$s</string>

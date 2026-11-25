@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Nimic nu așteaptă</string>
     <string name="offline_stock_queue_empty_body">Ce faci offline apare aici până se sincronizează.</string>
     <string name="offline_stock_queue_note">Munca pe rânduri (colectări, ambalare, amplasare, retururi, mutări și numărări) se salvează pe telefon offline și este verificată de Aiku la sincronizare. Schimbările de stare necesită conexiune.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Aviz de expediție %1$s</string>
     <string name="offline_stock_record_return">Retur %1$s</string>
     <string name="offline_stock_record_delivery">Livrare de stoc %1$s</string>

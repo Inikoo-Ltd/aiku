@@ -133,7 +133,7 @@ fun ClockingCalendarScreen() {
                 selectedDay = null
             },
         )
-        problem?.let { ClockingLoadProblem(problem = it, onRetry = { controller.loadMonth(month) }) }
+        problem?.let { ClockingLoadProblem(problem = it, onRetry = { controller.loadMonth(month) }, title = stringResource(R.string.clocking_load_failed_calendar)) }
         CalendarMonthGrid(
             month = month,
             today = today,

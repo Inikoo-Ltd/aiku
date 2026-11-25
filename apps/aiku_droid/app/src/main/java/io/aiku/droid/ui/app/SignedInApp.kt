@@ -37,7 +37,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.aiku.droid.AppContainer
-import io.aiku.droid.data.offline.SyncReason
 import io.aiku.droid.R
 import io.aiku.droid.data.api.ChatContextKind
 import io.aiku.droid.data.api.DeliveryNoteBucket
@@ -50,6 +49,7 @@ import io.aiku.droid.data.api.StockDeliverySource
 import io.aiku.droid.data.api.StockDeliveryStateFilter
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
+import io.aiku.droid.data.offline.SyncReason
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.push.AskForNotificationsOnce
 import io.aiku.droid.push.PushDestination
@@ -87,6 +87,7 @@ import io.aiku.droid.ui.components.TabHandoff
 import io.aiku.droid.ui.components.ToastHost
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.ToastState
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.dashboard.WarehouseDashboardScreen
 import io.aiku.droid.ui.dashboard.WarehouseDashboardViewModel
 import io.aiku.droid.ui.fulfilment.FulfilmentBookInScreen
@@ -134,11 +135,11 @@ import io.aiku.droid.ui.goodsout.ScanToPickScreen
 import io.aiku.droid.ui.goodsout.SessionTarget
 import io.aiku.droid.ui.goodsout.extra.AskCrmScreen
 import io.aiku.droid.ui.goodsout.extra.DeliveryNoteCancelledScreen
+import io.aiku.droid.ui.goodsout.extra.EquipmentListViewModel
 import io.aiku.droid.ui.goodsout.extra.ExternalShipmentScreen
 import io.aiku.droid.ui.goodsout.extra.PackByScanScreen
 import io.aiku.droid.ui.goodsout.extra.PickByLocationScreen
 import io.aiku.droid.ui.goodsout.extra.PickedBaysScreen
-import io.aiku.droid.ui.goodsout.extra.EquipmentListViewModel
 import io.aiku.droid.ui.goodsout.extra.PickingSessionScreen
 import io.aiku.droid.ui.goodsout.extra.PickingSessionViewModel
 import io.aiku.droid.ui.goodsout.extra.PickingSessionsScreen
@@ -230,7 +231,6 @@ import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.MenuRoute
 import io.aiku.droid.ui.navigation.MyWorkRoute
 import io.aiku.droid.ui.navigation.NoWarehouseAccess
-import io.aiku.droid.ui.navigation.NotDesignedRoute
 import io.aiku.droid.ui.navigation.OnlineOnlyRoute
 import io.aiku.droid.ui.navigation.OvertimeRoute
 import io.aiku.droid.ui.navigation.PackByScanRoute
@@ -283,16 +283,15 @@ import io.aiku.droid.ui.scan.ScanScreen
 import io.aiku.droid.ui.search.SearchScreen
 import io.aiku.droid.ui.search.SearchViewModel
 import io.aiku.droid.ui.states.LoadingScreen
-import io.aiku.droid.ui.states.NotDesignedScreen
 import io.aiku.droid.ui.states.OfflineScreen
 import io.aiku.droid.ui.states.ReportProblemSheet
 import io.aiku.droid.ui.states.ServerErrorScreen
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.states.StatePreviewScreen
 import io.aiku.droid.ui.sync.ConflictScreen
+import io.aiku.droid.ui.sync.ConflictViewModel
 import io.aiku.droid.ui.sync.OnlineOnlyGate
 import io.aiku.droid.ui.sync.OnlineOnlyScreen
-import io.aiku.droid.ui.sync.ConflictViewModel
 import io.aiku.droid.ui.sync.ResolveConflictsScreen
 import io.aiku.droid.ui.sync.ResolveConflictsViewModel
 import io.aiku.droid.ui.sync.SyncQueueScreen
@@ -508,7 +507,7 @@ private fun WarehouseApp(
                     onSignOut()
                 },
                 onDismiss = { signOutWaiting = 0 },
-                confirmLook = ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_log_out),
+                confirmLook = ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_log_out).forConfirm(),
             )
         }
     }
@@ -612,7 +611,6 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         }
         composable<OnlineOnlyRoute> { entry -> entry.toRoute<OnlineOnlyRoute>().let { route -> OnlineOnlyScreen(route.reference, container.offlineWork) } }
         composable<StatePreviewRoute> { entry -> entry.toRoute<StatePreviewRoute>().let { route -> StatePreviewScreen(route.kind) } }
-        composable<NotDesignedRoute> { entry -> entry.toRoute<NotDesignedRoute>().let { route -> NotDesignedScreen(route.title) } }
         composable<InventoryDashboardRoute> {
             val dashboard: InventoryDashboardViewModel = viewModel(
                 key = "inventory-dashboard-$currentWarehouseId",

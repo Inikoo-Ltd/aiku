@@ -46,10 +46,10 @@ import io.aiku.droid.data.api.ReturnWrite
 import io.aiku.droid.data.offline.OfflineOperation
 import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.ui.components.AikuButton
-import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.DetailCard
@@ -65,6 +65,7 @@ import io.aiku.droid.ui.components.StateTimeline
 import io.aiku.droid.ui.components.TimelineEntry
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.forConfirm
+import io.aiku.droid.ui.components.inFooter
 import io.aiku.droid.ui.goodsout.DisabledActionNotice
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
@@ -417,7 +418,7 @@ private fun ReturnItemCard(
                 AikuButton(
                     text = stringResource(R.string.goodsin_back_to_stock),
                     onClick = { onAction(ReturnItemAction.BackToStock) },
-                    style = goodsInActionLook(GoodsInActionKey.PUT_BACK).style,
+                    style = goodsInActionLook(GoodsInActionKey.PUT_BACK).inFooter(isFirst = false).style,
                     icon = goodsInActionLook(GoodsInActionKey.PUT_BACK).icon,
                     height = 48.dp,
                     modifier = Modifier.fillMaxWidth(),

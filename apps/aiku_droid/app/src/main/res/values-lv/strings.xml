@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Nav rezultātu vaicājumam “%1$s”</string>
     <string name="states_search_scan_instead">Tā vietā skenēt</string>
     <string name="states_server_body">Aiku neatbildēja. Jūsu pēdējā darbība netika saglabāta. Mēģiniet vēlreiz pēc brīža.</string>
-    <string name="states_server_error_code">Kļūda %1$d ·</string>
     <string name="states_server_title">Kaut kas nogāja greizi</string>
     <string name="states_session_body">Drošības nolūkos jūs tikāt izrakstīts pēc ilgas neaktivitātes. Piesakieties vēlreiz, lai turpinātu. Nekas no saglabātā nav zudis.</string>
     <string name="states_session_sign_in">Pieteikties vēlreiz</string>
     <string name="states_session_title">Sesijas derīgums beidzies</string>
-    <string name="states_tasks_empty_body">Neviena piegādes pavadzīme jūs negaida. Jaunas parādīsies šeit, tiklīdz tās tiks piešķirtas.</string>
-    <string name="states_tasks_empty_title">Viss padarīts</string>
-    <string name="states_tasks_pick_from_queue">Atpakaļ uz piegādes pavadzīmēm</string>
     <string name="states_try_again">Mēģināt vēlreiz</string>
     <string name="states_type_code">Ievadiet kodu</string>
     <string name="stepper_decrease">Samazināt</string>
@@ -2585,4 +2581,19 @@
     <string name="inventory_remove_one_confirm">Noņemt</string>
     <string name="inventory_sko_status_heading">SKO statuss</string>
     <string name="inventory_quantity_status_heading">Daudzuma statuss</string>
+    <string name="goodsout_filter_date_overdue">Nokavētie</string>
+    <string name="errors_what_does_this_mean">Ko tas nozīmē?</string>
+    <string name="errors_support_reference">Atbalsta atsauce: %1$s</string>
+    <string name="errors_support_reference_label">Aiku atbalsta atsauce</string>
+    <string name="errors_support_reference_copied">Atbalsta atsauce nokopēta</string>
+    <string name="errors_open_in_browser">Atvērt pārlūkā</string>
+    <string name="errors_page_failed_title">Neizdevās ielādēt palīdzības lapu</string>
+    <string name="errors_page_failed_body">Pārbaudiet savienojumu vai atveriet lapu pārlūkā.</string>
+    <string name="goodsin_next_stock_delivery">Nākamā krājumu piegāde</string>
+    <string name="clocking_load_failed_timesheets">Neizdevās ielādēt jūsu darba laika uzskaiti</string>
+    <string name="clocking_load_failed_day">Neizdevās ielādēt šo dienu</string>
+    <string name="clocking_load_failed_calendar">Neizdevās ielādēt kalendāru</string>
+    <string name="clocking_load_failed_leave">Neizdevās ielādēt jūsu atvaļinājumus</string>
+    <string name="clocking_load_failed_overtime">Neizdevās ielādēt jūsu virsstundas</string>
+    <string name="clocking_load_failed_adjustments">Neizdevās ielādēt jūsu pieraksta labojumus</string>
 </resources>

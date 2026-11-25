@@ -87,7 +87,7 @@ extension LocationsSlot {
         var roles = Set<LocationsPickingRole>()
         if remote.defaultWholesalePickingLocation { roles.insert(.wholesale) }
         if remote.defaultDropshippingPickingLocation { roles.insert(.dropshipping) }
-        let quantity = Int(remote.quantity.value.rounded(.towardZero))
+        let quantity = remote.quantity.value
         let value = remote.value?.value ?? 0
 
         self.init(
@@ -102,7 +102,7 @@ extension LocationsSlot {
             note: remote.notes ?? "",
             unitWeightKg: 0,
             unitVolumeM3: 0,
-            unitValue: quantity > 0 ? value / Double(quantity) : 0,
+            unitValue: quantity > 0 ? value / quantity : 0,
             remoteOrgStockID: remote.id,
             remoteLinkID: remote.locationOrgStockId,
             quantityLabel: remote.quantityLabel

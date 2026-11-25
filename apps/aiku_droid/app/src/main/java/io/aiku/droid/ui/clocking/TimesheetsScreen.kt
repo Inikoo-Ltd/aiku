@@ -122,7 +122,7 @@ fun TimesheetsScreen() {
                 requestedWeek = next.takeIf { it.isBefore(thisMonday) }?.toString()
             },
         )
-        week?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { clocking.loadWeek(requestedFrom) }) }
+        week?.problem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = { clocking.loadWeek(requestedFrom) }, title = stringResource(R.string.clocking_load_failed_timesheets)) }
         week?.lastUpdated?.let { updatedAt -> LastUpdatedNote(updatedAt = updatedAt) }
         when {
             period != null -> {

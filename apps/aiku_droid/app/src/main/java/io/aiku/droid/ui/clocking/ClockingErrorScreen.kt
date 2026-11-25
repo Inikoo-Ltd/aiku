@@ -45,6 +45,8 @@ import io.aiku.droid.ui.navigation.ClockScanQrRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.states.ErrorCode
+import io.aiku.droid.ui.states.ErrorHelp
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 internal enum class ClockingErrorKind(
@@ -75,6 +77,15 @@ internal enum class ClockingErrorKind(
         R.string.clocking_error_camera_body,
     ),
     ;
+
+    val errorCode: ErrorCode
+        get() = when (this) {
+            QrInvalid -> ErrorCode.ClockingQrInvalid
+            LocationBlocked -> ErrorCode.ClockingLocationNeeded
+            NoPin -> ErrorCode.ClockingNoPin
+            Offline -> ErrorCode.Unreachable
+            CameraBlocked -> ErrorCode.CameraBlocked
+        }
 
     companion object {
         fun fromKey(key: String): ClockingErrorKind = entries.firstOrNull { it.key == key } ?: QrInvalid
@@ -125,6 +136,7 @@ internal fun ClockingErrorScreen(error: ClockingErrorKind, message: String?, sca
                 textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(max = 320.dp),
             )
+            ErrorHelp(code = error.errorCode, centered = true)
             if (error == ClockingErrorKind.QrInvalid) {
                 if (message == null) {
                     ListGroup(modifier = Modifier.fakeData()) {

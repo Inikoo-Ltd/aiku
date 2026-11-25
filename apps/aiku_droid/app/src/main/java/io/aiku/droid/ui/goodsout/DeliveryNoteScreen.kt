@@ -271,7 +271,12 @@ private fun DeliveryNoteContent(viewModel: DeliveryNoteViewModel, state: Deliver
         activeTab = MainTab.Menu,
         showBar = true,
         bottomPanel = scanTarget?.let { target -> { NoteScanPanel(note = note, target = target, state = state, viewModel = viewModel) } },
-        footer = deliveryNoteFooter(note = note, loadingKey = if (state.isWorking && sheet == null) directActionKey(note) else null, onAction = runAction),
+        footer = deliveryNoteFooter(
+            note = note,
+            loadingKey = if (state.isWorking && sheet == null) directActionKey(note) else null,
+            onAction = runAction,
+            hasScanPanel = scanTarget != null,
+        ),
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = state.canRefresh),
     ) {
         state.problem?.let { GoodsOutLoadProblem(problem = it, title = stringResource(R.string.goodsout_note_refresh_failed_title), onRetry = viewModel::retry) }
@@ -638,13 +643,18 @@ private fun deliveryNoteFootNote(note: DeliveryNote): Int? {
 }
 
 @Composable
-private fun deliveryNoteFooter(note: DeliveryNote, loadingKey: String?, onAction: (DeliveryNoteAction) -> Unit): (@Composable ColumnScope.() -> Unit)? {
+private fun deliveryNoteFooter(
+    note: DeliveryNote,
+    loadingKey: String?,
+    onAction: (DeliveryNoteAction) -> Unit,
+    hasScanPanel: Boolean,
+): (@Composable ColumnScope.() -> Unit)? {
     val stage = note.stage
     val items = note.footerItems
 
     return when {
         stage == DeliveryNoteStage.Dispatched -> null
-        items.isNotEmpty() -> { { NoteFooterItems(items = items, loadingKey = loadingKey, onAction = onAction) } }
+        items.isNotEmpty() -> { { NoteFooterItems(items = items, loadingKey = loadingKey, onAction = onAction, hasMainElsewhere = hasScanPanel) } }
         stage.isBeforePacking && stage != DeliveryNoteStage.Picked -> {
             val (title, body) = pickingFooterStatus(note)
             return { FooterStatus(title = title, body = body) }

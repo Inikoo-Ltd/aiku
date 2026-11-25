@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">“%1$s” için sonuç yok</string>
     <string name="states_search_scan_instead">Bunun yerine tara</string>
     <string name="states_server_body">Aiku yanıt vermedi. Son işleminiz kaydedilmedi. Birazdan tekrar deneyin.</string>
-    <string name="states_server_error_code">Hata %1$d ·</string>
     <string name="states_server_title">Bir şeyler ters gitti</string>
     <string name="states_session_body">Güvenliğiniz için uzun süre işlem yapılmadığından oturumunuz kapatıldı. Devam etmek için tekrar giriş yapın. Kaydettiğiniz hiçbir şey kaybolmadı.</string>
     <string name="states_session_sign_in">Tekrar giriş yap</string>
     <string name="states_session_title">Oturum süresi doldu</string>
-    <string name="states_tasks_empty_body">Sizi bekleyen irsaliye yok. Yenileri atanır atanmaz burada görünür.</string>
-    <string name="states_tasks_empty_title">Her şey güncel</string>
-    <string name="states_tasks_pick_from_queue">İrsaliyelere dön</string>
     <string name="states_try_again">Tekrar dene</string>
     <string name="states_type_code">Kodu yazın</string>
     <string name="stepper_decrease">Azalt</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Kaldır</string>
     <string name="inventory_sko_status_heading">SKO durumu</string>
     <string name="inventory_quantity_status_heading">Miktar durumu</string>
+    <string name="goodsout_filter_date_overdue">Gecikmiş</string>
+    <string name="errors_what_does_this_mean">Bu ne anlama geliyor?</string>
+    <string name="errors_support_reference">Destek referansı: %1$s</string>
+    <string name="errors_support_reference_label">Aiku destek referansı</string>
+    <string name="errors_support_reference_copied">Destek referansı kopyalandı</string>
+    <string name="errors_open_in_browser">Tarayıcıda aç</string>
+    <string name="errors_page_failed_title">Yardım sayfası yüklenemedi</string>
+    <string name="errors_page_failed_body">Bağlantıyı kontrol edin veya sayfayı tarayıcıda açın.</string>
+    <string name="goodsin_next_stock_delivery">Sonraki stok teslimatı</string>
+    <string name="clocking_load_failed_timesheets">Puantaj çizelgeleriniz yüklenemedi</string>
+    <string name="clocking_load_failed_day">Bu gün yüklenemedi</string>
+    <string name="clocking_load_failed_calendar">Takvim yüklenemedi</string>
+    <string name="clocking_load_failed_leave">İzinleriniz yüklenemedi</string>
+    <string name="clocking_load_failed_overtime">Fazla mesaileriniz yüklenemedi</string>
+    <string name="clocking_load_failed_adjustments">Puantaj düzeltmeleriniz yüklenemedi</string>
 </resources>

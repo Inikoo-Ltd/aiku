@@ -4,7 +4,7 @@ struct LocationsMoveSheet: View {
     let source: LocationsLocation
     let warehouse: LocationsWarehouse
     let isRemote: Bool
-    let onMove: (String, [String: Int], Bool, Bool) -> Void
+    let onMove: (String, [String: Double], Bool, Bool) -> Void
     let onCancel: () -> Void
     let searchTargets: (String) async -> Void
     @State private var isSome: Bool
@@ -12,7 +12,7 @@ struct LocationsMoveSheet: View {
     @State private var targetCode: String?
     @State private var removeFromSource = false
     @State private var picked: Set<String>
-    @State private var quantities: [String: Int]
+    @State private var quantities: [String: Double]
     @State private var isScanning = false
 
     init(
@@ -22,7 +22,7 @@ struct LocationsMoveSheet: View {
         preselected: String? = nil,
         isRemote: Bool = false,
         searchTargets: @escaping (String) async -> Void = { _ in },
-        onMove: @escaping (String, [String: Int], Bool, Bool) -> Void,
+        onMove: @escaping (String, [String: Double], Bool, Bool) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.source = source
@@ -45,14 +45,14 @@ struct LocationsMoveSheet: View {
         Array(warehouse.moveTargets(from: source.code, query: query).prefix(4))
     }
 
-    private var plannedQuantities: [String: Int] {
+    private var plannedQuantities: [String: Double] {
         if isSome {
             return quantities.filter { picked.contains($0.key) && $0.value > 0 }
         }
         return warehouse.allQuantities(of: source.code).filter { $0.value > 0 }
     }
 
-    private var plannedUnits: Int {
+    private var plannedUnits: Double {
         plannedQuantities.values.reduce(0, +)
     }
 
@@ -118,7 +118,10 @@ struct LocationsMoveSheet: View {
     private var primaryTitle: String {
         guard let targetCode else { return "Choose a target location" }
         if isSome {
-            return L10n.format("Move %lld units to %@", plannedUnits, targetCode)
+            if plannedUnits == plannedUnits.rounded() {
+                return L10n.format("Move %lld units to %@", Int(plannedUnits), targetCode)
+            }
+            return L10n.format("Move %@", FractionGlyphs.apply(StockFraction.label(plannedUnits, packedIn: nil)))
         }
         return L10n.format("Move all to %@", targetCode)
     }
@@ -155,12 +158,14 @@ struct LocationsMoveSheet: View {
             )
             .accessibilityIdentifier("locations.move.sko.\(slot.skoReference)")
             if isPicked {
-                QuantityStepper(
+                let moving = min(max(quantities[slot.skoReference] ?? slot.quantity, 0), slot.quantity)
+                DecimalQuantityStepper(
                     value: Binding(
-                        get: { min(max(quantities[slot.skoReference] ?? slot.quantity, 1), slot.quantity) },
+                        get: { moving },
                         set: { quantities[slot.skoReference] = $0 }
                     ),
-                    range: 1...max(slot.quantity, 1)
+                    valueText: FractionGlyphs.apply(StockFraction.label(moving, packedIn: nil)),
+                    range: 0...max(slot.quantity, 0)
                 )
             }
         }

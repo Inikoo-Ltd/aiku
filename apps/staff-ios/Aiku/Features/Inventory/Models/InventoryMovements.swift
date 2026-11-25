@@ -68,7 +68,7 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
     let id: UUID
     let skoReference: String
     let kind: InventoryMovementKind
-    let quantity: Int
+    let quantity: Double
     let summary: String
     let todaySummary: String?
 
@@ -76,7 +76,7 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
         id: UUID = UUID(),
         skoReference: String,
         kind: InventoryMovementKind,
-        quantity: Int,
+        quantity: Double,
         summary: String,
         todaySummary: String? = nil
     ) {
@@ -93,7 +93,7 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
         let title = L10n.text(kind.title)
         switch kind {
         case .locationTransfer:
-            return Chip("\(title) \(quantity)", .info)
+            return Chip("\(title) \(quantity.grouped)", .info)
         case .associate, .disassociate:
             return Chip(kind.title, .info)
         case .purchase, .found, .returns:
@@ -107,8 +107,8 @@ struct InventoryStockMovement: Identifiable, Hashable, Sendable {
         }
     }
 
-    static func signed(_ value: Int) -> String {
-        value > 0 ? "+\(value)" : value < 0 ? "−\(-value)" : "0"
+    static func signed(_ value: Double) -> String {
+        value > 0 ? "+\(value.grouped)" : value < 0 ? "−\((-value).grouped)" : "0"
     }
 
     @MainActor
@@ -161,7 +161,7 @@ enum InventoryAuditReason: String, CaseIterable, Hashable, Sendable {
     static let decreaseReasons: [InventoryAuditReason] = [.countShortage, .damagedStock, .lostMissing, .expired, .pickingError]
     static let increaseReasons: [InventoryAuditReason] = [.countGain, .recountCorrection, .returnedToSaleable, .supplierOver]
 
-    static func reasons(forChange change: Int) -> [InventoryAuditReason] {
+    static func reasons(forChange change: Double) -> [InventoryAuditReason] {
         change < 0 ? decreaseReasons : increaseReasons
     }
 }

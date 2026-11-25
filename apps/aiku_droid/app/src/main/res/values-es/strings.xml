@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">No hay resultados para «%1$s»</string>
     <string name="states_search_scan_instead">Escanear en su lugar</string>
     <string name="states_server_body">Aiku no ha respondido. Su última acción no se ha guardado. Inténtelo de nuevo en un momento.</string>
-    <string name="states_server_error_code">Error %1$d ·</string>
     <string name="states_server_title">Algo salió mal</string>
     <string name="states_session_body">Por seguridad, se ha cerrado su sesión tras mucho tiempo sin actividad. Vuelva a iniciar sesión para continuar. No se ha perdido nada de lo que guardó.</string>
     <string name="states_session_sign_in">Volver a iniciar sesión</string>
     <string name="states_session_title">Sesión caducada</string>
-    <string name="states_tasks_empty_body">No hay albaranes esperándole. Los nuevos aparecen aquí en cuanto se le asignan.</string>
-    <string name="states_tasks_empty_title">Todo al día</string>
-    <string name="states_tasks_pick_from_queue">Volver a los albaranes</string>
     <string name="states_try_again">Reintentar</string>
     <string name="states_type_code">Escriba el código</string>
     <string name="stepper_decrease">Reducir</string>
@@ -2585,4 +2581,19 @@
     <string name="inventory_remove_one_confirm">Quitar</string>
     <string name="inventory_sko_status_heading">Estado de los SKO</string>
     <string name="inventory_quantity_status_heading">Estado de la cantidad</string>
+    <string name="goodsout_filter_date_overdue">Con retraso</string>
+    <string name="errors_what_does_this_mean">¿Qué significa esto?</string>
+    <string name="errors_support_reference">Referencia de soporte: %1$s</string>
+    <string name="errors_support_reference_label">Referencia de soporte de Aiku</string>
+    <string name="errors_support_reference_copied">Referencia de soporte copiada</string>
+    <string name="errors_open_in_browser">Abrir en el navegador</string>
+    <string name="errors_page_failed_title">No se pudo cargar la página de ayuda</string>
+    <string name="errors_page_failed_body">Compruebe la conexión o abra la página en el navegador.</string>
+    <string name="goodsin_next_stock_delivery">Siguiente entrega de stock</string>
+    <string name="clocking_load_failed_timesheets">No se pudieron cargar sus registros horarios</string>
+    <string name="clocking_load_failed_day">No se pudo cargar este día</string>
+    <string name="clocking_load_failed_calendar">No se pudo cargar el calendario</string>
+    <string name="clocking_load_failed_leave">No se pudieron cargar sus ausencias</string>
+    <string name="clocking_load_failed_overtime">No se pudieron cargar sus horas extra</string>
+    <string name="clocking_load_failed_adjustments">No se pudieron cargar sus correcciones de fichaje</string>
 </resources>

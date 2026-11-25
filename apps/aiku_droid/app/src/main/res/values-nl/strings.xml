@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Geen resultaten voor ‘%1$s’</string>
     <string name="states_search_scan_instead">In plaats daarvan scannen</string>
     <string name="states_server_body">Aiku reageerde niet. Je laatste actie is niet opgeslagen. Probeer het zo opnieuw.</string>
-    <string name="states_server_error_code">Fout %1$d ·</string>
     <string name="states_server_title">Er is iets misgegaan</string>
     <string name="states_session_body">Voor de veiligheid ben je uitgelogd na een lange tijd zonder activiteit. Log opnieuw in om verder te gaan. Niets wat je hebt opgeslagen, gaat verloren.</string>
     <string name="states_session_sign_in">Opnieuw inloggen</string>
     <string name="states_session_title">Sessie verlopen</string>
-    <string name="states_tasks_empty_body">Er wachten geen leveringsbonnen op je. Nieuwe verschijnen hier zodra ze zijn toegewezen.</string>
-    <string name="states_tasks_empty_title">Alles bijgewerkt</string>
-    <string name="states_tasks_pick_from_queue">Terug naar leveringsbonnen</string>
     <string name="states_try_again">Opnieuw proberen</string>
     <string name="states_type_code">Typ de code</string>
     <string name="stepper_decrease">Verlagen</string>
@@ -2475,4 +2471,19 @@
     <string name="inventory_remove_one_confirm">Verwijderen</string>
     <string name="inventory_sko_status_heading">SKO-status</string>
     <string name="inventory_quantity_status_heading">Hoeveelheidsstatus</string>
+    <string name="goodsout_filter_date_overdue">Te laat</string>
+    <string name="errors_what_does_this_mean">Wat betekent dit?</string>
+    <string name="errors_support_reference">Supportreferentie: %1$s</string>
+    <string name="errors_support_reference_label">Aiku-supportreferentie</string>
+    <string name="errors_support_reference_copied">Supportreferentie gekopieerd</string>
+    <string name="errors_open_in_browser">Openen in browser</string>
+    <string name="errors_page_failed_title">De helppagina kon niet worden geladen</string>
+    <string name="errors_page_failed_body">Controleer de verbinding of open de pagina in de browser.</string>
+    <string name="goodsin_next_stock_delivery">Volgende voorraadlevering</string>
+    <string name="clocking_load_failed_timesheets">Je urenstaten konden niet worden geladen</string>
+    <string name="clocking_load_failed_day">Deze dag kon niet worden geladen</string>
+    <string name="clocking_load_failed_calendar">De kalender kon niet worden geladen</string>
+    <string name="clocking_load_failed_leave">Je verlof kon niet worden geladen</string>
+    <string name="clocking_load_failed_overtime">Je overuren konden niet worden geladen</string>
+    <string name="clocking_load_failed_adjustments">Je klokcorrecties konden niet worden geladen</string>
 </resources>

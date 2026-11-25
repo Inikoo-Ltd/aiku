@@ -37,7 +37,7 @@ class CheckMobileOfflineWaitingNotice
         $sender      = User::find($senderId) ?? $absentUser;
         $lastWork    = MobileOfflineOperation::query()->with('warehouse:id,name,organisation_id')->where('device_uuid', $deviceUuid)->latest('id')->first(['id', 'warehouse_id']);
         $absentName  = $absentUser->contact_name ?? $absentUser->username;
-        $description = __(':name left :count actions unsent on a shared phone, the oldest done :oldest. They are sent only when :name signs in again on that phone. Until then the stock and the lines they touched are wrong in Aiku.', [
+        $description = trans_choice(':name left :count action unsent on a shared phone, done :oldest. It is sent only when :name signs in again on that phone. Until then the stock and the lines it touched are wrong in Aiku.|:name left :count actions unsent on a shared phone, the oldest done :oldest. They are sent only when :name signs in again on that phone. Until then the stock and the lines they touched are wrong in Aiku.', $count, [
             'name'   => $absentName,
             'count'  => $count,
             'oldest' => $oldestPerformedAt ? CarbonImmutable::parse($oldestPerformedAt)->toDateTimeString('minute') : __('at an unknown time'),
@@ -48,7 +48,7 @@ class CheckMobileOfflineWaitingNotice
         }
 
         return StoreStaffTask::make()->action($sender, [
-            'subject'     => __('Offline actions of :name are waiting on a shared phone', ['name' => $absentName]),
+            'subject'     => trans_choice('An offline action of :name is waiting on a shared phone|Offline actions of :name are waiting on a shared phone', $count, ['name' => $absentName]),
             'description' => $description,
             'department'  => 'warehouse',
             'data'        => array_filter([

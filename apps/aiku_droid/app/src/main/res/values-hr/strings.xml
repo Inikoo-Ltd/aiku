@@ -1932,14 +1932,10 @@
     <string name="states_search_empty_title">Nema rezultata za „%1$s”</string>
     <string name="states_search_scan_instead">Radije skeniraj</string>
     <string name="states_server_body">Aiku nije odgovorio. Vaša zadnja radnja nije spremljena. Pokušajte ponovno za trenutak.</string>
-    <string name="states_server_error_code">Pogreška %1$d ·</string>
     <string name="states_server_title">Nešto je pošlo po zlu</string>
     <string name="states_session_body">Zbog sigurnosti ste odjavljeni nakon dulje neaktivnosti. Prijavite se ponovno za nastavak. Ništa što ste spremili nije izgubljeno.</string>
     <string name="states_session_sign_in">Ponovno se prijavite</string>
     <string name="states_session_title">Sesija je istekla</string>
-    <string name="states_tasks_empty_body">Nijedna otpremnica ne čeka na vas. Nove se prikazuju ovdje čim budu dodijeljene.</string>
-    <string name="states_tasks_empty_title">Sve je obavljeno</string>
-    <string name="states_tasks_pick_from_queue">Natrag na otpremnice</string>
     <string name="states_try_again">Pokušajte ponovno</string>
     <string name="states_type_code">Upišite kôd</string>
     <string name="stepper_decrease">Smanji</string>
@@ -2585,4 +2581,19 @@
     <string name="inventory_remove_one_confirm">Ukloni</string>
     <string name="inventory_sko_status_heading">Status SKO-a</string>
     <string name="inventory_quantity_status_heading">Status količine</string>
+    <string name="goodsout_filter_date_overdue">Kasni</string>
+    <string name="errors_what_does_this_mean">Što to znači?</string>
+    <string name="errors_support_reference">Referenca za podršku: %1$s</string>
+    <string name="errors_support_reference_label">Aiku referenca za podršku</string>
+    <string name="errors_support_reference_copied">Referenca za podršku kopirana</string>
+    <string name="errors_open_in_browser">Otvori u pregledniku</string>
+    <string name="errors_page_failed_title">Učitavanje stranice pomoći nije uspjelo</string>
+    <string name="errors_page_failed_body">Provjerite vezu ili otvorite stranicu u pregledniku.</string>
+    <string name="goodsin_next_stock_delivery">Sljedeća isporuka zaliha</string>
+    <string name="clocking_load_failed_timesheets">Učitavanje vremenskih tablica nije uspjelo</string>
+    <string name="clocking_load_failed_day">Učitavanje ovog dana nije uspjelo</string>
+    <string name="clocking_load_failed_calendar">Učitavanje kalendara nije uspjelo</string>
+    <string name="clocking_load_failed_leave">Učitavanje dopusta nije uspjelo</string>
+    <string name="clocking_load_failed_overtime">Učitavanje prekovremenog rada nije uspjelo</string>
+    <string name="clocking_load_failed_adjustments">Učitavanje ispravaka evidencije radnog vremena nije uspjelo</string>
 </resources>

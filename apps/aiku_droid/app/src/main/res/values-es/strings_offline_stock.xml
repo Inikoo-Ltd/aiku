@@ -39,7 +39,6 @@
     <string name="offline_stock_queue_empty_title">Nada pendiente</string>
     <string name="offline_stock_queue_empty_body">Lo que hagas sin conexión aparece aquí hasta que se sincronice.</string>
     <string name="offline_stock_queue_note">El trabajo por líneas (recoger, empaquetar, ubicar, devoluciones, mover y contar) se guarda en el teléfono sin conexión y Aiku lo comprueba al sincronizar. Los cambios de estado necesitan conexión.</string>
-    <string name="offline_stock_record_id">#%1$d</string>
     <string name="offline_stock_record_note">Albarán %1$s</string>
     <string name="offline_stock_record_return">Devolución %1$s</string>
     <string name="offline_stock_record_delivery">Entrega de stock %1$s</string>

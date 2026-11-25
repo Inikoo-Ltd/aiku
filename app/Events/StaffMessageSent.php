@@ -13,10 +13,12 @@ use App\Models\Chat\StaffMessage;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldRescue;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StaffMessageSent implements ShouldBroadcastNow
+class StaffMessageSent implements ShouldBroadcastNow, ShouldRescue, ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use InteractsWithSockets;

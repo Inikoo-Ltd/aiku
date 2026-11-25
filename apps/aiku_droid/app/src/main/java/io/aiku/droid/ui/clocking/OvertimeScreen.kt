@@ -64,6 +64,7 @@ fun OvertimeScreen() {
             list = state.list,
             emptyIcon = R.drawable.ic_ui_clock,
             emptyTitle = stringResource(R.string.clocking_overtime_empty_title),
+            problemTitle = stringResource(R.string.clocking_load_failed_overtime),
             emptyBody = stringResource(R.string.clocking_overtime_empty_body),
             onRetry = controller::load,
             onLoadMore = controller::loadMore,
