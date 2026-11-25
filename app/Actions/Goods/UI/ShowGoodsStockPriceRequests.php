@@ -9,6 +9,7 @@
 
 namespace App\Actions\Goods\UI;
 
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\OrgAction;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -16,6 +17,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionPriceQueryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Goods\Stock;
+use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
@@ -32,6 +34,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShowGoodsStockPriceRequests extends OrgAction
 {
     use AsAction;
+
+    private const array ALWAYS_SHOWN_CURRENCIES = ['GBP', 'EUR'];
+
+    /** @var array<string, ?float> */
+    private array $costExchanges = [];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -224,8 +231,13 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->get()
             ->sortBy(fn (MasterAsset $masterAsset) => [(int) $masterAsset->stocks_in_product > 1, $masterAsset->code])
             ->map(function (MasterAsset $masterAsset) use ($stock, $priceRatio, $effectiveCost) {
-                $exchanges      = collect($masterAsset->masterShop?->price_exchanges ?? []);
-                $mainCurrencies = $exchanges->filter(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values();
+                $exchanges           = collect($masterAsset->masterShop?->price_exchanges ?? []);
+                $mainCurrencies      = $exchanges->filter(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values();
+                $followingCurrencies = $exchanges
+                    ->filter(fn (array $exchange, string $currencyCode) => !($exchange['is_major'] ?? false) && in_array($currencyCode, self::ALWAYS_SHOWN_CURRENCIES, true) && isset($exchange['major'], $exchange['exchange']))
+                    ->map(fn (array $exchange, string $currencyCode) => ['currency' => $currencyCode, 'major' => $exchange['major'], 'exchange' => (float) $exchange['exchange']])
+                    ->values();
+                $shownCurrencies     = $mainCurrencies->merge($followingCurrencies->pluck('currency'));
                 $costAtNewPrice = $priceRatio !== null ? $effectiveCost->costWithStockPriceChange($masterAsset, $stock->id, $priceRatio) : null;
 
                 return [
@@ -240,8 +252,10 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'cost_at_new_price' => $costAtNewPrice !== null ? round($costAtNewPrice, 2) : null,
                     'cost_currency'   => $this->group->currency->code,
                     'main_currencies' => $mainCurrencies->all(),
-                    'other_currencies' => $exchanges->reject(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values()->all(),
-                    'prices'          => $mainCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->value($masterAsset->master_prices, $currencyCode)])->all(),
+                    'cost_exchanges'  => $shownCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->costExchange($currencyCode)])->all(),
+                    'following_currencies' => $followingCurrencies->all(),
+                    'other_currencies' => $exchanges->keys()->diff($shownCurrencies)->values()->all(),
+                    'prices'          => $shownCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->value($masterAsset->master_prices, $currencyCode)])->all(),
                     'rrps'            => $mainCurrencies->mapWithKeys(fn (string $currencyCode) => [$currencyCode => $this->value($masterAsset->master_rrps, $currencyCode)])->all(),
                     'url'             => $masterAsset->masterShop ? route('grp.masters.master_shops.show.master_products.show', [$masterAsset->masterShop->slug, $masterAsset->slug]) : null,
                     'master_family'   => $masterAsset->masterShop && $masterAsset->masterFamily ? [
@@ -257,6 +271,16 @@ class ShowGoodsStockPriceRequests extends OrgAction
             })
             ->values()
             ->all();
+    }
+
+    private function costExchange(string $currencyCode): ?float
+    {
+        if (!array_key_exists($currencyCode, $this->costExchanges)) {
+            $currency                           = Currency::where('code', $currencyCode)->first();
+            $this->costExchanges[$currencyCode] = $currency ? GetCurrencyExchange::make()->cachedOrStored($this->group->currency, $currency) : null;
+        }
+
+        return $this->costExchanges[$currencyCode];
     }
 
     private function value(?array $record, string $currencyCode): ?float

@@ -55,7 +55,9 @@ interface MasterProduct {
     cost_at_new_price: number | null
     cost_currency: string
     main_currencies: string[]
+    following_currencies: { currency: string; major: string; exchange: number }[]
     other_currencies: string[]
+    cost_exchanges: Record<string, number | null>
     prices: Record<string, number | null>
     rrps: Record<string, number | null>
     url: string | null
@@ -241,14 +243,30 @@ const newPriceNote = computed(() => {
         : ctrans("Margins use the cost at the agreed price of :price per unit (:reference) until those goods are booked in", replacements)
 })
 
+function followingPrice(masterProduct: MasterProduct, following: MasterProduct["following_currencies"][number]): number | null {
+    const majorPrice = masterForms[masterProduct.id]?.prices[following.major]
+    if (!majorPrice) {
+        return masterProduct.prices[following.currency] ?? null
+    }
+
+    return Math.round(majorPrice * following.exchange * 100) / 100
+}
+
+function priceIn(masterProduct: MasterProduct, currency: string): number | null {
+    const following = masterProduct.following_currencies.find((item) => item.currency === currency)
+
+    return following ? followingPrice(masterProduct, following) : masterForms[masterProduct.id]?.prices[currency] ?? null
+}
+
 function margin(masterProduct: MasterProduct, currency: string): number | null {
-    const price = masterForms[masterProduct.id]?.prices[currency]
+    const price = priceIn(masterProduct, currency)
     const cost = marginCost(masterProduct)
-    if (cost === null || currency !== masterProduct.cost_currency || !price) {
+    const exchange = masterProduct.cost_exchanges[currency]
+    if (cost === null || !exchange || !price) {
         return null
     }
 
-    return Math.round(((price - cost) / price) * 1000) / 10
+    return Math.round(((price - cost * exchange) / price) * 1000) / 10
 }
 
 function isMasterChanged(masterProduct: MasterProduct): boolean {
@@ -423,7 +441,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                             <FontAwesomeIcon :icon="faCube" fixed-width aria-hidden="true" />
                             {{ masterProduct.stock_quantity > 1 ? ctrans("Own product, :quantity per outer", { quantity: masterProduct.stock_quantity }) : ctrans("Own product") }}
                         </span>
-                        <span class="min-w-0 flex-1 truncate">{{ masterProduct.name }}</span>
+                        <span class="min-w-[12rem] flex-1">{{ masterProduct.name }}</span>
                         <span class="text-gray-500">{{ ctrans(":units units per outer", { units: masterProduct.units }) }}</span>
                         <a
                             v-if="masterProduct.master_family"
@@ -445,9 +463,9 @@ function saveMaster(masterProduct: MasterProduct): void {
                         <thead class="whitespace-nowrap text-left text-[10px] uppercase tracking-wide text-gray-400">
                             <tr>
                                 <th class="w-16 pr-3 font-medium">{{ ctrans("Currency") }}</th>
-                                <th class="pr-3 font-medium">{{ ctrans("Price per outer") }}</th>
-                                <th class="pr-3 font-medium">{{ ctrans("RRP per unit") }}</th>
-                                <th class="font-medium">{{ ctrans("Margin") }}</th>
+                                <th class="w-px pr-2 font-medium">{{ ctrans("Price per outer") }}</th>
+                                <th class="w-px pr-6 font-medium">{{ ctrans("Profit margin") }}</th>
+                                <th class="font-medium">{{ ctrans("RRP per unit") }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -467,6 +485,10 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     <span v-else>{{ money(currency, masterProduct.prices[currency]) }}</span>
                                 </td>
                                 <td class="py-1 pr-3">
+                                    <span v-if="margin(masterProduct, currency) !== null" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%</span>
+                                    <span v-else class="text-gray-300">—</span>
+                                </td>
+                                <td class="py-1">
                                     <InputNumber
                                         v-if="data.can_edit_master_prices"
                                         v-model="masterForms[masterProduct.id].rrps[currency]"
@@ -479,10 +501,15 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     />
                                     <span v-else>{{ money(currency, rrpsPerUnit(masterProduct)[currency]) }}</span>
                                 </td>
-                                <td class="py-1">
-                                    <span v-if="margin(masterProduct, currency) !== null" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%</span>
+                            </tr>
+                            <tr v-for="following in masterProduct.following_currencies" :key="following.currency" class="text-gray-500">
+                                <td class="py-1 pr-3 font-semibold text-gray-700">{{ following.currency }}</td>
+                                <td class="py-1 pr-3">{{ money(following.currency, followingPrice(masterProduct, following)) }}</td>
+                                <td class="py-1 pr-3">
+                                    <span v-if="margin(masterProduct, following.currency) !== null" :class="(margin(masterProduct, following.currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, following.currency) }}%</span>
                                     <span v-else class="text-gray-300">—</span>
                                 </td>
+                                <td class="py-1 text-[10px]">{{ ctrans("follows :major × :exchange", { major: following.major, exchange: following.exchange }) }}</td>
                             </tr>
                         </tbody>
                     </table>
