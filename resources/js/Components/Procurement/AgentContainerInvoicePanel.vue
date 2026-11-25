@@ -7,13 +7,13 @@ import PaymentDialog, { PaymentPayload } from "@/Components/Procurement/PaymentD
 import AgentContainerChargeDialog, { ChargeForm } from "@/Components/Procurement/AgentContainerChargeDialog.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip } from "@fal"
+import { faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip, faSyncAlt } from "@fal"
 import { useLocaleStore } from "@/Stores/locale"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
-library.add(faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip)
+library.add(faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip, faSyncAlt)
 
 interface Charge {
 	description: string
@@ -163,7 +163,7 @@ const deposits = computed(() => props.data.invoice?.advance_payments.filter(paym
 					<FontAwesomeIcon icon="fal fa-file-pdf" fixed-width aria-hidden="true" />
 					{{ ctrans("Download PDF") }}
 				</a>
-				<Button v-if="data.is_open" type="tertiary" size="xs" :label="ctrans('Recalculate from the container')" :loading="invoiceLoading" @click="confirmRemakeInvoice" />
+				<Button v-if="data.is_open" type="tertiary" size="xs" icon="fal fa-sync-alt" :label="ctrans('Recalculate from the container')" :loading="invoiceLoading" @click="confirmRemakeInvoice" />
 			</div>
 		</div>
 
