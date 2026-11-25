@@ -956,3 +956,27 @@ test('W4 products sent from the upload are saved with their pictures attached on
     $submission = SupplierSubmission::where('supplier_id', $supplier->id)->where('type', SupplierSubmissionTypeEnum::PRODUCT_PROPOSAL)->sole();
     expect($submission->attachments()->count())->toBe(1);
 });
+
+test('INI-523 a direct supplier marking its order complete from its portal tells the buyer once', function () {
+    [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $orgSupplier   = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $orgSupplierProduct = $orgSupplier->orgSupplierProducts()->where('supplier_product_id', $supplierProduct->id)->firstOrFail();
+    $purchaseOrder = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $buyer         = $this->adminGuest->getUser();
+    $purchaseOrder->updateQuietly(['buyer_id' => $buyer->id]);
+    Auth::logout();
+    if ($published = \App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $this->group->id)->where('state', 'published')->first()) {
+        acceptSupplierAgreement($this, $token, $published)->assertSessionHasNoErrors();
+    }
+
+    $this->postJson(route('grp.supplier_share.purchase_order.documents.store', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]), [
+        'scope' => 'Packing list',
+        'files' => [UploadedFile::fake()->createWithContent('pl.pdf', '%PDF-1.4 pl '.Str::random(32))],
+    ])->assertOk();
+
+    Notification::fake();
+    $this->postJson(route('grp.supplier_share.purchase_order.complete', ['token' => $token, 'purchaseOrder' => $purchaseOrder->id]))->assertOk();
+
+    Notification::assertSentToTimes($buyer, \App\Notifications\SupplierDepositRequestedNotification::class, 1);
+    Notification::assertSentTo($buyer, \App\Notifications\SupplierDepositRequestedNotification::class, fn ($notification) => $notification->type === 'supplier_shipped_order');
+});

@@ -11,20 +11,27 @@ import qs from "qs"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TableStockDeliveries from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveries.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import ReceiveSupplierParcelDialog from "@/Components/Procurement/ReceiveSupplierParcelDialog.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTruckContainer } from "@fal"
+import { faTruckContainer, faBoxCheck } from "@fal"
 library.add(faTruckContainer)
 
 type FilterOption = { label: string; value: string; count: number; tooltip?: string }
+type RouteDef = { name: string; parameters: (string | number)[] }
 
 defineProps<{
     pageHead: object
     title: string
     data: object
     filterOptions?: { organisation?: FilterOption[] }
+    receiveSupplierParcel?: { options: RouteDef; receive: RouteDef } | null
 }>()
+
+const isReceivingParcel = ref(false)
 
 const currentQuery = () => qs.parse(location.search.substring(1)) as Record<string, any>
 const organisation = ref<string | null>(currentQuery().filter?.organisation ?? null)
@@ -39,7 +46,16 @@ watch(organisation, () => {
 
 <template>
     <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template v-if="receiveSupplierParcel" #otherBefore>
+            <Button type="tertiary" :label="ctrans('Receive supplier parcel')" @click="isReceivingParcel = true">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faBoxCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </template>
+    </PageHeading>
+    <ReceiveSupplierParcelDialog v-if="receiveSupplierParcel" v-model:visible="isReceivingParcel" :routes="receiveSupplierParcel" />
     <div v-if="filterOptions?.organisation?.length" class="flex flex-wrap gap-x-4 gap-y-2 px-4 pt-3">
         <PillFilterBar :label="ctrans('Organisation')" :options="filterOptions.organisation" :selected="organisation" @select="(value) => (organisation = value)" />
     </div>

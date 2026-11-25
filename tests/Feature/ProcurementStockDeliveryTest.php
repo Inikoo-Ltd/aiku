@@ -65,6 +65,7 @@ use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Laravel\Scout\Builder as ScoutBuilder;
 use Laravel\Scout\EngineManager;
 use Laravel\Scout\Engines\Engine;
@@ -5059,4 +5060,98 @@ test('INI-525 the rest of an agent line kept at the agent lets the order settle 
         ->and($order->refresh()->state)->not->toBe(PurchaseOrderStateEnum::SETTLED);
 
     actingAs($this->adminGuest->getUser());
+});
+
+test('INI-523 goods in receives a direct supplier parcel: a submitted order is agreed, only what arrived goes on one received delivery, the rest stays open, and only shipping documents follow', function () {
+    [$orgSupplier, $supplierProduct, $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    $user      = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+
+    $agreed    = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $submitted = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action(
+        $submitted,
+        $supplierProduct->historicSupplierProduct,
+        $this->orgStocks[1],
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 40])
+    );
+    $submitted = UpdatePurchaseOrderStateToSubmitted::make()->action($submitted->refresh());
+
+    foreach (['Packing list' => 'pl', 'Invoice' => 'inv'] as $scope => $name) {
+        $file = UploadedFile::fake()->createWithContent("$name.pdf", '%PDF-1.4 '.$name.' '.Str::random(32));
+        \App\Actions\Helpers\Media\SaveModelAttachment::make()->action($agreed, [
+            'path'         => $file->getPathname(),
+            'originalName' => "$name.pdf",
+            'extension'    => 'pdf',
+            'scope'        => $scope,
+            'sub_scope'    => 'supplier_portal',
+            'caption'      => "$name.pdf",
+        ]);
+    }
+
+    $agreedLine    = $agreed->purchaseOrderTransactions()->sole();
+    $submittedLine = $submitted->purchaseOrderTransactions()->sole();
+
+    $options = \App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->handle($this->organisation, $warehouse, $orgSupplier->id)['purchase_orders'];
+    $listed  = collect($options)->keyBy('id');
+    $agreedSkos = (float) $listed[$agreed->id]['lines'][0]['skos_awaiting'];
+
+    expect(collect(\App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->suppliers($this->organisation))->pluck('id'))->toContain($orgSupplier->id)
+        ->and($listed[$submitted->id]['needs_agreeing'])->toBeTrue()
+        ->and($listed[$agreed->id]['needs_agreeing'])->toBeFalse()
+        ->and($agreedSkos * \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::unitsPerSko($agreedLine))->toEqual(100.0)
+        ->and(json_encode($options))->not->toContain('net_amount')
+        ->and(fn () => \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle($this->organisation, $orgSupplier->id, [$agreedLine->id => 0], $user))
+        ->toThrow(ValidationException::class);
+
+    $packsOfThree = (new PurchaseOrderTransaction())->setRelation('orgStock', (new \App\Models\Inventory\OrgStock())->forceFill(['packed_in' => 3]));
+    expect(\App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::units(6.667, $packsOfThree, 20))->toEqual(20.0)
+        ->and(\App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::units(5, $packsOfThree, 20))->toEqual(15.0);
+
+    $halfSkos      = $agreedSkos / 2;
+    $submittedSkos = 40 / \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::unitsPerSko($submittedLine);
+
+    $stockDelivery = \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle(
+        $this->organisation,
+        $orgSupplier->id,
+        [$agreedLine->id => $halfSkos, $submittedLine->id => $submittedSkos],
+        $user
+    );
+
+    $submitted = $submitted->refresh();
+    $stages    = \App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::run($agreed->refresh());
+
+    expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::RECEIVED)
+        ->and($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->sort()->values()->all())->toBe(collect([$agreed->id, $submitted->id])->sort()->values()->all())
+        ->and((float) $stockDelivery->items()->whereRaw("(data->>'purchase_order_transaction_id')::bigint = ?", [$agreedLine->id])->sole()->unit_quantity)->toEqual(50.0)
+        ->and($submitted->state)->not->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and($submitted->data['agreed_on_receiving']['user_id'])->toBe($user->id)
+        ->and($stockDelivery->attachments()->pluck('model_has_attachments.scope')->all())->toBe(['Packing list'])
+        ->and($stages['handed_over']['recorded'])->toBeTrue()
+        ->and($stages['handed_over']['date']?->toDateString())->toBe($stockDelivery->received_at->toDateString());
+
+    $stillOpen = collect(\App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->handle($this->organisation, $warehouse, $orgSupplier->id)['purchase_orders'])->keyBy('id');
+
+    expect((float) $stillOpen[$agreed->id]['lines'][0]['skos_awaiting'])->toEqual($agreedSkos - $halfSkos)
+        ->and($stillOpen->has($submitted->id))->toBeFalse();
+});
+
+test('INI-523 goods in can not receive a parcel against an agent order or another supplier\'s order, and only goods in staff open the parcel dialog', function () {
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+    [$otherOrgSupplier, , $otherOrgSupplierProduct] = independentOrgSupplierFixture($this);
+    $otherOrder = createConfirmedAgentOrder($this, $otherOrgSupplier, $otherOrgSupplierProduct, 0, 10);
+    $warehouse  = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+
+    expect(fn () => \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle($this->organisation, $orgSupplier->id, [$otherOrder->purchaseOrderTransactions()->value('id') => 1]))
+        ->toThrow(ValidationException::class);
+
+    $outsider = userWithOnlyPermissions($this->organisation, []);
+    actingAs($outsider);
+    $this->getJson(route('grp.org.warehouses.show.incoming.supplier_parcel.options', [$this->organisation->slug, $warehouse->slug]))->assertForbidden();
+
+    $user = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+    actingAs($user);
+    $this->getJson(route('grp.org.warehouses.show.incoming.supplier_parcel.options', [$this->organisation->slug, $warehouse->slug]))->assertOk()->assertJsonStructure(['suppliers']);
 });

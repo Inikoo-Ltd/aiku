@@ -50,6 +50,8 @@ class CompleteSupplierPortalPurchaseOrder
 
         $purchaseOrder->update(['data' => [...($purchaseOrder->data ?? []), self::COMPLETED_BY_SUPPLIER_KEY => $today]]);
 
+        rescue(fn () => NotifyPurchasingOfSupplierShipment::run($purchaseOrder));
+
         return $purchaseOrder;
     }
 
