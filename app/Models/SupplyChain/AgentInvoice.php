@@ -92,16 +92,6 @@ class AgentInvoice extends Model
             return $this->advancePaymentsCache;
         }
 
-        $deposits = $this->stockDelivery->depositApplications()
-            ->with('aspoDeposit:id,reference')
-            ->get()
-            ->map(fn ($application) => [
-                'type'      => 'deposit',
-                'reference' => $application->aspoDeposit?->reference,
-                'date'      => $application->created_at?->toDateString(),
-                'amount'    => (float) $application->amount,
-            ]);
-
         $sent = GetStockDeliveryImportFile::sentDeposits($this->stockDelivery)
             ->filter(fn (array $deposit) => $deposit['is_paid'] && $deposit['currency'] === $this->currency->code)
             ->map(fn (array $deposit) => [
@@ -121,7 +111,7 @@ class AgentInvoice extends Model
                 'amount'    => (float) $payment->amount,
             ]);
 
-        return $this->advancePaymentsCache = $deposits->concat($sent)->concat($payments)->values()->all();
+        return $this->advancePaymentsCache = $sent->concat($payments)->values()->all();
     }
 
     public function paidAmount(): float

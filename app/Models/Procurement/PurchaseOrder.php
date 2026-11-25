@@ -21,7 +21,6 @@ use App\Models\Helpers\Address;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;
-use App\Models\SupplyChain\AspoDeposit;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
@@ -156,7 +155,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Agent|null $agent
  * @property-read Currency $currency
- * @property-read Collection<int, AspoDeposit> $deposits
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Organisation $organisation
@@ -529,10 +527,6 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         return OrgAgent::where('organisation_id', $this->organisation_id)->where('agent_id', $this->agent_id)->first();
     }
 
-    public function deposits(): HasMany
-    {
-        return $this->hasMany(AspoDeposit::class);
-    }
 
     public function buyer(): BelongsTo
     {

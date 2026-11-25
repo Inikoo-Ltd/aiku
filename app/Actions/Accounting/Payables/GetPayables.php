@@ -10,7 +10,7 @@ namespace App\Actions\Accounting\Payables;
 
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Models\Helpers\Currency;
 use Illuminate\Database\Query\Builder;
@@ -94,8 +94,7 @@ class GetPayables
         $agentInvoices = fn (string $kind, string $where, string $counted) => "
             select '$kind', ai.id, ai.organisation_id, 'agent', ai.agent_id, a.name, {$orgAgentSlug('ai')},
                 ai.reference, ai.date, null::date, ai.currency_id, ai.total_amount,
-                coalesce((select sum(da.amount) from stock_delivery_deposit_applications da where da.stock_delivery_id = ai.stock_delivery_id and da.deleted_at is null), 0)
-                + coalesce((select sum(ap.amount) from agent_payments ap where ap.stock_delivery_id = ai.stock_delivery_id and ap.type = '$transfer' and ap.deleted_at is null), 0),
+                coalesce((select sum(ap.amount) from agent_payments ap where ap.stock_delivery_id = ai.stock_delivery_id and ap.type = '$transfer' and ap.deleted_at is null), 0),
                 sd.slug, sd.reference, null::timestamptz, $counted
             from agent_invoices ai
             join stock_deliveries sd on sd.id = ai.stock_delivery_id

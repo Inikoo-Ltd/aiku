@@ -777,11 +777,6 @@ use App\Actions\SupplyChain\SupplierProduct\Upload\CancelSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\ConfirmSupplierProductUpload;
 use App\Actions\SupplyChain\SupplierProduct\Upload\SetSupplierProductUploadNewDraft;
 use App\Actions\SupplyChain\SupplierProduct\Upload\UpdateSupplierProductUploadRecord;
-use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
-use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDeposit;
-use App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState;
-use App\Actions\SupplyChain\DepositRequest\StoreDepositRequest;
-use App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid;
 use App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\StoreAgentMoneyRequestExpense;
 use App\Actions\SupplyChain\DepositRequest\SkipAgentMoneyRequestLine;
@@ -798,8 +793,6 @@ use App\Actions\SupplyChain\DepositRequest\UndoAgentMoneyBankTransfer;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAdvancePercentage;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAgentFeePercentage;
 use App\Actions\GoodsIn\StockDelivery\AcknowledgeStockDeliveriesCostingReminder;
-use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
-use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\DeleteImageFromSupplierProduct;
@@ -1911,14 +1904,6 @@ Route::delete('/supplier-product/{supplierProduct:id}/detach-image/{media:id}', 
 Route::post('/org-supplier-product/{orgSupplierProduct:id}/upload-images', [UploadImagesToSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.upload_images');
 Route::delete('/org-supplier-product/{orgSupplierProduct:id}/detach-image/{media:id}', [DeleteImageFromSupplierProduct::class, 'inOrgSupplierProduct'])->name('org_supplier_product.detach_image')->withoutScopedBindings();
 
-Route::name('aspo-deposit.')->prefix('aspo-deposit/{aspoDeposit:id}')->group(function () {
-    Route::patch('update', UpdateAspoDeposit::class)->name('update');
-    Route::patch('state', UpdateAspoDepositState::class)->name('state');
-});
-
-Route::post('/agent/{agent:id}/deposit-request', StoreDepositRequest::class)->name('agent.deposit_request.store');
-Route::patch('/deposit-request-item/{depositRequestItem:id}/mark-paid', MarkDepositRequestItemPaid::class)->name('deposit_request_item.mark_paid');
-
 Route::patch('/org-supplier/{orgSupplier:id}', UpdateOrgSupplier::class)->name('org_supplier.update');
 
 Route::patch('/org-agent/{orgAgent:id}', UpdateOrgAgent::class)->name('org_agent.update');
@@ -2136,7 +2121,6 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::post('cost', StoreStockDeliveryCost::class)->name('cost.store');
     Route::delete('unbacked-costs', RemoveStockDeliveryUnbackedCosts::class)->name('unbacked-costs.remove');
     Route::post('cost/invoice', AttachStockDeliveryCostInvoice::class)->name('cost.invoice.attach');
-    Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
     Route::post('feedback', StoreStockDeliveryFeedback::class)->name('feedback.store');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
@@ -2158,10 +2142,6 @@ Route::name('stock_delivery_service_invoice.')->prefix('stock-delivery-service-i
 Route::name('stock-delivery-cost.')->prefix('stock-delivery-cost/{stockDeliveryCost:id}')->group(function () {
     Route::patch('update', UpdateStockDeliveryCost::class)->name('update');
     Route::delete('', DeleteStockDeliveryCost::class)->name('delete');
-});
-
-Route::name('stock-delivery-deposit-application.')->prefix('stock-delivery-deposit-application/{stockDeliveryDepositApplication:id}')->group(function () {
-    Route::delete('', DeleteStockDeliveryDepositApplication::class)->name('delete');
 });
 
 Route::post('stock-delivery-packing-check/{stockDeliveryPackingCheck:id}', RecordStockDeliveryPackingCheck::class)->name('stock_delivery_packing_check.record');
@@ -2218,7 +2198,6 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('chase', StorePurchaseOrderChase::class)->name('chase.store');
     Route::post('compliance/{tradeUnit:id}', AttachPurchaseOrderComplianceDocument::class)->name('compliance.attach')->withoutScopedBindings();
     Route::patch('compliance/{tradeUnit:id}/check', CheckPurchaseOrderComplianceDocument::class)->name('compliance.check')->withoutScopedBindings();
-    Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
     Route::post('payment', ConfirmPurchaseOrderPayment::class)->name('payment.confirm');
     Route::delete('payment/{depositPayment:id}', UndoPurchaseOrderPayment::class)->name('payment.undo');
     Route::post('balance-reminder', RemindPurchaseOrderBalancePayment::class)->name('balance_reminder.store');

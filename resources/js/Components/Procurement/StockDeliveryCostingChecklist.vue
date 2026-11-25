@@ -52,13 +52,6 @@ interface CostRow {
     needs_lines?: boolean
 }
 
-interface AvailableDeposit {
-    id: number
-    reference: string | null
-    unapplied_amount: number
-    currency_code: string
-}
-
 const props = defineProps<{
     costing: {
         is_costed: boolean
@@ -80,14 +73,6 @@ const props = defineProps<{
         agent_invoice_missing: boolean
         agent_invoice_waiting: string | null
         storeCostRoute: routeType
-        deposits: {
-            applied: { id: number, amount: number, reference: string | null, deleteRoute: routeType | null }[]
-            applied_total: number
-            agent_invoice_amount: number
-            balance_due: number
-            available: AvailableDeposit[]
-            applyRoute: routeType
-        }
         partner_invoice: {
             reference: string
             net_amount: number
@@ -111,28 +96,6 @@ const optimistic = ref<{ [key: string]: Partial<CostRow> }>({})
 const rows = computed(() => props.costing.checklist
     .filter(row => (row.type === "agent_invoice") === isInvoiceSection.value)
     .map(row => ({ ...row, ...optimistic.value[rowKey(row)] })))
-
-const selectedDepositId = ref<number | null>(null)
-const applyAmount = ref<string>("")
-
-const applyDeposit = () => {
-    errorMessage.value = null
-    if (!selectedDepositId.value || !applyAmount.value) return
-
-    router.post(
-        route(props.costing.deposits.applyRoute.name, props.costing.deposits.applyRoute.parameters),
-        { aspo_deposit_id: selectedDepositId.value, amount: Number(applyAmount.value) },
-        { ...quietVisit, onError, onSuccess: () => { selectedDepositId.value = null; applyAmount.value = "" } }
-    )
-}
-
-const unapplyDeposit = (application: { deleteRoute: routeType | null }) => {
-    errorMessage.value = null
-    if (!application.deleteRoute) return
-    if (!window.confirm(ctrans("Remove this deposit application? This is audited and visible to org staff and the agent."))) return
-
-    router.delete(route(application.deleteRoute.name, application.deleteRoute.parameters), { ...quietVisit, onError })
-}
 
 const locale = useLocaleStore()
 const loading = ref<string | null>(null)
@@ -288,11 +251,6 @@ const uploadInvoice = (row: CostRow, event: Event) => {
         }
     )
 }
-
-const depositOptions = computed(() => props.costing.deposits.available.map(deposit => ({
-    id: deposit.id,
-    label: `${deposit.reference || deposit.id} (${deposit.unapplied_amount} ${deposit.currency_code} ${ctrans("unapplied")})`,
-})))
 
 const editingNote = ref<string | null>(null)
 const noteDraft = ref("")
@@ -717,57 +675,6 @@ const removeExtra = (row: CostRow) => {
                         />
                         {{ costing.currency }}
                     </label>
-                </div>
-            </div>
-
-            <div v-if="isInvoiceSection" class="mt-4 rounded-md border border-gray-200 overflow-hidden text-sm">
-                <div class="bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600">{{ ctrans("Settlement") }}</div>
-                <div class="grid gap-1 px-3 py-2 text-gray-700">
-                    <div v-for="application in costing.deposits.applied" :key="application.id" class="flex items-center justify-between gap-3">
-                        <span>{{ application.reference || application.id }}</span>
-                        <span class="flex items-center gap-2 tabular-nums">
-                            {{ locale.currencyFormat(costing.currency ?? "", Number(application.amount)) }}
-                            <button
-                                v-if="canEditPayments && application.deleteRoute"
-                                type="button"
-                                class="text-gray-400 hover:text-red-500"
-                                :title="ctrans('Un-apply deposit (audited)')"
-                                @click="unapplyDeposit(application)"
-                            >
-                                <FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
-                            </button>
-                        </span>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-gray-500">{{ ctrans("Agent invoice") }}</span>
-                        <span class="tabular-nums">{{ locale.currencyFormat(costing.currency ?? "", Number(costing.deposits.agent_invoice_amount)) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-gray-500">{{ ctrans("Deposits applied") }}</span>
-                        <span class="tabular-nums">{{ Number(costing.deposits.applied_total) > 0 ? "-" : "" }}{{ locale.currencyFormat(costing.currency ?? "", Number(costing.deposits.applied_total)) }}</span>
-                    </div>
-                    <div class="flex items-center justify-between gap-3 font-medium">
-                        <span>{{ ctrans("Balance due") }}</span>
-                        <span class="tabular-nums">{{ locale.currencyFormat(costing.currency ?? "", Number(costing.deposits.balance_due)) }}</span>
-                    </div>
-                </div>
-
-                <div v-if="canEditPayments && costing.deposits.available.length" class="flex items-center gap-2 border-t border-gray-200 px-3 py-2">
-                    <Select
-                        v-model="selectedDepositId"
-                        size="small"
-                        :options="depositOptions"
-                        optionLabel="label"
-                        optionValue="id"
-                        showClear
-                        :placeholder="ctrans('Select a paid deposit')"
-                        class="min-w-64"
-                    />
-                    <InputText v-model="applyAmount" type="number" size="small" min="0" step="0.01" class="w-28 tabular-nums" :placeholder="ctrans('Amount')" />
-                    <button type="button" class="text-xs text-gray-500 hover:text-gray-700" @click="applyDeposit">
-                        {{ ctrans("Apply deposit") }}
-                    </button>
                 </div>
             </div>
         </template>

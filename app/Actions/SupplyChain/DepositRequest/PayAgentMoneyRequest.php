@@ -12,7 +12,7 @@ use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Helpers\Media;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;

@@ -9,7 +9,7 @@
 namespace App\Actions\SupplyChain\DepositRequest;
 
 use App\Actions\OrgAction;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\SupplyChain\DepositRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;

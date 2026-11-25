@@ -1979,7 +1979,7 @@ test('UI show agent', function () {
             ->where('pageHead.actions.0.route.name', 'grp.supply-chain.agents.edit')
             ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
             ->has('tabs')
-            ->where('showcase.depositWorkspace', fn ($workspace) => $agent->deposits()->where('state', 'pending')->exists() || $workspace === null);
+            ->missing('showcase.depositWorkspace');
     });
 
     $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'history']))

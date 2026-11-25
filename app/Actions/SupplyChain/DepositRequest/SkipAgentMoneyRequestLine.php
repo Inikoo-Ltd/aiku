@@ -10,7 +10,7 @@
 namespace App\Actions\SupplyChain\DepositRequest;
 
 use App\Actions\OrgAction;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;

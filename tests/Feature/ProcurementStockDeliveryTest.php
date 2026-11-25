@@ -14,7 +14,6 @@ use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Models\Goods\TradeUnit;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
-use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UI\ShowAgentCommissionInvoice;
 use Carbon\CarbonImmutable;
@@ -3446,197 +3445,7 @@ describe('supplier deposits', function () {
         );
     });
 
-    test('deposit store on an agent purchase order records the deposit against the order', function () {
-        $this->post(route('grp.models.purchase-order.deposit.store', $this->depositPurchaseOrder->id), ['amount' => 50, 'reference' => 'DEP-ROUTE'])
-            ->assertSessionHasNoErrors();
-
-        $deposit = $this->depositPurchaseOrder->deposits()->firstOrFail();
-
-        expect($deposit->purchase_order_id)->toBe($this->depositPurchaseOrder->id)
-            ->and($deposit->agent_id)->toBe($this->depositPurchaseOrder->agent_id)
-            ->and($deposit->purchaseOrder->is($this->depositPurchaseOrder))->toBeTrue()
-            ->and((float) $deposit->amount)->toBe(50.0)
-            ->and($this->depositPurchaseOrder->deposits()->count())->toBe(1);
-    });
-
-    test('deposit store refuses a purchase order that is not through an agent', function () {
-        $supplier         = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
-        $orgSupplier      = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
-        $independentOrder = StorePurchaseOrder::make()->action(
-            $orgSupplier,
-            array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'NO-AGENT-DEP-'.uniqid()]),
-            strict: false
-        );
-
-        expect($independentOrder->isAgentOrder())->toBeFalse();
-
-        $this->post(route('grp.models.purchase-order.deposit.store', $independentOrder->id), ['amount' => 50])
-            ->assertSessionHasErrors('amount');
-
-        expect(fn () => StoreAspoDeposit::make()->action($independentOrder, ['amount' => 50]))->toThrow(ValidationException::class)
-            ->and($independentOrder->deposits()->count())->toBe(0);
-    });
-
-    test('deposit lifecycle: pending to paid to supplier', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, [
-            'amount' => 300,
-        ]);
-
-        expect($deposit)->toBeInstanceOf(\App\Models\SupplyChain\AspoDeposit::class)
-            ->and($deposit->agent_id)->toBe($this->depositPurchaseOrder->agent_id)
-            ->and($deposit->state->value)->toBe('pending')
-            ->and($deposit->currency_id)->toBe($this->depositPurchaseOrder->currency_id);
-
-        $paid = \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        expect($paid->state->value)->toBe('paid_to_supplier')
-            ->and($paid->paid_to_supplier_at)->not->toBeNull();
-
-        $refunded = \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($paid, ['state' => 'refunded']);
-        expect($refunded->state->value)->toBe('refunded')
-            ->and($refunded->refunded_at)->not->toBeNull();
-    });
-
-    test('deposit request consolidation auto-settles when all items paid', function () {
-        $depositOne = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 100]);
-        $depositTwo = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 150]);
-
-        $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreDepositRequest::make()->action($this->depositPurchaseOrder->agent, [
-            'currency_id' => $this->depositPurchaseOrder->currency_id,
-            'items'       => [
-                ['aspo_deposit_id' => $depositOne->id, 'organisation_id' => $this->organisation->id, 'amount' => 100],
-                ['aspo_deposit_id' => $depositTwo->id, 'organisation_id' => $this->organisation->id, 'amount' => 150],
-            ],
-        ]);
-
-        expect($depositRequest)->toBeInstanceOf(\App\Models\SupplyChain\DepositRequest::class)
-            ->and($depositRequest->items()->count())->toBe(2)
-            ->and($depositRequest->state->value)->toBe('requested');
-
-        $items = $depositRequest->items()->get();
-
-        \App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid::make()->action($items[0]);
-        expect($depositRequest->refresh()->state->value)->toBe('requested');
-
-        \App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid::make()->action($items[1]);
-        expect($depositRequest->refresh()->state->value)->toBe('settled')
-            ->and($depositRequest->settled_at)->not->toBeNull();
-    });
-
-    test('deposit application splits across two deliveries and tracks unapplied balance', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 100]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $deliveryOne = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-APP-1-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        $deliveryTwo = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-APP-2-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($deliveryOne, $this->depositPurchaseOrder);
-        placeDeliveryUnderAgentOrder($deliveryTwo, $this->depositPurchaseOrder);
-
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryOne->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 40,
-        ]);
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryTwo->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 30,
-        ]);
-
-        $deposit->refresh();
-        expect($deposit->applied_amount)->toBe(70.0)
-            ->and($deposit->unapplied_amount)->toBe(30.0)
-            ->and($deliveryOne->depositApplications()->sum('amount'))->toBe('40.00')
-            ->and($deliveryTwo->depositApplications()->sum('amount'))->toBe('30.00');
-
-        expect(fn () => \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryOne->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 50,
-        ]))->toThrow(ValidationException::class);
-    });
-
-    test('settlement math: agent invoice minus applied deposits equals balance due', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-SETTLE-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($delivery, $this->depositPurchaseOrder);
-
-        StoreStockDeliveryCost::make()->action($delivery, [
-            'type'   => StockDeliveryCostTypeEnum::AGENT_INVOICE->value,
-            'amount' => 1000,
-        ]);
-
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 300,
-        ]);
-
-        $agentInvoiceAmount = (float) $delivery->costs()->where('type', 'agent_invoice')->value('amount');
-        $appliedTotal        = (float) $delivery->depositApplications()->sum('amount');
-
-        expect($agentInvoiceAmount)->toBe(1000.0)
-            ->and($appliedTotal)->toBe(300.0)
-            ->and($agentInvoiceAmount - $appliedTotal)->toBe(700.0);
-    });
-
-    test('un-applying a deposit application is audited, restores balance, and allows re-apply', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-UNAPPLY-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($delivery, $this->depositPurchaseOrder);
-
-        StoreStockDeliveryCost::make()->action($delivery, [
-            'type'   => StockDeliveryCostTypeEnum::AGENT_INVOICE->value,
-            'amount' => 1000,
-        ]);
-
-        $application = \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 200,
-        ]);
-
-        expect($deposit->refresh()->unapplied_amount)->toBe(100.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(200.0);
-
-        \App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication::make()->action($application);
-
-        expect($deposit->refresh()->unapplied_amount)->toBe(300.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(0.0)
-            ->and($delivery->depositApplications()->count())->toBe(0);
-
-        $trashed = \App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->find($application->id);
-        expect($trashed)->not->toBeNull()
-            ->and($trashed->trashed())->toBeTrue()
-            ->and($trashed->deleted_by)->toBeNull()
-            ->and($trashed->deleted_at)->not->toBeNull();
-
-        $reapplied = \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 150,
-        ]);
-
-        expect($reapplied)->toBeInstanceOf(\App\Models\GoodsIn\StockDeliveryDepositApplication::class)
-            ->and($deposit->refresh()->unapplied_amount)->toBe(150.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(150.0)
-            ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
-    });
-
     test('accounting clerk gets view-only procurement access, and edit access only on supplier/agent payments and stock delivery costing (HELP-3437)', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
         $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
             'reference' => 'DEP-ACC-CLERK-'.StockDelivery::count(),
             'date'      => date('Y-m-d'),
@@ -3659,18 +3468,12 @@ describe('supplier deposits', function () {
             'payment_terms' => '30 days',
         ])->assertForbidden();
 
-        $this->post(route('grp.models.stock-delivery.deposit.apply', $delivery->id), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 100,
-        ])->assertRedirect();
-
-        expect((float) $delivery->depositApplications()->sum('amount'))->toBe(100.0);
-
         $this->withoutVite();
         $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $delivery->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('costing.can_edit', true)
-                ->where('costing.can_edit_payments', true));
+                ->where('costing.can_edit_payments', true)
+                ->missing('costing.deposits'));
 
         $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['org_exchange' => 0.75])->assertRedirect();
         expect((float) $delivery->refresh()->org_exchange)->toBe(0.75);
@@ -4402,10 +4205,10 @@ test('import file deposit row shows each deposit sent as amount, % of its order 
         'agent_id'        => $this->orgAgent->agent_id,
         'organisation_id' => $stockDelivery->organisation_id,
         'currency_id'     => $stockDelivery->currency_id,
-        'state'           => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED,
+        'state'           => \App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED,
         'requested_at'    => '2026-11-02',
     ]);
-    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
+    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
 
     $steps = fn () => collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
 
@@ -4420,7 +4223,7 @@ test('import file deposit row shows each deposit sent as amount, % of its order 
     $advance->update(['paid_at' => now()]);
     expect($steps()['balance_payment']['money']['left'])->toBe(1100.0);
 
-    $moneyRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+    $moneyRequest->update(['state' => \App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::CANCELLED]);
     expect($steps()['deposit']['money']['rows'])->toHaveCount(1);
 
     $later = StoreStockDelivery::make()->action($stockDelivery->parent, ['reference' => 'IMPORT-FILE-4794-2', 'date' => date('Y-m-d')], strict: false);

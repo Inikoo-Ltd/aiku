@@ -10,8 +10,8 @@ namespace App\Actions\GoodsIn\StockDelivery\UI;
 
 use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\SupplyChain\DepositRequestItem;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryServiceInvoiceTypeEnum;
@@ -285,7 +285,7 @@ class GetStockDeliveryImportFile
         $ordersTotal     = round($purchaseOrders->sum(fn (PurchaseOrder $purchaseOrder) => SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder)), 2);
         $total           = $invoice ? (float) $invoice->total_amount : $ordersTotal;
         $sent            = round((float) $paidRows->sum('amount'), 2);
-        $paid            = round((float) $payments->sum('amount') + ($stockDelivery->agent_id ? (float) $stockDelivery->depositApplications()->sum('amount') : 0), 2);
+        $paid            = round((float) $payments->sum('amount'), 2);
 
         return [
             'deposit'         => [
@@ -364,7 +364,7 @@ class GetStockDeliveryImportFile
 
         $depositAt = PurchaseOrderDepositPayment::whereIn('purchase_order_id', $purchaseOrders->pluck('id'))->min('date')
             ?? $purchaseOrders->pluck('deposit_paid_at')->filter()->min();
-        if ($depositAt || $stockDelivery->depositApplications()->exists()) {
+        if ($depositAt) {
             $auto['deposit'] = $done($depositAt, __('Deposit recorded on the purchase order'));
         }
 

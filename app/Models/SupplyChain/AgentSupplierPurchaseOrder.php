@@ -212,8 +212,4 @@ class AgentSupplierPurchaseOrder extends Model implements HasMedia, Auditable
         return $this->hasMany(PurchaseOrderTransaction::class);
     }
 
-    public function deposits(): HasMany
-    {
-        return $this->hasMany(AspoDeposit::class);
-    }
 }

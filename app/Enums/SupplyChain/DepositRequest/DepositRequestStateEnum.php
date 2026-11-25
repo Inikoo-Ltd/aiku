@@ -6,7 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Enums\SupplyChain\AspoDeposit;
+namespace App\Enums\SupplyChain\DepositRequest;
 
 use App\Enums\EnumHelperTrait;
 

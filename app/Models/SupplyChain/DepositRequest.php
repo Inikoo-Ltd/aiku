@@ -8,7 +8,7 @@
 
 namespace App\Models\SupplyChain;
 
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;

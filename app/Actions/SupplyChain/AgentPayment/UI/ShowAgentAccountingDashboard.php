@@ -6,15 +6,14 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
-namespace App\Actions\SupplyChain\AspoDeposit\UI;
+namespace App\Actions\SupplyChain\AgentPayment\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Actions\SupplyChain\AgentPayment\UI\IndexAgentLedger;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;

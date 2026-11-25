@@ -56,7 +56,6 @@ class GetAgentOrganisationNavigation
                 'agent_accounting' => [
                     $this->procurementSubSection(__('Dashboard'), 'fa-chart-network', 'grp.org.agent.accounting.dashboard', 'grp.org.agent.accounting.dashboard', $organisation),
                     $this->procurementSubSection(__('Ledger'), 'fa-book', 'grp.org.agent.accounting.ledger.', 'grp.org.agent.accounting.ledger.index', $organisation),
-                    $this->procurementSubSection(__('Deposits'), 'fa-hand-holding-usd', 'grp.org.agent.accounting.deposits.', 'grp.org.agent.accounting.deposits.index', $organisation),
                     $this->procurementSubSection(__('Money requests'), 'fa-money-check-alt', 'grp.org.agent.accounting.deposit_requests.', 'grp.org.agent.accounting.deposit_requests.index', $organisation),
                     $this->procurementSubSection(__('Invoices'), 'fa-file-invoice', 'grp.org.agent.accounting.invoices.', 'grp.org.agent.accounting.invoices.index', $organisation),
                     ...(isset(ShowAgentCommissionInvoice::COMMISSIONS[$organisation->slug])

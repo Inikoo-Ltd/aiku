@@ -15,7 +15,7 @@ use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SysAdmin\Organisation;
