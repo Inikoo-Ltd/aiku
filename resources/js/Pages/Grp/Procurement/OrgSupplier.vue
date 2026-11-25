@@ -32,6 +32,9 @@ import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/Table
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
 import AgentAgreementsByOrganisation from '@/Components/Procurement/AgentAgreementsByOrganisation.vue'
 import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
+import PurchaseOrderForOrganisationMenu from '@/Components/Procurement/PurchaseOrderForOrganisationMenu.vue'
+import SupplierArchiveButton from '@/Components/SupplyChain/SupplierArchiveButton.vue'
+import Action from '@/Components/Forms/Fields/Action.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -72,6 +75,7 @@ const props = defineProps<{
     attachments?: object
     attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
     attachmentScopes: { name: string; code: string }[]
+    archive?: InstanceType<typeof SupplierArchiveButton>["$props"]["archive"] | null
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -111,6 +115,13 @@ const getErrors = () => {
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <SupplierAgreementStatusBadge v-if="agreement?.supplier_agreement?.status" :status="agreement.supplier_agreement" class="ml-2" />
+        </template>
+        <template #button-group-purchase-order-organisation="{ action }">
+            <PurchaseOrderForOrganisationMenu :action="action" />
+        </template>
+        <template #button-edit="{ action }">
+            <Action :action="action" />
+            <SupplierArchiveButton v-if="archive" :archive="archive" />
         </template>
         <template #other>
             <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />

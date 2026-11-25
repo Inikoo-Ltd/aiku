@@ -5164,6 +5164,52 @@ test('an agent has one page per supplier product with an organisation selector a
     actingAs($this->adminGuest->getUser());
 });
 
+test('the agent supplier page offers a purchase order for each buying organisation by name, and only the agent org admin can archive the supplier from it', function () {
+    $orgAgent          = createFreshOrgAgent($this);
+    $agent             = $orgAgent->agent;
+    $agentOrganisation = $agent->organisation;
+    $otherBuyer        = Organisation::where('code', 'prc2')->first()
+        ?? StoreOrganisation::make()->action($this->group, array_merge(Organisation::factory()->definition(), ['code' => 'prc2', 'type' => OrganisationTypeEnum::SHOP]));
+    StoreOrgAgent::make()->action($otherBuyer, $agent, []);
+
+    [$orgSupplier] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $supplier      = $orgSupplier->supplier;
+    $buyerNames    = OrgSupplier::where('supplier_id', $supplier->id)->where('status', true)->orderBy('organisation_id')->with('organisation')->get()->pluck('organisation.name')->all();
+    $page          = route('grp.org.agent.org_suppliers.show', [$agentOrganisation->slug, $supplier->slug]);
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-mgr-'.Str::lower(Str::random(6)), 'agt-m'));
+
+    $this->get($page)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('archive', null));
+    $this->patch(route('grp.models.supplier.archive', $supplier->id))->assertForbidden();
+
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-adm-'.Str::lower(Str::random(6))));
+
+    $this->get($page)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.key', 'purchase-order-organisation')
+            ->where('pageHead.actions.0.button', fn ($buttons) => collect($buttons)->pluck('organisation_name')->all() === $buyerNames)
+            ->where('archive.is_archived', false)
+            ->where('archive.can_archive', true)
+            ->where('archive.route.name', 'grp.models.supplier.archive'));
+
+    $this->patch(route('grp.models.supplier.archive', $supplier->id))->assertSessionHasNoErrors();
+    expect($supplier->refresh()->status)->toBeFalse();
+
+    $this->get($page)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('archive.is_archived', true)
+            ->where('archive.route.name', 'grp.models.supplier.unarchive'));
+
+    $this->patch(route('grp.models.supplier.unarchive', $supplier->id))->assertSessionHasNoErrors();
+    expect($supplier->refresh()->status)->toBeTrue();
+
+    actingAs($this->adminGuest->getUser());
+});
+
 function pricedAgentPurchaseOrders(object $test, int $numberOfOrders): array
 {
     $orgAgent = createFreshOrgAgent($test);

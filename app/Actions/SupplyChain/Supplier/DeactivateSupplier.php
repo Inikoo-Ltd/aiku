@@ -71,16 +71,24 @@ class DeactivateSupplier
     }
 
     /**
-     * Group admins, and the org admins of any organisation that buys from the supplier.
+     * Group admins, the org admins of any organisation that buys from the supplier, and the org admins of
+     * the agent the supplier works through.
      */
     public static function canArchive(User $user, Supplier $supplier): bool
     {
-        if ($user->hasRole(RolesEnum::GROUP_ADMIN->value)) {
+        if ($user->hasRole(RolesEnum::GROUP_ADMIN->value) || self::isAgentOrgAdmin($user, $supplier)) {
             return true;
         }
 
         return $supplier->orgSuppliers()->pluck('organisation_id')
             ->contains(fn (int $organisationId) => $user->authTo("org-admin.$organisationId"));
+    }
+
+    public static function isAgentOrgAdmin(User $user, Supplier $supplier): bool
+    {
+        $agentOrganisationId = $supplier->agent?->organisation_id;
+
+        return $agentOrganisationId !== null && $user->authTo("org-admin.$agentOrganisationId");
     }
 
     public function authorize(ActionRequest $request): bool
