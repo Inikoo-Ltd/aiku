@@ -27,7 +27,6 @@ import TableSuppliers from "@/Components/Tables/Grp/SupplyChain/TableSuppliers.v
 import TableSupplierProducts from "@/Components/Tables/Grp/SupplyChain/TableSupplierProducts.vue"
 import AgentShowcase from "@/Components/Showcases/Grp/AgentShowcase.vue"
 import ContactInfoStrip from "@/Components/Showcases/Grp/ContactInfoStrip.vue"
-import DepositRequestsPanel from "@/Components/Procurement/DepositRequestsPanel.vue"
 import { type AgentCard, type CoverBucket } from "@/Components/Procurement/AgentWorkCard.vue"
 import AgentOrdersOverview from "@/Components/Procurement/AgentOrdersOverview.vue"
 import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
@@ -58,7 +57,6 @@ const props = defineProps<{
     },
     showcase?: {
         contactCard: InstanceType<typeof ContactInfoStrip>["$props"]["contactCard"]
-        depositWorkspace?: InstanceType<typeof DepositRequestsPanel>["$props"]["data"] | null
         cleanHandover?: CleanHandoverData
         agentCards?: AgentCard[]
     }
@@ -161,7 +159,6 @@ const getErrors = () => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <div v-if="currentTab === 'showcase'" class="space-y-4 px-4 py-4">
         <ContactInfoStrip v-if="showcase?.contactCard" :contactCard="showcase.contactCard" />
-        <DepositRequestsPanel v-if="showcase?.depositWorkspace" :data="showcase.depositWorkspace" />
         <AgentOrdersOverview v-if="showcase?.agentCards?.length" :cards="showcase.agentCards" :cover="cover" :sections="sections" :cardSections="cardSections" heading="organisation" />
         <p v-else class="text-sm text-gray-500">{{ ctrans("No organisation you can open orders from this agent") }}</p>
         <OverviewSection v-if="productDevelopments" sectionKey="agent_developments" :title="ctrans('Open product developments')" :summary="ctrans(':count open', { count: productDevelopments.rows.length })" icon="fal fa-flask" :sections="sections">

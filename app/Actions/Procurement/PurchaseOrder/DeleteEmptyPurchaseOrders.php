@@ -99,8 +99,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
 
     /**
      * No deposit was paid, planned, requested or held for the order, wherever it is recorded: on the order itself,
-     * its deposit payments (undone ones excepted), the agent's deposits on it, directly or through the legacy agent
-     * supplier order, deposit requests and agent payments. Written against the alias po.
+     * its deposit payments (undone ones excepted), the legacy agent supplier order, deposit requests and agent payments. Written against the alias po.
      */
     public static function withoutDepositCondition(): string
     {
@@ -110,12 +109,6 @@ class DeleteEmptyPurchaseOrders extends OrgAction
                 select 1 from purchase_order_deposit_payments
                 where purchase_order_deposit_payments.purchase_order_id = po.id
                     and purchase_order_deposit_payments.deleted_at is null
-            )
-            and not exists (
-                select 1 from aspo_deposits
-                left join agent_supplier_purchase_orders on agent_supplier_purchase_orders.id = aspo_deposits.agent_supplier_purchase_order_id
-                where (aspo_deposits.purchase_order_id = po.id or agent_supplier_purchase_orders.purchase_order_id = po.id)
-                    and aspo_deposits.state <> 'cancelled'
             )
             and not exists (
                 select 1 from agent_supplier_purchase_orders

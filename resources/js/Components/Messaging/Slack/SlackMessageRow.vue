@@ -61,7 +61,7 @@ const time = (iso: string) => useFormatTime(iso, { formatTime: "HH:mm" })
 const reactionTooltip = (reaction: SlackStreamMessage["reactions"][number]) =>
     reaction.people.length ? reaction.people.join(", ") : ctrans(":count people", { count: String(reaction.count) })
 
-type SlackWrite = { allowed: boolean; reason: string | null; connect_url: string | null }
+type SlackWrite = { allowed: boolean; reason: string | null; stand_in?: boolean; connect_url: string | null }
 type Reaction = SlackStreamMessage["reactions"][number]
 
 const page = usePage()
@@ -83,9 +83,9 @@ const error = ref<string | null>(null)
 const showConnect = ref(false)
 const busy = ref(false)
 
-const ready = () => {
+const ready = (standInMay = false) => {
     error.value = null
-    if (write.value?.reason) {
+    if (write.value?.reason && !(standInMay && write.value?.stand_in)) {
         showConnect.value = true
         return false
     }
@@ -188,7 +188,7 @@ const draft = ref("")
 const original = ref("")
 const editBox = ref()
 const startEdit = async () => {
-    if (busy.value || !ready()) return
+    if (busy.value || !ready(true)) return
     let text = shown.value.text
     if (text === undefined) {
         busy.value = true
@@ -245,7 +245,7 @@ const onEditKey = (event: KeyboardEvent) => {
 const confirmingDelete = ref(false)
 const deleteError = ref<string | null>(null)
 const askDelete = () => {
-    if (!ready()) return
+    if (!ready(true)) return
     deleteError.value = null
     confirmingDelete.value = true
 }

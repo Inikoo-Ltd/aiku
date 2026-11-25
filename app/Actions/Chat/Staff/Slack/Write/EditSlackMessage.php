@@ -46,7 +46,7 @@ class EditSlackMessage
     {
         $this->ensureMayWrite($user, $slackChannel);
         $message = $this->liveMessage($slackChannel, $ts);
-        $client  = $this->clientFor($user);
+        $client  = $this->clientFor($user, standInAllowed: true);
         $this->ensureOwnMessage($message, $client);
 
         $slackText = self::toSlackText($text, (string) $message->text);

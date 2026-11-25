@@ -12,7 +12,7 @@ use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Accounting\BankTransaction;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\AgentPayment;

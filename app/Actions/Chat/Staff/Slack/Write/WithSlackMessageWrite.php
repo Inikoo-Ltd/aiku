@@ -48,9 +48,9 @@ trait WithSlackMessageWrite
         return SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $ts)->firstOrFail();
     }
 
-    protected function clientFor(User $user): SlackWriteClient
+    protected function clientFor(User $user, bool $standInAllowed = false): SlackWriteClient
     {
-        $client = SlackWriteClient::for($user);
+        $client = SlackWriteClient::for($user) ?? ($standInAllowed ? SlackWriteClient::standInFor($user) : null);
         if (!$client) {
             $this->refuse(SlackWriteAccess::reasonUnavailable($user) ?? __('Connect your Slack account first'));
         }
@@ -67,6 +67,7 @@ trait WithSlackMessageWrite
     {
         $isOwn = $message->slack_user_id !== null
             && $message->slack_user_id === $client->slackUserId()
+            && (!$client->isStandIn() || $message->sent_from_aiku)
             && !GetSlackChannelMessages::isBotMessage($message)
             && !in_array($message->subtype, GetSlackChannelMessages::SYSTEM_SUBTYPES, true);
 

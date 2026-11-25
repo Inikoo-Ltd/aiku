@@ -11,7 +11,7 @@ namespace App\Actions\SupplyChain\AgentInvoice\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
-use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
+use App\Actions\SupplyChain\AgentPayment\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\SupplyChain\Agent;
@@ -35,8 +35,7 @@ class IndexAgentInvoices extends OrgAction
 
     public function handle(Agent $agent, ?string $search = null, ?string $filter = null): LengthAwarePaginator
     {
-        $paid = '(coalesce((select sum(amount) from stock_delivery_deposit_applications where stock_delivery_id = agent_invoices.stock_delivery_id and deleted_at is null), 0)'
-            .' + coalesce((select sum(amount) from agent_payments where stock_delivery_id = agent_invoices.stock_delivery_id and type = \'transfer_received\' and deleted_at is null), 0))';
+        $paid = 'coalesce((select sum(amount) from agent_payments where stock_delivery_id = agent_invoices.stock_delivery_id and type = \'transfer_received\' and deleted_at is null), 0)';
 
         return AgentInvoice::query()
             ->where('agent_invoices.agent_id', $agent->id)

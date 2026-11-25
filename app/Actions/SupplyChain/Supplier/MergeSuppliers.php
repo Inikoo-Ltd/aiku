@@ -209,8 +209,7 @@ class MergeSuppliers
                     ->orWhere('duplicate_orders.deposit_amount', '>', 0)
                     ->orWhereNotNull('duplicate_orders.deposit_paid_at')
                     ->orWhereNotNull('duplicate_orders.balance_paid_at')
-                    ->orWhere('duplicate_orders.notes', '<>', '')
-                    ->orWhereExists(fn ($deposits) => $deposits->from('aspo_deposits')->whereColumn('aspo_deposits.agent_supplier_purchase_order_id', 'duplicate_orders.id'));
+                    ->orWhere('duplicate_orders.notes', '<>', '');
             })
             ->pluck('purchase_orders.reference');
     }

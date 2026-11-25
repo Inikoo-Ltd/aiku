@@ -199,7 +199,7 @@ class ChangePurchaseOrderSupplier extends OrgAction
 
     /**
      * The emptied order's money goes with its lines: deposits the buyer recorded, the agent's payments to the supplier,
-     * the money requested from the client for it and legacy agent deposits. Its own deposit marks are cleared and kept
+     * and the money requested from the client for it. Its own deposit marks are cleared and kept
      * in merged_into, so the money is counted once, on the order that now holds the goods; a deposit date marked by hand
      * goes there too when that order has none.
      *
@@ -210,7 +210,6 @@ class ChangePurchaseOrderSupplier extends OrgAction
         $movedDepositPayments = DB::table('purchase_order_deposit_payments')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
         $movedLedgerPayments  = DB::table('agent_payments')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
         DB::table('deposit_request_items')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
-        DB::table('aspo_deposits')->where('purchase_order_id', $purchaseOrder->id)->update(['purchase_order_id' => $into->id]);
 
         $depositMarks = Arr::only($purchaseOrder->getAttributes(), ['deposit_amount', 'deposit_paid_at', 'deposit_paid_by_id', 'balance_paid_at']);
 
@@ -471,8 +470,7 @@ class ChangePurchaseOrderSupplier extends OrgAction
     {
         return $purchaseOrder->isDepositPaid()
             || DB::table('agent_payments')->where('purchase_order_id', $purchaseOrder->id)->exists()
-            || DB::table('deposit_request_items')->where('purchase_order_id', $purchaseOrder->id)->exists()
-            || DB::table('aspo_deposits')->where('purchase_order_id', $purchaseOrder->id)->exists();
+            || DB::table('deposit_request_items')->where('purchase_order_id', $purchaseOrder->id)->exists();
     }
 
     /**

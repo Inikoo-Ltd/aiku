@@ -138,7 +138,7 @@ return [
         'procurement' => [
             'suppliers', 'supplier_*', 'packing_spec_lines', 'historic_supplier_product*', 'org_suppliers', 'org_supplier_*',
             'agents', 'agent_*', 'org_agents', 'org_partners', 'partner_shopping_list_items',
-            'purchase_order*', 'stock_deliver*', 'aspo_deposits', 'deposit_request*', 'competitor*',
+            'purchase_order*', 'stock_deliver*', 'deposit_request*', 'competitor*',
             'org_stock_discontinue_suggestions', 'procurement_notes',
         ],
 

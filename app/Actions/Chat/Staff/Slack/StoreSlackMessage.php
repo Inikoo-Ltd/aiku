@@ -92,6 +92,10 @@ class StoreSlackMessage
                 return $stored;
             }
             $this->keepEarlierVersion($stored, $message, $editedTs);
+            if ($stored?->slack_user_id && !$slackUserId && Arr::get($message, 'bot_id')) {
+                $slackUserId = $stored->slack_user_id;
+                $message     = [...$message, 'subtype' => $stored->subtype];
+            }
 
             return tap(SlackMessage::withTrashed()->updateOrCreate(
                 ['slack_channel_id' => $channel->id, 'ts' => $ts],

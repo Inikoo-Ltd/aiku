@@ -9,7 +9,7 @@
 namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $deposit_request_id
- * @property int|null $aspo_deposit_id
  * @property DepositRequestItemKindEnum $kind
  * @property int|null $purchase_order_id
  * @property int|null $stock_delivery_id the shipment a shipment costs line asks for
@@ -29,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property numeric $exchange
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property-read DepositRequest $depositRequest
- * @property-read AspoDeposit $aspoDeposit
  * @property-read AgentPayment|null $agentPayment
  * @property-read Organisation $organisation
  */
@@ -49,10 +47,6 @@ class DepositRequestItem extends Model
         return $this->belongsTo(DepositRequest::class);
     }
 
-    public function aspoDeposit(): BelongsTo
-    {
-        return $this->belongsTo(AspoDeposit::class);
-    }
 
     public function purchaseOrder(): BelongsTo
     {

@@ -10,7 +10,6 @@ namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
-use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 
 class SlackWriteAccess
@@ -29,7 +28,7 @@ class SlackWriteAccess
 
     public static function allows(User $user): bool
     {
-        return $user->status && Ticket::canBeManagedBy($user) && SlackChannel::userMayReadPublicChannels($user);
+        return $user->status && SlackChannel::userMayReadPublicChannels($user);
     }
 
     public static function reasonUnavailable(User $user): ?string

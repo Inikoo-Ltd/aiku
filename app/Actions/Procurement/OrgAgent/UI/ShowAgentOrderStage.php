@@ -59,8 +59,7 @@ class ShowAgentOrderStage extends OrgAction
     private const string AGENT_INVOICE_EXISTS_SQL = 'exists (select 1 from agent_invoices ai where ai.stock_delivery_id = sd.id)';
 
     private const string AGENT_INVOICE_BALANCE_SQL = '(select coalesce(sum(ai.total_amount), 0) from agent_invoices ai where ai.stock_delivery_id = sd.id)
-        - (select coalesce(sum(ap.amount), 0) from agent_payments ap where ap.stock_delivery_id = sd.id and ap.type = \'transfer_received\' and ap.deleted_at is null)
-        - (select coalesce(sum(da.amount), 0) from stock_delivery_deposit_applications da where da.stock_delivery_id = sd.id and da.deleted_at is null)';
+        - (select coalesce(sum(ap.amount), 0) from agent_payments ap where ap.stock_delivery_id = sd.id and ap.type = \'transfer_received\' and ap.deleted_at is null)';
 
     private const array STOCK_DELIVERY_STATES = [
         self::PREPARING  => [StockDeliveryStateEnum::IN_PROCESS, StockDeliveryStateEnum::CONFIRMED, StockDeliveryStateEnum::READY_TO_SHIP],

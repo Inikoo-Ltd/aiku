@@ -10,7 +10,7 @@ namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderPaidFromAgentLedger;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Models\SupplyChain\AgentPayment;
 use App\Models\SysAdmin\User;

@@ -31,7 +31,7 @@ use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets;
 use App\Actions\Procurement\OrgAgent\UI\IndexAgentCoverBucketItems;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Actions\Procurement\OrgAgent\UI\ShowOrgAgent;
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
@@ -75,7 +75,6 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\SupplyChain\AspoDeposit;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid;
 use App\Actions\Procurement\AgentGoodsReceipt\UI\GetPurchaseOrderGoodsReceipts;
@@ -341,7 +340,6 @@ class ShowPurchaseOrder extends OrgAction
                         ])->values()
                     : [],
                 'order_notes'              => $this->getOrderNotes($purchaseOrder, $request),
-                'deposits'                 => $purchaseOrder->isAgentOrder() ? $this->getDeposits($purchaseOrder) : null,
                 'agent_money'              => $agentMoney = ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getAgentMoney($purchaseOrder) : null,
                 'payments'                 => !$agentMoney && ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getPayments($purchaseOrder, $request) : null,
                 'delivery_items'            => $purchaseOrder->state->isAgreed()
@@ -1472,70 +1470,6 @@ class ShowPurchaseOrder extends OrgAction
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
             ],
         ];
-    }
-
-    private function getDeposits(PurchaseOrder $purchaseOrder): array
-    {
-        $deposits = $purchaseOrder->deposits()->with('currency')->orderBy('id')->get();
-
-        return [
-            'can_edit' => $this->canEdit,
-            'list'     => $deposits->map(fn ($deposit) => [
-                'id'                  => $deposit->id,
-                'reference'           => $deposit->reference,
-                'amount'              => $deposit->amount,
-                'currency_id'         => $deposit->currency_id,
-                'currency_code'       => $deposit->currency->code,
-                'state'               => $deposit->state->value,
-                'state_label'         => $deposit->state->labels()[$deposit->state->value],
-                'paid_to_supplier_at' => $deposit->paid_to_supplier_at,
-                'unapplied_amount'    => $deposit->unapplied_amount,
-                'notes'               => $deposit->notes,
-                'applications'        => $this->getApplicationHistory($deposit),
-                'updateRoute'         => [
-                    'name'       => 'grp.models.aspo-deposit.update',
-                    'parameters' => ['aspoDeposit' => $deposit->id],
-                    'method'     => 'patch',
-                ],
-                'stateRoute'          => [
-                    'name'       => 'grp.models.aspo-deposit.state',
-                    'parameters' => ['aspoDeposit' => $deposit->id],
-                    'method'     => 'patch',
-                ],
-            ])->all(),
-            'storeRoute' => [
-                'name'       => 'grp.models.purchase-order.deposit.store',
-                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
-                'method'     => 'post',
-            ],
-            'currency_code' => $purchaseOrder->currency->code,
-            'currency_id'   => $purchaseOrder->currency_id,
-            'currencies'    => Currency::orderBy('code')->get(['id', 'code'])->toArray(),
-        ];
-    }
-
-    private function getApplicationHistory(AspoDeposit $deposit): array
-    {
-        return $deposit->stockDeliveryApplications()
-            ->withTrashed()
-            ->with(['stockDelivery', 'createdBy', 'deletedBy'])
-            ->orderByDesc('id')
-            ->get()
-            ->map(fn ($application) => [
-                'id'                       => $application->id,
-                'amount'                   => $application->amount,
-                'stock_delivery_reference' => $application->stockDelivery?->reference,
-                'created_by_name'          => $application->createdBy?->contact_name ?? $application->createdBy?->username,
-                'created_at'               => $application->created_at,
-                'is_removed'               => $application->trashed(),
-                'deleted_by_name'          => $application->deletedBy?->contact_name ?? $application->deletedBy?->username,
-                'deleted_at'               => $application->deleted_at,
-                'deleteRoute'              => !$application->trashed() && $this->canEdit ? [
-                    'name'       => 'grp.models.stock-delivery-deposit-application.delete',
-                    'parameters' => ['stockDeliveryDepositApplication' => $application->id],
-                    'method'     => 'delete',
-                ] : null,
-            ])->all();
     }
 
     private function hasActiveStockDelivery(PurchaseOrder $purchaseOrder): bool

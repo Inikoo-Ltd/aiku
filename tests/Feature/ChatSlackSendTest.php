@@ -256,7 +256,7 @@ test('refused before Slack is called: a channel that is hidden, archived, not pu
     foreach ([$this->archived, $this->ignored, $this->private, $this->gone] as $channel) {
         ($this->send)($channel, 'Hello')->assertForbidden();
     }
-    ($this->send)($this->general, 'Hello', as: $this->reader)->assertForbidden();
+    ($this->send)($this->general, 'Hello', as: $this->reader)->assertUnprocessable()->assertJsonPath('message', 'Connect your Slack account to write here');
     ($this->send)($this->general, '   ')->assertUnprocessable();
     ($this->send)($this->general, str_repeat('a', SendSlackMessage::MAX_LENGTH + 1))->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'too long'));
     ($this->send)($this->general, str_repeat('&', 1500))->assertUnprocessable()->assertJsonPath('message', fn (string $message) => str_contains($message, 'too long'));
@@ -295,7 +295,7 @@ test('the channel screen tells the composer who may write, and why not yet, INI-
     };
 
     expect($state($this->writer))->toMatchArray(['allowed' => true, 'reason' => null])
-        ->and($state($this->reader))->toMatchArray(['allowed' => false, 'reason' => null]);
+        ->and($state($this->reader))->toMatchArray(['allowed' => true, 'reason' => 'Connect your Slack account to write here']);
 
     SlackConnection::where('user_id', $this->writer->id)->delete();
     expect($state($this->writer)['reason'])->toBe('Connect your Slack account to write here');
@@ -368,4 +368,42 @@ test('what the box sends comes back from the renderer with the same names it sho
 
     $stored = ($this->messages)($this->general)->first();
     expect(trim(FormatSlackMessages::plainText(FormatSlackMessages::make()->handle([$stored])[$stored->id])))->toBe("@Bob Person please check #{$this->general->name} @here");
+});
+
+test('a person who has not connected Slack posts through the Desk bot under their own name and photo, stays the author through the echo, can edit it, cannot react, and is offered to connect, INI-548', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test-'.$this->s);
+    SlackUser::where('slack_id', "UREAD{$this->s}")->update(['avatar_url' => 'https://avatars.example/reader.png']);
+    ($this->slack)(function (Request $request) {
+        $ts = sprintf('%d.%06d', now()->timestamp, 800001);
+
+        return Http::response(['ok' => true, 'channel' => $request['channel'], 'ts' => $ts, 'message' => [
+            'type' => 'message', 'subtype' => 'bot_message', 'bot_id' => 'B0AIKU', 'username' => $request['username'], 'text' => $request['text'], 'ts' => $ts,
+        ]]);
+    });
+
+    $response = ($this->send)($this->general, 'Hello from Desk', as: $this->reader)->assertOk()->assertJsonPath('stand_in', true);
+
+    [$request] = ($this->posts)()[0];
+    expect($request->header('Authorization')[0])->toBe('Bearer xoxb-test-'.$this->s)
+        ->and($request['username'])->toBe('Reader Person')
+        ->and($request['icon_url'])->toBe('https://avatars.example/reader.png');
+
+    $ts      = $response->json('ts');
+    $stored  = fn () => SlackMessage::where('slack_channel_id', $this->general->id)->where('ts', $ts)->sole();
+    $isOwned = fn (SlackMessage $message) => $message->slack_user_id === "UREAD{$this->s}" && $message->user_id === $this->reader->id && $message->subtype === null && $message->sent_from_aiku;
+    expect($isOwned($stored()))->toBeTrue();
+
+    StoreSlackMessage::make()->store($this->general, ['type' => 'message', 'subtype' => 'bot_message', 'bot_id' => 'B0AIKU', 'text' => 'Hello from Desk', 'ts' => $ts]);
+    expect($isOwned($stored()))->toBeTrue();
+
+    Http::fake(['slack.com/api/chat.update' => Http::response(['ok' => true, 'ts' => $ts, 'text' => 'Hello again from Desk'])]);
+    actingAs($this->reader)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $this->general->id]), ['ts' => $ts, 'text' => 'Hello again from Desk'])->assertOk();
+    expect($stored()->text)->toBe('Hello again from Desk')
+        ->and($isOwned($stored()))->toBeTrue();
+
+    actingAs($this->reader)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $this->general->id]), ['ts' => $ts, 'name' => 'eyes', 'add' => true])
+        ->assertUnprocessable()->assertJsonPath('message', 'Connect your Slack account to write here');
+
+    actingAs($this->reader)->get(route('grp.chat.staff.slack.show', ['slackChannel' => $this->general->id]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.stand_in', true)->where('slack_channel.write.allowed', true));
 });

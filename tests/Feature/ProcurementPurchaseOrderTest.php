@@ -119,7 +119,6 @@ use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Models\GoodsIn\StockDelivery;
-use App\Models\Helpers\Currency;
 use App\Models\Inventory\OrgStock;
 use App\Models\GoodsIn\StockDeliveryItem;
 use App\Http\Resources\Procurement\StockDeliveryItemResource;
@@ -2101,7 +2100,7 @@ test('UI show agent purchase order', function (PurchaseOrder $purchaseOrder) {
         ->component('Procurement/PurchaseOrder')
         ->has('title')
         ->has('breadcrumbs')
-        ->has('deposits.list')
+        ->missing('deposits')
         ->has('box_stats.first_block.clean_handover')
         ->where('box_stats.first_block.orderer.via_agent.slug', $purchaseOrder->parent->orgAgent->slug)
         ->where('routes.updatePurchaseOrderRoute.name', 'grp.models.purchase-order.update'));
@@ -3555,48 +3554,6 @@ test('stock delivery from a confirmed agent order is created under the org agent
         ->and($orderTwo->stockDeliveries()->pluck('stock_deliveries.id')->all())->toBe([$deliveryOne->id]);
 });
 
-test('a stock delivery only takes the paid deposits of its own purchase orders in its own currency', function () {
-    [$orgSupplierOne, $orgSupplierProductOne] = createAgentOrgSupplierWithProduct($this);
-    [$orgSupplierTwo, $orgSupplierProductTwo] = createAgentOrgSupplierWithProduct($this);
-
-    $orderOne = createConfirmedAgentOrder($this, $orgSupplierOne, $orgSupplierProductOne, 0, 10);
-    $orderTwo = createConfirmedAgentOrder($this, $orgSupplierTwo, $orgSupplierProductTwo, 1, 20);
-
-    $delivery = StoreStockDeliveryFromPurchaseOrder::make()->action($orderOne->refresh());
-
-    $ownDeposit     = createPaidAspoDeposit($orderOne);
-    $otherOrderDeposit = createPaidAspoDeposit($orderTwo);
-    $otherCurrency  = Currency::where('id', '!=', $orderOne->currency_id)->firstOrFail();
-    $foreignDeposit = createPaidAspoDeposit($orderOne, ['currency_id' => $otherCurrency->id]);
-
-    expect($delivery->agent_id)->toBe($orderOne->agent_id)
-        ->and(offeredDepositIds($delivery))->toContain($ownDeposit->id)
-        ->and(offeredDepositIds($delivery))->not->toContain($otherOrderDeposit->id)
-        ->and(offeredDepositIds($delivery))->not->toContain($foreignDeposit->id);
-
-    foreach ([$otherOrderDeposit, $foreignDeposit] as $refused) {
-        expect(fn () => \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $refused->id,
-            'amount'          => 10,
-        ]))->toThrow(ValidationException::class);
-    }
-
-    expect($delivery->depositApplications()->count())->toBe(0);
-
-    $application = \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-        'aspo_deposit_id' => $ownDeposit->id,
-        'amount'          => 40,
-    ]);
-
-    expect((float) $application->amount)->toBe(40.0);
-
-    StoreStockDeliveryFromPurchaseOrder::make()->action($orderTwo->refresh(), ['stock_delivery_id' => $delivery->id]);
-
-    expect(offeredDepositIds($delivery->refresh()))->toContain($ownDeposit->id)
-        ->and(offeredDepositIds($delivery))->toContain($otherOrderDeposit->id)
-        ->and(offeredDepositIds($delivery))->not->toContain($foreignDeposit->id);
-});
-
 test('an agent order joining a stock delivery fills the fields still empty and keeps the ones already set', function () {
     [$orgSupplierOne, $orgSupplierProductOne] = createAgentOrgSupplierWithProduct($this);
     [$orgSupplierTwo, $orgSupplierProductTwo] = createAgentOrgSupplierWithProduct($this);
@@ -3693,7 +3650,6 @@ test('a money request asks an open order\'s advance by what was asked only, not 
         ->assertSessionHasNoErrors();
     $depositRequest = \App\Models\SupplyChain\DepositRequest::where('agent_id', $agent->id)->latest('id')->firstOrFail();
 
-    $this->patch(route('grp.models.deposit_request_item.mark_paid', $depositRequest->items()->firstOrFail()->id))->assertNotFound();
     $this->patch(route('grp.models.org_agent.agent_fee.update', $orgAgent->id), ['agent_fee_percentage' => 5])->assertSessionHasNoErrors();
     expect((float) $orgAgent->refresh()->agent_fee_percentage)->toBe(5.0);
 
@@ -3708,7 +3664,7 @@ test('a money request asks an open order\'s advance by what was asked only, not 
     $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance, 'receipt' => $receipt()])->assertSessionHasNoErrors();
 
     $transfer = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $depositRequest->id)->firstOrFail();
-    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
+    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED)
         ->and($transfer->isRecordedByClient())->toBeTrue();
 
     actingAs($agentUser);
@@ -3717,7 +3673,7 @@ test('a money request asks an open order\'s advance by what was asked only, not 
 
     actingAs($clientUser);
     $this->delete(route('grp.models.agent_payment.delete', $transfer->id))->assertForbidden();
-    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
 
     $walletLine = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'type' => 'transfer_received', 'date' => date('Y-m-d'), 'amount' => 1, 'receipt' => \Illuminate\Http\UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf')]);
     $receipt    = \App\Models\Helpers\Media::findOrFail($walletLine->media_id);
@@ -3790,8 +3746,12 @@ test('an agent order the agent keeps a ledger for shows its goods, money request
             ->where('data.recently_paid.0.purchase_order', $order->reference)
             ->where('data.recently_paid.0.amount', fn ($amount) => (float) $amount === 30.0));
 
+    $this->get(route('grp.org.agent.accounting.dashboard', [$agentOrganisation->slug]).'/deposits')->assertNotFound();
+
     $this->get(route('grp.org.agent.purchase_orders.show', [$agentOrganisation->slug, $order->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('agent_money.requested', fn ($amount) => abs((float) $amount - $advance) < 0.001));
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('agent_money.requested', fn ($amount) => abs((float) $amount - $advance) < 0.001)
+            ->missing('deposits'));
 
     actingAs($this->adminGuest->getUser());
 });
