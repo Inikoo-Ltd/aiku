@@ -313,10 +313,16 @@ class StoreWebpage extends OrgAction
         }
 
         if (property_exists($this, 'fulfilment') && isset($this->fulfilment)) {
-            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
+            return $request->user()->authTo([
+                "fulfilment-shop.{$this->fulfilment->id}.edit",
+                "group-webmaster.edit"
+            ]);
         }
 
-        return $request->user()->authTo("web.{$this->shop->id}.edit");
+        return $request->user()->authTo([
+            "web.{$this->shop->id}.edit",
+            "group-webmaster.edit"
+        ]);
     }
 
     public function prepareForValidation(): void

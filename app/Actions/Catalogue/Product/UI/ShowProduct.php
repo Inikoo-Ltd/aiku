@@ -48,6 +48,7 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Product;
+use App\Actions\Masters\MasterAsset\UI\GetMasterAssetMaterialCost;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -460,6 +461,7 @@ class ShowProduct extends OrgAction
                         'label' => $product->name
                     ],
                     'iconRight'  => $product->state->stateIcon()[$product->state->value],
+                    'iconLinks'  => $product->masterProduct ? array_values(array_filter([GetMasterAssetMaterialCost::artefactIconLink($product->masterProduct)])) : [],
                     'actions'    => $actions
 
                 ],

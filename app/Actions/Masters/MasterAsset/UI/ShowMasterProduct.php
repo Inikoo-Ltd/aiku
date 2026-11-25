@@ -226,6 +226,7 @@ class ShowMasterProduct extends OrgAction
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Master asset')
                     ],
+                    'iconLinks' => array_values(array_filter([GetMasterAssetMaterialCost::artefactIconLink($masterAsset)])),
                     'iconRight' => $masterAsset->status
                         ? [
                             'tooltip' => __('Active'),

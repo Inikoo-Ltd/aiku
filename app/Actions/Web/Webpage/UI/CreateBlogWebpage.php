@@ -22,9 +22,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateBlogWebpage extends OrgAction
 {
-    use WithWebAuthorisation;
+    use WithWebAuthorisation {
+        authorize as canViewWebsite;
+    }
 
     protected Fulfilment|Website|Webpage $parent;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        return $this->canViewWebsite($request) && $this->canEdit;
+    }
 
 
 

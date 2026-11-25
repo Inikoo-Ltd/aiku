@@ -978,6 +978,48 @@ test('a shop viewer sees the webpage but none of the controls to change it', fun
     SetUserAuthorisedModels::run($this->user);
 })->depends('create webpage', 'store redirect');
 
+test('the create blog and webpage pages and buttons show only to users who can save, group webmasters included', function (Website $website) {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $shopId        = $website->shop_id;
+    $websiteRoute  = [$this->organisation->slug, $this->shop->slug, $website->slug];
+    $createActions = fn (string $indexRoute) => collect(get(route($indexRoute, $websiteRoute))->viewData('page')['props']['pageHead']['actions'])
+        ->pluck('route.name')
+        ->filter(fn (?string $name) => $name && str_ends_with($name, '.create'));
+
+    actingAsUserWithOnlyPermissions($this->user, ["web.$shopId.view", "web.$shopId.edit.landing-pages", "supervisor-web.$shopId"]);
+
+    get(route('grp.org.shops.show.web.blogs.create', $websiteRoute))->assertForbidden();
+    get(route('grp.org.shops.show.web.webpages.create', $websiteRoute))->assertForbidden();
+    expect($createActions('grp.org.shops.show.web.blogs.index'))->toBeEmpty()
+        ->and($createActions('grp.org.shops.show.web.webpages.index'))->toBeEmpty();
+    post(route('grp.models.shop.blog_webpage.store', [$shopId, $website->id]), [
+        'code'     => 'viewer-blog',
+        'title'    => 'Коледни украси',
+        'url'      => 'viewer-blog',
+        'sub_type' => WebpageSubTypeEnum::BUSINESS_TIPS->value,
+    ])->assertForbidden();
+
+    foreach ([["web.$shopId.view", "web.$shopId.edit"], ['group-webmaster']] as $index => $editorPermissions) {
+        actingAsUserWithOnlyPermissions($this->user, $editorPermissions);
+
+        get(route('grp.org.shops.show.web.blogs.create', $websiteRoute))->assertOk();
+        get(route('grp.org.shops.show.web.webpages.create', $websiteRoute))->assertOk();
+        expect($createActions('grp.org.shops.show.web.blogs.index'))->toContain('grp.org.shops.show.web.blogs.create')
+            ->and($createActions('grp.org.shops.show.web.webpages.index'))->toContain('grp.org.shops.show.web.webpages.create');
+
+        post(route('grp.models.shop.blog_webpage.store', [$shopId, $website->id]), [
+            'code'     => "editor-blog-$index",
+            'title'    => 'Коледни украси на едро',
+            'url'      => "editor-blog-$index",
+            'sub_type' => WebpageSubTypeEnum::BUSINESS_TIPS->value,
+        ])->assertRedirect();
+        expect(Webpage::where('website_id', $website->id)->where('code', "editor-blog-$index")->exists())->toBeTrue();
+    }
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+    SetUserAuthorisedModels::run($this->user);
+})->depends('create webpage');
+
 
 test('web sitemap creation', function () {
 

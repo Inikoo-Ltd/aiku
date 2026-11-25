@@ -7,6 +7,7 @@ use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UI\GetMasterAssetsPartnerPricing;
 use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
 use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
+use App\Actions\Masters\MasterAsset\UI\GetMasterAssetMaterialCost;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPartnerPrices;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -319,4 +320,141 @@ test('the Aromatics master product showcase gives each partner its price and the
     $otherAsset      = partnerPricesMasterAsset(partnerPricesFamily($otherMasterShop), 'PPO-'.strtoupper(substr(uniqid(), -6)), $this->shop->currency->code, 20, 8);
 
     expect(GetMasterProductShowcase::run($otherAsset)['partnerPricing'])->toBeNull();
+});
+
+test('the Aromatics master product showcase splits the effective cost by the recipe materials of the seller\'s artefact', function () {
+    require_once __DIR__.'/../Support/ProductionHelpers.php';
+
+    $production = \App\Models\Production\Production::where('organisation_id', $this->organisation->id)->first()
+        ?? \App\Actions\Production\Production\StoreProduction::make()->action($this->organisation, ['code' => 'PPTP'.substr(uniqid(), -4), 'name' => 'Partner prices production']);
+
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $this->masterAsset->tradeUnits()->attach($tradeUnit->id, ['quantity' => 2]);
+    $this->masterAsset->updateQuietly(['effective_cost' => 5]);
+
+    $artefact = \App\Actions\Production\Artefact\StoreArtefact::make()->action($production, [
+        'code'  => 'PPTA-'.strtoupper(substr(uniqid(), -6)),
+        'name'  => 'Partner prices artefact',
+        'state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
+    ]);
+    $artefact->updateQuietly(['trade_unit_id' => $tradeUnit->id]);
+
+    $rawMaterial = fn (string $code, float $unitCost) => \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, [
+        'type'        => \App\Enums\Production\RawMaterial\RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => \App\Enums\Production\RawMaterial\RawMaterialStateEnum::ORPHAN->value,
+        'code'        => $code.'-'.strtoupper(substr(uniqid(), -5)),
+        'description' => $code.' material',
+        'unit'        => \App\Enums\Production\RawMaterial\RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => $unitCost,
+    ]);
+    $oil    = $rawMaterial('OIL', 3);
+    $bottle = $rawMaterial('BOT', 0.5);
+
+    $recipeStep = \App\Models\Production\ArtefactManufactureTask::create([
+        'artefact_id'         => $artefact->id,
+        'manufacture_task_id' => \Tests\Feature\stepTestManufactureTask($production)->id,
+        'position'            => 1,
+        'units_per_artefact'  => 1,
+    ]);
+    foreach ([[$oil, 0.25], [$bottle, 1]] as [$material, $quantityPerUnit]) {
+        \App\Models\Production\RecipeStepRawMaterial::create([
+            'group_id'                     => $this->group->id,
+            'organisation_id'              => $this->organisation->id,
+            'artefact_manufacture_task_id' => $recipeStep->id,
+            'raw_material_id'              => $material->id,
+            'quantity_per_unit'            => $quantityPerUnit,
+        ]);
+    }
+
+    $materialCost = GetMasterProductShowcase::run($this->masterAsset->refresh())['materialCost'];
+
+    expect($materialCost['source'])->toBe('recipe')
+        ->and($materialCost['organisation_code'])->toBe($this->organisation->code)
+        ->and($materialCost['materials_total'])->toBe(2.5)
+        ->and($materialCost['effective_cost'])->toBe(5.0)
+        ->and($materialCost['rest'])->toBe(2.5)
+        ->and(collect($materialCost['materials'])->pluck('code')->all())->toBe([$oil->code, $bottle->code])
+        ->and($materialCost['materials'][0]['quantity'])->toBe(0.5)
+        ->and($materialCost['materials'][0]['cost'])->toBe(1.5)
+        ->and($materialCost['materials'][0]['share'])->toBe(30.0)
+        ->and($materialCost['materials'][1]['share'])->toBe(20.0)
+        ->and($materialCost['materials'][0]['next_delivery'])->toBeNull();
+
+    $artefactLink = GetMasterAssetMaterialCost::artefactIconLink($this->masterAsset);
+    expect($artefactLink['route']['name'])->toBe('grp.org.productions.show.crafts.artefacts.show')
+        ->and($artefactLink['route']['parameters'])->toBe([
+            'organisation' => $this->organisation->slug,
+            'production'   => $production->slug,
+            'artefact'     => $artefact->slug,
+        ]);
+
+    $otherMasterShop = partnerPricesMasterShop($this->group, 'ppother'.substr(uniqid(), -4));
+    $otherAsset      = partnerPricesMasterAsset(partnerPricesFamily($otherMasterShop), 'PPO-'.strtoupper(substr(uniqid(), -6)), $this->shop->currency->code, 20, 8);
+    $otherAsset->tradeUnits()->attach($tradeUnit->id, ['quantity' => 1]);
+
+    expect(GetMasterProductShowcase::run($otherAsset)['materialCost'])->toBeNull()
+        ->and(GetMasterAssetMaterialCost::artefactIconLink($otherAsset))->toBeNull();
+});
+
+test('without a recipe or stock the Aromatics material bar still shows the whole effective cost, and nothing without a cost', function () {
+    $this->masterAsset->updateQuietly(['effective_cost' => null]);
+
+    expect(GetMasterAssetMaterialCost::run($this->masterAsset->refresh()))->toBeNull()
+        ->and(GetMasterAssetMaterialCost::artefactIconLink($this->masterAsset))->toBeNull();
+
+    $this->masterAsset->updateQuietly(['effective_cost' => 4]);
+    $materialCost = GetMasterAssetMaterialCost::run($this->masterAsset->refresh());
+
+    expect($materialCost['source'])->toBe('none')
+        ->and($materialCost['materials'])->toBe([])
+        ->and($materialCost['materials_total'])->toBe(0.0)
+        ->and($materialCost['rest'])->toBe(4.0);
+});
+
+test('the Aroma shop product carries the master\'s Aromatics cards with its own price, and other shops do not', function () {
+    $this->masterAsset->updateQuietly(['effective_cost' => 5]);
+    [, $product] = createProduct($this->shop);
+    $product->updateQuietly(['master_product_id' => $this->masterAsset->id, 'price' => 20, 'rrp' => 40, 'units' => 2]);
+
+    $showcaseOf = fn () => get(route('grp.org.shops.show.catalogue.products.all_products.show', [
+        'organisation' => $this->organisation->slug,
+        'shop'         => $this->shop->slug,
+        'product'      => $product->slug,
+        'tab'          => 'showcase',
+    ]))->assertOk()->inertiaProps()['showcase'];
+
+    $aromaPricing = $showcaseOf()['aromaPricing'];
+
+    expect($aromaPricing['product'])->toEqual(['currency_code' => $product->currency->code, 'price' => 20.0, 'rrp' => 40.0, 'units' => 2.0])
+        ->and($aromaPricing['partnerPricing']['partners'])->not->toBeEmpty()
+        ->and($aromaPricing['pricingCosts'])->not->toBeNull()
+        ->and($aromaPricing['competitorsRoute']['parameters']['tab'])->toBe('competitors')
+        ->and($aromaPricing['editPricingRoute']['parameters']['section'])->toBe(3)
+        ->and(array_keys($aromaPricing))->toContain('materialCost', 'competitors', 'majorCurrencies');
+
+    $otherMasterShop = partnerPricesMasterShop($this->group, 'ppother'.substr(uniqid(), -4));
+    $otherAsset      = partnerPricesMasterAsset(partnerPricesFamily($otherMasterShop), 'PPO-'.strtoupper(substr(uniqid(), -6)), $this->shop->currency->code, 20, 8);
+    $product->updateQuietly(['master_product_id' => $otherAsset->id]);
+
+    expect($showcaseOf()['aromaPricing'])->toBeNull();
+});
+
+test('the Aromatics master product showcase gives what the partners sell the same code at, with their margins', function () {
+    $sibling = partnerPricesSibling($this->buyer, $this->code);
+
+    $siblingPricing = GetMasterProductShowcase::run($this->masterAsset->refresh())['partnerPricing']['sibling'];
+    $siblingRow     = GetMasterAssetsPartnerPricing::run($this->aromaMasterShop, collect([$this->masterAsset]))['rows'][$this->masterAsset->id]['sibling'];
+
+    expect($siblingPricing['code'])->toBe($sibling->code)
+        ->and(collect($siblingPricing['currencies'])->pluck('currency_code')->sort()->values()->all())
+        ->toBe(collect($siblingRow['currencies'])->keys()->sort()->values()->all())
+        ->and($siblingPricing['currencies'])->not->toBeEmpty();
+
+    foreach ($siblingPricing['currencies'] as $currency) {
+        $listed = data_get($siblingRow, 'master_prices.'.$currency['currency_code'].'.value');
+
+        expect(array_keys($currency))->toBe(['currency_code', 'is_major', 'price', 'price_margin', 'rrp', 'rrp_margin'])
+            ->and($currency['price'])->toBe($listed !== null ? (float) $listed : null)
+            ->and($currency['is_major'])->toBe((bool) data_get($siblingRow, 'currencies.'.$currency['currency_code'].'.is_major'));
+    }
 });

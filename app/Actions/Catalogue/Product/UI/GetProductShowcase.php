@@ -23,6 +23,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Catalogue\Product;
+use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Traits\HasBucketAttachment;
@@ -140,6 +141,49 @@ class GetProductShowcase
             ],
             'search_in_website_availability' => $product->webpage ? $this->getSearchInWebsiteAvailabilityChecklist($product) : null,
             'completeness'                 => $product->shop->type == ShopTypeEnum::EXTERNAL ? null : $this->getCompleteness($product),
+            'aromaPricing'                 => $this->getAromaPricing($product),
+        ];
+    }
+
+    /**
+     * Aromatics only: the master's cost and partner cards, with this product's own price and RRP, a link to the
+     * master's Pricing section for those who can edit masters and to its competitors.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function getAromaPricing(Product $product): ?array
+    {
+        $masterProduct = $product->masterProduct;
+        if (!$masterProduct) {
+            return null;
+        }
+
+        $cards = GetMasterProductShowcase::make()->aromaPricingCards($masterProduct);
+        if (!$cards) {
+            return null;
+        }
+
+        $masterParameters = [
+            'masterShop'    => $masterProduct->masterShop->slug,
+            'masterProduct' => $masterProduct->slug,
+        ];
+
+        return [
+            ...$cards,
+            'editPricingRoute' => request()->user()?->authTo('masters.edit') ? [
+                'name'       => 'grp.masters.master_shops.show.master_products.edit',
+                'parameters' => [...$masterParameters, 'section' => 3],
+            ] : null,
+            'competitorsRoute' => [
+                'name'       => 'grp.masters.master_shops.show.master_products.show',
+                'parameters' => [...$masterParameters, 'tab' => 'competitors'],
+            ],
+            'product'          => [
+                'currency_code' => $product->currency->code,
+                'price'         => $product->price !== null ? (float) $product->price : null,
+                'rrp'           => $product->rrp !== null ? (float) $product->rrp : null,
+                'units'         => (float) $product->units,
+            ],
         ];
     }
 

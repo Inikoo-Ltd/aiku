@@ -18,9 +18,7 @@ import {
 	faVideo,
 	faTimesCircle,
 	faCheckCircle,
-	faBalanceScale,
-	faQuestionCircle,
-	faPencil
+	faBalanceScale
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
 import { faStarfighter, faStarshipFreighter } from "@far"
@@ -46,6 +44,7 @@ import SalesAnalysisMovers from '@/Components/SalesAnalysis/SalesAnalysisMovers.
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
 import CompositionTriangle from '@/Components/Goods/CompositionTriangle.vue'
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
+import AromaPricingCards from "@/Components/Masters/AromaPricingCards.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { createReusableTemplate } from "@vueuse/core"
 import { Disclosure, DisclosureButton } from "@headlessui/vue"
@@ -91,8 +90,30 @@ const props = defineProps<{
 		majorCurrencies?: string[]
 		pricingCosts?: Record<string, number | null> | null
 		editPricingRoute?: routeType | null
+		materialCost?: {
+			source: 'recipe' | 'stock' | 'none'
+			organisation_code: string
+			currency_code: string
+			effective_cost: number | null
+			materials_total: number
+			rest: number
+			materials: {
+				code: string
+				name: string
+				quantity: number
+				unit_cost: number
+				cost: number
+				share: number
+				next_delivery: { eta: string | null, is_estimate: boolean, is_overdue: boolean, reference: string | null, supplier: string | null, quantity: number } | null
+			}[]
+		} | null
 		partnerPricing?: {
 			partner_discount: number
+			sibling: {
+				code: string
+				master_shop: string
+				currencies: { currency_code: string, is_major: boolean, price: number | null, price_margin: number | null, rrp: number | null, rrp_margin: number | null }[]
+			} | null
 			partners: { code: string, currency_code: string, price: number, margin: number | null, is_custom: boolean }[]
 		} | null
 		competitors?: {
@@ -182,32 +203,6 @@ const props = defineProps<{
 	return [...unique.values()]
 }) */
 const locale = inject('locale', aikuLocaleStructure)
-
-const THIN_PARTNER_MARGIN = 10
-
-const partnerMarginClass = (margin: number | null): string => {
-	if (margin === null) {
-		return 'text-gray-400'
-	}
-	if (margin < 0) {
-		return 'text-red-600'
-	}
-
-	return margin < THIN_PARTNER_MARGIN ? 'text-amber-600' : 'text-green-600'
-}
-
-const partnerMarginTooltip = (margin: number | null): string => {
-	if (margin === null) {
-		return ctrans('Margin vs effective cost')
-	}
-	if (margin < 0) {
-		return ctrans('Loss: the partner pays less than the effective cost')
-	}
-
-	return margin < THIN_PARTNER_MARGIN
-		? ctrans('Thin margin: under :n% over the effective cost', { n: `${THIN_PARTNER_MARGIN}` })
-		: ctrans('Profit over the effective cost')
-}
 
 const rebelPricePopover = useTemplateRef('rebelPricePopover')
 type RebelPrice = {
@@ -503,156 +498,107 @@ const isModalProductForSale = ref(false)
         <!-- Sales Analytics - right sidebar -->
         <div class="min-w-0 h-fit ml-4 mr-2">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
-				<div v-if="data.partnerPricing" class="w-full border border-solid border-gray-300 rounded-md px-3 py-1.5">
-					<div class="flex items-start justify-between gap-3">
-						<div class="flex items-center gap-1 pt-0.5 text-xs font-semibold text-gray-500">
-							<span>{{ ctrans('Effective cost / Outer') }}</span>
-							<FontAwesomeIcon
-								:icon="faQuestionCircle"
-								class="text-gray-400 hover:text-gray-600 cursor-help"
-								v-tooltip="ctrans('What one outer costs us. For each organisation that stocks it: its last purchase price per SKO, divided by the units per SKO and multiplied by the trade units in the outer. The organisations are then averaged, weighted by how many outers each one has available, so the organisations holding the stock set the cost. With no stock anywhere it is a plain average.')"
-								fixed-width
-								aria-hidden="true"
-							/>
-						</div>
-						<div class="grid grid-cols-[auto] justify-end gap-y-0.5 tabular-nums text-sm font-medium text-gray-700">
-							<span v-for="code in majorCodes" :key="code" class="text-right">
-								{{ data.pricingCosts?.[code] != null ? locale.currencyFormat(code, data.pricingCosts[code]!) : '-' }}
-							</span>
-						</div>
-					</div>
-				</div>
+				<AromaPricingCards :data="data" :majorCodes="majorCodes">
+					<template #prices>
+						<ReuseMasterPriceBlock
+							:title="ctrans('Price / Outer')"
+							:prices="data.masterProduct.master_prices"
+							:rebelList="rebelPriceList"
+							:toggleRebel="toggleRebelPrice"
+							:emptyTooltip="ctrans('Price is not set up for this master product')"
+							:costs="data.pricingCosts"
+						/>
 
-				<ReuseMasterPriceBlock
-					:title="ctrans('Price / Outer')"
-					:prices="data.masterProduct.master_prices"
-					:rebelList="rebelPriceList"
-					:toggleRebel="toggleRebelPrice"
-					:emptyTooltip="ctrans('Price is not set up for this master product')"
-					:costs="data.pricingCosts"
-				/>
+						<Popover ref="rebelPricePopover">
+							<div class="min-w-[20rem]">
+								<div class="mb-2 text-xs font-semibold text-gray-700">
+									{{ ctrans('Rebel Prices') }}
+									<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
+								</div>
 
-				<Popover ref="rebelPricePopover">
-					<div class="min-w-[20rem]">
-						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ ctrans('Rebel Prices') }}
-							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
-						</div>
+								<div class="overflow-x-auto">
+									<table class="w-full border-collapse text-xs">
+										<thead>
+											<tr class="bg-gray-100 text-left text-gray-600">
+												<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+												<th class="border px-3 py-1.5 text-right">{{ ctrans('Price') }}</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="rebel in rebelPriceList" :key="rebel.shop_id" class="hover:bg-gray-50">
+												<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+												<td class="border px-3 py-1.5 text-right">
+													{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</Popover>
+						<ReuseMasterPriceBlock
+							:title="data.is_dropship ? ctrans('RRP / Outer') : ctrans('RRP / Unit')"
+							:prices="data.masterProduct.master_rrp"
+							:rebelList="rebelRrpList"
+							:toggleRebel="toggleRebelRrp"
+							:emptyTooltip="ctrans('RRP is not set up for this master product')"
+							:perUnits="data.is_dropship ? 0 : Number(data.masterProduct?.units) || 0"
+							:counterpart="data.masterProduct.master_prices"
+						/>
 
-						<div class="overflow-x-auto">
-							<table class="w-full border-collapse text-xs">
-								<thead>
-									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ ctrans('Price') }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="rebel in rebelPriceList" :key="rebel.shop_id" class="hover:bg-gray-50">
-										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
-										<td class="border px-3 py-1.5 text-right">
-											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</Popover>
-				<ReuseMasterPriceBlock
-					:title="data.is_dropship ? ctrans('RRP / Outer') : ctrans('RRP / Unit')"
-					:prices="data.masterProduct.master_rrp"
-					:rebelList="rebelRrpList"
-					:toggleRebel="toggleRebelRrp"
-					:emptyTooltip="ctrans('RRP is not set up for this master product')"
-					:perUnits="data.is_dropship ? 0 : Number(data.masterProduct?.units) || 0"
-					:counterpart="data.masterProduct.master_prices"
-				/>
+						<Popover ref="rebelRrpPopover">
+							<div class="min-w-[20rem]">
+								<div class="mb-2 text-xs font-semibold text-gray-700">
+									{{ ctrans('Rebel RRP') }}
+									<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
+								</div>
 
-				<div v-if="data.partnerPricing?.partners.length" class="w-full border border-solid border-gray-300 rounded-md px-3 py-1.5">
-					<div class="flex items-start justify-between gap-3">
-						<div class="flex items-center gap-1 pt-0.5 text-xs font-semibold text-gray-500">
-							<span>{{ ctrans('Partner price / Outer') }}</span>
-							<FontAwesomeIcon
-								:icon="faQuestionCircle"
-								class="text-gray-400 hover:text-gray-600 cursor-help"
-								v-tooltip="ctrans('What each partner organisation pays us for one outer: the list price less the :discount partner discount, in the partner\'s currency, unless a custom partner price is set. The % is our margin over the effective cost.', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` })"
-								fixed-width
-								aria-hidden="true"
-							/>
-							<Link
-								v-if="data.editPricingRoute"
-								:href="route(data.editPricingRoute.name, data.editPricingRoute.parameters)"
-								class="text-gray-400 hover:text-[var(--app-accent)]"
-								v-tooltip="ctrans('Edit partner prices')"
-							>
-								<FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
-							</Link>
+								<div class="overflow-x-auto">
+									<table class="w-full border-collapse text-xs">
+										<thead>
+											<tr class="bg-gray-100 text-left text-gray-600">
+												<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
+												<th class="border px-3 py-1.5 text-right">{{ ctrans('RRP') }}</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="rebel in rebelRrpList" :key="rebel.shop_id" class="hover:bg-gray-50">
+												<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
+												<td class="border px-3 py-1.5 text-right">
+													{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</Popover>
+					</template>
+					<template #after>
+						<div v-if="data.competitors" class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
+							<div class="flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
+								<span class="flex min-w-0 items-center gap-2">
+									<FontAwesomeIcon :icon="faBalanceScale" fixed-width />
+									<span class="truncate">{{ ctrans('Competitors / Unit') }}</span>
+								</span>
+								<button type="button" class="whitespace-nowrap font-normal text-gray-400 hover:text-gray-600" @click="handleTabUpdate('competitors')">
+									<span v-if="data.competitors.to_review" class="mr-1 text-amber-600">{{ ctrans(':count to review', { count: data.competitors.to_review }) }}</span>
+									{{ ctrans('See all') }}
+								</button>
+							</div>
+							<div v-if="data.competitors.prices.length" class="mt-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-2 gap-y-0.5 tabular-nums text-sm">
+								<template v-for="(competitor, index) in data.competitors.prices" :key="index">
+									<Link :href="route('grp.masters.competitors.show', { competitor: competitor.competitor_slug })" class="truncate text-gray-600 hover:underline">{{ competitor.competitor }}</Link>
+									<span class="text-right text-xs" :class="(competitor.difference ?? 0) < 0 ? 'text-red-500' : 'text-green-600'">
+										<template v-if="competitor.difference !== null">{{ competitor.difference > 0 ? '+' : '' }}{{ competitor.difference }}%</template>
+									</span>
+									<span class="text-right font-medium text-gray-700">{{ competitor.price === null ? '' : locale.currencyFormat(competitor.currency_code, competitor.price) }}</span>
+								</template>
+							</div>
+							<div v-else class="mt-1 text-xs text-gray-400">{{ ctrans('No confirmed competitor prices yet') }}</div>
 						</div>
-						<div class="grid grid-cols-[auto_auto_auto_auto] justify-end gap-x-2 gap-y-0.5 tabular-nums text-sm font-medium text-gray-700">
-							<template v-for="partner in data.partnerPricing.partners" :key="partner.code">
-								<span
-									class="self-center justify-self-end whitespace-nowrap rounded border px-1 text-[10px] font-medium leading-4"
-									:class="partner.is_custom ? 'border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]' : 'border-gray-200 text-gray-400'"
-									v-tooltip="partner.is_custom ? ctrans('A custom price set for this partner') : ctrans('List price less the :discount partner discount', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` })"
-								>{{ partner.is_custom ? ctrans('Custom') : ctrans('Default -:discount', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` }) }}</span>
-								<span class="self-center text-xs font-semibold text-gray-500">{{ partner.code }}</span>
-								<span class="self-center text-right text-xs font-medium" :class="partnerMarginClass(partner.margin)" v-tooltip="partnerMarginTooltip(partner.margin)">{{ partner.margin !== null ? `${partner.margin}%` : '' }}</span>
-								<span class="text-right">{{ locale.currencyFormat(partner.currency_code, partner.price) }}</span>
-							</template>
-						</div>
-					</div>
-				</div>
-
-				<Popover ref="rebelRrpPopover">
-					<div class="min-w-[20rem]">
-						<div class="mb-2 text-xs font-semibold text-gray-700">
-							{{ ctrans('Rebel RRP') }}
-							<span class="text-gray-400">({{ ctrans('not following master pricing') }})</span>
-						</div>
-
-						<div class="overflow-x-auto">
-							<table class="w-full border-collapse text-xs">
-								<thead>
-									<tr class="bg-gray-100 text-left text-gray-600">
-										<th class="border px-3 py-1.5">{{ ctrans('Shop') }}</th>
-										<th class="border px-3 py-1.5 text-right">{{ ctrans('RRP') }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="rebel in rebelRrpList" :key="rebel.shop_id" class="hover:bg-gray-50">
-										<td class="border px-3 py-1.5 font-medium text-gray-700">{{ rebel.shop_code }}</td>
-										<td class="border px-3 py-1.5 text-right">
-											{{ locale.currencyFormat(rebel.currency_code, rebel.value ?? 0) }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</Popover>
-				<div v-if="data.competitors" class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
-					<div class="flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
-						<span class="flex min-w-0 items-center gap-2">
-							<FontAwesomeIcon :icon="faBalanceScale" fixed-width />
-							<span class="truncate">{{ ctrans('Competitors / Unit') }}</span>
-						</span>
-						<button type="button" class="whitespace-nowrap font-normal text-gray-400 hover:text-gray-600" @click="handleTabUpdate('competitors')">
-							<span v-if="data.competitors.to_review" class="mr-1 text-amber-600">{{ ctrans(':count to review', { count: data.competitors.to_review }) }}</span>
-							{{ ctrans('See all') }}
-						</button>
-					</div>
-					<div v-if="data.competitors.prices.length" class="mt-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-2 gap-y-0.5 tabular-nums text-sm">
-						<template v-for="(competitor, index) in data.competitors.prices" :key="index">
-							<Link :href="route('grp.masters.competitors.show', { competitor: competitor.competitor_slug })" class="truncate text-gray-600 hover:underline">{{ competitor.competitor }}</Link>
-							<span class="text-right text-xs" :class="(competitor.difference ?? 0) < 0 ? 'text-red-500' : 'text-green-600'">
-								<template v-if="competitor.difference !== null">{{ competitor.difference > 0 ? '+' : '' }}{{ competitor.difference }}%</template>
-							</span>
-							<span class="text-right font-medium text-gray-700">{{ competitor.price === null ? '' : locale.currencyFormat(competitor.currency_code, competitor.price) }}</span>
-						</template>
-					</div>
-					<div v-else class="mt-1 text-xs text-gray-400">{{ ctrans('No confirmed competitor prices yet') }}</div>
-				</div>
+					</template>
+				</AromaPricingCards>
 			</div>
 			<div class="mr-3">
 				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />

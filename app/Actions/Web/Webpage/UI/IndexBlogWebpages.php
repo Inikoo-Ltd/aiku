@@ -277,7 +277,7 @@ class IndexBlogWebpages extends OrgAction
 
         $actions = [];
 
-        if ($routeCreate) {
+        if ($routeCreate && $this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
