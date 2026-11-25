@@ -14,6 +14,7 @@ import InputNumber from "primevue/inputnumber"
 import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube } from "@fal"
+import { faStar } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -252,6 +253,32 @@ function followingPrice(masterProduct: MasterProduct, following: MasterProduct["
     return Math.round(majorPrice * following.exchange * 100) / 100
 }
 
+type FollowingCurrency = MasterProduct["following_currencies"][number]
+
+interface CurrencyRow {
+    currency: string
+    following: FollowingCurrency | null
+}
+
+const currencyOrder = ["GBP", "EUR"]
+
+function currencyRank(masterProduct: MasterProduct, currency: string): number {
+    if (currency === masterProduct.cost_currency) {
+        return -1
+    }
+
+    const index = currencyOrder.indexOf(currency)
+
+    return index === -1 ? currencyOrder.length : index
+}
+
+function currencyRows(masterProduct: MasterProduct): CurrencyRow[] {
+    return [
+        ...masterProduct.main_currencies.map((currency) => ({ currency, following: null })),
+        ...masterProduct.following_currencies.map((following) => ({ currency: following.currency, following })),
+    ].sort((first, second) => currencyRank(masterProduct, first.currency) - currencyRank(masterProduct, second.currency) || first.currency.localeCompare(second.currency))
+}
+
 function priceIn(masterProduct: MasterProduct, currency: string): number | null {
     const following = masterProduct.following_currencies.find((item) => item.currency === currency)
 
@@ -469,8 +496,14 @@ function saveMaster(masterProduct: MasterProduct): void {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="currency in masterProduct.main_currencies" :key="currency">
-                                <td class="py-1 pr-3 font-semibold text-gray-700">{{ currency }}</td>
+                            <template v-for="{ currency, following } in currencyRows(masterProduct)" :key="currency">
+                            <tr v-if="!following">
+                                <td class="py-1 pr-3 font-semibold text-gray-700">
+                                    <span class="flex items-center gap-1 whitespace-nowrap">
+                                        {{ currency }}
+                                        <FontAwesomeIcon v-if="currency === masterProduct.cost_currency" v-tooltip="ctrans('Main currency: the cost is in :currency', { currency })" :icon="faStar" class="text-[10px] text-amber-500" fixed-width :aria-label="ctrans('Main currency')" />
+                                    </span>
+                                </td>
                                 <td class="py-1 pr-3">
                                     <InputNumber
                                         v-if="data.can_edit_master_prices"
@@ -502,8 +535,13 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     <span v-else>{{ money(currency, rrpsPerUnit(masterProduct)[currency]) }}</span>
                                 </td>
                             </tr>
-                            <tr v-for="following in masterProduct.following_currencies" :key="following.currency" class="text-gray-500">
-                                <td class="py-1 pr-3 font-semibold text-gray-700">{{ following.currency }}</td>
+                            <tr v-else class="text-gray-500">
+                                <td class="py-1 pr-3 font-semibold text-gray-700">
+                                    <span class="flex items-center gap-1 whitespace-nowrap">
+                                        {{ following.currency }}
+                                        <FontAwesomeIcon v-if="following.currency === masterProduct.cost_currency" v-tooltip="ctrans('Main currency: the cost is in :currency', { currency: following.currency })" :icon="faStar" class="text-[10px] text-amber-500" fixed-width :aria-label="ctrans('Main currency')" />
+                                    </span>
+                                </td>
                                 <td class="py-1 pr-3">{{ money(following.currency, followingPrice(masterProduct, following)) }}</td>
                                 <td class="py-1 pr-3">
                                     <span v-if="margin(masterProduct, following.currency) !== null" :class="(margin(masterProduct, following.currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, following.currency) }}%</span>
@@ -511,6 +549,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                                 </td>
                                 <td class="py-1 text-[10px]">{{ ctrans("follows :major × :exchange", { major: following.major, exchange: following.exchange }) }}</td>
                             </tr>
+                            </template>
                         </tbody>
                     </table>
 
