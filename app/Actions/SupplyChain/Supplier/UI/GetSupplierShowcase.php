@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
@@ -25,7 +26,8 @@ class GetSupplierShowcase
     public function handle(Supplier $supplier, ?array $editRoute = null): array
     {
         return [
-            'leadTimes'   => $this->leadTimes($supplier, $editRoute),
+            'leadTimes'           => $this->leadTimes($supplier, $editRoute),
+            'relationshipContact' => $this->relationshipContact($supplier),
             'contactCard' => [
                 'created_at' => $supplier->created_at,
                 'company'    => $supplier->company_name,
@@ -42,6 +44,21 @@ class GetSupplierShowcase
                 'photo_full' => $supplier->image?->fullResolutionUrls(),
                 'supplierInfo' => $this->supplierInfo($supplier),
             ],
+        ];
+    }
+
+    /**
+     * @return array{supplier_id: int, user_id: int|null, name: string|null, can_edit: bool}
+     */
+    private function relationshipContact(Supplier $supplier): array
+    {
+        $user = $supplier->relationshipContact;
+
+        return [
+            'supplier_id' => $supplier->id,
+            'user_id'     => $user?->id,
+            'name'        => $user ? ($user->contact_name ?: $user->username) : null,
+            'can_edit'    => (bool) request()->user()?->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value),
         ];
     }
 

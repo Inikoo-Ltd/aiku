@@ -39,6 +39,7 @@ import CopyButton from '@/Components/Utils/CopyButton.vue'
 import ZoomableImage from '@/Components/Utils/ZoomableImage.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
+import SupplierRelationshipContact from '@/Components/SupplyChain/SupplierRelationshipContact.vue'
 
 library.add(
     faBoxUsd,
@@ -91,6 +92,7 @@ const props = defineProps<{
                 pre_orders: RouteLink
             } | null
         }
+        relationshipContact?: InstanceType<typeof SupplierRelationshipContact>['$props']['data']
         contactCard: {
             created_at?: string
             company?: string
@@ -411,6 +413,11 @@ const formatHoliday = (holiday: FactoryHoliday) => {
                 <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
                     {{ ctrans('No contact details recorded') }}
                 </p>
+
+                <SupplierRelationshipContact
+                    v-if="data.relationshipContact"
+                    :data="data.relationshipContact"
+                    class="border-t border-gray-900/5" />
 
                 <template v-if="supplierInfo.length">
                     <div class="border-t border-gray-900/5 bg-gray-50/80 px-6 py-3">
