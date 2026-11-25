@@ -13,7 +13,7 @@ import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube } from "@fal"
+import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube, faInfoCircle } from "@fal"
 import { faStar } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -296,6 +296,45 @@ function margin(masterProduct: MasterProduct, currency: string): number | null {
     return Math.round(((price - cost * exchange) / price) * 1000) / 10
 }
 
+function marginTooltip(masterProduct: MasterProduct, currency: string): string {
+    const price = priceIn(masterProduct, currency)
+    const cost = marginCost(masterProduct)
+    const exchange = masterProduct.cost_exchanges[currency]
+    const formula = ctrans("Our margin = (price per outer − cost) ÷ price per outer")
+    if (cost === null || !exchange || !price) {
+        return formula
+    }
+
+    return `${formula}: ${ctrans("(:price − :cost) ÷ :price", { price: money(currency, price), cost: money(currency, cost * exchange) })}`
+}
+
+function rrpPerOuter(masterProduct: MasterProduct, currency: string): number | null {
+    const rrpPerUnit = masterForms[masterProduct.id]?.rrps[currency]
+
+    return rrpPerUnit ? rrpPerUnit * (masterProduct.units || 1) : null
+}
+
+function retailMargin(masterProduct: MasterProduct, currency: string): number | null {
+    const price = priceIn(masterProduct, currency)
+    const rrp = rrpPerOuter(masterProduct, currency)
+    if (!price || !rrp) {
+        return null
+    }
+
+    return Math.round(((rrp - price) / rrp) * 1000) / 10
+}
+
+function retailMarginTooltip(masterProduct: MasterProduct, currency: string): string {
+    const price = priceIn(masterProduct, currency)
+    const rrp = rrpPerOuter(masterProduct, currency)
+    const formula = ctrans("Retail margin = (RRP per unit × units per outer − price per outer) ÷ (RRP per unit × units per outer)")
+    if (!price || !rrp) {
+        return formula
+    }
+
+    return `${formula}: ${ctrans("(:rrp − :price) ÷ :rrp", { rrp: money(currency, rrp), price: money(currency, price) })}`
+}
+
 function isMasterChanged(masterProduct: MasterProduct): boolean {
     const form = masterForms[masterProduct.id]
     if (!form) {
@@ -491,8 +530,13 @@ function saveMaster(masterProduct: MasterProduct): void {
                             <tr>
                                 <th class="w-16 pr-3 font-medium">{{ ctrans("Currency") }}</th>
                                 <th class="w-px pr-2 font-medium">{{ ctrans("Price per outer") }}</th>
-                                <th class="w-px pr-6 font-medium">{{ ctrans("Profit margin") }}</th>
-                                <th class="font-medium">{{ ctrans("RRP per unit") }}</th>
+                                <th class="w-px pr-6 font-medium">
+                                    <span v-tooltip="ctrans('Our margin = (price per outer − cost) ÷ price per outer')" class="inline-flex cursor-help items-center gap-1">{{ ctrans("Our margin") }}<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
+                                </th>
+                                <th class="w-px pr-6 font-medium">{{ ctrans("RRP per unit") }}</th>
+                                <th class="font-medium">
+                                    <span v-tooltip="ctrans('Retail margin = (RRP per unit × units per outer − price per outer) ÷ (RRP per unit × units per outer)')" class="inline-flex cursor-help items-center gap-1">{{ ctrans("Retail margin") }}<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -518,10 +562,10 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     <span v-else>{{ money(currency, masterProduct.prices[currency]) }}</span>
                                 </td>
                                 <td class="py-1 pr-3">
-                                    <span v-if="margin(masterProduct, currency) !== null" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%</span>
+                                    <span v-if="margin(masterProduct, currency) !== null" v-tooltip="marginTooltip(masterProduct, currency)" class="inline-flex cursor-help items-center gap-1" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
                                     <span v-else class="text-gray-300">—</span>
                                 </td>
-                                <td class="py-1">
+                                <td class="py-1 pr-3">
                                     <InputNumber
                                         v-if="data.can_edit_master_prices"
                                         v-model="masterForms[masterProduct.id].rrps[currency]"
@@ -534,6 +578,10 @@ function saveMaster(masterProduct: MasterProduct): void {
                                     />
                                     <span v-else>{{ money(currency, rrpsPerUnit(masterProduct)[currency]) }}</span>
                                 </td>
+                                <td class="py-1">
+                                    <span v-if="retailMargin(masterProduct, currency) !== null" v-tooltip="retailMarginTooltip(masterProduct, currency)" class="inline-flex cursor-help items-center gap-1" :class="(retailMargin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ retailMargin(masterProduct, currency) }}%<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
+                                    <span v-else v-tooltip="retailMarginTooltip(masterProduct, currency)" class="inline-flex cursor-help items-center gap-1 text-gray-300">—<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
+                                </td>
                             </tr>
                             <tr v-else class="text-gray-500">
                                 <td class="py-1 pr-3 font-semibold text-gray-700">
@@ -544,10 +592,13 @@ function saveMaster(masterProduct: MasterProduct): void {
                                 </td>
                                 <td class="py-1 pr-3">{{ money(following.currency, followingPrice(masterProduct, following)) }}</td>
                                 <td class="py-1 pr-3">
-                                    <span v-if="margin(masterProduct, following.currency) !== null" :class="(margin(masterProduct, following.currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, following.currency) }}%</span>
+                                    <span v-if="margin(masterProduct, following.currency) !== null" v-tooltip="marginTooltip(masterProduct, following.currency)" class="inline-flex cursor-help items-center gap-1" :class="(margin(masterProduct, following.currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, following.currency) }}%<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
                                     <span v-else class="text-gray-300">—</span>
                                 </td>
-                                <td class="py-1 text-[10px]">{{ ctrans("follows :major × :exchange", { major: following.major, exchange: following.exchange }) }}</td>
+                                <td class="py-1 pr-3 text-[10px]">{{ ctrans("follows :major × :exchange", { major: following.major, exchange: following.exchange }) }}</td>
+                                <td class="py-1">
+                                    <span v-tooltip="ctrans('No RRP is set in :currency', { currency: following.currency })" class="inline-flex cursor-help items-center gap-1 text-gray-300">—<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
+                                </td>
                             </tr>
                             </template>
                         </tbody>
