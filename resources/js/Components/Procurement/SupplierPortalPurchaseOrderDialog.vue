@@ -677,7 +677,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								<Button type="tertiary" size="xs" full :label="ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
 									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
 								</Button>
-								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit')" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
+								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
 									<template #icon><FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 								</Button>
 								<p v-if="detail.deposit.agreement_missing" class="flex items-start gap-1 text-amber-700">
