@@ -63,7 +63,8 @@ class GetCustomersDicStatus
     }
 
     /**
-     * Slovak-address business customers (a company name or an identity number), not deleted.
+     * Slovak-address business customers (a company name or an identity number), not deleted, leaving out those who said they
+ * buy as a private person unless they have a DIČ.
      */
     private static function scope(EloquentBuilder|Builder $query): void
     {
@@ -72,7 +73,9 @@ class GetCustomersDicStatus
                 ->whereColumn('addresses.id', 'customers.address_id')
                 ->where('addresses.country_code', 'SK'))
             ->where(fn ($business) => $business->whereRaw("trim(coalesce(customers.company_name, '')) <> ''")
-                ->orWhereNotNull('customers.identity_document_number'));
+                ->orWhereNotNull('customers.identity_document_number'))
+            ->where(fn ($notPrivate) => $notPrivate->whereRaw("customers.data->>'buys_as_private_person' is null")
+                ->orWhere('customers.peppol_id', 'like', '0245:%'));
     }
 
     private static function statusSql(): string
@@ -86,7 +89,7 @@ class GetCustomersDicStatus
                 or ((customers.identity_document_number collate \"C\") ~ '^[0-9 ]+$'
                     and length(regexp_replace(customers.identity_document_number collate \"C\", '[^0-9]', '', 'g')) between 6 and 8)
                 or exists (
-                    select 1 from tax_numbers where tax_numbers.owner_type = 'Customer' and tax_numbers.owner_id = customers.id
+                    select 1 from tax_numbers where tax_numbers.owner_type = 'Customer' and tax_numbers.owner_id = customers.id and tax_numbers.deleted_at is null
                     and tax_numbers.country_code = 'SK'
                     and regexp_replace(upper(tax_numbers.number collate \"C\"), '^SK|[^0-9]', '', 'g') ~ '^[1-9][0-9]{9}$'
                     and regexp_replace(upper(tax_numbers.number collate \"C\"), '^SK|[^0-9]', '', 'g')::bigint % 11 = 0

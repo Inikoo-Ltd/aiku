@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\EInvoice;
 
+use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Models\Accounting\Invoice;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Carbon;
@@ -37,6 +38,10 @@ class IsInvoiceInEInvoiceScope
 
         $buyer = BuildUblInvoice::buyerParticipantId($invoice);
         if ($buyer !== null && $buyer === self::ownParticipantId($invoice)) {
+            return false;
+        }
+
+        if ($buyer === null && $invoice->customer && UpdateRetinaCustomer::buysAsPrivatePerson($invoice->customer)) {
             return false;
         }
 

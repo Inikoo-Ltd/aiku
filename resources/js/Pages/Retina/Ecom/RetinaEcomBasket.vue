@@ -21,6 +21,7 @@ import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Compo
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeadingPublic.vue"
+import BasketDicRequest from "@/Components/Retina/Ecom/BasketDicRequest.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
@@ -75,6 +76,7 @@ const props = defineProps<{
         gift_message_pdf_name?: string | null
     }
     bonus_stock?: BasketBonusStock[]
+    dic_request?: { customer_id: number; dic: string | null } | null
     upcoming_transactions: {
         data: {
             id: number
@@ -728,6 +730,7 @@ const onChangeInsurance = async (val: boolean) => {
 
         </template>
     </PageHeading>
+    <BasketDicRequest v-if="dic_request" :request="dic_request" />
 
     <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
         <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="ctrans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />

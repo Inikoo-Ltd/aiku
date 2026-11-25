@@ -36,6 +36,12 @@ class UpdateRetinaCustomer extends RetinaAction
 
     public function handle(Customer $customer, array $modelData): Customer
     {
+        if (Arr::pull($modelData, 'buys_as_private_person')) {
+            $data = $customer->data ?? [];
+            data_set($data, 'buys_as_private_person', now()->toIso8601String());
+            $modelData['data'] = $data;
+        }
+
         if (Arr::has($modelData, 'peppol_dic')) {
             $dic = Arr::pull($modelData, 'peppol_dic');
             if (self::needsPeppolDic($customer)) {
@@ -56,9 +62,19 @@ class UpdateRetinaCustomer extends RetinaAction
             return str_starts_with($customer->peppol_id, BuildUblInvoice::PEPPOL_SCHEME.':');
         }
 
-        return $customer->address?->country_code === 'SK'
+        return !self::buysAsPrivatePerson($customer)
+            && $customer->address?->country_code === 'SK'
             && $customer->organisation->country?->code === 'SK'
             && (trim((string)$customer->company_name) !== '' || strlen(preg_replace('/\D/', '', (string)$customer->identity_document_number)) >= 8);
+    }
+
+    /**
+     * The customer said, when asked for its DIČ, that it buys as a private person: never asked again nor e-invoiced
+     * (a DIČ staff enter later still counts).
+     */
+    public static function buysAsPrivatePerson(Customer $customer): bool
+    {
+        return Arr::has($customer->data ?? [], 'buys_as_private_person');
     }
 
     /**
@@ -147,6 +163,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'is_gift_opted_out'            => ['sometimes', 'boolean'],
             'identity_document_number'     => ['sometimes', 'nullable', 'string'],
             'identity_document_number_alt' => ['sometimes', 'nullable', 'string'],
+            'buys_as_private_person'       => ['sometimes', 'boolean'],
             'peppol_dic'                   => [
                 'sometimes',
                 'nullable',

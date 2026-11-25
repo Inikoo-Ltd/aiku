@@ -724,3 +724,38 @@ test('the customer list meter counts a shop\'s Slovak business customers by DIČ
     $this->customer->fresh()->update(['identity_document_number' => null, 'data' => []]);
     $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
 });
+
+test('a customer who says it buys as a private person is not asked for its DIČ again, not counted to chase and not e-invoiced', function () {
+    $originalCountryId = $this->organisation->country_id;
+    $this->organisation->update([
+        'country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id'),
+        'settings'   => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => ['SK']]]),
+    ]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->fresh()->update(['company_name' => 'Môj obchod', 'identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    $this->invoice->update(['address_id' => $this->customer->address_id, 'tax_number' => null, 'tax_number_valid' => null, 'identity_document_number' => null]);
+    $scope   = new IsInvoiceInEInvoiceScope();
+    $chasing = fn () => tap(\App\Models\CRM\Customer::query()->where('customers.shop_id', $this->customer->shop_id), fn ($query) => \App\Actions\Accounting\EInvoice\GetCustomersDicStatus::applyFilter($query, 'no_dic'))->pluck('customers.id');
+
+    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::lacksDicForEInvoices($this->customer->fresh()))->toBeTrue()
+        ->and($chasing())->toContain($this->customer->id)
+        ->and($scope->handle($this->invoice->fresh()))->toBeTrue();
+
+    \App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::make()->handle($this->customer->fresh(), ['buys_as_private_person' => true]);
+    $customer = $this->customer->fresh();
+
+    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::buysAsPrivatePerson($customer))->toBeTrue()
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::lacksDicForEInvoices($customer))->toBeFalse()
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer))->toBeFalse()
+        ->and($chasing())->not->toContain($customer->id)
+        ->and($scope->handle($this->invoice->fresh()))->toBeFalse()
+        ->and($customer->company_name)->toBe('Môj obchod');
+
+    $customer->update(['peppol_id' => '0245:2021344160']);
+    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer->fresh()))->toBeTrue()
+        ->and($scope->handle($this->invoice->fresh()))->toBeTrue();
+
+    $customer->fresh()->update(['peppol_id' => null, 'data' => []]);
+    $this->organisation->update(['country_id' => $originalCountryId, 'settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
+});

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\GetOrderShippingOptions;
@@ -250,6 +251,10 @@ class ShowRetinaEcomBasket extends RetinaAction
                 ],
 
                 'upcoming_transactions' => UpcomingTransactionsResource::collection(IndexRetinaUpcomingTransactions::run($this->customer)),
+                'dic_request'           => request()->user()?->is_root && UpdateRetinaCustomer::lacksDicForEInvoices($this->customer) ? [
+                    'customer_id' => $this->customer->id,
+                    'dic'         => UpdateRetinaCustomer::dicFor($this->customer),
+                ] : null,
 
                 'contact_address'    => $order ? AddressResource::make($order->customer->address)->getArray() : null,
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
