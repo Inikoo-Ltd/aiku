@@ -1018,7 +1018,7 @@ test('the create blog and webpage pages and buttons show only to users who can s
 
     actingAsUserWithRoles($this->user, $originalRoles);
     SetUserAuthorisedModels::run($this->user);
-})->depends('create webpage');
+})->depends('launch website');
 
 
 test('web sitemap creation', function () {

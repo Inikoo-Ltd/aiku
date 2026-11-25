@@ -4053,8 +4053,8 @@ test('a product shipped from two purchase orders is one row of its container, li
             ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.confirm_item_ids', $container->items()->orderBy('id')->pluck('id')->all())
             ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.cbmInContainerRoute', null)
             ->where(StockDeliveryTabsEnum::ITEMS->value.'.data.0.purchase_orders', [
-                ['purchase_order_reference' => $orderOne->reference, 'purchase_order_slug' => $orderOne->slug, 'unit_quantity' => '300.0000'],
-                ['purchase_order_reference' => $orderTwo->reference, 'purchase_order_slug' => $orderTwo->slug, 'unit_quantity' => '100.0000'],
+                ['id' => $container->items()->orderBy('id')->value('id'), 'purchase_order_reference' => $orderOne->reference, 'purchase_order_slug' => $orderOne->slug, 'unit_quantity' => '300.0000', 'is_removable' => true],
+                ['id' => $container->items()->orderByDesc('id')->value('id'), 'purchase_order_reference' => $orderTwo->reference, 'purchase_order_slug' => $orderTwo->slug, 'unit_quantity' => '100.0000', 'is_removable' => true],
             ]));
 });
 
