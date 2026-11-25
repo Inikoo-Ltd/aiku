@@ -107,6 +107,7 @@ class GetMasterProductShowcase
                 ->values(),
             'pricingCosts'        => $this->getPricingCosts($masterAsset),
             'partnerPricing'      => $this->getPartnerPricing($masterAsset),
+            'materialCost'        => GetMasterAssetMaterialCost::run($masterAsset),
             'competitors'         => IndexMasterAssetCompetitorProducts::make()->summary($masterAsset),
             'is_dropship'         => $masterAsset->masterShop?->type == ShopTypeEnum::DROPSHIPPING,
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
@@ -147,7 +148,7 @@ class GetMasterProductShowcase
      *
      * @return array<string, float|null>|null
      */
-    private function getPricingCosts(MasterAsset $masterAsset): ?array
+    public function getPricingCosts(MasterAsset $masterAsset): ?array
     {
         if ($masterAsset->effective_cost === null || !$masterAsset->masterShop) {
             return null;
@@ -172,7 +173,7 @@ class GetMasterProductShowcase
      *
      * @return array{partner_discount: float, partners: list<array{code: string, currency_code: string, price: float, margin: int|null, is_custom: bool}>}|null
      */
-    private function getPartnerPricing(MasterAsset $masterAsset): ?array
+    public function getPartnerPricing(MasterAsset $masterAsset): ?array
     {
         if (!GetMasterAssetsPartnerPricing::appliesTo($masterAsset->masterShop)) {
             return null;
@@ -188,6 +189,7 @@ class GetMasterProductShowcase
 
         return [
             'partner_discount' => $partnerDiscount,
+            'sibling'          => $this->getSiblingPricing($row, $pricing['meta'], $partnerDiscount),
             'partners'         => collect($pricing['meta']['partners'])->map(function (array $partner) use ($row, $partnerDiscount) {
                 $customPrice = $row['prices'][$partner['org_partner_id']] ?? null;
                 $fromBase    = (float) $partner['from_base_rate'] ?: 1.0;
@@ -202,6 +204,90 @@ class GetMasterProductShowcase
                     'is_custom'     => $customPrice !== null,
                 ];
             })->values()->all(),
+        ];
+    }
+
+    /**
+     * The Aromatics cost and partner cards of a master, for pages outside the master (the Aroma shop's product).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function aromaPricingCards(MasterAsset $masterAsset): ?array
+    {
+        if (!GetMasterAssetsPartnerPricing::appliesTo($masterAsset->masterShop)) {
+            return null;
+        }
+
+        return [
+            'majorCurrencies' => collect($masterAsset->masterShop->price_exchanges ?? [])
+                ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                ->keys()
+                ->values()
+                ->all(),
+            'pricingCosts'    => $this->getPricingCosts($masterAsset),
+            'partnerPricing'  => $this->getPartnerPricing($masterAsset),
+            'materialCost'    => GetMasterAssetMaterialCost::run($masterAsset),
+            'competitors'     => IndexMasterAssetCompetitorProducts::make()->summary($masterAsset),
+        ];
+    }
+
+    /**
+     * What the partners sell the same code at in their own shops, per main currency of that master: price per
+     * outer with the partner's margin over what it pays the seller, and RRP per unit with the margin over that
+     * price. Same maths as the Partners sell at / Partners RRP columns of the pricing tab.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $meta
+     *
+     * @return array{code: string, master_shop: string, currencies: list<array{currency_code: string, is_major: bool, price: float|null, price_margin: int|null, rrp: float|null, rrp_margin: int|null}>}|null
+     */
+    private function getSiblingPricing(array $row, array $meta, float $partnerDiscount): ?array
+    {
+        $sibling = $row['sibling'] ?? null;
+        if (!$sibling) {
+            return null;
+        }
+
+        $units = (float) ($sibling['units'] ?? 0) ?: 1.0;
+
+        $siblingCurrencies = collect($sibling['currencies'] ?? []);
+
+        $currencies = $siblingCurrencies
+            ->keys()
+            ->sortBy(fn (string $currencyCode) => data_get($siblingCurrencies->get($currencyCode), 'is_major') ? 0 : 1)
+            ->map(function (string $currencyCode) use ($sibling, $siblingCurrencies, $row, $meta, $partnerDiscount, $units) {
+                $price    = data_get($sibling, "master_prices.$currencyCode.value");
+                $price    = $price !== null ? (float) $price : null;
+                $rrpOuter = data_get($sibling, "master_rrps.$currencyCode.value");
+                $rrpOuter = $rrpOuter !== null ? (float) $rrpOuter : null;
+                $fromBase = $meta['rates_from_base'][$currencyCode] ?? null;
+
+                $paidByPartners = collect($meta['partners'])
+                    ->filter(fn (array $partner) => $fromBase && in_array($currencyCode, $partner['shop_currencies'] ?? [], true))
+                    ->map(function (array $partner) use ($row, $partnerDiscount, $fromBase) {
+                        $partnerRate = (float) $partner['from_base_rate'] ?: 1.0;
+                        $paid        = $row['prices'][$partner['org_partner_id']] ?? round($row['list_price'] * (1 - $partnerDiscount) * $partnerRate, 2);
+
+                        return $paid / $partnerRate * $fromBase;
+                    });
+                $partnerCost = $paidByPartners->isNotEmpty() ? $paidByPartners->max() : ($sibling['costs'][$currencyCode] ?? null);
+
+                return [
+                    'currency_code' => $currencyCode,
+                    'is_major'      => (bool) data_get($siblingCurrencies->get($currencyCode), 'is_major'),
+                    'price'         => $price,
+                    'price_margin'  => $price && $partnerCost !== null ? (int) round(($price - $partnerCost) / $price * 100) : null,
+                    'rrp'           => $rrpOuter !== null ? round($rrpOuter / $units, 2) : null,
+                    'rrp_margin'    => $price && $rrpOuter ? (int) round(($rrpOuter - $price) / $rrpOuter * 100) : null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'code'        => $sibling['code'],
+            'master_shop' => $sibling['master_shop'],
+            'currencies'  => $currencies,
         ];
     }
 

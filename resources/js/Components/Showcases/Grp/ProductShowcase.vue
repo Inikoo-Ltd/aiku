@@ -24,7 +24,7 @@ import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
 import ProductUnitLabel from "@/Components/Utils/Label/ProductUnitLabel.vue"
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LabelSKU from '@/Components/Utils/Product/LabelSKU.vue'
@@ -33,8 +33,18 @@ import SalesAnalysisTeaser from '@/Components/SalesAnalysis/SalesAnalysisTeaser.
 import SearchInWebsiteAvailabilityChecklist from '@/Components/Utils/SearchInWebsiteAvailabilityChecklist.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import ProductCompleteness, { type ProductCompletenessData } from "@/Components/Catalogue/ProductCompleteness.vue"
+import AromaPricingCards, { type AromaMaterialCost, type AromaPartnerPricing } from "@/Components/Masters/AromaPricingCards.vue"
+import { faBalanceScale } from "@fal"
 
 const locale = inject('locale', aikuLocaleStructure)
+
+const aromaMargin = (price: number | null, cost: number | null | undefined): string => {
+	if (!price || cost === null || cost === undefined) {
+		return ''
+	}
+
+	return Math.round(((price - cost) / price) * 100) + '%'
+}
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -56,6 +66,19 @@ const props = defineProps<{
 		product: {
 			data: ProductResource
 		}
+		aromaPricing?: {
+			majorCurrencies: string[]
+			pricingCosts: Record<string, number | null> | null
+			partnerPricing: AromaPartnerPricing | null
+			materialCost: AromaMaterialCost | null
+			competitors: {
+				to_review: number
+				prices: { competitor_slug: string, competitor: string, price: number | null, difference: number | null, currency_code: string }[]
+			} | null
+			editPricingRoute: routeType | null
+			competitorsRoute: routeType
+			product: { currency_code: string, price: number | null, rrp: number | null, units: number }
+		} | null
         is_external: boolean
         is_dropship?: boolean
         completeness?: ProductCompletenessData | null
@@ -324,6 +347,54 @@ const getTooltips = () => {
 		</div>
 
 		<div class="min-w-0 h-fit mx-4">
+			<div v-if="data.aromaPricing" class="mb-4 grid justify-items-end gap-2 px-2">
+				<AromaPricingCards :data="data.aromaPricing" :majorCodes="data.aromaPricing.majorCurrencies">
+					<template #prices>
+						<div class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
+							<div class="flex items-start justify-between gap-3">
+								<span class="pt-0.5 text-xs font-semibold text-gray-500">{{ ctrans('Price / Outer') }}</span>
+								<span class="flex items-baseline gap-x-2 tabular-nums text-sm font-medium text-gray-700">
+									<span class="text-xs font-normal text-gray-400" v-tooltip="ctrans('Margin vs effective cost')">{{ aromaMargin(data.aromaPricing.product.price, data.aromaPricing.pricingCosts?.[data.aromaPricing.product.currency_code]) }}</span>
+									<span>{{ data.aromaPricing.product.price !== null ? locale.currencyFormat(data.aromaPricing.product.currency_code, data.aromaPricing.product.price) : '-' }}</span>
+								</span>
+							</div>
+						</div>
+						<div class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
+							<div class="flex items-start justify-between gap-3">
+								<span class="pt-0.5 text-xs font-semibold text-gray-500">{{ ctrans('RRP / Unit') }}</span>
+								<span class="flex items-baseline gap-x-2 tabular-nums text-sm font-medium text-gray-700">
+									<span class="text-xs font-normal text-gray-400" v-tooltip="ctrans('Retail margin vs price')">{{ aromaMargin(data.aromaPricing.product.rrp, data.aromaPricing.product.price) }}</span>
+									<span>{{ data.aromaPricing.product.rrp !== null ? locale.currencyFormat(data.aromaPricing.product.currency_code, data.aromaPricing.product.rrp / (data.aromaPricing.product.units || 1)) : '-' }}</span>
+								</span>
+							</div>
+						</div>
+					</template>
+					<template #after>
+						<div v-if="data.aromaPricing.competitors" class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
+							<div class="flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
+								<span class="flex min-w-0 items-center gap-2">
+									<FontAwesomeIcon :icon="faBalanceScale" fixed-width />
+									<span class="truncate">{{ ctrans('Competitors / Unit') }}</span>
+								</span>
+								<Link :href="route(data.aromaPricing.competitorsRoute.name, data.aromaPricing.competitorsRoute.parameters)" class="whitespace-nowrap font-normal text-gray-400 hover:text-gray-600">
+									<span v-if="data.aromaPricing.competitors.to_review" class="mr-1 text-amber-600">{{ ctrans(':count to review', { count: data.aromaPricing.competitors.to_review }) }}</span>
+									{{ ctrans('See all') }}
+								</Link>
+							</div>
+							<div v-if="data.aromaPricing.competitors.prices.length" class="mt-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-2 gap-y-0.5 tabular-nums text-sm">
+								<template v-for="(competitor, index) in data.aromaPricing.competitors.prices" :key="index">
+									<Link :href="route('grp.masters.competitors.show', { competitor: competitor.competitor_slug })" class="truncate text-gray-600 hover:underline">{{ competitor.competitor }}</Link>
+									<span class="text-right text-xs" :class="(competitor.difference ?? 0) < 0 ? 'text-red-500' : 'text-green-600'">
+										<template v-if="competitor.difference !== null">{{ competitor.difference > 0 ? '+' : '' }}{{ competitor.difference }}%</template>
+									</span>
+									<span class="text-right font-medium text-gray-700">{{ competitor.price === null ? '' : locale.currencyFormat(competitor.currency_code, competitor.price) }}</span>
+								</template>
+							</div>
+							<div v-else class="mt-1 text-xs text-gray-400">{{ ctrans('No confirmed competitor prices yet') }}</div>
+						</div>
+					</template>
+				</AromaPricingCards>
+			</div>
 			<div class="mb-4 flex items-center gap-3 px-2">
 				<span class="relative flex h-3 w-3 shrink-0">
 					<span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
