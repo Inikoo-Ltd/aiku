@@ -15,7 +15,7 @@ Pozycje, które trzeba wyprodukować, idą do <b>To produce</b> (do wyprodukowan
 <li><b>Masz cały towar:</b> nic nie rób. aiku samo wyśle ją do magazynu w ciągu dziesięciu minut. Jeśli towaru jest dokładnie tyle, co w pozycji, i nic nie zostaje, pozycja czeka: naciśnij <b>Pre-pick</b>.</li>
 <li><b>Masz tylko część, a więcej jest w drodze od dostawcy:</b> poczekaj. Gdy dostawa zostanie przyjęta na stan, aiku samo wyśle całą pozycję. Albo naciśnij <b>Pre-pick</b>, żeby wysłać od razu to, co masz; reszta idzie do <b>To produce</b>.</li>
 <li><b>Masz tylko część, a to produkt, który sam wytwarzasz:</b> czekanie nic nie da, bo nikt nie dostaje polecenia wyprodukowania reszty. Naciśnij <b>Pre-pick</b>, żeby wysłać to, co masz; reszta idzie do <b>To produce</b>, żeby ją wyprodukować.</li>
-<li><b>Towar nie przyjdzie (wycofany, niedostępny):</b> naciśnij <b>Close short</b> (zamknij z niedoborem), żeby wysłać to, co jest, i anulować resztę; partner dostaje powiadomienie. Jeśli nic nie ma na stanie, pozycja jest w <b>To produce</b>: zobacz Przypadek 3 niżej.</li>
+<li><b>Towar nie przyjdzie (wycofany, niedostępny):</b> naciśnij <b>Close short</b> (zamknij z niedoborem), żeby wysłać to, co jest, i anulować resztę, albo <b>Can't be done</b>, żeby nie wysyłać nic; partner dostaje powiadomienie. Jeśli nic nie ma na stanie, pozycja jest w <b>To produce</b>: zobacz Przypadek 3 niżej.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ Pozycja pokazuje **Awaiting full stock, production manager to decide**. Masz trz
 
 Produkt jest wycofany, dostawca już go nie ma albo nie będzie dostępny przez długi czas.
 
-- **Część jest na stanie** - naciśnij **Close short**: partner dostaje to, co jest, i dowiaduje się, że reszta nie przyjdzie.
+- **Część jest na stanie** - naciśnij **Close short**: partner dostaje to, co jest, i dowiaduje się, że reszta nie przyjdzie. Jeśli nie możesz wysłać także nic z tego, naciśnij zamiast tego **Can't be done** w wierszu i podaj powód.
 - **Nic nie ma na stanie i produkt wytwarzasz** - pozycja jest kartą na tablicy **To produce**. Przeciągnij ją z **Backlog** (zaległe) do **Preparing** (w przygotowaniu), albo do **Producing** (w produkcji), jeśli Twoja fabryka używa prostej tablicy, a w oknie, które się otworzy, naciśnij **Can't be done** (nie da się zrobić) i podaj powód. Pozycja znika z tablicy, a osoba, która ją dodała, i zespół zakupów partnera dostają informację z Twoim powodem, żeby mogli kupić towar gdzie indziej.
-- **Nic nie ma na stanie i produktu nie wytwarzasz** - pozycja jest w **To produce → All**, ale nie ma tam jeszcze przycisku **Can't be done**. Poproś partnera, żeby usunął pozycję ze swojej listy zakupów, albo zgłoś ticket.
+- **Nic nie ma na stanie i produktu nie wytwarzasz** - pozycja jest w **To produce → All**. Naciśnij **Can't be done** w jej wierszu i podaj powód; te same osoby dostają informację.
 
 Nie zostawiaj takich pozycji bez słowa: partner widzi je jako **Requested** (zamówione) na swojej liście i dalej na nie liczy.
 
@@ -101,8 +101,7 @@ Gdy pozycję zamknięto z niedoborem albo nie da się jej zrobić, osoby po stro
 <li><b>Lista:</b> Twoja organizacja → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Wyślij pozycję teraz:</b> <b>Pre-pick</b> w wierszu, albo zaznacz wiersze i naciśnij <b>Pre-pick selected</b>, albo <b>Pre-pick all</b>.</li>
 <li><b>Wyślij to, co jest, i anuluj resztę:</b> <b>Close short</b> w wierszu.</li>
-<li><b>Pozycja, którą wytwarzasz, a której nie da się zrobić:</b> <b>Factory</b> → <b>To produce</b> → przeciągnij kartę z <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Pozycje bez towaru, których nie wytwarzasz:</b> <b>Factory</b> → <b>To produce</b> → zakładka <b>All</b>.</li>
+<li><b>Pozycja, której nie da się zrobić:</b> <b>Can't be done</b> w jej wierszu w <b>Pre-pick</b> albo w <b>Factory</b> → <b>To produce</b> → <b>All</b>, albo przeciągnij jej kartę z <b>Backlog</b> na tablicy.</li>
 <li><b>Spacery do skrzyni:</b> <b>Warehouse</b> → <b>Dispatching</b> → zakładka <b>Pre-pick</b>, zobacz <a href="/docs/gathering-a-partners-goods-pl">Zbieranie towaru partnera</a>.</li>
 <li><b>Wyślij zebrany towar:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, albo pozwól działać harmonogramowi wysyłek partnera.</li>
 </ul>

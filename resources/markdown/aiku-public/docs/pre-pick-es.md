@@ -15,7 +15,7 @@ Las líneas que hay que fabricar van a <b>To produce</b> (Por producir); las que
 <li><b>Tienes todo el stock:</b> no hagas nada. aiku la envía sola al almacén en diez minutos. Si el stock la cubre justo, sin que sobre nada, espera: pulsa <b>Pre-pick</b>.</li>
 <li><b>Tienes una parte, y viene más en camino de un proveedor:</b> espera. Cuando la entrega se dé de alta en stock, aiku envía la línea entera sola. O pulsa <b>Pre-pick</b> para enviar ahora lo que tienes; el resto va a <b>To produce</b>.</li>
 <li><b>Tienes una parte, y es algo que fabricas:</b> esperar no sirve de nada, porque nadie recibe el encargo de fabricar el resto. Pulsa <b>Pre-pick</b> para enviar lo que tienes; el resto va a <b>To produce</b> para fabricarse.</li>
-<li><b>No va a llegar (descatalogado, no disponible):</b> pulsa <b>Close short</b> (Cerrar corta) para enviar lo que hay y cancelar el resto; el socio recibe un aviso. Si no hay nada en stock, la línea está en <b>To produce</b>: mira el Caso 3 más abajo.</li>
+<li><b>No va a llegar (descatalogado, no disponible):</b> pulsa <b>Close short</b> (Cerrar corta) para enviar lo que hay y cancelar el resto, o <b>Can't be done</b> para no enviar nada; el socio recibe un aviso. Si no hay nada en stock, la línea está en <b>To produce</b>: mira el Caso 3 más abajo.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ La línea muestra **Awaiting full stock, production manager to decide**. Tienes 
 
 El producto está descatalogado, el proveedor ya no lo tiene, o no estará disponible durante mucho tiempo.
 
-- **Hay una parte en stock** - pulsa **Close short**: el socio recibe lo que hay y se le avisa de que el resto no llegará.
+- **Hay una parte en stock** - pulsa **Close short**: el socio recibe lo que hay y se le avisa de que el resto no llegará. Si tampoco puedes enviar nada, pulsa **Can't be done** en la fila y da el motivo.
 - **No hay nada en stock, y lo fabricas** - la línea es una tarjeta en el tablero de **To produce**. Arrástrala fuera de **Backlog** (Pendientes) (a **Preparing** (En preparación), o a **Producing** (En producción) si tu fábrica usa el tablero sencillo) y, en la ventana que se abre, pulsa **Can't be done** (No se puede hacer) y da el motivo. La línea sale del tablero, y a quien la añadió y al equipo de compras del socio se les avisa, con tu motivo, para que puedan comprarlo en otro sitio.
-- **No hay nada en stock, y no lo fabricas** - la línea está en **To produce → All**, pero allí todavía no hay botón **Can't be done**. Pide al socio que borre la línea de su lista de la compra, o abre un ticket.
+- **No hay nada en stock, y no lo fabricas** - la línea está en **To produce → All**. Pulsa **Can't be done** en su fila y da el motivo; se avisa a las mismas personas.
 
 No dejes esas líneas esperando sin avisar: el socio las ve como **Requested** (Solicitado) en su lista y sigue contando con ellas.
 
@@ -101,8 +101,7 @@ Cuando una línea se cierra corta o no se puede hacer, se avisa a las personas d
 <li><b>La lista:</b> tu organización → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Enviar una línea ya:</b> <b>Pre-pick</b> en la fila, o marca filas y pulsa <b>Pre-pick selected</b>, o <b>Pre-pick all</b>.</li>
 <li><b>Enviar lo que hay y cancelar el resto:</b> <b>Close short</b> en la fila.</li>
-<li><b>Una línea que fabricas y no se puede hacer:</b> <b>Factory</b> → <b>To produce</b> → arrastra la tarjeta fuera de <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Líneas sin stock que no fabricas:</b> <b>Factory</b> → <b>To produce</b> → pestaña <b>All</b>.</li>
+<li><b>Una línea que no se puede hacer:</b> <b>Can't be done</b> en su fila en <b>Pre-pick</b> o en <b>Factory</b> → <b>To produce</b> → <b>All</b>, o arrastra su tarjeta fuera de <b>Backlog</b> en el tablero.</li>
 <li><b>Recorridos a la bahía:</b> <b>Warehouse</b> → <b>Dispatching</b> → pestaña <b>Pre-pick</b>, consulta <a href="/docs/gathering-a-partners-goods-es">Reunir los productos de un socio</a>.</li>
 <li><b>Enviar lo reunido:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, o deja que lo haga el horario de envíos del socio.</li>
 </ul>

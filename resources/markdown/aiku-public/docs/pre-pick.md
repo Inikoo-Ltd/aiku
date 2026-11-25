@@ -15,7 +15,7 @@ Lines that need making go to <b>To produce</b>; lines you already have on the sh
 <li><b>You have all the stock:</b> do nothing. aiku sends it to the warehouse on its own within ten minutes. If the stock covers it exactly, with none left over, it waits: press <b>Pre-pick</b>.</li>
 <li><b>You have part of it, and more is on its way from a supplier:</b> wait. Once the delivery is booked into stock, aiku sends the whole line on its own. Or press <b>Pre-pick</b> to send what you have now; the rest goes to <b>To produce</b>.</li>
 <li><b>You have part of it, and it is something you make:</b> waiting does nothing, because nobody is asked to make the rest. Press <b>Pre-pick</b> to send what you have; the rest goes to <b>To produce</b> to be made.</li>
-<li><b>It will not come (discontinued, not available):</b> press <b>Close short</b> to send what there is and cancel the rest; the partner is told. If none is in stock, the line is on <b>To produce</b>: see Case 3 below.</li>
+<li><b>It will not come (discontinued, not available):</b> press <b>Close short</b> to send what there is and cancel the rest, or <b>Can't be done</b> to send none of it; the partner is told. If none is in stock, the line is on <b>To produce</b>: see Case 3 below.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ The line shows **Awaiting full stock, production manager to decide**. You have t
 
 The product is discontinued, the supplier no longer has it, or it is not available for a long time.
 
-- **Some of it is in stock** - press **Close short**: the partner gets what there is, and is told the rest will not come.
+- **Some of it is in stock** - press **Close short**: the partner gets what there is, and is told the rest will not come. If you cannot send any of it either, press **Can't be done** on the row instead and give the reason.
 - **None of it is in stock, and you make it** - the line is a card on the **To produce** board. Drag it out of **Backlog** (to **Preparing**, or to **Producing** if your factory uses the simple board) and, in the box that opens, press **Can't be done** and give the reason. The line leaves the board, and the person who added it and the partner's purchasing team are told, with your reason, so they can buy it elsewhere.
-- **None of it is in stock, and you do not make it** - the line is on **To produce → All**, but there is no **Can't be done** button there yet. Ask the partner to delete the line from their shopping list, or raise a ticket.
+- **None of it is in stock, and you do not make it** - the line is on **To produce → All**. Press **Can't be done** on its row and give the reason; the same people are told.
 
 Do not leave such lines waiting with no word: the partner sees them as **Requested** on their list and keeps counting on them.
 
@@ -101,8 +101,7 @@ When a line is closed short or can't be done, the people on the partner's side a
 <li><b>The list:</b> your organisation → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Send a line now:</b> <b>Pre-pick</b> on the row, or tick rows and press <b>Pre-pick selected</b>, or <b>Pre-pick all</b>.</li>
 <li><b>Send what is there and cancel the rest:</b> <b>Close short</b> on the row.</li>
-<li><b>A line you make that can't be made:</b> <b>Factory</b> → <b>To produce</b> → drag the card out of <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Lines with no stock that you don't make:</b> <b>Factory</b> → <b>To produce</b> → <b>All</b> tab.</li>
+<li><b>A line that can't be done:</b> <b>Can't be done</b> on its row in <b>Pre-pick</b> or in <b>Factory</b> → <b>To produce</b> → <b>All</b>, or drag its card out of <b>Backlog</b> on the board.</li>
 <li><b>Walks to the bay:</b> <b>Warehouse</b> → <b>Dispatching</b> → <b>Pre-pick</b> tab, see <a href="/docs/gathering-a-partners-goods">Gathering a partner's goods</a>.</li>
 <li><b>Send the gathered goods:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, or let the partner's shipment schedule do it.</li>
 </ul>

@@ -478,6 +478,9 @@ describe('partner shopping list', function () {
         $this->post(route('grp.org.productions.show.to_produce.items.cant_be_done', [$seller->slug, $production->slug]), ['ids' => [$item->id]])
             ->assertSessionHasErrors('reason');
 
+        expect(get(route('grp.org.productions.show.to_produce.list', [$seller->slug, $production->slug]))
+            ->assertOk()->viewData('page')['props']['canDismiss'])->toBeTrue();
+
         $dismissed = \App\Actions\Production\PartnerShippingList\DismissToProduceItems::make()->action($production, [$item->id, $inJob->id], 'No honey in stock until November', $user);
 
         expect($dismissed->pluck('id')->all())->toBe([$item->id])

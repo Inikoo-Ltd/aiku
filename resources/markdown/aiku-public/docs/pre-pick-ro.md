@@ -15,7 +15,7 @@ Liniile care trebuie produse merg la <b>To produce</b> (de produs); liniile pe c
 <li><b>Aveți tot stocul:</b> nu faceți nimic. aiku o trimite singur la depozit în zece minute. Dacă stocul o acoperă exact, fără nimic în plus, ea așteaptă: apăsați <b>Pre-pick</b>.</li>
 <li><b>Aveți o parte, iar de la un furnizor mai vine marfă:</b> așteptați. Imediat ce livrarea este înregistrată în stoc, aiku trimite singur toată linia. Sau apăsați <b>Pre-pick</b> ca să trimiteți acum ce aveți; restul merge în <b>To produce</b>.</li>
 <li><b>Aveți o parte, iar produsul este unul pe care îl faceți voi:</b> așteptarea nu ajută, pentru că nimeni nu e rugat să facă restul. Apăsați <b>Pre-pick</b> ca să trimiteți ce aveți; restul merge în <b>To produce</b>, ca să fie produs.</li>
-<li><b>Nu va mai veni (scos din gamă, indisponibil):</b> apăsați <b>Close short</b> (închide cu cantitate mai mică) ca să trimiteți ce e și să anulați restul; partenerul este anunțat. Dacă nu aveți nimic în stoc, linia e în <b>To produce</b>: vedeți Cazul 3 mai jos.</li>
+<li><b>Nu va mai veni (scos din gamă, indisponibil):</b> apăsați <b>Close short</b> (închide cu cantitate mai mică) ca să trimiteți ce e și să anulați restul, sau <b>Can't be done</b> ca să nu trimiteți nimic; partenerul este anunțat. Dacă nu aveți nimic în stoc, linia e în <b>To produce</b>: vedeți Cazul 3 mai jos.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ Linia arată **Awaiting full stock, production manager to decide**. Ai trei vari
 
 Produsul e scos din gamă, furnizorul nu-l mai are sau nu va fi disponibil mult timp.
 
-- **O parte e în stoc** - apasă **Close short**: partenerul primește ce există și e anunțat că restul nu va veni.
+- **O parte e în stoc** - apasă **Close short**: partenerul primește ce există și e anunțat că restul nu va veni. Dacă nu poți trimite nimic nici așa, apasă în schimb **Can't be done** pe rând și scrie motivul.
 - **Nimic în stoc, iar voi îl produceți** - linia e un card pe tabla **To produce**. Trage-l din **Backlog** (în **Preparing**, sau în **Producing** dacă fabrica voastră folosește tabla simplă) și, în fereastra care se deschide, apasă **Can't be done** (nu se poate face) și scrie motivul. Linia iese de pe tablă, iar cel care a adăugat-o și echipa de achiziții a partenerului sunt anunțați, cu motivul tău, ca să cumpere din altă parte.
-- **Nimic în stoc, iar voi nu îl produceți** - linia e în **To produce → All**, dar acolo nu există încă butonul **Can't be done**. Roagă partenerul să șteargă linia de pe lista lui de cumpărături, sau deschide un tichet.
+- **Nimic în stoc, iar voi nu îl produceți** - linia e în **To produce → All**. Apasă **Can't be done** pe rândul ei și scrie motivul; sunt anunțate aceleași persoane.
 
 Nu lăsa asemenea linii să aștepte fără nicio veste: partenerul le vede ca **Requested** pe lista lui și continuă să conteze pe ele.
 
@@ -101,8 +101,7 @@ Când o linie e închisă mai scurt sau nu se poate face, oamenii de partea part
 <li><b>Lista:</b> organizația ta → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Trimite o linie acum:</b> <b>Pre-pick</b> pe rând, sau bifează rânduri și apasă <b>Pre-pick selected</b>, sau <b>Pre-pick all</b>.</li>
 <li><b>Trimite ce există și anulează restul:</b> <b>Close short</b> pe rând.</li>
-<li><b>O linie pe care o produceți și nu se poate face:</b> <b>Factory</b> → <b>To produce</b> → trage cardul din <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Linii fără stoc pe care nu le produceți:</b> <b>Factory</b> → <b>To produce</b> → tab-ul <b>All</b>.</li>
+<li><b>O linie care nu se poate face:</b> <b>Can't be done</b> pe rândul ei în <b>Pre-pick</b> sau în <b>Factory</b> → <b>To produce</b> → <b>All</b>, sau trage cardul ei din <b>Backlog</b> pe tablă.</li>
 <li><b>Drumurile către cheson:</b> <b>Warehouse</b> → <b>Dispatching</b> → tab-ul <b>Pre-pick</b>, vezi <a href="/docs/gathering-a-partners-goods-ro">Adunarea mărfii unui partener</a>.</li>
 <li><b>Trimite marfa adunată:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, sau lasă programul de expediere al partenerului să o facă.</li>
 </ul>

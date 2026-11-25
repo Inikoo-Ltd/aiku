@@ -15,7 +15,7 @@ Rindas, kas jāizgatavo, iet uz <b>To produce</b> (Jāizgatavo); rindas, kas jau
 <li><b>Tev ir viss krājums:</b> nedari neko. aiku pats nosūta to noliktavai desmit minūšu laikā. Ja krājums aptver rindu tieši un nekas nepaliek pāri, rinda gaida: spied <b>Pre-pick</b>.</li>
 <li><b>Tev ir tikai daļa, un vēl kas ir ceļā no piegādātāja:</b> gaidi. Kad piegāde ir ievadīta krājumā, aiku pats nosūta visu rindu. Vai spied <b>Pre-pick</b>, lai uzreiz nosūtītu to, kas tev ir; pārējais iet uz <b>To produce</b>.</li>
 <li><b>Tev ir tikai daļa, un to ražo pats:</b> gaidīšana neko nedod, jo neviens netiek lūgts izgatavot pārējo. Spied <b>Pre-pick</b>, lai nosūtītu to, kas ir; pārējais iet uz <b>To produce</b>, lai to izgatavotu.</li>
-<li><b>Tas vairs neatnāks (izņemts no sortimenta, nav pieejams):</b> spied <b>Close short</b> (Slēgt īsāku), lai nosūtītu to, kas ir, un atceltu pārējo; partneris tiek informēts. Ja krājumā nekā nav, rinda ir sarakstā <b>To produce</b>: skaties 3. gadījumu zemāk.</li>
+<li><b>Tas vairs neatnāks (izņemts no sortimenta, nav pieejams):</b> spied <b>Close short</b> (Slēgt īsāku), lai nosūtītu to, kas ir, un atceltu pārējo, vai <b>Can't be done</b>, lai nenosūtītu neko; partneris tiek informēts. Ja krājumā nekā nav, rinda ir sarakstā <b>To produce</b>: skaties 3. gadījumu zemāk.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ Rinda rāda **Awaiting full stock, production manager to decide**. Ir trīs izv�
 
 Produkts ir pārtraukts, piegādātājam tā vairs nav, vai tas ilgi nebūs pieejams.
 
-- **Daļa ir krājumā** - spied **Close short**: partneris saņem to, kas ir, un viņam pasaka, ka pārējais neatnāks.
+- **Daļa ir krājumā** - spied **Close short**: partneris saņem to, kas ir, un viņam pasaka, ka pārējais neatnāks. Ja nevari nosūtīt arī neko no tā, spied tā vietā **Can't be done** uz rindas un norādi iemeslu.
 - **Krājumā nav nekā, un tu to ražo** - rinda ir kartīte uz **To produce** dēļa. Pavelc to no **Backlog** (Rindā) uz **Preparing** (Sagatavo), vai uz **Producing** (Ražo), ja tava ražotne lieto vienkāršo dēli, un atvērtajā logā spied **Can't be done** (Nevar izdarīt), norādot iemeslu. Rinda pazūd no dēļa, un tas, kurš to pievienoja, un partnera iepirkumu komanda tiek informēti kopā ar tavu iemeslu, lai viņi var sagādāt citur.
-- **Krājumā nav nekā, un tu to neražo** - rinda ir sadaļā **To produce → All**, bet tur pagaidām nav pogas **Can't be done**. Palūdz partnerim izdzēst rindu no sava iepirkumu saraksta vai izveido pieteikumu (ticket).
+- **Krājumā nav nekā, un tu to neražo** - rinda ir sadaļā **To produce → All**. Spied **Can't be done** uz tās rindas un norādi iemeslu; tiek informēti tie paši cilvēki.
 
 Neatstāj šādas rindas gaidām bez ziņas: partneris tās redz kā **Requested** (Pieprasīts) savā sarakstā un turpina uz tām rēķināties.
 
@@ -101,8 +101,7 @@ Kad rinda ir slēgta īsāka vai to nevar izdarīt, cilvēki partnera pusē tiek
 <li><b>Saraksts:</b> tava organizācija → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Nosūtīt rindu tagad:</b> <b>Pre-pick</b> uz rindas, vai atzīmē rindas un spied <b>Pre-pick selected</b>, vai <b>Pre-pick all</b>.</li>
 <li><b>Nosūtīt to, kas ir, un atcelt pārējo:</b> <b>Close short</b> uz rindas.</li>
-<li><b>Rinda, ko tu ražo un kuru nevar izgatavot:</b> <b>Factory</b> → <b>To produce</b> → pavelc kartīti no <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Rindas bez krājuma, ko tu neražo:</b> <b>Factory</b> → <b>To produce</b> → cilne <b>All</b>.</li>
+<li><b>Rinda, ko nevar izdarīt:</b> <b>Can't be done</b> uz tās rindas sadaļā <b>Pre-pick</b> vai <b>Factory</b> → <b>To produce</b> → <b>All</b>, vai pavelc tās kartīti no <b>Backlog</b> uz dēļa.</li>
 <li><b>Pastaigas uz partnera vietu:</b> <b>Warehouse</b> → <b>Dispatching</b> → cilne <b>Pre-pick</b>, skaties <a href="/docs/gathering-a-partners-goods-lv">Partnera preču savākšana</a>.</li>
 <li><b>Nosūtīt savāktās preces:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, vai ļauj to izdarīt partnera sūtījumu grafikam.</li>
 </ul>

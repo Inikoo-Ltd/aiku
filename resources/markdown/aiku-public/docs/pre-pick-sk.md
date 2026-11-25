@@ -15,7 +15,7 @@ Položky, ktoré treba vyrobiť, idú do <b>To produce</b>; položky, ktoré už
 <li><b>Máte všetok tovar:</b> nerobte nič. aiku ju samo pošle do skladu do desiatich minút. Ak zásoba pokrýva položku presne a nič nezostane, položka čaká: stlačte <b>Pre-pick</b>.</li>
 <li><b>Máte iba časť a ďalší tovar je na ceste od dodávateľa:</b> počkajte. Keď sa dodávka zapíše na sklad, aiku pošle celú položku samo. Alebo stlačte <b>Pre-pick</b> a pošlite hneď to, čo máte; zvyšok ide do <b>To produce</b>.</li>
 <li><b>Máte iba časť a je to niečo, čo vyrábate:</b> čakanie nepomôže, lebo nikto nedostane pokyn vyrobiť zvyšok. Stlačte <b>Pre-pick</b> a pošlite, čo máte; zvyšok ide do <b>To produce</b>, aby sa vyrobil.</li>
-<li><b>Neprinesie sa (vyradené, nedostupné):</b> stlačte <b>Close short</b>, pošle sa, čo je, a zvyšok sa zruší; partner dostane správu. Ak nie je nič na sklade, položka je v <b>To produce</b>: pozrite Prípad 3 nižšie.</li>
+<li><b>Neprinesie sa (vyradené, nedostupné):</b> stlačte <b>Close short</b>, pošle sa, čo je, a zvyšok sa zruší, alebo <b>Can't be done</b>, aby sa neposlalo nič; partner dostane správu. Ak nie je nič na sklade, položka je v <b>To produce</b>: pozrite Prípad 3 nižšie.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ Položka ukazuje **Awaiting full stock, production manager to decide**. Máte tr
 
 Produkt je vyradený, dodávateľ ho už nemá, alebo nebude dlho dostupný.
 
-- **Časť je na sklade** - stlačte **Close short**: partner dostane, čo je, a dozvie sa, že zvyšok nepríde.
+- **Časť je na sklade** - stlačte **Close short**: partner dostane, čo je, a dozvie sa, že zvyšok nepríde. Ak nemôžete poslať ani nič z toho, stlačte namiesto toho **Can't be done** na riadku a uveďte dôvod.
 - **Nič nie je na sklade a vy to vyrábate** - položka je kartou na tabuli **To produce**. Presuňte ju z **Backlog** (do **Preparing**, alebo do **Producing**, ak vaša výroba používa jednoduchú tabuľu) a v okne, ktoré sa otvorí, stlačte **Can't be done** (Nedá sa urobiť) a uveďte dôvod. Položka z tabule zmizne a ten, kto ju pridal, a nákupný tím partnera dostanú správu s vaším dôvodom, aby to mohli zohnať inde.
-- **Nič nie je na sklade a vy to nevyrábate** - položka je v **To produce → All**, ale tlačidlo **Can't be done** tam zatiaľ nie je. Požiadajte partnera, aby položku zo svojho nákupného zoznamu zmazal, alebo založte tiket.
+- **Nič nie je na sklade a vy to nevyrábate** - položka je v **To produce → All**. Stlačte **Can't be done** na jej riadku a uveďte dôvod; správu dostanú tí istí ľudia.
 
 Takéto položky nenechávajte čakať bez slova: partner ich na svojom zozname vidí ako **Requested** a ďalej s nimi počíta.
 
@@ -101,8 +101,7 @@ Keď sa položka uzavrie s menším množstvom alebo sa nedá urobiť, ľudia na
 <li><b>Zoznam:</b> vaša organizácia → <b>Factory</b> → <b>Pre-pick</b>.</li>
 <li><b>Poslať položku hneď:</b> <b>Pre-pick</b> na riadku, alebo označte riadky a stlačte <b>Pre-pick selected</b>, alebo <b>Pre-pick all</b>.</li>
 <li><b>Poslať, čo je, a zvyšok zrušiť:</b> <b>Close short</b> na riadku.</li>
-<li><b>Položka, ktorú vyrábate a nedá sa urobiť:</b> <b>Factory</b> → <b>To produce</b> → presuňte kartu z <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Položky bez zásoby, ktoré nevyrábate:</b> <b>Factory</b> → <b>To produce</b> → záložka <b>All</b>.</li>
+<li><b>Položka, ktorú sa nedá urobiť:</b> <b>Can't be done</b> na jej riadku v <b>Pre-pick</b> alebo vo <b>Factory</b> → <b>To produce</b> → <b>All</b>, alebo presuňte jej kartu z <b>Backlog</b> na tabuli.</li>
 <li><b>Cesty do zberného miesta:</b> <b>Warehouse</b> → <b>Dispatching</b> → záložka <b>Pre-pick</b>, pozrite <a href="/docs/gathering-a-partners-goods-sk">Zhromažďovanie tovaru pre partnera</a>.</li>
 <li><b>Odoslať zhromaždený tovar:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, alebo to nechajte na rozvrh zásielok partnera.</li>
 </ul>

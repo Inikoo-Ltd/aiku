@@ -32,6 +32,7 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import CantBeDoneButton from "@/Components/Production/CantBeDoneButton.vue"
 import { faCalendarDay, faMagic, faHourglassHalf, faFlask, faCheck } from "@fal"
 
 library.add(faUserHardHat, faPencil, faFilePdf, faPrint, faHashtag, faBars, faBuilding, faBells, faCalendarDay, faMagic, faHourglassHalf)
@@ -124,6 +125,7 @@ const props = defineProps<{
     hitchhikers?: { count: number, showing: boolean }
     pipeline?: { count: number, ignoring: boolean }
     canCreateJobOrder?: boolean
+    canDismiss?: boolean
     simpleBoard?: boolean
     periodsAfterOpening?: PeriodAfterOpeningOption[]
     productionBlockedNotice?: InstanceType<typeof OrdersBlockedByProductionNotice>['$props']['notice'] | null
@@ -1357,6 +1359,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
         </template>
         <template #cell(created_at)="{ item }">
             <span class="whitespace-nowrap tabular-nums">{{ useFormatTime(item.created_at, { formatTime: "mdy" }) }}</span>
+        </template>
+        <template #cell(action)="{ item }">
+            <CantBeDoneButton v-if="canDismiss && item.state === 'open' && !item.job_order_id" :id="item.id" :stock-code="item.stock_code" />
         </template>
     </Table>
 </template>

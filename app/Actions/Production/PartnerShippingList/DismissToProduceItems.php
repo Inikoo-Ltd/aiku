@@ -124,10 +124,15 @@ class DismissToProduceItems extends OrgAction
             return true;
         }
 
-        return $request->user()->authTo([
-            'org-supervisor.'.$this->organisation->id,
-            "productions_operations.{$this->production->id}.orchestrate",
-            "productions_operations.{$this->production->id}.prepare",
+        return self::isAllowed($request->user(), $this->production);
+    }
+
+    public static function isAllowed(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            'org-supervisor.'.$production->organisation_id,
+            "productions_operations.{$production->id}.orchestrate",
+            "productions_operations.{$production->id}.prepare",
         ]);
     }
 

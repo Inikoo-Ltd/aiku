@@ -15,7 +15,7 @@ order: 8
 <li><b>Máte všechno zboží:</b> nedělejte nic. aiku ho samo pošle do skladu do deseti minut. Pokud zásoba pokrývá řádek přesně a nic nezbude, řádek čeká: stiskněte <b>Pre-pick</b>.</li>
 <li><b>Máte jen část a další zboží je na cestě od dodavatele:</b> počkejte. Jakmile je dodávka zapsaná na sklad, aiku pošle celý řádek samo. Nebo stiskněte <b>Pre-pick</b> a pošlete hned to, co máte; zbytek jde do <b>To produce</b>.</li>
 <li><b>Máte jen část a vyrábíte to:</b> čekání nepomůže, protože nikdo nedostane za úkol zbytek vyrobit. Stiskněte <b>Pre-pick</b> a pošlete, co máte; zbytek jde do <b>To produce</b>, aby se vyrobil.</li>
-<li><b>Nedorazí (vyřazeno, nedostupné):</b> stiskněte <b>Close short</b> (uzavřít s menším množstvím): pošle se, co je, a zbytek se zruší; partner dostane zprávu. Pokud na skladě nic není, řádek je v <b>To produce</b>: viz případ 3 níže.</li>
+<li><b>Nedorazí (vyřazeno, nedostupné):</b> stiskněte <b>Close short</b> (uzavřít s menším množstvím): pošle se, co je, a zbytek se zruší, nebo <b>Can't be done</b>, aby se neposlalo nic; partner dostane zprávu. Pokud na skladě nic není, řádek je v <b>To produce</b>: viz případ 3 níže.</li>
 </ul>
 </aside>
 
@@ -77,9 +77,9 @@ Chcete-li poslat víc řádků najednou, zaškrtněte je a stiskněte **Pre-pick
 
 Produkt je vyřazen, dodavatel ho už nemá, nebo nebude dlouho dostupný.
 
-- **Něco je na skladě** - stiskněte **Close short**: partner dostane, co je, a dozví se, že zbytek nedorazí.
+- **Něco je na skladě** - stiskněte **Close short**: partner dostane, co je, a dozví se, že zbytek nedorazí. Pokud nemůžete poslat ani nic z toho, stiskněte místo toho **Can't be done** na řádku a uveďte důvod.
 - **Nic není na skladě a vy to vyrábíte** - řádek je karta na tabuli **To produce**. Přetáhněte ji z **Backlog** (do **Preparing**, nebo do **Producing**, pokud vaše továrna používá jednoduchou tabuli) a v okně, které se otevře, stiskněte **Can't be done** (Nelze provést) a uveďte důvod. Řádek z tabule zmizí a ten, kdo ho přidal, i partnerův nákupní tým se s vaším důvodem dozvědí, že to mají sehnat jinde.
-- **Nic není na skladě a vy to nevyrábíte** - řádek je v **To produce → All**, ale tlačítko **Can't be done** tam zatím není. Požádejte partnera, aby řádek smazal ze svého nákupního seznamu, nebo založte ticket.
+- **Nic není na skladě a vy to nevyrábíte** - řádek je v **To produce → All**. Stiskněte **Can't be done** na jeho řádku a uveďte důvod; dozvědí se to stejní lidé.
 
 Takové řádky nenechávejte čekat bez zprávy: partner je vidí jako **Requested** a dál s nimi počítá.
 
@@ -101,8 +101,7 @@ Když je řádek uzavřen s menším množstvím nebo ho nelze provést, lidé n
 <li><b>Seznam:</b> vaše organizace → <b>Factory</b> (Továrna) → <b>Pre-pick</b>.</li>
 <li><b>Poslat řádek hned:</b> <b>Pre-pick</b> na řádku, nebo zaškrtnout řádky a stisknout <b>Pre-pick selected</b>, nebo <b>Pre-pick all</b>.</li>
 <li><b>Poslat, co je, a zbytek zrušit:</b> <b>Close short</b> na řádku.</li>
-<li><b>Řádek, který vyrábíte a nejde vyrobit:</b> <b>Factory</b> → <b>To produce</b> → přetáhnout kartu z <b>Backlog</b> → <b>Can't be done</b>.</li>
-<li><b>Řádky bez zásoby, které nevyrábíte:</b> <b>Factory</b> → <b>To produce</b> → záložka <b>All</b>.</li>
+<li><b>Řádek, který nejde udělat:</b> <b>Can't be done</b> na jeho řádku v <b>Pre-pick</b> nebo ve <b>Factory</b> → <b>To produce</b> → <b>All</b>, nebo přetáhněte jeho kartu z <b>Backlog</b> na tabuli.</li>
 <li><b>Přenosy do místa:</b> <b>Warehouse</b> → <b>Dispatching</b> → záložka <b>Pre-pick</b>, viz <a href="/docs/gathering-a-partners-goods-cs">Shromažďování partnerova zboží</a>.</li>
 <li><b>Odeslat shromážděné zboží:</b> <b>Factory</b> → <b>To produce</b> → <i>Picked orders</i> → <b>Send to warehouse</b>, nebo to nechat na plánu zásilek partnera.</li>
 </ul>

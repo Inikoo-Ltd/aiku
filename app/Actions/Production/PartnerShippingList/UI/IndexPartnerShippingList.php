@@ -19,6 +19,7 @@ use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived;
 use App\Actions\Production\JobOrder\GetMadeIngredientShortfalls;
+use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
 use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
@@ -512,6 +513,7 @@ class IndexPartnerShippingList extends OrgAction
                 ->column(key: 'state', label: __('State'), canBeHidden: false, sortable: true)
                 ->column(key: 'job_order_reference', label: __('Job order'), canBeHidden: false)
                 ->column(key: 'created_at', label: __('Added'), canBeHidden: false, sortable: true)
+                ->column(key: 'action', label: '', canBeHidden: false, align: 'right')
                 ->defaultSort('-created_at');
         };
     }
@@ -1026,6 +1028,7 @@ class IndexPartnerShippingList extends OrgAction
                 'mixJobOrders' => $this->groupBy === 'mixes' ? GetMixJobOrders::run($this->production) : null,
                 'data'         => $items,
                 'manualJobOrder' => Inertia::optional(fn () => $this->getManualJobOrderOptions()),
+                'canDismiss'   => DismissToProduceItems::isAllowed($request->user(), $this->production),
                 'canCreateJobOrder' => $request->user()->authTo([
                     'org-supervisor.'.$this->organisation->id,
                     "productions_operations.{$this->production->id}.orchestrate",

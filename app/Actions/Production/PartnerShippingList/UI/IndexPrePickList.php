@@ -9,6 +9,7 @@
 namespace App\Actions\Production\PartnerShippingList\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\PartnerShippingList\DismissToProduceItems;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -258,6 +259,7 @@ class IndexPrePickList extends OrgAction
                     ])
                     ->all(),
                 'data'         => $items,
+                'canDismiss'   => DismissToProduceItems::isAllowed($request->user(), $this->production),
             ]
         )->table($this->tableStructure());
     }
