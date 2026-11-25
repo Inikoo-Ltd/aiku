@@ -2040,7 +2040,7 @@ test('the chat customer panel says what erasing a customer would keep, and offer
 
     expect($erasure['orders'])->toBe(0)
         ->and($erasure['invoices'])->toBe(0)
-        ->and($erasure['confirmation'])->toBe($customer->reference)
+        ->and($erasure['confirmation'])->toBeNull()
         ->and($erasure['route'])->toBeNull();
 });
 

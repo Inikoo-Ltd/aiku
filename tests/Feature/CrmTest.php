@@ -3990,14 +3990,16 @@ describe('who can erase a customer', function () {
             ->and(AnonymiseCustomer::canBeAnonymisedBy(userAuthorisedTo(["supervisor-crm.{$this->shop->id}"]), $customer))->toBeTrue();
     });
 
-    test('erase from the customer page needs the reference typed back', function () {
+    test('erase from the customer page needs the confirmation box ticked for a customer without orders', function () {
         $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
 
-        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request', 'reference' => 'wrong'])
-            ->assertSessionHasErrors('reference');
+        expect(AnonymiseCustomer::confirmationText($customer))->toBeNull();
+
+        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request'])
+            ->assertSessionHasErrors('confirmed');
         expect(Customer::find($customer->id))->not->toBeNull();
 
-        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request', 'reference' => AnonymiseCustomer::confirmationText($customer)])
+        $this->post(route('grp.models.customer.anonymise', ['customer' => $customer->id]), ['reason' => 'Erasure request', 'confirmed' => true])
             ->assertRedirect();
         expect(Customer::find($customer->id))->toBeNull()
             ->and(AnonymiseCustomer::isAnonymised(Customer::withTrashed()->find($customer->id)))->toBeTrue();

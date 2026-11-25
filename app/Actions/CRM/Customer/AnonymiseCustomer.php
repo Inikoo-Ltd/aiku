@@ -414,9 +414,9 @@ class AnonymiseCustomer extends OrgAction
         return static::canBeAnonymisedBy($request->user(), $this->customer);
     }
 
-    public static function confirmationText(Customer $customer): string
+    public static function confirmationText(Customer $customer): ?string
     {
-        return DeleteCustomer::canBeDeleted($customer) ? $customer->reference : $customer->reference.' with orders';
+        return DeleteCustomer::canBeDeleted($customer) ? null : $customer->reference.' with orders';
     }
 
     public static function canBeAnonymisedBy(User $user, Customer $customer): bool
@@ -432,7 +432,8 @@ class AnonymiseCustomer extends OrgAction
     {
         return [
             'reason'            => ['required', 'string', 'max:1000'],
-            'reference'         => ['required', 'string', 'in:'.static::confirmationText($this->customer)],
+            'reference'         => static::confirmationText($this->customer) === null ? ['nullable'] : ['required', 'string', 'in:'.static::confirmationText($this->customer)],
+            'confirmed'         => static::confirmationText($this->customer) === null ? ['accepted'] : ['sometimes'],
             'keep_company_name' => ['sometimes', 'boolean'],
             'fraud_note'        => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
@@ -461,6 +462,7 @@ class AnonymiseCustomer extends OrgAction
         $this->initialisationFromShop($customer->shop, [
             'reason'            => $reason,
             'reference'         => static::confirmationText($customer),
+            'confirmed'         => true,
             'keep_company_name' => $keepCompanyName,
         ]);
 

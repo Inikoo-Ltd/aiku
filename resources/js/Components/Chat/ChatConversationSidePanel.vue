@@ -2,6 +2,7 @@
 import AuraAvatar from "@/Components/Chat/Agent/AuraAvatar.vue"
 import { faAddressCard as farAddressCard, faComments as farComments, faTicket as farTicket, faChartBar as farChartBar, faStream as farStream, faHistory as farHistory } from "@far"
 import { ref, computed, inject, onMounted, watch } from 'vue'
+import Checkbox from 'primevue/checkbox'
 import axios from 'axios'
 import { ctrans } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -244,7 +245,7 @@ interface CustomerProfile {
     erasure?: {
         orders: number
         invoices: number
-        confirmation: string
+        confirmation: string | null
         route: { name: string, parameters: Record<string, any> } | null
     }
 }
@@ -527,6 +528,13 @@ const addClaimToNextOrder = async () => {
 const erasureOpen = ref(false)
 const erasureReason = ref("")
 const erasureConfirmation = ref("")
+const erasureTicked = ref(false)
+const erasureError = ref("")
+const normalisedConfirmation = (text: string) => text.trim().replace(/\s+/g, " ").toLowerCase()
+const erasureConfirmed = computed(() => {
+    const confirmation = customerProfile.value.erasure?.confirmation ?? null
+    return confirmation === null ? erasureTicked.value : normalisedConfirmation(erasureConfirmation.value) === normalisedConfirmation(confirmation)
+})
 const isErasing = ref(false)
 
 const openErasure = () => {
@@ -536,18 +544,19 @@ const openErasure = () => {
 
 const eraseCustomer = async () => {
     const erasure = customerProfile.value.erasure
-    if (!erasure?.route || isErasing.value || erasureConfirmation.value !== erasure.confirmation) return
+    if (!erasure?.route || isErasing.value || !erasureConfirmed.value) return
     isErasing.value = true
+    erasureError.value = ""
     try {
         await axios.post(route(erasure.route.name, erasure.route.parameters), {
             reason: erasureReason.value,
-            reference: erasureConfirmation.value,
+            reference: erasure.confirmation,
+            confirmed: erasure.confirmation === null,
         })
-        notify({ title: ctrans("Personal data erased"), text: ctrans("Their name, contact details, addresses and conversations are gone; orders and invoices stay, without them"), type: "success" })
         erasureOpen.value = false
         customerProfile.value = emptyCustomerProfile()
     } catch (error: any) {
-        notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? ctrans("Their data could not be erased"), type: "error" })
+        erasureError.value = error?.response?.data?.message ?? ctrans("Their data could not be erased")
     } finally {
         isErasing.value = false
     }
@@ -1246,16 +1255,22 @@ const copyChatId = async () => {
                         </p>
                         <template v-else>
                             <textarea v-model="erasureReason" rows="2" class="w-full rounded border-gray-300 text-xs" :placeholder="ctrans('Why')" />
-                            <label class="block text-gray-600">
+                            <label v-if="customerProfile.erasure.confirmation === null" class="flex items-center gap-2 text-gray-600">
+                                <Checkbox v-model="erasureTicked" binary inputId="chat-erasure-confirmed" />
+                                <span>{{ ctrans("The customer asked to delete their account") }}</span>
+                            </label>
+                            <label v-else class="block text-gray-600">
                                 {{ ctrans("Type :text to confirm", { text: customerProfile.erasure.confirmation }) }}
                                 <input v-model="erasureConfirmation" type="text" class="mt-1 w-full rounded border-gray-300 text-xs" />
+                                <span v-if="erasureConfirmation && !erasureConfirmed" class="mt-1 block text-red-500">{{ ctrans("This does not match :reference", { reference: customerProfile.erasure.confirmation }) }}</span>
                             </label>
                             <button type="button"
                                 class="rounded bg-red-600 px-2 py-1 font-medium text-white disabled:opacity-40"
-                                :disabled="isErasing || !erasureReason.trim() || erasureConfirmation !== customerProfile.erasure.confirmation"
+                                :disabled="isErasing || !erasureReason.trim() || !erasureConfirmed"
                                 @click="eraseCustomer">
                                 {{ isErasing ? ctrans("Erasing…") : ctrans("Erase their data") }}
                             </button>
+                            <p v-if="erasureError" class="text-red-500">{{ erasureError }}</p>
                         </template>
                     </template>
                 </div>

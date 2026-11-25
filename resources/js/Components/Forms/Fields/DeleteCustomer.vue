@@ -18,7 +18,7 @@ const props = defineProps<{
     form: any
     fieldName: string
     fieldData: {
-        reference: string
+        reference: string | null
         orders: number
         invoices: number
         owes_money?: boolean
@@ -29,14 +29,18 @@ const props = defineProps<{
 const deleteForm = useForm({
     reason: "",
     reference: "",
+    confirmed: false,
     fraud_note: ""
 })
 
 const suspectedFraud = ref(false)
 const keepsIdentity = computed(() => suspectedFraud.value || !!props.fieldData.owes_money)
 
+const normalised = (text: string) => text.trim().replace(/\s+/g, " ").toLowerCase()
+const referenceConfirmed = computed(() => props.fieldData.reference === null ? deleteForm.confirmed : normalised(deleteForm.reference) === normalised(props.fieldData.reference))
+
 const submitDelete = () => {
-    deleteForm.transform((data) => ({ ...data, fraud_note: suspectedFraud.value ? data.fraud_note : null })).post(route(props.fieldData.route.name, props.fieldData.route.parameters))
+    deleteForm.transform((data) => ({ ...data, reference: props.fieldData.reference, fraud_note: suspectedFraud.value ? data.fraud_note : null })).post(route(props.fieldData.route.name, props.fieldData.route.parameters))
 }
 </script>
 
@@ -68,13 +72,19 @@ const submitDelete = () => {
         </div>
         <PureTextarea v-model="deleteForm.reason" :placeholder="ctrans('Reason (e.g. erasure request received on ...)')" :rows="3" />
         <p v-if="deleteForm.errors.reason" class="text-xs text-red-500">{{ deleteForm.errors.reason }}</p>
-        <div>
+        <label v-if="fieldData.reference === null" class="flex items-center gap-2 text-sm">
+            <Checkbox v-model="deleteForm.confirmed" binary inputId="erasure-confirmed" />
+            <span>{{ ctrans("The customer asked to delete their account") }}</span>
+        </label>
+        <p v-if="deleteForm.errors.confirmed" class="text-xs text-red-500">{{ deleteForm.errors.confirmed }}</p>
+        <div v-if="fieldData.reference !== null">
             <p class="text-sm mb-1">{{ ctrans("Type the customer reference") }} <strong>{{ fieldData.reference }}</strong> {{ ctrans("to confirm") }}</p>
             <PureInput v-model="deleteForm.reference" :placeholder="fieldData.reference" />
             <p v-if="deleteForm.errors.reference" class="text-xs text-red-500">{{ deleteForm.errors.reference }}</p>
+            <p v-else-if="deleteForm.reference && !referenceConfirmed" class="text-xs text-red-500">{{ ctrans("This does not match :reference", { reference: fieldData.reference }) }}</p>
         </div>
         <Button type="delete" icon="fal fa-trash-alt" :label="ctrans('Delete customer')" :loading="deleteForm.processing"
-            :disabled="!deleteForm.reason || deleteForm.reference !== fieldData.reference || (suspectedFraud && !deleteForm.fraud_note)"
+            :disabled="!deleteForm.reason || !referenceConfirmed || (suspectedFraud && !deleteForm.fraud_note)"
             @click="submitDelete" />
     </div>
 </template>
