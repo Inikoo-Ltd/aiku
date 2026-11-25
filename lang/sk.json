@@ -27142,5 +27142,19 @@
     "Your DIČ for electronic invoices": "Vaše DIČ pre elektronické faktúry",
     "From 2027 we must send invoices to Slovak companies and sole traders as electronic invoices, to their DIČ. Please add yours.": "Od roku 2027 musíme slovenským firmám a živnostníkom posielať faktúry ako elektronické faktúry na ich DIČ. Doplňte, prosím, svoje.",
     "I buy as a private person, I have no DIČ": "Nakupujem ako súkromná osoba, nemám DIČ",
-    "Could not save, please try again.": "Nepodarilo sa uložiť, skúste to znova."
+    "Could not save, please try again.": "Nepodarilo sa uložiť, skúste to znova.",
+    "Delivery to a Packeta pickup point is not available for this order. Remove the pickup point to send it to the delivery address.": "Doručenie na výdajné miesto Packeta nie je pre túto objednávku dostupné. Odstráňte výdajné miesto a zásielka pôjde na adresu doručenia.",
+    "Packeta pickup point": "Výdajné miesto Packeta",
+    "Packeta pickup points do not take cash on delivery. Choose another payment method, or remove the pickup point in the basket.": "Výdajné miesta Packeta neprijímajú dobierku. Zvoľte iný spôsob platby alebo v košíku odstráňte výdajné miesto.",
+    "The list of Packeta pickup points is not available right now, please try again in a few minutes.": "Zoznam výdajných miest Packeta momentálne nie je dostupný, skúste to znova o pár minút.",
+    "This order weighs about :weight kg and this pickup point takes parcels up to :max kg.": "Táto objednávka váži približne :weight kg a toto výdajné miesto prijíma zásielky do :max kg.",
+    "This Packeta pickup point is not in the country of the delivery address, please choose one in :country.": "Toto výdajné miesto Packeta nie je v krajine adresy doručenia, vyberte si miesto v krajine: :country.",
+    "This Packeta pickup point was not found, please choose another one.": "Toto výdajné miesto Packeta sa nenašlo, vyberte si iné.",
+    "Choose on the map": "Vybrať na mape",
+    "Send to the delivery address": "Poslať na adresu doručenia",
+    "Customer chose :point — contact customer services to change": "Zákazník zvolil :point — zmenu vybavte cez zákaznícky servis",
+    "Optional. Without a pickup point the parcel goes to the delivery address.": "Nepovinné. Bez výdajného miesta pôjde zásielka na adresu doručenia.",
+    "Packeta pickup point or Z-BOX": "Výdajné miesto Packeta alebo Z-BOX",
+    "Packeta's map could not be opened, please try again.": "Mapu Packeta sa nepodarilo otvoriť, skúste to znova.",
+    "The pickup point could not be saved, please try again.": "Výdajné miesto sa nepodarilo uložiť, skúste to znova."
 }
