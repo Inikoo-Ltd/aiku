@@ -34,3 +34,6 @@ Vika, 2 Nov 2026: every loading state shows `@/Components/Utils/LoadingIcon.vue`
 
 ## Required fields carry a red asterisk
 Vika, 9 Nov 2026: every form or dialog label of a field the user must fill ends with a red asterisk, `{{ ctrans("Amount") }} <span class="text-red-500">*</span>` inside the label's text span, so the user sees what blocks the save before pressing it. A field that is required only sometimes shows it under the same condition (`<span v-if="selectedType?.needs_order" class="text-red-500">*</span>`). Optional fields get no asterisk (an "(optional)" suffix is fine). Add the missing asterisks in any form you touch.
+
+## Number inputs update while typing, never only on blur
+Vika, 25 Nov 2026. PrimeVue InputNumber only emits update:modelValue on blur, so totals and amounts beside it lag until the field loses focus. Every InputNumber also listens to @input and writes the typed value at once: `@input="(event: InputNumberInputEvent) => (value = typeof event.value === 'number' ? event.value : null)"` (import `type InputNumberInputEvent` from "primevue/inputnumber"), keeping v-model or @update:modelValue for the blur. Pattern: PurchaseOrderDepositPayments.vue typedValue(), SupplierPortalPurchaseOrderDialog.vue deposit %.

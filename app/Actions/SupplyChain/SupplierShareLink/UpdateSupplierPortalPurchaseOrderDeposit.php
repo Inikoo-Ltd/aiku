@@ -42,7 +42,7 @@ class UpdateSupplierPortalPurchaseOrderDeposit
 
     public const string REQUEST = 'request';
 
-    public const int REQUEST_PERCENTAGE = 30;
+    public const int REQUEST_PERCENTAGE = SyncPurchaseOrderDepositPaid::DEFAULT_DEPOSIT_PERCENTAGE;
 
     public function handle(Supplier $supplier, int $purchaseOrderId, string $choice, ?int $supplierPortalContactId = null, ?float $percentage = null): PurchaseOrder
     {

@@ -2,6 +2,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid;
 use App\Actions\SupplyChain\Supplier\WithSupplierPacking;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
@@ -161,8 +162,8 @@ trait WithSupplierEditFields
                     'default_deposit_percentage' => [
                         'type'        => 'input',
                         'label'       => __('Default deposit (%)'),
-                        'placeholder' => __('Not set'),
-                        'information' => __('Share of the price of the products this supplier usually asks for as a deposit on a purchase order. It fills in the deposit payment and the deposit the supplier requests from its portal, and can still be changed.'),
+                        'placeholder' => __(':percentage% (default)', ['percentage' => SyncPurchaseOrderDepositPaid::DEFAULT_DEPOSIT_PERCENTAGE]),
+                        'information' => __('Share of the price of the products this supplier usually asks for as a deposit on a purchase order. It fills in the deposit payment and the deposit the supplier requests from its portal, and can still be changed there. Leave it empty to use the default :percentage%, or set 0 when the supplier usually asks for no deposit.', ['percentage' => SyncPurchaseOrderDepositPaid::DEFAULT_DEPOSIT_PERCENTAGE]),
                         'value'       => Arr::get($supplier->settings, 'default_deposit_percentage'),
                         'options'     => ['inputType' => 'number'],
                     ],

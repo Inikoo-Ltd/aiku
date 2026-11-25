@@ -14,7 +14,7 @@ import DatePicker from "primevue/datepicker"
 import Select from "primevue/select"
 import FileUpload from "primevue/fileupload"
 import Textarea from "primevue/textarea"
-import InputNumber from "primevue/inputnumber"
+import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import type { PDRNotes } from "@/types/Pallet"
@@ -946,7 +946,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 			<label v-if="depositChoice === 'request'" class="block">
 				<span class="text-xs font-semibold text-gray-500">{{ ctrans("Deposit (% of the order)") }}</span>
 				<div class="mt-1 flex items-center gap-2">
-					<InputNumber v-model="requestPercentage" suffix="%" :min="1" :max="100" :minFractionDigits="0" :maxFractionDigits="2" class="w-32" :pt="{ pcInputText: { root: { class: '!w-full focus:!border-[var(--app-accent)]' } } }" />
+					<InputNumber v-model="requestPercentage" @input="(event: InputNumberInputEvent) => (requestPercentage = typeof event.value === 'number' ? event.value : null)" suffix="%" :min="1" :max="100" :minFractionDigits="0" :maxFractionDigits="2" class="w-32" :pt="{ pcInputText: { root: { class: '!w-full focus:!border-[var(--app-accent)]' } } }" />
 					<span class="tabular-nums text-gray-700">{{ money(requestAmount) }}</span>
 				</div>
 			</label>

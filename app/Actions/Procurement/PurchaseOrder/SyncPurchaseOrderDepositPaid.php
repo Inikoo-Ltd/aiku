@@ -18,6 +18,8 @@ class SyncPurchaseOrderDepositPaid
 {
     use AsObject;
 
+    public const int DEFAULT_DEPOSIT_PERCENTAGE = 30;
+
     /**
      * The first payment is the deposit and paying the order in full is the balance, as the purchase order stages
      * read them. An order set to need no deposit keeps that until a payment is made.
@@ -65,7 +67,7 @@ class SyncPurchaseOrderDepositPaid
 
     /**
      * The share of the order the supplier usually asks as a deposit (Sheikh: 40%), offered as the first payment.
-     * Empty or 0 means none is set.
+     * Empty is the usual 30%; 0 means the supplier usually asks for none.
      */
     public static function defaultDepositPercentage(PurchaseOrder $purchaseOrder): ?float
     {
@@ -75,7 +77,11 @@ class SyncPurchaseOrderDepositPaid
 
         $percentage = Arr::get(Supplier::withTrashed()->whereKey($purchaseOrder->supplier_id)->value('settings') ?? [], 'default_deposit_percentage');
 
-        return $percentage !== null && (float) $percentage > 0 ? min(100, (float) $percentage) : null;
+        if ($percentage === null || $percentage === '') {
+            return (float) self::DEFAULT_DEPOSIT_PERCENTAGE;
+        }
+
+        return (float) $percentage > 0 ? min(100, (float) $percentage) : null;
     }
 
     public static function defaultDeposit(PurchaseOrder $purchaseOrder): ?float
