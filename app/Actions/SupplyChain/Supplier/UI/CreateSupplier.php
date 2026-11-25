@@ -359,9 +359,10 @@ class CreateSupplier extends OrgAction
                 'icon'   => 'fal fa-file-invoice-dollar',
                 'fields' => [
                     'minimum_order'       => [
-                        'type'      => 'input',
-                        'label'     => __('Minimum Order'),
-                        'value'     => '',
+                        'type'        => 'input',
+                        'label'       => __('Minimum order value'),
+                        'information' => __('The least the supplier accepts per order, as the total cost in the supplier\'s currency. The Pre-orders by supplier page shows each supplier\'s pre-order total against it in green or red. Purchase orders are not blocked below it. The minimum per product, in cartons, is set on each supplier product.'),
+                        'value'       => '',
                         'labelFrom' => [
                             'field'   => 'currency_id',
                             'options' => Currency::pluck('code', 'id'),
@@ -369,8 +370,8 @@ class CreateSupplier extends OrgAction
                     ],
                     'cooling_period'      => [
                         'type'        => 'input',
-                        'label'       => __('Cooling Period (Days)'),
-                        'information' => __('Minimum days between two orders to this supplier'),
+                        'label'       => __('Cooling period between orders (days)'),
+                        'information' => __('The fewest days to leave between two orders to this supplier. For reference only: it is shown on the supplier page and nothing in aiku checks it when a purchase order is created or submitted.'),
                         'value'       => '',
                     ],
                 ],

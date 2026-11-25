@@ -168,16 +168,24 @@ trait WithSupplierEditFields
                         'options'     => ['inputType' => 'number'],
                     ],
                     'minimum_order' => [
-                        'type'    => 'input',
-                        'label'   => __('Minimum order'),
-                        'value'   => Arr::get($supplier->settings, 'minimum_order'),
-                        'options' => ['inputType' => 'number']
+                        'type'        => 'input_number',
+                        'label'       => __('Minimum order value'),
+                        'information' => __('The least the supplier accepts per order, as the total cost in the supplier\'s currency. The Pre-orders by supplier page shows each supplier\'s pre-order total against it in green or red. Purchase orders are not blocked below it. The minimum per product, in cartons, is set on each supplier product.'),
+                        'bind'        => [
+                            'mode'              => 'currency',
+                            'currency'          => $supplier->currency?->code,
+                            'min'               => 0,
+                            'minFractionDigits' => 2,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'       => Arr::get($supplier->settings, 'minimum_order') === null ? null : (float) Arr::get($supplier->settings, 'minimum_order'),
                     ],
                     'cooling_period' => [
-                        'type'    => 'input',
-                        'label'   => __('Cooling period between orders (days)'),
-                        'value'   => Arr::get($supplier->settings, 'cooling_period'),
-                        'options' => ['inputType' => 'number']
+                        'type'        => 'input',
+                        'label'       => __('Cooling period between orders (days)'),
+                        'information' => __('The fewest days to leave between two orders to this supplier. For reference only: it is shown on the supplier page and nothing in aiku checks it when a purchase order is created or submitted.'),
+                        'value'       => Arr::get($supplier->settings, 'cooling_period'),
+                        'options'     => ['inputType' => 'number']
                     ],
                     ...$this->relationshipContactEditField($supplier),
                 ]

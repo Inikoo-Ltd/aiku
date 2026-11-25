@@ -40,6 +40,7 @@ import ZoomableImage from '@/Components/Utils/ZoomableImage.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import SupplierRelationshipContact from '@/Components/SupplyChain/SupplierRelationshipContact.vue'
+import { useLocaleStore } from '@/Stores/locale'
 
 library.add(
     faBoxUsd,
@@ -130,6 +131,8 @@ const props = defineProps<{
         }
     }
 }>()
+
+const locale = useLocaleStore()
 
 const contactCard = computed(() => props.data?.contactCard)
 
@@ -279,9 +282,11 @@ const supplierInfo = computed(() => {
         },
         {
             key: 'minimum_order',
-            label: ctrans('Minimum order'),
+            label: ctrans('Minimum order value'),
             icon: 'fal fa-box-usd',
-            value: info.minimum_order
+            value: info.minimum_order !== undefined && info.minimum_order !== null && contactCard.value?.currency?.code
+                ? locale.currencyFormat(contactCard.value.currency.code, Number(info.minimum_order))
+                : info.minimum_order
         },
         {
             key: 'next_purchase_order_reference',
