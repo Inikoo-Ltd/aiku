@@ -34,6 +34,7 @@ function zentradaFeedProduct(Product $template, array $attributes): Product
         'exclusive_for_customer_id' => null,
         'available_quantity'        => 10,
         'barcode'                   => null,
+        'web_images'                => ['all' => [['gallery' => ['original_2x' => 'https://media.test/'.$code.'.jpg']]]],
     ], $attributes))->saveQuietly();
 
     return $product;
@@ -78,12 +79,14 @@ test('zentrada feed sells packs by the piece at a price rounded up to the cent',
         ->and($row['short_product_description'])->toStartWith('<strong>1 packing unit = 6 x ');
 });
 
-test('zentrada feed leaves out products without stock and products exclusive to a customer', function () {
+test('zentrada feed leaves out products without stock or images, exclusive to a customer or with an EXP code', function () {
     $inStock    = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1]);
     $noStock    = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'available_quantity' => 0]);
     $unknown    = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'available_quantity' => null]);
     $exclusive  = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'exclusive_for_customer_id' => createCustomer($this->shop)->id]);
     $notForSale = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'is_for_sale' => false]);
+    $noImages   = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'web_images' => []]);
+    $expCode    = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'code' => 'ZEN-'.Str::upper(Str::random(6)).'-01exp']);
 
     $rows = readZentradaFeed($this->shop)['rows'];
 
@@ -91,7 +94,10 @@ test('zentrada feed leaves out products without stock and products exclusive to 
         ->and($rows)->not->toHaveKey($noStock->code)
         ->and($rows)->not->toHaveKey($unknown->code)
         ->and($rows)->not->toHaveKey($exclusive->code)
-        ->and($rows)->not->toHaveKey($notForSale->code);
+        ->and($rows)->not->toHaveKey($notForSale->code)
+        ->and($rows)->not->toHaveKey($noImages->code)
+        ->and($rows)->not->toHaveKey($expCode->code)
+        ->and($rows[$inStock->code]['image'])->toBe('https://media.test/'.$inStock->code.'.jpg');
 });
 
 test('zentrada feed takes the promotion and volume prices from the shop settings', function () {

@@ -39,6 +39,8 @@ class ZentradaWebApi extends RetinaAction
 
     public const int MAX_VOLUME_TIERS = 3;
 
+    public const string EXCLUDED_CODE_SUFFIX = 'EXP';
+
     private const array COLUMNS = [
         'market_place_allocation',
         'item_number',
@@ -148,6 +150,8 @@ class ZentradaWebApi extends RetinaAction
             ->where('products.price', '>', 0)
             ->where('products.available_quantity', '>', 0)
             ->whereNull('products.exclusive_for_customer_id')
+            ->whereRaw("jsonb_array_length(coalesce(products.web_images->'all', '[]'::jsonb)) > 0")
+            ->whereRaw('products.code COLLATE "C" NOT ILIKE ?', ['%'.self::EXCLUDED_CODE_SUFFIX])
             ->with([
                 'family:id,code',
                 'brands:brands.id,brands.name',
