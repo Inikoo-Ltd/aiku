@@ -66,7 +66,7 @@ struct InventorySkoLayoutTests {
     @Test func negativeLocationsUseTheExactQuantity() throws {
         let sko = try liveSko()
         let negative = try #require(sko.location("D-02"))
-        #expect(negative.quantity == 0)
+        #expect(negative.quantity == -0.5)
         #expect(negative.isNegative)
         #expect(sko.location("C-01")?.isNegative == false)
     }

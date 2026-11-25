@@ -196,14 +196,14 @@ struct LocationsDetailView: View {
         sheet = nil
         guard store.isRemote else {
             let differences = store.audit(location: location.code, counts: counts)
-            toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            toasts.show(LocationsToastText.audit(location: location.code, differences: Int(differences)))
             return
         }
         Task {
             do {
                 switch try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient) {
                 case .saved(let differences):
-                    toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                    toasts.show(LocationsToastText.audit(location: location.code, differences: Int(differences)))
                 case .queued:
                     toasts.show(OfflineRecordText.queued, tone: .info)
                 }
@@ -213,7 +213,7 @@ struct LocationsDetailView: View {
         }
     }
 
-    private func move(from source: String, to target: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool) {
+    private func move(from source: String, to target: String, quantities: [String: Double], removeFromSource: Bool, movesEverything: Bool) {
         sheet = nil
         guard store.isRemote else {
             let result = store.move(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource)
@@ -272,19 +272,24 @@ enum LocationsToastText {
     static func showMove(_ outcome: LocationsWriteOutcome, target: String, toasts: ToastCenter) {
         switch outcome {
         case .saved(let moved):
-            toasts.show(moved > 0 ? L10n.format("%lld units moved to %@", moved, target) : L10n.text("Nothing to move"), tone: moved > 0 ? .success : .warn)
+            toasts.show(moved > 0 ? movedText(moved, target: target) : L10n.text("Nothing to move"), tone: moved > 0 ? .success : .warn)
         case .queued:
             toasts.show(OfflineRecordText.queued, tone: .info)
         }
     }
 
     @MainActor
-    static func showMove(_ result: (moved: Int, snapshot: LocationsWarehouse), target: String, store: LocationsStore, toasts: ToastCenter) {
+    static func movedText(_ moved: Double, target: String) -> String {
+        moved == moved.rounded() ? L10n.format("%lld units moved to %@", Int(moved), target) : L10n.text("Stock moved")
+    }
+
+    @MainActor
+    static func showMove(_ result: (moved: Double, snapshot: LocationsWarehouse), target: String, store: LocationsStore, toasts: ToastCenter) {
         guard result.moved > 0 else {
             toasts.show("Nothing to move", tone: .warn)
             return
         }
-        toasts.show(L10n.format("%lld units moved to %@", result.moved, target), actionTitle: "Undo") {
+        toasts.show(movedText(result.moved, target: target), actionTitle: "Undo") {
             store.restore(result.snapshot)
         }
     }

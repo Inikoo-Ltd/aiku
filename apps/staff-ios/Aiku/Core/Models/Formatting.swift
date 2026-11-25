@@ -10,6 +10,14 @@ extension Decimal {
     }
 }
 
+extension Double {
+    var grouped: String { formatted(.number.precision(.fractionLength(0...3)).locale(Locale(identifier: "en_GB"))) }
+
+    var signedChange: String {
+        self > 0 ? "+\(grouped)" : self < 0 ? "−\((-self).grouped)" : "0"
+    }
+}
+
 extension Int {
     var grouped: String { formatted(.number.locale(Locale(identifier: "en_GB"))) }
 

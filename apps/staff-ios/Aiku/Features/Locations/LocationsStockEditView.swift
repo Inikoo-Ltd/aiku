@@ -228,14 +228,14 @@ private struct LocationsStockEditForm: View {
     private func audit(_ counts: [LocationsAuditCount]) {
         guard store.isRemote else {
             let differences = store.audit(location: location.code, counts: counts)
-            toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            toasts.show(LocationsToastText.audit(location: location.code, differences: Int(differences)))
             return
         }
         Task {
             do {
                 switch try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient) {
                 case .saved(let differences):
-                    toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                    toasts.show(LocationsToastText.audit(location: location.code, differences: Int(differences)))
                 case .queued:
                     toasts.show(OfflineRecordText.queued, tone: .info)
                 }
@@ -245,7 +245,7 @@ private struct LocationsStockEditForm: View {
         }
     }
 
-    private func move(to target: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool) {
+    private func move(to target: String, quantities: [String: Double], removeFromSource: Bool, movesEverything: Bool) {
         guard store.isRemote else {
             let result = store.move(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource)
             LocationsToastText.showMove(result, target: target, store: store, toasts: toasts)

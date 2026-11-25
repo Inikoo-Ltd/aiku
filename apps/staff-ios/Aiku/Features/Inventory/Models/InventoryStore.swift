@@ -91,14 +91,14 @@ final class InventoryStore {
     }
 
     @discardableResult
-    func move(_ reference: String, from source: String, to destination: String, quantity: Int, reason: InventoryMoveReason) throws -> String {
+    func move(_ reference: String, from source: String, to destination: String, quantity: Double, reason: InventoryMoveReason) throws -> String {
         try apply(reference) {
             try InventoryStockOperations.move($0, from: source, to: destination, quantity: quantity, reason: reason, time: timeLabel)
         }
     }
 
     @discardableResult
-    func consume(_ reference: String, location: String, quantity: Int, note: String) throws -> String {
+    func consume(_ reference: String, location: String, quantity: Double, note: String) throws -> String {
         try apply(reference) { try InventoryStockOperations.consume($0, location: location, quantity: quantity, note: note, time: timeLabel) }
     }
 

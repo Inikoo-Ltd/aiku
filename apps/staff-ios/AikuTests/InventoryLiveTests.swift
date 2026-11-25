@@ -183,7 +183,7 @@ struct InventoryLiveTests {
         #expect(sko.coverLabel == "30 days")
         #expect(sko.listChip == Chip("Active", .success))
         let picking = try #require(sko.location("8v5"))
-        #expect(picking.quantity == 40)
+        #expect(picking.quantity == 40.5)
         #expect(picking.quantityText == "40.5")
         #expect(picking.chip == Chip("Picking · Wholesale · Dropshipping", .info))
         #expect(picking.lastAudited == "28 May 2024")
@@ -248,7 +248,7 @@ struct InventoryLiveTests {
         ))
         await feed.load()
 
-        let message = try await feed.audit(counted: ["8v5": 40, "C-01": 58], reasons: ["C-01": "damaged"])
+        let message = try await feed.audit(counted: ["8v5": 40.5, "C-01": 58], reasons: ["C-01": "damaged"])
 
         #expect(message == "Stock count saved.")
         #expect(await calls.audits.first == [
@@ -276,6 +276,54 @@ struct InventoryLiveTests {
         #expect(await calls.audits.first == [
             MobileOrgStockAuditCount(locationOrgStockId: 157741, quantity: 58, reason: "damaged"),
         ])
+    }
+
+    @Test func fractionsOfAnSkoAreCountedMovedAndConsumedExactly() async throws {
+        let detail = try Self.detail()
+        let calls = Calls()
+        let feed = InventorySkoFeed(warehouseID: 4, target: .id(74495), canEditStocks: true, service: InventoryService(
+            orgStock: { _, _ in detail },
+            audit: { _, _, counts, requestID in
+                await calls.audit(counts, requestID)
+                return try Self.written("Stock count saved.")
+            },
+            move: { link, targets, requestID in
+                await calls.move(link, targets, requestID)
+                return try Self.written(nil)
+            },
+            consume: { link, body in
+                await calls.consume(link, body)
+                return try Self.written(nil)
+            }
+        ))
+        await feed.load()
+
+        _ = try await feed.audit(counted: ["8v5": 39.5], reasons: ["8v5": "damaged"])
+        _ = try await feed.move(from: "8v5", to: "C-01", quantity: 40.5)
+        _ = try await feed.consume(location: "8v5", quantity: 0.5, note: "")
+
+        #expect(await calls.audits.first == [MobileOrgStockAuditCount(locationOrgStockId: 43286, quantity: 39.5, reason: "damaged")])
+        #expect(await calls.moves.first?.1 == [MobileOrgStockMoveTarget(locationOrgStockId: 157741, quantity: 40.5)])
+        #expect(await calls.consumes.first?.1 == MobileOrgStockConsumeBody(quantity: 0.5, note: nil))
+    }
+
+    @MainActor
+    @Test func steppingAFractionStaysExactAndNeverLeavesTheRange() {
+        var value = 13.7
+        for _ in 0..<13 {
+            value = DecimalQuantityStepper.clean(min(13.7, max(0, value - 1)))
+        }
+        #expect(value == 0.7)
+        #expect(DecimalQuantityStepper.clean(13.7 - 13) == 0.7)
+        #expect(DecimalQuantityStepper.clean(min(13.7, max(0, 13.7 + 1))) == 13.7)
+    }
+
+    @MainActor
+    @Test func anUntouchedFractionOrNegativeCountIsNoChange() throws {
+        let sko = InventoryLive.sko(try Self.detail(), canEditStocks: true)
+        let draft = InventoryAuditDraft(sko: sko)
+        #expect(draft.changedLocations(in: sko).isEmpty)
+        #expect(StockConfirmText.auditLine("8v5", wasText: "40 ¹⁄₂", counted: 40.5, was: 40.5, packedIn: nil) == "8v5: 40 ¹⁄₂, no change")
     }
 
     @Test func stockEditsUseTheLocationLinks() async throws {

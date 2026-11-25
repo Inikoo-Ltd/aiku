@@ -5,7 +5,7 @@ struct LocationsAuditSheet: View {
     var onlySko: String?
     let onSave: ([LocationsAuditCount]) -> Void
     let onCancel: () -> Void
-    @State private var counted: [String: Int]
+    @State private var counted: [String: Double]
     @State private var reasons: [String: LocationsAuditReason] = [:]
     @State private var note = ""
     @State private var isConfirming = false
@@ -28,8 +28,8 @@ struct LocationsAuditSheet: View {
         return location.slots.filter { $0.skoReference == onlySko }
     }
 
-    private func change(for slot: LocationsSlot) -> Int {
-        (counted[slot.skoReference] ?? slot.quantity) - max(slot.quantity, 0)
+    private func change(for slot: LocationsSlot) -> Double {
+        (counted[slot.skoReference] ?? slot.quantity) - slot.quantity
     }
 
     private var missingReasons: Int {
@@ -76,7 +76,7 @@ struct LocationsAuditSheet: View {
         .joined(separator: "\n")
     }
 
-    private func countedValue(_ slot: LocationsSlot) -> Int {
+    private func countedValue(_ slot: LocationsSlot) -> Double {
         counted[slot.skoReference] ?? slot.quantity
     }
 
@@ -132,7 +132,7 @@ struct LocationsAuditSheet: View {
         let valueText = countedText(slot)
         return HStack(spacing: 0) {
             stepButton("−", label: L10n.format("Decrease %@", slot.skoReference), isEnabled: value > 0) {
-                counted[slot.skoReference] = max(value - 1, 0)
+                counted[slot.skoReference] = DecimalQuantityStepper.clean(max(value - 1, 0))
             }
             Text(valueText)
                 .font(.aiku(16, .bold))
@@ -143,7 +143,7 @@ struct LocationsAuditSheet: View {
                 .frame(minWidth: 40)
                 .accessibilityLabel(L10n.format("%@ counted %@", slot.skoReference, valueText))
             stepButton("+", label: L10n.format("Increase %@", slot.skoReference), isEnabled: true) {
-                counted[slot.skoReference] = value + 1
+                counted[slot.skoReference] = DecimalQuantityStepper.clean(value + 1)
             }
         }
         .frame(height: 44)

@@ -8,7 +8,7 @@ struct InventorySkoRow: View {
     var location: InventorySkoListLocation?
     var action: (() -> Void)?
 
-    init(reference: String, chip: Chip?, subtitle: String, quantity: Int?, action: (() -> Void)? = nil) {
+    init(reference: String, chip: Chip?, subtitle: String, quantity: Double?, action: (() -> Void)? = nil) {
         self.init(reference: reference, chip: chip, subtitle: subtitle, quantityText: quantity?.grouped, action: action)
     }
 
@@ -192,13 +192,14 @@ struct InventoryScopeChips<Option: Hashable>: View {
 
 struct InventoryQuantityField: View {
     let title: String
-    @Binding var value: Int
-    let range: ClosedRange<Int>
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    var packedIn: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             FieldLabel(title)
-            QuantityStepper(value: $value, range: range)
+            DecimalQuantityStepper(value: $value, valueText: StockConfirmText.quantityLabel(value, packedIn: packedIn), range: range)
         }
     }
 }

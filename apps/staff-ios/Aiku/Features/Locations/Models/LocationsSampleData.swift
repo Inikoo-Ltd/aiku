@@ -7,35 +7,35 @@ enum LocationsSampleData {
         return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) ?? Date(timeIntervalSince1970: 0)
     }
 
-    static func bathBomb(_ quantity: Int, type: LocationsSlotType = .storing, roles: Set<LocationsPickingRole> = []) -> LocationsSlot {
+    static func bathBomb(_ quantity: Double, type: LocationsSlotType = .storing, roles: Set<LocationsPickingRole> = []) -> LocationsSlot {
         LocationsSlot(
             skoReference: "SKO-00733", name: "Bath bomb – rose 180g", quantity: quantity, type: type, roles: roles,
             unitWeightKg: 0.4, unitVolumeM3: 0.006, unitValue: 9.6
         )
     }
 
-    static func lavenderOil(_ quantity: Int, type: LocationsSlotType = .storing) -> LocationsSlot {
+    static func lavenderOil(_ quantity: Double, type: LocationsSlotType = .storing) -> LocationsSlot {
         LocationsSlot(
             skoReference: "SKO-00412", name: "Lavender essential oil 10ml", quantity: quantity, type: type,
             unitWeightKg: 0.2, unitVolumeM3: 0.002, unitValue: 14.4
         )
     }
 
-    static func eucalyptusOil(_ quantity: Int) -> LocationsSlot {
+    static func eucalyptusOil(_ quantity: Double) -> LocationsSlot {
         LocationsSlot(
             skoReference: "SKO-01402", name: "Eucalyptus essential oil 10ml", quantity: quantity, type: .storing,
             replenishment: 24, unitWeightKg: 0.075, unitVolumeM3: 0.001, unitValue: 12.0
         )
     }
 
-    static func incense(_ quantity: Int, type: LocationsSlotType = .storing) -> LocationsSlot {
+    static func incense(_ quantity: Double, type: LocationsSlotType = .storing) -> LocationsSlot {
         LocationsSlot(
             skoReference: "SKO-00953", name: "Incense – sandalwood", quantity: quantity, type: type,
             unitWeightKg: 0.175, unitVolumeM3: 0.0005, unitValue: 6.0
         )
     }
 
-    static func candle(_ quantity: Int, type: LocationsSlotType = .storing) -> LocationsSlot {
+    static func candle(_ quantity: Double, type: LocationsSlotType = .storing) -> LocationsSlot {
         LocationsSlot(
             skoReference: "SKO-01187", name: "Soy candle – vanilla", quantity: quantity, type: type,
             unitWeightKg: 0.6, unitVolumeM3: 0.003, unitValue: 18.0
