@@ -26819,5 +26819,8 @@
     "DIČ": "DIČ",
     "10 digits, without SK. We send your invoices to it as e-invoices.": "10 digits, without SK. We send your invoices to it as e-invoices.",
     "Enter your company DIČ, we send your invoices to it as e-invoices.": "Enter your company DIČ, we send your invoices to it as e-invoices.",
-    "This is not a valid Slovak DIČ. Please check the number.": "This is not a valid Slovak DIČ. Please check the number."
+    "This is not a valid Slovak DIČ. Please check the number.": "This is not a valid Slovak DIČ. Please check the number.",
+    "This Slovak business customer has no DIČ, so its invoice cannot go out as an e-invoice. Add the DIČ before invoicing, the e-invoice must be sent the same day.": "This Slovak business customer has no DIČ, so its invoice cannot go out as an e-invoice. Add the DIČ before invoicing, the e-invoice must be sent the same day.",
+    "Add DIČ": "Add DIČ",
+    "Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company. With a valid Slovak VAT number, the DIČ in it is used.": "Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company. With a valid Slovak VAT number, the DIČ in it is used."
 }

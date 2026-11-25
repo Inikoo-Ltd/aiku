@@ -27119,5 +27119,8 @@
     "DIČ": "DIČ",
     "10 digits, without SK. We send your invoices to it as e-invoices.": "10 číslic, bez SK. Na toto DIČ vám posielame faktúry ako elektronické faktúry.",
     "Enter your company DIČ, we send your invoices to it as e-invoices.": "Zadajte DIČ vašej firmy, posielame naň faktúry ako elektronické faktúry.",
-    "This is not a valid Slovak DIČ. Please check the number.": "Toto nie je platné slovenské DIČ. Skontrolujte, prosím, číslo."
+    "This is not a valid Slovak DIČ. Please check the number.": "Toto nie je platné slovenské DIČ. Skontrolujte, prosím, číslo.",
+    "This Slovak business customer has no DIČ, so its invoice cannot go out as an e-invoice. Add the DIČ before invoicing, the e-invoice must be sent the same day.": "Tento firemný zákazník zo Slovenska nemá DIČ, preto jeho faktúru nemožno odoslať ako elektronickú faktúru. Doplňte DIČ pred fakturáciou, elektronická faktúra musí odísť v ten istý deň.",
+    "Add DIČ": "Doplniť DIČ",
+    "Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company. With a valid Slovak VAT number, the DIČ in it is used.": "Vaše 10-miestne daňové identifikačné číslo (DIČ). Posielame naň vaše faktúry ako elektronické faktúry Peppol, preto ho prosím skontrolujte: s nesprávnym číslom by vaše faktúry dostala iná firma. Ak máte platné slovenské IČ DPH, použije sa DIČ z neho."
 }

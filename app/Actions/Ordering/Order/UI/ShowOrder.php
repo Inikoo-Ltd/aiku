@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Ordering\PreOrder\GetPreOrderShowcase;
 use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
 use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
@@ -637,6 +638,11 @@ class ShowOrder extends OrgAction
                         'unlocked_until'   => $order->preOrder->isUnlockedFor($request->user()) ? $order->preOrder->unlockedUntil()?->toIso8601String() : null,
                     ],
                 ]) : null,
+                'e_invoice_dic_missing'       => !in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED], true)
+                    && $order->customer && UpdateRetinaCustomer::lacksDicForEInvoices($order->customer) ? [
+                        'name'       => 'grp.org.shops.show.crm.customers.edit',
+                        'parameters' => [$order->organisation->slug, $order->shop->slug, $order->customer->slug],
+                    ] : null,
                 'split_pre_order'             => $order->splitPreOrder ? [
                     'reference' => $order->splitPreOrder->order->reference,
                     'slug'      => $order->splitPreOrder->order->slug,
