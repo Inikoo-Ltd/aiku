@@ -81,9 +81,12 @@ class ShowStock extends OrgAction
                         'title' => __('Master SKO'),
                         'icon'  => 'fal fa-cloud-rainbow'
                     ],
-                    'title' => $stock->code,
-
-                    'actions' => [
+                    'model'      => __('Master SKO'),
+                    'title'      => $stock->code,
+                    'afterTitle' => [
+                        'label' => $stock->name
+                    ],
+                    'actions'    => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',

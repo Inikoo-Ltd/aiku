@@ -26,7 +26,8 @@ class IndexStockSupplierProducts extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('supplier_products.code', $value)
                     ->orWhereAnyWordStartWith('supplier_products.name', $value)
-                    ->orWhereAnyWordStartWith('suppliers.name', $value);
+                    ->orWhereAnyWordStartWith('suppliers.name', $value)
+                    ->orWhereAnyWordStartWith('agents.name', $value);
             });
         });
 
@@ -38,6 +39,7 @@ class IndexStockSupplierProducts extends OrgAction
         $query->where('stock_has_supplier_products.stock_id', $stock->id);
         $query->leftJoin('supplier_products', 'supplier_products.id', 'stock_has_supplier_products.supplier_product_id');
         $query->leftJoin('suppliers', 'suppliers.id', 'supplier_products.supplier_id');
+        $query->leftJoin('agents', 'agents.id', 'suppliers.agent_id');
         $query->leftJoin('currencies', 'currencies.id', 'supplier_products.currency_id');
 
         return $query
@@ -52,6 +54,9 @@ class IndexStockSupplierProducts extends OrgAction
                 'supplier_products.cost as unit_cost',
                 'supplier_products.units_per_carton',
                 'suppliers.name as supplier_name',
+                'suppliers.slug as supplier_slug',
+                'agents.name as agent_name',
+                'agents.slug as agent_slug',
                 'currencies.code as currency_code',
             ])
             ->selectRaw('(stock_has_supplier_products.priority > 0 and stock_has_supplier_products.priority = max(stock_has_supplier_products.priority) over ()) as is_preferred')
@@ -67,6 +72,7 @@ class IndexStockSupplierProducts extends OrgAction
                 'code',
                 'priority',
                 AllowedSort::field('supplier_name', 'suppliers.name'),
+                AllowedSort::field('agent_name', 'agents.name'),
                 AllowedSort::field('unit_cost', 'supplier_products.cost'),
             ])
             ->allowedFilters([$globalSearch])
@@ -87,6 +93,7 @@ class IndexStockSupplierProducts extends OrgAction
                 ->withLabelRecord([__("Supplier's product"), __("Supplier's products")])
                 ->column(key: 'preferred', label: '', type: 'icon')
                 ->column(key: 'supplier_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'agent_name', label: __('Agent'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'code', label: __("Supplier's code"), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'description', label: __("Supplier's unit description"), canBeHidden: false, searchable: true)
                 ->column(key: 'unit_cost', label: __('Unit cost'), canBeHidden: false, sortable: true, type: 'currency')

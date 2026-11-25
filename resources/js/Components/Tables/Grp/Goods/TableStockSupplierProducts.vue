@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { router } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { useLocaleStore } from "@/Stores/locale"
@@ -42,6 +42,26 @@ function setPreferred(supplierProduct: { stock_id: number, supplier_product_id: 
             <Icon
                 v-else
                 :data="{ icon: 'fal fa-snooze', class: 'text-gray-400', tooltip: ctrans('Backup supplier') }" />
+        </template>
+
+        <template #cell(supplier_name)="{ item: supplierProduct }">
+            <Link
+                v-if="supplierProduct.supplier_slug"
+                :href="route('grp.supply-chain.suppliers.show', [supplierProduct.supplier_slug])"
+                class="primaryLink">
+                {{ supplierProduct.supplier_name }}
+            </Link>
+            <span v-else>{{ supplierProduct.supplier_name }}</span>
+        </template>
+
+        <template #cell(agent_name)="{ item: supplierProduct }">
+            <Link
+                v-if="supplierProduct.agent_slug"
+                :href="route('grp.supply-chain.agents.show', [supplierProduct.agent_slug])"
+                class="secondaryLink">
+                {{ supplierProduct.agent_name }}
+            </Link>
+            <span v-else class="text-gray-300">—</span>
         </template>
 
         <template #cell(unit_cost)="{ item: supplierProduct }">

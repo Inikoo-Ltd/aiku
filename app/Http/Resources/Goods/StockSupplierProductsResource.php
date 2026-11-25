@@ -14,6 +14,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $stock_id
  * @property int $supplier_product_id
  * @property string $supplier_name
+ * @property string $supplier_slug
+ * @property string|null $agent_name
+ * @property string|null $agent_slug
  * @property string $code
  * @property string $name
  * @property string $description
@@ -30,6 +33,9 @@ class StockSupplierProductsResource extends JsonResource
             'stock_id'            => $this->stock_id,
             'supplier_product_id' => $this->supplier_product_id,
             'supplier_name'       => $this->supplier_name,
+            'supplier_slug'       => $this->supplier_slug,
+            'agent_name'          => $this->agent_name,
+            'agent_slug'          => $this->agent_slug,
             'code'                => $this->code,
             'description'         => $this->description ?? $this->name,
             'currency_code'       => $this->currency_code,
