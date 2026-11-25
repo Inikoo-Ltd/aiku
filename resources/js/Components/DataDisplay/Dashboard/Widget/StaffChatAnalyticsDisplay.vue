@@ -36,7 +36,7 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
     <div class="bg-white rounded-lg p-4 flex flex-col shadow-sm border border-gray-300">
         <div class="flex items-baseline justify-between mb-2">
             <h3 class="text-lg font-semibold">
-                {{ ctrans("Staff chat") }}
+                {{ ctrans("Verba") }}
                 <span v-if="widget" class="text-xs font-normal text-gray-400">{{ ctrans("last :days days", { days: String(widget.days) }) }}</span>
             </h3>
             <Link
@@ -110,6 +110,6 @@ const maxPairMessages = computed(() => Math.max(0, ...(props.widget?.top_pairs.m
             </div>
         </template>
 
-        <p v-else class="text-sm text-gray-500">{{ ctrans("No staff chat activity recorded yet") }}</p>
+        <p v-else class="text-sm text-gray-500">{{ ctrans("No Verba activity recorded yet") }}</p>
     </div>
 </template>

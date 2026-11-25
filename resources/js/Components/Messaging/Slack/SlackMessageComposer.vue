@@ -123,7 +123,7 @@ const editLast = () => {
                 mention-tokens
                 can-edit-last
                 attach-disabled
-                :attach-label="ctrans('Sending files from Desk is coming soon')"
+                :attach-label="ctrans('Sending files from Verba is coming soon')"
                 @submit="send()"
                 @edit-last="editLast" />
             <div class="flex items-center gap-x-3 pt-1.5">

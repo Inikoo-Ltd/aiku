@@ -43,14 +43,14 @@ trait WithUsersSubNavigation
             ],
 
             [
-                "label"    => __("Staff chat"),
+                "label"    => __("Verba"),
                 "route"     => [
                     "name"       => "grp.sysadmin.staff_chat.index",
                     "parameters" => [],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-comments-alt"],
-                    "tooltip" => __("Staff chat analytics"),
+                    "tooltip" => __("Verba analytics"),
                 ],
             ],
             [

@@ -318,8 +318,8 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label'   => __('Desk'),
-                        'tooltip' => __('Desk'),
+                        'label'   => __('Verba'),
+                        'tooltip' => __('Verba'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
                         'route'   => [

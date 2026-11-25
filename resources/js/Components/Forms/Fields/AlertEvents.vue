@@ -14,7 +14,7 @@ const props = defineProps<{
 const events: { key: AlertEvent, label: string, hint: string }[] = [
     { key: 'customer_message', label: ctrans('New customer message'), hint: ctrans('A customer writes on the website, WhatsApp or by email') },
     { key: 'assigned', label: ctrans('Assigned to me'), hint: ctrans('A colleague or a supervisor gives you a conversation') },
-    { key: 'colleague', label: ctrans('Colleague messages'), hint: ctrans('A colleague writes to you in the staff chat') },
+    { key: 'colleague', label: ctrans('Colleague messages'), hint: ctrans('A colleague writes to you in Verba') },
     { key: 'waiting', label: ctrans('Customer still waiting'), hint: ctrans('Again every 30 seconds while a chat is unanswered') },
     { key: 'ticket', label: ctrans('Tickets'), hint: ctrans('A ticket is raised, answered, resolved or needs your QA') },
 ]

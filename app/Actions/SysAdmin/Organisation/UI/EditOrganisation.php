@@ -186,7 +186,7 @@ class EditOrganisation extends OrgAction
                         ],
                     ],
                     [
-                        "label"  => __("Staff chat"),
+                        "label"  => __("Verba"),
                         "icon"   => "fal fa-comments",
                         "fields" => [
                             "staff_chat_crm_user_ids" => [

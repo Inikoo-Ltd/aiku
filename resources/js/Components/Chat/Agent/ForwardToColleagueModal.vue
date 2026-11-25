@@ -59,7 +59,7 @@ const confirmForward = async () => {
         if (notEmailed.length) {
             notify({
                 title: ctrans("Not emailed"),
-                text: ctrans(":names has no work email in Aiku, so only got it in the staff chat.", { names: notEmailed.join(", ") }),
+                text: ctrans(":names has no work email in Aiku, so only got it in Verba.", { names: notEmailed.join(", ") }),
                 type: "warning",
             })
         }

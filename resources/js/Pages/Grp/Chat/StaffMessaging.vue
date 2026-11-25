@@ -427,10 +427,10 @@ onUnmounted(() => {
         <nav
             class="w-full md:w-64 shrink-0 flex-col bg-[var(--desk-sidebar)] text-[var(--desk-text)]"
             :class="[selectedUlid || showSlackChannel ? 'hidden' : 'flex', isSidebarCollapsed ? 'md:hidden' : 'md:flex']"
-            :aria-label="ctrans('Desk')">
+            :aria-label="ctrans('Verba')">
             <div class="flex h-[50px] shrink-0 items-center gap-x-2 border-b border-[var(--desk-border)] pl-4 pr-3">
                 <DeskIcon class="text-lg" />
-                <h1 class="flex-1 truncate text-[18px] font-black leading-none text-white">{{ ctrans("Desk") }}</h1>
+                <h1 class="flex-1 truncate text-[18px] font-black leading-none text-white">{{ ctrans("Verba") }}</h1>
                 <button
                     type="button"
                     class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[var(--desk-sidebar)] transition hover:opacity-90"
@@ -598,7 +598,7 @@ onUnmounted(() => {
             </button>
         </nav>
 
-        <nav v-if="isSidebarCollapsed" class="hidden w-14 shrink-0 flex-col items-center bg-[var(--desk-sidebar)] text-[var(--desk-text)] md:flex" :aria-label="ctrans('Desk')">
+        <nav v-if="isSidebarCollapsed" class="hidden w-14 shrink-0 flex-col items-center bg-[var(--desk-sidebar)] text-[var(--desk-text)] md:flex" :aria-label="ctrans('Verba')">
             <div class="flex h-[50px] w-full shrink-0 items-center justify-center border-b border-[var(--desk-border)]">
                 <button
                     type="button"
@@ -667,8 +667,8 @@ onUnmounted(() => {
             type="button"
             class="absolute top-1/3 z-10 hidden aspect-square w-5 -translate-x-1/2 items-center justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
-            :aria-label="isSidebarCollapsed ? ctrans('Show the Desk sidebar') : ctrans('Hide the Desk sidebar')"
-            v-tooltip="isSidebarCollapsed ? ctrans('Show the Desk sidebar') : ctrans('Hide the Desk sidebar')"
+            :aria-label="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
+            v-tooltip="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
             :aria-expanded="!isSidebarCollapsed"
             @click="toggleSidebar">
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />

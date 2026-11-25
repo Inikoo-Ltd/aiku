@@ -63,9 +63,9 @@ class ShowStaffChatConversation extends OrgAction
             'Org/HumanResources/StaffChatConversation',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($conversation, $request->route()->originalParameters()),
-                'title'       => __('Staff chat'),
+                'title'       => __('Verba'),
                 'pageHead'    => [
-                    'icon'  => ['icon' => ['fal', 'fa-comments-alt'], 'title' => __('Staff chat')],
+                    'icon'  => ['icon' => ['fal', 'fa-comments-alt'], 'title' => __('Verba')],
                     'title' => $conversation->name ?: $members,
                     'model' => $conversation->context_type ? class_basename($conversation->context_type) : __('Conversation'),
                 ],
