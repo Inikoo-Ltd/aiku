@@ -83,8 +83,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $statusOrder = array_flip(self::STATUSES);
         $sorted      = match ($active['sort']) {
-            'newest'       => $filtered->sortByDesc('created_at'),
-            'oldest'       => $filtered->sortBy('created_at'),
+            'newest'       => $filtered->sortByDesc(fn (array $ribbon) => [$this->submittedOn($ribbon) !== null, $this->submittedOn($ribbon), $ribbon['created_at']]),
+            'oldest'       => $filtered->sortBy(fn (array $ribbon) => [$this->submittedOn($ribbon) === null, $this->submittedOn($ribbon), $ribbon['created_at']]),
             'value'        => $filtered->sortByDesc(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
             'lowest_value' => $filtered->sortBy(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
             default        => $filtered->sort(function (array $a, array $b) use ($statusOrder) {
@@ -130,6 +130,23 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'per_page'  => $perPage,
             ],
         ];
+    }
+
+    /**
+     * The PO Submitted date the board shows for the order (its Day Zero), or null while it is not submitted, so the
+     * newest and oldest sorts follow that date and put orders not yet submitted last.
+     *
+     * @param  array<string, mixed>  $ribbon
+     */
+    private function submittedOn(array $ribbon): ?string
+    {
+        $submitted = collect($ribbon['segments'])->firstWhere('key', 'submitted');
+
+        if (!$submitted || !in_array($submitted['state'], ['done', 'skipped'])) {
+            return null;
+        }
+
+        return $submitted['done_at'] ?? $ribbon['created_at'];
     }
 
     /**

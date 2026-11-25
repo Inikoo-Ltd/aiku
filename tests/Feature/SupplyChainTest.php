@@ -1604,6 +1604,25 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
                 ->where('ribbons.0.lines', null)));
     $purchaseOrder->updateQuietly(['deposit_amount' => null]);
 
+    $submittedLongAgo = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $submittedLongAgo->updateQuietly([
+        'state'        => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED,
+        'submitted_at' => '2001-01-01 10:00:00',
+        'created_at'   => now()->addDay(),
+    ]);
+    $references = [$purchaseOrder->reference, $submittedLongAgo->reference];
+    $ourOrder   = fn ($ribbons) => collect($ribbons)->pluck('reference')->intersect($references)->values()->all();
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $supplier->code, 'sort' => 'oldest', 'per_page' => 100]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('ribbons', fn ($ribbons) => $ourOrder($ribbons) === [$submittedLongAgo->reference, $purchaseOrder->reference])));
+
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $supplier->code, 'sort' => 'newest', 'per_page' => 100]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('ribbons', fn ($ribbons) => $ourOrder($ribbons) === [$purchaseOrder->reference, $submittedLongAgo->reference])));
+
     $partial = $this->withHeaders([
         'X-Inertia'                   => 'true',
         'X-Inertia-Version'           => \Illuminate\Support\Facades\Vite::manifestHash('grp'),
