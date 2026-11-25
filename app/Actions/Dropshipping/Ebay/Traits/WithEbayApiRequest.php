@@ -28,6 +28,8 @@ trait WithEbayApiRequest
 
     public const int NEW_CONDITION_ID = 1000;
 
+    public const int DEFAULT_HANDLING_DAYS = 3;
+
     public const int OFFER_LOOKUP_CHUNK = 25;
 
     public const int ASPECT_VALUE_MAX_LENGTH = 65;
@@ -1060,6 +1062,7 @@ trait WithEbayApiRequest
             'access_token'   => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token'  => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
             'marketplace_id' => $marketplace,
+            'handling_days'  => (int) Arr::get($shop->settings, 'ebay.handling_days', self::DEFAULT_HANDLING_DAYS),
             'currency'       => match ($marketplace) {
                 'EBAY_ES', 'EBAY_DE' => 'EUR',
                 'EBAY_GB' => 'GBP',
@@ -2065,7 +2068,7 @@ trait WithEbayApiRequest
         $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
 
         $price           = $this->firstFilledValue([Arr::get($attributes, 'price')], 1);
-        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time')], 1);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time')], Arr::get($this->getEbayConfig(), 'handling_days'));
 
         $data = [
             "categoryTypes"   => [
@@ -2124,7 +2127,7 @@ trait WithEbayApiRequest
         $default = $this->getDefaultCarrierForMarketplace($marketplaceId);
 
         $price           = $this->firstFilledValue([Arr::get($attributes, 'price'), Arr::get($defaults, 'price')], 0);
-        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time'), Arr::get($defaults, 'max_dispatch_time')], 1);
+        $maxDispatchTime = $this->firstFilledValue([Arr::get($attributes, 'max_dispatch_time'), Arr::get($defaults, 'max_dispatch_time')], Arr::get($this->getEbayConfig(), 'handling_days'));
         $carrierCode     = $this->firstFilledValue([Arr::get($attributes, 'carrier_code'), Arr::get($defaults, 'carrier_code')], $default['carrier_code']);
         $serviceCode     = $this->firstFilledValue([Arr::get($attributes, 'service_code'), Arr::get($defaults, 'service_code')], $default['service_code']);
 
@@ -2168,6 +2171,24 @@ trait WithEbayApiRequest
         } catch (Exception $e) {
             Log::error('Edit Fulfilment Policy Error: '.$e->getMessage());
 
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function getFulfilmentPolicy(string $fulfillmentPolicyId)
+    {
+        try {
+            return $this->makeEbayRequest('get', "/sell/account/v1/fulfillment_policy/$fulfillmentPolicyId");
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function replaceFulfilmentPolicy(string $fulfillmentPolicyId, array $policy)
+    {
+        try {
+            return $this->makeEbayRequest('put', "/sell/account/v1/fulfillment_policy/$fulfillmentPolicyId", $policy);
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }

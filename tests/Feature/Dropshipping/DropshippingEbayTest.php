@@ -21,6 +21,7 @@ use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CheckEbayChannel;
 use App\Actions\Dropshipping\Ebay\CheckEbayUserAuthorized;
 use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
+use App\Actions\Dropshipping\Ebay\SetEbayHandlingDays;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrdersOnCustomerActivity;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
@@ -2149,7 +2150,7 @@ test('a freshly authorised channel gets its policies and warehouse location crea
     expect($postage['name'])->toBe('Shipping-'.$ebayUser->customerSalesChannel->slug)
         ->and($postage['marketplaceId'])->toBe('EBAY_GB')
         ->and($postage['categoryTypes'])->toBe([['name' => 'ALL_EXCLUDING_MOTORS_VEHICLES']])
-        ->and($postage['handlingTime'])->toBe(['unit' => 'DAY', 'value' => 1])
+        ->and($postage['handlingTime'])->toBe(['unit' => 'DAY', 'value' => 3])
         ->and($postage['shippingOptions'][0]['shippingServices'][0]['shippingCarrierCode'])->toBe('RoyalMail')
         ->and($postage['shippingOptions'][0]['shippingServices'][0]['shippingServiceCode'])->toBe('UK_RoyalMailNextDay')
         ->and($postage['shippingOptions'][0]['shippingServices'][0]['shippingCost'])->toBe(['currency' => 'GBP', 'value' => '1']);
@@ -3168,4 +3169,61 @@ test('an eBay order shipped from another company\'s warehouse uploads that compa
     Http::assertSent(fn (Request $request) => str_contains($request->url(), '/sell/fulfillment/v1/order/'.$order->platform_order_id.'/shipping_fulfillment')
         && $request->data()['trackingNumber'] === 'ZK484484'
         && $request->data()['shippingCarrierCode'] === 'Zasielkovna');
+});
+
+function ebayPostagePolicy(EbayUser $ebayUser, int $days, ?string $name = null): string
+{
+    return json_encode([
+        'fulfillmentPolicyId' => 'fp-1',
+        'name'                => $name ?? $ebayUser->ownFulfilmentPolicyName(),
+        'marketplaceId'       => 'EBAY_GB',
+        'categoryTypes'       => [['name' => 'ALL_EXCLUDING_MOTORS_VEHICLES']],
+        'handlingTime'        => ['unit' => 'DAY', 'value' => $days],
+        'shippingOptions'     => [['costType' => 'FLAT_RATE', 'optionType' => 'DOMESTIC', 'shippingServices' => [['shippingServiceCode' => 'UK_RoyalMailSecondClassStandard', 'shippingCost' => ['currency' => 'GBP', 'value' => '1.0']]]]],
+        'pickupDropOff'       => new stdClass(),
+    ]);
+}
+
+test('our postage policy still on the days we gave it moves to the new handling days, the rest of the policy as eBay has it', function () {
+    $ebayUser = ebayChannel($this);
+    fakeEbay($this, [
+        '/sell/account/v1/fulfillment_policy/fp-1' => fn (Request $request) => $request->method() === 'PUT' ? Http::response(['fulfillmentPolicyId' => 'fp-1']) : Http::response(ebayPostagePolicy($ebayUser, 1)),
+    ]);
+
+    $outcome = SetEbayHandlingDays::make()->handle($ebayUser, 3, 3);
+    $body    = json_decode(sentEbayRequest('PUT', '/sell/account/v1/fulfillment_policy/fp-1')->body(), true);
+
+    expect($outcome)->toBe('updated')
+        ->and($body['handlingTime'])->toBe(['unit' => 'DAY', 'value' => 3])
+        ->and($body['shippingOptions'][0]['shippingServices'][0]['shippingCost']['value'])->toBe('1.0')
+        ->and($body)->not->toHaveKeys(['fulfillmentPolicyId', 'pickupDropOff'])
+        ->and(Arr::get($ebayUser->refresh()->settings, 'shipping.max_dispatch_time'))->toBe('3');
+});
+
+test('a postage policy the seller chose or changed in eBay keeps its handling days', function (?string $name, int $days) {
+    $ebayUser = ebayChannel($this);
+    fakeEbay($this, [
+        '/sell/account/v1/fulfillment_policy/fp-1' => fn () => Http::response(ebayPostagePolicy($ebayUser, $days, $name)),
+    ]);
+
+    expect(SetEbayHandlingDays::make()->handle($ebayUser, 5, 3))->toBe($name ? 'seller_policy' : 'seller_changed');
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT');
+})->with([
+    'seller policy'          => ['My postage', 1],
+    'ours, days changed'     => [null, 2],
+]);
+
+test('a new postage policy takes the shop handling days', function () {
+    $ebayUser = ebayChannel($this);
+    $settings = $this->shop->settings;
+    data_set($settings, 'ebay.handling_days', 4);
+    $this->shop->update(['settings' => $settings]);
+    fakeEbay($this, [
+        '/sell/account/v1/fulfillment_policy' => ['fulfillmentPolicyId' => 'fp-new'],
+        '/metadata'                           => [],
+    ]);
+
+    $ebayUser->refresh()->createFulfilmentPolicy([]);
+
+    expect(json_decode(sentEbayRequest('POST', '/sell/account/v1/fulfillment_policy')->body(), true)['handlingTime']['value'])->toBe(4);
 });
