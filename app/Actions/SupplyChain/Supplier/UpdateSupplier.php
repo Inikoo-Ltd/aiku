@@ -70,11 +70,10 @@ class UpdateSupplier extends OrgAction
 
     public function handle(Supplier $supplier, array $modelData): Supplier
     {
-        $leavingContainer = Arr::exists($modelData, 'delivery_type')
-            && Arr::get($modelData, 'delivery_type') !== 'container';
+        $leavingBillOfLading = $this->isLeavingBillOfLadingDelivery($modelData);
 
-        if ($leavingContainer) {
-            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        if ($leavingBillOfLading) {
+            Arr::forget($modelData, self::BILL_OF_LADING_FIELDS);
         }
 
         if (Arr::has($modelData, 'agent_id')) {
@@ -131,8 +130,8 @@ class UpdateSupplier extends OrgAction
             $this->hydrateSupplierProductsOrgStockCosts($supplier);
         }
 
-        if ($leavingContainer) {
-            $supplier->update(['data' => Arr::except($supplier->data, self::CONTAINER_ONLY_FIELDS)]);
+        if ($leavingBillOfLading) {
+            $supplier->update(['data' => Arr::except($supplier->data, self::BILL_OF_LADING_FIELDS)]);
         }
 
         return $supplier;

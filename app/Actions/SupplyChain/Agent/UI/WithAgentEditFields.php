@@ -4,6 +4,7 @@ namespace App\Actions\SupplyChain\Agent\UI;
 
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Http\Resources\Helpers\AddressResource;
@@ -89,10 +90,7 @@ trait WithAgentEditFields
                         'type'        => 'select',
                         'label'       => __('Delivery type'),
                         'placeholder' => __('Select a delivery type'),
-                        'options'     => [
-                            ['value' => 'parcel', 'label' => __('Parcels')],
-                            ['value' => 'container', 'label' => __('Container')],
-                        ],
+                        'options'     => StockDeliveryTypeEnum::selectOptions(),
                         'value'       => Arr::get($agent->data, 'delivery_type'),
                         'mode'        => 'single'
                     ],

@@ -2,6 +2,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Models\Helpers\Country;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -17,7 +18,7 @@ trait WithSupplierInfo
         $originCountryId = Arr::get($supplier->settings, 'default_product_country_origin');
 
         return array_filter([
-            'delivery_type'           => Arr::get($supplier->data, 'delivery_type'),
+            'delivery_type'           => StockDeliveryTypeEnum::labelFor(Arr::get($supplier->data, 'delivery_type')),
             'delivery_time'           => Arr::get($supplier->data, 'delivery_time'),
             'production_waiting_time' => Arr::get($supplier->data, 'production_waiting_time'),
             'incoterm'                => Arr::get($supplier->data, 'incoterm'),

@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
@@ -208,10 +209,7 @@ class CreateSupplier extends OrgAction
                         'label'       => __('Delivery Type'),
                         'value'       => null,
                         'mode'        => 'single',
-                        'options'     => [
-                            ['label' => __('Container'), 'value' => 'container'],
-                            ['label' => __('Parcel'), 'value' => 'parcel'],
-                        ],
+                        'options'     => StockDeliveryTypeEnum::selectOptions(),
                     ],
                 ],
             ],
@@ -225,19 +223,19 @@ class CreateSupplier extends OrgAction
                         'value'   => null,
                         'mode'    => 'single',
                         'options' => array_map(fn ($code) => ['label' => $code, 'value' => $code], self::INCOTERMS),
-                        'showIf'  => ['field' => 'delivery_type', 'value' => 'container'],
+                        'showIf'  => ['field' => 'delivery_type', 'values' => StockDeliveryTypeEnum::valuesSailingWithBillOfLading()],
                     ],
                     'port_of_export' => [
                         'type'   => 'input',
                         'label'  => __('Port of Export'),
                         'value'  => '',
-                        'showIf' => ['field' => 'delivery_type', 'value' => 'container'],
+                        'showIf' => ['field' => 'delivery_type', 'values' => StockDeliveryTypeEnum::valuesSailingWithBillOfLading()],
                     ],
                     'port_of_import' => [
                         'type'   => 'input',
                         'label'  => __('Port of Import'),
                         'value'  => '',
-                        'showIf' => ['field' => 'delivery_type', 'value' => 'container'],
+                        'showIf' => ['field' => 'delivery_type', 'values' => StockDeliveryTypeEnum::valuesSailingWithBillOfLading()],
                     ],
                 ],
             ],

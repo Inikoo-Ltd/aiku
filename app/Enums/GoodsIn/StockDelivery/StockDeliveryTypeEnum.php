@@ -65,4 +65,17 @@ enum StockDeliveryTypeEnum: string
     {
         return in_array($this, [self::CONTAINER, self::LCL]);
     }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function valuesSailingWithBillOfLading(): array
+    {
+        return collect(self::cases())->filter(fn (self $type) => $type->sailsWithBillOfLading())->map(fn (self $type) => $type->value)->values()->all();
+    }
+
+    public static function labelFor(?string $value): ?string
+    {
+        return $value === null ? null : (self::labels()[$value] ?? $value);
+    }
 }

@@ -311,7 +311,7 @@ const isShownByCondition = (fieldData: any) => {
     const sourceField = fieldForms.find((fieldForm: any) => fieldForm?.form && fieldData.showIf.field in fieldForm.form)
     const currentValue = sourceField ? sourceField.form[fieldData.showIf.field] : savedFieldValue(fieldData.showIf.field)
 
-    return currentValue === fieldData.showIf.value
+    return Array.isArray(fieldData.showIf.values) ? fieldData.showIf.values.includes(currentValue) : currentValue === fieldData.showIf.value
 }
 
 const updateViewportWidth = () => {

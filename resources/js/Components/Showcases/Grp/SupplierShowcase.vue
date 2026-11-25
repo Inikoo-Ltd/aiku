@@ -250,7 +250,7 @@ const supplierInfo = computed(() => {
             key: 'delivery_type',
             label: ctrans('Delivery type'),
             icon: 'fal fa-truck-container',
-            value: info.delivery_type === 'container' ? ctrans('Container') : info.delivery_type === 'parcel' ? ctrans('Parcels') : info.delivery_type
+            value: info.delivery_type
         },
         {
             key: 'products_origin',

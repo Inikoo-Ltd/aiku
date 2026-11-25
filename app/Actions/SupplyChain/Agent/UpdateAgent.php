@@ -45,11 +45,10 @@ class UpdateAgent extends OrgAction
 
     public function handle(Agent $agent, array $modelData): Agent
     {
-        $leavingContainer = Arr::exists($modelData, 'delivery_type')
-            && Arr::get($modelData, 'delivery_type') !== 'container';
+        $leavingBillOfLading = $this->isLeavingBillOfLadingDelivery($modelData);
 
-        if ($leavingContainer) {
-            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        if ($leavingBillOfLading) {
+            Arr::forget($modelData, self::BILL_OF_LADING_FIELDS);
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);
@@ -94,8 +93,8 @@ class UpdateAgent extends OrgAction
             'settings',
         ]), ['data', 'settings']);
 
-        if ($leavingContainer) {
-            $agent->update(['data' => Arr::except($agent->data, self::CONTAINER_ONLY_FIELDS)]);
+        if ($leavingBillOfLading) {
+            $agent->update(['data' => Arr::except($agent->data, self::BILL_OF_LADING_FIELDS)]);
         }
 
         if ($agent->wasChanged('settings')) {

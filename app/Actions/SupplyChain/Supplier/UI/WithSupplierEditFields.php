@@ -9,6 +9,7 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -135,10 +136,7 @@ trait WithSupplierEditFields
                         'type'        => 'select',
                         'label'       => __('Delivery type'),
                         'placeholder' => __('Select a delivery type'),
-                        'options'     => [
-                            ['value' => 'parcel', 'label' => __('Parcels')],
-                            ['value' => 'container', 'label' => __('Container')],
-                        ],
+                        'options'     => StockDeliveryTypeEnum::selectOptions(),
                         'value'       => Arr::get($supplier->data, 'delivery_type'),
                         'mode'        => 'single'
                     ],

@@ -17,6 +17,7 @@ use App\Actions\SupplyChain\SupplierProduct\CopySupplierProductsToSupplier;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
@@ -79,8 +80,8 @@ class StoreSupplier extends OrgAction
         $copiedOrgSupplierProductIds = Arr::pull($modelData, 'org_supplier_products', []);
         $copiedSupplierProductIds    = Arr::pull($modelData, 'supplier_products', []);
 
-        if (Arr::get($modelData, 'delivery_type') !== 'container') {
-            Arr::forget($modelData, self::CONTAINER_ONLY_FIELDS);
+        if (!StockDeliveryTypeEnum::tryFrom((string) Arr::get($modelData, 'delivery_type'))?->sailsWithBillOfLading()) {
+            Arr::forget($modelData, self::BILL_OF_LADING_FIELDS);
         }
 
         $modelData = $this->pullSupplierJsonColumns($modelData);

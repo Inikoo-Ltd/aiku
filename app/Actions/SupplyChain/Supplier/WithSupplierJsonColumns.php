@@ -9,6 +9,9 @@
 namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\Traits\WithPullIntoJsonColumn;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 
 trait WithSupplierJsonColumns
 {
@@ -24,7 +27,7 @@ trait WithSupplierJsonColumns
         'extra_emails',
     ];
 
-    private const CONTAINER_ONLY_FIELDS = [
+    private const BILL_OF_LADING_FIELDS = [
         'incoterm',
         'port_of_export',
         'port_of_import',
@@ -57,12 +60,21 @@ trait WithSupplierJsonColumns
     }
 
     /**
+     * @param array<string, mixed> $modelData
+     */
+    protected function isLeavingBillOfLadingDelivery(array $modelData): bool
+    {
+        return Arr::exists($modelData, 'delivery_type')
+            && !StockDeliveryTypeEnum::tryFrom((string) Arr::get($modelData, 'delivery_type'))?->sailsWithBillOfLading();
+    }
+
+    /**
      * @return array<string, array<int, mixed>>
      */
     protected function supplierJsonFieldRules(): array
     {
         return [
-            'delivery_type'                   => ['sometimes', 'nullable', 'string', 'in:parcel,container'],
+            'delivery_type'                   => ['sometimes', 'nullable', Rule::enum(StockDeliveryTypeEnum::class)],
             'incoterm'                        => ['sometimes', 'nullable', 'string', 'max:8'],
             'port_of_export'                  => ['sometimes', 'nullable', 'string', 'max:255'],
             'port_of_import'                  => ['sometimes', 'nullable', 'string', 'max:255'],

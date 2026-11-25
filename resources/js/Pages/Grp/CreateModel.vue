@@ -78,7 +78,9 @@ const isFieldVisible = (fieldData: any) => {
         return true
     }
 
-    return form[fieldData.showIf.field] === fieldData.showIf.value
+    const currentValue = form[fieldData.showIf.field]
+
+    return Array.isArray(fieldData.showIf.values) ? fieldData.showIf.values.includes(currentValue) : currentValue === fieldData.showIf.value
 }
 
 const isFieldRequired = (fieldData: any) => {
