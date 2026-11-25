@@ -9,6 +9,7 @@
 
 namespace App\Actions\SupplyChain\SupplierShareLink;
 
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalPurchaseOrders;
@@ -43,12 +44,12 @@ class UpdateSupplierPortalPurchaseOrderDeposit
 
     public const int REQUEST_PERCENTAGE = 30;
 
-    public function handle(Supplier $supplier, int $purchaseOrderId, string $choice, ?int $supplierPortalContactId = null): PurchaseOrder
+    public function handle(Supplier $supplier, int $purchaseOrderId, string $choice, ?int $supplierPortalContactId = null, ?float $percentage = null): PurchaseOrder
     {
         IndexSupplierPortalPurchaseOrders::make()->sent($supplier)->findOrFail($purchaseOrderId);
 
         $isNewRequest = false;
-        $purchaseOrder = DB::transaction(function () use ($supplier, $purchaseOrderId, $choice, $supplierPortalContactId, &$isNewRequest) {
+        $purchaseOrder = DB::transaction(function () use ($supplier, $purchaseOrderId, $choice, $supplierPortalContactId, $percentage, &$isNewRequest) {
             /** @var PurchaseOrder $purchaseOrder */
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrderId)->lockForUpdate()->firstOrFail();
 
@@ -73,10 +74,11 @@ class UpdateSupplierPortalPurchaseOrderDeposit
                 throw ValidationException::withMessages(['deposit' => __('Please accept Supplier Agreement before submitting deposit request.')]);
             }
 
+            $percentage                       = $percentage ?? self::requestPercentage($purchaseOrder);
             $data                             = $purchaseOrder->data ?? [];
             $data['supplier_deposit_request'] = [
-                'percentage'                 => self::REQUEST_PERCENTAGE,
-                'amount'                     => $deposit['request_amount'],
+                'percentage'                 => $percentage,
+                'amount'                     => self::requestAmount($purchaseOrder, $percentage),
                 'requested_at'               => now()->toIso8601String(),
                 'supplier_portal_contact_id' => $supplierPortalContactId,
             ];
@@ -100,9 +102,14 @@ class UpdateSupplierPortalPurchaseOrderDeposit
         return $agreement !== null && $agreement['status'] !== SupplierAgreementStatusEnum::ACCEPTED->value;
     }
 
-    public static function requestAmount(PurchaseOrder $purchaseOrder): float
+    public static function requestPercentage(PurchaseOrder $purchaseOrder): float
     {
-        return round((float) $purchaseOrder->cost_items * self::REQUEST_PERCENTAGE / 100, 2);
+        return SyncPurchaseOrderDepositPaid::defaultDepositPercentage($purchaseOrder) ?? self::REQUEST_PERCENTAGE;
+    }
+
+    public static function requestAmount(PurchaseOrder $purchaseOrder, ?float $percentage = null): float
+    {
+        return round((float) $purchaseOrder->cost_items * ($percentage ?? self::requestPercentage($purchaseOrder)) / 100, 2);
     }
 
     public function asController(string $token, int $purchaseOrder, Request $request): JsonResponse
@@ -111,10 +118,13 @@ class UpdateSupplierPortalPurchaseOrderDeposit
         abort_if($link->needsCode(), 403);
 
         $validated = Validator::make($request->all(), [
-            'choice' => ['required', Rule::in([self::NOT_NEEDED, self::REQUEST])],
+            'choice'     => ['required', Rule::in([self::NOT_NEEDED, self::REQUEST])],
+            'percentage' => ['nullable', 'numeric', 'gt:0', 'max:100'],
         ])->validate();
 
-        $this->handle($link->supplier, $purchaseOrder, $validated['choice'], $link->supplier_portal_contact_id);
+        $percentage = $validated['choice'] === self::REQUEST && isset($validated['percentage']) ? round((float) $validated['percentage'], 2) : null;
+
+        $this->handle($link->supplier, $purchaseOrder, $validated['choice'], $link->supplier_portal_contact_id, $percentage);
 
         return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($link->supplier, $purchaseOrder, $token));
     }

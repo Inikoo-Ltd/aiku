@@ -41,6 +41,7 @@ export interface PurchaseOrderPaymentsData {
 	total: number
 	paid: number
 	left: number
+	default_deposit?: { percentage: number; amount: number } | null
 	balance_awaits_qc?: boolean
 	paid_at: string | null
 	deposits: DepositPayment[]
@@ -93,6 +94,8 @@ const paymentAddedTooltip = (payment: DepositPayment) => {
 }
 
 const isFullyPaid = computed(() => props.payments.left <= 0)
+const defaultDeposit = computed(() => props.payments.default_deposit ?? null)
+const formatPercentage = (percentage: number) => `${Number(percentage.toFixed(2))}%`
 const isMarkedPaidWithoutDeposits = computed(() => !!props.payments.paid_at && !props.payments.deposits.length)
 const isNextPaymentBalance = computed(() => props.payments.deposits.length > 0)
 const payButtonLabel = computed(() => (isNextPaymentBalance.value ? ctrans("Pay balance") : ctrans("Pay deposit")))
@@ -150,6 +153,7 @@ const openPayDialog = () => {
 	isCountedAmountTyped.value = false
 	percent.value = null
 	payError.value = null
+	if (defaultDeposit.value) setAmount(Math.min(defaultDeposit.value.amount, props.payments.left))
 	isPayDialogOpen.value = true
 }
 
@@ -273,6 +277,10 @@ const undoPayment = () => {
 		<div class="flex items-baseline justify-between gap-2 font-medium">
 			<span class="text-gray-600">{{ ctrans("Left to pay") }}</span>
 			<span class="tabular-nums" :class="isFullyPaid ? 'text-green-600' : 'text-amber-600'">{{ money(payments.left) }}</span>
+		</div>
+		<div v-if="defaultDeposit" class="flex items-baseline justify-between gap-2" v-tooltip="ctrans('This supplier usually asks for a deposit of :percentage of the total to pay', { percentage: formatPercentage(defaultDeposit.percentage) })">
+			<span class="text-gray-500">{{ ctrans("Default deposit (:percentage)", { percentage: formatPercentage(defaultDeposit.percentage) }) }}</span>
+			<span class="tabular-nums text-gray-700">{{ money(defaultDeposit.amount) }}</span>
 		</div>
 
 		<div v-if="isMarkedPaidWithoutDeposits" class="flex items-center gap-1 text-gray-400">

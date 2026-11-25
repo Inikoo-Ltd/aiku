@@ -290,7 +290,7 @@ class ShowSupplierPortalPurchaseOrder
      * What the supplier answered at the deposit stage. It chooses once, while the order is open, nothing is paid, no
      * deposit amount is set and no later stage is reached: no deposit needed, or a deposit of a fixed share.
      *
-     * @return array{choosable: bool, not_needed: bool, request: array{percentage: int, amount: float, requested_at: string}|null, request_percentage: int, request_amount: float, recipients: list<array{name: string, organisation: string}>}
+     * @return array{choosable: bool, not_needed: bool, request: array{percentage: int|float, amount: float, requested_at: string}|null, request_percentage: float, request_amount: float, order_amount: float, recipients: list<array{name: string, organisation: string}>}
      */
     public function deposit(PurchaseOrder $purchaseOrder, Supplier $supplier): array
     {
@@ -308,8 +308,9 @@ class ShowSupplierPortalPurchaseOrder
             'not_needed'         => $notNeeded,
             'not_needed_by'      => $notNeeded ? Arr::get($purchaseOrder->data ?? [], 'deposit_not_required_by') : null,
             'request'            => $request ? Arr::only($request, ['percentage', 'amount', 'requested_at']) : null,
-            'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::REQUEST_PERCENTAGE,
+            'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::requestPercentage($purchaseOrder),
             'request_amount'     => UpdateSupplierPortalPurchaseOrderDeposit::requestAmount($purchaseOrder),
+            'order_amount'       => round((float) $purchaseOrder->cost_items, 2),
             'recipients'         => $choosable ? NotifyPurchasingOfSupplierDepositRequest::make()->emailRecipients($purchaseOrder) : [],
             'agreement_missing'  => $choosable && UpdateSupplierPortalPurchaseOrderDeposit::isAgreementMissing($supplier),
         ];

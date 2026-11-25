@@ -4,6 +4,8 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
+use App\Models\SupplyChain\Supplier;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -59,5 +61,27 @@ class SyncPurchaseOrderDepositPaid
     public static function leftToPay(PurchaseOrder $purchaseOrder): float
     {
         return max(0, round(self::totalToPay($purchaseOrder) - self::paidAmount($purchaseOrder), 2));
+    }
+
+    /**
+     * The share of the order the supplier usually asks as a deposit (Sheikh: 40%), offered as the first payment.
+     * Empty or 0 means none is set.
+     */
+    public static function defaultDepositPercentage(PurchaseOrder $purchaseOrder): ?float
+    {
+        if (!$purchaseOrder->supplier_id) {
+            return null;
+        }
+
+        $percentage = Arr::get(Supplier::withTrashed()->whereKey($purchaseOrder->supplier_id)->value('settings') ?? [], 'default_deposit_percentage');
+
+        return $percentage !== null && (float) $percentage > 0 ? min(100, (float) $percentage) : null;
+    }
+
+    public static function defaultDeposit(PurchaseOrder $purchaseOrder): ?float
+    {
+        $percentage = self::defaultDepositPercentage($purchaseOrder);
+
+        return $percentage === null ? null : round(self::totalToPay($purchaseOrder) * $percentage / 100, 2);
     }
 }

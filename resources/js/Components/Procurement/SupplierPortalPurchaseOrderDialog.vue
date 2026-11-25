@@ -14,6 +14,7 @@ import DatePicker from "primevue/datepicker"
 import Select from "primevue/select"
 import FileUpload from "primevue/fileupload"
 import Textarea from "primevue/textarea"
+import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import type { PDRNotes } from "@/types/Pallet"
@@ -90,6 +91,7 @@ interface PurchaseOrderDetail {
 		request: { percentage: number; amount: number; requested_at: string } | null
 		request_percentage: number
 		request_amount: number
+		order_amount: number
 		recipients: { name: string; organisation: string }[]
 		agreement_missing: boolean
 	}
@@ -420,8 +422,13 @@ const depositChoice = ref<DepositChoice | null>(null)
 const isSavingDeposit = ref(false)
 const depositError = ref<string | null>(null)
 
+const requestPercentage = ref<number | null>(null)
+const requestAmount = computed(() => (detail.value && requestPercentage.value ? Math.round(detail.value.deposit.order_amount * requestPercentage.value) / 100 : 0))
+const isRequestPercentageValid = computed(() => !!requestPercentage.value && requestPercentage.value > 0 && requestPercentage.value <= 100)
+
 const chooseDeposit = (choice: DepositChoice) => {
 	depositError.value = null
+	requestPercentage.value = detail.value?.deposit.request_percentage ?? null
 	depositChoice.value = choice
 }
 
@@ -443,7 +450,10 @@ const saveDeposit = async () => {
 	isSavingDeposit.value = true
 	depositError.value = null
 	try {
-		const { data } = await axios.post<PurchaseOrderDetail>(props.depositRoute.replace(/\/0\/deposit$/, `/${id}/deposit`), { choice: depositChoice.value })
+		const { data } = await axios.post<PurchaseOrderDetail>(props.depositRoute.replace(/\/0\/deposit$/, `/${id}/deposit`), {
+			choice: depositChoice.value,
+			percentage: depositChoice.value === "request" ? requestPercentage.value : null,
+		})
 		if (purchaseOrderId.value === id) {
 			detail.value = data
 		}
@@ -667,7 +677,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								<Button type="tertiary" size="xs" full :label="ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
 									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
 								</Button>
-								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
+								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit')" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
 									<template #icon><FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
 								</Button>
 								<p v-if="detail.deposit.agreement_missing" class="flex items-start gap-1 text-amber-700">
@@ -931,8 +941,15 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 	<Dialog v-model:visible="isConfirmingDeposit" modal :header="depositChoice === 'request' ? ctrans('Request deposit') : ctrans('No deposit needed')" :style="{ width: '26rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div v-if="detail" class="space-y-3 text-sm">
 			<p v-if="depositChoice === 'request'" class="text-gray-700">
-				{{ ctrans("Ask :organisation for a deposit of :amount (:percentage% of the order) before you start production? We email the buyer and the agent.", { organisation: detail.order.organisation_name, amount: money(detail.deposit.request_amount), percentage: String(detail.deposit.request_percentage) }) }}
+				{{ ctrans("Ask :organisation for a deposit of :amount (:percentage% of the order) before you start production? We email the buyer and the agent.", { organisation: detail.order.organisation_name, amount: money(requestAmount), percentage: String(requestPercentage ?? 0) }) }}
 			</p>
+			<label v-if="depositChoice === 'request'" class="block">
+				<span class="text-xs font-semibold text-gray-500">{{ ctrans("Deposit (% of the order)") }}</span>
+				<div class="mt-1 flex items-center gap-2">
+					<InputNumber v-model="requestPercentage" suffix="%" :min="1" :max="100" :minFractionDigits="0" :maxFractionDigits="2" class="w-32" :pt="{ pcInputText: { root: { class: '!w-full focus:!border-[var(--app-accent)]' } } }" />
+					<span class="tabular-nums text-gray-700">{{ money(requestAmount) }}</span>
+				</div>
+			</label>
 			<div v-if="depositChoice === 'request'">
 				<div class="mb-1 text-xs font-semibold text-gray-500">{{ ctrans("Email goes to") }}</div>
 				<ul v-if="detail.deposit.recipients.length" class="max-h-48 divide-y divide-gray-100 overflow-y-auto rounded border border-gray-200 text-xs">
@@ -951,7 +968,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isConfirmingDeposit = false">
 					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="primary" full :label="depositChoice === 'request' ? ctrans('Send request') : ctrans('Confirm')" :loading="isSavingDeposit" @click="saveDeposit">
+				<Button type="primary" full :label="depositChoice === 'request' ? ctrans('Send request') : ctrans('Confirm')" :disabled="depositChoice === 'request' && !isRequestPercentageValid" :loading="isSavingDeposit" @click="saveDeposit">
 					<template #icon><FontAwesomeIcon :icon="depositChoice === 'request' ? 'fal fa-hand-holding-usd' : 'fal fa-check'" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>

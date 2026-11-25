@@ -1412,6 +1412,10 @@ class ShowPurchaseOrder extends OrgAction
             'total'         => $totalToPay,
             'paid'          => $paid,
             'left'          => max(0, round($totalToPay - $paid, 2)),
+            'default_deposit' => $paid > 0 || ($defaultDepositPercentage = SyncPurchaseOrderDepositPaid::defaultDepositPercentage($purchaseOrder)) === null ? null : [
+                'percentage' => $defaultDepositPercentage,
+                'amount'     => SyncPurchaseOrderDepositPaid::defaultDeposit($purchaseOrder),
+            ],
             'balance_awaits_qc' => ConfirmPurchaseOrderPayment::balanceAwaitsQc($purchaseOrder),
             'paid_at'       => $purchaseOrder->deposit_paid_at,
             'deposits'      => $purchaseOrder->depositPayments()

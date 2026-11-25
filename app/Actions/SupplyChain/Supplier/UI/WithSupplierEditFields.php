@@ -158,6 +158,14 @@ trait WithSupplierEditFields
                         'label' => __('Payment terms'),
                         'value' => Arr::get($supplier->settings, 'payment_terms'),
                     ],
+                    'default_deposit_percentage' => [
+                        'type'        => 'input',
+                        'label'       => __('Default deposit (%)'),
+                        'placeholder' => __('Not set'),
+                        'information' => __('Share of the price of the products this supplier usually asks for as a deposit on a purchase order. It fills in the deposit payment and the deposit the supplier requests from its portal, and can still be changed.'),
+                        'value'       => Arr::get($supplier->settings, 'default_deposit_percentage'),
+                        'options'     => ['inputType' => 'number'],
+                    ],
                     'minimum_order' => [
                         'type'    => 'input',
                         'label'   => __('Minimum order'),
