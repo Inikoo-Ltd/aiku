@@ -66,7 +66,7 @@ const props = defineProps<{
 }>()
 
 const VERBA = "#7c5cff"
-const SLACK = "#9ca3af"
+const SLACK = "#e8a33d"
 const ANSWERED = "#14c2a3"
 const MISSED = "#ef4444"
 
@@ -165,17 +165,16 @@ const tableTooltip = ({ chart, tooltip }: TooltipContext) => {
 	element.style.opacity = "1"
 }
 
-const line = (label: string, data: number[], colour: string, fill = false) => ({
+const line = (label: string, data: number[], colour: string) => ({
 	label,
 	data,
 	borderColor: colour,
-	backgroundColor: `${colour}26`,
-	borderWidth: 2,
-	fill,
-	cubicInterpolationMode: "monotone",
-	pointRadius: 0,
-	pointHoverRadius: 3,
-	pointHoverBackgroundColor: colour,
+	backgroundColor: colour,
+	borderWidth: 1.5,
+	fill: false,
+	tension: 0,
+	pointRadius: data.length > 40 ? 0 : 2.5,
+	pointHoverRadius: 4,
 })
 
 const chartOptions = {
@@ -194,15 +193,15 @@ const chartOptions = {
 
 const messagesChart = computed(() => ({
 	labels: labels.value,
-	datasets: [line(ctrans("Verba"), props.report.series.messages, VERBA, true), line(ctrans("Slack"), props.report.series.slack_messages, SLACK)],
+	datasets: [line(ctrans("Verba"), props.report.series.messages, VERBA), line(ctrans("Slack"), props.report.series.slack_messages, SLACK)],
 }))
 const peopleChart = computed(() => ({
 	labels: labels.value,
-	datasets: [line(ctrans("Verba"), props.report.series.people, VERBA, true), line(ctrans("Slack"), props.report.series.slack_people, SLACK)],
+	datasets: [line(ctrans("Verba"), props.report.series.people, VERBA), line(ctrans("Slack"), props.report.series.slack_people, SLACK)],
 }))
 const callsChart = computed(() => ({
 	labels: labels.value,
-	datasets: [line(ctrans("Answered"), props.report.series.answered, ANSWERED, true), line(ctrans("Missed or declined"), props.report.series.missed, MISSED), line(ctrans("Minutes talking"), props.report.series.talk_minutes, VERBA)],
+	datasets: [line(ctrans("Answered"), props.report.series.answered, ANSWERED), line(ctrans("Missed or declined"), props.report.series.missed, MISSED), line(ctrans("Minutes talking"), props.report.series.talk_minutes, VERBA)],
 }))
 
 const callFacts = computed(() => [
