@@ -752,9 +752,12 @@ test('a customer who says it buys as a private person is not asked for its DIČ 
         ->and($scope->handle($this->invoice->fresh()))->toBeFalse()
         ->and($customer->company_name)->toBe('Môj obchod');
 
-    $customer->update(['peppol_id' => '0245:2021344160']);
-    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer->fresh()))->toBeTrue()
-        ->and($scope->handle($this->invoice->fresh()))->toBeTrue();
+    expect(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::showsDicField($customer))->toBeTrue();
+    \App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::make()->handle($customer, ['peppol_dic' => '2021344160']);
+    expect($customer->fresh()->peppol_id)->toBe('0245:2021344160')
+        ->and(\App\Actions\Retina\SysAdmin\UpdateRetinaCustomer::needsPeppolDic($customer->fresh()))->toBeTrue()
+        ->and($scope->handle($this->invoice->fresh()))->toBeTrue()
+        ->and(\Illuminate\Support\Arr::get($customer->fresh()->data, 'buys_as_private_person'))->not->toBeNull();
 
     $customer->fresh()->update(['peppol_id' => null, 'data' => []]);
     $this->organisation->update(['country_id' => $originalCountryId, 'settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);

@@ -213,7 +213,7 @@ class EditCustomer extends OrgAction
             ]
         ];
 
-        if (UpdateRetinaCustomer::needsPeppolDic($customer)) {
+        if (UpdateRetinaCustomer::showsDicField($customer)) {
             $identification['fields']['peppol_dic'] = [
                 'type'        => 'input',
                 'label'       => __('DIČ'),

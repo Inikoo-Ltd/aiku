@@ -37,14 +37,12 @@ class UpdateRetinaCustomer extends RetinaAction
     public function handle(Customer $customer, array $modelData): Customer
     {
         if (Arr::pull($modelData, 'buys_as_private_person')) {
-            $data = $customer->data ?? [];
-            data_set($data, 'buys_as_private_person', now()->toIso8601String());
-            $modelData['data'] = $data;
+            $modelData['data'] = ['buys_as_private_person' => now()->toIso8601String()];
         }
 
         if (Arr::has($modelData, 'peppol_dic')) {
             $dic = Arr::pull($modelData, 'peppol_dic');
-            if (self::needsPeppolDic($customer)) {
+            if (self::showsDicField($customer)) {
                 $modelData['peppol_id'] = $dic ? BuildUblInvoice::PEPPOL_SCHEME.':'.$dic : null;
             }
         }
@@ -66,6 +64,15 @@ class UpdateRetinaCustomer extends RetinaAction
             && $customer->address?->country_code === 'SK'
             && $customer->organisation->country?->code === 'SK'
             && (trim((string)$customer->company_name) !== '' || strlen(preg_replace('/\D/', '', (string)$customer->identity_document_number)) >= 8);
+    }
+
+    /**
+     * Where the DIČ field shows (account page, back office): customers who need a DIČ, and those who said they buy as a
+     * private person, so one that clicked it by mistake can still give its DIČ, which puts it back on e-invoices.
+     */
+    public static function showsDicField(Customer $customer): bool
+    {
+        return self::needsPeppolDic($customer) || (self::buysAsPrivatePerson($customer) && !$customer->peppol_id);
     }
 
     /**

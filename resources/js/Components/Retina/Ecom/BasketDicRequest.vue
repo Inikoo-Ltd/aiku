@@ -27,8 +27,16 @@ const dic = ref(props.request.dic ?? "")
 const error = ref<string | null>(null)
 const isSaving = ref(false)
 
+const laterUntil = () => {
+	try {
+		return Number(localStorage.getItem(laterKey) ?? 0)
+	} catch {
+		return 0
+	}
+}
+
 onMounted(() => {
-	isVisible.value = Number(localStorage.getItem(laterKey) ?? 0) < Date.now()
+	isVisible.value = laterUntil() < Date.now()
 })
 
 const isSlovakDic = (value: string) => /^[1-9]\d{9}$/.test(value) && Number(value) % 11 === 0
@@ -54,8 +62,12 @@ const save = () => {
 }
 
 const later = () => {
-	localStorage.setItem(laterKey, String(Date.now() + LATER_DAYS * 24 * 3600 * 1000))
 	isVisible.value = false
+	try {
+		localStorage.setItem(laterKey, String(Date.now() + LATER_DAYS * 24 * 3600 * 1000))
+	} catch {
+		return
+	}
 }
 </script>
 
@@ -75,7 +87,7 @@ const later = () => {
 						id="basket-dic"
 						v-model="dic"
 						inputmode="numeric"
-						maxlength="12"
+						maxlength="16"
 						placeholder="2120123456"
 						class="w-40"
 						@update:model-value="error = null"

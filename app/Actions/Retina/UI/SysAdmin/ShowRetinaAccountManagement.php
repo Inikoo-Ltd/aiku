@@ -158,7 +158,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ],
                                     'peppol_dic' => [
                                         'type'        => 'input',
-                                        'hidden'      => !UpdateRetinaCustomer::needsPeppolDic($customer),
+                                        'hidden'      => !UpdateRetinaCustomer::showsDicField($customer),
                                         'label'       => __('DIČ'),
                                         'information' => __('Your 10-digit tax identification number (DIČ). We send your invoices to it as Peppol e-invoices, so please double-check it: a wrong number sends your invoices to another company. With a valid Slovak VAT number, the DIČ in it is used.'),
                                         'value'       => UpdateRetinaCustomer::dicFor($customer),
