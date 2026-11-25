@@ -26832,7 +26832,7 @@
     "DIČ differs": "DIČ differs",
     "The DIČ is not the one the register has for its IČO": "The DIČ is not the one the register has for its IČO",
     "No DIČ": "No DIČ",
-    "No DIČ and nothing to look it up by: ask the customer": "No DIČ and nothing to look it up by: ask the customer",
+    "No DIČ and no IČO or valid VAT number to look it up by: ask the customer": "No DIČ and no IČO or valid VAT number to look it up by: ask the customer",
     "Slovak e-invoices: DIČ of business customers": "Slovak e-invoices: DIČ of business customers",
     "Show all customers": "Show all customers",
     "DIČ status of Slovak business customers": "DIČ status of Slovak business customers"

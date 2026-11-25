@@ -25,7 +25,7 @@ const parts: { key: DicStatusKey; label: string; hint: string; colour: string }[
 	{ key: "name_differs", label: ctrans("IČO of another name"), hint: ctrans("Its IČO belongs to a company with another name: check the IČO"), colour: "bg-amber-400" },
 	{ key: "not_found", label: ctrans("IČO not in register"), hint: ctrans("The register has no company with its IČO: check the IČO"), colour: "bg-orange-300" },
 	{ key: "differs", label: ctrans("DIČ differs"), hint: ctrans("The DIČ is not the one the register has for its IČO"), colour: "bg-red-700" },
-	{ key: "no_dic", label: ctrans("No DIČ"), hint: ctrans("No DIČ and nothing to look it up by: ask the customer"), colour: "bg-red-400" },
+	{ key: "no_dic", label: ctrans("No DIČ"), hint: ctrans("No DIČ and no IČO or valid VAT number to look it up by: ask the customer"), colour: "bg-red-400" },
 ]
 
 const hrefFor = (key: DicStatusKey | null) => {

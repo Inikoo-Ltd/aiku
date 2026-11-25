@@ -27132,7 +27132,7 @@
     "DIČ differs": "DIČ nesúhlasí",
     "The DIČ is not the one the register has for its IČO": "DIČ nie je to, ktoré má register pre jeho IČO",
     "No DIČ": "Bez DIČ",
-    "No DIČ and nothing to look it up by: ask the customer": "Bez DIČ a bez údaja na vyhľadanie: opýtajte sa zákazníka",
+    "No DIČ and no IČO or valid VAT number to look it up by: ask the customer": "Bez DIČ a bez IČO či platného IČ DPH na vyhľadanie: opýtajte sa zákazníka",
     "Slovak e-invoices: DIČ of business customers": "Slovenské e-faktúry: DIČ firemných zákazníkov",
     "Show all customers": "Zobraziť všetkých zákazníkov",
     "DIČ status of Slovak business customers": "Stav DIČ slovenských firemných zákazníkov",

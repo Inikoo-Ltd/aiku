@@ -88,6 +88,8 @@ class GetCustomersDicStatus
                 or exists (
                     select 1 from tax_numbers where tax_numbers.owner_type = 'Customer' and tax_numbers.owner_id = customers.id
                     and tax_numbers.country_code = 'SK'
+                    and regexp_replace(upper(tax_numbers.number collate \"C\"), '^SK|[^0-9]', '', 'g') ~ '^[1-9][0-9]{9}$'
+                    and regexp_replace(upper(tax_numbers.number collate \"C\"), '^SK|[^0-9]', '', 'g')::bigint % 11 = 0
                 ) then 'unchecked'
             else 'no_dic' end";
     }
