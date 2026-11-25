@@ -33,7 +33,8 @@ const isShortcutLoading = ref(false)
 const isNavActive = () =>
 	[props.nav.root, ...(props.nav.roots ?? [])]
 		.filter(Boolean)
-		.some((root) => isNavigationActive(layout.currentRoute, root))
+		.some((root) => isNavigationActive(layout.currentRoute, root)) &&
+	!(props.nav.excludeRoots ?? []).some((root) => (layout.currentRoute ?? "").includes(root))
 
 const hasShortcut = computed(() => Boolean(props.nav.shortcut?.route?.name && layout.leftSidebar.show))
 

@@ -455,3 +455,48 @@ test('a screen share leaves its own entry, and a missed one counts as unread', f
     expect($listed['unread_count'])->toBeGreaterThanOrEqual(1)
         ->and($listed['last_message'])->toBe('Missed screen share');
 });
+
+test('Verba reports count messages, reply time, calls and meetings in the period, against the period before', function () {
+    $at       = fn (string $time) => \Illuminate\Support\Carbon::parse('2031-06-10 '.$time, 'UTC');
+    $message  = fn (User $user, $createdAt) => \Illuminate\Support\Facades\DB::table('staff_messages')->insert(['staff_conversation_id' => $this->dm->id, 'user_id' => $user->id, 'body' => 'x', 'created_at' => $createdAt, 'updated_at' => $createdAt]);
+
+    $message($this->user, $at('10:00:00'));
+    $message($this->user, $at('10:01:00'));
+    $message($this->callee, $at('10:05:00'));
+    $message($this->user, $at('10:06:00'));
+    $message($this->user, $at('10:06:00')->subDays(9));
+
+    $answered = StaffCall::create(['group_id' => $this->dm->group_id, 'staff_conversation_id' => $this->dm->id, 'started_by_user_id' => $this->user->id, 'kind' => StaffCall::KIND_VIDEO, 'started_at' => $at('11:00:00'), 'answered_at' => $at('11:00:10'), 'ended_at' => $at('11:05:10'), 'outcome' => StaffCall::OUTCOME_ANSWERED]);
+    foreach ([$this->user, $this->callee, $this->outsider] as $person) {
+        $answered->users()->attach($person->id, ['joined_at' => $at('11:00:10'), 'left_at' => $at('11:05:10'), 'last_seen_at' => $at('11:05:10')]);
+    }
+    StaffCall::create(['group_id' => $this->dm->group_id, 'staff_conversation_id' => $this->dm->id, 'started_by_user_id' => $this->callee->id, 'started_at' => $at('12:00:00'), 'ended_at' => $at('12:00:30'), 'outcome' => StaffCall::OUTCOME_MISSED]);
+
+    $report = \App\Actions\Chat\Staff\UI\ShowStaffChatReports::make()->handle($this->user->group, 7, 'day', $at('18:00:00'));
+
+    expect($report['current'])->toMatchArray([
+        'messages'              => 4,
+        'people'                => 2,
+        'direct_messages'       => 4,
+        'reply_median_seconds'  => 180,
+        'calls'                 => 2,
+        'answered'              => 1,
+        'missed'                => 1,
+        'video'                 => 1,
+        'meetings'              => 1,
+        'answer_median_seconds' => 10,
+        'call_median_seconds'   => 300,
+        'talk_minutes'          => 5,
+        'person_minutes'        => 15,
+    ])
+        ->and($report['previous']['messages'])->toBe(1)
+        ->and($report['series']['buckets'])->toHaveCount(7)
+        ->and(last($report['series']['messages']))->toBe(4)
+        ->and(last($report['series']['calls']))->toBe(2);
+
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    actingAs($this->user)->get(route('grp.chat.staff.reports', ['days' => 30]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffChatReports')->where('report.days', 30)->where('report.by', 'day')->has('people.data'));
+    actingAs($this->callee)->get(route('grp.chat.staff.reports'))->assertForbidden();
+});

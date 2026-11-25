@@ -305,11 +305,12 @@ class GetGroupNavigation
         ];
 
         $groupNavigation['chat'] = [
-            'label'   => __('Chat'),
-            'tooltip' => __('Chat'),
-            'icon'    => ['fal', 'fa-comment-alt'],
-            'root'    => 'grp.chat.',
-            'route'   => [
+            'label'        => __('Chat'),
+            'tooltip'      => __('Chat'),
+            'icon'         => ['fal', 'fa-comment-alt'],
+            'root'         => 'grp.chat.',
+            'excludeRoots' => ['grp.chat.staff.'],
+            'route'        => [
                 'name' => 'grp.chat.reports',
             ],
             'topMenu' => [
@@ -321,15 +322,6 @@ class GetGroupNavigation
                         'root'    => 'grp.chat.inbox',
                         'route'   => [
                             'name' => 'grp.chat.inbox',
-                        ],
-                    ],
-                    [
-                        'label'   => __('Verba'),
-                        'tooltip' => __('Verba'),
-                        'icon'    => ['fal', 'fa-comments'],
-                        'root'    => 'grp.chat.staff.index',
-                        'route'   => [
-                            'name' => 'grp.chat.staff.index',
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
@@ -359,6 +351,48 @@ class GetGroupNavigation
                     //         'name' => 'grp.chat.agents.show',
                     //     ],
                     // ],
+                ],
+            ],
+        ];
+
+        $groupNavigation['verba'] = [
+            'label'   => __('Verba'),
+            'tooltip' => __('Verba'),
+            'icon'    => ['fal', 'fa-comments'],
+            'root'    => 'grp.chat.staff.',
+            'route'   => [
+                'name' => 'grp.chat.staff.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => __('Channels'),
+                        'tooltip' => __('Channels'),
+                        'icon'    => ['fal', 'fa-hashtag'],
+                        'root'    => 'grp.chat.staff.slack.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.slack.index',
+                        ],
+                    ],
+                    [
+                        'label'   => __('DM'),
+                        'tooltip' => __('Direct messages and group chats'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.chat.staff.index',
+                        'roots'   => ['grp.chat.staff.show'],
+                        'route'   => [
+                            'name' => 'grp.chat.staff.index',
+                        ],
+                    ],
+                    ...($user->hasGroupAccess() ? [[
+                        'label'   => __('Reports'),
+                        'tooltip' => __('Reports'),
+                        'icon'    => ['fal', 'fa-chart-line'],
+                        'root'    => 'grp.chat.staff.reports',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.reports',
+                        ],
+                    ]] : []),
                 ],
             ],
         ];
