@@ -47,7 +47,8 @@ class StockDeliveryDocumentChecks
 
     /**
      * The ways a document can name the delivery, from its reference: AWChina-92-VAL260365 is named by the shipment
-     * number VAL260365, but not by the order AWChina-92, which other deliveries share. A reference with no such
+     * number VAL260365, but not by the order AWChina-92, which other deliveries share, nor Brenntag-00035 by a
+     * zero-padded counter 00035 that any customs document code can contain (HELP-4952). A reference with no such
      * number of its own is named only by the whole of it, and one that reads like a date or a count by nothing.
      *
      * @return array<int, string> regular expressions
@@ -55,7 +56,7 @@ class StockDeliveryDocumentChecks
     public static function identifiers(string $reference): array
     {
         $tokens = array_values(array_filter((array) preg_split('/[^A-Za-z0-9]+/', $reference), fn ($token) => $token !== ''));
-        $strong = array_filter($tokens, fn (string $token) => strlen($token) >= 5 && preg_match_all('/\d/', $token) >= 3);
+        $strong = array_filter($tokens, fn (string $token) => strlen(ctype_digit($token) ? ltrim($token, '0') : $token) >= 5 && preg_match_all('/\d/', $token) >= 3);
 
         if ($strong) {
             return array_values(array_unique(array_map(fn (string $token) => self::pattern([$token]), $strong)));

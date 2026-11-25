@@ -167,7 +167,8 @@ class ReadStockDeliveryServiceInvoice extends OrgAction
             ."\nnet_total is the total before VAT, vat_total the VAT, total_payable the amount to pay. Dates as YYYY-MM-DD, currency as the ISO 4217 code printed on the document."
             ."\nreferences are every order, shipment, booking, container, bill of lading and customs declaration number printed on it, copied exactly."
             ."\nissuer is the company that issued the invoice, invoice_number its number."
-            ."\nSet is_invoice to false when the document is not an invoice for services, for instance an invoice for goods, a packing list or a customs declaration.";
+            ."\nA customs declaration that prints the duty assessed (such as a UK CDS entry with its payment summary) is the bill for that duty: set is_invoice to true, issuer to the declarant, invoice_number to the MRN, invoice_date to the clearance date, currency to the currency of the payment summary (GBP on a UK entry, never the currency of the goods invoice it quotes), one duty line for Customs Duty and one line for Other Duty typed anti_dumping or import_levy by what it is, from the Total column, leaving out any that is zero, vat_total to the import VAT, total_payable to the printed Total and net_total null."
+            ."\nSet is_invoice to false when the document is not an invoice for services, for instance an invoice for goods, a packing list or a customs declaration that shows no duty.";
 
         $response = $this->aiRequest()
             ->timeout(240)
