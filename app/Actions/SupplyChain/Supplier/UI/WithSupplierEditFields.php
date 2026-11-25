@@ -180,13 +180,6 @@ trait WithSupplierEditFields
                         ],
                         'value'       => Arr::get($supplier->settings, 'minimum_order') === null ? null : (float) Arr::get($supplier->settings, 'minimum_order'),
                     ],
-                    'cooling_period' => [
-                        'type'        => 'input',
-                        'label'       => __('Cooling period between orders (days)'),
-                        'information' => __('The fewest days to leave between two orders to this supplier. For reference only: it is shown on the supplier page and nothing in aiku checks it when a purchase order is created or submitted.'),
-                        'value'       => Arr::get($supplier->settings, 'cooling_period'),
-                        'options'     => ['inputType' => 'number']
-                    ],
                     ...$this->relationshipContactEditField($supplier),
                 ]
             ],

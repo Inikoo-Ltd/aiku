@@ -82,7 +82,6 @@ const props = defineProps<{
                 products_origin?: string
                 payment_terms?: string
                 minimum_order?: number
-                cooling_period?: number
                 next_purchase_order_reference?: string
                 next_stock_delivery_reference?: string
             }

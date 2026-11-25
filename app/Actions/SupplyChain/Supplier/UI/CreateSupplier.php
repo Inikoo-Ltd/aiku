@@ -368,12 +368,6 @@ class CreateSupplier extends OrgAction
                             'options' => Currency::pluck('code', 'id'),
                         ],
                     ],
-                    'cooling_period'      => [
-                        'type'        => 'input',
-                        'label'       => __('Cooling period between orders (days)'),
-                        'information' => __('The fewest days to leave between two orders to this supplier. For reference only: it is shown on the supplier page and nothing in aiku checks it when a purchase order is created or submitted.'),
-                        'value'       => '',
-                    ],
                 ],
             ],
         ]));

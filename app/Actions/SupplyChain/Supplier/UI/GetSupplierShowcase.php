@@ -79,7 +79,6 @@ class GetSupplierShowcase
         return [
             'delivery_time'            => Arr::get($supplier->data, 'delivery_time'),
             'production_waiting_time'  => Arr::get($supplier->data, 'production_waiting_time'),
-            'cooling_period'           => Arr::get($supplier->settings, 'cooling_period'),
             'pre_order_lead_time'      => Arr::get($supplier->settings, 'pre_order_lead_time'),
             'pre_order_lead_time_unit' => Arr::get($supplier->settings, 'pre_order_lead_time_unit', 'days'),
             'factory_holidays'         => $upcomingHolidays,

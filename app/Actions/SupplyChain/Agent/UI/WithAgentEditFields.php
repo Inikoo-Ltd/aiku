@@ -113,12 +113,6 @@ trait WithAgentEditFields
                         'value'   => Arr::get($agent->settings, 'minimum_order'),
                         'options' => ['inputType' => 'number']
                     ],
-                    'cooling_period' => [
-                        'type'    => 'input',
-                        'label'   => __('Cooling period between orders (days)'),
-                        'value'   => Arr::get($agent->settings, 'cooling_period'),
-                        'options' => ['inputType' => 'number']
-                    ],
                     'buyers_manage_stock_deliveries' => [
                         'type'        => 'toggle',
                         'label'       => __('Buyers can mark containers as dispatched'),

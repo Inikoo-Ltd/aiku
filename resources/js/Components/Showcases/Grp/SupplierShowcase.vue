@@ -19,7 +19,6 @@ import {
     faHourglassHalf,
     faIndustry,
     faPencil,
-    faSnowflake,
     faStopwatch,
     faEnvelope,
     faFileInvoiceDollar,
@@ -51,7 +50,6 @@ library.add(
     faHourglassHalf,
     faIndustry,
     faPencil,
-    faSnowflake,
     faStopwatch,
     faEnvelope,
     faFileInvoiceDollar,
@@ -83,7 +81,6 @@ const props = defineProps<{
         leadTimes?: {
             delivery_time?: number | string | null
             production_waiting_time?: number | string | null
-            cooling_period?: number | string | null
             pre_order_lead_time?: number | string | null
             pre_order_lead_time_unit?: 'days' | 'weeks' | null
             factory_holidays?: FactoryHoliday[]
@@ -124,7 +121,6 @@ const props = defineProps<{
                 products_origin?: string
                 payment_terms?: string
                 minimum_order?: number
-                cooling_period?: number
                 next_purchase_order_reference?: string
                 next_stock_delivery_reference?: string
             }
@@ -335,13 +331,6 @@ const leadTimeRows = computed(() => {
             label: ctrans('Production time'),
             icon: 'fal fa-industry',
             value: formatDays(times.production_waiting_time),
-            editRoute: times.edit_routes?.settings
-        },
-        {
-            key: 'cooling_period',
-            label: ctrans('Cooling period between orders'),
-            icon: 'fal fa-snowflake',
-            value: formatDays(times.cooling_period),
             editRoute: times.edit_routes?.settings
         },
         {

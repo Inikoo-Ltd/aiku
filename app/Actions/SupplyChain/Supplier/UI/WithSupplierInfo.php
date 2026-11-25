@@ -26,7 +26,6 @@ trait WithSupplierInfo
             'products_origin'         => $originCountryId ? Country::find($originCountryId)?->name : null,
             'payment_terms'           => Arr::get($supplier->settings, 'payment_terms'),
             'minimum_order'           => Arr::get($supplier->settings, 'minimum_order'),
-            'cooling_period'          => Arr::get($supplier->settings, 'cooling_period'),
         ], fn ($value) => $value !== null && $value !== '');
     }
 }
