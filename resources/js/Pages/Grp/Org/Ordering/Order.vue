@@ -142,6 +142,7 @@ interface UploadSection {
 const props = defineProps<{
     pre_order?: any
     split_pre_order?: { reference: string, slug: string } | null
+    e_invoice_dic_missing?: { name: string, parameters: (string | number)[] } | null
     aurora_notice?: string | null
     production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
@@ -2008,6 +2009,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
     </div>
 
     <PreOrderPanel v-if="pre_order" :pre_order :canEdit="pre_order.can_manage" />
+    <div v-if="e_invoice_dic_missing" class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        {{ ctrans("This Slovak business customer has no DIČ, so its invoice cannot go out as an e-invoice. Add the DIČ before invoicing, the e-invoice must be sent the same day.") }}
+        <Link :href="route(e_invoice_dic_missing.name, e_invoice_dic_missing.parameters)" class="ml-1 font-semibold underline">{{ ctrans("Add DIČ") }}</Link>
+    </div>
     <div v-if="split_pre_order" class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
         {{ ctrans("The pre-order items of this order were split into order :reference, sent when they arrive.", { reference: split_pre_order.reference }) }}
     </div>
