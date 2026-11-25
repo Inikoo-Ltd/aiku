@@ -5,6 +5,8 @@
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UI\GetMasterAssetsPartnerPricing;
+use App\Actions\Masters\MasterAsset\UI\EditMasterProduct;
+use App\Actions\Masters\MasterAsset\UI\GetMasterProductShowcase;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPartnerPrices;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
@@ -241,6 +243,30 @@ test('the edit master product page shows partner prices under Pricing for Aromat
             ->where('formData.blueprint.3.fields.partner_prices.updateRoute.name', 'grp.models.master_asset.partner_prices.update')
             ->where('formData.blueprint.3.fields.partner_prices.row.prices.'.$this->orgPartner->id, 12.5)
             ->has('formData.blueprint.3.fields.master_prices')
+            ->where('formData.blueprint.3.fields', fn ($fields) => array_key_first(collect($fields)->all()) === 'effective_cost')
+            ->where('formData.blueprint.3.fields.effective_cost.type', 'input')
+            ->where('formData.blueprint.3.fields.effective_cost.readonly', true)
+            ->etc()
+    );
+
+    $otherMasterShop = partnerPricesMasterShop($this->group, 'ppother'.substr(uniqid(), -4));
+    $otherAsset      = partnerPricesMasterAsset(partnerPricesFamily($otherMasterShop), 'PPO-'.strtoupper(substr(uniqid(), -6)), $this->shop->currency->code, 20, 8);
+
+    expect(collect(EditMasterProduct::make()->getBlueprint($otherAsset))->pluck('fields')->collapse()->has('effective_cost'))->toBeFalse();
+});
+
+test('the Aromatics master product showcase links its partner prices to the Pricing section of the edit page', function () {
+    $response = get(route('grp.masters.master_shops.show.master_products.show', [
+        'masterShop'    => $this->aromaMasterShop->slug,
+        'masterProduct' => $this->masterAsset->slug,
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('showcase.editPricingRoute.name', 'grp.masters.master_shops.show.master_products.edit')
+            ->where('showcase.editPricingRoute.parameters.section', 3)
+            ->where('showcase.editPricingRoute.parameters.masterProduct', $this->masterAsset->slug)
             ->etc()
     );
 });
@@ -264,4 +290,33 @@ test('the pricing tab of an Aromatics family carries partner pricing on each row
             ->where('pricing.data.0.partner_pricing.prices.'.$this->orgPartner->id, 12.5)
             ->etc()
     );
+});
+
+test('the Aromatics master product showcase gives each partner its price and the margin over the effective cost', function () {
+    $this->masterAsset->updateQuietly(['effective_cost' => 5]);
+
+    $partnerPricing = GetMasterProductShowcase::run($this->masterAsset->refresh())['partnerPricing'];
+    $partner        = collect($partnerPricing['partners'])->firstWhere('code', $this->buyer->code);
+    $fromBaseRate   = collect(GetMasterAssetsPartnerPricing::run($this->aromaMasterShop, collect([$this->masterAsset]))['meta']['partners'])
+        ->firstWhere('org_partner_id', $this->orgPartner->id)['from_base_rate'];
+
+    expect($partnerPricing['partner_discount'])->toBe(0.45)
+        ->and($partner['currency_code'])->toBe('EUR')
+        ->and($partner['price'])->toBe(round(20 * 0.55 * $fromBaseRate, 2))
+        ->and($partner['is_custom'])->toBeFalse()
+        ->and($partner['margin'])->toBe((int) round((11 - 5) / 11 * 100));
+
+    UpdateMasterAssetPartnerPrices::make()->action($this->masterAsset, [
+        'partner_prices' => [$this->orgPartner->id => 12.5],
+    ]);
+
+    $customPartner = collect(GetMasterProductShowcase::run($this->masterAsset->refresh())['partnerPricing']['partners'])->firstWhere('code', $this->buyer->code);
+
+    expect($customPartner['price'])->toBe(12.5)
+        ->and($customPartner['is_custom'])->toBeTrue();
+
+    $otherMasterShop = partnerPricesMasterShop($this->group, 'ppother'.substr(uniqid(), -4));
+    $otherAsset      = partnerPricesMasterAsset(partnerPricesFamily($otherMasterShop), 'PPO-'.strtoupper(substr(uniqid(), -6)), $this->shop->currency->code, 20, 8);
+
+    expect(GetMasterProductShowcase::run($otherAsset)['partnerPricing'])->toBeNull();
 });

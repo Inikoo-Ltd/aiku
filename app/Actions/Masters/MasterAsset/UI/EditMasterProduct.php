@@ -24,6 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Currency;
+use Illuminate\Support\Number;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -251,10 +252,26 @@ class EditMasterProduct extends OrgAction
             'type_input'        => 'rrp'
         ];
 
-        $pricingFields = [
-            'master_prices' => $masterPricesField,
-            'master_rrps'   => $masterRRPsField,
-        ];
+        $pricingFields = [];
+
+        if (GetMasterAssetsPartnerPricing::appliesTo($masterShop)) {
+            $majorCurrencies = collect($masterShop->price_exchanges ?? [])
+                ->filter(fn (array $exchangeData) => $exchangeData['is_major'] ?? false)
+                ->keys();
+
+            $pricingFields['effective_cost'] = [
+                'type'        => 'input',
+                'label'       => __('Effective cost').' / '.__('Outer'),
+                'readonly'    => true,
+                'value'       => $majorCurrencies
+                    ->map(fn (string $currencyCode) => ($costs[$currencyCode] ?? null) !== null ? Number::currency($costs[$currencyCode], $currencyCode, 'en') : '-')
+                    ->join(' · ') ?: '-',
+                'information' => __('What one outer costs us. For each organisation that stocks it: its last purchase price per SKO, divided by the units per SKO and multiplied by the trade units in the outer. The organisations are then averaged, weighted by how many outers each one has available, so the organisations holding the stock set the cost. With no stock anywhere it is a plain average.'),
+            ];
+        }
+
+        $pricingFields['master_prices'] = $masterPricesField;
+        $pricingFields['master_rrps']   = $masterRRPsField;
 
         $partnerPricing = GetMasterAssetsPartnerPricing::run($masterShop, collect([$masterProduct]));
         if ($partnerPricing) {

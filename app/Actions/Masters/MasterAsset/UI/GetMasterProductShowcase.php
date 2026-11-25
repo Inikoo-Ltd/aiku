@@ -106,6 +106,7 @@ class GetMasterProductShowcase
                 ->keys()
                 ->values(),
             'pricingCosts'        => $this->getPricingCosts($masterAsset),
+            'partnerPricing'      => $this->getPartnerPricing($masterAsset),
             'competitors'         => IndexMasterAssetCompetitorProducts::make()->summary($masterAsset),
             'is_dropship'         => $masterAsset->masterShop?->type == ShopTypeEnum::DROPSHIPPING,
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
@@ -162,6 +163,46 @@ class GetMasterProductShowcase
                 return $exchange ? round((float) $masterAsset->effective_cost * $exchange, 2) : null;
             })
             ->all();
+    }
+
+    /**
+     * Aromatics only: what each partner pays for one outer (its custom price, or the list price less
+     * the hub partner discount, in the partner's currency) and the seller's margin over the effective cost.
+     * Same maths as the Partners pay column of the pricing tab.
+     *
+     * @return array{partner_discount: float, partners: list<array{code: string, currency_code: string, price: float, margin: int|null, is_custom: bool}>}|null
+     */
+    private function getPartnerPricing(MasterAsset $masterAsset): ?array
+    {
+        if (!GetMasterAssetsPartnerPricing::appliesTo($masterAsset->masterShop)) {
+            return null;
+        }
+
+        $pricing = GetMasterAssetsPartnerPricing::run($masterAsset->masterShop, collect([$masterAsset]));
+        $row     = $pricing['rows'][$masterAsset->id] ?? null;
+        if (!$row) {
+            return null;
+        }
+
+        $partnerDiscount = (float) $pricing['meta']['partner_discount'];
+
+        return [
+            'partner_discount' => $partnerDiscount,
+            'partners'         => collect($pricing['meta']['partners'])->map(function (array $partner) use ($row, $partnerDiscount) {
+                $customPrice = $row['prices'][$partner['org_partner_id']] ?? null;
+                $fromBase    = (float) $partner['from_base_rate'] ?: 1.0;
+                $price       = $customPrice ?? round($row['list_price'] * (1 - $partnerDiscount) * $fromBase, 2);
+                $paidInBase  = $price / $fromBase;
+
+                return [
+                    'code'          => $partner['code'],
+                    'currency_code' => $partner['currency_code'],
+                    'price'         => $price,
+                    'margin'        => $row['cost'] !== null && $paidInBase > 0 ? (int) round(($paidInBase - $row['cost']) / $paidInBase * 100) : null,
+                    'is_custom'     => $customPrice !== null,
+                ];
+            })->values()->all(),
+        ];
     }
 
     private function getDataTradeUnit(MasterAsset $masterAsset): array

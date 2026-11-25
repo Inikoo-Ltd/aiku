@@ -116,6 +116,17 @@ class ShowMasterProduct extends OrgAction
         return $this->handle($masterProduct);
     }
 
+    private function showcase(MasterAsset $masterAsset, ActionRequest $request): array
+    {
+        return [
+            ...GetMasterProductShowcase::run($masterAsset),
+            'editPricingRoute' => $this->canEdit ? [
+                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                'parameters' => [...$request->route()->originalParameters(), 'section' => 3],
+            ] : null,
+        ];
+    }
+
     public function htmlResponse(MasterAsset $masterAsset, ActionRequest $request): Response
     {
         $navigation = MasterAssetTabsEnum::navigation($masterAsset);
@@ -293,8 +304,8 @@ class ShowMasterProduct extends OrgAction
                 'products'             => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset)),
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn () => GetMasterProductShowcase::run($masterAsset)
-                    : Inertia::optional(fn () => GetMasterProductShowcase::run($masterAsset)),
+                    fn () => $this->showcase($masterAsset, $request)
+                    : Inertia::optional(fn () => $this->showcase($masterAsset, $request)),
 
                 MasterAssetTabsEnum::SALES_ANALYSIS->value => $this->tab === MasterAssetTabsEnum::SALES_ANALYSIS->value ?
                     Inertia::defer(fn () => GetSalesAnalysis::run(SalesAnalysisScope::forMasterAsset($masterAsset), $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')

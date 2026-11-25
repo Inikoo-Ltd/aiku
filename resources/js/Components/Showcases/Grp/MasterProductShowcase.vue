@@ -18,7 +18,9 @@ import {
 	faVideo,
 	faTimesCircle,
 	faCheckCircle,
-	faBalanceScale
+	faBalanceScale,
+	faQuestionCircle,
+	faPencil
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
 import { faStarfighter, faStarshipFreighter } from "@far"
@@ -88,6 +90,11 @@ const props = defineProps<{
         rebel_rrp : {}
 		majorCurrencies?: string[]
 		pricingCosts?: Record<string, number | null> | null
+		editPricingRoute?: routeType | null
+		partnerPricing?: {
+			partner_discount: number
+			partners: { code: string, currency_code: string, price: number, margin: number | null, is_custom: boolean }[]
+		} | null
 		competitors?: {
 			to_review: number
 			prices: { competitor_slug: string, competitor: string, price: number | null, difference: number | null, currency_code: string }[]
@@ -175,6 +182,32 @@ const props = defineProps<{
 	return [...unique.values()]
 }) */
 const locale = inject('locale', aikuLocaleStructure)
+
+const THIN_PARTNER_MARGIN = 10
+
+const partnerMarginClass = (margin: number | null): string => {
+	if (margin === null) {
+		return 'text-gray-400'
+	}
+	if (margin < 0) {
+		return 'text-red-600'
+	}
+
+	return margin < THIN_PARTNER_MARGIN ? 'text-amber-600' : 'text-green-600'
+}
+
+const partnerMarginTooltip = (margin: number | null): string => {
+	if (margin === null) {
+		return ctrans('Margin vs effective cost')
+	}
+	if (margin < 0) {
+		return ctrans('Loss: the partner pays less than the effective cost')
+	}
+
+	return margin < THIN_PARTNER_MARGIN
+		? ctrans('Thin margin: under :n% over the effective cost', { n: `${THIN_PARTNER_MARGIN}` })
+		: ctrans('Profit over the effective cost')
+}
 
 const rebelPricePopover = useTemplateRef('rebelPricePopover')
 type RebelPrice = {
@@ -470,6 +503,26 @@ const isModalProductForSale = ref(false)
         <!-- Sales Analytics - right sidebar -->
         <div class="min-w-0 h-fit ml-4 mr-2">
 			<div class="grid justify-items-end pr-3 pb-2 gap-2">
+				<div v-if="data.partnerPricing" class="w-full border border-solid border-gray-300 rounded-md px-3 py-1.5">
+					<div class="flex items-start justify-between gap-3">
+						<div class="flex items-center gap-1 pt-0.5 text-xs font-semibold text-gray-500">
+							<span>{{ ctrans('Effective cost / Outer') }}</span>
+							<FontAwesomeIcon
+								:icon="faQuestionCircle"
+								class="text-gray-400 hover:text-gray-600 cursor-help"
+								v-tooltip="ctrans('What one outer costs us. For each organisation that stocks it: its last purchase price per SKO, divided by the units per SKO and multiplied by the trade units in the outer. The organisations are then averaged, weighted by how many outers each one has available, so the organisations holding the stock set the cost. With no stock anywhere it is a plain average.')"
+								fixed-width
+								aria-hidden="true"
+							/>
+						</div>
+						<div class="grid grid-cols-[auto] justify-end gap-y-0.5 tabular-nums text-sm font-medium text-gray-700">
+							<span v-for="code in majorCodes" :key="code" class="text-right">
+								{{ data.pricingCosts?.[code] != null ? locale.currencyFormat(code, data.pricingCosts[code]!) : '-' }}
+							</span>
+						</div>
+					</div>
+				</div>
+
 				<ReuseMasterPriceBlock
 					:title="ctrans('Price / Outer')"
 					:prices="data.masterProduct.master_prices"
@@ -515,6 +568,41 @@ const isModalProductForSale = ref(false)
 					:perUnits="data.is_dropship ? 0 : Number(data.masterProduct?.units) || 0"
 					:counterpart="data.masterProduct.master_prices"
 				/>
+
+				<div v-if="data.partnerPricing?.partners.length" class="w-full border border-solid border-gray-300 rounded-md px-3 py-1.5">
+					<div class="flex items-start justify-between gap-3">
+						<div class="flex items-center gap-1 pt-0.5 text-xs font-semibold text-gray-500">
+							<span>{{ ctrans('Partner price / Outer') }}</span>
+							<FontAwesomeIcon
+								:icon="faQuestionCircle"
+								class="text-gray-400 hover:text-gray-600 cursor-help"
+								v-tooltip="ctrans('What each partner organisation pays us for one outer: the list price less the :discount partner discount, in the partner\'s currency, unless a custom partner price is set. The % is our margin over the effective cost.', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` })"
+								fixed-width
+								aria-hidden="true"
+							/>
+							<Link
+								v-if="data.editPricingRoute"
+								:href="route(data.editPricingRoute.name, data.editPricingRoute.parameters)"
+								class="text-gray-400 hover:text-[var(--app-accent)]"
+								v-tooltip="ctrans('Edit partner prices')"
+							>
+								<FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+							</Link>
+						</div>
+						<div class="grid grid-cols-[auto_auto_auto_auto] justify-end gap-x-2 gap-y-0.5 tabular-nums text-sm font-medium text-gray-700">
+							<template v-for="partner in data.partnerPricing.partners" :key="partner.code">
+								<span
+									class="self-center justify-self-end whitespace-nowrap rounded border px-1 text-[10px] font-medium leading-4"
+									:class="partner.is_custom ? 'border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]' : 'border-gray-200 text-gray-400'"
+									v-tooltip="partner.is_custom ? ctrans('A custom price set for this partner') : ctrans('List price less the :discount partner discount', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` })"
+								>{{ partner.is_custom ? ctrans('Custom') : ctrans('Default -:discount', { discount: `${Math.round(data.partnerPricing.partner_discount * 100)}%` }) }}</span>
+								<span class="self-center text-xs font-semibold text-gray-500">{{ partner.code }}</span>
+								<span class="self-center text-right text-xs font-medium" :class="partnerMarginClass(partner.margin)" v-tooltip="partnerMarginTooltip(partner.margin)">{{ partner.margin !== null ? `${partner.margin}%` : '' }}</span>
+								<span class="text-right">{{ locale.currencyFormat(partner.currency_code, partner.price) }}</span>
+							</template>
+						</div>
+					</div>
+				</div>
 
 				<Popover ref="rebelRrpPopover">
 					<div class="min-w-[20rem]">
