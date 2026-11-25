@@ -11,7 +11,7 @@ namespace App\Actions\SupplyChain\AgentInvoice\UI;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
-use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
+use App\Actions\SupplyChain\AgentPayment\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;

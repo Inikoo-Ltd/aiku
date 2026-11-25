@@ -9,7 +9,7 @@
 namespace App\Actions\SupplyChain\DepositRequest;
 
 use App\Actions\OrgAction;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\AgentPayment;
 use App\Models\SupplyChain\DepositRequest;

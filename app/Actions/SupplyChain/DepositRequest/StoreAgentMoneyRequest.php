@@ -10,8 +10,8 @@ namespace App\Actions\SupplyChain\DepositRequest;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\DepositRequest;

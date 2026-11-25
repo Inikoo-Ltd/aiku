@@ -17,7 +17,7 @@ use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;

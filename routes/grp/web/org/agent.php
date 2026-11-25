@@ -92,8 +92,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurch
 use App\Actions\SupplyChain\AgentPayment\UI\IndexAgentLedger;
 use App\Actions\SupplyChain\DepositRequest\UI\CreateAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\UI\IndexAgentMoneyRequests;
-use App\Actions\SupplyChain\AspoDeposit\UI\IndexAgentDeposits;
-use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
+use App\Actions\SupplyChain\AgentPayment\UI\ShowAgentAccountingDashboard;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierDirectLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalAccess;
@@ -213,7 +212,6 @@ Route::get('barcodes', IndexAgentBarcodes::class)->name('agent_barcodes.index');
 
 Route::prefix('agent-accounting')->as('accounting.')->group(function () {
     Route::get('', ShowAgentAccountingDashboard::class)->name('dashboard');
-    Route::get('deposits', IndexAgentDeposits::class)->name('deposits.index');
     Route::get('deposit-requests', IndexAgentMoneyRequests::class)->name('deposit_requests.index');
     Route::get('deposit-requests/create', CreateAgentMoneyRequest::class)->name('deposit_requests.create');
     Route::get('invoices', IndexAgentInvoices::class)->name('invoices.index');

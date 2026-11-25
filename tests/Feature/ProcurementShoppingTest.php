@@ -4273,7 +4273,7 @@ test('a ledger line a standing money request asks for keeps its type, order and 
         ->and($rows[$unasked->id]['money_request_lock'])->toBeNull()
         ->and($rows[$unasked->id]['delete_route'])->not->toBeNull();
 
-    $depositRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+    $depositRequest->update(['state' => \App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::CANCELLED]);
 
     $this->patch(route('grp.models.agent_payment.update', $charge->id), ['date' => date('Y-m-d'), 'type' => 'samples'])->assertSessionHasNoErrors();
     $this->delete(route('grp.models.agent_payment.delete', $expense->id))->assertSessionHasNoErrors();
@@ -4593,13 +4593,13 @@ test('one transfer set as paid from the money tab settles the approved requests 
         ->and($transfers->sum(fn ($transfer) => (float) $transfer->original_amount))->toBe(70.0)
         ->and($transfers->pluck('media_id')->unique()->count())->toBe(1)
         ->and($transfers->first()->media_id)->not->toBeNull()
-        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
-        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
+        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED)
         ->and(\App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest::outstanding($newer))->toBe(50.0)
         ->and(\App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $waiting->id)->exists())->toBeFalse();
 
     $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 50, 'receipt' => $receipt()])->assertSessionHasNoErrors();
-    expect($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+    expect($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
     $this->post($payRoute, ['date' => date('Y-m-d'), 'amount' => 1, 'receipt' => $receipt()])->assertForbidden();
 
     actingAs($this->adminGuest->getUser());
@@ -4833,7 +4833,7 @@ test('transfers the client\'s bank sent the agent that add up exactly to what is
     $transfers = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $request->id)->orderBy('id')->get();
     expect($transfers->map(fn ($transfer) => [(float) $transfer->amount, $transfer->bank_transaction_id, $transfer->original_amount])->all())->toBe([[100.0, $first->id, null], [200.0, $second->id, null]])
         ->and($transfers->first()->date->toDateString())->toBe($first->booked_at->copy()->setTimezone($orgAgent->organisation->timezone?->name ?? config('app.timezone'))->toDateString())
-        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
 
     $next = $ask(50);
     \App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest::make()->handle($next, null);
@@ -4844,7 +4844,7 @@ test('transfers the client\'s bank sent the agent that add up exactly to what is
     $third = $line(50.50, 50, now()->subMinutes(5));
     expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(1)
         ->and(\App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $next->id)->value('bank_transaction_id'))->toBe($third->id)
-        ->and($next->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+        ->and($next->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
 });
 
 test('a transfer to the agent that does not add up, or follows one recorded by hand, waits on the money tab for the payer to confirm or set aside (HELP-4864)', function () {
@@ -4883,7 +4883,7 @@ test('a transfer to the agent that does not add up, or follows one recorded by h
         ->and((float) $fromBank->original_amount)->toBe(9.0)
         ->and($fromBank->original_currency_id)->toBe($otherCurrency->id)
         ->and($fromBank->created_by)->toBe($payer->id)
-        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
 
     $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page->where('money.bank_lines', [])->etc());
 
@@ -4901,8 +4901,8 @@ test('transfers split over two approved requests are recorded together, a same-d
     $line(250, 250, now()->subDays(2)->startOfDay());
     $line(150, 150, now()->subDays(2)->startOfDay()->addHours(20));
     expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(2)
-        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
-        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
+        ->and($older->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED)
+        ->and($newer->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED)
         ->and(\App\Models\SupplyChain\AgentPayment::whereIn('deposit_request_id', [$older->id, $newer->id])->whereNotNull('created_by')->exists())->toBeFalse();
 
     $third = $ask(80);
@@ -4910,7 +4910,7 @@ test('transfers split over two approved requests are recorded together, a same-d
     \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($orgAgent->agent, ['organisation_id' => $client->id, 'date' => date('Y-m-d'), 'type' => 'transfer_received', 'amount' => 80, 'notes' => 'H4864W agent entered']);
     $line(80, 80, now()->addMinute());
     expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0)
-        ->and($third->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED);
+        ->and($third->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED);
 });
 
 test('a bank line booked at Prague midnight on the request\'s day counts, a hand record a few days before the window still stops recording on its own, and two equal lines wait for a person (HELP-4864)', function () {
@@ -4932,7 +4932,7 @@ test('a bank line booked at Prague midnight on the request\'s day counts, a hand
     \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $paidByHand->id)->update(['created_at' => now()->subDays(30)]);
     $line(60, null, now()->setTimezone('Europe/Prague')->startOfDay()->addHours(2));
     expect(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0)
-        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED);
+        ->and($request->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED);
 });
 
 test('a payer undoes what was set as paid from a bank transfer: the request opens again and the line is offered but never recorded on its own again; a reversed line is flagged and a line set aside can still be paid (HELP-4864)', function () {
@@ -4968,7 +4968,7 @@ test('a payer undoes what was set as paid from a bank transfer: the request open
         && str_contains($notification->body(), 'open to pay again')
         && $notification->route['name'] === 'grp.org.agent.accounting.deposit_requests.index');
     \Illuminate\Support\Facades\Notification::assertNotSentTo($payer, \App\Notifications\MoneyRequestPaymentUndoneNotification::class);
-    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
+    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED)
         ->and($recorded->refresh()->trashed())->toBeTrue()
         ->and(\App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers::run($client))->toBe(0);
     $this->patch($undoRoute)->assertNotFound();
@@ -4982,7 +4982,7 @@ test('a payer undoes what was set as paid from a bank transfer: the request open
     $this->patch(route('grp.models.org_agent.money_requests.bank_line.dismiss', [$orgAgent->id, $wrong->id]))->assertRedirect()->assertSessionHasNoErrors();
     $this->withoutVite()->get($moneyTab)->assertInertia(fn (AssertableInertia $page) => $page->where('money.bank_lines.0.set_aside', true)->etc());
     $this->post(route('grp.models.org_agent.money_requests.pay_from_bank', [$orgAgent->id, $wrong->id]), ['amount' => 300])->assertRedirect()->assertSessionHasNoErrors();
-    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
+    expect($request->refresh()->state)->toBe(\App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::SETTLED);
 
     actingAs($this->adminGuest->getUser());
 });

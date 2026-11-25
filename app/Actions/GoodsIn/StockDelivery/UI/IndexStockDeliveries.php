@@ -28,6 +28,7 @@ use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\Warehouse;
+use App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -724,6 +725,10 @@ class IndexStockDeliveries extends OrgAction
                 ],
                 'data'        => StockDeliveryResource::collection($suppliers),
                 'filterOptions' => $this->isAgentOwnOrganisation() || $this->agentViewingSupplier() ? ['organisation' => $this->getOrganisationFilterOptions()] : [],
+                'receiveSupplierParcel' => $this->parent instanceof Warehouse && ReceiveSupplierParcel::userCanBookIn($request->user(), $this->organisation, 'incoming.%d.edit') ? [
+                    'options' => ['name' => 'grp.org.warehouses.show.incoming.supplier_parcel.options', 'parameters' => [$this->organisation->slug, $this->parent->slug]],
+                    'receive' => ['name' => 'grp.org.warehouses.show.incoming.supplier_parcel.receive', 'parameters' => [$this->organisation->slug, $this->parent->slug]],
+                ] : null,
             ]
         )->table($this->tableStructure());
     }

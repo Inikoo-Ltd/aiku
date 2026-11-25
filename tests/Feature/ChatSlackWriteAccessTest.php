@@ -201,14 +201,19 @@ test('a state made for one person is refused for another, and an expired one too
     Http::assertNothingSent();
 });
 
-test('only engineers can start or see the Slack block, and one without a linked Slack person is told so', function () {
+test('any active staff member linked to a Slack person can connect, one who is not linked cannot', function () {
     $staff = ($this->makeUser)(null);
-    actingAs($staff)->get(route('grp.chat.staff.slack.connect.start'))->assertForbidden();
-    actingAs($staff)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'c', 'state' => 's']))->assertForbidden();
+    expect(SlackWriteAccess::allows($staff))->toBeTrue();
     actingAs($staff)->get(route('grp.profile.edit'))->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
+        ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->contains(fn ($fields) => isset($fields['slack_connection']))));
+
+    $unlinkedStaff = ($this->makeUser)(null, false);
+    actingAs($unlinkedStaff)->get(route('grp.chat.staff.slack.connect.start'))->assertForbidden();
+    actingAs($unlinkedStaff)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'c', 'state' => 's']))->assertForbidden();
+    actingAs($unlinkedStaff)->get(route('grp.profile.edit'))->assertOk()->assertInertia(fn (AssertableInertia $inertia) => $inertia
         ->where('formData.blueprint', fn ($blueprint) => !collect($blueprint)->pluck('fields')->contains(fn ($fields) => isset($fields['slack_connection']))));
-    expect(SlackWriteAccess::allows($staff))->toBeFalse()
-        ->and(SlackWriteAccess::reasonUnavailable($staff))->toBeString();
+    expect(SlackWriteAccess::allows($unlinkedStaff))->toBeFalse()
+        ->and(SlackWriteAccess::reasonUnavailable($unlinkedStaff))->toBeString();
 
     $unlinked = ($this->makeUser)('help-desk-clerk', false);
     actingAs($unlinked)->get(route('grp.chat.staff.slack.connect.start'))
@@ -220,7 +225,7 @@ test('only engineers can start or see the Slack block, and one without a linked 
     Http::assertNothingSent();
 });
 
-test('the write client exists only for an engineer with a live connection on a machine allowed to write', function () {
+test('the write client exists only for a linked person with a live connection on a machine allowed to write', function () {
     $engineer = ($this->makeUser)();
     expect(SlackWriteClient::for($engineer))->toBeNull()
         ->and(SlackWriteAccess::reasonUnavailable($engineer))->toContain('Connect');
@@ -231,7 +236,7 @@ test('the write client exists only for an engineer with a live connection on a m
 
     $staff = ($this->makeUser)(null);
     ($this->connect)($staff);
-    expect(SlackWriteClient::for($staff))->toBeNull();
+    expect(SlackWriteClient::for($staff))->toBeInstanceOf(SlackWriteClient::class);
 
     $environment = app()->environment();
     app()->instance('env', 'local');

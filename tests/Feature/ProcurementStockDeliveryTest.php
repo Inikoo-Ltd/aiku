@@ -14,7 +14,6 @@ use App\Actions\Goods\Stock\SyncStockTradeUnits;
 use App\Models\Goods\TradeUnit;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
-use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UI\ShowAgentCommissionInvoice;
 use Carbon\CarbonImmutable;
@@ -65,6 +64,7 @@ use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
 use Laravel\Scout\Builder as ScoutBuilder;
 use Laravel\Scout\EngineManager;
 use Laravel\Scout\Engines\Engine;
@@ -3445,197 +3445,7 @@ describe('supplier deposits', function () {
         );
     });
 
-    test('deposit store on an agent purchase order records the deposit against the order', function () {
-        $this->post(route('grp.models.purchase-order.deposit.store', $this->depositPurchaseOrder->id), ['amount' => 50, 'reference' => 'DEP-ROUTE'])
-            ->assertSessionHasNoErrors();
-
-        $deposit = $this->depositPurchaseOrder->deposits()->firstOrFail();
-
-        expect($deposit->purchase_order_id)->toBe($this->depositPurchaseOrder->id)
-            ->and($deposit->agent_id)->toBe($this->depositPurchaseOrder->agent_id)
-            ->and($deposit->purchaseOrder->is($this->depositPurchaseOrder))->toBeTrue()
-            ->and((float) $deposit->amount)->toBe(50.0)
-            ->and($this->depositPurchaseOrder->deposits()->count())->toBe(1);
-    });
-
-    test('deposit store refuses a purchase order that is not through an agent', function () {
-        $supplier         = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
-        $orgSupplier      = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
-        $independentOrder = StorePurchaseOrder::make()->action(
-            $orgSupplier,
-            array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'NO-AGENT-DEP-'.uniqid()]),
-            strict: false
-        );
-
-        expect($independentOrder->isAgentOrder())->toBeFalse();
-
-        $this->post(route('grp.models.purchase-order.deposit.store', $independentOrder->id), ['amount' => 50])
-            ->assertSessionHasErrors('amount');
-
-        expect(fn () => StoreAspoDeposit::make()->action($independentOrder, ['amount' => 50]))->toThrow(ValidationException::class)
-            ->and($independentOrder->deposits()->count())->toBe(0);
-    });
-
-    test('deposit lifecycle: pending to paid to supplier', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, [
-            'amount' => 300,
-        ]);
-
-        expect($deposit)->toBeInstanceOf(\App\Models\SupplyChain\AspoDeposit::class)
-            ->and($deposit->agent_id)->toBe($this->depositPurchaseOrder->agent_id)
-            ->and($deposit->state->value)->toBe('pending')
-            ->and($deposit->currency_id)->toBe($this->depositPurchaseOrder->currency_id);
-
-        $paid = \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        expect($paid->state->value)->toBe('paid_to_supplier')
-            ->and($paid->paid_to_supplier_at)->not->toBeNull();
-
-        $refunded = \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($paid, ['state' => 'refunded']);
-        expect($refunded->state->value)->toBe('refunded')
-            ->and($refunded->refunded_at)->not->toBeNull();
-    });
-
-    test('deposit request consolidation auto-settles when all items paid', function () {
-        $depositOne = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 100]);
-        $depositTwo = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 150]);
-
-        $depositRequest = \App\Actions\SupplyChain\DepositRequest\StoreDepositRequest::make()->action($this->depositPurchaseOrder->agent, [
-            'currency_id' => $this->depositPurchaseOrder->currency_id,
-            'items'       => [
-                ['aspo_deposit_id' => $depositOne->id, 'organisation_id' => $this->organisation->id, 'amount' => 100],
-                ['aspo_deposit_id' => $depositTwo->id, 'organisation_id' => $this->organisation->id, 'amount' => 150],
-            ],
-        ]);
-
-        expect($depositRequest)->toBeInstanceOf(\App\Models\SupplyChain\DepositRequest::class)
-            ->and($depositRequest->items()->count())->toBe(2)
-            ->and($depositRequest->state->value)->toBe('requested');
-
-        $items = $depositRequest->items()->get();
-
-        \App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid::make()->action($items[0]);
-        expect($depositRequest->refresh()->state->value)->toBe('requested');
-
-        \App\Actions\SupplyChain\DepositRequest\MarkDepositRequestItemPaid::make()->action($items[1]);
-        expect($depositRequest->refresh()->state->value)->toBe('settled')
-            ->and($depositRequest->settled_at)->not->toBeNull();
-    });
-
-    test('deposit application splits across two deliveries and tracks unapplied balance', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 100]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $deliveryOne = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-APP-1-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        $deliveryTwo = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-APP-2-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($deliveryOne, $this->depositPurchaseOrder);
-        placeDeliveryUnderAgentOrder($deliveryTwo, $this->depositPurchaseOrder);
-
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryOne->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 40,
-        ]);
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryTwo->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 30,
-        ]);
-
-        $deposit->refresh();
-        expect($deposit->applied_amount)->toBe(70.0)
-            ->and($deposit->unapplied_amount)->toBe(30.0)
-            ->and($deliveryOne->depositApplications()->sum('amount'))->toBe('40.00')
-            ->and($deliveryTwo->depositApplications()->sum('amount'))->toBe('30.00');
-
-        expect(fn () => \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($deliveryOne->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 50,
-        ]))->toThrow(ValidationException::class);
-    });
-
-    test('settlement math: agent invoice minus applied deposits equals balance due', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-SETTLE-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($delivery, $this->depositPurchaseOrder);
-
-        StoreStockDeliveryCost::make()->action($delivery, [
-            'type'   => StockDeliveryCostTypeEnum::AGENT_INVOICE->value,
-            'amount' => 1000,
-        ]);
-
-        \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 300,
-        ]);
-
-        $agentInvoiceAmount = (float) $delivery->costs()->where('type', 'agent_invoice')->value('amount');
-        $appliedTotal        = (float) $delivery->depositApplications()->sum('amount');
-
-        expect($agentInvoiceAmount)->toBe(1000.0)
-            ->and($appliedTotal)->toBe(300.0)
-            ->and($agentInvoiceAmount - $appliedTotal)->toBe(700.0);
-    });
-
-    test('un-applying a deposit application is audited, restores balance, and allows re-apply', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
-        $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
-            'reference' => 'DEP-UNAPPLY-'.StockDelivery::count(),
-            'date'      => date('Y-m-d'),
-        ], strict: false);
-        placeDeliveryUnderAgentOrder($delivery, $this->depositPurchaseOrder);
-
-        StoreStockDeliveryCost::make()->action($delivery, [
-            'type'   => StockDeliveryCostTypeEnum::AGENT_INVOICE->value,
-            'amount' => 1000,
-        ]);
-
-        $application = \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 200,
-        ]);
-
-        expect($deposit->refresh()->unapplied_amount)->toBe(100.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(200.0);
-
-        \App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication::make()->action($application);
-
-        expect($deposit->refresh()->unapplied_amount)->toBe(300.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(0.0)
-            ->and($delivery->depositApplications()->count())->toBe(0);
-
-        $trashed = \App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->find($application->id);
-        expect($trashed)->not->toBeNull()
-            ->and($trashed->trashed())->toBeTrue()
-            ->and($trashed->deleted_by)->toBeNull()
-            ->and($trashed->deleted_at)->not->toBeNull();
-
-        $reapplied = \App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit::make()->action($delivery->refresh(), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 150,
-        ]);
-
-        expect($reapplied)->toBeInstanceOf(\App\Models\GoodsIn\StockDeliveryDepositApplication::class)
-            ->and($deposit->refresh()->unapplied_amount)->toBe(150.0)
-            ->and((float) $delivery->depositApplications()->sum('amount'))->toBe(150.0)
-            ->and(\App\Models\GoodsIn\StockDeliveryDepositApplication::withTrashed()->where('aspo_deposit_id', $deposit->id)->count())->toBe(2);
-    });
-
     test('accounting clerk gets view-only procurement access, and edit access only on supplier/agent payments and stock delivery costing (HELP-3437)', function () {
-        $deposit = StoreAspoDeposit::make()->action($this->depositPurchaseOrder, ['amount' => 300]);
-        \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-
         $delivery = StoreStockDelivery::make()->action($this->orgSupplier, [
             'reference' => 'DEP-ACC-CLERK-'.StockDelivery::count(),
             'date'      => date('Y-m-d'),
@@ -3658,18 +3468,12 @@ describe('supplier deposits', function () {
             'payment_terms' => '30 days',
         ])->assertForbidden();
 
-        $this->post(route('grp.models.stock-delivery.deposit.apply', $delivery->id), [
-            'aspo_deposit_id' => $deposit->id,
-            'amount'          => 100,
-        ])->assertRedirect();
-
-        expect((float) $delivery->depositApplications()->sum('amount'))->toBe(100.0);
-
         $this->withoutVite();
         $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $delivery->slug]))
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('costing.can_edit', true)
-                ->where('costing.can_edit_payments', true));
+                ->where('costing.can_edit_payments', true)
+                ->missing('costing.deposits'));
 
         $this->patch(route('grp.models.stock-delivery.update', $delivery->id), ['org_exchange' => 0.75])->assertRedirect();
         expect((float) $delivery->refresh()->org_exchange)->toBe(0.75);
@@ -4401,10 +4205,10 @@ test('import file deposit row shows each deposit sent as amount, % of its order 
         'agent_id'        => $this->orgAgent->agent_id,
         'organisation_id' => $stockDelivery->organisation_id,
         'currency_id'     => $stockDelivery->currency_id,
-        'state'           => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED,
+        'state'           => \App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::REQUESTED,
         'requested_at'    => '2026-11-02',
     ]);
-    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
+    $advance = $moneyRequest->items()->create(['organisation_id' => $stockDelivery->organisation_id, 'kind' => \App\Enums\SupplyChain\DepositRequest\DepositRequestItemKindEnum::ADVANCE, 'purchase_order_id' => $agentOrder->id, 'amount' => 100]);
 
     $steps = fn () => collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
 
@@ -4419,7 +4223,7 @@ test('import file deposit row shows each deposit sent as amount, % of its order 
     $advance->update(['paid_at' => now()]);
     expect($steps()['balance_payment']['money']['left'])->toBe(1100.0);
 
-    $moneyRequest->update(['state' => \App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED]);
+    $moneyRequest->update(['state' => \App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum::CANCELLED]);
     expect($steps()['deposit']['money']['rows'])->toHaveCount(1);
 
     $later = StoreStockDelivery::make()->action($stockDelivery->parent, ['reference' => 'IMPORT-FILE-4794-2', 'date' => date('Y-m-d')], strict: false);
@@ -5059,4 +4863,98 @@ test('INI-525 the rest of an agent line kept at the agent lets the order settle 
         ->and($order->refresh()->state)->not->toBe(PurchaseOrderStateEnum::SETTLED);
 
     actingAs($this->adminGuest->getUser());
+});
+
+test('INI-523 goods in receives a direct supplier parcel: a submitted order is agreed, only what arrived goes on one received delivery, the rest stays open, and only shipping documents follow', function () {
+    [$orgSupplier, $supplierProduct, $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $warehouse = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+    $user      = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+
+    $agreed    = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 100);
+    $submitted = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    StorePurchaseOrderTransaction::make()->action(
+        $submitted,
+        $supplierProduct->historicSupplierProduct,
+        $this->orgStocks[1],
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 40])
+    );
+    $submitted = UpdatePurchaseOrderStateToSubmitted::make()->action($submitted->refresh());
+
+    foreach (['Packing list' => 'pl', 'Invoice' => 'inv'] as $scope => $name) {
+        $file = UploadedFile::fake()->createWithContent("$name.pdf", '%PDF-1.4 '.$name.' '.Str::random(32));
+        \App\Actions\Helpers\Media\SaveModelAttachment::make()->action($agreed, [
+            'path'         => $file->getPathname(),
+            'originalName' => "$name.pdf",
+            'extension'    => 'pdf',
+            'scope'        => $scope,
+            'sub_scope'    => 'supplier_portal',
+            'caption'      => "$name.pdf",
+        ]);
+    }
+
+    $agreedLine    = $agreed->purchaseOrderTransactions()->sole();
+    $submittedLine = $submitted->purchaseOrderTransactions()->sole();
+
+    $options = \App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->handle($this->organisation, $warehouse, $orgSupplier->id)['purchase_orders'];
+    $listed  = collect($options)->keyBy('id');
+    $agreedSkos = (float) $listed[$agreed->id]['lines'][0]['skos_awaiting'];
+
+    expect(collect(\App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->suppliers($this->organisation))->pluck('id'))->toContain($orgSupplier->id)
+        ->and($listed[$submitted->id]['needs_agreeing'])->toBeTrue()
+        ->and($listed[$agreed->id]['needs_agreeing'])->toBeFalse()
+        ->and($agreedSkos * \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::unitsPerSko($agreedLine))->toEqual(100.0)
+        ->and(json_encode($options))->not->toContain('net_amount')
+        ->and(fn () => \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle($this->organisation, $orgSupplier->id, [$agreedLine->id => 0], $user))
+        ->toThrow(ValidationException::class);
+
+    $packsOfThree = (new PurchaseOrderTransaction())->setRelation('orgStock', (new \App\Models\Inventory\OrgStock())->forceFill(['packed_in' => 3]));
+    expect(\App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::units(6.667, $packsOfThree, 20))->toEqual(20.0)
+        ->and(\App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::units(5, $packsOfThree, 20))->toEqual(15.0);
+
+    $halfSkos      = $agreedSkos / 2;
+    $submittedSkos = 40 / \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::unitsPerSko($submittedLine);
+
+    $stockDelivery = \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle(
+        $this->organisation,
+        $orgSupplier->id,
+        [$agreedLine->id => $halfSkos, $submittedLine->id => $submittedSkos],
+        $user
+    );
+
+    $submitted = $submitted->refresh();
+    $stages    = \App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages::run($agreed->refresh());
+
+    expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::RECEIVED)
+        ->and($stockDelivery->purchaseOrders()->pluck('purchase_orders.id')->sort()->values()->all())->toBe(collect([$agreed->id, $submitted->id])->sort()->values()->all())
+        ->and((float) $stockDelivery->items()->whereRaw("(data->>'purchase_order_transaction_id')::bigint = ?", [$agreedLine->id])->sole()->unit_quantity)->toEqual(50.0)
+        ->and($submitted->state)->not->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and($submitted->data['agreed_on_receiving']['user_id'])->toBe($user->id)
+        ->and($stockDelivery->attachments()->pluck('model_has_attachments.scope')->all())->toBe(['Packing list'])
+        ->and($stages['handed_over']['recorded'])->toBeTrue()
+        ->and($stages['handed_over']['date']?->toDateString())->toBe($stockDelivery->received_at->toDateString());
+
+    $stillOpen = collect(\App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders::make()->handle($this->organisation, $warehouse, $orgSupplier->id)['purchase_orders'])->keyBy('id');
+
+    expect((float) $stillOpen[$agreed->id]['lines'][0]['skos_awaiting'])->toEqual($agreedSkos - $halfSkos)
+        ->and($stillOpen->has($submitted->id))->toBeFalse();
+});
+
+test('INI-523 goods in can not receive a parcel against an agent order or another supplier\'s order, and only goods in staff open the parcel dialog', function () {
+    [$orgSupplier] = independentOrgSupplierFixture($this);
+    [$otherOrgSupplier, , $otherOrgSupplierProduct] = independentOrgSupplierFixture($this);
+    $otherOrder = createConfirmedAgentOrder($this, $otherOrgSupplier, $otherOrgSupplierProduct, 0, 10);
+    $warehouse  = $this->organisation->warehouses()->oldest('id')->first() ?? createWarehouse();
+
+    expect(fn () => \App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel::make()->handle($this->organisation, $orgSupplier->id, [$otherOrder->purchaseOrderTransactions()->value('id') => 1]))
+        ->toThrow(ValidationException::class);
+
+    $outsider = userWithOnlyPermissions($this->organisation, []);
+    actingAs($outsider);
+    $this->getJson(route('grp.org.warehouses.show.incoming.supplier_parcel.options', [$this->organisation->slug, $warehouse->slug]))->assertForbidden();
+
+    $user = $this->adminGuest->getUser();
+    allowGoodsInOn($warehouse, $user);
+    actingAs($user);
+    $this->getJson(route('grp.org.warehouses.show.incoming.supplier_parcel.options', [$this->organisation->slug, $warehouse->slug]))->assertOk()->assertJsonStructure(['suppliers']);
 });

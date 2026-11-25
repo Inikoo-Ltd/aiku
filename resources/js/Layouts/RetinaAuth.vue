@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import CookieConsent from "@/Layouts/Iris/CookieConsent.vue"
 import { usePage } from '@inertiajs/vue3'
 import { loadLanguageAsync } from 'laravel-vue-i18n'
 import { provide } from "vue"
@@ -45,4 +46,7 @@ const isStaging = usePage().props.environment === 'staging'
             </div>
         </div>
     </div>
+
+    <!-- Own cookie banner (INI-513): /app pages need the banner and Cookie settings button too -->
+    <CookieConsent v-if="usePage().props?.iris?.own_cookie_banner" />
 </template>

@@ -20,7 +20,7 @@ use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\GoodsIn\StockDeliveryFollowUp\UI\IndexBuyerDeliveryDiscrepancies;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;

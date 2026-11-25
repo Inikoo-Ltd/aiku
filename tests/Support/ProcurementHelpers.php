@@ -2,7 +2,6 @@
 
 use App\Actions\Goods\Stock\StoreStock;
 use App\Enums\Goods\Stock\StockStateEnum;
-use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Models\SysAdmin\User;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
@@ -147,21 +146,6 @@ function placeDeliveryUnderAgentOrder(StockDelivery $stockDelivery, PurchaseOrde
 {
     $stockDelivery->update(['agent_id' => $purchaseOrder->agent_id, 'currency_id' => $purchaseOrder->currency_id]);
     $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
-}
-
-function createPaidAspoDeposit(PurchaseOrder $purchaseOrder, array $modelData = []): \App\Models\SupplyChain\AspoDeposit
-{
-    $deposit = StoreAspoDeposit::make()->action($purchaseOrder, array_merge(['amount' => 100], $modelData));
-
-    return \App\Actions\SupplyChain\AspoDeposit\UpdateAspoDepositState::make()->action($deposit, ['state' => 'paid_to_supplier']);
-}
-
-function offeredDepositIds(StockDelivery $stockDelivery): array
-{
-    $method = new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery::class, 'getDepositSettlement');
-    $method->setAccessible(true);
-
-    return collect($method->invoke(\App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery::make(), $stockDelivery, collect(), 0.0, 0.0)['available'])->pluck('id')->all();
 }
 
 function allowGoodsInOn(\App\Models\Inventory\Warehouse $warehouse, User $user): void

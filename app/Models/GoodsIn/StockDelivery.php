@@ -530,10 +530,6 @@ class StockDelivery extends Model implements HasMedia, Auditable
             ->withTimestamps();
     }
 
-    public function depositApplications(): HasMany
-    {
-        return $this->hasMany(StockDeliveryDepositApplication::class);
-    }
 
     public function parent(): MorphTo
     {

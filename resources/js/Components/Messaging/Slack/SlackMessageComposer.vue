@@ -21,6 +21,7 @@ import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessa
 export interface SlackWriteState {
     allowed: boolean
     reason: string | null
+    stand_in?: boolean
     connect_url: string | null
     people?: DeskPerson[]
     channels?: DeskPerson[]
@@ -32,6 +33,7 @@ export interface SlackSentMessage {
     at: number
     message: SlackStreamMessage | null
     parent: SlackStreamMessage | null
+    stand_in?: boolean
 }
 
 const props = defineProps<{
@@ -51,6 +53,7 @@ const alsoToChannel = ref(false)
 const sending = ref(false)
 const error = ref<string | null>(null)
 const confirmingEveryone = ref(false)
+const offerConnect = ref(false)
 const EVERYONE_CONFIRM_ABOVE = 6
 let idempotencyKey: string | null = null
 
@@ -83,6 +86,7 @@ const send = async (notifyEveryone = false) => {
         text.value = ""
         alsoToChannel.value = false
         emit("sent", data)
+        offerConnect.value = Boolean(data.stand_in && props.write.connect_url)
         editorRef.value?.focus()
     } catch (e: any) {
         if (e?.response?.status === 422 && e?.response?.data?.errors?.notify_everyone) {
@@ -107,11 +111,20 @@ const editLast = () => {
 
 <template>
     <div v-if="write.allowed" ref="rootEl" class="shrink-0 bg-white px-4 pb-4 pt-1">
-        <p v-if="write.reason" class="text-xs text-gray-500">
+        <p v-if="write.reason && !write.stand_in" class="text-xs text-gray-500">
             {{ write.reason }}
             <a v-if="write.connect_url" :href="write.connect_url" class="font-medium text-gray-700 underline hover:text-gray-900">{{ ctrans("Connect Slack") }}</a>
         </p>
         <template v-else>
+            <div v-if="offerConnect" class="mb-1.5 flex items-start gap-x-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                <p class="flex-1">
+                    {{ ctrans("Sent under your name through the Desk app, so Slack shows it with an APP label. Want it to show fully as you?") }}
+                    <a :href="write.connect_url ?? undefined" class="ml-1 font-medium text-gray-700 underline hover:text-gray-900">{{ ctrans("Connect your Slack") }}</a>
+                </p>
+                <button type="button" class="text-gray-400 hover:text-gray-600" :aria-label="ctrans('Close')" @click="offerConnect = false">
+                    <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+                </button>
+            </div>
             <DeskMessageEditor
                 ref="editorRef"
                 v-model="text"

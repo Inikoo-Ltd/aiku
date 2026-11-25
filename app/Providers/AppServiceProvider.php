@@ -257,7 +257,6 @@ class AppServiceProvider extends ServiceProvider
                 'ReturnItem'                       => 'App\Models\GoodsIn\ReturnItem',
 
                 // Goods In
-                'StockDeliveryDepositApplication'  => 'App\Models\GoodsIn\StockDeliveryDepositApplication',
                 'OrderReturn'                      => 'App\Models\GoodsIn\OrderReturn',
                 'Sowing'                           => 'App\Models\GoodsIn\Sowing',
                 'StockDelivery'                    => 'App\Models\GoodsIn\StockDelivery',
@@ -447,7 +446,6 @@ class AppServiceProvider extends ServiceProvider
 
 
                 // Supply Chain
-                'AspoDeposit'                      => 'App\Models\SupplyChain\AspoDeposit',
                 'SupplierSubmission'               => 'App\Models\SupplyChain\SupplierSubmission',
                 'AgentSupplierPurchaseOrder'       => 'App\Models\SupplyChain\AgentSupplierPurchaseOrder',
                 'HistoricSupplierProduct'          => 'App\Models\SupplyChain\HistoricSupplierProduct',

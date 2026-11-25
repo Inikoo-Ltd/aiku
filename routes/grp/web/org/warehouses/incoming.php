@@ -13,6 +13,8 @@ use App\Actions\GoodsIn\Return\UI\IndexReturns;
 use App\Actions\GoodsIn\Return\UI\ShowReturn;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\IndexReturnDeliveryNotes;
 use App\Actions\GoodsIn\ReturnDeliveryNote\UI\ShowReturnDeliveryNote;
+use App\Actions\GoodsIn\StockDelivery\ReceiveSupplierParcel;
+use App\Actions\GoodsIn\StockDelivery\UI\GetSupplierParcelPurchaseOrders;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
 use App\Actions\UI\Incoming\IndexIncomingProductionOutput;
@@ -25,6 +27,8 @@ Route::post('/production-output/put-away', PutAwayFinishedJobOrder::class)->name
 
 Route::get('stock-deliveries', [IndexStockDeliveries::class, 'inWarehouse'])->name('stock_deliveries.index');
 Route::get('stock-deliveries/{stockDelivery}', [ShowStockDelivery::class, 'inWarehouse'])->name('stock_deliveries.show');
+Route::get('supplier-parcel', GetSupplierParcelPurchaseOrders::class)->name('supplier_parcel.options');
+Route::post('supplier-parcel', ReceiveSupplierParcel::class)->name('supplier_parcel.receive');
 
 
 Route::get('fulfilment-deliveries', IndexWarehousePalletDeliveries::class)->name('pallet_deliveries.index');

@@ -23,7 +23,7 @@ class SupplierDepositRequestedNotification extends Notification implements Shoul
 
     public bool $byEmail = true;
 
-    public function __construct(public PurchaseOrder $purchaseOrder, public string $title, public string $body, public string $whyLine, public array $route)
+    public function __construct(public PurchaseOrder $purchaseOrder, public string $title, public string $body, public string $whyLine, public array $route, public string $type = 'supplier_deposit_requested')
     {
         $this->locale = app()->getLocale();
         $this->afterCommit();
@@ -39,7 +39,7 @@ class SupplierDepositRequestedNotification extends Notification implements Shoul
         return [
             'title' => $this->title,
             'body'  => $this->body,
-            'type'  => 'supplier_deposit_requested',
+            'type'  => $this->type,
             'slug'  => (string) $this->purchaseOrder->id,
             'route' => $this->route,
         ];

@@ -161,7 +161,8 @@ class GetPurchaseOrderStages
         $isDispatched = $deliveries->isEmpty()
             ? in_array(StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value), self::SHIPPED_STATES)
             : $dispatched->isNotEmpty();
-        $dispatchedAt = $dispatched->pluck('dispatched_at')->filter()->min();
+        $dispatchedAt = $dispatched->pluck('dispatched_at')->filter()->min()
+            ?? ($purchaseOrder->isAgentOrder() ? null : $dispatched->pluck('received_at')->filter()->min());
         $sendsOnNextContainer = $purchaseOrder->choMode() === 'next_container';
         $onContainers         = $sendsOnNextContainer ? $this->allOnContainersAt($purchaseOrder) : null;
         $packedAt             = $sendsOnNextContainer ? $this->warehouseDates($purchaseOrder)['warehouse_packed_at'] : null;

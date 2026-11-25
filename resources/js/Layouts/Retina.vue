@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import CookieConsent from "@/Layouts/Iris/CookieConsent.vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
@@ -389,6 +390,9 @@ useAppAccentVariables(() => safeTheme.value)
     </notifications>
 
     <SidePanel :isChatEnabled="!!useChat" />
+
+    <!-- Own cookie banner (INI-513): /app pages need the banner and Cookie settings button too -->
+    <CookieConsent v-if="usePage().props?.iris?.own_cookie_banner" />
 </template>
 
 <style lang="scss">

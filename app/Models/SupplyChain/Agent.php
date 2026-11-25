@@ -251,10 +251,6 @@ class Agent extends Model implements HasMedia, Auditable
         return $this->hasMany(AgentTimeSeries::class);
     }
 
-    public function deposits(): HasMany
-    {
-        return $this->hasMany(AspoDeposit::class);
-    }
 
     public function depositRequests(): HasMany
     {

@@ -10,7 +10,10 @@ use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDelivery
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
+use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPurchaseOrder;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
@@ -198,6 +201,8 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         });
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
+
+        $this->attachSupplierShippingDocuments($stockDelivery, $purchaseOrder);
 
         StockDeliveriesHydrateItems::run($stockDelivery);
 
@@ -622,6 +627,34 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
         if ($data !== ($stockDelivery->data ?? [])) {
             $stockDelivery->update(['data' => $data]);
+        }
+    }
+
+    /**
+     * The shipping documents the supplier uploaded to the order from its portal follow the goods onto the delivery.
+     * Goods in sees a delivery's attachments and never prices, so the invoice and proforma stay on the order.
+     */
+    public function attachSupplierShippingDocuments(StockDelivery $stockDelivery, PurchaseOrder $purchaseOrder): void
+    {
+        $scopes = array_map(fn (PurchaseOrderAttachmentScopeEnum $scope) => $scope->value, [
+            PurchaseOrderAttachmentScopeEnum::PACKING_LIST,
+            PurchaseOrderAttachmentScopeEnum::BILL_OF_LADING,
+            PurchaseOrderAttachmentScopeEnum::CERTIFICATE_OF_ORIGIN,
+        ]);
+
+        $documents = ShowSupplierPortalPurchaseOrder::make()->supplierDocumentsQuery($purchaseOrder)
+            ->wherePivotIn('scope', $scopes)
+            ->whereNotIn('media.id', $stockDelivery->attachments()->select('media.id'))
+            ->get();
+
+        foreach ($documents as $document) {
+            $stockDelivery->attachments()->attach($document->id, [
+                'group_id'  => $stockDelivery->group_id,
+                'scope'     => $document->pivot->scope,
+                'sub_scope' => StoreSupplierPortalPurchaseOrderDocument::SUB_SCOPE,
+                'caption'   => $document->pivot->caption,
+                'data'      => '{}',
+            ]);
         }
     }
 

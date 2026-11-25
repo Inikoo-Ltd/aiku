@@ -28,7 +28,7 @@ use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\UI\Procurement\OrgAgentTabsEnum;
 use App\Actions\SupplyChain\AgentPayment\UI\IndexAgentLedger;
 use App\Actions\SupplyChain\DepositRequest\UI\IndexAgentMoneyRequests;
-use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
+use App\Enums\SupplyChain\DepositRequest\DepositRequestStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\SupplyChain\DepositRequest\MatchAgentMoneyTransfers;

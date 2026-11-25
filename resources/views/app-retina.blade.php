@@ -31,6 +31,8 @@
         {{Vite::useHotFile('retina.hot')->useBuildDirectory('retina')->withEntryPoints(['resources/js/app-retina.js'])}}
         @inertiaHead
 
+        @include('partials.consent-mode-defaults')
+
         @if(request()->input('website') && Arr::get(request()->input('website')->settings, 'google_tag_id', ''))
             <!-- Google Tag Manager -->
             <script>

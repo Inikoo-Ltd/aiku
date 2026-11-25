@@ -45,7 +45,6 @@ import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
-import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import type { PDRNotes } from "@/types/Pallet"
 import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayments.vue"
@@ -159,7 +158,6 @@ const props = defineProps < {
     compliance?: object
     compliance_summary?: InstanceType<typeof TablePurchaseOrderComplianceDocuments>["$props"]["compliance"]
     compliance_checklist?: ComplianceChecklist | null
-    deposits?: object | null
     payments?: PurchaseOrderPaymentsData | null
     agent_money?: AgentPurchaseOrderMoneyData | null
     delivery_items: {
@@ -1730,8 +1728,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</div>
 		</BoxStatPallet>
 	</div>
-
-	<AspoDepositsChecklist v-if="deposits" :deposits="deposits" />
 
 	<div v-if="agreement.supplier_agreement_status?.warning || agreement.supplier_agreement_status?.order_acceptance" class="px-4 pt-4">
 		<p v-if="agreement.supplier_agreement_status.warning" class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">

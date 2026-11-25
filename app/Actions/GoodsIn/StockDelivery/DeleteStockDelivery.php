@@ -80,8 +80,7 @@ class DeleteStockDelivery extends OrgAction
     {
         return match (true) {
             $stockDelivery->agentLedgerEntries()->exists(),
-            $stockDelivery->supplierPayments()->exists(),
-            $stockDelivery->depositApplications()->exists()                                                => __(':reference has payments or deposits, remove them first', ['reference' => $stockDelivery->reference]),
+            $stockDelivery->supplierPayments()->exists()                                                   => __(':reference has payments or deposits, remove them first', ['reference' => $stockDelivery->reference]),
             $stockDelivery->claims()->exists()                                                             => __(':reference has claims, remove them first', ['reference' => $stockDelivery->reference]),
             $stockDelivery->costs()->whereNotNull('amount')->where('amount', '!=', 0)->exists(),
             $stockDelivery->serviceInvoices()->exists()                                                    => __(':reference has costs or service invoices, remove them first', ['reference' => $stockDelivery->reference]),

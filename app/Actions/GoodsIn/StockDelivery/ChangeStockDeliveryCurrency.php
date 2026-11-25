@@ -102,7 +102,6 @@ class ChangeStockDeliveryCurrency
             __('This stock delivery is costed.')               => (bool) $stockDelivery->is_costed,
             __('Payments to the supplier are recorded on it.') => $stockDelivery->supplierPayments()->exists(),
             __('Payments to the agent are recorded on it.')    => $stockDelivery->agentLedgerEntries()->exists(),
-            __('A deposit is applied to it.')                  => $stockDelivery->depositApplications()->exists(),
             __('It has an agent invoice.')                     => $stockDelivery->agentInvoice()->exists(),
             __('A supplier invoice is already entered on it.') => $stockDelivery->supplierInvoice()->exists(),
             __('It has claims.')                               => $stockDelivery->claims()->exists(),
