@@ -8,7 +8,9 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
+use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\ConnectionException;
@@ -20,8 +22,28 @@ class SlackWriteClient
 
     private const int TIMEOUT_SECONDS = 8;
 
-    private function __construct(private readonly SlackConnection $connection, #[\SensitiveParameter] private readonly string $token)
+    private function __construct(private readonly ?SlackConnection $connection, #[\SensitiveParameter] private readonly string $token, private readonly ?SlackUser $standInFor = null)
     {
+    }
+
+    /**
+     * For a person who has not connected their Slack, the Desk bot posts in their place under their name and photo
+     * (Slack labels it APP). It can post, edit and delete what it posted, never react or touch the person's own messages.
+     */
+    public static function standInFor(User $user): ?self
+    {
+        $token  = (string) config('services.slack.notifications.bot_user_oauth_token');
+        $person = SlackChannel::linkedSlackPerson($user);
+        if ($token === '' || !$person || !SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
+            return null;
+        }
+
+        return new self(null, $token, $person);
+    }
+
+    public function isStandIn(): bool
+    {
+        return $this->standInFor !== null;
     }
 
     public static function for(User $user): ?self
@@ -46,7 +68,7 @@ class SlackWriteClient
 
     public function slackUserId(): string
     {
-        return $this->connection->slack_user_id;
+        return $this->standInFor?->slack_id ?? $this->connection->slack_user_id;
     }
 
     /**
@@ -57,6 +79,12 @@ class SlackWriteClient
      */
     public function call(string $method, array $parameters): array
     {
+        if ($this->standInFor && $method === 'chat.postMessage') {
+            $parameters += [
+                'username' => $this->standInFor->real_name ?: $this->standInFor->display_name ?: $this->standInFor->name,
+                'icon_url' => $this->standInFor->avatar_url,
+            ];
+        }
         $form = array_map(
             fn ($value) => is_bool($value) ? ($value ? 'true' : 'false') : (is_array($value) ? json_encode($value) : $value),
             array_filter($parameters, fn ($value) => $value !== null)
@@ -73,7 +101,7 @@ class SlackWriteClient
         }
         if (!$response->json('ok')) {
             $error = (string) $response->json('error', 'http_'.$response->status());
-            if (in_array($error, self::RECONNECT_ERRORS, true)) {
+            if ($this->connection && in_array($error, self::RECONNECT_ERRORS, true)) {
                 $this->connection->update(['needs_reconnect' => true]);
             }
             throw new SlackWriteException($error, $method);

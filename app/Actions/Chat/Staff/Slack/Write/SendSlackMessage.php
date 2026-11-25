@@ -88,7 +88,7 @@ class SendSlackMessage
         $rootTs      = $threadTs ? $this->threadRoot($slackChannel, $threadTs) : null;
         $isBroadcast = $rootTs !== null && $alsoToChannel;
 
-        $client = $this->clientFor($user);
+        $client = $this->clientFor($user, standInAllowed: true);
 
         $claimKey = 'slack-send:'.$user->id.':'.$slackChannel->id.':'.$idempotencyKey;
         if (!Cache::add($claimKey, 'sending', self::IDEMPOTENCY_SECONDS)) {
@@ -122,7 +122,10 @@ class SendSlackMessage
         if ($rootTs) {
             SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $rootTs)->whereNull('thread_ts')->update(['thread_ts' => $rootTs]);
         }
-        $message = $this->storeOnce($slackChannel, ['ts' => $ts, 'thread_ts' => $rootTs, 'user' => $client->slackUserId(), 'text' => $text, ...($isBroadcast ? ['subtype' => 'thread_broadcast'] : []), ...$posted]);
+        $message = $this->storeOnce($slackChannel, [
+            'ts' => $ts, 'thread_ts' => $rootTs, 'user' => $client->slackUserId(), 'text' => $text, ...($isBroadcast ? ['subtype' => 'thread_broadcast'] : []), ...$posted,
+            ...($client->isStandIn() ? ['user' => $client->slackUserId(), 'subtype' => $isBroadcast ? 'thread_broadcast' : null] : []),
+        ]);
         if ($message?->wasRecentlyCreated) {
             rescue(fn () => SlackChannelMessageChanged::dispatch($slackChannel, $message, 'new'));
             rescue(fn () => NotifySlackMentions::run($message));
@@ -131,7 +134,7 @@ class SendSlackMessage
             $message->forceFill(['sent_from_aiku' => true])->saveQuietly();
         }
 
-        return $this->payload($slackChannel, $message);
+        return [...$this->payload($slackChannel, $message), 'stand_in' => $client->isStandIn()];
     }
 
     /**

@@ -15,6 +15,7 @@ use App\Actions\Chat\Staff\Slack\MarkSlackChannelRead;
 use App\Actions\Chat\Staff\Slack\ResolveSlackEmoji;
 use App\Actions\OrgAction;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteClient;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackMessage;
@@ -213,18 +214,20 @@ class ShowStaffSlackChannels extends OrgAction
      *
      * When the person can write, also who and which channels the box may mention: live people, members of this channel first.
      *
-     * @return array{allowed: bool, reason: string|null, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int}
+     * @return array{allowed: bool, reason: string|null, stand_in: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int}
      */
     public function writeState(User $user, ?SlackChannel $slackChannel = null): array
     {
         $allowed = SlackWriteAccess::allows($user);
         $reason  = $allowed ? SlackWriteAccess::reasonUnavailable($user) : null;
+        $standIn = $reason && SlackWriteClient::standInFor($user) !== null;
         $state   = [
             'allowed'     => $allowed,
             'reason'      => $reason,
+            'stand_in'    => $standIn,
             'connect_url' => $reason && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) ? route('grp.profile.edit', ['section' => 'slack']) : null,
         ];
-        if (!$allowed || $reason || !$slackChannel) {
+        if (!$allowed || ($reason && !$standIn) || !$slackChannel) {
             return $state;
         }
 
