@@ -28,6 +28,7 @@ library.add(faBarcodeRead, faSeedling, faChair, faExclamationTriangle, faLaugh, 
 type SupplierProductRow = Omit<SupplierProduct, "state"> & {
     state: { value: string, label: string, icon: object } | null
     goods_states?: { stock_code: string, state: string }[]
+    stock_codes?: string[]
 }
 
 const goodsStateLabels: Record<string, string> = {
@@ -147,9 +148,18 @@ function supplierProductRoute(supplierProduct: SupplierProduct) {
                 />
             </template>
             <template #cell(code)="{ item: supplier_product }">
-                <Link :href="supplierProductHref(supplier_product)" class="primaryLink whitespace-nowrap">
+                <Link
+                    v-tooltip="ctrans('Supplier product code')"
+                    :href="supplierProductHref(supplier_product)"
+                    class="primaryLink whitespace-nowrap"
+                >
                     {{ supplier_product['code'] }}
                 </Link>
+                <span
+                    v-if="supplier_product.stock_codes?.length"
+                    v-tooltip="supplier_product.stock_codes.length > 1 ? ctrans('Product codes (SKO)') : ctrans('Product code (SKO)')"
+                    class="ml-1 cursor-help whitespace-nowrap text-gray-500"
+                >({{ supplier_product.stock_codes.join(", ") }})</span>
             </template>
             <template #cell(supplier_name)="{ item: supplier_product }">
                 <Link v-if="supplier_product.supplier_slug" :href="route('grp.supply-chain.suppliers.show', [supplier_product.supplier_slug])" class="secondaryLink">

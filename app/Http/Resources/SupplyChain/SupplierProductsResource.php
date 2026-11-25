@@ -45,6 +45,7 @@ class SupplierProductsResource extends JsonResource
                 'icon'  => SupplierProductStateEnum::stateIcon()[$this->state->value],
             ] : null),
             'goods_states'  => $this->goods_states ?? [],
+            'stock_codes'   => $this->stock_codes ?? [],
             'description'   => $this->description,
             'cost'          => $this->cost,
             'currency_code' => $this->currency_code,

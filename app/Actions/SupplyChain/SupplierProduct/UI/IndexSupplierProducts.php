@@ -143,6 +143,7 @@ class IndexSupplierProducts extends OrgAction
             ->withQueryString();
 
         $this->attachGoodsStates($supplierProducts);
+        $this->attachStockCodes($supplierProducts);
 
         return $supplierProducts;
     }
@@ -165,6 +166,25 @@ class IndexSupplierProducts extends OrgAction
                     'stock_code' => $stockCode,
                     'state'      => ShowGoodsDashboard::groupState($cells->all())[0],
                 ])
+                ->values()
+                ->all();
+        }
+    }
+
+    private function attachStockCodes(LengthAwarePaginator $supplierProducts): void
+    {
+        $stockCodes = DB::table('stock_has_supplier_products')
+            ->join('stocks', 'stocks.id', 'stock_has_supplier_products.stock_id')
+            ->whereIn('stock_has_supplier_products.supplier_product_id', $supplierProducts->getCollection()->pluck('id'))
+            ->select(['stock_has_supplier_products.supplier_product_id', 'stocks.code'])
+            ->orderBy('stocks.code')
+            ->get()
+            ->groupBy('supplier_product_id');
+
+        foreach ($supplierProducts->getCollection() as $supplierProduct) {
+            $supplierProduct->stock_codes = ($stockCodes->get($supplierProduct->id) ?? collect())
+                ->pluck('code')
+                ->unique()
                 ->values()
                 ->all();
         }
