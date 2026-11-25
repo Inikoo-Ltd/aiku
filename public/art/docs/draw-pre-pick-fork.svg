@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750" font-family="'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive">
+<defs>
+    <filter id="pen" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="bleed" x="-30%" y="-30%" width="160%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.014" numOctaves="3" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="1.6" result="b"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="4" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 -0.2" result="ga"/>
+      <feComposite in="b" in2="ga" operator="in" result="mottled"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="mottled"/></feMerge>
+    </filter>
+    <filter id="marker" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="21" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="2" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.90  0 0 0 0 0.87  0 0 0 0 0.80  0 0 0 0.28 0" result="c"/>
+      <feComposite in="c" in2="SourceGraphic" operator="over"/>
+    </filter>
+    <style>
+      .pen { fill: none; stroke: #23222e; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; filter: url(#pen); }
+      .soft { stroke-width: 1.4; opacity: .6; }
+      .w { mix-blend-mode: multiply; filter: url(#bleed); stroke: none; opacity: .8; }
+      .m { fill: none; stroke-linecap: round; stroke-width: 26; opacity: .55; mix-blend-mode: multiply; filter: url(#marker); }
+      .h { fill: #23222e; filter: url(#pen); }
+      .hl { fill: #8a4b9e; filter: url(#pen); }
+    </style>
+  </defs>
+  <rect width="1200" height="750" fill="#fbf7ee"/>
+  <rect width="1200" height="750" fill="#fbf7ee" filter="url(#paper)"/>
+
+  <g class="w">
+    <path d="M44 322 C110 312 180 316 232 322 C240 400 238 470 230 530 C160 540 100 536 48 530 C38 460 38 390 44 322 Z" fill="#9dcab0" opacity=".30"/>
+    <path d="M300 292 C360 284 430 286 478 300 C486 320 480 340 462 350 C400 356 340 354 302 350 Z M300 374 C350 368 410 370 456 384 C462 404 456 424 440 432 C390 438 340 436 302 432 Z" fill="#e2c28a" opacity=".5"/>
+    <path d="M570 80 C650 62 760 66 812 90 C824 140 820 190 806 222 C730 232 640 230 580 220 C564 170 562 120 570 80 Z" fill="#f3c04a" opacity=".34"/>
+    <path d="M500 340 C560 332 630 334 680 344 C690 430 688 520 680 600 C620 608 560 606 502 598 C492 510 492 420 500 340 Z" fill="#76b7c2" opacity=".30"/>
+    <path d="M1026 292 C1070 284 1120 286 1156 296 C1162 380 1160 470 1154 546 C1110 552 1066 550 1028 544 C1020 460 1020 370 1026 292 Z" fill="#9dcab0" opacity=".36"/>
+    <path d="M870 480 C920 472 980 474 1012 484 C1016 510 1012 536 1004 546 C960 552 910 550 872 542 C864 520 864 498 870 480 Z" fill="#e2c28a" opacity=".42"/>
+    <path d="M900 590 C970 570 1070 566 1124 580 C1130 610 1126 640 1116 656 C1050 668 970 670 906 660 C894 636 892 610 900 590 Z" fill="#e88a73" opacity=".36"/>
+  </g>
+  <g class="m">
+    <path d="M70 436 L206 433" stroke="#f3c04a"/>
+  </g>
+
+  <g class="pen">
+    <path d="M52 332 C110 326 170 330 222 328 C228 400 226 460 222 520 C160 526 110 524 56 522 C48 460 48 400 52 332 Z"/>
+    <path d="M54 370 C110 366 170 370 222 367 M68 396 l120 -2 M68 462 l132 -2 M68 494 l96 -2" class="soft"/>
+    <path d="M230 418 C250 410 270 408 290 404" class="soft" stroke-dasharray="6 10"/>
+    <path d="M280 396 l12 8 l-10 10" class="soft"/>
+
+    <path d="M300 286 C298 400 302 500 300 600 M270 604 c20 -7 42 -7 64 0"/>
+    <path d="M308 300 l140 -4 l22 23 l-20 23 l-142 4 z"/>
+    <path d="M308 382 l120 -3 l22 23 l-20 23 l-122 3 z"/>
+
+    <path d="M476 316 C520 306 548 250 572 196" class="soft" stroke-dasharray="6 10"/>
+    <path d="M560 204 l13 -9 l3 15" class="soft"/>
+    <path d="M580 150 l224 -4 l1 14 l-224 4 z M596 166 l-2 52 M790 162 l2 52"/>
+    <path d="M596 196 l194 -4" class="soft"/>
+    <path d="M612 148 l0 -30 c0 -8 6 -8 6 -14 l0 -10 l12 0 l0 10 c0 6 6 6 6 14 l0 30"/>
+    <path d="M664 147 l50 -1 l0 -34 l-50 1 z M664 113 l-10 -14 M714 112 l12 -12"/>
+    <path d="M750 142 l22 -44 M764 86 l22 10 l-5 12 l-22 -10 z"/>
+    <path d="M736 96 l-8 -8 M744 82 l0 -12 M728 110 l-12 -2" class="soft"/>
+
+    <path d="M454 408 C470 414 486 424 502 436" class="soft" stroke-dasharray="6 10"/>
+    <path d="M490 438 l14 0 l-4 -13" class="soft"/>
+    <path d="M514 350 l-2 244 M668 348 l2 244 M506 352 l168 -3 M506 430 l168 -3 M506 512 l168 -3 M506 592 l168 -3"/>
+    <path d="M526 428 l40 -1 l0 -40 l-40 1 z M574 428 l34 -1 l0 -30 l-34 1 z M616 426 l38 -1 l0 -46 l-38 1 z"/>
+    <path d="M530 510 l50 -1 l0 -36 l-50 1 z M592 509 l30 0 l0 -50 l-30 0 z M632 508 l26 0 l0 -28 l-26 0 z"/>
+    <path d="M524 590 l36 -1 l0 -44 l-36 1 z M570 590 l48 -1 l0 -30 l-48 1 z M628 589 l30 0 l0 -40 l-30 0 z"/>
+
+    <path d="M676 420 C710 400 730 360 758 342 M676 470 C705 462 730 440 760 432 M676 530 C706 548 730 580 758 596" class="soft" stroke-dasharray="6 10"/>
+    <path d="M746 340 l13 2 l-6 12 M748 426 l13 6 l-9 10 M752 584 l8 12 l-14 3" class="soft"/>
+
+    <circle cx="796" cy="340" r="22"/>
+    <path d="M796 340 l0 -14 M796 340 l10 6"/>
+    <path d="M930 344 C960 340 990 346 1022 344" class="soft" stroke-dasharray="6 10"/>
+    <path d="M1012 336 l12 8 l-10 10" class="soft"/>
+
+    <path d="M1034 300 l112 -3 l3 238 l-114 3 z" class="soft" stroke-dasharray="12 8"/>
+    <path d="M1052 378 l76 -2 l0 -58 l-76 2 z M1052 340 l76 -2 M1090 319 l0 58"/>
+    <path d="M1066 458 l46 -1 l0 -38 l-46 1 z M1066 438 l46 -1"/>
+
+    <path d="M772 434 C860 428 950 436 1022 432" class="soft" stroke-dasharray="6 10"/>
+    <path d="M1012 424 l12 8 l-10 10" class="soft"/>
+    <path d="M780 492 l44 -1 l1 38 l-44 1 z" class="soft" stroke-dasharray="5 6"/>
+    <path d="M920 486 l84 -2 l1 44 l-84 2 z M920 498 l-28 1 l-14 16 l0 16 l42 -1 M892 504 l-8 10 l14 0 z"/>
+    <circle cx="898" cy="534" r="11"/><circle cx="982" cy="532" r="11"/>
+    <path d="M868 512 l-30 1 M846 506 l-8 7 l8 7" class="soft"/>
+
+    <path d="M782 622 l44 -1 l1 38 l-44 1 z" class="soft" stroke-dasharray="5 6"/>
+    <path d="M776 616 l56 50 M832 614 l-54 54" style="stroke:#b53a2a"/>
+    <g transform="rotate(-7 1026 620)" style="stroke:#b53a2a">
+      <path d="M922 592 l208 -2 l1 58 l-208 2 z" style="stroke-width:3.4"/>
+      <path d="M930 600 l192 -2 l1 42 l-192 2 z" class="soft"/>
+    </g>
+
+    <path d="M924 668 C850 698 720 712 616 708 M548 706 C400 700 240 660 160 540" class="soft" stroke-dasharray="6 10"/>
+    <path d="M150 556 l10 -16 l12 14" class="soft"/>
+    <path d="M560 692 l46 -2 l1 28 l-46 2 z M560 692 l24 14 l22 -16"/>
+  </g>
+
+  <g class="h" font-size="24">
+    <text x="60" y="86" font-size="30">Factory › Pre-pick</text>
+    <text x="66" y="358" font-size="19">shopping list</text>
+    <text x="72" y="425" font-size="21">SKU-01</text><text x="178" y="425" font-size="21">96</text>
+    <text x="322" y="332">To produce</text>
+    <text x="322" y="414">Pre-pick</text>
+    <text x="770" y="298">All in stock</text>
+    <text x="828" y="348" font-size="22">≤ 10 min</text>
+    <text x="1014" y="276" font-size="19">partner's bay</text>
+    <text x="770" y="412">Part in stock</text>
+    <text x="770" y="604">Won't come</text>
+    <text x="1026" y="631" font-size="30" text-anchor="middle" transform="rotate(-7 1026 620)" style="fill:#b53a2a">Close short</text>
+  </g>
+  <g class="hl" font-size="21">
+    <text x="52" y="286">a partner's line</text>
+    <text x="52" y="310">arrives</text>
+    <text x="830" y="150">none in stock: it gets made</text>
+    <text x="500" y="626">some or all in stock</text>
+    <text x="828" y="376">goes on its own</text>
+    <text x="880" y="474">more coming</text>
+    <text x="300" y="732">the partner is told</text>
+  </g>
+  <g class="h" font-size="19" opacity=".7"><text x="850" y="736">— where a partner's line goes</text></g>
+</svg>

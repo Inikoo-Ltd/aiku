@@ -6,7 +6,7 @@ tags: production, stock, planning
 category: production
 help_routes: grp.org.productions.show.to_restock
 series: Ordering from partners
-order: 11
+order: 12
 ---
 
 <aside class="tldr">

@@ -6,7 +6,7 @@ tags: production, planning, floor
 category: production
 help_routes: grp.org.productions.show.operations.day_plan, grp.org.productions.show.operations.materials_check
 series: Ordering from partners
-order: 13
+order: 14
 ---
 
 <aside class="tldr">

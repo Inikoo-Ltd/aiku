@@ -5,7 +5,7 @@ date: 2026-09-08
 tags: dispatch, production, intercompany, warehouse
 category: dispatch
 series: Ordering from partners
-order: 10
+order: 11
 ---
 
 <aside class="tldr">

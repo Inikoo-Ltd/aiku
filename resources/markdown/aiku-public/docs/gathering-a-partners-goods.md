@@ -4,9 +4,9 @@ summary: The warehouse guide - what pre-pick means, why stock in a partner's gat
 date: 2026-09-09
 tags: dispatch, procurement, intercompany, warehouse
 category: dispatch
-help_routes: grp.org.warehouses.show.dispatching, grp.org.productions.show.pre_pick
+help_routes: grp.org.warehouses.show.dispatching
 series: Ordering from partners
-order: 8
+order: 9
 ---
 
 <aside class="tldr">

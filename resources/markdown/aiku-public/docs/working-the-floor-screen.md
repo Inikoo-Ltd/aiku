@@ -6,7 +6,7 @@ tags: production, floor, artisan
 category: production
 help_routes: grp.org.productions.show.floor
 series: Ordering from partners
-order: 9
+order: 10
 ---
 
 <aside class="tldr">

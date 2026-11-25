@@ -6,7 +6,7 @@ tags: production, stock, procurement, crafts
 category: production
 help_routes: grp.org.productions.show.crafts.artefacts.show
 series: Ordering from partners
-order: 12
+order: 13
 ---
 
 <aside class="tldr">
