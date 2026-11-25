@@ -56,11 +56,7 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
         $pickupPointError      = $chosenPickupPoint ? UpdateOrderPacketaPickupPoint::make()->getPointError($order, $chosenPickupPoint) : null;
 
         if ($insertsWithoutArtwork || $pickupPointError) {
-            $notification = $pickupPointError ? [
-                'status'      => 'error',
-                'title'       => __('Packeta pickup point'),
-                'description' => $pickupPointError,
-            ] : [
+            $notification = $pickupPointError ? null : [
                 'status'      => 'error',
                 'title'       => __('Insert file missing'),
                 'description' => __('Upload the file for :inserts before checking out.', [
@@ -153,8 +149,9 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
     public function htmlResponse(array $checkoutData): Response|RedirectResponse
     {
         if (Arr::get($checkoutData, 'redirect') === true) {
-            return Redirect::route(Arr::get($checkoutData, 'route.name'), Arr::get($checkoutData, 'route.parameters'))
-                ->with('notification', Arr::get($checkoutData, 'notification'));
+            $redirect = Redirect::route(Arr::get($checkoutData, 'route.name'), Arr::get($checkoutData, 'route.parameters'));
+
+            return Arr::get($checkoutData, 'notification') ? $redirect->with('notification', Arr::get($checkoutData, 'notification')) : $redirect;
         }
 
         /** @var Order $order */

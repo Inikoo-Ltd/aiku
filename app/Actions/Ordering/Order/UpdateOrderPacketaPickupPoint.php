@@ -70,7 +70,7 @@ class UpdateOrderPacketaPickupPoint
 
         $countryCode = (string) $order->deliveryAddress?->country_code;
         if ($point['country'] !== strtolower($countryCode)) {
-            return __('This Packeta pickup point is not in the country of the delivery address, please choose one in :country.', ['country' => $order->deliveryAddress?->country?->name ?? $countryCode]);
+            return __('This Packeta pickup point is not in the country of the delivery address, please choose one in :country.', ['country' => \Locale::getDisplayRegion('-'.$countryCode, app()->getLocale()) ?: $countryCode]);
         }
 
         $weight = round(((int) $order->estimated_weight + self::BOX_WEIGHT_ALLOWANCE) / 1000, 1);

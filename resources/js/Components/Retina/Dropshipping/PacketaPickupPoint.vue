@@ -97,7 +97,7 @@ const choosePoint = async () => {
     <div>
         <div class="text-sm text-gray-500">
             <FontAwesomeIcon icon="fal fa-map-marker-alt" fixed-width aria-hidden="true" />
-            {{ ctrans("Packeta pickup point or Z-BOX") }}
+            {{ ctrans("Packeta pickup point or Z-BOX").replace("Z-BOX", "Z\u2011BOX") }}
         </div>
 
         <div v-if="option.selected" class="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm">
