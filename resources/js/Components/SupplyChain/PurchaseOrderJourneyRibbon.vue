@@ -222,7 +222,7 @@ function shortDate(date: string | null): string {
     if (!date) {
         return ""
     }
-    return useFormatTime(date, { formatTime: date.slice(0, 4) === String(new Date().getFullYear()) ? "d MMM" : "d MMM yy" })
+    return useFormatTime(date, { formatTime: "d MMM ''yy" })
 }
 
 function amount(value: number | null, currency: string, digits = 0): string {
