@@ -56,7 +56,10 @@ const timeFormat = (iso: string) => new Date(iso).toLocaleString(undefined, { we
         <div v-if="!Object.keys(usage).length" class="text-xs text-gray-500">{{ ctrans("No usage reading in the last two weeks") }}</div>
         <div v-for="(row, account) in usage" :key="account" class="py-1.5">
             <div class="flex items-baseline justify-between gap-3">
-                <span class="truncate text-gray-800">{{ account }}</span>
+                <span class="flex min-w-0 items-baseline gap-1.5">
+                    <span class="truncate text-gray-800">{{ String(account).split(" · ")[0] }}</span>
+                    <span v-if="String(account).includes(' · ')" class="whitespace-nowrap rounded border border-gray-200 bg-gray-50 px-1.5 text-xs text-gray-400">{{ String(account).split(" · ")[1] }}</span>
+                </span>
                 <span class="whitespace-nowrap tabular-nums" :class="usageClass(row)">
                     {{ row.percent_used }}% <span class="text-xs text-gray-400">/ {{ row.week_gone_percent.toFixed(1) }}%</span>
                 </span>
