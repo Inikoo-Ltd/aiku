@@ -30,6 +30,7 @@ import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
+import ProductDevelopmentRelatedList from '@/Components/Goods/ProductDevelopment/ProductDevelopmentRelatedList.vue'
 import AgentAgreementsByOrganisation from '@/Components/Procurement/AgentAgreementsByOrganisation.vue'
 import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
 import PurchaseOrderForOrganisationMenu from '@/Components/Procurement/PurchaseOrderForOrganisationMenu.vue'
@@ -76,6 +77,7 @@ const props = defineProps<{
     attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
     attachmentScopes: { name: string; code: string }[]
     archive?: InstanceType<typeof SupplierArchiveButton>["$props"]["archive"] | null
+    productDevelopments?: InstanceType<typeof ProductDevelopmentRelatedList>["$props"]["data"] | null
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -129,8 +131,12 @@ const getErrors = () => {
     </PageHeading>
     <div v-if="props.errors.purchase_order">{{ getErrors() }}</div>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div v-if="currentTab === 'showcase'" class="px-4 pt-4 max-w-4xl">
+    <div v-if="currentTab === 'showcase'" class="grid items-start gap-4 px-4 pt-4 md:px-6 lg:px-8" :class="productDevelopments ? 'xl:grid-cols-[minmax(0,56rem)_minmax(0,1fr)]' : 'max-w-4xl'">
         <AgreementSummary :agreement="agreement" />
+        <section v-if="productDevelopments" class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <h3 class="border-b border-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800">{{ ctrans("Open product developments") }}</h3>
+            <ProductDevelopmentRelatedList :data="productDevelopments" compact :emptyText="ctrans('No open product development')" />
+        </section>
     </div>
     <AgentAgreementsByOrganisation v-if="currentTab === 'agreed_terms' && agreement?.by_organisation" :rows="agreement.by_organisation" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :detachRoute="attachmentRoutes.detachRoute" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}" />

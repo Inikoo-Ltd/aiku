@@ -23,6 +23,7 @@ use App\Models\Helpers\Currency;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SysAdmin\User;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -51,21 +52,26 @@ class UpdateSupplier extends OrgAction
             return true;
         }
 
-        if ($request->has('agent_id') || $request->has('relationship_contact_user_id')) {
+        if ($request->has('agent_id')) {
             return $request->user()->authTo('supply-chain.edit');
         }
 
-        if ($this->supplier->agent && $request->user()->authTo("procurement.{$this->supplier->agent->organisation_id}.edit")) {
+        return self::canBeEditedBy($this->supplier, $request->user());
+    }
+
+    public static function canBeEditedBy(Supplier $supplier, User $user): bool
+    {
+        if ($supplier->agent && $user->authTo("procurement.{$supplier->agent->organisation_id}.edit")) {
             return true;
         }
 
-        foreach ($this->supplier->orgSuppliers()->pluck('organisation_id') as $organisationId) {
-            if ($request->user()->authTo("procurement.{$organisationId}.edit")) {
+        foreach ($supplier->orgSuppliers()->pluck('organisation_id') as $organisationId) {
+            if ($user->authTo("procurement.{$organisationId}.edit")) {
                 return true;
             }
         }
 
-        return $request->user()->authTo('supply-chain.edit');
+        return $user->authTo('supply-chain.edit');
     }
 
     public function handle(Supplier $supplier, array $modelData): Supplier
@@ -80,6 +86,7 @@ class UpdateSupplier extends OrgAction
             $supplier = SetSupplierAgent::run($supplier, Agent::find(Arr::pull($modelData, 'agent_id')));
         }
 
+        $modelData         = $this->withNameFallingBackToContact($supplier, $modelData);
         $modelData         = $this->pullSupplierJsonColumns($modelData);
         $productsCurrency  = Arr::pull($modelData, 'products_currency');
         $productsCostRate  = null;
@@ -135,6 +142,31 @@ class UpdateSupplier extends OrgAction
         }
 
         return $supplier;
+    }
+
+    /**
+     * The name is the nickname; without one it follows the company or contact name.
+     */
+    private function withNameFallingBackToContact(Supplier $supplier, array $modelData): array
+    {
+        $nameFromContact = Supplier::nameFromContact(
+            Arr::get($modelData, 'company_name', $supplier->company_name),
+            Arr::get($modelData, 'contact_name', $supplier->contact_name)
+        ) ?: $supplier->name;
+
+        if (Arr::has($modelData, 'name')) {
+            $nickname          = trim((string) $modelData['name']);
+            $modelData['name'] = $nickname === '' ? $nameFromContact : $nickname;
+
+            return $modelData;
+        }
+
+        $contactChanges = Arr::has($modelData, 'company_name') || Arr::has($modelData, 'contact_name');
+        if ($contactChanges && $supplier->nickname() === null) {
+            $modelData['name'] = $nameFromContact;
+        }
+
+        return $modelData;
     }
 
     private function getProductsCostRate(Supplier $supplier, Currency $newCurrency, bool $convertCosts): float

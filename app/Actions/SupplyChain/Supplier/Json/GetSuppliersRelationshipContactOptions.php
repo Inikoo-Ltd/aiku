@@ -11,7 +11,6 @@ namespace App\Actions\SupplyChain\Supplier\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\Supplier\SetSuppliersRelationshipContact;
-use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +43,7 @@ class GetSuppliersRelationshipContactOptions extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value);
+        return SetSuppliersRelationshipContact::canBeSetBy($request->user(), (array) $request->input('suppliers', []));
     }
 
     public function asController(ActionRequest $request): array

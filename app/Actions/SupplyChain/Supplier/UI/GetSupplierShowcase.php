@@ -8,7 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
-use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
@@ -32,6 +32,10 @@ class GetSupplierShowcase
                 'created_at' => $supplier->created_at,
                 'company'    => $supplier->company_name,
                 'nickname'   => $supplier->nickname(),
+                'update_route' => $editRoute ? [
+                    'name'       => 'grp.models.supplier.update',
+                    'parameters' => ['supplier' => $supplier->id],
+                ] : null,
                 'contact'    => $supplier->contact_name,
                 'website'    => $supplier->contact_website,
                 'location'   => $supplier->location,
@@ -58,7 +62,7 @@ class GetSupplierShowcase
             'supplier_id' => $supplier->id,
             'user_id'     => $user?->id,
             'name'        => $user ? ($user->contact_name ?: $user->username) : null,
-            'can_edit'    => (bool) request()->user()?->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value),
+            'can_edit'    => request()->user() !== null && UpdateSupplier::canBeEditedBy($supplier, request()->user()),
         ];
     }
 

@@ -26,6 +26,9 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
 use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
+use App\Actions\SupplyChain\Supplier\UpdateSupplier;
+use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Actions\Goods\ProductDevelopment\UI\GetRelatedProductDevelopments;
 use App\Actions\SupplyChain\Supplier\UI\GetSupplierDeclarations;
 use App\Enums\UI\SupplyChain\SupplierTabsEnum;
 use App\Actions\Procurement\SupplierMessage\UI\IndexSupplierMessages;
@@ -82,6 +85,7 @@ class ShowOrgSupplier extends OrgAction
         $supplier              = $orgSupplier->supplier;
         $agreementOrganisation = $selection ? $selection->selected : $orgSupplier->organisation;
         $inboxParent           = $selection ? $supplier : $orgSupplier;
+        $editRoute             = UpdateSupplier::canBeEditedBy($supplier, $request->user()) ? $this->supplierEditRoute($selection, $supplier, $request) : null;
 
         return Inertia::render(
             'Procurement/OrgSupplier',
@@ -119,8 +123,12 @@ class ShowOrgSupplier extends OrgAction
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
-                    fn () => GetOrgSupplierShowcase::run($orgSupplier)
-                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
+                    fn () => GetOrgSupplierShowcase::run($orgSupplier, $editRoute)
+                    : Inertia::optional(fn () => GetOrgSupplierShowcase::run($orgSupplier, $editRoute)),
+
+                'productDevelopments' => (new ProductDevelopmentAccess())->canSeeAny($request->user())
+                    ? ['rows' => GetRelatedProductDevelopments::make()->forSupplier($supplier, $request->user())]
+                    : null,
 
                 'archive' => $selection ? $this->agentArchive($supplier, $request) : null,
 
@@ -336,6 +344,21 @@ class ShowOrgSupplier extends OrgAction
     /**
      * @return array<int, array<string, mixed>|false>
      */
+    /**
+     * @return array{name: string, parameters: array<string, mixed>}
+     */
+    private function supplierEditRoute(?AgentOrganisationSelection $selection, Supplier $supplier, ActionRequest $request): array
+    {
+        if ($selection) {
+            return $selection->route('grp.org.procurement.org_suppliers.edit', ['organisation' => $this->organisation->slug, 'supplier' => $supplier->slug]);
+        }
+
+        return [
+            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+            'parameters' => $request->route()->originalParameters(),
+        ];
+    }
+
     private function agentSupplierActions(AgentOrganisationSelection $selection, Supplier $supplier, ActionRequest $request): array
     {
         $parameters = ['organisation' => $this->organisation->slug, 'supplier' => $supplier->slug];

@@ -5,8 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import { computed, nextTick, ref } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import InputText from 'primevue/inputtext'
 import { ctrans } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -14,6 +15,8 @@ import {
     faBoxUsd,
     faBuilding,
     faCalendarPlus,
+    faCheck,
+    faTimes,
     faCalendarTimes,
     faClock,
     faHourglassHalf,
@@ -45,6 +48,8 @@ library.add(
     faBoxUsd,
     faBuilding,
     faCalendarPlus,
+    faCheck,
+    faTimes,
     faCalendarTimes,
     faClock,
     faHourglassHalf,
@@ -95,6 +100,7 @@ const props = defineProps<{
             created_at?: string
             company?: string
             nickname?: string | null
+            update_route?: RouteLink | null
             contact?: string
             location?: string[]
             email?: string
@@ -150,14 +156,81 @@ const hasAddress = computed(() =>
     Boolean(contactCard.value?.location?.length || contactCard.value?.address?.formatted_address)
 )
 
-const details = computed(() =>
-    [
+type DetailRow = {
+    key: string
+    label: string
+    icon: string
+    value: string | null | undefined
+    field?: string
+    placeholder?: string
+    hint?: string
+    alwaysShown?: boolean
+    href: string | null
+    external: boolean
+    copyable: boolean
+}
+
+const canEditContact = computed(() => Boolean(contactCard.value?.update_route))
+
+const editingField = ref<string | null>(null)
+const isSavingField = ref(false)
+const fieldDraft = ref('')
+const fieldError = ref<string | null>(null)
+const fieldInputElement = ref<InstanceType<typeof InputText>[] | InstanceType<typeof InputText> | null>(null)
+
+const focusFieldInput = () => {
+    const input = Array.isArray(fieldInputElement.value) ? fieldInputElement.value[0] : fieldInputElement.value
+    ;(input?.$el as HTMLInputElement | undefined)?.focus()
+}
+
+const startEditingField = (row: DetailRow) => {
+    if (!row.field) {
+        return
+    }
+
+    fieldDraft.value = row.value ?? ''
+    fieldError.value = null
+    editingField.value = row.field
+    nextTick(focusFieldInput)
+}
+
+const cancelEditingField = () => {
+    editingField.value = null
+    fieldError.value = null
+}
+
+const saveField = () => {
+    const updateRoute = contactCard.value?.update_route
+    const field = editingField.value
+    if (!updateRoute || !field || isSavingField.value) {
+        return
+    }
+
+    router.patch(
+        route(updateRoute.name, updateRoute.parameters),
+        { [field]: fieldDraft.value.trim() || null },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isSavingField.value = true
+                fieldError.value = null
+            },
+            onFinish: () => (isSavingField.value = false),
+            onSuccess: () => (editingField.value = null),
+            onError: (errors) => (fieldError.value = errors[field] || ctrans('Could not save the change'))
+        }
+    )
+}
+
+const details = computed<DetailRow[]>(() =>
+    ([
         {
             key: 'company',
             label: ctrans('Company'),
             icon: 'fal fa-building',
             value: contactCard.value?.company,
-            href: null as string | null,
+            field: 'company_name',
+            href: null,
             external: false,
             copyable: true
         },
@@ -166,7 +239,11 @@ const details = computed(() =>
             label: ctrans('Nickname'),
             icon: 'fal fa-tag',
             value: contactCard.value?.nickname,
-            href: null as string | null,
+            field: 'name',
+            placeholder: contactCard.value?.company || contactCard.value?.contact || '',
+            hint: ctrans('Leave it empty to use the company name.'),
+            alwaysShown: true,
+            href: null,
             external: false,
             copyable: true
         },
@@ -175,7 +252,8 @@ const details = computed(() =>
             label: ctrans('Contact name'),
             icon: 'fal fa-user',
             value: contactCard.value?.contact,
-            href: null as string | null,
+            field: 'contact_name',
+            href: null,
             external: false,
             copyable: true
         },
@@ -184,6 +262,7 @@ const details = computed(() =>
             label: ctrans('Email'),
             icon: 'fal fa-envelope',
             value: contactCard.value?.email,
+            field: 'email',
             href: contactCard.value?.email ? `mailto:${contactCard.value.email}` : null,
             external: false,
             copyable: true
@@ -193,7 +272,7 @@ const details = computed(() =>
             label: ctrans('Other email'),
             icon: 'fal fa-envelope',
             value: email,
-            href: `mailto:${email}` as string | null,
+            href: `mailto:${email}`,
             external: false,
             copyable: true
         })),
@@ -202,6 +281,7 @@ const details = computed(() =>
             label: ctrans('Phone'),
             icon: 'fal fa-phone',
             value: contactCard.value?.phone,
+            field: 'phone',
             href: contactCard.value?.phone ? `tel:${contactCard.value.phone}` : null,
             external: false,
             copyable: true
@@ -211,6 +291,7 @@ const details = computed(() =>
             label: ctrans('Website'),
             icon: 'fal fa-globe',
             value: contactCard.value?.website,
+            field: 'contact_website',
             href: contactCard.value?.website ?? null,
             external: true,
             copyable: true
@@ -220,7 +301,7 @@ const details = computed(() =>
             label: ctrans('Currency'),
             icon: 'fal fa-money-bill-wave-alt',
             value: contactCard.value?.currency?.name,
-            href: null as string | null,
+            href: null,
             external: false,
             copyable: false
         },
@@ -231,11 +312,11 @@ const details = computed(() =>
             value: contactCard.value?.created_at
                 ? useFormatTime(contactCard.value.created_at, { formatTime: 'aiku' })
                 : null,
-            href: null as string | null,
+            href: null,
             external: false,
             copyable: false
         }
-    ].filter((row) => row.value)
+    ] as DetailRow[]).filter((row) => row.value || row.alwaysShown || (row.field && canEditContact.value))
 )
 
 const supplierInfo = computed(() => {
@@ -387,21 +468,63 @@ const formatHoliday = (holiday: FactoryHoliday) => {
                             <span class="sr-only">{{ row.label }}</span>
                             <FontAwesomeIcon :icon="row.icon" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
-                        <dd class="min-w-0 flex-1 text-sm">
-                            <a
-                                v-if="row.href"
-                                :href="row.href"
-                                :target="row.external ? '_blank' : undefined"
-                                :rel="row.external ? 'noopener noreferrer' : undefined"
-                                class="break-all text-gray-700 hover:text-gray-900 hover:underline">
-                                {{ row.value }}
-                            </a>
-                            <span v-else class="break-all text-gray-700">{{ row.value }}</span>
+                        <dd v-if="row.field && editingField === row.field" class="min-w-0 flex-1 text-sm">
+                            <div class="flex items-center gap-x-2">
+                                <InputText
+                                    ref="fieldInputElement"
+                                    v-model="fieldDraft"
+                                    size="small"
+                                    class="min-w-0 flex-1"
+                                    :placeholder="row.placeholder ?? row.label"
+                                    :disabled="isSavingField"
+                                    @keydown.enter.prevent="saveField"
+                                    @keydown.esc.prevent="cancelEditingField" />
+                                <Button
+                                    type="primary"
+                                    size="xs"
+                                    :icon="faCheck"
+                                    :loading="isSavingField"
+                                    v-tooltip="ctrans('Save')"
+                                    @click="saveField" />
+                                <Button
+                                    type="tertiary"
+                                    size="xs"
+                                    :icon="faTimes"
+                                    :disabled="isSavingField"
+                                    v-tooltip="ctrans('Cancel')"
+                                    @click="cancelEditingField" />
+                            </div>
+                            <p v-if="row.hint" class="mt-1 text-xs text-gray-400">{{ row.hint }}</p>
+                            <p v-if="fieldError" class="mt-1 text-xs text-red-500">{{ fieldError }}</p>
                         </dd>
-                        <CopyButton
-                            v-if="row.copyable"
-                            :text="(row.value as string)"
-                            class="flex-none text-gray-400" />
+                        <template v-else>
+                            <dd class="min-w-0 flex-1 text-sm">
+                                <a
+                                    v-if="row.href && row.value"
+                                    :href="row.href"
+                                    :target="row.external ? '_blank' : undefined"
+                                    :rel="row.external ? 'noopener noreferrer' : undefined"
+                                    class="break-all text-gray-700 hover:text-gray-900 hover:underline">
+                                    {{ row.value }}
+                                </a>
+                                <span v-else-if="row.value" class="break-all text-gray-700">{{ row.value }}</span>
+                                <span v-else class="text-gray-400">-</span>
+                            </dd>
+                            <CopyButton
+                                v-if="row.copyable && row.value"
+                                :text="row.value"
+                                class="flex-none text-gray-400" />
+                            <button
+                                v-if="row.field && canEditContact"
+                                type="button"
+                                v-tooltip="ctrans('Edit') + ' ' + row.label"
+                                :disabled="Boolean(editingField)"
+                                class="flex-none rounded text-gray-400 hover:text-[var(--app-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--app-accent)] disabled:opacity-40"
+                                @click="startEditingField(row)">
+                                <FontAwesomeIcon :icon="faPencil" fixed-width aria-hidden="true" />
+                                <span class="sr-only">{{ ctrans('Edit') }} {{ row.label }}</span>
+                            </button>
+                        </template>
                     </div>
                 </dl>
                 <p v-else class="px-6 py-8 text-center text-sm text-gray-400">

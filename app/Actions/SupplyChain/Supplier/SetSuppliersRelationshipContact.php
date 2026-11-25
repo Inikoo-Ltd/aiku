@@ -123,7 +123,25 @@ class SetSuppliersRelationshipContact extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value);
+        return self::canBeSetBy($request->user(), (array) $request->input('suppliers', []));
+    }
+
+    /**
+     * Supply chain editors set it for any supplier; anyone else only for suppliers they can edit, such as an agent's staff for the agent's suppliers.
+     *
+     * @param  array<int, mixed>  $supplierIds
+     */
+    public static function canBeSetBy(User $user, array $supplierIds): bool
+    {
+        if ($user->authTo(GroupPermissionsEnum::SUPPLY_CHAIN_EDIT->value)) {
+            return true;
+        }
+
+        $suppliers = Supplier::where('group_id', $user->group_id)->whereIn('id', array_filter($supplierIds, 'is_numeric'))->get();
+
+        return $suppliers->isNotEmpty()
+            && $suppliers->count() === count(array_unique($supplierIds))
+            && $suppliers->every(fn (Supplier $supplier) => UpdateSupplier::canBeEditedBy($supplier, $user));
     }
 
     public function asController(ActionRequest $request): array
