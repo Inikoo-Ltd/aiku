@@ -24,6 +24,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplierProduct;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\HistoricSupplierProduct;
@@ -151,6 +152,10 @@ class StorePurchaseOrderTransaction extends OrgAction
             }
             if ($purchaseOrder->purchaseOrderTransactions()->where('org_stock_id', $orgStock->id)->exists()) {
                 $fail(__(':code is already on this purchase order, change its quantity instead', ['code' => $orgStock->code]));
+            }
+
+            if ($purchaseOrder->parent->partner->isHubWithRescuePurchaseOrders() && PartnerShoppingListItem::isMadeBySeller($purchaseOrder->parent->partner_id, $orgStock->stock_id)) {
+                $fail(__(':partner makes :code: order it in the basket', ['partner' => $purchaseOrder->parent->partner->name, 'code' => $orgStock->code]));
             }
 
             $unitPrice = $this->partnerUnitCost($purchaseOrder->parent, $orgStock);

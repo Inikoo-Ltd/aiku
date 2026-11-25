@@ -8,7 +8,9 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Masters\MasterAsset\GetPartnerAgreedUnitPrice;
 use App\Actions\Ordering\Order\CalculateOrderDiscounts;
+use App\Actions\Procurement\OrgPartner\GetPartnerBuyingPriceFactor;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateCategoriesData;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateDiscretionaryOffersData;
@@ -56,7 +58,7 @@ class SendPartnerPurchaseOrderToSeller
     public static function appliesTo(PurchaseOrder $purchaseOrder): bool
     {
         return $purchaseOrder->parent instanceof OrgPartner
-            && !$purchaseOrder->parent->partner->is_manufacturing_hub;
+            && $purchaseOrder->parent->partner->takesPartnerPurchaseOrders();
     }
 
     /**
@@ -235,19 +237,26 @@ class SendPartnerPurchaseOrderToSeller
 
             $landedCostLines = [];
             $orderLines      = [];
+            $hubDiscounted   = [];
+            $fromHub         = $orgPartner->partner->is_manufacturing_hub;
             foreach ($this->transactions($purchaseOrder) as $transaction) {
                 $product        = $this->sellingProduct($orgPartner, $transaction->stock_id, $shop->id);
                 $sellerOrgStock = $product->orgStocks()->first();
                 $unitsPerItem   = (float) $product->pivot->quantity * (float) ($sellerOrgStock?->packed_in ?: 1);
                 $quantity       = round((float) $transaction->quantity_ordered / $unitsPerItem, 6);
-                $amount         = round($quantity * (float) $product->price, 2);
+                $agreedPrice    = $fromHub ? GetPartnerAgreedUnitPrice::run($product, $orgPartner) : null;
+                $amount         = round($quantity * ($agreedPrice ?? (float) $product->price), 2);
 
                 $orderTransaction = StoreTransaction::make()->action($order, $product->historicAsset, [
-                    'quantity_ordered' => $quantity,
-                    'gross_amount'     => $amount,
-                    'net_amount'       => $amount,
+                    'quantity_ordered'  => $quantity,
+                    'gross_amount'      => $amount,
+                    'net_amount'        => $amount,
+                    'agreed_unit_price' => $agreedPrice,
                 ], strict: false);
                 $orderLines[$transaction->id] = $orderTransaction->id;
+                if ($fromHub && $agreedPrice === null) {
+                    $hubDiscounted[] = $orderTransaction->id;
+                }
 
                 if ($sellerOrgStock && (float) $product->price > 0) {
                     $landedCostLines[$orderTransaction->id] = [$sellerOrgStock->id, (float) $product->pivot->quantity / (float) $product->price];
@@ -261,6 +270,8 @@ class SendPartnerPurchaseOrderToSeller
 
             if (GetPartnerLandedCost::appliesTo($orgPartner)) {
                 $this->discountToLandedCost($order, $landedCostLines);
+            } elseif ($hubDiscounted) {
+                $this->discountAsHubPartner($order, $orgPartner, $hubDiscounted);
             }
 
             $this->matchPurchaseOrderToSellerOrder($purchaseOrder, $order, $orderLines);
@@ -348,6 +359,23 @@ class SendPartnerPurchaseOrderToSeller
                 'discretionary_offer_label' => __('Intercompany at landed cost'),
             ]);
         }
+
+        OrderHydrateDiscretionaryOffersData::run($order);
+        CalculateOrderDiscounts::run($order->refresh());
+    }
+
+    /**
+     * A hub prices what it sells to a partner as its basket orders do (CherryPickPartnerShoppingListItems):
+     * the agreed price when there is one, otherwise the list price less the intercompany partner discount.
+     *
+     * @param  array<int, int>  $transactionIds
+     */
+    private function discountAsHubPartner(Order $order, OrgPartner $orgPartner, array $transactionIds): void
+    {
+        Transaction::whereIn('id', $transactionIds)->update([
+            'discretionary_offer'       => GetPartnerBuyingPriceFactor::hubPartnerDiscount($orgPartner->partner),
+            'discretionary_offer_label' => __('Intercompany partner discount'),
+        ]);
 
         OrderHydrateDiscretionaryOffersData::run($order);
         CalculateOrderDiscounts::run($order->refresh());

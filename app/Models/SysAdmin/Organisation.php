@@ -929,6 +929,20 @@ class Organisation extends Model implements HasMedia, Auditable
         return $this->workSchedules()->where('type', 'default')->where('is_active', true)->first();
     }
 
+    /**
+     * A manufacturing hub with settings.procurement.rescue_by_purchase_order takes only what it makes
+     * through the partner basket; the rest it holds is bought from it on a purchase order (HELP-4939).
+     */
+    public function isHubWithRescuePurchaseOrders(): bool
+    {
+        return $this->is_manufacturing_hub && (bool) data_get($this->settings, 'procurement.rescue_by_purchase_order', false);
+    }
+
+    public function takesPartnerPurchaseOrders(): bool
+    {
+        return !$this->is_manufacturing_hub || $this->isHubWithRescuePurchaseOrders();
+    }
+
     public function hasFulfilmentGate(): bool
     {
         return (bool) ($this->settings['fulfilment_gate'] ?? false);

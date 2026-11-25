@@ -159,7 +159,7 @@ class StorePurchaseOrder extends OrgAction
         }
 
         if ($this->parent instanceof OrgPartner) {
-            if ($this->parent->partner->is_manufacturing_hub) {
+            if (!$this->parent->partner->takesPartnerPurchaseOrders()) {
                 $validator->errors()->add('purchase_order', __('Buy from :partner with the shopping list', ['partner' => $this->parent->partner->name]));
             }
 
@@ -208,7 +208,7 @@ class StorePurchaseOrder extends OrgAction
 
         /** @var PurchaseOrder|null $openPurchaseOrder */
         $openPurchaseOrder = $orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first();
-        if ($openPurchaseOrder && !$orgPartner->partner->is_manufacturing_hub) {
+        if ($openPurchaseOrder && $orgPartner->partner->takesPartnerPurchaseOrders()) {
             return $openPurchaseOrder;
         }
 

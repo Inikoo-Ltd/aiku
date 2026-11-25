@@ -655,7 +655,7 @@ class IndexPurchaseOrders extends OrgAction
             $afterTitle    = ['label' => __('Purchase Orders')];
             $iconRight     = ['icon' => 'fal fa-clipboard-list'];
             $subNavigation = $this->getOrgPartnerNavigation($this->parent);
-            $actions       = $this->parent->partner->is_manufacturing_hub ? [] : [
+            $actions       = !$this->parent->partner->takesPartnerPurchaseOrders() ? [] : [
                 [
                     'label' => __('Purchase Order'),
                     'type'  => 'button',

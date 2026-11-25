@@ -242,6 +242,15 @@ class PartnerShoppingListItem extends Model
         return "exists (select 1 from artefacts where artefacts.org_stock_id = $sellerOrgStockId and artefacts.deleted_at is null)";
     }
 
+    public static function isMadeBySeller(int $sellerOrganisationId, int $stockId): bool
+    {
+        return OrgStock::query()
+            ->where('organisation_id', $sellerOrganisationId)
+            ->where('stock_id', $stockId)
+            ->whereRaw(self::madeBySellerSql('org_stocks.id'))
+            ->exists();
+    }
+
     public static function isProductionLineSql(string $items = 'partner_shopping_list_items'): string
     {
         return "exists (select 1 from org_stocks seller_made

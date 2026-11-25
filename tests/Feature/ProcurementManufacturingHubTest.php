@@ -3591,6 +3591,56 @@ describe('partner shopping list', function () {
             ->and($production->refresh()->state)->toBe(ShoppingListItemStateEnum::OPEN);
     });
 
+    test('a hub with rescue purchase orders takes only what it makes in the basket and the rest on a purchase order at the hub price', function () {
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->where('state', ShoppingListItemStateEnum::DRAFT)->delete();
+        $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->delete();
+        $hub = $this->orgPartner->partner;
+        $hub->update(['is_manufacturing_hub' => true]);
+        if (!$hub->warehouses()->exists()) {
+            StoreWarehouse::make()->action($hub, Warehouse::factory()->definition());
+        }
+
+        $made = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($hub->group, Stock::factory()->definition())])[0];
+        madeBySeller(createOrgStocks($hub, [$made->stock])[0]);
+        $heldOnly = createOrgStocks($this->orgPartner->organisation, [StoreStock::make()->action($hub->group, Stock::factory()->definition())])[0];
+        createOrgStocks($hub, [$heldOnly->stock]);
+
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $liveArtefacts  = Artefact::where('org_stock_id', $sellerOrgStock->id)->whereNull('deleted_at')->pluck('id');
+        Artefact::whereIn('id', $liveArtefacts)->update(['deleted_at' => now()]);
+        $this->buyerOrgStock->update(['packed_in' => $sellerOrgStock->packed_in]);
+        $unitsPerProduct = (float) $sellerOrgStock->pivot->quantity * (float) ($sellerOrgStock->packed_in ?: 1);
+
+        expect(fn () => StorePurchaseOrder::make()->action($this->orgPartner, []))->toThrow(ValidationException::class);
+
+        $settings = $hub->settings ?? [];
+        $hub->update(['settings' => array_replace_recursive($settings, ['procurement' => ['shop_id' => $this->sellerShop->id, 'rescue_by_purchase_order' => true]])]);
+        $orgPartner = $this->orgPartner->refresh();
+
+        try {
+            expect(StorePartnerShoppingListItem::make()->action($orgPartner, $made, ['quantity' => 4])->state)->toBe(ShoppingListItemStateEnum::DRAFT)
+                ->and(fn () => StorePartnerShoppingListItem::make()->action($orgPartner, $heldOnly, ['quantity' => 2]))->toThrow(ValidationException::class, 'order it on a purchase order');
+
+            $purchaseOrder = StorePurchaseOrder::make()->action($orgPartner, []);
+            expect(SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder))->toBeTrue()
+                ->and(fn () => StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $made, ['quantity_ordered' => 1]))->toThrow(ValidationException::class, 'order it in the basket');
+
+            StorePurchaseOrderTransaction::make()->addPartnerOrgStock($purchaseOrder, $this->buyerOrgStock->refresh(), ['quantity_ordered' => 3 * $unitsPerProduct]);
+            UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+            $purchaseOrder->refresh();
+            $sellerLine = \App\Models\Ordering\Order::find(data_get($purchaseOrder->data, 'seller_order_id'))->transactions()->first();
+            $hubPrice   = round(3 * (float) $this->sellerProduct->price * (1 - GetPartnerBuyingPriceFactor::hubPartnerDiscount($hub)), 2);
+
+            expect($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+                ->and((float) $sellerLine->gross_amount)->toBe(round(3 * (float) $this->sellerProduct->price, 2))
+                ->and((float) $sellerLine->net_amount)->toEqualWithDelta($hubPrice, 0.01)
+                ->and(PartnerShoppingListItem::where('transaction_id', $sellerLine->id)->exists())->toBeFalse();
+        } finally {
+            $hub->update(['settings' => $settings]);
+            Artefact::whereIn('id', $liveArtefacts)->update(['deleted_at' => null]);
+        }
+    });
+
     test('submitting the list of a partner of another organisation is not found', function () {
         $anotherOrganisation = $this->agent->organisation;
         $foreignOrgPartner   = OrgPartner::where('organisation_id', $anotherOrganisation->id)->where('partner_id', $this->orgPartner->partner_id)->first()

@@ -44,6 +44,12 @@ class StorePartnerShoppingListItem extends OrgAction
             'Org stock does not belong to the buying organisation or its partner'
         );
 
+        if ($asDraft && $orgPartner->partner->isHubWithRescuePurchaseOrders() && !PartnerShoppingListItem::isMadeBySeller($orgPartner->partner_id, $orgStock->stock_id)) {
+            throw ValidationException::withMessages([
+                'org_stock' => __(':partner does not make :code: order it on a purchase order', ['partner' => $orgPartner->partner->name, 'code' => $orgStock->code]),
+            ]);
+        }
+
         GetPartnerOrderCapacity::guardAdd($orgPartner, $orgStock);
 
         if (PartnerSkoPrice::isOffLimitsToPartner($orgPartner, $orgStock->stock_id)) {
