@@ -70,7 +70,7 @@ class EditSupplierProduct extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit supplier product'),
+                'title'       => __('Edit supplier product').': '.$supplierProduct->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplierProduct,
                     $request->route()->getName(),

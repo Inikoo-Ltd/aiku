@@ -89,7 +89,7 @@ class ShowSupplierProduct extends InertiaAction
         return Inertia::render(
             'SupplyChain/SupplierProduct',
             [
-                'title'       => __('Supplier Product'),
+                'title'       => __('Supplier product').': '.$supplierProduct->code,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplierProduct,
                     $request->route()->getName(),
