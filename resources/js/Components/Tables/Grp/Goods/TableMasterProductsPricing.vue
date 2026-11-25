@@ -593,10 +593,10 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
+    <Table :resource="data" :name="tab" class="master-products-pricing-table mt-5" :isCheckBox="true" :useTopPagination="true" :stickyHeader="true"
         @onSelectRow="(items: Record<string, boolean>) => { selectedIds = items; emits('selectedRow', items) }">
         <template #cell(code)="{ item: masterProduct }">
-            <Link :href="productRoute(masterProduct)" class="primaryLink">
+            <Link :href="productRoute(masterProduct)" class="primaryLink whitespace-nowrap">
                 {{ masterProduct.code }}
             </Link>
             <FontAwesomeIcon
@@ -693,6 +693,17 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
                 </span>
                 </div>
             </div>
+        </template>
+
+        <template #cell(effective_cost)="{ item: masterProduct }">
+            <div v-if="majorCurrencies?.length" class="flex flex-col items-end gap-y-0.5 tabular-nums">
+                <span v-for="code in majorCurrencies" :key="code" class="whitespace-nowrap">
+                    {{ formatMoney(costsFor(masterProduct.effective_cost)?.[code] ?? null, code) }}
+                </span>
+            </div>
+            <span v-else class="whitespace-nowrap tabular-nums">
+                {{ formatMoney(costsFor(masterProduct.effective_cost)?.[masterProduct.currency_code] ?? null, masterProduct.currency_code) }}
+            </span>
         </template>
 
         <template #cell(price)="{ item: masterProduct }">
@@ -992,3 +1003,9 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
         </form>
     </Teleport>
 </template>
+
+<style>
+main:has(.master-products-pricing-table) {
+    padding-bottom: 1.5rem;
+}
+</style>
