@@ -685,7 +685,7 @@ test('a sole trader is registered under the person\'s name: its DIČ is filled w
     expect(VerifyCustomerDic::make()->handle($this->customer->fresh())['status'])->toBe(VerifyCustomerDic::FILLED)
         ->and($this->customer->fresh()->peppol_id)->toBe('0245:1075530467');
 
-    $this->customer->fresh()->update(['contact_name' => 'Someone Else', 'peppol_id' => null, 'data' => []]);
+    $this->customer->fresh()->update(['company_name' => 'J N Servis', 'contact_name' => 'Someone Else', 'peppol_id' => null, 'data' => []]);
     expect(VerifyCustomerDic::make()->handle($this->customer->fresh())['status'])->toBe(VerifyCustomerDic::NAME_DIFFERS);
 
     \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $this->customer->fresh(), modelData: ['number' => '1075530467', 'country_id' => $slovakiaId], strict: false);
@@ -696,6 +696,44 @@ test('a sole trader is registered under the person\'s name: its DIČ is filled w
     $this->customer->fresh()->taxNumber?->delete();
     $this->customer->fresh()->update(['identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
     $this->organisation->update(['country_id' => $originalCountryId]);
+});
+
+test('the register name is theirs when it is the same name written differently, never when it is another person or company', function () {
+    $same = [
+        ['Ľudmila Maitnerová', 'Mgr. Ľudmila Maitnerová'],
+        ['Daniela Galgóciová', 'Galgóciová Daniela jr.'],
+        ['Lenka Mikulová', 'Ing. Lenka Mikulová, PhD.'],
+        ['Anaja s. r. o.', 'Anaja sro'],
+        ['Viera Bramušková', 'Viera Bramušková - MUŠKA'],
+        ['Daniela Ivaničová', 'PRÍRODNÝ svet - Daniela Ivaničová'],
+        ['Marián Mezej', 'Marián Mezej m.focus'],
+        ['Mydláreň TAMARA, registrovaný sociálny podnik - integračný podnik', 'Mydláreň TAMARA, registrovaný sociálny podnik'],
+        ['Občianske združenie Jelšovka', 'OZ Jelšovka'],
+        ['AS Trade s.r.o.', 'ASTrade s.r.o.'],
+        ['Ján Novák', 'Ján Novák st.'],
+    ];
+    $different = [
+        ['Ancient Wisdom s. r. o.', 'Koncekova Martina'],
+        ['Peter Vavro', 'Hatiar Jakub'],
+        ['KM Zlatníctvo, spol. s r.o.', 'Helena Kasalová'],
+        ['Martina Švendová', 'Martina Gabrišová'],
+        ['Obchod', 'Obchod Plus'],
+        ['Obchod Plus s.r.o.', 'Obchod Plus Trnava s.r.o.'],
+        ['Daniela Pichová Lukáčová', 'Daniela Pichova'],
+        ['Ján Novák st.', 'Ján Novák ml.'],
+        ['Ján Novák', 'Autoservis Ján Novák s.r.o.'],
+        ['Materská škola', 'Súkromná materská škola Slniečko'],
+        ['HUMA, družstvo', 'HUMA Plus'],
+        ['BC Trade s.r.o.', 'Trade s.r.o.'],
+        ['Tran Van Ing', 'Tran Van'],
+    ];
+
+    foreach ($same as [$registered, $ours]) {
+        expect(VerifyCustomerDic::sameName($registered, $ours))->toBeTrue("$ours is $registered");
+    }
+    foreach ($different as [$registered, $ours]) {
+        expect(VerifyCustomerDic::sameName($registered, $ours))->toBeFalse("$ours is not $registered");
+    }
 });
 
 test('the customer list meter counts a shop\'s Slovak business customers by DIČ status and filters by each part', function () {

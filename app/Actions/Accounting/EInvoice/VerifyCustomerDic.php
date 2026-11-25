@@ -199,9 +199,6 @@ class VerifyCustomerDic
     }
 
     /**
-     * Names compared without accents, case, punctuation and legal form, so "Obchod, s. r. o." is "OBCHOD s.r.o.".
-     */
-    /**
      * The registered subject is the customer's when its name is the customer's company or contact name (a sole trader is
      * registered under the person's name), or when the DIČ the customer typed as its tax number is the registered one.
      *
@@ -223,18 +220,89 @@ class VerifyCustomerDic
         return false;
     }
 
+    private const string LEADING_LEGAL_FORMS = 'o z|oz|obcianske zdruzenie';
+    private const string LEGAL_FORMS = 'spol s r o|spol sro|s r o|sro|spol|a s|as|v o s|k s|s e|n o|o z|oz|obcianske zdruzenie|registrovany socialny podnik|integracny podnik|druzstvo|limited|ltd';
+    private const string TITLES = 'ing arch|mgr art|ph d|bc|mgr|ing|dr|mudr|mddr|mvdr|phdr|rndr|judr|paeddr|phd|csc|doc|prof|mba|jr|ml|st';
+    private const array GENERATIONS = ['jr', 'ml', 'st'];
+    private const string INSTITUTIONS = 'obec|mesto|mestske|mestska|skola|stredisko|urad|farnost|nadacia|zdruzenie|spolok|klub|centrum';
+
+    /**
+     * Names compared without accents, case, punctuation and the legal form at their start or end, so "Obchod, s. r. o."
+     * is "OBCHOD sro" and "OZ Jelšovka" is "Občianske združenie Jelšovka". A registered person (a sole trader: 2 or 3
+     * words, no legal form, no institution word) is also theirs when our name has no legal form and holds every word of
+     * it, in any order and without academic titles, so "Galgóciová Daniela jr." and "Viera Bramušková - MUŠKA" are
+     * "Daniela Galgóciová" and "Viera Bramušková"; "Ján Novák st." is never "Ján Novák ml.".
+     */
     public static function sameName(string $registered, string $ours): bool
     {
-        $normalise = fn (string $name) => trim((string)preg_replace(
-            ['/[^a-z0-9]+/', '/\b(spol|s r o|a s|v o s|k s|s e|o z)\b/'],
-            [' ', ''],
-            Str::lower(Str::ascii($name))
-        ));
+        $registeredCompact = implode('', self::nameWords($registered, withoutLegalForm: true));
+        if ($registeredCompact === '') {
+            return false;
+        }
+        if ($registeredCompact === implode('', self::nameWords($ours, withoutLegalForm: true))) {
+            return true;
+        }
 
-        $registered = preg_replace('/\s+/', '', $normalise($registered));
-        $ours       = preg_replace('/\s+/', '', $normalise($ours));
+        return self::isPerson($registered) && !self::hasLegalForm($ours) && self::samePerson($registered, $ours);
+    }
 
-        return $registered !== '' && $registered === $ours;
+    private static function isPerson(string $registered): bool
+    {
+        $words = array_diff(self::nameWords($registered, withoutLegalForm: false), self::GENERATIONS);
+
+        return count($words) >= 2 && count($words) <= 3
+            && !self::hasLegalForm($registered)
+            && !preg_match('/\d/', $registered)
+            && !preg_match('/\b('.self::INSTITUTIONS.')\b/', implode(' ', $words));
+    }
+
+    private static function samePerson(string $registered, string $ours): bool
+    {
+        $registeredWords = array_values(array_diff(self::nameWords($registered, withoutLegalForm: false), self::GENERATIONS));
+        $ourWords        = self::personWords($ours);
+        $registeredGeneration = array_intersect(self::nameWords($registered, withoutLegalForm: false), self::GENERATIONS);
+        $ourGeneration        = array_intersect(self::nameWords($ours, withoutLegalForm: false), self::GENERATIONS);
+        if ($registeredGeneration !== [] && $ourGeneration !== [] && array_values($registeredGeneration) !== array_values($ourGeneration)) {
+            return false;
+        }
+
+        return array_diff($registeredWords, $ourWords) === [];
+    }
+
+    private static function hasLegalForm(string $name): bool
+    {
+        return self::nameWords($name, withoutLegalForm: true) !== self::nameWords($name, withoutLegalForm: false);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function personWords(string $name): array
+    {
+        $plain = ' '.implode(' ', self::nameWords($name, withoutLegalForm: false)).' ';
+
+        return self::words((string)preg_replace('/(?<= )('.self::TITLES.')(?= )/', ' ', $plain));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function nameWords(string $name, bool $withoutLegalForm): array
+    {
+        $plain = ' '.trim((string)preg_replace('/[^a-z0-9]+/', ' ', Str::lower(Str::ascii($name)))).' ';
+        if ($withoutLegalForm) {
+            $plain = (string)preg_replace('/^(?: (?:'.self::LEADING_LEGAL_FORMS.')(?= ))+|(?: (?:'.self::LEGAL_FORMS.'))+(?= $)/', '', $plain);
+        }
+
+        return self::words($plain);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function words(string $plain): array
+    {
+        return array_values(array_filter(explode(' ', $plain), fn (string $word) => $word !== ''));
     }
 
     private function isOwnDic(Customer $customer, string $dic): bool
