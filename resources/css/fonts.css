@@ -25,31 +25,36 @@
 /* Bunya */
 @font-face {
     font-family: 'Bunya';
-    src: url('/assets/Fonts/Bunya/Bunya-Thin_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Thin.woff2') format('woff2'),
+         url('/assets/Fonts/Bunya/Bunya-Thin.woff') format('woff');
     font-weight: 200;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('/assets/Fonts/Bunya/Bunya-Light_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Light.woff2') format('woff2'),
+         url('/assets/Fonts/Bunya/Bunya-Light.woff') format('woff');
     font-weight: 300;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('/assets/Fonts/Bunya/Bunya-Regular_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Regular.woff2') format('woff2'),
+         url('/assets/Fonts/Bunya/Bunya-Regular.woff') format('woff');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('/assets/Fonts/Bunya/Bunya-Bold_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Bold.woff2') format('woff2'),
+         url('/assets/Fonts/Bunya/Bunya-Bold.woff') format('woff');
     font-weight: 700;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('/assets/Fonts/Bunya/Bunya-Black_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Black.woff2') format('woff2'),
+         url('/assets/Fonts/Bunya/Bunya-Black.woff') format('woff');
     font-weight: 900;
     font-display: swap;
 }

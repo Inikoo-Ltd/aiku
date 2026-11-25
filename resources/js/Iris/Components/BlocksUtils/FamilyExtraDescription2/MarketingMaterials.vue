@@ -12,6 +12,12 @@ const props = defineProps<{
 
 const containerStyle = computed(() => (getStyles(props.fieldValue?.marketing?.container?.properties)))
 
+const titleStyle = computed(() => getStyles(props.fieldValue?.marketing?.title?.container?.properties, props.screenType))
+
+const taglineStyle = computed(() => getStyles(props.fieldValue?.marketing?.tagline?.container?.properties, props.screenType))
+
+const showsBackdrop = computed(() => props.fieldValue?.marketing?.show_backdrop !== false)
+
 const resolveRoute = inject<((name: string, params?: object) => string) | null>('route', null)
 
 const marketingMaterialUrl = computed(() => {
@@ -32,11 +38,11 @@ const marketingMaterialUrl = computed(() => {
 
 <template>
     <section class="relative w-full overflow-hidden px-6 py-6 md:px-10 lg:px-16" :style="containerStyle">
-        <MarketingBackdrop />
+        <MarketingBackdrop v-if="showsBackdrop" />
 
         <div class="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 lg:flex-row">
             <div class="flex-1">
-                <h2 class="max-w-xl text-xl font-light leading-tight text-[#13294B] md:text-2xl">
+                <h2 class="max-w-xl text-xl font-light leading-tight text-[#13294B] md:text-2xl" :style="titleStyle">
                     {{ ctrans("Marketing materials for your online") }}
                     <br />
                     {{ ctrans("store & social media") }}
@@ -56,7 +62,7 @@ const marketingMaterialUrl = computed(() => {
             <div class="flex flex-col items-center">
                 <MarketingProductPhotos :images="fieldValue?.family?.marketing_images" :alt="fieldValue?.family?.name" />
 
-                <h3 class="mt-2 text-center text-lg font-bold leading-none text-[#13294B]">
+                <h3 class="mt-2 text-center text-lg font-bold leading-none text-[#13294B]" :style="taglineStyle">
                     {{ ctrans("Promote, Engage, Sell") }}
                 </h3>
             </div>

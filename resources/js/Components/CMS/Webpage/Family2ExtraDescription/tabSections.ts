@@ -120,10 +120,33 @@ export const regulatorySection = () => ({
 	replaceForm: [layoutSection()],
 })
 
+const textStyleSection = (name: string, key: string[]) => ({
+	name,
+	key,
+	replaceForm: [
+		{
+			key: ["container", "properties", "text"],
+			type: "textProperty",
+			useIn: ["desktop", "tablet", "mobile"],
+		},
+	],
+})
+
 export const marketingSection = () => ({
 	name: "Marketing & Materials",
 	key: ["marketing"],
-	replaceForm: [buttonSection("Button", ["button"]), layoutSection()],
+	replaceForm: [
+		textStyleSection("Title", ["title"]),
+		textStyleSection("Tagline", ["tagline"]),
+		buttonSection("Button", ["button"]),
+		{
+			label: "Show decorative background",
+			key: ["show_backdrop"],
+			type: "switch",
+			props_data: {},
+		},
+		layoutSection(),
+	],
 })
 
 export const faqSection = () => ({
