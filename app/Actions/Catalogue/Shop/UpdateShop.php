@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\CRM\Appointment\Zoom\ZoomClient;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
+use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Facades\Crypt;
 use Throwable;
@@ -281,6 +282,13 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
+        }
+
+        foreach (self::zentradaSettingFields() as $field => $cast) {
+            if (Arr::has($modelData, "zentrada_$field")) {
+                $value = Arr::pull($modelData, "zentrada_$field");
+                data_set($modelData, "settings.zentrada.$field", blank($value) ? null : ($cast === 'int' ? (int) $value : (float) $value));
+            }
         }
 
         foreach (array_keys(Shop::UNPAID_CHANNEL_ORDER_DEFAULTS) as $unpaidSetting) {
@@ -1093,6 +1101,20 @@ class UpdateShop extends OrgAction
             });
     }
 
+    /**
+     * @return array<string, 'int'|'float'>
+     */
+    public static function zentradaSettingFields(): array
+    {
+        $fields = ['promotion_discount' => 'float'];
+        foreach (range(1, ZentradaWebApi::MAX_VOLUME_TIERS) as $tier) {
+            $fields["tier_{$tier}_quantity"] = 'int';
+            $fields["tier_{$tier}_discount"] = 'float';
+        }
+
+        return $fields;
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -1318,6 +1340,13 @@ class UpdateShop extends OrgAction
             'dispatch_require_shipping'                               => ['sometimes', 'boolean'],
             'excess_refund_mode'                                       => ['sometimes', Rule::in(['credit', 'refund'])],
             'packaging_and_inserts_enabled'                           => ['sometimes', 'boolean'],
+            'zentrada_promotion_discount'                             => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
+            'zentrada_tier_1_quantity'                                 => ['sometimes', 'nullable', 'integer', 'min:2'],
+            'zentrada_tier_1_discount'                                 => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
+            'zentrada_tier_2_quantity'                                 => ['sometimes', 'nullable', 'integer', 'min:2'],
+            'zentrada_tier_2_discount'                                 => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
+            'zentrada_tier_3_quantity'                                 => ['sometimes', 'nullable', 'integer', 'min:2'],
+            'zentrada_tier_3_discount'                                 => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
             'newsletter_to_suppliers'                                 => ['sometimes', 'boolean'],
             'pre_order_enabled'                                       => ['sometimes', 'boolean'],
             'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],

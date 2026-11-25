@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
+use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\Comms\Email\SendChannelOrderOnHoldEmail;
 use App\Actions\Comms\Email\SendOrderPaymentReminderEmail;
@@ -1434,6 +1435,7 @@ class EditShop extends OrgAction
                     'icon'   => 'fal fa-shopping-cart',
                     'fields' => $salesChannelFields,
                 ],
+                $shop->salesChannels->contains('code', 'zentrada') ? $this->zentradaFeedSettingsFields($shop) : [],
                 [
                     'label'  => __('Bundle Discount'),
                     'icon'   => 'fal fa-shopping-cart',
@@ -1769,6 +1771,47 @@ class EditShop extends OrgAction
         }
 
         return $information;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function zentradaFeedSettingsFields(Shop $shop): array
+    {
+        $percentage = ['min' => 0, 'max' => 99.99, 'maxFractionDigits' => 2, 'suffix' => ' %'];
+
+        $fields = [
+            'zentrada_promotion_discount' => [
+                'type'        => 'input_number',
+                'label'       => __('Promotion discount'),
+                'bind'        => $percentage,
+                'value'       => (float) Arr::get($shop->settings, 'zentrada.promotion_discount', 0),
+                'information' => __('Taken off every product in the Zentrada feed, including its volume prices. Zentrada only lets a promotion be removed 10 days or more after it was set. 0 for none.'),
+            ],
+        ];
+
+        foreach (range(1, ZentradaWebApi::MAX_VOLUME_TIERS) as $tier) {
+            $fields["zentrada_tier_{$tier}_quantity"] = [
+                'type'  => 'input_number',
+                'label' => __('Volume price :tier: from packing units', ['tier' => $tier]),
+                'bind'  => ['min' => 2, 'step' => '1', 'maxFractionDigits' => 0],
+                'value' => Arr::get($shop->settings, "zentrada.tier_{$tier}_quantity"),
+            ];
+            $fields["zentrada_tier_{$tier}_discount"] = [
+                'type'  => 'input_number',
+                'label' => __('Volume price :tier: discount', ['tier' => $tier]),
+                'bind'  => $percentage,
+                'value' => Arr::get($shop->settings, "zentrada.tier_{$tier}_discount"),
+            ];
+        }
+
+        $fields['zentrada_tier_1_quantity']['information'] = __('Volume prices are sent only when both the packing units and the discount are set. Up to 3, ordered by packing units.');
+
+        return [
+            'label'  => __('Zentrada feed'),
+            'icon'   => 'fal fa-badge-percent',
+            'fields' => $fields,
+        ];
     }
 
     /**

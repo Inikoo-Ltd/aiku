@@ -41,7 +41,9 @@ targets:
         AikuAPIBaseURL: $(API_BASE_URL)
         AikuMobileAppKey: $(AIKU_MOBILE_APP_KEY)
         AikuSentryDSN: $(AIKU_SENTRY_DSN)
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSCameraUsageDescription: Aiku uses the camera to scan clocking QR codes and barcodes.
         NSLocationWhenInUseUsageDescription: Aiku checks you are at your workplace when you clock in with a QR code.
