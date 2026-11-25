@@ -51,7 +51,7 @@ enum OrderTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon'  => 'fal fa-coins',
             ],
 
             OrderTabsEnum::DISPATCHED_EMAILS => [

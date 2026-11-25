@@ -162,27 +162,25 @@ class GetGroupNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('Dashboard'),
-                            'icon'  => ['fal', 'fa-tachometer-alt'],
-                            'root'  => 'grp.financials.dashboard',
-                            'route' => [
+                            'label'   => null,
+                            'tooltip' => __('Dashboard'),
+                            'icon'    => ['fal', 'fa-tachometer-alt'],
+                            'root'    => 'grp.financials.dashboard',
+                            'route'   => [
                                 'name' => 'grp.financials.dashboard',
                             ],
                         ],
                         [
-                            'label' => __('Bank incoming'),
+                            'label' => __('Bank'),
                             'icon'  => ['fal', 'fa-university'],
                             'root'  => 'grp.financials.bank_incoming.',
+                            'roots' => ['grp.financials.bank_outgoing.'],
                             'route' => [
                                 'name' => 'grp.financials.bank_incoming.index',
                             ],
-                        ],
-                        [
-                            'label' => __('Bank outgoing'),
-                            'icon'  => ['fal', 'fa-money-check-alt'],
-                            'root'  => 'grp.financials.bank_outgoing.',
-                            'route' => [
-                                'name' => 'grp.financials.bank_outgoing.index',
+                            'parts' => [
+                                ['label' => __('In'), 'root' => 'grp.financials.bank_incoming.', 'route' => ['name' => 'grp.financials.bank_incoming.index']],
+                                ['label' => __('Out'), 'root' => 'grp.financials.bank_outgoing.', 'route' => ['name' => 'grp.financials.bank_outgoing.index']],
                             ],
                         ],
                         [
@@ -200,6 +198,14 @@ class GetGroupNavigation
                             'root'  => 'grp.financials.payouts.',
                             'route' => [
                                 'name' => 'grp.financials.payouts.index',
+                            ],
+                        ],
+                        [
+                            'label'   => __('Payment methods'),
+                            'icon'    => ['fal', 'fa-credit-card'],
+                            'root'  => 'grp.financials.payment_methods.',
+                            'route' => [
+                                'name' => 'grp.financials.payment_methods.index',
                             ],
                         ],
                         [

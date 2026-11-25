@@ -33,7 +33,7 @@ enum AccountingTabsEnum: string
             ],
             AccountingTabsEnum::PAYMENTS => [
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-dollar-sign',
+                'icon'  => 'fal fa-coins',
             ],
             AccountingTabsEnum::PROPERTIES_OPERATIONS => [
                 'title' => __('Properties/operations'),

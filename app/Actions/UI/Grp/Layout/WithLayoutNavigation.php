@@ -77,7 +77,7 @@ trait WithLayoutNavigation
                         [
                             'label'   => null,
                             'tooltip' => __('Dashboard'),
-                            'icon'    => ['fal', 'fa-chart-network'],
+                            'icon'    => ['fal', 'fa-tachometer-alt'],
                             'root'    => 'grp.org.accounting.dashboard',
                             'route' => [
                                 'name'       => 'grp.org.accounting.dashboard',
@@ -97,7 +97,8 @@ trait WithLayoutNavigation
                         ],
                         */
                         [
-                            'label' => __('Accounts'),
+                            'label'   => null,
+                            'tooltip' => __('Accounts'),
                             'icon'  => ['fal', 'fa-money-check-alt'],
                             'root'  => 'grp.org.accounting.payment-accounts.',
                             'route' => [
@@ -107,7 +108,8 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
-                            'label' => __('Payments'),
+                            'label'   => null,
+                            'tooltip' => __('Payments'),
                             'icon'  => ['fal', 'fa-coins'],
                             'root'  => 'grp.org.accounting.payments.',
                             'route' => [
@@ -117,22 +119,40 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
-                            'label' => __('Bank incoming'),
-                            'icon'  => ['fal', 'fa-university'],
-                            'root'  => 'grp.org.accounting.bank_incoming.',
+                            'label'   => null,
+                            'tooltip' => __('Invoices'),
+                            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+                            'root'  => 'grp.org.accounting.invoices.',
                             'route' => [
-                                'name'       => 'grp.org.accounting.bank_incoming.index',
+                                'name'       => 'grp.org.accounting.invoices.index',
                                 'parameters' => [$organisation->slug],
+
                             ]
                         ],
                         [
-                            'label' => __('Bank outgoing'),
-                            'icon'  => ['fal', 'fa-money-check-alt'],
-                            'root'  => 'grp.org.accounting.bank_outgoing.',
+                            'label'   => null,
+                            'tooltip' => __('Customers Balances'),
+                            'icon'  => ['fal', 'fa-piggy-bank'],
+                            'root'  => 'grp.org.accounting.balances.',
                             'route' => [
-                                'name'       => 'grp.org.accounting.bank_outgoing.index',
+                                'name'       => 'grp.org.accounting.balances.index',
                                 'parameters' => [$organisation->slug],
+
                             ]
+                        ],
+                        [
+                            'label' => __('Bank'),
+                            'icon'  => ['fal', 'fa-university'],
+                            'root'  => 'grp.org.accounting.bank_incoming.',
+                            'roots' => ['grp.org.accounting.bank_outgoing.'],
+                            'route' => [
+                                'name'       => 'grp.org.accounting.bank_incoming.index',
+                                'parameters' => [$organisation->slug],
+                            ],
+                            'parts' => [
+                                ['label' => __('In'), 'root' => 'grp.org.accounting.bank_incoming.', 'route' => ['name' => 'grp.org.accounting.bank_incoming.index', 'parameters' => [$organisation->slug]]],
+                                ['label' => __('Out'), 'root' => 'grp.org.accounting.bank_outgoing.', 'route' => ['name' => 'grp.org.accounting.bank_outgoing.index', 'parameters' => [$organisation->slug]]],
+                            ],
                         ],
                         [
                             'label' => __('Cash'),
@@ -196,26 +216,6 @@ trait WithLayoutNavigation
                             'route' => [
                                 'name'       => 'grp.org.accounting.profit_and_loss.index',
                                 'parameters' => [$organisation->slug],
-                            ]
-                        ],
-                        [
-                            'label' => __('Invoices'),
-                            'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                            'root'  => 'grp.org.accounting.invoices.',
-                            'route' => [
-                                'name'       => 'grp.org.accounting.invoices.index',
-                                'parameters' => [$organisation->slug],
-
-                            ]
-                        ],
-                        [
-                            'label' => __('Customers Balances'),
-                            'icon'  => ['fal', 'fa-piggy-bank'],
-                            'root'  => 'grp.org.accounting.balances.',
-                            'route' => [
-                                'name'       => 'grp.org.accounting.balances.index',
-                                'parameters' => [$organisation->slug],
-
                             ]
                         ],
 

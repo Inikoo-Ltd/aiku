@@ -640,3 +640,73 @@ test('payouts show a marketplace shop with its payouts, the commission kept and 
         DB::table('shops')->where('id', $this->shop->id)->update(['type' => $shopType->value]);
     }
 });
+
+test('group payment methods group each payment by method, take the method from the account when the payment has none, leave out refunds, bank fees and our own companies, and count customer balances apart', function () {
+    $group    = $this->organisation->group;
+    $currency = \App\Models\Helpers\Currency::where('code', 'ISK')->firstOrFail();
+    $checkout = \App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        \App\Models\Accounting\PaymentServiceProvider::where('code', 'checkout')->firstOrFail(),
+        ['code' => 'checkout'.random_int(1000, 9999), 'name' => 'Checkout methods']
+    );
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $company  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $company->id)->update(['as_organisation_id' => $this->organisation->id]);
+    $pay = function (float $amount, ?string $method, array $changes = [], ?Customer $payer = null) use ($checkout, $currency, $customer) {
+        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($payer ?? $customer, $checkout, [
+            'amount' => $amount,
+            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+        ]);
+        DB::table('payments')->where('id', $payment->id)->update(array_merge(['method' => $method, 'currency_id' => $currency->id, 'org_amount' => $amount, 'grp_amount' => $amount, 'date' => now()->subDays(40)], $changes));
+    };
+    $pay(600, 'card');
+    $pay(100, null);
+    $pay(80, 'card', ['sub_method' => 'American Express']);
+    $pay(200, 'klarna');
+    $pay(50, 'ideal');
+    $pay(50, 'p24');
+    $pay(300, 'account');
+    $pay(999, 'bank_fee');
+    $pay(999, 'card', ['type' => 'refund']);
+    $pay(999, 'card', ['state' => 'cancelled']);
+    $pay(999, 'card', ['date' => now()->subMonths(13)]);
+    $pay(400, 'card', [], $company);
+
+    $report = fn (array $filters = []) => \App\Actions\Accounting\Payment\UI\ShowGroupPaymentMethods::make()->handle($group, collect([$this->organisation]), array_merge(['currency' => 'ISK'], $filters));
+    $rows   = fn (array $filters = []) => collect($report($filters)['matrix']['rows'])->keyBy('key');
+    $matrix = $rows();
+
+    expect($matrix->keys()->all())->toBe(['amex', 'card', 'klarna', 'ideal', 'p24', 'online_total', 'all', 'account'])
+        ->and($matrix['card']['total']['amount'])->toEqual(700)
+        ->and($matrix['card']['total']['payments'])->toBe(2)
+        ->and($matrix['amex']['total']['amount'])->toEqual(80)
+        ->and($matrix['online_total']['total']['amount'])->toEqual(1080)
+        ->and($matrix['all']['total']['amount'])->toEqual(1080)
+        ->and($matrix['klarna']['total']['share'])->toEqual(18.5)
+        ->and($matrix['account']['total']['amount'])->toEqual(300)
+        ->and($matrix['account']['total']['share'])->toBeNull()
+        ->and($report()['matrix']['online_share']['total'])->toEqual(100)
+        ->and($report()['organisations'][0]['total'])->toEqual(1080)
+        ->and($report()['organisations'][0]['online'])->toEqual(1080)
+        ->and($report()['organisations'][0]['balance'])->toEqual(300)
+        ->and($report()['organisations'][0]['top'][0]['key'])->toBe('cards')
+        ->and($rows(['intercompany' => true])['card']['total']['amount'])->toEqual(1100)
+        ->and($rows(['months' => 24])['card']['total']['amount'])->toEqual(1699)
+        ->and($rows(['brand' => 'amex'])->keys()->all())->toBe(['amex', 'online_total', 'all'])
+        ->and(array_sum(array_column($report()['chart']['all'], array_search(now()->subDays(40)->setTimezone('Europe/Bratislava')->startOfWeek(\Carbon\CarbonInterface::MONDAY)->format('Y-m-d'), $report()['weeks']))))->toEqual(1080);
+
+    setPermissionsTeamId($group->id);
+    $admin = StoreGuest::make()->action($group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $admin->givePermissionTo(['financials', "accounting.{$this->organisation->id}.view"]);
+    $admin->refresh();
+    actingAs($admin);
+    get(route('grp.financials.payment_methods.index', ['currency' => 'ISK', 'org' => $this->organisation->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/GroupPaymentMethods')
+            ->where('filters.organisation', $this->organisation->slug)
+            ->where('report.currency', $this->organisation->currency->code)
+            ->has('report.series', 8));
+    expect(collect(GetGroupNavigation::make()->handle($admin)['financials']['topMenu']['subSections'])->pluck('route.name')->all())->toContain('grp.financials.payment_methods.index');
+});

@@ -68,7 +68,7 @@ enum CustomerDropshippingTabsEnum: string
             CustomerDropshippingTabsEnum::PAYMENTS => [
                 'align' => 'right',
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-money-bill',
+                'icon'  => 'fal fa-coins',
                 'type'  => 'icon',
             ],
             CustomerDropshippingTabsEnum::CREDIT_TRANSACTIONS => [

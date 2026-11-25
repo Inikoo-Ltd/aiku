@@ -7,13 +7,14 @@ import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome
 import { faClock as falClock, faPencil as falPencil } from "@fal";
 import { faDotCircle } from "@fas";
 import { faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog } from "@fal";
+import { faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { SubSection } from "@/types/Navigation";
 import { ref } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 
-library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog);
+library.add(falClock, falPencil, faDotCircle, faPallet, faUsers, faMapSigns, faTruckCouch, faSignOut, faSitemap, faUserFriends, faColumns, faChartLine, faBoxOpen, faHistory, faBarcode, faTags, faChartNetwork, faHandHoldingUsd, faMoneyCheckAlt, faFileInvoice, faComments, faPersonDolly, faBoxUsd, faPeopleCarry, faTasks, faClipboardList, faAnalytics, faWarehouseAlt, faIndustryAlt, faInboxIn, faClipboardCheck, faCogs, faTachometerAltFast, faSpider, faUniversity, faTruckContainer, faCog, faBalanceScale, faCoins, faHandHoldingBox, faCreditCard, faTachometerAlt, faFileInvoiceDollar, faPiggyBank);
 
 const layoutStore = useLayoutStore();
 
@@ -41,6 +42,10 @@ const badgeCount = (subSection: SubSection): number => {
     return Number((layoutStore as Record<string, unknown>)[subSection.badge] ?? 0)
 }
 
+const startsGroup = (idx: number) => idx > 0 && !!props.subSections[idx]?.label && !props.subSections[idx - 1]?.label
+
+const isPartActive = (root: string) => (layoutStore.currentRoute ?? "").includes(root)
+
 const getTooltip = (subSection: SubSection) => {
     if (!subSection.tooltip || subSection.tooltip === subSection.label) {
         return false
@@ -52,12 +57,36 @@ const getTooltip = (subSection: SubSection) => {
 
 <template>
     <template v-for="(subSection, idxSubSec) in subSections">
+        <div
+            v-if="subSection?.parts?.length"
+            class="relative text-gray-700 text-sm flex justify-end items-center gap-x-1 px-3 md:px-4 lg:px-4"
+            :class="startsGroup(idxSubSec) ? 'ml-4' : ''"
+            v-tooltip="getTooltip(subSection)"
+        >
+            <FontAwesomeIcon v-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-5 lg:h-3.5 w-auto opacity-70" aria-hidden="true" />
+            <span v-if="subSection.label" class="hidden lg:inline whitespace-nowrap mr-1">{{ subSection.label }}</span>
+            <template v-for="(part, idxPart) in subSection.parts" :key="part.root">
+                <span v-if="idxPart > 0" class="text-gray-300" aria-hidden="true">|</span>
+                <Link
+                    :href="route(part.route.name, part.route.parameters)"
+                    class="group relative flex items-center whitespace-nowrap px-1.5 py-3 outline-none focus-visible:bg-gray-100"
+                    :class="isPartActive(part.root) ? 'font-semibold text-gray-900' : 'text-gray-600 hover:text-gray-900'"
+                    :aria-current="isPartActive(part.root) ? 'page' : undefined"
+                >
+                    <div :class="isPartActive(part.root) ? 'bottomNavigationActive' : 'bottomNavigation'" />
+                    {{ part.label }}
+                </Link>
+            </template>
+            <span v-if="badgeCount(subSection) > 0" class="absolute top-1.5 right-1.5">
+                <PingIcon v-tooltip="ctrans(':count waiting', { count: badgeCount(subSection) })" class="text-[7px] text-amber-500 self-start" aria-hidden="true" />
+            </span>
+        </div>
         <component
-            v-if="subSection"
+            v-else-if="subSection"
             :is="subSection.route?.name ? Link : 'div'"
             :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'"
-            class="group relative text-gray-700 text-sm flex justify-end items-center cursor-pointer py-3 gap-x-2 px-3 md:px-4 lg:px-4 outline-none focus-visible:bg-gray-100"
-            :class="[]"
+            class="group relative text-gray-700 text-sm flex justify-end items-center cursor-pointer py-3 gap-x-2 outline-none focus-visible:bg-gray-100"
+            :class="[subSection.label ? 'px-3 md:px-4 lg:px-4' : 'px-2 lg:px-2.5', startsGroup(idxSubSec) ? 'ml-4' : '']"
             v-tooltip="getTooltip(subSection)"
             @start="() => isLoading = 'subSection' + idxSubSec"
             @finish="() => isLoading = false"

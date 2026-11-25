@@ -10,7 +10,7 @@
 <script setup lang="ts">
 import { inject, nextTick, onMounted, ref, watch } from "vue"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { faClock as falClock, faPencil as falPencil } from "@fal"
+import { faClock as falClock, faPencil as falPencil, faCoins as falCoins } from "@fal"
 import { faInfoCircle, faPallet, faCircle, faUndo } from "@fas"
 import { faSpinnerThird } from "@fad"
 import Icon from "@/Components/Icon.vue"
@@ -51,7 +51,7 @@ import { ctrans } from "@/Composables/useTrans"
 import PingIcon from "../Utils/PingIcon.vue"
 import ScrollFadeArrow from "@/Components/Utils/ScrollFadeArrow.vue"
 import { useScrollArrows } from "@/Composables/useScrollArrows"
-library.add(falClock, falPencil, 
+library.add(falClock, falPencil, falCoins, 
 	faListUl,
 	faShapes,
 	faRepeat,

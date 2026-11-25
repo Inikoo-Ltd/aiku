@@ -31,7 +31,7 @@ enum RefundTabsEnum: string
                 'title' => __('Payments'),
                 'type'  => 'icon',
                 'align' => 'right',
-                'icon'  => 'fal fa-credit-card',
+                'icon'  => 'fal fa-coins',
             ],
 
             RefundTabsEnum::HISTORY     => [

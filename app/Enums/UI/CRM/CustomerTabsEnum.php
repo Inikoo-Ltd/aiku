@@ -88,7 +88,7 @@ enum CustomerTabsEnum: string
             CustomerTabsEnum::PAYMENTS => [
                 'align' => 'right',
                 'title' => __('Payments'),
-                'icon'  => 'fal fa-money-bill',
+                'icon'  => 'fal fa-coins',
                 'type'  => 'icon',
             ],
             CustomerTabsEnum::REORDERS => [

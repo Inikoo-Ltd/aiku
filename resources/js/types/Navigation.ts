@@ -11,13 +11,14 @@ export interface DropdownLink {
 }
 
 export interface SubSection {
-    label: string
+    label: string | null
     icon?: string | string[]
     tooltip?: string
     root: string
     roots?: string[]
     route: routeType
     badge?: string
+    parts?: { label: string; root: string; route: routeType }[]
 }
 
 export interface Navigation {
