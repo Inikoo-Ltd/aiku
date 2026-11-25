@@ -67,7 +67,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Routing\Middleware\ThrottleRequests;
+use App\Http\Middleware\ThrottleRequestsPerRoute;
 use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
@@ -294,7 +294,7 @@ class Kernel extends HttpKernel
         'password.confirm'       => RequirePassword::class,
         'signed'                 => ValidateSignature::class,
         'supplier-portal-locale' => \App\Http\Middleware\SetSupplierPortalLocale::class,
-        'throttle'               => ThrottleRequests::class,
+        'throttle'               => ThrottleRequestsPerRoute::class,
         'verified'               => EnsureEmailIsVerified::class,
         'inertia'                => HandleInertiaGrpRequests::class,
         'bind_group'             => ApiBindGroupInstance::class,
