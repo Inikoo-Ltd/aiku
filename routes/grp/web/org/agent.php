@@ -47,6 +47,7 @@ use App\Actions\Procurement\AgentWarehouseStock\UnpackAgentWarehouseStock;
 use App\Actions\Procurement\AgentWarehouseStock\LinkAgentWarehouseStockToPurchaseOrderTransaction;
 use App\Actions\Procurement\AgentWarehouseStock\UI\GetAgentWarehouseStockPurchaseOrderLines;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentWarehouseStocks;
+use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentKeptAtAgent;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
 use App\Actions\Procurement\OrgSupplier\UI\ShowOrgSupplier;
@@ -186,6 +187,7 @@ Route::prefix('containers')->as('stock_deliveries.')->group(function () {
 });
 
 Route::get('warehouse', IndexAgentWarehouseStocks::class)->name('warehouse.index');
+Route::get('warehouse/kept-at-agent', IndexAgentKeptAtAgent::class)->name('warehouse.kept_at_agent');
 Route::patch('warehouse/pack', PackAgentWarehouseStocks::class)->name('warehouse.pack_many');
 Route::patch('warehouse/{agentWarehouseStock:id}/pack', PackAgentWarehouseStock::class)->name('warehouse.pack')->withoutScopedBindings();
 Route::patch('warehouse/{agentWarehouseStock:id}/unpack', UnpackAgentWarehouseStock::class)->name('warehouse.unpack')->withoutScopedBindings();

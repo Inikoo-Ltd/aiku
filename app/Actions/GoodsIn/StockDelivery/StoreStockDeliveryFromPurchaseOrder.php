@@ -10,6 +10,7 @@ use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDelivery
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
@@ -49,7 +50,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData = []): StockDelivery
     {
-        if (!$purchaseOrder->state->isAgreed()) {
+        if (!in_array($purchaseOrder->state, self::shippingStates(), true)) {
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
         }
 
@@ -86,7 +87,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $stockDelivery = DB::transaction(function () use ($purchaseOrder, $modelData) {
             PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
 
-            $purchaseOrderTransactionsQuery = self::transactionsAwaitingDelivery($purchaseOrder)
+            $purchaseOrderTransactionsQuery = self::whereShippable($purchaseOrder->purchaseOrderTransactions())
                 ->with(['historicSupplierProduct', 'orgStock']);
 
             if (array_key_exists('purchase_order_transaction_ids', $modelData)) {
@@ -160,13 +161,15 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                     ? (float) $purchaseOrderTransaction->net_amount
                     : (float) $purchaseOrderTransaction->net_amount * $unitQuantity / (float) $purchaseOrderTransaction->quantity_ordered;
 
+                $keptUnits = self::keptUnitsShipped($purchaseOrderTransaction, $unitQuantity);
+
                 $itemInThisDelivery = $stockDelivery->items()
                     ->whereRaw("(data->>'purchase_order_transaction_id')::bigint = ?", [$purchaseOrderTransaction->id])
                     ->whereNotIn('state', [StockDeliveryItemStateEnum::CANCELLED, StockDeliveryItemStateEnum::NOT_RECEIVED])
                     ->first();
 
                 if ($itemInThisDelivery) {
-                    $this->addToDeliveryItem($itemInThisDelivery, $unitQuantity, $netAmount);
+                    $this->addToDeliveryItem($itemInThisDelivery, $unitQuantity, $netAmount, $keptUnits);
 
                     continue;
                 }
@@ -179,9 +182,10 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                         'state'         => StockDeliveryItemStateEnum::IN_PROCESS,
                         'unit_quantity' => $unitQuantity,
                         'net_amount'    => $netAmount,
-                        'data'          => [
+                        'data'          => array_filter([
                             'purchase_order_transaction_id' => $purchaseOrderTransaction->id,
-                        ],
+                            'kept_at_agent_units'           => $keptUnits ?: null,
+                        ]),
                     ], $this->getExchanges($purchaseOrderTransaction))
                 );
             }
@@ -206,8 +210,20 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
     }
 
     /**
-     * A confirmed line is awaiting delivery while part of what was ordered is in no container yet: an agent can
-     * ship a line across several containers.
+     * Agreed orders ship; a settled one ships only the units it kept at the agent (whereShippable).
+     *
+     * @return array<int, PurchaseOrderStateEnum>
+     */
+    public static function shippingStates(): array
+    {
+        return [...PurchaseOrderStateEnum::agreed(), PurchaseOrderStateEnum::SETTLED];
+    }
+
+    public const string KEPT_AT_AGENT_SQL = 'coalesce(purchase_order_transactions.quantity_kept_at_agent, 0)';
+
+    /**
+     * A confirmed line is awaiting delivery while part of what was ordered is in no container yet and was not kept at
+     * the agent (INI-525): an agent can ship a line across several containers.
      */
     public static function whereAwaitingDelivery(EloquentBuilder|HasMany $transactions): EloquentBuilder|HasMany
     {
@@ -217,7 +233,99 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
             ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::CONFIRMED)
             ->where(fn ($query) => $query
                 ->whereNotExists(fn (Builder $items) => self::liveDeliveryItemsOfTransaction($items))
-                ->orWhereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') > '.self::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings()));
+                ->orWhereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') - '.self::KEPT_AT_AGENT_SQL.' > '.self::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings()));
+    }
+
+    /**
+     * Lines with units in no container yet, which may still go in one: awaiting delivery, or kept at the agent
+     * (INI-525), also once the line settled without them.
+     */
+    public static function whereShippable(EloquentBuilder|HasMany $transactions): EloquentBuilder|HasMany
+    {
+        $quantityOnDelivery = self::quantityOnDelivery();
+
+        return $transactions->where(fn ($query) => $query
+            ->where(fn ($confirmed) => $confirmed
+                ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+                ->where(fn ($unshipped) => $unshipped
+                    ->whereNotExists(fn (Builder $items) => self::liveDeliveryItemsOfTransaction($items))
+                    ->orWhereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') > '.self::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings())))
+            ->orWhere(fn ($kept) => self::whereHoldsKeptAtAgent($kept)->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SETTLED)));
+    }
+
+    /**
+     * Lines whose units kept at the agent are not all in a container yet.
+     */
+    public static function whereHoldsKeptAtAgent(EloquentBuilder|HasMany|Builder $transactions): EloquentBuilder|HasMany|Builder
+    {
+        $held = self::quantityHeldAtAgentSql();
+
+        return $transactions->whereRaw($held['sql'].' > '.self::QUANTITY_TOLERANCE, $held['bindings']);
+    }
+
+    /**
+     * The units kept at the agent still not in a container: least(kept, ordered - on containers).
+     *
+     * @return array{sql: string, bindings: array<int, mixed>}
+     */
+    public static function quantityHeldAtAgentSql(): array
+    {
+        $quantityOnDelivery = self::quantityOnDelivery();
+
+        return [
+            'sql'      => 'least('.self::KEPT_AT_AGENT_SQL.', purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().'))',
+            'bindings' => $quantityOnDelivery->getBindings(),
+        ];
+    }
+
+    /**
+     * The units of a line on deliveries that arrived (received or later), leaving out the units kept at the agent that
+     * shipped later (data.kept_at_agent_units), in a subquery correlated to purchase_order_transactions: the kept
+     * quantity already counts them.
+     */
+    public static function quantityArrived(): Builder
+    {
+        return self::liveDeliveryItemsOfTransaction(DB::query())
+            ->join('stock_deliveries as arrived_deliveries', 'arrived_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+            ->whereNotIn('arrived_deliveries.state', array_column(self::NOT_ARRIVED_STATES, 'value'))
+            ->selectRaw("coalesce(sum(stock_delivery_items.unit_quantity - least(stock_delivery_items.unit_quantity, coalesce((stock_delivery_items.data->>'kept_at_agent_units')::numeric, 0))), 0)");
+    }
+
+    /**
+     * How many of the units going in a container come out of what was kept at the agent: what goes beyond the units
+     * still awaited. Needs quantity_awaiting_delivery (ordered - on containers) selected.
+     */
+    public static function keptUnitsShipped(PurchaseOrderTransaction $purchaseOrderTransaction, float $unitQuantity): float
+    {
+        $kept = (float) $purchaseOrderTransaction->quantity_kept_at_agent;
+        if ($kept <= 0) {
+            return 0;
+        }
+
+        $notOnContainers = max(0, (float) $purchaseOrderTransaction->quantity_awaiting_delivery);
+        $keptUnits       = round(min($unitQuantity, $notOnContainers) - max(0, $notOnContainers - $kept), 3);
+
+        return $keptUnits > self::QUANTITY_TOLERANCE ? $keptUnits : 0;
+    }
+
+    public const array NOT_ARRIVED_STATES = [
+        StockDeliveryStateEnum::IN_PROCESS,
+        StockDeliveryStateEnum::CONFIRMED,
+        StockDeliveryStateEnum::READY_TO_SHIP,
+        StockDeliveryStateEnum::DISPATCHED,
+    ];
+
+    /**
+     * A line with units kept at the agent is all in once what arrived and what was kept cover what was ordered: units
+     * kept and shipped later in another container do not hold it back.
+     */
+    public static function whereKeptLineAllArrived(EloquentBuilder|HasMany $transactions): EloquentBuilder|HasMany
+    {
+        $arrived = self::quantityArrived();
+
+        return $transactions
+            ->where('purchase_order_transactions.quantity_kept_at_agent', '>', 0)
+            ->whereRaw('purchase_order_transactions.quantity_ordered - '.self::KEPT_AT_AGENT_SQL.' - ('.$arrived->toSql().') <= '.self::QUANTITY_TOLERANCE, $arrived->getBindings());
     }
 
     public static function withQuantityAwaitingDelivery(EloquentBuilder|HasMany $transactions): EloquentBuilder|HasMany
@@ -245,7 +353,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
      */
     public static function whereReadyToShip(EloquentBuilder|HasMany $transactions, bool $fromAgentWarehouse): EloquentBuilder|HasMany
     {
-        $transactions = self::whereAwaitingDelivery($transactions);
+        $transactions = self::whereShippable($transactions);
         if (!$fromAgentWarehouse) {
             return $transactions;
         }
@@ -268,14 +376,28 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $onDelivery   = self::quantityOnDelivery();
 
         if (!$fromAgentWarehouse) {
-            return $transactions->selectRaw('purchase_order_transactions.quantity_ordered - ('.$onDelivery->toSql().') as quantity_ready_to_ship', $onDelivery->getBindings());
+            return self::selectReadyToShipCappedForSettled($transactions, 'purchase_order_transactions.quantity_ordered - ('.$onDelivery->toSql().')', $onDelivery->getBindings());
         }
 
         $received = self::quantityReceivedAtAgentWarehouse();
 
-        return $transactions->selectRaw(
-            'least(purchase_order_transactions.quantity_ordered, ('.$received->toSql().')) - ('.$onDelivery->toSql().') as quantity_ready_to_ship',
+        return self::selectReadyToShipCappedForSettled(
+            $transactions,
+            'least(purchase_order_transactions.quantity_ordered, ('.$received->toSql().')) - ('.$onDelivery->toSql().')',
             [...$received->getBindings(), ...$onDelivery->getBindings()]
+        );
+    }
+
+    /**
+     * A settled line ships only what it kept at the agent and is not in a container yet.
+     */
+    private static function selectReadyToShipCappedForSettled(EloquentBuilder|HasMany $transactions, string $readyToShipSql, array $bindings): EloquentBuilder|HasMany
+    {
+        $held = self::quantityHeldAtAgentSql();
+
+        return $transactions->selectRaw(
+            "case when purchase_order_transactions.state = '".PurchaseOrderTransactionStateEnum::SETTLED->value."' then least(".$readyToShipSql.', '.$held['sql'].') else '.$readyToShipSql.' end as quantity_ready_to_ship',
+            [...$bindings, ...$held['bindings'], ...$bindings]
         );
     }
 
@@ -351,7 +473,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 Rule::exists('purchase_order_transactions', 'id')->where(
                     fn ($query) => $query
                         ->where('purchase_order_id', $this->purchaseOrder->id)
-                        ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED->value)
+                        ->whereIn('state', [PurchaseOrderTransactionStateEnum::CONFIRMED->value, PurchaseOrderTransactionStateEnum::SETTLED->value])
                 ),
             ],
             'unit_quantities'                  => ['sometimes', 'array'],
@@ -468,11 +590,16 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         ], fn ($exchange) => $exchange !== null);
     }
 
-    private function addToDeliveryItem(StockDeliveryItem $stockDeliveryItem, float $unitQuantity, float $netAmount): void
+    private function addToDeliveryItem(StockDeliveryItem $stockDeliveryItem, float $unitQuantity, float $netAmount, float $keptUnits = 0): void
     {
         $netAmount = (float) $stockDeliveryItem->net_amount + $netAmount;
+        $data      = $stockDeliveryItem->data ?? [];
+        if ($keptUnits > 0) {
+            $data['kept_at_agent_units'] = round((float) Arr::get($data, 'kept_at_agent_units', 0) + $keptUnits, 3);
+        }
 
         $stockDeliveryItem->update([
+            'data'           => $data,
             'unit_quantity'  => (float) $stockDeliveryItem->unit_quantity + $unitQuantity,
             'net_amount'     => $netAmount,
             'org_net_amount' => $netAmount * (float) ($stockDeliveryItem->org_exchange ?? 1),

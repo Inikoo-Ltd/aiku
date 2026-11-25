@@ -24,13 +24,15 @@ import PurchaseOrderLinePriceChange from '@/Components/Procurement/PurchaseOrder
 import PurchaseOrderLineQuantityChange from '@/Components/Procurement/PurchaseOrderLineQuantityChange.vue'
 import PurchaseOrderLineAgentUnitExpense from '@/Components/Procurement/PurchaseOrderLineAgentUnitExpense.vue'
 import PurchaseOrderLineAddToContainerDialog from '@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue'
+import PurchaseOrderLineKeepAtAgentDialog from '@/Components/Procurement/PurchaseOrderLineKeepAtAgentDialog.vue'
 import PurchaseOrderLineMoveDialog from '@/Components/Procurement/PurchaseOrderLineMoveDialog.vue'
 import PurchaseOrderLinePackButtons from '@/Components/Procurement/PurchaseOrderLinePackButtons.vue'
 import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes, faCheck, faExchange, faUndo } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes, faCheck, faExchange, faUndo, faWarehouse } from '@fal'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
@@ -387,7 +389,7 @@ function isFullyPacked(item: any) {
 
 function isAllInContainers(item: any) {
     const warehouse = item.agent_warehouse
-    return !!warehouse?.containers?.length && warehouse.quantity_awaiting_delivery <= 0.01
+    return !!warehouse?.containers?.length && (warehouse.quantity_not_on_containers ?? warehouse.quantity_awaiting_delivery) <= 0.01
 }
 
 const isReceivedAtAgentWarehouse = (item: any) => Number(item.agent_warehouse?.quantity_received ?? 0) > 0
@@ -547,16 +549,41 @@ function onAddedToContainer() {
     selectedRows.value = {}
 }
 
+const keepAtAgentItem = ref<any | null>(null)
+const isKeepAtAgentDialogVisible = ref(false)
+const undoingKeepId = ref<number | null>(null)
+const rowErrors = ref<Record<number, string>>({})
+
+function openKeepAtAgentDialog(item: any) {
+    keepAtAgentItem.value = item
+    isKeepAtAgentDialogVisible.value = true
+}
+
+function undoKeepAtAgent(item: any) {
+    const undoRoute = item.agent_warehouse.kept_at_agent.undo_route
+    router.delete(route(undoRoute.name, undoRoute.parameters), {
+        preserveScroll: true,
+        onStart: () => {
+            undoingKeepId.value = item.id
+            delete rowErrors.value[item.id]
+        },
+        onFinish: () => (undoingKeepId.value = null),
+        onError: (errors: Record<string, string>) => (rowErrors.value[item.id] = Object.values(errors ?? {})[0] ?? ctrans('Something went wrong')),
+    })
+}
+
 const removingContainerKey = ref<string | null>(null)
 
 function removeFromContainer(item: any, container: any) {
     const removeRoute = container.remove_route
     router.delete(route(removeRoute.name, removeRoute.parameters), {
         preserveScroll: true,
-        onStart: () => (removingContainerKey.value = `${item.id}-${container.id}`),
+        onStart: () => {
+            removingContainerKey.value = `${item.id}-${container.id}`
+            delete rowErrors.value[item.id]
+        },
         onFinish: () => (removingContainerKey.value = null),
-        onSuccess: () => notify({ title: ctrans('Success'), text: ctrans(':code removed from :container', { code: item.code, container: container.reference }), type: 'success' }),
-        onError: (errors: Record<string, string>) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors ?? {})[0], type: 'error' }),
+        onError: (errors: Record<string, string>) => (rowErrors.value[item.id] = Object.values(errors ?? {})[0] ?? ctrans('Something went wrong')),
     })
 }
 
@@ -1208,6 +1235,19 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 </Button>
 
                 <Button
+                    v-if="item.agent_warehouse?.keep_at_agent"
+                    :label="ctrans('Keep rest at agent')"
+                    :tooltip="ctrans('The units not in a shipment stay at the agent, so the order can finish without them')"
+                    type="tertiary"
+                    size="xs"
+                    @click="openKeepAtAgentDialog(item)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faWarehouse" class="text-gray-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+
+                <Button
                     v-if="item.deleteRoute && state === 'in_process'"
                     :label="ctrans('Remove')"
                     :tooltip="ctrans('Remove this product from the purchase order')"
@@ -1244,8 +1284,9 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             </div>
 
             <p v-if="undoCancelErrors[item.id]" class="text-xs text-red-600">{{ undoCancelErrors[item.id] }}</p>
+            <p v-if="rowErrors[item.id]" class="text-xs text-red-600">{{ rowErrors[item.id] }}</p>
 
-            <div v-if="item.agent_warehouse?.containers?.length" class="flex flex-wrap justify-end gap-1">
+            <div v-if="item.agent_warehouse?.containers?.length || item.agent_warehouse?.kept_at_agent" class="flex flex-wrap justify-end gap-1">
                 <span
                     v-for="container in item.agent_warehouse.containers"
                     :key="container.id"
@@ -1266,7 +1307,29 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         :aria-label="ctrans('Remove from :container', { container: container.reference })"
                         @click="confirmRemoveFromContainer($event, item, container)"
                     >
-                        <FontAwesomeIcon :icon="removingContainerKey === `${item.id}-${container.id}` ? faSpinner : faTimes" :spin="removingContainerKey === `${item.id}-${container.id}`" fixed-width aria-hidden="true" />
+                        <LoadingIcon v-if="removingContainerKey === `${item.id}-${container.id}`" />
+                        <FontAwesomeIcon v-else :icon="faTimes" fixed-width aria-hidden="true" />
+                    </button>
+                </span>
+                <span
+                    v-if="item.agent_warehouse?.kept_at_agent"
+                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-700 ring-1 ring-inset ring-gray-200"
+                    v-tooltip="item.agent_warehouse.kept_at_agent.note"
+                >
+                    <FontAwesomeIcon :icon="faWarehouse" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ ctrans('At agent') }}
+                    <span class="tabular-nums text-gray-500">· {{ locale.number(item.agent_warehouse.kept_at_agent.quantity) }}</span>
+                    <button
+                        v-if="item.agent_warehouse.kept_at_agent.undo_route"
+                        type="button"
+                        class="ml-0.5 text-gray-400 hover:text-red-600 disabled:opacity-50"
+                        :disabled="undoingKeepId === item.id"
+                        v-tooltip="ctrans('Undo: wait for these units again')"
+                        :aria-label="ctrans('Undo keep at agent')"
+                        @click="undoKeepAtAgent(item)"
+                    >
+                        <LoadingIcon v-if="undoingKeepId === item.id" />
+                        <FontAwesomeIcon v-else :icon="faTimes" fixed-width aria-hidden="true" />
                     </button>
                 </span>
             </div>
@@ -1383,6 +1446,13 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         v-model:visible="isContainerDialogVisible"
         :items="containerDialogItems"
         @added="onAddedToContainer"
+    />
+
+    <PurchaseOrderLineKeepAtAgentDialog
+        v-if="keepAtAgentItem?.agent_warehouse?.keep_at_agent"
+        v-model:visible="isKeepAtAgentDialogVisible"
+        :code="keepAtAgentItem.code"
+        :keepAtAgent="keepAtAgentItem.agent_warehouse.keep_at_agent"
     />
 
     <PurchaseOrderLineMoveDialog

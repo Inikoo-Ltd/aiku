@@ -5,7 +5,6 @@ namespace App\Actions\GoodsIn\StockDelivery;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\Traits\HasPurchaseOrderHydrators;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
-use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -58,6 +57,7 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
             )
             ->where('state', $shouldSettle ? PurchaseOrderTransactionStateEnum::CONFIRMED : PurchaseOrderTransactionStateEnum::SETTLED)
             ->when($shouldSettle && !$stockDelivery->delivery_note_id, fn ($transactions) => $this->whereAllArrived($transactions))
+            ->when(!$shouldSettle, fn ($transactions) => $transactions->whereNot(fn ($kept) => StoreStockDeliveryFromPurchaseOrder::whereKeptLineAllArrived($kept)))
             ->update(['state' => $shouldSettle ? PurchaseOrderTransactionStateEnum::SETTLED : PurchaseOrderTransactionStateEnum::CONFIRMED]);
 
         if ($shouldSettle && $stockDelivery->delivery_note_id) {
@@ -142,24 +142,22 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
 
     /**
      * A line an agent split across containers is settled once all of it is in containers and none of them is still
-     * on its way.
+     * on its way, or once what arrived and what was kept at the agent cover it (INI-525). A container taken back
+     * reopens lines, but not one still covered that way: a later container with the kept units never reopens it.
      */
     private function whereAllArrived(EloquentBuilder $transactions): EloquentBuilder
     {
         $quantityOnDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
 
-        return $transactions
-            ->whereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') <= '.StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings())
-            ->whereNotExists(
-                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items)
-                    ->join('stock_deliveries as other_deliveries', 'other_deliveries.id', 'stock_delivery_items.stock_delivery_id')
-                    ->whereIn('other_deliveries.state', [
-                        StockDeliveryStateEnum::IN_PROCESS->value,
-                        StockDeliveryStateEnum::CONFIRMED->value,
-                        StockDeliveryStateEnum::READY_TO_SHIP->value,
-                        StockDeliveryStateEnum::DISPATCHED->value,
-                    ])
-            );
+        return $transactions->where(fn ($lines) => $lines
+            ->where(fn ($line) => $line
+                ->whereRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') <= '.StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE, $quantityOnDelivery->getBindings())
+                ->whereNotExists(
+                    fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items)
+                        ->join('stock_deliveries as other_deliveries', 'other_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+                        ->whereIn('other_deliveries.state', array_column(StoreStockDeliveryFromPurchaseOrder::NOT_ARRIVED_STATES, 'value'))
+                ))
+            ->orWhere(fn ($kept) => StoreStockDeliveryFromPurchaseOrder::whereKeptLineAllArrived($kept)));
     }
 
     public function action(StockDelivery $stockDelivery): void
