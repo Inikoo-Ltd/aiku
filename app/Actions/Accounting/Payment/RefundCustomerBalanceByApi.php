@@ -38,13 +38,15 @@ class RefundCustomerBalanceByApi extends OrgAction
 
     private Customer $customer;
 
+    private bool $isPreview = false;
+
     public static function ledgerBalance(Customer $customer): float
     {
         return round((float) CreditTransaction::where('customer_id', $customer->id)->sum('amount'), 2);
     }
 
     /**
-     * Credit we gave (compensation, added funds, transfers in, positive adjustments, top ups not paid by card) in the
+     * Credit we gave (compensation, added funds, transfers in, adjustments net of their reversals, top ups not paid by card) in the
      * lookback: it is taken as still in the balance, so it never goes out as cash to a card.
      */
     public static function giftedCredit(Customer $customer): float
@@ -58,9 +60,13 @@ class RefundCustomerBalanceByApi extends OrgAction
                 CreditTransactionTypeEnum::COMPENSATION,
                 CreditTransactionTypeEnum::ADD_FUNDS_OTHER,
                 CreditTransactionTypeEnum::TRANSFER_IN,
-                CreditTransactionTypeEnum::ADJUST,
             ])
             ->sum('amount');
+
+        $netAdjustments = max(0, (float) CreditTransaction::where('customer_id', $customer->id)
+            ->where('date', '>=', $since)
+            ->where('type', CreditTransactionTypeEnum::ADJUST)
+            ->sum('amount'));
 
         $topUpsNotByCard = (float) CreditTransaction::where('customer_id', $customer->id)
             ->where('date', '>=', $since)
@@ -71,7 +77,7 @@ class RefundCustomerBalanceByApi extends OrgAction
                 ->where('payment_accounts.type', PaymentAccountTypeEnum::CHECKOUT)))
             ->sum('amount');
 
-        return round($gifted + $topUpsNotByCard, 2);
+        return round($gifted + $netAdjustments + $topUpsNotByCard, 2);
     }
 
     /**
@@ -228,7 +234,7 @@ class RefundCustomerBalanceByApi extends OrgAction
     public function rules(): array
     {
         return [
-            'confirmed_amount' => ['required', 'numeric', 'gt:0'],
+            'confirmed_amount' => [$this->isPreview ? 'sometimes' : 'required', 'numeric', 'gt:0'],
         ];
     }
 
@@ -248,7 +254,8 @@ class RefundCustomerBalanceByApi extends OrgAction
      */
     public function preview(Customer $customer, ActionRequest $request): array
     {
-        $this->customer = $customer;
+        $this->customer  = $customer;
+        $this->isPreview = true;
         $this->initialisationFromShop($customer->shop, $request);
 
         return self::plan($customer);

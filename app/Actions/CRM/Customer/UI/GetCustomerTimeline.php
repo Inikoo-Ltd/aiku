@@ -12,6 +12,7 @@ use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\CRM\Customer\CustomerWebActivityTypeEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\GoodsIn\Return\ReturnStateEnum;
 use App\Enums\Helpers\Audit\AuditEventEnum;
 use App\Http\Resources\Helpers\ImageResource;
@@ -246,7 +247,7 @@ class GetCustomerTimeline
                     'type'      => 'payment',
                     'timestamp' => $timestamp,
                     'datetime'  => $timestamp?->toIso8601String(),
-                    'title'     => __('Payment received'),
+                    'title'     => $payment->type === PaymentTypeEnum::REFUND ? __('Refund sent') : __('Payment received'),
                     'subtitle'  => $payment->reference,
                     'icon'      => ['fal', 'fa-money-bill'],
                     'color'     => 'green',

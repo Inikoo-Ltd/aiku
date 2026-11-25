@@ -1815,3 +1815,24 @@ test('a cancel whose card refund is refused emails the customer that the money i
         ->and($notifications->getArrayCopy())->toContain(false)
         ->and(last($notifications->getArrayCopy()))->toBeTrue();
 });
+
+test('the customer page preview of refund to card answers without a confirmed amount and a reversed adjustment is not gifted credit', function () {
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    foreach ([0.01, -0.01] as $amount) {
+        \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($customer, [
+            'amount' => $amount,
+            'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::ADJUST,
+        ], notifyCustomer: false);
+    }
+    \App\Actions\Accounting\CreditTransaction\StoreCreditTransaction::make()->action($customer, [
+        'amount' => 5,
+        'type'   => \App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum::COMPENSATION,
+    ], notifyCustomer: false);
+
+    expect(\App\Actions\Accounting\Payment\RefundCustomerBalanceByApi::giftedCredit($customer))->toBe(5.0);
+
+    $this->getJson(route('grp.json.customer.refund_balance_by_api.preview', $customer->id))
+        ->assertOk()
+        ->assertJsonPath('balance', 5)
+        ->assertJsonPath('to_card', 0);
+});
