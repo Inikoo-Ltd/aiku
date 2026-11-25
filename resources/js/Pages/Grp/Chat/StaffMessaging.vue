@@ -661,7 +661,7 @@ onUnmounted(() => {
 
         <button
             type="button"
-            class="absolute top-1/3 z-10 hidden aspect-square w-5 -translate-x-1/2 items-center justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
+            class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-full items-center justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
             :aria-label="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
             v-tooltip="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
