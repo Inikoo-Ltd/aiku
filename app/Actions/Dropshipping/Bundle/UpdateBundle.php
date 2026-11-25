@@ -134,7 +134,7 @@ class UpdateBundle extends OrgAction
                 }
 
                 $calculatedPrice = CalculateBundleItemPriceDetails::run($bundle->customerSalesChannel, $modelData);
-                $productPrice    = Arr::get($calculatedPrice, 'total_price');
+                $productPrice    = Arr::get($calculatedPrice, 'total_bundle_price');
                 $productRrp      = Arr::get($modelData, 'rrp') ?? Arr::get($calculatedPrice, 'total_rrp');
             }
 
