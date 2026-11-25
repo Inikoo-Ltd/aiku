@@ -2928,3 +2928,9 @@ test('a product page closes when the product stops being for sale and reopens wh
     expect($reopened->state)->toBe(WebpageStateEnum::LIVE)
         ->and(\App\Models\Web\Redirect::where('website_id', $reopened->website_id)->where('from_path', $reopened->url)->exists())->toBeFalse();
 });
+
+test('incoming stock says goods already at the warehouse are there, not still with the supplier', function () {
+    expect(\App\Actions\Catalogue\Product\GetProductIncomingStock::stockDeliveryStateLabel('checked'))->toBe('At the warehouse, checked, being booked in')
+        ->and(\App\Actions\Catalogue\Product\GetProductIncomingStock::stockDeliveryStateLabel('received'))->toBe('At the warehouse, to be checked')
+        ->and(\App\Actions\Catalogue\Product\GetProductIncomingStock::stockDeliveryStateLabel('dispatched'))->toBe('Dispatched');
+});

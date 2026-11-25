@@ -258,7 +258,7 @@ class GetProductIncomingStock
                 'org_stock_code'    => $row->org_stock_code,
                 'org_stock_name'    => $row->org_stock_name,
                 'state'             => $row->state,
-                'state_label'       => StockDeliveryStateEnum::labels()[$row->state],
+                'state_label'       => self::stockDeliveryStateLabel($row->state),
                 'quantity'          => (float) $row->quantity,
                 'eta'               => $row->typed_eta || $row->parent_type !== 'OrgPartner'
                     ? $this->eta($row->typed_eta)
@@ -544,6 +544,20 @@ class GetProductIncomingStock
         }
 
         return Carbon::parse($typedEta)->max(now()->addDay())->toDateString();
+    }
+
+    /**
+     * Goods already in our warehouse say so, so nobody chases the supplier for a delivery that has arrived.
+     */
+    public static function stockDeliveryStateLabel(string $state): string
+    {
+        return match ($state) {
+            'received'   => __('At the warehouse, to be checked'),
+            'checked'    => __('At the warehouse, checked, being booked in'),
+            'booking_in' => __('At the warehouse, being booked in'),
+            'booked_in'  => __('At the warehouse, being put on the shelf'),
+            default      => StockDeliveryStateEnum::labels()[$state],
+        };
     }
 
     private function isOverdue(string $typedEta): bool
