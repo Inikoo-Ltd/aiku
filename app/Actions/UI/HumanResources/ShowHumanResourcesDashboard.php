@@ -153,7 +153,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                         ]
                     ],
                     [
-                        'name'  => __('Staff chat'),
+                        'name'  => __('Verba'),
                         'stat'  => $staffChatInsights['messages'],
                         'color' => 'sky',
                         'icon'  => ['fal', 'fa-comments-alt'],

@@ -157,7 +157,7 @@ class ShowStaffSlackChannels extends OrgAction
 
     public function htmlResponse(Group $group, ActionRequest $request): Response
     {
-        $title         = __('Desk');
+        $title         = __('Verba');
         $slackChannel  = $this->slackChannel;
         $list          = $this->listProps($group, $request->user());
 

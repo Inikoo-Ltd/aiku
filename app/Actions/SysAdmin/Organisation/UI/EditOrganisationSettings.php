@@ -344,7 +344,7 @@ class EditOrganisationSettings extends OrgAction
                             'fields' => $pickingFields,
                         ],
                         [
-                            'label' => __('Staff chat'),
+                            'label' => __('Verba'),
                             'icon' => 'fal fa-comments',
                             'fields' => [
                                 'staff_chat_warehouse_user_ids' => [

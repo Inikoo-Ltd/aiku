@@ -1963,7 +1963,7 @@ test('UI hr staff chat analytics and conversation scoped to organisation', funct
     $conversation = \App\Models\Chat\StaffConversation::first();
 
     $response = get(route('grp.org.hr.dashboard', [$organisation->slug]));
-    $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Staff chat')->where('stats.5.stat', 3));
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('stats.5.name', 'Verba')->where('stats.5.stat', 3));
 
     $response = get(route('grp.org.hr.dashboard', [$organisation->slug, 'show' => 'absent']));
     $response->assertInertia(fn (AssertableInertia $page) => $page

@@ -307,7 +307,7 @@ class EditUser extends OrgAction
                                         "noSaveButton"     => true,
                                         "submitOnConfirm"  => true,
                                         "warnOnEnableOnly" => true,
-                                        "warnTitle"        => __("Let their AI assistant change shop staff chat settings?"),
+                                        "warnTitle"        => __("Let their AI assistant change shop Verba settings?"),
                                         "confirmLabel"     => __("Yes, they decide who answers these questions"),
                                         "warningTextHtml"  => __("Their AI assistant will be able to <strong>add and remove staff</strong> on the Ask CRM and Ask warehouse lists of a shop, or of every shop of an organisation at once, after showing what will change. It still needs to be an admin of the shop or the organisation in Aiku. Every change is kept in the AI changes log with their name and the exact request text, and can be reverted there."),
                                         "warningBox"       => __("This is a write permission. Only for the managers who decide who answers staff questions."),

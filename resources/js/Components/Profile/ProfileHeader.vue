@@ -302,7 +302,7 @@ onMounted(async () => {
                             <dd class="text-sm font-medium text-gray-900">
                                 <form v-if="isEditingNickname" @submit.prevent="saveNickname" class="mt-1 flex items-center gap-x-1">
                                     <input ref="_nicknameInput" v-model="nicknameDraft" type="text" :maxlength="maxNicknameLength"
-                                        :placeholder="ctrans('Short name shown in staff chat')"
+                                        :placeholder="ctrans('Short name shown in Verba')"
                                         :disabled="isSavingNickname"
                                         @keydown.esc="cancelEditingNickname"
                                         class="min-w-0 flex-1 rounded-md border-gray-300 py-1 px-2 text-sm focus:border-[color:var(--profile-accent)] focus:ring-[color:var(--profile-accent)]" />

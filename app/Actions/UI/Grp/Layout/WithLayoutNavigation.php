@@ -385,8 +385,8 @@ trait WithLayoutNavigation
                             ],
                         ],
                         [
-                            'label'   => __('Staff chat'),
-                            'tooltip' => __('Staff chat'),
+                            'label'   => __('Verba'),
+                            'tooltip' => __('Verba'),
                             'icon'    => ['fal', 'fa-comments-alt'],
                             'root'    => 'grp.org.hr.staff_chat.',
                             'route'   => [

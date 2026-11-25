@@ -132,7 +132,7 @@ class IndexStaffChatAnalytics extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withTitle(title: __('Staff chat by user'))
+                ->withTitle(title: __('Verba by user'))
                 ->withLabelRecord([__('user'), __('users')])
                 ->column(key: 'username', label: __('User'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'messages', label: __('Messages'), canBeHidden: false, sortable: true, align: 'right')
@@ -174,13 +174,13 @@ class IndexStaffChatAnalytics extends OrgAction
             'SysAdmin/StaffChatAnalytics',
             [
                 'breadcrumbs'   => $this->getBreadcrumbs(),
-                'title'         => __('Staff chat analytics'),
+                'title'         => __('Verba analytics'),
                 'pageHead'      => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-comments-alt'],
-                        'title' => __('Staff chat analytics'),
+                        'title' => __('Verba analytics'),
                     ],
-                    'title' => __('Staff chat analytics'),
+                    'title' => __('Verba analytics'),
                 ],
                 'insights'      => GetStaffChatAnalytics::run($this->group, 30, $this->scopedOrganisation),
                 'users'         => StaffChatUsersResource::collection($users),
@@ -209,7 +209,7 @@ class IndexStaffChatAnalytics extends OrgAction
                                 'name'       => 'grp.org.hr.staff_chat.index',
                                 'parameters' => ['organisation' => $this->scopedOrganisation->slug],
                             ],
-                            'label' => __('Staff chat'),
+                            'label' => __('Verba'),
                         ]
                     ]
                 ]
@@ -225,7 +225,7 @@ class IndexStaffChatAnalytics extends OrgAction
                         'route' => [
                             'name' => 'grp.sysadmin.staff_chat.index',
                         ],
-                        'label' => __('Staff chat analytics'),
+                        'label' => __('Verba analytics'),
                     ]
                 ]
             ]

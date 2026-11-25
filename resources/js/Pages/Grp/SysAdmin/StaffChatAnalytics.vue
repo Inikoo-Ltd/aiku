@@ -226,7 +226,7 @@ const typeClass = (type: string): string => type === "dm" ? "bg-indigo-50 text-i
     <div class="p-4 grid gap-4 lg:grid-cols-2">
         <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300 lg:col-span-2">
             <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h3 class="text-lg font-semibold">{{ ctrans("Staff chat usage") }}</h3>
+                <h3 class="text-lg font-semibold">{{ ctrans("Verba usage") }}</h3>
                 <span class="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-600">
                     <FontAwesomeIcon :icon="faCalendarAlt" fixed-width aria-hidden="true" class="text-gray-400" />
                     <span class="first-letter:uppercase">{{ ctrans("last :days days", { days: String(insights.days) }) }}</span>
@@ -297,7 +297,7 @@ const typeClass = (type: string): string => type === "dm" ? "bg-indigo-50 text-i
     </div>
 
     <div class="px-4">
-        <SegmentedToggle v-model="activeTab" :options="tabOptions" :aria-label="ctrans('Staff chat table')" />
+        <SegmentedToggle v-model="activeTab" :options="tabOptions" :aria-label="ctrans('Verba table')" />
     </div>
 
     <Table v-show="activeTab === 'users'" :resource="users" class="mt-2">
