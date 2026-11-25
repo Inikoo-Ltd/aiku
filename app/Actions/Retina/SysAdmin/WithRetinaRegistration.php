@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
+use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use App\Actions\CRM\Customer\RegisterCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Actions\Web\WebsiteConversionEvent\ProcessRegistrationConversionEvent;
@@ -52,6 +53,7 @@ trait WithRetinaRegistration
                 $this->shop,
                 $modelData
             );
+            VerifyCustomerDic::dispatchIfApplies($customer);
 
             if ($sessionId) {
                 ProcessRegistrationConversionEvent::dispatch($customer, $sessionId);

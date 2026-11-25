@@ -166,6 +166,10 @@ return [
         'extraction_model' => env('COMPETITOR_INTEL_EXTRACTION_MODEL', 'anthropic/claude-sonnet-5.5'),
         'briefing_model' => env('COMPETITOR_INTEL_BRIEFING_MODEL', 'anthropic/claude-opus-5.5'),
     ],
+    'financna_sprava' => [
+        'url'     => env('FINANCNA_SPRAVA_URL', 'https://iz.opendata.financnasprava.sk/api'),
+        'api_key' => env('FINANCNA_SPRAVA_API_KEY'),
+    ],
     'softip' => [
         'url'             => env('SOFTIP_URL'),
         'api_key'         => env('SOFTIP_API_KEY'),

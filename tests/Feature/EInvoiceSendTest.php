@@ -12,6 +12,7 @@ use App\Actions\Accounting\EInvoice\BuildUblInvoice;
 use App\Actions\Accounting\EInvoice\IsInvoiceInEInvoiceScope;
 use App\Actions\Accounting\EInvoice\PollEInvoiceTransmissions;
 use App\Actions\Accounting\EInvoice\SendEInvoice;
+use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceEInvoiceTransmission;
 use App\Models\SysAdmin\Guest;
@@ -597,4 +598,47 @@ test('an invoice to an account carrying our own VAT number is never e-invoiced t
     expect($scope->handle($this->invoice->fresh()))->toBeTrue();
 
     $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
+});
+
+test('a Slovak business customer\'s DIČ is checked against the Finančná správa register by IČO, and filled only when the registered name is theirs', function () {
+    config(['services.financna_sprava.url' => 'https://register.test/api', 'services.financna_sprava.api_key' => 'register-key']);
+    $originalCountryId = $this->organisation->country_id;
+    $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->update(['company_name' => 'Príklad, s. r. o.', 'identity_document_number' => '50920600', 'peppol_id' => null]);
+    $register = fn (array $rows) => softipFake(['/data/ds_dsrdp/search' => Http::response(['page' => 1, 'pages' => 1, 'itemsCount' => count($rows), 'itemsPerPage' => 1000, 'data' => $rows])]);
+    $verify   = fn () => VerifyCustomerDic::make()->handle($this->customer->fresh());
+
+    $register([['dic' => '2021344160', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.']]);
+    expect($verify()['status'])->toBe(VerifyCustomerDic::FILLED)
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:2021344160')
+        ->and($verify()['status'])->toBe(VerifyCustomerDic::MATCHED);
+    Http::assertSent(fn (Request $request) => $request->hasHeader('key', 'register-key') && str_contains($request->url(), 'column=ico') && str_contains($request->url(), 'search=50920600'));
+
+    $register([['dic' => '2021965990', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.']]);
+    expect($verify())->toMatchArray(['status' => VerifyCustomerDic::MISMATCH, 'register_dic' => '2021965990'])
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:2021344160');
+
+    $this->customer->fresh()->update(['peppol_id' => null]);
+    $register([['dic' => '2021965990', 'ico' => '50920600', 'nazov_ds' => 'Celkom Iná Firma s.r.o.']]);
+    expect($verify()['status'])->toBe(VerifyCustomerDic::NAME_DIFFERS)
+        ->and($this->customer->fresh()->peppol_id)->toBeNull()
+        ->and(Illuminate\Support\Arr::get($this->customer->fresh()->data, 'dic_verification.register_name'))->toBe('Celkom Iná Firma s.r.o.');
+
+    $register([['dic' => '2021344160', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.']]);
+    expect($verify()['status'])->toBe(VerifyCustomerDic::NOT_REFILLED)
+        ->and($this->customer->fresh()->peppol_id)->toBeNull();
+
+    softipFake(['/data/ds_dsrdp/search' => Http::response(['message' => 'Search not found'], 404)]);
+    expect($verify()['status'])->toBe(VerifyCustomerDic::NOT_FOUND);
+
+    $this->customer->fresh()->update(['identity_document_number' => 'EA123456']);
+    expect(VerifyCustomerDic::ico($this->customer->fresh()))->toBeNull()
+        ->and($verify())->toBeNull();
+
+    $this->customer->fresh()->update(['identity_document_number' => null]);
+    expect($verify())->toBeNull();
+
+    $this->organisation->update(['country_id' => $originalCountryId]);
 });
