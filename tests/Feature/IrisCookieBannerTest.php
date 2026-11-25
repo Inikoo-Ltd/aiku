@@ -40,6 +40,7 @@ test('own cookie banner and its Consent Mode defaults only show on websites that
 });
 
 test('the customer area (/app login and register) gets the same Consent Mode defaults when the setting is on', function () {
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
     $login = fn () => $this->withoutVite()->followingRedirects()->get('http://'.$this->website->domain.'/app/login')->assertOk();
 
     $login()->assertDontSee('window.gtag("consent", "default"', false);
