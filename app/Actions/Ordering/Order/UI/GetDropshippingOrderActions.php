@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
@@ -245,6 +246,8 @@ class GetDropshippingOrderActions
                         'label'                => __('Cancel'),
                         'cancellation_reasons' => OrderCancellationReasonEnum::staffOptions(),
                         'is_paid'              => $order->payment_amount > 0,
+                        'refund_to_card'       => $order->payment_amount > 0 && CancelOrder::isRefundToCard($order),
+                        'can_refund_to_card'   => $order->payment_amount > 0 && CancelOrder::hasCardRefundableByApi($order),
                         'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',

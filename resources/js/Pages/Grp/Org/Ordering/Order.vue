@@ -16,7 +16,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
 import PrimePopover from "primevue/popover"
-import { Checkbox, InputNumber, InputGroup, InputGroupAddon, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
+import { Checkbox, InputNumber, InputGroup, InputGroupAddon, Popover as PopoverPrimevue, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
@@ -261,7 +261,7 @@ const props = defineProps<{
             }
             excess_refund?: {
                 state: 'pending' | 'unknown' | 'refunded' | 'kept_as_credit' | 'failed'
-                source: 'shop' | 'customer'
+                source: 'shop' | 'customer' | 'staff'
                 reason: string | null
             } | null
             estimated_weight: number
@@ -620,15 +620,16 @@ const generateRouteDeliveryNote = (slug: string) => {
 const cancelLoading = ref(false)
 const isModalCancelOrder = ref(false)
 const cancelOrderAction = ref<any>(null)
-const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string, refund_to_original_payment: boolean }>({
+const cancelOrderData = ref<{ cancellation_reason: string | null, cancellation_notes: string, other_way: boolean, save_for_customer: boolean }>({
     cancellation_reason: null,
     cancellation_notes: '',
-    refund_to_original_payment: false
+    other_way: false,
+    save_for_customer: false
 })
 
 const openCancelOrderModal = (action) => {
     cancelOrderAction.value = action
-    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '', refund_to_original_payment: false }
+    cancelOrderData.value = { cancellation_reason: null, cancellation_notes: '', other_way: false, save_for_customer: false }
     isModalCancelOrder.value = true
 }
 
@@ -638,7 +639,12 @@ const onSubmitCancelOrder = () => {
 
     router[action.route.method](
         route(action.route.name, action.route.parameters),
-        { ...cancelOrderData.value },
+        {
+            cancellation_reason: cancelOrderData.value.cancellation_reason,
+            cancellation_notes: cancelOrderData.value.cancellation_notes,
+            refund_instead: cancelOrderData.value.other_way ? (action.refund_to_card ? 'credit' : 'refund') : null,
+            save_for_customer: cancelOrderData.value.other_way && cancelOrderData.value.save_for_customer,
+        },
         {
             onStart: () => {
                 cancelLoading.value = true
@@ -2453,6 +2459,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         <template v-else-if="box_stats.products.excess_refund.state === 'failed'">
                             {{ ctrans('Refund failed: :reason, kept as credit', { reason: box_stats.products.excess_refund.reason }) }}
                         </template>
+                        <template v-else-if="box_stats.products.excess_refund.state === 'refunded' && box_stats.products.excess_refund.source === 'staff'">{{ ctrans('Refunded to card (chosen when cancelling)') }}</template>
                         <template v-else-if="box_stats.products.excess_refund.state === 'refunded' && box_stats.products.excess_refund.source === 'customer'">{{ ctrans('Refunded to card (customer setting)') }}</template>
                         <template v-else-if="box_stats.products.excess_refund.state === 'refunded'">{{ ctrans('Refunded to card (shop setting)') }}</template>
                         <template v-else-if="box_stats.products.excess_refund.source === 'customer'">{{ ctrans('Kept as credit (customer setting)') }}</template>
@@ -3371,14 +3378,20 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                     <label class="block text-sm font-medium leading-6">
                         {{ ctrans("Paid amount") }}
                     </label>
-                    <div class="mt-1 flex flex-col gap-y-2 text-sm">
-                        <label class="flex items-center gap-x-2 cursor-pointer">
-                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="false" />
-                            {{ ctrans("Keep as store credit, the customer is emailed about the credit") }}
+                    <p class="mt-1 text-sm text-gray-600">
+                        {{ cancelOrderAction.refund_to_card
+                            ? ctrans("Refunded to the card it was paid with, as the refund setting says")
+                            : ctrans("Kept as store credit, the customer is emailed about the credit") }}
+                    </p>
+                    <div v-if="cancelOrderAction.refund_to_card || cancelOrderAction.can_refund_to_card"
+                        class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                        <label class="flex items-center gap-x-1.5 cursor-pointer">
+                            <Checkbox v-model="cancelOrderData.other_way" binary />
+                            {{ cancelOrderAction.refund_to_card ? ctrans("Keep as store credit instead") : ctrans("Refund to card instead") }}
                         </label>
-                        <label class="flex items-center gap-x-2 cursor-pointer">
-                            <RadioButton v-model="cancelOrderData.refund_to_original_payment" :value="true" />
-                            {{ ctrans("Customer wants a refund to the original payment method, no credit email is sent") }}
+                        <label v-if="cancelOrderData.other_way" class="flex items-center gap-x-1.5 cursor-pointer">
+                            <Checkbox v-model="cancelOrderData.save_for_customer" binary />
+                            {{ ctrans("Save for this customer") }}
                         </label>
                     </div>
                 </div>

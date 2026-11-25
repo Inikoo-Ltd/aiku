@@ -73,6 +73,7 @@ class GetPreOrderText
         'email_cancelled_subject'       => ['Cancellation email: subject', 'Pre-order {order_number} cancelled'],
         'email_cancelled_body'          => ['Cancellation email: text (our reason goes after it)', 'Your pre-order {order_number} has been cancelled.'],
         'email_cancelled_refund'        => ['Cancellation email: refund', '{amount} has been returned to your account balance.'],
+        'email_cancelled_refund_to_card' => ['Cancellation email: refund to card', '{amount} will be refunded to the card you paid with.'],
         'email_cancelled_no_refund'     => ['Cancellation email: no refund', 'No refund is due under the pre-order terms.'],
     ];
 

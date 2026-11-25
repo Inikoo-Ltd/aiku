@@ -242,8 +242,8 @@ class EditCustomer extends OrgAction
                 ],
                 'excess_refund_mode'   => [
                     'type'        => 'select',
-                    'label'       => __('Money for items not shipped'),
-                    'information' => __('Overrides the shop setting for this customer when an order is invoiced for less than was paid.'),
+                    'label'       => __('Money given back'),
+                    'information' => __('Overrides the shop setting for this customer when an order paid by card is invoiced for less than was paid or is cancelled.'),
                     'value'       => Arr::get($customer->settings, 'excess_refund_mode', 'shop'),
                     'options'     => [
                         ['label' => __('As the shop'), 'value' => 'shop'],

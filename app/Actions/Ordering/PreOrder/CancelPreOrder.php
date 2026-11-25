@@ -45,6 +45,7 @@ class CancelPreOrder
             $refundAmount    = $this->refundAmount($preOrder, $reason);
             $keptAmount      = round(max(0, (float) $order->payment_amount - $refundAmount), 2);
             $wasHoldingStock = in_array($preOrder->state, PreOrderStateEnum::holdingStock());
+            $isRefundToCard  = $refundAmount > 0 && CancelOrder::isRefundToCard($order) && CancelOrder::cardRefundableLeft($order) >= $refundAmount;
 
             $preOrder->update([
                 'state'               => PreOrderStateEnum::CANCELLED,
@@ -70,7 +71,8 @@ class CancelPreOrder
 
             SendPreOrderUpdateEmail::dispatch($preOrder, SendPreOrderUpdateEmail::CANCELLED, [
                 'reason'        => $reason->label(),
-                'refund_amount' => $refundAmount,
+                'refund_amount'  => $refundAmount,
+                'refund_to_card' => $isRefundToCard,
             ])->afterCommit();
             SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::CANCELLED)->afterCommit();
 

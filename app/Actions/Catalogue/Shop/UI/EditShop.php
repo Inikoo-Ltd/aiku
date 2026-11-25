@@ -609,13 +609,13 @@ class EditShop extends OrgAction
                     ],
                 ],
                 [
-                    'label'  => __('Money for items not shipped'),
+                    'label'  => __('Money given back'),
                     'icon'   => 'fa-light fa-rotate-left',
                     'fields' => [
                         'excess_refund_mode' => [
                             'type'        => 'select',
-                            'label'       => __('When an order is invoiced for less than was paid'),
-                            'information' => __('What happens to the money for items not shipped. A customer can be set to differ from the shop. A card refund that Checkout.com refuses leaves the money as customer credit.'),
+                            'label'       => __('Items not shipped and cancelled orders'),
+                            'information' => __('What happens to money paid by card when an order is invoiced for less than was paid or is cancelled. Staff can choose otherwise when cancelling, and a customer can be set to differ from the shop. Other payment methods, and a card refund that Checkout.com refuses, leave the money as customer credit.'),
                             'value'       => Arr::get($shop->settings, 'excess_refund.mode', 'credit'),
                             'options'     => [
                                 ['label' => __('Keep as customer credit'), 'value' => 'credit'],

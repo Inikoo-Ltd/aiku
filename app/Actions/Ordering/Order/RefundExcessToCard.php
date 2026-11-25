@@ -9,10 +9,12 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\Payment\RefundPaymentByApi;
+use App\Actions\Comms\Outbox\CreditBalanceNotification\ProcessCreditBalanceNotification;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Payment;
 use App\Exceptions\CheckoutRefundOutcomeUnknown;
@@ -35,7 +37,7 @@ class RefundExcessToCard implements ShouldBeUnique
     use AsAction;
     use WithActionUpdate;
 
-    public function getJobUniqueId(Order $order, float $amount): string
+    public function getJobUniqueId(Order $order, float $amount, ?string $staffMode = null): string
     {
         return (string) $order->id;
     }
@@ -53,21 +55,27 @@ class RefundExcessToCard implements ShouldBeUnique
         return [Arr::get($order->shop->settings, 'excess_refund.mode') === 'refund' ? 'refund' : 'credit', 'shop'];
     }
 
-    public static function dispatchIfRefund(Order $order, float $amount): void
+    /**
+     * @param  'refund'|'credit'|null  $staffMode  what staff chose for this order instead of the setting
+     */
+    public static function dispatchIfRefund(Order $order, float $amount, ?string $staffMode = null): void
     {
-        if ($amount > 0 && self::effectiveSetting($order)[0] === 'refund') {
-            static::dispatch($order, $amount)->afterCommit();
+        if ($amount > 0 && ($staffMode ?? self::effectiveSetting($order)[0]) === 'refund') {
+            static::dispatch($order, $amount, $staffMode)->afterCommit();
         }
     }
 
-    public function handle(Order $order, float $amount): void
+    /**
+     * @param  'refund'|'credit'|null  $staffMode
+     */
+    public function handle(Order $order, float $amount, ?string $staffMode = null): void
     {
         $order->refresh();
         if (Arr::has($order->data, 'excess_refund')) {
             return;
         }
 
-        [$mode, $source] = self::effectiveSetting($order);
+        [$mode, $source] = $staffMode ? [$staffMode, 'staff'] : self::effectiveSetting($order);
         if ($mode !== 'refund') {
             return;
         }
@@ -135,6 +143,11 @@ class RefundExcessToCard implements ShouldBeUnique
             Sentry::captureMessage("Refund to card of the money for items not shipped in order $order->reference $state: $reason");
         }
 
+        /** A cancel held back its credit email for the money meant for the card; none of it got there, so the customer is told it is in their balance */
+        if (in_array($state, ['failed', 'kept_as_credit'], true) && $refunded == 0 && $order->state === OrderStateEnum::CANCELLED && $order->customer) {
+            ProcessCreditBalanceNotification::run($order->customer);
+        }
+
         $this->record($order, [
             'state'      => $state,
             'source'     => $source,
@@ -156,10 +169,10 @@ class RefundExcessToCard implements ShouldBeUnique
         $this->update($order, ['data' => $data]);
     }
 
-    public function asJob(Order $order, float $amount): void
+    public function asJob(Order $order, float $amount, ?string $staffMode = null): void
     {
         Nightwatch::dontSample();
 
-        $this->handle($order, $amount);
+        $this->handle($order, $amount, $staffMode);
     }
 }

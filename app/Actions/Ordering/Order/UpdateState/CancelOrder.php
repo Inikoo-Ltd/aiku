@@ -17,8 +17,10 @@ use App\Actions\Accounting\Invoice\UI\FinaliseRefund;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\InvoiceTransaction\StoreRefundInvoiceTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
+use App\Actions\Accounting\Payment\RefundPaymentByApi;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dropshipping\Allegro\Order\CancelFulfillOrderAllegro;
@@ -26,6 +28,7 @@ use App\Actions\Dropshipping\Wix\Order\CancelFulfillOrderWix;
 use App\Actions\Dropshipping\Shopify\Fulfilment\CloseFulfillOrderToShopify;
 use App\Actions\Dropshipping\Tiktok\Order\CancelFulfillOrderTiktok;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\RefundExcessToCard;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -78,7 +81,8 @@ class CancelOrder extends OrgAction
 
         $reason = $this->getCancellationReason($modelData);
         $notes  = trim((string)Arr::get($modelData, 'cancellation_notes'));
-        $isRefundToOriginalPayment = (bool)Arr::get($modelData, 'refund_to_original_payment', false);
+        $staffMode                 = Arr::get($modelData, 'refund_instead');
+        $isRefundToOriginalPayment = self::isRefundToCard($order, $staffMode);
 
         $orderData = [
             'state' => OrderStateEnum::CANCELLED,
@@ -97,7 +101,7 @@ class CancelOrder extends OrgAction
             ]));
         }
 
-        DB::transaction(function () use ($order, $orderData, $date, $modelData, $reason, $notes, $isRefundToOriginalPayment) {
+        DB::transaction(function () use ($order, $orderData, $date, $modelData, $reason, $notes, $isRefundToOriginalPayment, $staffMode) {
             $this->update($order, $orderData);
 
             $this->cancelTransactions($order, $date);
@@ -118,12 +122,18 @@ class CancelOrder extends OrgAction
             $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);
 
             if ($refundAmount > 0) {
-                StoreCreditTransaction::make()->action($order->customer, [
-                    'amount' => $refundAmount,
-                    'type'   => CreditTransactionTypeEnum::MONEY_BACK,
-                    'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
-                    'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isRefundToOriginalPayment),
-                ], notifyCustomer: !$isRefundToOriginalPayment);
+                /** Only what the cards can take back goes to them; the rest is store credit and the customer is emailed about it. The card part is the latest credit, so a refund that fails can still email it */
+                $toCard = $isRefundToOriginalPayment ? round(min($refundAmount, self::cardRefundableLeft($order)), 2) : 0;
+                foreach ([[round($refundAmount - $toCard, 2), false], [$toCard, true]] as [$creditAmount, $isToCard]) {
+                    if ($creditAmount > 0) {
+                        StoreCreditTransaction::make()->action($order->customer, [
+                            'amount' => $creditAmount,
+                            'type'   => CreditTransactionTypeEnum::MONEY_BACK,
+                            'reason' => CreditTransactionReasonEnum::ORDER_CANCELLED,
+                            'notes'  => $this->getCreditTransactionNotes($order, $reason, $notes, $isToCard),
+                        ], notifyCustomer: !$isToCard);
+                    }
+                }
 
 
                 $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
@@ -148,6 +158,11 @@ class CancelOrder extends OrgAction
                 if ($sharedInvoice) {
                     $this->creditSharedInvoice($order, $sharedInvoice, $payment);
                 }
+
+                if ($toCard > 0) {
+                    $this->setAsideFinishedInvoiceExcessRefund($order);
+                    RefundExcessToCard::dispatchIfRefund($order, $toCard, $staffMode);
+                }
             }
 
             /** Cancelled from the order itself rather than its pre-order panel: the goods kept for it go back on sale */
@@ -167,6 +182,10 @@ class CancelOrder extends OrgAction
                 }
             }
         });
+
+        if ($staffMode && Arr::get($modelData, 'save_for_customer')) {
+            UpdateCustomer::make()->action($order->customer, ['excess_refund_mode' => $staffMode]);
+        }
 
         if ($oldState == OrderStateEnum::CREATING) {
             CustomerHydrateBasket::run($order->customer_id);
@@ -253,6 +272,57 @@ class CancelOrder extends OrgAction
         return OrderCancellationReasonEnum::tryFrom((string)$reason);
     }
 
+    /**
+     * Staff's choice for this order, else the customer's setting, else the shop's, decides whether the money goes back
+     * to the card, which only a card payment refundable by API can take; anything else stays as store credit and the
+     * customer is told about it.
+     */
+    public static function isRefundToCard(Order $order, ?string $staffMode = null): bool
+    {
+        return ($staffMode ?? RefundExcessToCard::effectiveSetting($order)[0]) === 'refund'
+            && !in_array(Arr::get($order->data, 'excess_refund.state'), ['pending', 'unknown'], true)
+            && self::hasCardRefundableByApi($order);
+    }
+
+    public static function cardRefundableLeft(Order $order): float
+    {
+        return round(self::cardPayments($order)->sum(fn (Payment $payment) => max(0, (float) $payment->amount - RefundPaymentByApi::alreadyRefunded($payment))), 2);
+    }
+
+    public static function hasCardRefundableByApi(Order $order): bool
+    {
+        return self::cardPayments($order)->isNotEmpty();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Payment>
+     */
+    private static function cardPayments(Order $order): \Illuminate\Support\Collection
+    {
+        return $order->payments()
+            ->where('payments.type', PaymentTypeEnum::PAYMENT)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->get()
+            ->filter(fn (Payment $payment) => RefundPaymentByApi::canRefundByApi($payment->paymentAccount?->type?->value, $payment->reference))
+            ->values();
+    }
+
+    /**
+     * An invoice deleted before the cancel may have left its excess refund record, which would stop the money of the
+     * cancel going back to the card. A refund still unconfirmed keeps its record, so nothing is refunded twice.
+     */
+    private function setAsideFinishedInvoiceExcessRefund(Order $order): void
+    {
+        $data = $order->refresh()->data ?? [];
+        if (!in_array(Arr::get($data, 'excess_refund.state'), ['refunded', 'kept_as_credit', 'failed'], true)) {
+            return;
+        }
+
+        $data['invoice_excess_refund'] = Arr::pull($data, 'excess_refund');
+        $this->update($order, ['data' => $data]);
+    }
+
     private function getCreditTransactionNotes(Order $order, ?OrderCancellationReasonEnum $reason, string $notes, bool $isRefundToOriginalPayment): string
     {
         $outcome = $isRefundToOriginalPayment
@@ -276,7 +346,8 @@ class CancelOrder extends OrgAction
         return [
             'cancellation_reason' => ['sometimes', 'nullable', Rule::enum(OrderCancellationReasonEnum::class)],
             'cancellation_notes'  => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'refund_to_original_payment' => ['sometimes', 'boolean'],
+            'refund_instead'      => ['sometimes', 'nullable', Rule::in(['refund', 'credit'])],
+            'save_for_customer'   => ['sometimes', 'boolean'],
             ...($this->asAction ? ['refund_amount' => ['sometimes', 'numeric', 'min:0']] : []),
         ];
     }

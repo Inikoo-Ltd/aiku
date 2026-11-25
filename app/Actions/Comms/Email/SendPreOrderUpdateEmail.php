@@ -155,7 +155,7 @@ class SendPreOrderUpdateEmail extends OrgAction
                 }
                 $refund       = (float) Arr::get($context, 'refund_amount', 0);
                 $paragraphs[] = $refund > 0
-                    ? $texts->handle($shop, 'email_cancelled_refund', array_merge($values, ['amount' => $currency.' '.number_format($refund, 2)]))
+                    ? $texts->handle($shop, Arr::get($context, 'refund_to_card') ? 'email_cancelled_refund_to_card' : 'email_cancelled_refund', array_merge($values, ['amount' => $currency.' '.number_format($refund, 2)]))
                     : $texts->handle($shop, 'email_cancelled_no_refund', $values);
                 break;
             default:

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -330,11 +331,13 @@ class GetEcomOrderActions
                         'type'                 => 'button',
                         'style'                => 'cancel',
                         'key'                  => 'cancel',
-                        'tooltip'              => __("Cancel the order. If payment has already been made, the amount will be credited to the customer's balance"),
+                        'tooltip'              => __("Cancel the order. Money already paid goes back as the shop's refund setting says: to the card, or to the customer's balance"),
                         'icon'                 => 'fas fa-skull',
                         'label'                => __('Cancel'),
                         'cancellation_reasons' => OrderCancellationReasonEnum::staffOptions(),
                         'is_paid'              => $order->payment_amount > 0,
+                        'refund_to_card'       => $order->payment_amount > 0 && CancelOrder::isRefundToCard($order),
+                        'can_refund_to_card'   => $order->payment_amount > 0 && CancelOrder::hasCardRefundableByApi($order),
                         'route'                => [
                             'method'     => 'patch',
                             'name'       => 'grp.models.order.state.cancelled',

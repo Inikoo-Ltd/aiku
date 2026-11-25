@@ -1671,3 +1671,147 @@ test('the local QA command makes card top ups and order payments that can be ref
         ->and($orderPayment->refresh()->reference)->toBe('pay_test_qa_original')
         ->and($command::make()->restore($orderPayment))->toBeNull();
 });
+
+test('a cancelled order paid by card goes back to the card when the shop is set to refund, without asking staff', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_refund', 2500);
+    $ledger = fn () => round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2);
+    $ledgerBefore = $ledger();
+    $paid         = (float) $order->payment_amount;
+    $toCard       = round(min($paid, (float) $payment->amount), 2);
+
+    expect(\App\Actions\Ordering\Order\UpdateState\CancelOrder::isRefundToCard($order))->toBeTrue();
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order);
+
+    $record = $order->refresh()->data['excess_refund'];
+    expect($paid)->toBeGreaterThan(0)
+        ->and($record['state'])->toBe('refunded')
+        ->and($record['source'])->toBe('shop')
+        ->and($calls->getArrayCopy())->toBe([['pay_test_cancel_refund', $toCard]])
+        ->and((float) $payment->refresh()->total_refund)->toBe($toCard)
+        ->and($ledger())->toBe(round($ledgerBefore + $paid - $toCard, 2));
+});
+
+test('a cancelled order stays as store credit when the setting says credit', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'credit']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_credit', 2500);
+    $ledgerBefore = round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2);
+    $paid         = (float) $order->payment_amount;
+
+    expect(\App\Actions\Ordering\Order\UpdateState\CancelOrder::isRefundToCard($order))->toBeFalse();
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order);
+
+    expect($calls->getArrayCopy())->toBe([])
+        ->and(Illuminate\Support\Arr::has($order->refresh()->data, 'excess_refund'))->toBeFalse()
+        ->and(round((float) App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)->sum('amount'), 2))->toBe(round($ledgerBefore + $paid, 2));
+});
+
+test('a cancel still refunds to card after a deleted invoice left a finished excess refund', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_after_invoice', 2500);
+    $finished = ['state' => 'kept_as_credit', 'source' => 'shop', 'amount' => 1, 'refunded' => 0, 'reason' => null, 'action_ids' => []];
+    $order->update(['data' => [...($order->data ?? []), 'excess_refund' => $finished]]);
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order->refresh());
+
+    expect($calls)->toHaveCount(1)
+        ->and($order->refresh()->data['excess_refund']['state'])->toBe('refunded')
+        ->and($order->data['invoice_excess_refund'])->toEqual($finished);
+});
+
+test('a cancel never refunds to card over an unconfirmed excess refund', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    $finished = ['state' => 'unknown', 'source' => 'shop', 'amount' => 1, 'refunded' => 0, 'reason' => null, 'action_ids' => []];
+
+    list($unconfirmedOrder, $unconfirmedPayment, $unconfirmedCalls) = invoiceCapturedOrder($this, 'pay_test_cancel_unconfirmed', 2500);
+    $unconfirmedOrder->update(['data' => [...($unconfirmedOrder->data ?? []), 'excess_refund' => [...$finished, 'state' => 'unknown']]]);
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($unconfirmedOrder->refresh());
+
+    expect($unconfirmedCalls->getArrayCopy())->toBe([])
+        ->and($unconfirmedOrder->refresh()->data['excess_refund']['state'])->toBe('unknown')
+        ->and((float) $unconfirmedPayment->refresh()->total_refund)->toBe(0.0);
+});
+
+test('staff can refund a cancel to card against a credit setting, once or saved for the customer', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'credit']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_staff_refund', 2500);
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order, ['refund_instead' => 'refund', 'save_for_customer' => true]);
+
+    expect($calls)->toHaveCount(1)
+        ->and($order->refresh()->data['excess_refund']['source'])->toBe('staff')
+        ->and($order->data['excess_refund']['state'])->toBe('refunded')
+        ->and($this->customer->refresh()->settings['excess_refund_mode'])->toBe('refund');
+});
+
+test('staff can keep a cancel as credit against a refund setting without changing the customer', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_staff_credit', 2500);
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order, ['refund_instead' => 'credit']);
+
+    expect($calls->getArrayCopy())->toBe([])
+        ->and(Illuminate\Support\Arr::has($order->refresh()->data, 'excess_refund'))->toBeFalse()
+        ->and($this->customer->refresh()->settings['excess_refund_mode'])->toBe('shop');
+});
+
+test('a cancel paid partly by card and partly by bank sends only the card part back and keeps the rest as emailed store credit', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order, $payment, $calls) = invoiceCapturedOrder($this, 'pay_test_cancel_mixed', 1000);
+
+    $bank = App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', App\Enums\Accounting\PaymentServiceProvider\PaymentServiceProviderTypeEnum::BANK->value)->first(),
+        ['code' => 'ACC'.mt_rand(1000, 9999), 'name' => 'Bank Account Cancel Mixed']
+    );
+    App\Actions\Ordering\Order\PayOrder::make()->action($order, $bank, [
+        'amount' => 20.00,
+        'status' => PaymentStatusEnum::SUCCESS,
+        'state'  => PaymentStateEnum::COMPLETED,
+    ]);
+    $order->refresh();
+    $paid = (float) $order->payment_amount;
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order);
+
+    $cancelCredits = App\Models\Accounting\CreditTransaction::where('customer_id', $order->customer_id)
+        ->where('reason', \App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum::ORDER_CANCELLED)
+        ->orderByDesc('id')->limit(2)->get();
+
+    expect($paid)->toBeGreaterThan(10.0)
+        ->and($calls->getArrayCopy())->toBe([['pay_test_cancel_mixed', 10.0]])
+        ->and((float) $cancelCredits[0]->amount)->toBe(10.0)
+        ->and($cancelCredits[0]->notes)->toContain('refunded to the original payment method')
+        ->and((float) $cancelCredits[1]->amount)->toBe(round($paid - 10, 2))
+        ->and($cancelCredits[1]->notes)->toContain('store credit');
+});
+
+test('a cancel whose card refund is refused emails the customer that the money is in their balance', function () {
+    $this->shop->update(['settings' => [...$this->shop->settings, 'excess_refund' => ['mode' => 'refund']]]);
+    $this->customer->update(['settings' => [...$this->customer->settings, 'excess_refund_mode' => 'shop']]);
+    list($order) = invoiceCapturedOrder($this, 'pay_test_cancel_refused', 2500, null);
+
+    $notifications = new ArrayObject();
+    \App\Actions\Comms\Outbox\CreditBalanceNotification\ProcessCreditBalanceNotification::mock()
+        ->shouldReceive('handle')
+        ->andReturnUsing(function ($customer, $notifyCustomer = true) use ($notifications) {
+            $notifications->append($notifyCustomer);
+        });
+
+    \App\Actions\Ordering\Order\UpdateState\CancelOrder::make()->action($order);
+
+    expect($order->refresh()->data['excess_refund']['state'])->toBe('failed')
+        ->and($notifications->getArrayCopy())->toContain(false)
+        ->and(last($notifications->getArrayCopy()))->toBeTrue();
+});

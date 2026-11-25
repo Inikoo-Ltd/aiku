@@ -6581,6 +6581,9 @@ describe('pre-orders (HELP-3432)', function () {
             ->toContain($preOrder->estimated_dispatch_to->format('d/m/Y'))
             ->not->toContain('{');
 
+        expect($preOrderEmail->body($preOrder, $preOrderEmail::CANCELLED, ['refund_amount' => 10, 'refund_to_card' => true]))->toContain('will be refunded to the card you paid with')
+            ->and($preOrderEmail->body($preOrder, $preOrderEmail::CANCELLED, ['refund_amount' => 10]))->toContain('has been returned to your account balance');
+
         $madeToOrder->orgStocks()->update(['quantity_available' => 2]);
         \App\Actions\Ordering\PreOrder\AllocatePreOrderStock::run();
         $preOrder->refresh();
