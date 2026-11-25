@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Accounting\EInvoice\GetCustomersDicStatus;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Mailshot\Filters\FilterByOrderValue;
@@ -73,6 +74,10 @@ class IndexCustomers extends OrgAction
     private int $upcomingReadyCount = 0;
 
     private int $upcomingOutOfStockCount = 0;
+
+    private ?string $dicStatusFilter = null;
+
+    private ?array $dicStatus = null;
 
     private ?Closure $largestMatchingOrderNetAmount = null;
 
@@ -360,6 +365,8 @@ class IndexCustomers extends OrgAction
             $this->stateFilter = $this->getStateFilter();
             $this->statusFilter = $this->getStatusFilter();
             $this->upcomingFilter = $this->getUpcomingFilter();
+            $this->dicStatus      = GetCustomersDicStatus::run($parent);
+            $this->dicStatusFilter = $this->dicStatus && in_array(request()->input('dic'), GetCustomersDicStatus::STATUSES, true) ? request()->input('dic') : null;
 
             $upcomingCounts = $this->getUpcomingCounts($parent->id);
             $this->upcomingReadyCount = $upcomingCounts['ready'];
@@ -400,6 +407,10 @@ class IndexCustomers extends OrgAction
             }
 
             $this->applyUpcomingFilter($queryBuilder, $parent->id);
+
+            if ($this->dicStatusFilter) {
+                GetCustomersDicStatus::applyFilter($queryBuilder, $this->dicStatusFilter);
+            }
         }
 
         if ($parent instanceof Product) {
@@ -726,6 +737,7 @@ class IndexCustomers extends OrgAction
                 'upcomingReadyCount'  => $this->upcomingReadyCount,
                 'upcomingOutOfStockCount' => $this->upcomingOutOfStockCount,
                 'upcomingFilter'      => $this->upcomingFilter,
+                'dicStatus'           => $this->dicStatus ? [...$this->dicStatus, 'active' => $this->dicStatusFilter] : null,
                 'exportFields'        => $this->getExportFields(),
             ];
         }

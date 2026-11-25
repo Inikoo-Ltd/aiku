@@ -16,6 +16,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import UnmatchedBankPaymentsNotice from '@/Components/Accounting/UnmatchedBankPaymentsNotice.vue'
+import CustomersDicMeter from '@/Components/Accounting/CustomersDicMeter.vue'
 import { PageHeadingTypes } from '@/types/PageHeading'
 library.add(faCircleNotch, faExclamationCircle, faTachometerAlt, faDownload, faRoute, faTags, faUserCircle)
 
@@ -42,6 +43,7 @@ const props = defineProps<{
     upcomingFilter?: string | null
     exportFields?: { key: string; label: string }[]
     bankPaymentsNotice?: InstanceType<typeof UnmatchedBankPaymentsNotice>['$props']['notice'] | null
+    dicStatus?: InstanceType<typeof CustomersDicMeter>['$props']['status'] | null
 }>()
 
 const downloadUrl = (type: string) => {
@@ -68,6 +70,7 @@ const downloadUrl = (type: string) => {
         </template>
     </PageHeading>
     <UnmatchedBankPaymentsNotice v-if="bankPaymentsNotice" :notice="bankPaymentsNotice" />
+    <CustomersDicMeter v-if="dicStatus?.total" :status="dicStatus" />
 
     <TableTemplateRecipients v-if="filtersStructure" :filters="filters ?? {}" :filters-structure="filtersStructure"
         :recipients-recipe="filters && Object.keys(filters).length ? filters : null" :shop-id="(shop_id as number)"

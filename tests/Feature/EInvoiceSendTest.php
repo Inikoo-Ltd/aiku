@@ -697,3 +697,30 @@ test('a sole trader is registered under the person\'s name: its DIČ is filled w
     $this->customer->fresh()->update(['identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
     $this->organisation->update(['country_id' => $originalCountryId]);
 });
+
+test('the customer list meter counts a shop\'s Slovak business customers by DIČ status and filters by each part', function () {
+    $shop = $this->customer->shop;
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => []]])]);
+    expect(\App\Actions\Accounting\EInvoice\GetCustomersDicStatus::run($shop->fresh()))->toBeNull();
+
+    $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => ['SK']]])]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->fresh()->update(['company_name' => 'Meter s.r.o.', 'identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    $status = fn () => \App\Actions\Accounting\EInvoice\GetCustomersDicStatus::run($shop->fresh());
+    $inPart = fn (string $part) => tap(\App\Models\CRM\Customer::query()->where('customers.shop_id', $shop->id), fn ($query) => \App\Actions\Accounting\EInvoice\GetCustomersDicStatus::applyFilter($query, $part))->pluck('customers.id');
+
+    $before = $status()['counts'];
+    expect($inPart('no_dic'))->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['identity_document_number' => '50920600']);
+    expect($status()['counts']['no_dic'])->toBe($before['no_dic'] - 1)
+        ->and($inPart('unchecked'))->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['data' => ['dic_verification' => ['status' => 'name_differs', 'checked_at' => now()->toIso8601String()]]]);
+    expect($inPart('name_differs'))->toContain($this->customer->id)
+        ->and($inPart('unchecked'))->not->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['identity_document_number' => null, 'data' => []]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
+});
