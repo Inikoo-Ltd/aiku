@@ -29,13 +29,16 @@ class GetMobileDeliveryNoteCounts
     public const array STATE_BUCKETS = ['unassigned', 'queued', 'handling', 'handling_blocked', 'picked', 'packing', 'packed', 'finalised', 'dispatched'];
 
     /**
+     * @param array<string, mixed> $filters
      * @return array{buckets: array<string, int>, channels: array<int, array{channel: string, label: string, buckets: array<string, int>}>}
      */
-    public function handle(Warehouse $warehouse, User $user, ?string $picker): array
+    public function handle(Warehouse $warehouse, User $user, array $filters = []): array
     {
+        $this->useWebDeliveryNotesSearch($filters['search'] ?? null);
+
         $channels = [];
         foreach ($this->channelLabels() as $channel => $label) {
-            $buckets = $this->bucketCounts($warehouse, $user, $channel, $picker);
+            $buckets = $this->bucketCounts($warehouse, $user, $channel, $filters);
             if ($buckets['in_warehouse'] + $buckets['dispatched'] > 0) {
                 $channels[] = [
                     'channel' => $channel,
@@ -46,17 +49,21 @@ class GetMobileDeliveryNoteCounts
         }
 
         return [
-            'buckets'  => $this->bucketCounts($warehouse, $user, 'all', $picker),
+            'buckets'  => $this->bucketCounts($warehouse, $user, 'all', $filters),
             'channels' => $channels,
         ];
     }
 
     /**
+     * @param array<string, mixed> $filters
      * @return array<string, int>
      */
-    private function bucketCounts(Warehouse $warehouse, User $user, string $channel, ?string $picker): array
+    private function bucketCounts(Warehouse $warehouse, User $user, string $channel, array $filters): array
     {
-        $stateCounts = $this->deliveryNotesQuery($warehouse, 'all', $channel, $picker, $user)
+        $query = $this->deliveryNotesQuery($warehouse, 'all', $channel, $filters['picker'] ?? null, $user);
+        $this->whereListFilters($query, $warehouse, $filters);
+
+        $stateCounts = $query
             ->reorder()
             ->toBase()
             ->select('delivery_notes.state')
@@ -99,9 +106,12 @@ class GetMobileDeliveryNoteCounts
         abort_unless(self::canViewGoodsOut($user, $warehouse), 403);
 
         $filters = Validator::make($request->query(), [
-            'picker' => ['sometimes', 'nullable', Rule::in(self::PICKER_FILTERS)],
+            'picker'  => ['sometimes', 'nullable', Rule::in(self::PICKER_FILTERS)],
+            'search'  => ['sometimes', 'nullable', 'string', 'max:255'],
+            ...$this->dateRangeRules($request->query()),
+            'overdue' => ['sometimes', 'boolean'],
         ])->validate();
 
-        return response()->json(['data' => $this->handle($warehouse, $user, $filters['picker'] ?? null)]);
+        return response()->json(['data' => $this->handle($warehouse, $user, $filters)]);
     }
 }

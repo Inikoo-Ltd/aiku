@@ -92,8 +92,8 @@ class PurgeMobileOfflineOperations
 
             $name = $first->user->contact_name ?? $first->user->username;
             StoreStaffTask::make()->action($first->user, [
-                'subject'     => __(':count offline actions of :name expired unresolved', ['count' => $group->count(), 'name' => $name]),
-                'description' => __('These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:', ['days' => self::KEEP_DAYS])
+                'subject'     => trans_choice(':count offline action of :name expired unresolved|:count offline actions of :name expired unresolved', $group->count(), ['count' => $group->count(), 'name' => $name]),
+                'description' => trans_choice('This offline action was still open after :days days, so Aiku and the shelves may disagree. Please check it:|These offline actions were still open after :days days, so Aiku and the shelves may disagree. Please check them:', $group->count(), ['days' => self::KEEP_DAYS])
                     ."\n".$group->map(fn (MobileOfflineOperation $operation) => '#'.$operation->device_sequence.' '.$operation->operation.' ('.($operation->outcome_reason ?? ($operation->blocked_by_id ? 'blocked' : 'open')).')'.($operation->subject_type ? ' '.$operation->subject_type.' '.$operation->subject_id : ''))->implode("\n")
                     ."\n".__('Warehouse: :warehouse', ['warehouse' => $first->warehouse->name]),
                 'department'  => 'warehouse',

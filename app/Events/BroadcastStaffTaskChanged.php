@@ -12,10 +12,11 @@ use App\Models\Tasks\StaffTask;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldRescue;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
-class BroadcastStaffTaskChanged implements ShouldBroadcastNow, ShouldDispatchAfterCommit
+class BroadcastStaffTaskChanged implements ShouldBroadcastNow, ShouldRescue, ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use InteractsWithSockets;

@@ -14,38 +14,38 @@ namespace Tests\Feature;
 use App\Actions\Api\Group\Offline\Handlers\MoveStockOfflineHandler;
 use App\Actions\Api\Group\Offline\MobileOfflineHandlerRegistry;
 use App\Actions\Api\Group\Offline\MobileOfflineOutcome;
-use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
+use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
-use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCheckedQuantity;
-use App\Actions\GoodsIn\StockDeliveryItem\StoreStockDeliveryItem;
-use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use App\Actions\Inventory\LocationOrgStock\MoveOrgStockToOtherLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
-use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct;
+use App\Actions\SupplyChain\Supplier\StoreSupplier;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Goods\Stock\StockStateEnum;
-use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
+use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
-use App\Enums\Inventory\Location\LocationStatusEnum;
+use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Enums\Inventory\Location\LocationStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
-use App\Models\Goods\Stock;
 use App\Models\GoodsIn\ReturnDeliveryNote;
 use App\Models\GoodsIn\ReturnDeliveryNoteItem;
 use App\Models\GoodsIn\Sowing;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\Goods\Stock;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
@@ -54,7 +54,12 @@ use App\Models\Inventory\Warehouse;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\MobileOfflineOperation;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Carbon\CarbonImmutable;
+use Illuminate\Broadcasting\BroadcastException;
+use Illuminate\Broadcasting\BroadcastManager;
+use Illuminate\Broadcasting\Broadcasters\Broadcaster;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -1088,4 +1093,45 @@ test('an audit conflict lists what was counted next to what Aiku has', function 
             'record_reference' => $link->location->code,
             'quantities'       => ['stock_now' => 9.0],
         ]);
+});
+
+test('a sync still answers when live messages cannot be sent', function () {
+    [, $source, $target] = offlineStockPair($this->warehouse, 2, 1);
+    offlineStockUser($this);
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key', 'X-Aiku-Device' => (string) Str::uuid(), 'X-Aiku-Platform' => 'android', 'X-Aiku-App-Version' => '1.4.2 (52)'];
+    $tasks   = StaffTask::count();
+
+    app()->forgetInstance(BroadcastManager::class);
+    Broadcast::clearResolvedInstances();
+    Broadcast::extend('failing', fn () => new class () extends Broadcaster {
+        public function auth($request)
+        {
+            return null;
+        }
+
+        public function validAuthenticationResponse($request, $result)
+        {
+            return null;
+        }
+
+        public function broadcast(array $channels, $event, array $payload = [])
+        {
+            throw new BroadcastException('Websocket server unreachable.');
+        }
+    });
+    config(['broadcasting.connections.failing' => ['driver' => 'failing'], 'broadcasting.default' => 'failing']);
+
+    $sync = postJson(route('grp.api.mobile.warehouses.offline.sync', $this->warehouse->id), ['actions' => [[
+        'sequence'     => 1,
+        'operation'    => 'move_stock',
+        'performed_at' => now()->subMinutes(5)->toIso8601ZuluString('millisecond'),
+        'time_source'  => 'server',
+        'seen_at'      => now()->subMinutes(30)->toIso8601ZuluString('millisecond'),
+        'payload'      => ['location_org_stock_id' => $source->id, 'target_location_org_stock_id' => $target->id, 'quantity' => 3, 'client_request_id' => offlineStockRequestId()],
+    ]]], $headers)->assertOk();
+
+    expect($sync->json('data.results.0.status'))->toBe('refused')
+        ->and($sync->json('data.results.0.reason'))->toBe('not_enough_stock')
+        ->and(StaffTask::count())->toBe($tasks + 1)
+        ->and(offlineStockQuantity($source))->toBe(2.0);
 });

@@ -16,6 +16,7 @@ use App\Models\Inventory\LocationOrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -41,13 +42,15 @@ class AuditMobileLocation
             ->get()
             ->keyBy('id');
 
-        foreach ($counts as $count) {
-            AuditLocationOrgStock::make()->action(
-                $links->get($count['location_org_stock_id']),
-                Arr::only($count, ['quantity', 'reason', 'note']),
-                $user
-            );
-        }
+        DB::transaction(function () use ($counts, $links, $user) {
+            foreach ($counts as $count) {
+                AuditLocationOrgStock::make()->action(
+                    $links->get($count['location_org_stock_id']),
+                    Arr::only($count, ['quantity', 'reason', 'note']),
+                    $user
+                );
+            }
+        });
 
         return $location->refresh();
     }
