@@ -115,8 +115,9 @@ class BlogPosts
      */
     public static function everything(string $dir = 'blog'): Collection
     {
-        return collect(File::glob(self::directory($dir).'/*.md'))
-            ->map(fn (string $path) => self::parse($path))
+        $files = File::glob(self::directory($dir).'/*.md');
+
+        return collect(Cache::remember('aiku-public-posts:'.self::contentHash($files), now()->addDay(), fn () => array_map(fn (string $path) => self::parse($path), $files)))
             ->reject(fn (array $post) => $post['date']->isFuture())
             ->sortByDesc('date')
             ->values();
@@ -189,14 +190,24 @@ class BlogPosts
 
     /**
      * Changes when any file in the directory is added, removed or edited, and each day, because a doc
-     * dated in the future appears on its day. Every deploy clones afresh, giving each file a new mtime,
-     * which is what clears pages cached against it when a view or style changes but no doc does.
+     * dated in the future appears on its day.
      */
     public static function version(string $dir = 'blog'): string
     {
-        $files = File::glob(self::directory($dir).'/*.md');
+        return md5(today()->toDateString().'|'.self::contentHash(File::glob(self::directory($dir).'/*.md')));
+    }
 
-        return md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
+    /**
+     * Every deploy clones afresh and gives each file a new mtime, so keying caches on mtimes emptied them
+     * several times a day. The contents key them instead; the mtimes only say when to hash them again.
+     *
+     * @param  array<int, string>  $files
+     */
+    public static function contentHash(array $files): string
+    {
+        $stamp = md5(implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
+
+        return Cache::remember('aiku-public-content:'.$stamp, now()->addDay(), fn () => md5(implode('|', array_map(fn (string $path) => Str::after($path, base_path()).':'.md5_file($path), $files))));
     }
 
     /**

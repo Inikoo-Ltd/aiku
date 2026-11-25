@@ -9,6 +9,7 @@
 use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\AikuPublic\IndexNotesInTypesense;
 use App\Actions\UI\AikuPublic\PingIndexNow;
+use App\Actions\UI\AikuPublic\ShowDoc;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 
@@ -292,7 +293,7 @@ test('docs index and article render with layout nav', function () {
 
 test('a rendered doc page is cached until a doc file changes', function () {
     $slug = BlogPosts::all('docs')->first()['slug'];
-    $key  = 'aiku-public-doc:'.$slug.':'.BlogPosts::version('docs');
+    $key  = ShowDoc::cacheKey($slug);
     cache()->forget($key);
 
     $host = 'https://'.config('app.domain');
@@ -307,7 +308,21 @@ test('a rendered doc page is cached until a doc file changes', function () {
         ->and(get($host.'/docs/'.$slug)->assertOk()->getContent())->toBe($first);
 
     get($host.'/docs/does-not-exist')->assertNotFound();
-    expect(cache()->has('aiku-public-doc:does-not-exist:'.BlogPosts::version('docs')))->toBeFalse();
+    expect(cache()->has(ShowDoc::cacheKey('does-not-exist')))->toBeFalse();
+});
+
+test('doc caches survive a deploy that only gives the files new mtimes', function () {
+    $files   = File::glob(resource_path('markdown/aiku-public/docs').'/*.md');
+    $version = BlogPosts::version('docs');
+    BlogPosts::everything('docs');
+    $postsKey = 'aiku-public-posts:'.BlogPosts::contentHash($files);
+
+    touch($files[0], time() + 60);
+    clearstatcache();
+
+    expect(BlogPosts::version('docs'))->toBe($version)
+        ->and(cache()->has('aiku-public-posts:'.BlogPosts::contentHash($files)))->toBeTrue()
+        ->and('aiku-public-posts:'.BlogPosts::contentHash($files))->toBe($postsKey);
 });
 
 test('production docs render and paint the production island', function () {

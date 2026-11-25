@@ -11,6 +11,7 @@ namespace App\Actions\UI\AikuPublic;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowDoc
@@ -29,7 +30,14 @@ class ShowDoc
             return $this->render($slug)->render();
         }
 
-        return Cache::remember('aiku-public-doc:'.$slug.':'.BlogPosts::version('docs'), now()->addDay(), fn () => $this->render($slug)->render());
+        return Cache::remember(self::cacheKey($slug), now()->addDay(), fn () => $this->render($slug)->render());
+    }
+
+    public static function cacheKey(string $slug): string
+    {
+        $views = array_map(fn (\SplFileInfo $file) => $file->getPathname(), [...File::allFiles(resource_path('views/aiku-public')), ...File::allFiles(resource_path('views/components/aiku-public'))]);
+
+        return 'aiku-public-doc:'.$slug.':'.BlogPosts::version('docs').':'.BlogPosts::contentHash($views);
     }
 
     private function render(string $slug): View
