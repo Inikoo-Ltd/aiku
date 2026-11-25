@@ -64,10 +64,13 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen, faStar } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen, faStar, faUndoAlt, faSpellCheck, faBoxCheck as falBoxCheck } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
+	faUndoAlt,
+	faSpellCheck,
+	falBoxCheck,
 	faStar,
 	faWeight,
 	faFolderOpen,
@@ -604,6 +607,7 @@ const removeUnbackedCosts = () => {
 const deleteLoading = ref(false)
 const dispatchLoading = ref(false)
 const undispatchLoading = ref(false)
+const shippingStateLoading = ref<string | null>(null)
 const receiveLoading = ref(false)
 const unreceiveLoading = ref(false)
 const cancelLoading = ref(false)
@@ -680,6 +684,31 @@ const confirmUndispatchStockDelivery = (action: any) => {
 					ctrans("Can not unmark as dispatched"),
 					errors,
 					props.is_container ? ctrans("Failed to unmark container as dispatched") : ctrans("Failed to unmark stock delivery as dispatched"),
+				),
+			})
+		},
+	})
+}
+
+const confirmSetShippingState = (action: any) => {
+	const isStepBack = action.direction === "previous"
+
+	confirm.require({
+		group: "stock-delivery",
+		header: isStepBack ? ctrans("Undo") : action.target_state,
+		message: isStepBack
+			? (props.is_container ? ctrans("Move this container back to :state? Its items keep their states.", { state: action.target_state }) : ctrans("Move this stock delivery back to :state? Its items keep their states.", { state: action.target_state }))
+			: (props.is_container ? ctrans("Set this container as :state? Its items keep their states.", { state: action.target_state }) : ctrans("Set this stock delivery as :state? Its items keep their states.", { state: action.target_state })),
+		rejectProps: { label: ctrans("Cancel"), severity: "secondary", outlined: true },
+		acceptProps: { label: isStepBack ? ctrans("Undo") : action.target_state, severity: "primary" },
+		accept: () => {
+			router.patch(route(action.route.name, action.route.parameters), { direction: action.direction }, {
+				onStart: () => { shippingStateLoading.value = action.key },
+				onFinish: () => { shippingStateLoading.value = null },
+				onError: (errors: Record<string, string>) => showDispatchError(
+					ctrans("Can not change the state"),
+					errors,
+					ctrans("Failed to change the state"),
 				),
 			})
 		},
@@ -993,6 +1022,36 @@ const confirmDeleteStockDelivery = (action: any) => {
 				:loading="undispatchLoading"
 				@click="() => confirmUndispatchStockDelivery(action)"
 			/>
+		</template>
+
+		<template #button-step-back-stock-delivery-shipping-state="{ action }">
+			<Button
+				type="tertiary"
+				:label="action.label"
+				:tooltip="action.tooltip"
+				:loading="shippingStateLoading === action.key"
+				:disabled="shippingStateLoading !== null"
+				@click="() => confirmSetShippingState(action)"
+			>
+				<template #icon>
+					<FontAwesomeIcon :icon="action.icon" class="text-amber-500" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+		</template>
+
+		<template #button-next-stock-delivery-shipping-state="{ action }">
+			<Button
+				type="tertiary"
+				:label="action.label"
+				:tooltip="action.tooltip"
+				:loading="shippingStateLoading === action.key"
+				:disabled="shippingStateLoading !== null"
+				@click="() => confirmSetShippingState(action)"
+			>
+				<template #icon>
+					<FontAwesomeIcon :icon="action.icon" class="text-green-600" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
 		</template>
 
 		<template #button-receive-stock-delivery="{ action }">

@@ -461,6 +461,7 @@ use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryItemsFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\SetStockDeliveryItemsShippingState;
+use App\Actions\GoodsIn\StockDelivery\SetStockDeliveryShippingState;
 use App\Actions\GoodsIn\StockDelivery\RemoveStockDeliveryUnbackedCosts;
 use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryServiceInvoice;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryInvoiceCosting;
@@ -2114,6 +2115,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::patch('update', UpdateStockDelivery::class)->name('update');
     Route::patch('dispatch', DispatchStockDelivery::class)->name('dispatch');
     Route::patch('undispatch', UndispatchStockDelivery::class)->name('undispatch');
+    Route::patch('shipping-state', SetStockDeliveryShippingState::class)->name('shipping-state');
     Route::patch('receive', ReceiveStockDelivery::class)->name('receive');
     Route::patch('unreceive', UnreceiveStockDelivery::class)->name('unreceive');
     Route::patch('cancel', CancelStockDelivery::class)->name('cancel');

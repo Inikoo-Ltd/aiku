@@ -24,6 +24,7 @@ use App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement;
 use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\SetStockDeliveryShippingState;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDelivery;
@@ -652,6 +653,7 @@ class ShowStockDelivery extends OrgAction
                 ],
                 $deleteButton,
                 $deliveryDateButton,
+                ...$this->getShippingStateActions($stockDelivery),
             ],
             StockDeliveryStateEnum::DISPATCHED => [
                 [
@@ -765,6 +767,57 @@ class ShowStockDelivery extends OrgAction
     }
 
     /**
+     * The container's own shipping step: forward to confirmed or ready to ship, or back one step. Its items keep their states.
+     */
+    private function getShippingStateActions(StockDelivery $stockDelivery): array
+    {
+        $user = request()->user();
+        if (!$user || $stockDelivery->isManagedByPartner() || !AddPurchaseOrdersToStockDelivery::userCanAdd($stockDelivery, $user)) {
+            return [];
+        }
+
+        $route = [
+            'method'     => 'patch',
+            'name'       => 'grp.models.stock-delivery.shipping-state',
+            'parameters' => ['stockDelivery' => $stockDelivery->id],
+        ];
+
+        $actions = [];
+
+        $previousState = SetStockDeliveryShippingState::previousState($stockDelivery);
+        if ($previousState) {
+            $actions[] = [
+                'label'        => __('Undo'),
+                'tooltip'      => __('Move back to :state, the items keep their states', ['state' => StockDeliveryStateEnum::labels()[$previousState->value]]),
+                'type'         => 'button',
+                'style'        => 'tertiary',
+                'icon'         => 'fal fa-undo-alt',
+                'key'          => 'step_back_stock_delivery_shipping_state',
+                'direction'    => 'previous',
+                'target_state' => StockDeliveryStateEnum::labels()[$previousState->value],
+                'route'        => $route,
+            ];
+        }
+
+        $nextState = SetStockDeliveryShippingState::nextState($stockDelivery);
+        if ($nextState) {
+            $actions[] = [
+                'label'        => StockDeliveryStateEnum::labels()[$nextState->value],
+                'tooltip'      => __('Set as :state, the items keep their states', ['state' => StockDeliveryStateEnum::labels()[$nextState->value]]),
+                'type'         => 'button',
+                'style'        => 'tertiary',
+                'icon'         => $nextState === StockDeliveryStateEnum::CONFIRMED ? 'fal fa-spell-check' : 'fal fa-box-check',
+                'key'          => 'next_stock_delivery_shipping_state',
+                'direction'    => 'next',
+                'target_state' => StockDeliveryStateEnum::labels()[$nextState->value],
+                'route'        => $route,
+            ];
+        }
+
+        return $actions;
+    }
+
+    /**
      * Delete first, then Settings, the CSV and PDF downloads as one group, and dispatching the container last.
      */
     private function arrangePageHeadActions(array $actions): array
@@ -785,7 +838,7 @@ class ShowStockDelivery extends OrgAction
     private function getAllowedActions(StockDelivery $stockDelivery): array
     {
         if ($this->viewedByAgent) {
-            $allowedKeys = $this->canEdit ? ['dispatch_stock_delivery', 'edit_estimated_delivery_date', 'csv', 'action'] : ['csv', 'action'];
+            $allowedKeys = $this->canEdit ? ['dispatch_stock_delivery', 'edit_estimated_delivery_date', 'step_back_stock_delivery_shipping_state', 'next_stock_delivery_shipping_state', 'csv', 'action'] : ['csv', 'action'];
             if ($this->canEdit && $stockDelivery->state === StockDeliveryStateEnum::IN_PROCESS) {
                 $allowedKeys[] = 'delete_stock_delivery';
             }
