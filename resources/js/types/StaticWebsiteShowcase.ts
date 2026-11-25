@@ -10,7 +10,7 @@ import { routeType } from "@/types/route"
 export interface StaticWebsiteShowcaseData {
     id: number
     url: string
-    url_hint: string
+    url_hint: string | null
     can_edit: boolean
     route_storefront: routeType | null
     route_header: routeType | null

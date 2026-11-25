@@ -20,9 +20,10 @@ import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { StaticWebsiteShowcaseData } from "@/types/StaticWebsiteShowcase"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBroadcastTower, faBrowser, faExternalLink, faEye, faGlobe, faHistory, faPuzzlePiece, faSeedling, faSkull, faTachometerAltFast } from "@fal"
+import { faBroadcastTower, faBrowser, faExclamationTriangle, faExternalLink, faEye, faGlobe, faHistory, faPuzzlePiece, faSeedling, faSkull, faTachometerAltFast } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faBroadcastTower, faBrowser, faExternalLink, faEye, faGlobe, faHistory, faPuzzlePiece, faSeedling, faSkull, faTachometerAltFast)
+library.add(faBroadcastTower, faBrowser, faExclamationTriangle, faExternalLink, faEye, faGlobe, faHistory, faPuzzlePiece, faSeedling, faSkull, faTachometerAltFast)
 
 const props = defineProps<{
     title: string
@@ -30,6 +31,7 @@ const props = defineProps<{
     tabs: { current: string, navigation: object }
     preview_url: string
     live_url: string
+    live_domain_warning: string | null
     can_restore: boolean
     showcase?: StaticWebsiteShowcaseData
     real_user_speed_history?: object | null
@@ -63,6 +65,10 @@ const tabComponent = computed(() => ({
                 </div>
             </template>
         </PageHeading>
+        <div v-if="live_domain_warning" class="mx-4 mt-3 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5" fixed-width aria-hidden="true" />
+            <span>{{ live_domain_warning }}</span>
+        </div>
         <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
         <template v-if="currentTab === 'showcase'">

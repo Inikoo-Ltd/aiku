@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum;
 use App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -31,6 +32,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property StaticWebsiteStateEnum $state
  * @property string|null $source_url
  * @property \Illuminate\Support\Carbon|null $crawled_at
+ * @property StaticWebsiteLiveDomainStatusEnum|null $live_domain_status
+ * @property string|null $nameservers
+ * @property \Illuminate\Support\Carbon|null $live_domain_checked_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
@@ -105,8 +109,33 @@ class StaticWebsite extends Model
     {
         return [
             'state'      => StaticWebsiteStateEnum::class,
-            'crawled_at' => 'datetime',
+            'crawled_at'             => 'datetime',
+            'live_domain_status'     => StaticWebsiteLiveDomainStatusEnum::class,
+            'live_domain_checked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Said wherever the site is edited (Aiku and the info website tools) while what is changed here
+     * does not reach the public domain: Aiku only answers live sites, and a live one is checked hourly.
+     */
+    public function liveDomainWarning(): ?string
+    {
+        if ($this->state !== StaticWebsiteStateEnum::LIVE) {
+            $warning = __(':domain is not in Aiku yet: changes made here do not appear on the live website until a developer moves the domain to Aiku.', ['domain' => $this->domain]);
+
+            if (!$this->crawled_at && $this->live_domain_status === StaticWebsiteLiveDomainStatusEnum::ELSEWHERE) {
+                $warning .= ' '.__('These pages were started blank in Aiku and are not a copy of what :domain shows today. To change the live website, ask a developer to copy it into Aiku first.', ['domain' => $this->domain]);
+            }
+
+            return $warning;
+        }
+
+        return match ($this->live_domain_status) {
+            StaticWebsiteLiveDomainStatusEnum::ELSEWHERE   => __(':domain still shows a website hosted somewhere else: changes made here do not appear on it until its DNS points to Aiku.', ['domain' => $this->domain]),
+            StaticWebsiteLiveDomainStatusEnum::UNREACHABLE => __(':domain did not answer at the last check, so changes made here may not be seen.', ['domain' => $this->domain]),
+            default                                        => null,
+        };
     }
 
     public function getSlugOptions(): SlugOptions

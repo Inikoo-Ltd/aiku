@@ -16,7 +16,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Prepares a change to an info website and shows it, without saving anything. operation: update_page (edits and/or title, description), create_page (path, title, description, from_page template defaulting to /, then content_html to fill its content area and/or edits), delete_page, update_component (edits to a shared part: header, footer or one added), create_component (component code, html, pages "all" or a list of paths, position after_header or before_footer), delete_component (also takes it off every page). Edits quote HTML exactly as info-websites-tool find shows it: {"action": "replace"|"insert_before"|"insert_after"|"remove", "find": "...", "html": "...", "all": false}; a quote that is missing, or there more than once without all=true, refuses the change. No scripts, inline event handlers or links to the old host. Returns a change_id, a summary, every edit as before/after text, the pages affected, warnings and a preview_url that shows the result in Aiku. Show all of that to the user, ask them to look at the preview and to confirm, and only then call info-website-write-tool with the change_id and their confirmation in their own words. Only for group administrators and group webmasters.')]
+#[Description('Prepares a change to an info website and shows it, without saving anything. operation: update_page (edits and/or title, description), create_page (path, title, description, from_page template defaulting to /, then content_html to fill its content area and/or edits), delete_page, update_component (edits to a shared part: header, footer or one added), create_component (component code, html, pages "all" or a list of paths, position after_header or before_footer), delete_component (also takes it off every page). Edits quote HTML exactly as info-websites-tool find shows it: {"action": "replace"|"insert_before"|"insert_after"|"remove", "find": "...", "html": "...", "all": false}; a quote that is missing, or there more than once without all=true, refuses the change. No scripts, inline event handlers or links to the old host. Returns a change_id, a summary, every edit as before/after text, the pages affected, warnings and a preview_url that shows the result in Aiku. Show all of that to the user, with live_domain_warning when it is set (the change will not reach the live domain), ask them to look at the preview and to confirm, and only then call info-website-write-tool with the change_id and their confirmation in their own words. Only for group administrators and group webmasters.')]
 #[IsReadOnly]
 class InfoWebsitePreviewTool extends AikuInfoWebsiteTool
 {
@@ -61,6 +61,7 @@ class InfoWebsitePreviewTool extends AikuInfoWebsiteTool
             'edits'          => $staged['diffs'],
             'affected_pages' => $staged['affected_pages'],
             'warnings'       => $staged['warnings'],
+            'live_domain_warning' => $staticWebsite->liveDomainWarning(),
             'preview_url'    => route('grp.marketing.info_websites.changes.preview', [$staticWebsite->slug, $staged['id'], 'path' => $staged['preview_path']]),
             'expires_at'     => $staged['expires_at'],
             'saved'          => false,

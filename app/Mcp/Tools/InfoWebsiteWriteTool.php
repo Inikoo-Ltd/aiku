@@ -79,7 +79,8 @@ class InfoWebsiteWriteTool extends AikuInfoWebsiteTool
                 'preview_url' => $this->previewUrl($staticWebsite, $path),
             ])->all(),
             'change_log_id' => $this->mcpChange?->id,
-            'note'          => 'Live pages can take up to 5 minutes to show the change. To undo it, use ai-changes-tool with this change_log_id after the user confirmed.',
+            'live_domain_warning' => $staticWebsite->liveDomainWarning(),
+            'note'          => ($staticWebsite->liveDomainWarning() ? 'Saved in Aiku only: tell the user the live_domain_warning.' : 'Live pages can take up to 5 minutes to show the change.').' To undo it, use ai-changes-tool with this change_log_id after the user confirmed.',
         ]);
     }
 

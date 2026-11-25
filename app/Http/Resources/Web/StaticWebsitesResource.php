@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum;
 use App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Web\StaticWebsite;
@@ -22,7 +23,8 @@ class StaticWebsitesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $state = $this->state->value;
+        $state            = $this->state->value;
+        $liveDomainStatus = $this->live_domain_status?->value;
 
         return [
             'id'             => $this->id,
@@ -36,6 +38,11 @@ class StaticWebsitesResource extends JsonResource
             'state'          => $state,
             'state_icon'     => StaticWebsiteStateEnum::stateIcon()[$state],
             'state_label'    => StaticWebsiteStateEnum::labels()[$state],
+            'live_domain_status'       => $liveDomainStatus,
+            'live_domain_status_label' => $liveDomainStatus ? StaticWebsiteLiveDomainStatusEnum::labels()[$liveDomainStatus] : null,
+            'live_domain_status_icon'  => $liveDomainStatus ? StaticWebsiteLiveDomainStatusEnum::icons()[$liveDomainStatus] : null,
+            'live_domain_checked_at'   => $this->live_domain_checked_at,
+            'nameservers'              => $this->nameservers,
             'webpages_count' => $this->webpages_count,
             'crawled_at'     => $this->crawled_at,
             'updated_at'     => $this->updated_at,

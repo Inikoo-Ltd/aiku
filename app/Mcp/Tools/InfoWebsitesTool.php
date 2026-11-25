@@ -18,7 +18,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Reads the info websites (information-only sites without a shop, e.g. aw-freedom.com) so they can be changed with info-website-preview-tool. Without arguments lists them; with website lists its pages (path, title, size, shared parts used) and its shared parts (header, footer and any added, with the pages using each); with website and page (a path like /our-story) or component (a shared part code like header) gives the title, description, live and preview links and an outline of the visible text. Add find to get every place a text appears with the exact HTML around it: quote that HTML exactly in edits. Add from and length to read a slice of the raw HTML. Pages hold <!--aiku:component:code--> where a shared part goes; change the part itself to change it on every page. A new info website is started with info-website-create-tool. Read only. Only for group administrators and group webmasters.')]
+#[Description('Reads the info websites (information-only sites without a shop, e.g. aw-freedom.com) so they can be changed with info-website-preview-tool. Without arguments lists them; with website lists its pages (path, title, size, shared parts used) and its shared parts (header, footer and any added, with the pages using each); with website and page (a path like /our-story) or component (a shared part code like header) gives the title, description, live and preview links and an outline of the visible text. Add find to get every place a text appears with the exact HTML around it: quote that HTML exactly in edits. Add from and length to read a slice of the raw HTML. Pages hold <!--aiku:component:code--> where a shared part goes; change the part itself to change it on every page. A new info website is started with info-website-create-tool. When live_domain_warning is set, the pages in Aiku are not what the live domain shows: tell the user that warning, in plain words, before preparing any change. Read only. Only for group administrators and group webmasters.')]
 #[IsReadOnly]
 class InfoWebsitesTool extends AikuInfoWebsiteTool
 {
@@ -82,6 +82,7 @@ class InfoWebsitesTool extends AikuInfoWebsiteTool
                 'shared_parts'  => $staticWebsite->components()->orderBy('code')->pluck('code')->all(),
                 'live_url'      => $this->liveUrl($staticWebsite),
                 'preview_url'   => $this->previewUrl($staticWebsite),
+                'live_domain_warning' => $staticWebsite->liveDomainWarning(),
             ])->all();
     }
 
@@ -90,6 +91,7 @@ class InfoWebsitesTool extends AikuInfoWebsiteTool
         return [
             'domain'       => $staticWebsite->domain,
             'name'         => $staticWebsite->name,
+            'live_domain_warning' => $staticWebsite->liveDomainWarning(),
             'pages'        => $staticWebsite->webpages()->orderBy('path')->get(['path', 'title', 'html'])
                 ->map(fn (StaticWebpage $webpage) => [
                     'path'         => $webpage->path,
@@ -117,6 +119,7 @@ class InfoWebsitesTool extends AikuInfoWebsiteTool
             'description'  => $webpage->description,
             'shared_parts' => StaticWebsiteComponent::codesIn($html),
             'live_url'     => $this->liveUrl($staticWebsite, $webpage->path),
+            'live_domain_warning' => $staticWebsite->liveDomainWarning(),
             'preview_url'  => $this->previewUrl($staticWebsite, $webpage->path),
             'html_length'  => strlen($html),
         ], $this->reading($request, $html));
@@ -129,6 +132,7 @@ class InfoWebsitesTool extends AikuInfoWebsiteTool
             'component'     => $component->code,
             'used_by_pages' => $staticWebsite->webpages()->whereRaw('position(? in html) > 0', [StaticWebsiteComponent::marker($component->code)])->orderBy('path')->pluck('path')->all(),
             'html_length'   => strlen($component->html),
+            'live_domain_warning' => $staticWebsite->liveDomainWarning(),
         ], $this->reading($request, $component->html));
     }
 

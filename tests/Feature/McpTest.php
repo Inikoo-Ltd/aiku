@@ -4641,6 +4641,27 @@ describe('changing info websites through the assistant', function () {
         ])->assertHasErrors(['A new info website can only be started by a group administrator. Do not retry; nothing was changed.']);
     });
 
+    it('warns that the live domain shows another website before anything is changed', function () {
+        $this->staticWebsite->update(['live_domain_status' => App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum::ELSEWHERE]);
+
+        $overview = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitesTool::class, ['website' => $this->staticWebsite->domain]));
+        $preview  = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website'   => $this->staticWebsite->domain,
+            'operation' => 'update_component',
+            'component' => 'header',
+            'edits'     => [['action' => 'replace', 'find' => '<a href="/about">About</a>', 'html' => '<a href="/about">Our story</a>']],
+        ]));
+        $saved = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $preview['change_id'], 'request_text' => 'yes']));
+
+        expect($overview['live_domain_warning'])->toContain('not in Aiku yet')->toContain('started blank')
+            ->and($preview['live_domain_warning'])->toBe($overview['live_domain_warning'])
+            ->and($saved['note'])->toStartWith('Saved in Aiku only');
+
+        $this->staticWebsite->update(['state' => App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum::LIVE, 'live_domain_status' => App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum::AIKU]);
+
+        expect(infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitesTool::class, ['website' => $this->staticWebsite->domain]))['live_domain_warning'])->toBeNull();
+    });
+
     it('reads the pages and finds the exact html to quote', function () {
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitesTool::class, ['website' => $this->staticWebsite->domain])
             ->assertOk()->assertSee('/about');

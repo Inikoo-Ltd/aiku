@@ -50,9 +50,12 @@ class IndexStaticWebsites extends OrgAction
                 'static_websites.state',
                 'static_websites.crawled_at',
                 'static_websites.updated_at',
+                'static_websites.live_domain_status',
+                'static_websites.nameservers',
+                'static_websites.live_domain_checked_at',
             ])
             ->withCount('webpages')
-            ->allowedSorts(['name', 'domain', 'state', 'webpages_count', 'crawled_at', 'updated_at'])
+            ->allowedSorts(['name', 'domain', 'state', 'live_domain_status', 'nameservers', 'webpages_count', 'crawled_at', 'updated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
@@ -78,6 +81,8 @@ class IndexStaticWebsites extends OrgAction
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'domain', label: __('Domain'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'live_domain_status', label: __('Live domain shows'), canBeHidden: false, sortable: true)
+                ->column(key: 'nameservers', label: __('Nameservers'), canBeHidden: true, sortable: true)
                 ->column(key: 'webpages_count', label: __('Pages'), canBeHidden: false, sortable: true, type: 'number')
                 ->column(key: 'crawled_at', label: __('Copied from source'), canBeHidden: false, sortable: true, type: 'date')
                 ->column(key: 'updated_at', label: __('Last change'), canBeHidden: false, sortable: true, type: 'date')

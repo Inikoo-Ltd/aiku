@@ -58,6 +58,7 @@ class ShowStaticWebsite extends OrgAction
                 ],
                 'preview_url' => route('grp.marketing.info_websites.preview', [$staticWebsite->slug]),
                 'live_url'    => 'https://www.'.$staticWebsite->domain,
+                'live_domain_warning' => $staticWebsite->liveDomainWarning(),
                 'can_restore' => $request->user()->authTo('group-webmaster.edit'),
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -100,7 +101,7 @@ class ShowStaticWebsite extends OrgAction
         return [
             'id'               => $staticWebsite->id,
             'url'              => 'https://www.'.$staticWebsite->domain,
-            'url_hint'         => __('Shows the old host until the domain points to Aiku'),
+            'url_hint'         => $staticWebsite->liveDomainWarning() ? __('Shows another website, not the pages in Aiku') : null,
             'can_edit'         => $request->user()->authTo('group-webmaster.edit'),
             'route_storefront' => $homepageId
                 ? ['name' => 'grp.marketing.info_websites.webpages.show', 'parameters' => [$staticWebsite->slug, $homepageId]]

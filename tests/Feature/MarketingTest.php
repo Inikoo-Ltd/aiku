@@ -5207,6 +5207,32 @@ describe('serving an info website on its own domain', function () {
             ->assertSee('<loc>'.$this->www.'/our-story</loc>', false);
     });
 
+    it('records whether the live domain shows the pages in Aiku or another website', function () {
+        $www = 'https://www.'.$this->staticWebsite->domain.'/';
+
+        Illuminate\Support\Facades\Http::fake([$www => Illuminate\Support\Facades\Http::sequence()
+            ->push('<h1>Welcome home</h1>', 200, ['X-AIKU-STATIC-WEBSITE' => '1'])
+            ->push('<h1>Old host</h1>', 200, ['Server' => 'Squarespace'])
+            ->pushFailedConnection()]);
+        App\Actions\Web\StaticWebsite\CheckStaticWebsiteLiveDomain::run($this->staticWebsite);
+        expect($this->staticWebsite->live_domain_status)->toBe(App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum::AIKU)
+            ->and($this->staticWebsite->live_domain_checked_at)->not->toBeNull()
+            ->and($this->staticWebsite->liveDomainWarning())->toBeNull();
+
+        App\Actions\Web\StaticWebsite\CheckStaticWebsiteLiveDomain::run($this->staticWebsite);
+        expect($this->staticWebsite->live_domain_status)->toBe(App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum::ELSEWHERE)
+            ->and($this->staticWebsite->liveDomainWarning())->toContain('still shows a website hosted somewhere else');
+
+        App\Actions\Web\StaticWebsite\CheckStaticWebsiteLiveDomain::run($this->staticWebsite);
+        expect($this->staticWebsite->live_domain_status)->toBe(App\Enums\Web\StaticWebsite\StaticWebsiteLiveDomainStatusEnum::UNREACHABLE);
+
+        Pest\Laravel\actingAs($this->user);
+        Pest\Laravel\get(route('grp.marketing.info_websites.index'))->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('data.data.0.live_domain_status', fn ($status) => in_array($status, ['aiku', 'elsewhere', 'unreachable', null], true)));
+        Pest\Laravel\get(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug]))->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('live_domain_warning', $this->staticWebsite->liveDomainWarning()));
+    });
+
     it('leaves the domain to the rest of Aiku while the info website is not live', function () {
         $this->staticWebsite->update(['state' => App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum::IN_PROCESS]);
 
