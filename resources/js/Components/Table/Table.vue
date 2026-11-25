@@ -39,6 +39,7 @@ import TableRows from './TableRows.vue'
 import KeyedMemoRows from './KeyedMemoRows'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import { Message } from 'primevue'
+import { useElementSize } from '@vueuse/core'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator, faYinYang, faOctopusDeploy, faExclamationTriangle)
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -205,6 +206,14 @@ const props = defineProps(
         // reactive, so per-row actions work normally. Good for big tables with per-row action buttons
         // that mutate row data (example: Picking Session, Delivery Note picking).
         virtualScroll: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
+        // Opt-in: the column headers stick to the page while it scrolls, under the sticky top pagination when
+        // useTopPagination is on. The table drops its own horizontal scroll box for it, so a table wider than
+        // the page scrolls the page sideways.
+        stickyHeader: {
             type: Boolean,
             default: false,
             required: false,
@@ -969,6 +978,35 @@ const virtualRowOffsets = computed(() => {
 })
 
 const virtualContainerRef = ref<HTMLElement | null>(null)
+
+const APP_TOP_BAR_HEIGHT = 33
+const topPaginationRef = ref<InstanceType<typeof Pagination> | null>(null)
+const { height: topPaginationHeight } = useElementSize(topPaginationRef, undefined, { box: 'border-box' })
+
+const tableScrollStyle = computed(() => {
+    if (props.virtualScroll) {
+        return { overflowY: 'auto' as const, maxHeight: props.virtualScrollHeight }
+    }
+
+    if (props.stickyHeader) {
+        return { overflow: 'visible' as const }
+    }
+
+    return undefined
+})
+
+const stickyHeaderStyle = computed(() => {
+    if (!props.stickyHeader || props.virtualScroll) {
+        return undefined
+    }
+
+    const underTopPagination = props.useTopPagination && topPaginationHeight.value
+        ? Math.floor(topPaginationHeight.value) - 1
+        : 0
+
+    return { top: `${APP_TOP_BAR_HEIGHT + underTopPagination}px` }
+})
+
 const scrollArrowsContainer = computed(() => props.withScrollArrows ? virtualContainerRef.value : null)
 const { canScrollLeft: canScrollTableLeft, canScrollRight: canScrollTableRight, scrollBy: scrollTable } = useScrollArrows(scrollArrowsContainer)
 const virtualWindow = ref({
@@ -1352,7 +1390,7 @@ const getSeverity = (type?: string) => {
             <slot name="tableWrapper" :meta="compResourceMeta">
                 <TableWrapper :result="compResourceMeta.total === 0" :class="{ 'mt-0': !hasOnlyData }">
                     <slot v-if="useTopPagination" name="pagination" :on-click="visit" :has-data="hasData" :meta="compResourceMeta" :per-page-options="queryBuilderProps.perPageOptions" :on-per-page-change="onPerPageChange">
-                        <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
+                        <Pagination ref="topPaginationRef" :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
                             :exportLinks="queryBuilderProps.exportLinks"
                             :per-page-options="queryBuilderProps.perPageOptions"
                             :on-per-page-change="onPerPageChange"
@@ -1442,9 +1480,9 @@ const getSeverity = (type?: string) => {
                         <div ref="virtualContainerRef"
                             class="overflow-x-auto"
                             @scroll="virtualScroll ? onVirtualScroll() : undefined"
-                            :style="virtualScroll ? { overflowY: 'auto', maxHeight: virtualScrollHeight } : undefined">
+                            :style="tableScrollStyle">
                         <table class="divide-y divide-gray-200 bg-white min-w-full" :class="tableClass">
-                            <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll }">
+                            <thead class="bg-gray-50" :class="{ 'sticky top-0 z-10': virtualScroll || stickyHeader }" :style="stickyHeaderStyle">
                                 <tr
                                     class="border-t border-gray-200 divide-x divide-gray-200"
                                     :class="{

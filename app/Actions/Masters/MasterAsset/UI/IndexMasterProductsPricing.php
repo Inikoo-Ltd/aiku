@@ -159,6 +159,7 @@ class IndexMasterProductsPricing extends OrgAction
             ->allowedSorts([
                 'code',
                 'name',
+                'effective_cost',
                 'price',
                 'rrp',
                 $priceTipSort,
@@ -237,6 +238,7 @@ class IndexMasterProductsPricing extends OrgAction
             }
 
             $table
+                ->column(key: 'effective_cost', label: __('Cost price'), tooltip: __('Effective cost of one outer. For each organisation that stocks it: last purchase price per SKO (or the current supplier cost, or the stock value, when there is none), divided by units per SKO and multiplied by the trade units in the outer. The organisations are then averaged, weighted by the outers each one has available, so the organisations holding the stock set the cost. With no stock anywhere it is a plain average. Converted to each currency at today\'s rate'), sortable: true, align: 'right', tooltipIcon: true)
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')
                 ->column(key: 'rrp', label: __('RRP').'/'.($masterShop->type == ShopTypeEnum::DROPSHIPPING ? __('Outer') : __('Unit')), sortable: true, align: 'right');
 

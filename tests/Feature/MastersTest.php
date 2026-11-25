@@ -1781,7 +1781,7 @@ test('UI Index Master Products in family has pricing tab', function () {
         'code' => 'PRTAB-FAM-'.uniqid(),
         'name' => 'Pricing Tab Family',
     ]);
-    StoreMasterAsset::make()->action($masterFamily, [
+    $cheapAsset = StoreMasterAsset::make()->action($masterFamily, [
         'code'    => 'PRTAB-AST-'.uniqid(),
         'name'    => 'Pricing Tab Asset',
         'is_main' => true,
@@ -1790,6 +1790,7 @@ test('UI Index Master Products in family has pricing tab', function () {
         'rrp'     => 30,
         'stocks'  => [],
     ]);
+    $cheapAsset->updateQuietly(['effective_cost' => 4.1]);
 
     $response = get(route('grp.masters.master_shops.show.master_families.master_products.index', [
         $masterFamily->masterShop->slug,
@@ -1803,11 +1804,22 @@ test('UI Index Master Products in family has pricing tab', function () {
             ->component('Masters/MasterProducts')
             ->has('tabs.navigation.pricing')
             ->has('pricing.data')
+            ->where('queryBuilderProps.pricing.columns', function ($columns) {
+                $keys = collect($columns)->pluck('key');
+
+                $column = collect($columns)->firstWhere('key', 'effective_cost');
+
+                return $keys->search('effective_cost') === $keys->search('price') - 1
+                    && $column['sortable'] === true
+                    && $column['tooltip_icon'] === true
+                    && str_contains($column['tooltip'], 'weighted by the outers each one has available');
+            })
             ->has(
                 'pricing.data.0',
                 fn (AssertableInertia $row) => $row
                     ->has('code')
                     ->has('name')
+                    ->has('effective_cost')
                     ->has('price')
                     ->has('rrp')
                     ->has('currency_code')
@@ -1815,6 +1827,27 @@ test('UI Index Master Products in family has pricing tab', function () {
             )
             ->etc()
     );
+
+    $dearAsset = StoreMasterAsset::make()->action($masterFamily, [
+        'code'    => 'PRTAB-AST2-'.uniqid(),
+        'name'    => 'Pricing Tab Asset Dear',
+        'is_main' => true,
+        'type'    => MasterAssetTypeEnum::PRODUCT,
+        'price'   => 20,
+        'rrp'     => 40,
+        'stocks'  => [],
+    ]);
+    $dearAsset->updateQuietly(['effective_cost' => 6.53]);
+
+    $codesSortedBy = fn (string $sort) => collect(get(route('grp.masters.master_shops.show.master_families.master_products.index', [
+        $masterFamily->masterShop->slug,
+        $masterFamily->slug,
+        'tab'          => 'pricing',
+        'pricing_sort' => $sort,
+    ]))->assertOk()->inertiaProps()['pricing']['data'])->pluck('code')->all();
+
+    expect($codesSortedBy('-effective_cost'))->toBe([$dearAsset->code, $cheapAsset->code])
+        ->and($codesSortedBy('effective_cost'))->toBe([$cheapAsset->code, $dearAsset->code]);
 });
 
 test('master product RRP is edited per outer in dropshipping and per unit elsewhere', function (ShopTypeEnum $shopType, string $rrpLabel, bool $isDropship) {
