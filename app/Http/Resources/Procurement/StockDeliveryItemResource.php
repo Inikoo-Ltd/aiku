@@ -56,7 +56,10 @@ class StockDeliveryItemResource extends JsonResource
         $row['ready_to_ship_item_ids'] = $rows->filter(fn (array $line) => $line['readyToShipRoute'])->pluck('id')->values()->all();
         $row['step_back_item_ids']     = $rows->filter(fn (array $line) => $line['stepBackRoute'])->pluck('id')->values()->all();
         $row['remove_item_ids']        = $rows->filter(fn (array $line) => $line['removeRoute'])->pluck('id')->values()->all();
-        $row['purchase_orders'] = $rows->map(fn (array $line) => Arr::only($line, ['purchase_order_reference', 'purchase_order_slug', 'unit_quantity']))->all();
+        $row['purchase_orders'] = $rows->map(fn (array $line) => [
+            ...Arr::only($line, ['id', 'purchase_order_reference', 'purchase_order_slug', 'unit_quantity']),
+            'is_removable' => $line['removeRoute'] !== null,
+        ])->all();
         $row['feedback']        = $rows->pluck('feedback')->filter()->first();
 
         if ($rows->count() === 1) {

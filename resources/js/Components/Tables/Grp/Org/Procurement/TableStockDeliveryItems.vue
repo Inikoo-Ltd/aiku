@@ -410,6 +410,16 @@ function purchaseOrderRoute(purchaseOrder: { purchase_order_slug?: string | null
     return route('grp.org.procurement.purchase_orders.show', [route().params['organisation'], purchaseOrder.purchase_order_slug])
 }
 
+function purchaseOrderLine(item: any, purchaseOrder: { id: number, unit_quantity: number | string }) {
+    return {
+        id: purchaseOrder.id,
+        code: item.code,
+        unit_quantity: purchaseOrder.unit_quantity,
+        removeRoute: item.removeRoute,
+        remove_item_ids: [purchaseOrder.id],
+    }
+}
+
 function orgStockRoute(item: { org_stock_id?: number }) {
     if (!item.org_stock_id) {
         return ''
@@ -955,6 +965,20 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     </Link>
                     <template v-else>{{ purchaseOrder.purchase_order_reference ?? ctrans('No purchase order') }}</template>
                     <span v-if="item.purchase_orders.length > 1" class="tabular-nums text-gray-500">({{ locale.number(Number(purchaseOrder.unit_quantity)) }})</span>
+                    <Button
+                        v-if="item.purchase_orders.length > 1 && purchaseOrder.is_removable && item.removeRoute"
+                        :tooltip="ctrans('Take only the :reference line out of the container, its units go back to awaiting delivery', { reference: purchaseOrder.purchase_order_reference ?? ctrans('No purchase order') })"
+                        type="tertiary"
+                        size="xs"
+                        class="ml-1"
+                        :loading="removingIds.length === 1 && removingIds.includes(purchaseOrder.id)"
+                        :disabled="removingIds.length > 0"
+                        @click="confirmRemoveFromContainer($event, [purchaseOrderLine(item, purchaseOrder)])"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
                 </span>
             </div>
         </template>
