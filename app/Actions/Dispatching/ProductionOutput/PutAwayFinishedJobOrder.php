@@ -46,18 +46,22 @@ class PutAwayFinishedJobOrder extends OrgAction
             : collect($locations)->map(fn ($code, $itemId) => ['code' => mb_strtolower(trim($code)), 'item_id' => (int) $itemId])
                 ->groupBy('code')->map(fn ($rows) => $rows->pluck('item_id')->all())->all();
 
-        $locationsByCode = [];
-        foreach (array_keys($itemIdsByCode) as $code) {
-            $locationsByCode[$code] = $warehouse->locations()->whereRaw('lower(code) = ?', [mb_strtolower(trim((string) $code))])->first()
-                ?? throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => mb_strtoupper((string) $code)])]);
-        }
-
         $jobOrders = JobOrder::whereIn('id', $jobOrderIds)->get();
 
         foreach ($jobOrders as $jobOrder) {
             if ($jobOrder->organisation_id !== $warehouse->organisation_id) {
                 throw ValidationException::withMessages(['job_order' => __('Job order does not belong to this warehouse')]);
             }
+
+            if ($jobOrder->isTrialRun()) {
+                throw ValidationException::withMessages(['job_order' => __(':reference is a trial sample: it goes to the office, not into stock', ['reference' => $jobOrder->reference])]);
+            }
+        }
+
+        $locationsByCode = [];
+        foreach (array_keys($itemIdsByCode) as $code) {
+            $locationsByCode[$code] = $warehouse->locations()->whereRaw('lower(code) = ?', [mb_strtolower(trim((string) $code))])->first()
+                ?? throw ValidationException::withMessages(['location_code' => __('No location :code in this warehouse', ['code' => mb_strtoupper((string) $code)])]);
         }
 
         return DB::transaction(function () use ($jobOrders, $itemIdsByCode, $locationsByCode, $allowNewLocations) {

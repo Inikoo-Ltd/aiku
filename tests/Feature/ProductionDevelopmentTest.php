@@ -193,6 +193,11 @@ test('a trial run is paid as development and received at the development office,
 
     expect($session->refresh()->activity_type)->toBe(ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT);
 
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-TRIAL', 'name' => 'Trial warehouse']);
+    expect(collect(\App\Actions\Dispatching\ProductionOutput\GetFinishedProductionJobOrders::run($warehouse))->pluck('job_order_ids')->flatten())->not->toContain($jobOrder->id)
+        ->and(fn () => \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], 'ANY'))
+        ->toThrow(ValidationException::class, 'trial sample');
+
     $movements = OrgStockMovement::count();
     $jobOrder  = ReceiveJobOrderIntoStock::make()->action($jobOrder->refresh(), []);
     $item      = $jobOrder->jobOrderItems()->first();

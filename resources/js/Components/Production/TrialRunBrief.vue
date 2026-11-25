@@ -104,6 +104,7 @@ function saved() {
             <FontAwesomeIcon icon="fal fa-lightbulb-on" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
             <div class="min-w-0 flex-1">
                 <div class="text-sm font-semibold text-gray-900">{{ ctrans("Trial run for product development") }}</div>
+                <div class="mt-0.5 text-sm font-semibold text-amber-700">{{ ctrans("Trial sample – please deliver to the office, not to the warehouse") }}</div>
                 <div v-if="brief" class="truncate text-xs text-gray-500">
                     {{ brief.development.code }} · {{ brief.development.name }} · {{ ctrans("Trial run :number of :sku", { number: brief.trial_run, sku: brief.sku.code }) }}
                 </div>

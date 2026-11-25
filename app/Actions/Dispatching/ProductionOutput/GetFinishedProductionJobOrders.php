@@ -41,6 +41,7 @@ class GetFinishedProductionJobOrders
     {
         $jobOrders = JobOrder::where('organisation_id', $warehouse->organisation_id)
             ->where('state', JobOrderStateEnum::CONFIRMED)
+            ->whereRaw(JobOrder::NOT_TRIAL_RUN_SQL)
             ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_items')->whereColumn('job_order_items.job_order_id', 'job_orders.id')
                 ->whereExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_item_id', 'job_order_items.id'))
                 ->whereNotExists(fn ($query) => $query->selectRaw('1')->from('job_order_item_tasks')->whereColumn('job_order_item_tasks.job_order_item_id', 'job_order_items.id')->where('job_order_item_tasks.state', '!=', 'done')))

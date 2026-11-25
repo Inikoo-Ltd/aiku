@@ -147,6 +147,8 @@ class JobOrder extends Model
         return (bool) ($this->data['trial_run'] ?? false);
     }
 
+    public const string NOT_TRIAL_RUN_SQL = "coalesce(job_orders.data->>'trial_run', 'false') <> 'true'";
+
     public const string NOT_ON_HOLD_SQL = "job_orders.data->'hold' is null";
 
     public function isOnHold(): bool
