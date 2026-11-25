@@ -2,6 +2,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\GoodsIn\StockDeliveryItem\StepBackStockDeliveryItemShippingState;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
 use App\Actions\OrgAction;
@@ -15,16 +16,17 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Confirms, or sets as ready to ship, several items of a container at once: each item goes through the same action
- * as its own row button, all in one transaction so a selection is moved whole or not at all.
+ * Confirms, sets as ready to ship, or steps back one shipping step, several items of a container at once: each item
+ * goes through the same action as its own row button, all in one transaction so a selection is moved whole or not at all.
  */
 class SetStockDeliveryItemsShippingState extends OrgAction
 {
     private StockDelivery $stockDelivery;
 
-    private const array FROM_STATE = [
-        'confirmed'     => StockDeliveryItemStateEnum::IN_PROCESS,
-        'ready_to_ship' => StockDeliveryItemStateEnum::CONFIRMED,
+    private const array FROM_STATES = [
+        'confirmed'     => [StockDeliveryItemStateEnum::IN_PROCESS],
+        'ready_to_ship' => [StockDeliveryItemStateEnum::CONFIRMED],
+        'step_back'     => [StockDeliveryItemStateEnum::CONFIRMED, StockDeliveryItemStateEnum::READY_TO_SHIP],
     ];
 
     public function authorize(ActionRequest $request): bool
@@ -38,16 +40,16 @@ class SetStockDeliveryItemsShippingState extends OrgAction
 
     public function rules(): array
     {
-        $fromState = self::FROM_STATE[$this->get('state')] ?? null;
+        $fromStates = self::FROM_STATES[$this->get('state')] ?? [];
 
         return [
-            'state'   => ['required', Rule::in(array_keys(self::FROM_STATE))],
+            'state'   => ['required', Rule::in(array_keys(self::FROM_STATES))],
             'items'   => ['required', 'array', 'min:1'],
             'items.*' => [
                 'required',
                 'integer',
                 'distinct',
-                Rule::in($fromState ? $this->stockDelivery->items()->where('stock_delivery_items.state', $fromState)->pluck('stock_delivery_items.id')->all() : []),
+                Rule::in($fromStates ? $this->stockDelivery->items()->whereIn('stock_delivery_items.state', $fromStates)->pluck('stock_delivery_items.id')->all() : []),
             ],
         ];
     }
@@ -64,9 +66,11 @@ class SetStockDeliveryItemsShippingState extends OrgAction
      */
     public function handle(StockDelivery $stockDelivery, string $state, array $stockDeliveryItemIds): StockDelivery
     {
-        $setState = $state === 'confirmed'
-            ? fn (StockDeliveryItem $item) => UpdateStateToConfirmedStockDeliveryItem::make()->action($item)
-            : fn (StockDeliveryItem $item) => UpdateStateToReadyToShipStockDeliveryItem::make()->action($item);
+        $setState = match ($state) {
+            'confirmed'     => fn (StockDeliveryItem $item) => UpdateStateToConfirmedStockDeliveryItem::make()->action($item),
+            'ready_to_ship' => fn (StockDeliveryItem $item) => UpdateStateToReadyToShipStockDeliveryItem::make()->action($item),
+            'step_back'     => fn (StockDeliveryItem $item) => StepBackStockDeliveryItemShippingState::make()->action($item),
+        };
 
         DB::transaction(function () use ($stockDelivery, $stockDeliveryItemIds, $setState) {
             StockDelivery::whereKey($stockDelivery->id)->lockForUpdate()->first();

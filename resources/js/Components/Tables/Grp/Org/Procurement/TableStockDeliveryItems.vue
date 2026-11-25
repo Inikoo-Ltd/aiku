@@ -154,16 +154,25 @@ const selectedRows = ref<Record<string, boolean>>({})
 const removingIds = ref<number[]>([])
 
 const tableRows = computed<any[]>(() => props.data?.data ?? [])
-const lineIds = (items: any[], key: 'confirm_item_ids' | 'ready_to_ship_item_ids' | 'remove_item_ids') => items.flatMap(item => item[key] ?? [item.id])
-const isSelectable = (item: any) => Boolean(item.removeRoute || item.confirmRoute || item.readyToShipRoute)
+type ShippingState = 'confirmed' | 'ready_to_ship' | 'step_back'
+const shippingStateItemIdsKey = { confirmed: 'confirm_item_ids', ready_to_ship: 'ready_to_ship_item_ids', step_back: 'step_back_item_ids' } as const
+const lineIds = (items: any[], key: 'confirm_item_ids' | 'ready_to_ship_item_ids' | 'step_back_item_ids' | 'remove_item_ids') => items.flatMap(item => item[key] ?? [item.id])
+const isSelectable = (item: any) => Boolean(item.removeRoute || item.confirmRoute || item.readyToShipRoute || item.stepBackRoute)
 const hasSelectableRows = computed(() => tableRows.value.some(isSelectable))
 const rowsSelectedForRemoval = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.removeRoute))
 const rowsSelectedForConfirm = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.confirmRoute && item.shippingStateRoute))
 const rowsSelectedForReadyToShip = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.readyToShipRoute && item.shippingStateRoute))
-const hasSelectedRowsWithActions = computed(() => rowsSelectedForRemoval.value.length + rowsSelectedForConfirm.value.length + rowsSelectedForReadyToShip.value.length > 0)
+const rowsSelectedForStepBack = computed(() => tableRows.value.filter(item => selectedRows.value[item.id] && item.stepBackRoute && item.shippingStateRoute))
+const hasSelectedRowsWithActions = computed(() => rowsSelectedForRemoval.value.length + rowsSelectedForConfirm.value.length + rowsSelectedForReadyToShip.value.length + rowsSelectedForStepBack.value.length > 0)
 const bulkChangingState = ref<string | null>(null)
 
-async function setShippingState(items: any[], state: 'confirmed' | 'ready_to_ship') {
+const shippingStateSuccessText = (state: ShippingState, count: number) => ({
+    confirmed: ctransChoice(':count item confirmed|:count items confirmed', count),
+    ready_to_ship: ctransChoice(':count item set as ready to ship|:count items set as ready to ship', count),
+    step_back: ctransChoice(':count item moved back one step|:count items moved back one step', count),
+})[state]
+
+async function setShippingState(items: any[], state: ShippingState) {
     const shippingStateRoute = items[0]?.shippingStateRoute
     if (!shippingStateRoute) {
         return
@@ -171,14 +180,12 @@ async function setShippingState(items: any[], state: 'confirmed' | 'ready_to_shi
 
     bulkChangingState.value = state
     try {
-        await axios.patch(route(shippingStateRoute.name, shippingStateRoute.parameters), { state, items: lineIds(items, state === 'confirmed' ? 'confirm_item_ids' : 'ready_to_ship_item_ids') })
+        await axios.patch(route(shippingStateRoute.name, shippingStateRoute.parameters), { state, items: lineIds(items, shippingStateItemIdsKey[state]) })
         _table.value?.clearSelection()
         selectedRows.value = {}
         notify({
             title: ctrans('Success'),
-            text: state === 'confirmed'
-                ? ctransChoice(':count item confirmed|:count items confirmed', items.length)
-                : ctransChoice(':count item set as ready to ship|:count items set as ready to ship', items.length),
+            text: shippingStateSuccessText(state, items.length),
             type: 'success',
         })
         await reloadStockDelivery()
@@ -193,14 +200,18 @@ async function setShippingState(items: any[], state: 'confirmed' | 'ready_to_shi
     }
 }
 
-function confirmSetShippingState(event: MouseEvent, items: any[], state: 'confirmed' | 'ready_to_ship') {
+function confirmSetShippingState(event: MouseEvent, items: any[], state: ShippingState) {
+    const prompts = {
+        confirmed: { message: ctransChoice('Confirm :count item?|Confirm :count items?', items.length), accept: ctrans('Confirm') },
+        ready_to_ship: { message: ctransChoice('Set :count item as ready to ship?|Set :count items as ready to ship?', items.length), accept: ctrans('Ready to ship') },
+        step_back: { message: ctransChoice('Move :count item back one step? Ready to ship goes back to confirmed, confirmed goes back to in process.|Move :count items back one step? Ready to ship goes back to confirmed, confirmed goes back to in process.', items.length), accept: ctrans('Undo') },
+    }[state]
+
     confirm.require({
         group: 'stock-delivery-items',
         target: event.currentTarget as HTMLElement,
-        message: state === 'confirmed'
-            ? ctransChoice('Confirm :count item?|Confirm :count items?', items.length)
-            : ctransChoice('Set :count item as ready to ship?|Set :count items as ready to ship?', items.length),
-        acceptProps: { label: state === 'confirmed' ? ctrans('Confirm') : ctrans('Ready to ship'), severity: 'success' },
+        message: prompts.message,
+        acceptProps: { label: prompts.accept, severity: 'success' },
         rejectProps: { label: ctrans('Cancel') },
         accept: () => setShippingState(items, state),
     })
@@ -738,6 +749,20 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     </template>
                 </Button>
                 <Button
+                    v-if="rowsSelectedForStepBack.length"
+                    :label="ctransChoice('Undo :count item one step|Undo :count items one step', rowsSelectedForStepBack.length)"
+                    :tooltip="ctrans('Move the selected items back one step: ready to ship to confirmed, confirmed to in process')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="bulkChangingState === 'step_back'"
+                    :disabled="bulkChangingState !== null"
+                    @click="confirmSetShippingState($event, rowsSelectedForStepBack, 'step_back')"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-undo-alt" class="text-amber-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button
                     v-if="rowsSelectedForRemoval.length"
                     :label="ctransChoice('Remove :count item from container|Remove :count items from container', rowsSelectedForRemoval.length)"
                     :tooltip="ctrans('Take the selected items out of this container, their units go back to awaiting delivery')"
@@ -1076,6 +1101,20 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                 />
 
                 <Button
+                    v-if="item.stepBackRoute"
+                    :tooltip="item.state === 'ready_to_ship' ? ctrans('Undo ready to ship: back to confirmed') : ctrans('Undo confirm: back to in process')"
+                    type="tertiary"
+                    size="xs"
+                    :loading="changingId === item.id || bulkChangingState === 'step_back'"
+                    :disabled="changingId === item.id || bulkChangingState !== null"
+                    @click="item.item_ids?.length > 1 ? confirmSetShippingState($event, [item], 'step_back') : confirmChangeState($event, item, item.stepBackRoute, item.state === 'ready_to_ship' ? ctrans('Move this item back to confirmed?') : ctrans('Move this item back to in process?'), ctrans('Undo'))"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-undo-alt" class="text-amber-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+
+                <Button
                     v-if="item.removeRoute"
                     :tooltip="ctrans('Take this item out of the container, its units go back to awaiting delivery')"
                     type="tertiary"
@@ -1089,7 +1128,7 @@ async function savePackedInside(item: any, outerItemId: number | null) {
                     </template>
                 </Button>
 
-                <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute && !item.removeRoute" class="text-gray-400 text-sm">
+                <span v-if="!item.updateCostRoute && !item.confirmRoute && !item.readyToShipRoute && !item.stepBackRoute && !item.removeRoute" class="text-gray-400 text-sm">
                     {{ ctrans('No actions needed') }}
                 </span>
             </div>

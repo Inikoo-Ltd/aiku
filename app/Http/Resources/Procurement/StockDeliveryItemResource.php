@@ -10,6 +10,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
+use App\Actions\GoodsIn\StockDeliveryItem\StepBackStockDeliveryItemShippingState;
 use App\Actions\GoodsIn\StockDeliveryItem\ChangeStockDeliveryItemQuantity;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
 use App\Enums\GoodsIn\Sowing\SowingTypeEnum;
@@ -53,6 +54,7 @@ class StockDeliveryItemResource extends JsonResource
         $row['item_ids']               = $rows->pluck('id')->all();
         $row['confirm_item_ids']       = $rows->filter(fn (array $line) => $line['confirmRoute'])->pluck('id')->values()->all();
         $row['ready_to_ship_item_ids'] = $rows->filter(fn (array $line) => $line['readyToShipRoute'])->pluck('id')->values()->all();
+        $row['step_back_item_ids']     = $rows->filter(fn (array $line) => $line['stepBackRoute'])->pluck('id')->values()->all();
         $row['remove_item_ids']        = $rows->filter(fn (array $line) => $line['removeRoute'])->pluck('id')->values()->all();
         $row['purchase_orders'] = $rows->map(fn (array $line) => Arr::only($line, ['purchase_order_reference', 'purchase_order_slug', 'unit_quantity']))->all();
         $row['feedback']        = $rows->pluck('feedback')->filter()->first();
@@ -72,6 +74,7 @@ class StockDeliveryItemResource extends JsonResource
         $row['changeQuantityRoute']     = null;
         $row['confirmRoute']            = $rows->pluck('confirmRoute')->filter()->first();
         $row['readyToShipRoute']        = $row['confirmRoute'] ? null : $rows->pluck('readyToShipRoute')->filter()->first();
+        $row['stepBackRoute']           = $rows->pluck('stepBackRoute')->filter()->first();
         $row['removeRoute']             = $rows->pluck('removeRoute')->filter()->first();
 
         return $row;
@@ -207,6 +210,11 @@ class StockDeliveryItemResource extends JsonResource
             ] : null,
             'readyToShipRoute'      => $canChangeShippingState && $item->state === StockDeliveryItemStateEnum::CONFIRMED ? [
                 'name'       => 'grp.models.stock-delivery-item.ready-to-ship',
+                'parameters' => ['stockDeliveryItem' => $item->id],
+                'method'     => 'patch',
+            ] : null,
+            'stepBackRoute'         => $canChangeShippingState && StepBackStockDeliveryItemShippingState::canStepBack($item) ? [
+                'name'       => 'grp.models.stock-delivery-item.step-back-shipping-state',
                 'parameters' => ['stockDeliveryItem' => $item->id],
                 'method'     => 'patch',
             ] : null,

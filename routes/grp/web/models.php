@@ -447,6 +447,7 @@ use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryIte
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToReadyToShipStockDeliveryItem;
+use App\Actions\GoodsIn\StockDeliveryItem\StepBackStockDeliveryItemShippingState;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Brand\AttachBrandToMultipleModel;
@@ -2168,6 +2169,7 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
     Route::post('feedback', StoreStockDeliveryItemFeedback::class)->name('feedback.store');
     Route::patch('confirm', UpdateStateToConfirmedStockDeliveryItem::class)->name('confirm')->withoutScopedBindings();
     Route::patch('ready-to-ship', UpdateStateToReadyToShipStockDeliveryItem::class)->name('ready-to-ship')->withoutScopedBindings();
+    Route::patch('step-back-shipping-state', StepBackStockDeliveryItemShippingState::class)->name('step-back-shipping-state')->withoutScopedBindings();
     Route::patch('set-checked', SetStockDeliveryItemCheckedQuantity::class)->name('set-checked')->withoutScopedBindings();
     Route::patch('set-all-checked', SetStockDeliveryItemAsChecked::class)->name('set-all-checked')->withoutScopedBindings();
     Route::patch('batches', SetStockDeliveryItemBatches::class)->name('batches')->withoutScopedBindings();

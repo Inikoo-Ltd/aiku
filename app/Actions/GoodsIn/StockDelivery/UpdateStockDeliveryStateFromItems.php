@@ -41,6 +41,7 @@ class UpdateStockDeliveryStateFromItems
         $newState = match (true) {
             $active > 0 && $readyToShip === $active           => StockDeliveryStateEnum::READY_TO_SHIP,
             $active > 0 && $inProcess === 0 && $confirmed > 0 => StockDeliveryStateEnum::CONFIRMED,
+            $active > 0 && $inProcess > 0                     => StockDeliveryStateEnum::IN_PROCESS,
             default                                           => null,
         };
 
@@ -51,8 +52,8 @@ class UpdateStockDeliveryStateFromItems
         $timestampKey = $newState->value . '_at';
 
         $stockDelivery->update([
-            'state'       => $newState,
-            $timestampKey => $stockDelivery->{$timestampKey} ?? now(),
+            'state' => $newState,
+            ...($newState === StockDeliveryStateEnum::IN_PROCESS ? [] : [$timestampKey => $stockDelivery->{$timestampKey} ?? now()]),
         ]);
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
