@@ -373,6 +373,10 @@ test('an org stock can not be linked to another organisation\'s supplier product
 test('every organisation and group top menu subsection carries a label', function () {
     $iconOnlyByDesign = [
         'accounting: grp.org.accounting.dashboard',
+        'accounting: grp.org.accounting.payment-accounts.index',
+        'accounting: grp.org.accounting.payments.index',
+        'accounting: grp.org.accounting.invoices.index',
+        'accounting: grp.org.accounting.balances.index',
         'procurement: grp.org.procurement.dashboard',
         'procurement: grp.org.procurement.settings.edit',
     ];

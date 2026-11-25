@@ -243,6 +243,8 @@ test('future-dated posts stay hidden until their date', function () {
     $path = resource_path("markdown/aiku-public/blog/{$slug}.md");
     File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/blog/*.md'))->andReturn([$path]);
     File::shouldReceive('isFile')->with($path)->andReturnTrue();
+    File::shouldReceive('lastModified')->with($path)->andReturn(0);
+    File::shouldReceive('hash')->with($path)->andReturn($slug);
     File::shouldReceive('get')->with($path)->andReturn("---\ntitle: Scheduled\nsummary: Not yet\ndate: ".now()->addDays(3)->toDateString()."\ntags: test\n---\n\nSoon.\n");
 
     expect(BlogPosts::all()->pluck('slug'))->not->toContain($slug)
@@ -445,6 +447,10 @@ test('translation freshness is shown against the English source date', function 
     File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$englishPath, $translationPath]);
     File::shouldReceive('isFile')->with($englishPath)->andReturnTrue();
     File::shouldReceive('isFile')->with($translationPath)->andReturnTrue();
+    File::shouldReceive('lastModified')->with($englishPath)->andReturn(0);
+    File::shouldReceive('lastModified')->with($translationPath)->andReturn(0);
+    File::shouldReceive('hash')->with($englishPath)->andReturn($slug.$sourceDate);
+    File::shouldReceive('hash')->with($translationPath)->andReturn($slug.$sourceDate.'-id');
     File::shouldReceive('get')->with($englishPath)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\ncategory: production\n---\nEnglish body\n");
     File::shouldReceive('get')->with($translationPath)->andReturn("---\ntitle: Panduan\nsummary: Test guide\ndate: 2026-01-03\nsource_date: {$sourceDate}\ncategory: production\n---\nIndonesian body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
@@ -466,6 +472,7 @@ test('help falls back to English when the requested translation is missing', fun
     $path = resource_path("markdown/aiku-public/docs/{$slug}.md");
     File::partialMock()->shouldReceive('glob')->with(resource_path('markdown/aiku-public/docs/*.md'))->andReturn([$path]);
     File::shouldReceive('lastModified')->with($path)->andReturn(0);
+    File::shouldReceive('hash')->with($path)->andReturn($slug);
     File::shouldReceive('get')->with($path)->andReturn("---\ntitle: English guide\nsummary: Test guide\ndate: 2026-01-02\nhelp_routes: grp.fixture.\n---\nEnglish body\n");
     $this->travelTo(\Illuminate\Support\Carbon::parse('2026-01-10'));
 

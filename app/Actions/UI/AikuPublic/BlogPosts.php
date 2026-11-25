@@ -207,7 +207,7 @@ class BlogPosts
     {
         $stamp = md5(implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
 
-        return Cache::remember('aiku-public-content:'.$stamp, now()->addDay(), fn () => md5(implode('|', array_map(fn (string $path) => Str::after($path, base_path()).':'.md5_file($path), $files))));
+        return Cache::remember('aiku-public-content:'.$stamp, now()->addDay(), fn () => md5(implode('|', array_map(fn (string $path) => Str::after($path, base_path()).':'.File::hash($path), $files))));
     }
 
     /**
