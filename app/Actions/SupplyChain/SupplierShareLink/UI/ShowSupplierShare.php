@@ -227,7 +227,7 @@ class ShowSupplierShare
         $supplier = $link->supplier;
         $page     = [
             'title'    => $supplier->officialName(),
-            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
+            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName(), 'is_direct' => $supplier->agent_id === null],
             'group'    => $link->group->name,
             'language' => ShowSupplierPortalLogin::language($request),
             'routes'   => [

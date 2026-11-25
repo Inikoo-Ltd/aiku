@@ -42,7 +42,7 @@ interface Person {
 
 const props = defineProps<{
 	title: string
-	supplier: { code: string; name: string }
+	supplier: { code: string; name: string; is_direct?: boolean }
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
@@ -248,6 +248,9 @@ onMounted(() => {
 				<div class="min-w-0">
 					<div class="truncate text-sm font-semibold leading-tight">{{ supplier.name }}</div>
 					<div class="truncate text-xs opacity-70">{{ ctrans("Supplier page with :group", { group }) }}</div>
+					<span v-if="supplier.is_direct" class="mt-1.5 inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide" :style="{ backgroundColor: navigationTheme.badge }">
+						{{ ctrans("Direct supplier") }}
+					</span>
 				</div>
 			</div>
 			<div class="mx-5 hidden border-t lg:block" :style="{ borderColor: navigationTheme.badge }" />

@@ -43,7 +43,7 @@ class ShowSupplierPortalPreview extends OrgAction
 
         return Inertia::render('SupplyChain/SupplierShare', [
             'title'    => $supplier->officialName(),
-            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
+            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName(), 'is_direct' => $supplier->agent_id === null],
             'group'    => $supplier->group->name,
             'language' => $language,
             'preview'  => true,
