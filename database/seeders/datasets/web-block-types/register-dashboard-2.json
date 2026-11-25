@@ -93,7 +93,7 @@
 					"label": "Register with Google"
 				},
 				"login_note": "<p>Already registered? <a href=\"/app/login\">Log in</a></p>",
-				"help_note": "<p>Need help registering? Contact <a href=\"mailto:care@ancientwisdom.biz\">care@ancientwisdom.biz</a></p>",
+				"help_note": "<p>Need help registering? <a href=\"/contact\">Contact us</a></p>",
 				"background_color": "#ffffff",
 				"area_background_color": "#f5f3ef",
 				"text_color": "#1d252e",
@@ -127,7 +127,7 @@
 					},
 					{
 						"question": "Do I need a VAT number?",
-						"answer": "<p>Complete the registration form with the tax information that applies to your business and country. If you are unsure what to provide, contact <a href=\"mailto:care@ancientwisdom.biz\">customer care</a> before submitting your registration.</p>"
+						"answer": "<p>Complete the registration form with the tax information that applies to your business and country. If you are unsure what to provide, contact <a href=\"/contact\">customer care</a> before submitting your registration.</p>"
 					}
 				],
 				"text_color": "#1d252e",
