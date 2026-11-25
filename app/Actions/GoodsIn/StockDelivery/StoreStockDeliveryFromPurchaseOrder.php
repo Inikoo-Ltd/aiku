@@ -186,6 +186,8 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                 );
             }
 
+            UpdateStockDeliveryStateFromItems::run($stockDelivery);
+
             PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
 
             return $stockDelivery;
@@ -393,7 +395,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
                     ->where('parent_type', 'OrgAgent')
                     ->where('parent_id', $orgAgent?->id)
             )
-            ->where('state', StockDeliveryStateEnum::IN_PROCESS)
+            ->whereIn('state', StockDeliveryStateEnum::beforeDispatch())
             ->where('currency_id', $purchaseOrder->currency_id)
             ->orderByDesc('id');
     }
@@ -473,6 +475,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
         $netAmount = (float) $stockDeliveryItem->net_amount + $netAmount;
 
         $stockDeliveryItem->update([
+            'state'          => StockDeliveryItemStateEnum::IN_PROCESS,
             'unit_quantity'  => (float) $stockDeliveryItem->unit_quantity + $unitQuantity,
             'net_amount'     => $netAmount,
             'org_net_amount' => $netAmount * (float) ($stockDeliveryItem->org_exchange ?? 1),

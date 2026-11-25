@@ -27,6 +27,16 @@ enum StockDeliveryStateEnum: string
     case CANCELLED = 'cancelled';
     case NOT_RECEIVED = 'not_received';
 
+    /**
+     * A container still at the agent or supplier, not dispatched yet, so goods can still go in it.
+     *
+     * @return array<int, self>
+     */
+    public static function beforeDispatch(): array
+    {
+        return [self::IN_PROCESS, self::CONFIRMED, self::READY_TO_SHIP];
+    }
+
     public static function labels(): array
     {
         return [

@@ -24,6 +24,9 @@ type Container = {
 	id: number
 	reference: string
 	date: string | null
+	state: string
+	state_label: string
+	state_icon: { icon: string | string[]; class: string } | null
 	number_purchase_orders: number
 }
 
@@ -82,8 +85,14 @@ const containerOptions = computed(() =>
 	containers.value.map((container) => ({
 		id: container.id,
 		label: `${container.reference} (${ctrans(":count purchase orders", { count: container.number_purchase_orders })})`,
+		reference: container.reference,
+		numberPurchaseOrders: container.number_purchase_orders,
+		stateLabel: container.state_label,
+		stateIcon: container.state_icon,
 	}))
 )
+
+const selectedContainerOption = computed(() => containerOptions.value.find((option) => option.id === selectedContainerId.value) ?? null)
 
 function chooseNewContainer() {
 	isNewContainer.value = true
@@ -177,7 +186,7 @@ const canSubmit = computed(() => (isNewContainer.value || !!selectedContainerId.
 
 const submitBlockedReason = computed(() => {
 	if (isShipmentMissing.value) {
-		return ctrans("Choose a shipment in process first, or open a new shipment")
+		return ctrans("Choose a shipment not dispatched yet, or open a new shipment")
 	}
 	if (!itemsToAdd.value.length) {
 		return ctrans("Enter how many units go in this shipment")
@@ -240,15 +249,38 @@ function submit() {
 					filter
 					:filterPlaceholder="ctrans('Search by reference')"
 					:loading="isFetching"
-					:placeholder="ctrans('Choose a shipment in process')"
-					:emptyMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment in process for :organisation yet', { organisation: organisationCode })"
+					:placeholder="ctrans('Choose a shipment not dispatched yet')"
+					:emptyMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment waiting to be dispatched for :organisation', { organisation: organisationCode })"
 					:emptyFilterMessage="isFetching ? ctrans('Loading…') : ctrans('No shipment found')"
 					:class="[fieldFocusClass, { 'errorShake !border-red-500': isShakingShipment }]"
 					fluid
 					@filter="onFilter"
-				/>
+				>
+					<template #value="{ value, placeholder }">
+						<span v-if="selectedContainerOption" class="flex items-center gap-2">
+							<span>{{ selectedContainerOption.reference }}</span>
+							<span class="inline-flex items-center gap-1 text-xs text-gray-500">
+								<FontAwesomeIcon v-if="selectedContainerOption.stateIcon" :icon="selectedContainerOption.stateIcon.icon" :class="selectedContainerOption.stateIcon.class" fixed-width aria-hidden="true" />
+								{{ selectedContainerOption.stateLabel }}
+							</span>
+						</span>
+						<span v-else>{{ value ?? placeholder }}</span>
+					</template>
+					<template #option="{ option }">
+						<div class="flex w-full items-center justify-between gap-3">
+							<span>
+								{{ option.reference }}
+								<span class="text-xs text-gray-500">({{ ctrans(":count purchase orders", { count: option.numberPurchaseOrders }) }})</span>
+							</span>
+							<span class="inline-flex shrink-0 items-center gap-1 text-xs text-gray-600">
+								<FontAwesomeIcon v-if="option.stateIcon" :icon="option.stateIcon.icon" :class="option.stateIcon.class" fixed-width aria-hidden="true" />
+								{{ option.stateLabel }}
+							</span>
+						</div>
+					</template>
+				</Select>
 				<span v-if="hasFetched && !containers.length" class="block text-xs text-gray-500">
-					{{ ctrans("No shipment in process for :organisation yet, shipments of other clients are not listed", { organisation: organisationCode }) }}
+					{{ ctrans("No shipment waiting to be dispatched for :organisation, shipments of other clients are not listed", { organisation: organisationCode }) }}
 				</span>
 				<button
 					v-if="warehouse?.new_container_route && !isNewContainer"
@@ -264,7 +296,7 @@ function submit() {
 					class="text-xs text-[var(--app-accent)] underline-offset-2 hover:underline"
 					@click="isNewContainer = false"
 				>
-					{{ ctrans("Or choose a shipment in process") }}
+					{{ ctrans("Or choose a shipment not dispatched yet") }}
 				</button>
 			</div>
 

@@ -45,7 +45,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
 
     public static function acceptsPurchaseOrders(StockDelivery $stockDelivery): bool
     {
-        return $stockDelivery->state === StockDeliveryStateEnum::IN_PROCESS
+        return in_array($stockDelivery->state, StockDeliveryStateEnum::beforeDispatch(), true)
             && (($stockDelivery->parent_type === 'OrgAgent' && $stockDelivery->agent_id) || self::isDirectSupplierContainer($stockDelivery));
     }
 
@@ -106,7 +106,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if (!self::acceptsPurchaseOrders($this->stockDelivery)) {
-            $validator->errors()->add('purchase_order_ids', __('Purchase orders can only be added to a container in process'));
+            $validator->errors()->add('purchase_order_ids', __('Purchase orders can only be added to a container that is not dispatched yet'));
         }
     }
 

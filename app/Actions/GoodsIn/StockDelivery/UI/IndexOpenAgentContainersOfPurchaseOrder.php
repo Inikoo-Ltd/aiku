@@ -11,13 +11,15 @@ namespace App\Actions\GoodsIn\StockDelivery\UI;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The agent containers in process the items of a purchase order can go in, searched by reference, fetched when the
+ * The agent containers not dispatched yet the items of a purchase order can go in, searched by reference, fetched when the
  * picker opens so the purchase order page does not load them up front.
  */
 class IndexOpenAgentContainersOfPurchaseOrder extends OrgAction
@@ -31,11 +33,14 @@ class IndexOpenAgentContainersOfPurchaseOrder extends OrgAction
         return StoreStockDeliveryFromPurchaseOrder::openAgentDeliveriesQuery($purchaseOrder)
             ->when($search, fn ($query) => $query->whereAnyWordStartWith('reference', $search))
             ->limit(self::LIMIT)
-            ->get(['id', 'reference', 'date', 'number_purchase_orders'])
+            ->get(['id', 'reference', 'date', 'state', 'number_purchase_orders'])
             ->map(fn (StockDelivery $stockDelivery) => [
                 'id'                     => $stockDelivery->id,
                 'reference'              => $stockDelivery->reference,
                 'date'                   => $stockDelivery->date,
+                'state'                  => $stockDelivery->state->value,
+                'state_label'            => StockDeliveryStateEnum::labels()[$stockDelivery->state->value],
+                'state_icon'             => Arr::only(StockDeliveryStateEnum::stateIcon()[$stockDelivery->state->value], ['icon', 'class']),
                 'number_purchase_orders' => $stockDelivery->number_purchase_orders,
             ]);
     }

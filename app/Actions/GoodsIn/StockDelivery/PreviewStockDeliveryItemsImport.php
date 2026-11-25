@@ -38,7 +38,7 @@ class PreviewStockDeliveryItemsImport extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         if (!AddPurchaseOrdersToStockDelivery::acceptsPurchaseOrders($this->stockDelivery)) {
-            $validator->errors()->add('file', __('Items can only be added to a container in process'));
+            $validator->errors()->add('file', __('Items can only be added to a container that is not dispatched yet'));
         }
     }
 
