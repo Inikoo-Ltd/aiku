@@ -171,8 +171,8 @@ test('Slack pins, bookmarks and reactions: the pinned list, jump to a message re
         ->assertInertia(fn (AssertableInertia $inertia) => $inertia
             ->where('slack_channel.pinned_count', 3)
             ->where('slack_channel.bookmarks', [
-                ['id' => SlackChannelBookmark::where('slack_id', "Bk1{$this->s}")->value('id'), 'title' => 'Handbook', 'url' => 'https://example.com/handbook', 'emoji' => ['unicode' => '🎉']],
-                ['id' => SlackChannelBookmark::where('slack_id', "Bk2{$this->s}")->value('id'), 'title' => 'Bad', 'url' => null, 'emoji' => null],
+                ['id' => SlackChannelBookmark::where('slack_id', "Bk1{$this->s}")->value('id'), 'title' => 'Handbook', 'url' => 'https://example.com/handbook', 'emoji_name' => 'tada', 'emoji' => ['unicode' => '🎉']],
+                ['id' => SlackChannelBookmark::where('slack_id', "Bk2{$this->s}")->value('id'), 'title' => 'Bad', 'url' => null, 'emoji_name' => null, 'emoji' => null],
             ]));
 
     $reacted = SlackMessage::where('slack_channel_id', $this->channel->id)->where('ts', $ts(40))->sole();

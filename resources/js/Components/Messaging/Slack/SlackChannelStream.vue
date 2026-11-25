@@ -8,9 +8,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import axios from "axios"
 import { Deferred, InfiniteScroll, router, usePage } from "@inertiajs/vue3"
-import { Popover } from "primevue"
+import { Dialog, InputText, Popover } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers } from "@fal"
+import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isToday, isYesterday } from "date-fns"
 import { ctrans } from "@/Composables/useTrans"
@@ -25,7 +25,15 @@ import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiv
 
 export type { SlackStreamMessage }
 
-library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faThumbtack, faUsers)
+library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
+
+export interface SlackBookmark {
+    id: number
+    title: string
+    url: string | null
+    emoji_name: string | null
+    emoji: { unicode?: string; url?: string | null } | null
+}
 
 export interface SlackChannelHeader {
     id: number
@@ -35,7 +43,7 @@ export interface SlackChannelHeader {
     is_archived: boolean
     member_count?: number
     pinned_count?: number
-    bookmarks?: { id: number; title: string; url: string | null; emoji: { unicode?: string; url?: string | null } | null }[]
+    bookmarks?: SlackBookmark[]
     last_read_ts?: string | null
     write?: SlackWriteState | null
 }
@@ -137,6 +145,50 @@ watch(() => [props.messages?.data.length, pendingAround.value], async () => {
         if (pendingAround.value && showInStream(pendingAround.value)) pendingAround.value = null
     })
 }, { immediate: true })
+
+const bookmarks = ref<SlackBookmark[]>(props.channel.bookmarks ?? [])
+watch(() => props.channel.bookmarks, (next) => (bookmarks.value = next ?? []))
+
+const bookmarkDialog = ref(false)
+const bookmarkId = ref<number | null>(null)
+const bookmarkForm = ref({ title: "", link: "", emoji: "" })
+const bookmarkBusy = ref(false)
+const bookmarkError = ref<string | null>(null)
+const bookmarkNeedsConnect = ref(false)
+
+const openBookmark = (bookmark: SlackBookmark | null) => {
+    bookmarkError.value = null
+    bookmarkNeedsConnect.value = !!write.value?.reason
+    if (bookmarkNeedsConnect.value) {
+        bookmarkDialog.value = true
+        return
+    }
+    bookmarkId.value = bookmark?.id ?? null
+    bookmarkForm.value = { title: bookmark && bookmark.title !== bookmark.url ? bookmark.title : "", link: bookmark?.url ?? "", emoji: bookmark?.emoji_name ?? "" }
+    bookmarkDialog.value = true
+}
+
+const sendBookmark = async (method: "post" | "patch" | "delete") => {
+    if (bookmarkBusy.value) return
+    bookmarkBusy.value = true
+    bookmarkError.value = null
+    const url = bookmarkId.value === null
+        ? route("grp.chat.staff.slack.bookmarks.store", { slackChannel: props.channel.id })
+        : route(method === "delete" ? "grp.chat.staff.slack.bookmarks.delete" : "grp.chat.staff.slack.bookmarks.update", { slackChannel: props.channel.id, bookmark: bookmarkId.value })
+    try {
+        const { data } = await axios.request({ method, url, data: method === "delete" ? undefined : { ...bookmarkForm.value, emoji: bookmarkForm.value.emoji || null } })
+        bookmarks.value = data.bookmarks
+        bookmarkDialog.value = false
+    } catch (exception: any) {
+        const errors = exception?.response?.data?.errors ?? {}
+        bookmarkError.value = errors.slack?.[0] ?? errors.link?.[0] ?? errors.title?.[0] ?? errors.emoji?.[0]
+            ?? (exception?.response?.status === 429 ? ctrans("Too many changes at once, wait a minute") : ctrans("Slack did not accept this, try again later"))
+    } finally {
+        bookmarkBusy.value = false
+    }
+}
+
+watch(() => props.channel.pinned_count, () => (pins.value = null))
 
 const pinsPopover = ref()
 const pins = ref<SlackStreamMessage[] | null>(null)
@@ -295,8 +347,8 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                     </div>
                     <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[#616061] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
-                <div v-if="channel.bookmarks?.length" class="flex gap-x-1.5 overflow-x-auto px-3 pb-2">
-                    <template v-for="bookmark in channel.bookmarks" :key="bookmark.id">
+                <div v-if="bookmarks.length || write?.allowed" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">
+                    <span v-for="bookmark in bookmarks" :key="bookmark.id" class="group/bookmark inline-flex shrink-0 items-center gap-x-0.5">
                         <a
                             v-if="bookmark.url"
                             :href="bookmark.url"
@@ -316,7 +368,16 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                             <span v-if="bookmark.emoji?.unicode" aria-hidden="true">{{ bookmark.emoji.unicode }}</span>
                             <span class="truncate">{{ bookmark.title }}</span>
                         </span>
-                    </template>
+                        <Button
+                            v-if="write?.allowed && bookmark.url"
+                            type="tertiary"
+                            size="xs"
+                            class="opacity-0 focus:opacity-100 group-hover/bookmark:opacity-100"
+                            icon="fal fa-pencil"
+                            :tooltip="ctrans('Edit bookmark')"
+                            @click="openBookmark(bookmark)" />
+                    </span>
+                    <Button v-if="write?.allowed" type="tertiary" size="xs" class="shrink-0 whitespace-nowrap" icon="fal fa-plus" :label="ctrans('Add a bookmark')" @click="openBookmark(null)" />
                 </div>
             </div>
 
@@ -376,10 +437,35 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
-            <SlackMessageComposer v-if="write" :channel-id="channel.id" :write="write" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
+            <SlackMessageComposer v-if="write" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 
         <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" :write="write" @close="openThreadTs = null" @sent="onThreadSent" />
+
+        <Dialog v-model:visible="bookmarkDialog" modal :header="bookmarkId === null ? ctrans('Add a bookmark') : ctrans('Edit bookmark')" :style="{ width: '24rem' }" :breakpoints="{ '640px': '92vw' }">
+            <p v-if="bookmarkNeedsConnect && write?.reason" class="text-sm text-gray-700">
+                {{ write.reason }}
+                <a v-if="write.connect_url" :href="write.connect_url" class="ml-1 font-medium text-[var(--app-accent)] hover:underline">{{ ctrans("Connect Slack") }}</a>
+            </p>
+            <form v-else class="space-y-2" @submit.prevent="sendBookmark(bookmarkId === null ? 'post' : 'patch')">
+                <label class="block text-xs text-gray-600">{{ ctrans("Name") }}
+                    <InputText v-model="bookmarkForm.title" class="mt-0.5 w-full" maxlength="200" autofocus />
+                </label>
+                <label class="block text-xs text-gray-600">{{ ctrans("Link") }}
+                    <InputText v-model="bookmarkForm.link" class="mt-0.5 w-full" placeholder="https://" inputmode="url" />
+                </label>
+                <label class="block text-xs text-gray-600">{{ ctrans("Emoji name (optional)") }}
+                    <InputText v-model="bookmarkForm.emoji" class="mt-0.5 w-full" placeholder="books" />
+                </label>
+                <p v-if="bookmarkError" class="text-xs text-red-600">{{ bookmarkError }}</p>
+                <div class="flex gap-2 pt-1">
+                    <Button v-if="bookmarkId !== null" type="tertiary" class="shrink-0" :label="ctrans('Remove')" :disabled="bookmarkBusy" @click="sendBookmark('delete')">
+                        <template #icon><FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="tertiary" full :label="ctrans('Save')" :loading="bookmarkBusy" @click="sendBookmark(bookmarkId === null ? 'post' : 'patch')" />
+                </div>
+            </form>
+        </Dialog>
 
         <Popover ref="pinsPopover">
             <div class="w-[min(24rem,calc(100vw-2rem))]">

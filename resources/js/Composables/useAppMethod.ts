@@ -11,10 +11,12 @@ import { router } from '@inertiajs/vue3'
 import { announcedUser, useLiveUsers } from '@/Stores/active-users'
 import { useChatAgentPresence } from '@/Composables/useChatAgentPresence'
 import { clearCachedChats } from '@/Composables/useStaffChatCache'
+import { clearAllDrafts } from '@/Components/Messaging/deskDrafts'
 import { ctrans } from '@/Composables/useTrans'
 
 export const useLogoutAuth = (dataUser, options) => {
     clearCachedChats()
+    clearAllDrafts()
     router.post(route('grp.logout'), {}, options)
 
     const dataActiveUser = {

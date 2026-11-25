@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import Checkbox from "primevue/checkbox"
 import Dialog from "primevue/dialog"
@@ -13,9 +13,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes } from "@fal"
+import { faCheck, faRedo, faTimes } from "@fal"
 import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskMessageEditor.vue"
 import { mentionsEveryone } from "@/Components/Messaging/deskMarkup"
+import { formatBytes } from "@/Composables/useUploadLimits"
+import { useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
+import { loadDraft, saveDraft } from "@/Components/Messaging/deskDrafts"
 import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 
 export interface SlackWriteState {
@@ -26,6 +29,7 @@ export interface SlackWriteState {
     people?: DeskPerson[]
     channels?: DeskPerson[]
     member_count?: number
+    max_file_bytes?: number
 }
 
 export interface SlackSentMessage {
@@ -42,11 +46,12 @@ const props = defineProps<{
     threadTs?: string | null
     channelName?: string | null
     placeholder?: string
+    liveChannel?: string | null
 }>()
 
 const emit = defineEmits<{ (e: "sent", sent: SlackSentMessage): void }>()
 
-const text = ref("")
+const text = ref(loadDraft(props.channelId, props.threadTs))
 const rootEl = ref<HTMLElement | null>(null)
 const editorRef = ref<InstanceType<typeof DeskMessageEditor> | null>(null)
 const alsoToChannel = ref(false)
@@ -57,14 +62,159 @@ const offerConnect = ref(false)
 const EVERYONE_CONFIRM_ABOVE = 6
 let idempotencyKey: string | null = null
 
-library.add(faCheck, faTimes)
+library.add(faCheck, faRedo, faTimes)
 
-watch(text, () => {
+interface AttachedFile {
+    key: string
+    file: File
+    progress: number
+    status: "uploading" | "done" | "failed"
+    error: string | null
+    fileId: string | null
+}
+
+const PENDING_MESSAGE_SECONDS = 60
+const fileInput = ref<HTMLInputElement | null>(null)
+const attached = ref<AttachedFile[]>([])
+const pendingFiles = ref<{ ids: string[]; names: string[] } | null>(null)
+let pendingTimer: ReturnType<typeof setTimeout> | null = null
+
+const canAttach = computed(() => props.write.allowed && !props.write.reason && !sending.value)
+const attachLabel = computed(() => props.write.stand_in ? ctrans("Connect your Slack to send files") : ctrans("Attach files"))
+const isUploading = computed(() => attached.value.some((item) => item.status === "uploading"))
+const hasFailed = computed(() => attached.value.some((item) => item.status === "failed"))
+const readyFileIds = computed(() => attached.value.filter((item) => item.status === "done").map((item) => item.fileId as string))
+const maxBytes = computed(() => props.write.max_file_bytes ?? 95 * 1024 * 1024)
+
+const uploadErrorOf = (e: any): string =>
+    e?.response?.status === 413
+        ? ctrans("This file is larger than the server accepts.")
+        : e?.response?.status === 429
+            ? ctrans("You are sending too fast. Try again in a moment.")
+            : e?.response?.data?.errors?.slack?.[0] ?? e?.response?.data?.errors?.file?.[0] ?? e?.response?.data?.message ?? ctrans("The file was not uploaded. Try again.")
+
+const upload = async (item: AttachedFile) => {
+    item.status = "uploading"
+    item.progress = 0
+    item.error = null
+    const form = new FormData()
+    form.append("file", item.file)
+    try {
+        const { data } = await axios.post(route("grp.chat.staff.slack.files.upload", { slackChannel: props.channelId }), form, {
+            onUploadProgress: (event) => {
+                item.progress = event.total ? event.loaded / event.total : 0
+            },
+        })
+        item.fileId = data.file_id
+        item.status = "done"
+    } catch (e: any) {
+        item.status = "failed"
+        item.error = uploadErrorOf(e)
+    }
+}
+
+const pad = (value: number) => String(value).padStart(2, "0")
+
+const addFiles = (files: File[]) => {
+    if (!canAttach.value) return
+    for (const original of files) {
+        const now = new Date()
+        const isPastedImage = original.type.startsWith("image/") && /^image\.\w+$/i.test(original.name)
+        const file = isPastedImage
+            ? new File([original], `image-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.${original.type.split("/")[1] === "jpeg" ? "jpg" : original.type.split("/")[1]}`, { type: original.type })
+            : original
+        const item: AttachedFile = { key: crypto.randomUUID(), file, progress: 0, status: "uploading", error: null, fileId: null }
+        attached.value.push(item)
+        const reactive = attached.value[attached.value.length - 1]
+        if (file.size > maxBytes.value) {
+            reactive.status = "failed"
+            reactive.error = ctrans("Larger than the :size aiku can send to Slack.", { size: formatBytes(maxBytes.value) })
+        } else {
+            upload(reactive)
+        }
+    }
+}
+
+const onPick = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    addFiles(Array.from(input.files ?? []))
+    input.value = ""
+}
+
+const onPaste = (event: ClipboardEvent) => {
+    const files = Array.from(event.clipboardData?.files ?? [])
+    if (!files.length || !canAttach.value) return
+    event.preventDefault()
+    addFiles(files)
+}
+
+const onDrop = (event: DragEvent) => {
+    if (!event.dataTransfer?.types.includes("Files")) return
+    event.preventDefault()
+    addFiles(Array.from(event.dataTransfer.files))
+}
+
+const onDragOver = (event: DragEvent) => {
+    if (event.dataTransfer?.types.includes("Files")) event.preventDefault()
+}
+
+const removeFile = (item: AttachedFile) => {
+    attached.value = attached.value.filter((candidate) => candidate.key !== item.key)
+}
+
+const clearPending = () => {
+    pendingFiles.value = null
+    if (pendingTimer) clearTimeout(pendingTimer)
+}
+
+useSlackLive(() => props.liveChannel, (event: SlackLiveEvent) => {
+    const arrived = (event.message?.files ?? []).map((file) => file.id)
+    if (pendingFiles.value && pendingFiles.value.ids.some((id) => arrived.includes(id))) clearPending()
+})
+
+let dropTarget: HTMLElement | null = null
+onMounted(() => {
+    dropTarget = rootEl.value?.parentElement ?? null
+    dropTarget?.addEventListener("dragover", onDragOver)
+    dropTarget?.addEventListener("drop", onDrop)
+})
+onBeforeUnmount(() => {
+    dropTarget?.removeEventListener("dragover", onDragOver)
+    dropTarget?.removeEventListener("drop", onDrop)
+    if (pendingTimer) clearTimeout(pendingTimer)
+})
+
+const sendFiles = async (notifyEveryone: boolean) => {
+    idempotencyKey ??= crypto.randomUUID()
+    const names = attached.value.filter((item) => item.status === "done").map((item) => item.file.name)
+    const { data } = await axios.post(route("grp.chat.staff.slack.files.send", { slackChannel: props.channelId }), {
+        file_ids: readyFileIds.value,
+        text: text.value,
+        thread_ts: props.threadTs ?? null,
+        idempotency_key: idempotencyKey,
+        notify_everyone: notifyEveryone,
+    })
+    pendingFiles.value = { ids: data.file_ids, names }
+    pendingTimer = setTimeout(() => {
+        clearPending()
+        error.value = ctrans("Slack has not shown the files yet. Check the channel before sending again.")
+    }, PENDING_MESSAGE_SECONDS * 1000)
+    attached.value = []
+    return data
+}
+
+watch([() => props.channelId, () => props.threadTs], () => {
+    attached.value = []
+    text.value = loadDraft(props.channelId, props.threadTs)
+}, { flush: "sync" })
+
+watch(text, (value) => {
     error.value = null
+    saveDraft(props.channelId, props.threadTs, value)
 })
 
 const send = async (notifyEveryone = false) => {
-    if (sending.value || !text.value.trim()) return
+    if (sending.value || isUploading.value || hasFailed.value || (!text.value.trim() && !readyFileIds.value.length)) return
     const members = props.write.member_count ?? 0
     if (!notifyEveryone && mentionsEveryone(text.value) && (members === 0 || members > EVERYONE_CONFIRM_ABOVE)) {
         confirmingEveryone.value = true
@@ -74,18 +224,23 @@ const send = async (notifyEveryone = false) => {
     sending.value = true
     error.value = null
     idempotencyKey ??= crypto.randomUUID()
+    const sentFrom = { channelId: props.channelId, threadTs: props.threadTs ?? null }
     try {
-        const { data } = await axios.post(route("grp.chat.staff.slack.messages.store", { slackChannel: props.channelId }), {
-            text: text.value,
-            thread_ts: props.threadTs ?? null,
-            also_to_channel: Boolean(props.threadTs) && alsoToChannel.value,
-            idempotency_key: idempotencyKey,
-            notify_everyone: notifyEveryone,
-        })
+        const hasFiles = readyFileIds.value.length > 0
+        const data = hasFiles
+            ? await sendFiles(notifyEveryone)
+            : (await axios.post(route("grp.chat.staff.slack.messages.store", { slackChannel: props.channelId }), {
+                text: text.value,
+                thread_ts: props.threadTs ?? null,
+                also_to_channel: Boolean(props.threadTs) && alsoToChannel.value,
+                idempotency_key: idempotencyKey,
+                notify_everyone: notifyEveryone,
+            })).data
         idempotencyKey = null
-        text.value = ""
+        saveDraft(sentFrom.channelId, sentFrom.threadTs, "")
+        if (sentFrom.channelId === props.channelId && sentFrom.threadTs === (props.threadTs ?? null)) text.value = ""
         alsoToChannel.value = false
-        emit("sent", data)
+        if (!hasFiles) emit("sent", data)
         offerConnect.value = Boolean(data.stand_in && props.write.connect_url)
         editorRef.value?.focus()
     } catch (e: any) {
@@ -134,13 +289,41 @@ const editLast = () => {
                 :people="write.people ?? []"
                 :channels="write.channels ?? []"
                 mention-tokens
+                styled-content
                 can-edit-last
-                attach-disabled
-                :attach-label="ctrans('Sending files from Verba is coming soon')"
+                :can-send="readyFileIds.length > 0 && !isUploading && !hasFailed"
+                :attach-disabled="!canAttach || Boolean(write.stand_in)"
+                :attach-label="attachLabel"
+                @attach="fileInput?.click()"
+                @paste="onPaste"
                 @submit="send()"
                 @edit-last="editLast" />
+            <input ref="fileInput" type="file" multiple class="hidden" @change="onPick">
+            <ul v-if="attached.length" class="mt-1.5 space-y-1">
+                <li v-for="item in attached" :key="item.key" class="rounded border border-gray-200 px-2.5 py-1.5 text-xs">
+                    <div class="flex items-center gap-x-2">
+                        <span class="min-w-0 flex-1 truncate font-medium text-gray-800">{{ item.file.name }}</span>
+                        <span class="shrink-0 whitespace-nowrap text-gray-400">{{ formatBytes(item.file.size) }}</span>
+                        <Button v-if="item.status === 'failed' && item.file.size <= maxBytes" type="tertiary" :label="ctrans('Retry')" @click="upload(item)">
+                            <template #icon><FontAwesomeIcon icon="fal fa-redo" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                        <Button type="tertiary" :label="ctrans('Remove')" :disabled="sending" @click="removeFile(item)">
+                            <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                        </Button>
+                    </div>
+                    <div v-if="item.status === 'uploading'" class="mt-1">
+                        <div class="h-1 overflow-hidden rounded bg-gray-100" role="progressbar" :aria-valuenow="Math.round(item.progress * 100)" aria-valuemin="0" aria-valuemax="100">
+                            <div class="h-full bg-[var(--app-accent)] transition-[width]" :style="{ width: `${Math.round(item.progress * 100)}%` }" />
+                        </div>
+                        <p v-if="item.progress >= 1" class="mt-0.5 text-gray-500">{{ ctrans("Sending to Slack…") }}</p>
+                    </div>
+                    <p v-else-if="item.status === 'failed'" class="mt-0.5 text-red-600" role="alert">{{ item.error }}</p>
+                </li>
+            </ul>
+            <p v-if="hasFailed" class="mt-1 text-xs text-gray-500">{{ ctrans("Retry or remove the files that failed, then send.") }}</p>
+            <p v-if="pendingFiles" class="mt-1.5 text-xs text-gray-500">{{ ctrans("Sending :files to Slack…", { files: pendingFiles.names.join(", ") }) }}</p>
             <div class="flex items-center gap-x-3 pt-1.5">
-                <label v-if="threadTs" class="inline-flex cursor-pointer items-center gap-x-2 text-[13px] text-[#1d1c1d]">
+                <label v-if="threadTs && !attached.length" class="inline-flex cursor-pointer items-center gap-x-2 text-[13px] text-[#1d1c1d]">
                     <Checkbox v-model="alsoToChannel" binary size="small" :disabled="sending" input-id="desk-also-to-channel" />
                     {{ channelName ? ctrans("Also send to #:channel", { channel: channelName }) : ctrans("Also send to channel") }}
                 </label>

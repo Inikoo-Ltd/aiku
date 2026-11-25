@@ -100,6 +100,12 @@ Route::prefix('staff')->name('staff.')->middleware('throttle:240,1')->group(func
     Route::get('/slack/{slackChannel}/messages/own-text', \App\Actions\Chat\Staff\Slack\Write\GetOwnSlackMessageText::class)->middleware('throttle:60,1,slack-edit-text')->name('slack.messages.own-text');
     Route::patch('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\EditSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.update');
     Route::delete('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\DeleteSlackMessage::class)->middleware('throttle:20,1,slack-edit')->name('slack.messages.delete');
+    Route::post('/slack/{slackChannel}/files', \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::class)->middleware('throttle:60,1,slack-upload')->name('slack.files.upload');
+    Route::post('/slack/{slackChannel}/files/send', \App\Actions\Chat\Staff\Slack\Write\SendSlackFiles::class)->middleware('throttle:20,1,slack-send')->name('slack.files.send');
+    Route::post('/slack/{slackChannel}/pin', \App\Actions\Chat\Staff\Slack\Write\ToggleSlackMessagePin::class)->middleware('throttle:30,1,slack-pin')->name('slack.pin.toggle');
+    Route::post('/slack/{slackChannel}/bookmarks', \App\Actions\Chat\Staff\Slack\Write\AddSlackChannelBookmark::class)->middleware('throttle:20,1,slack-bookmark')->name('slack.bookmarks.store');
+    Route::patch('/slack/{slackChannel}/bookmarks/{bookmark}', \App\Actions\Chat\Staff\Slack\Write\EditSlackChannelBookmark::class)->middleware('throttle:20,1,slack-bookmark')->scopeBindings()->name('slack.bookmarks.update');
+    Route::delete('/slack/{slackChannel}/bookmarks/{bookmark}', \App\Actions\Chat\Staff\Slack\Write\RemoveSlackChannelBookmark::class)->middleware('throttle:20,1,slack-bookmark')->scopeBindings()->name('slack.bookmarks.delete');
 });
 
 Route::prefix('staff')->name('staff.')->middleware('throttle:120,1,slack-search')->group(function () {

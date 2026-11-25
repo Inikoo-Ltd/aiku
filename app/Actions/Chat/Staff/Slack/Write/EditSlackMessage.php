@@ -32,6 +32,8 @@ class EditSlackMessage
         return [
             'ts'   => ['required', 'string', 'regex:/^\d{1,12}\.\d{1,8}$/'],
             'text' => ['required', 'string', 'max:'.(self::MAX_LENGTH * 5)],
+            'notify_everyone' => ['sometimes', 'boolean'],
+            'format'          => ['sometimes', 'nullable', 'string', 'in:readable'],
         ];
     }
 
@@ -42,14 +44,15 @@ class EditSlackMessage
      *
      * @return array<string, mixed>|null
      */
-    public function handle(User $user, SlackChannel $slackChannel, string $ts, string $text): ?array
+    public function handle(User $user, SlackChannel $slackChannel, string $ts, string $text, bool $notifyEveryone = false, bool $readable = true): ?array
     {
         $this->ensureMayWrite($user, $slackChannel);
         $message = $this->liveMessage($slackChannel, $ts);
         $client  = $this->clientFor($user, standInAllowed: true);
         $this->ensureOwnMessage($message, $client);
 
-        $slackText = self::toSlackText($text, (string) $message->text);
+        $addsEveryone = collect(['here', 'channel'])->contains(fn (string $code) => str_contains($text, "\u{E000}!{$code}\u{E000}") && !str_contains((string) $message->text, "<!{$code}>"));
+        $slackText    = SendSlackMessage::make()->withMentions(self::toSlackText($text, (string) $message->text, !$readable), $user, $slackChannel, $notifyEveryone || !$addsEveryone);
         if (trim($slackText) === '') {
             $this->refuse(__('Write something before saving'));
         }
@@ -78,11 +81,13 @@ class EditSlackMessage
     }
 
     /**
-     * The edit box holds Slack's own text, entities included. A <…> token stays markup only when the message already
-     * had it word for word (a mention, channel or link it was sent with); any other <, > and any & that is not
-     * already an entity is escaped, so an edit can never add a mention, a broadcast or a link the message did not have.
+     * The edit box holds the message as a person reads it (entities undone, mentions as chips). A <…> token stays markup
+     * only when the message already had it word for word (a link or code the box could not show as a chip); any other
+     * <, > and & is escaped, so an edit can never add a mention, a broadcast or a link the message did not have except
+     * through a chip, which handle() checks like a new message does. A box from before readable text (no format sent)
+     * still holds Slack's own entities, so an & that already starts one is kept.
      */
-    public static function toSlackText(string $text, string $original): string
+    public static function toSlackText(string $text, string $original, bool $slackEntities = false): string
     {
         $known = [(string) $original, GetSlackChannelMessages::editableText($original)];
         $parts = preg_split('/(<[^<>]*>)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$text];
@@ -90,14 +95,16 @@ class EditSlackMessage
         $slackText = '';
         foreach ($parts as $index => $part) {
             $isKnownToken = $index % 2 === 1 && $part !== '<>' && (str_contains($known[0], $part) || str_contains($known[1], $part));
-            $slackText .= $isKnownToken ? $part : (string) preg_replace(['/&(?!(?:amp|lt|gt);)/', '/</', '/>/'], ['&amp;', '&lt;', '&gt;'], $part);
+            $slackText .= $isKnownToken ? $part : ($slackEntities
+                ? (string) preg_replace(['/&(?!(?:amp|lt|gt);)/', '/</', '/>/'], ['&amp;', '&lt;', '&gt;'], $part)
+                : str_replace(['&', '<', '>'], ['&amp;', '&lt;', '&gt;'], $part));
         }
 
-        return $slackText;
+        return SendSlackMessage::keepQuotes($slackText);
     }
 
     public function asController(SlackChannel $slackChannel, ActionRequest $request): array
     {
-        return ['message' => $this->handle($request->user(), $slackChannel, $request->validated('ts'), $request->validated('text'))];
+        return ['message' => $this->handle($request->user(), $slackChannel, $request->validated('ts'), $request->validated('text'), (bool) $request->validated('notify_everyone', false), $request->validated('format') === 'readable')];
     }
 }

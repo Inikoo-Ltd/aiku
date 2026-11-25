@@ -8,12 +8,12 @@
 import { Link } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faStar } from "@fal"
+import { faPencil, faStar } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
 
-library.add(faStar, faStarSolid)
+library.add(faPencil, faStar, faStarSolid)
 
 const props = defineProps<{
     label: string
@@ -25,6 +25,7 @@ const props = defineProps<{
     isActive?: boolean
     isMuted?: boolean
     isStarred?: boolean
+    hasDraft?: boolean
     compact?: boolean
 }>()
 
@@ -69,6 +70,7 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
             </span>
             <FontAwesomeIcon v-else :icon="icon" class="shrink-0 text-[13px]" fixed-width aria-hidden="true" />
             <span class="min-w-0 flex-1 truncate">{{ label }}</span>
+            <FontAwesomeIcon v-if="hasDraft" icon="fal fa-pencil" class="shrink-0 text-[11px] opacity-70 group-hover/row:hidden" fixed-width v-tooltip="ctrans('Draft')" :aria-label="ctrans('Draft')" />
             <span
                 v-if="unread && !isActive"
                 class="shrink-0 rounded-full bg-[var(--desk-badge)] px-2 text-xs font-bold leading-[18px] text-white group-hover/row:hidden"

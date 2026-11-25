@@ -19,6 +19,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
+import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { deskShortcutList, isMac, useDeskShortcuts } from "@/Composables/useDeskShortcuts"
@@ -486,6 +487,7 @@ onUnmounted(() => {
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         :icon="channel.is_archived ? 'fal fa-archive' : 'fal fa-hashtag'"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-muted="channel.is_archived"
                         is-starred
@@ -526,6 +528,7 @@ onUnmounted(() => {
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         icon="fal fa-hashtag"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-starred="false"
                         @toggle-star="toggleStar('slack-' + channel.id)" />
@@ -623,6 +626,7 @@ onUnmounted(() => {
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         icon="fal fa-hashtag"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-muted="channel.is_archived" />
                     <DeskSidebarRow

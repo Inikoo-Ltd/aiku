@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack;
 
 use App\Actions\Helpers\Ticket\Concerns\WithSlack;
 use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackChannelBookmark;
 use App\Models\Chat\SlackSyncRun;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\PendingRequest;
@@ -75,19 +76,34 @@ class SyncSlackPinsAndBookmarks
     {
         $listed = [];
         foreach ((array) Arr::get($this->slackCall($client, 'bookmarks.list', ['channel_id' => $channel->slack_id], 'post'), 'bookmarks', []) as $bookmark) {
-            $channel->bookmarks()->updateOrCreate(['slack_id' => Arr::get($bookmark, 'id')], [
-                'title'               => Arr::get($bookmark, 'title'),
-                'link'                => Arr::get($bookmark, 'link'),
-                'emoji'               => Arr::get($bookmark, 'emoji'),
-                'position'            => Arr::get($bookmark, 'rank'),
-                'data'                => $bookmark,
-                'removed_in_slack_at' => null,
-            ]);
+            $this->storeBookmark($channel, (array) $bookmark);
             $listed[] = Arr::get($bookmark, 'id');
         }
         $channel->bookmarks()->whereNull('removed_in_slack_at')->whereNotIn('slack_id', $listed)->update(['removed_in_slack_at' => now()]);
 
         return count($listed);
+    }
+
+    /**
+     * One bookmark as Slack describes it (bookmarks.list, bookmarks.add, bookmarks.edit); also how a bookmark changed from aiku is kept.
+     *
+     * @param  array<string, mixed>  $bookmark
+     */
+    public function storeBookmark(SlackChannel $channel, array $bookmark): SlackChannelBookmark
+    {
+        return $channel->bookmarks()->updateOrCreate(['slack_id' => Arr::get($bookmark, 'id')], [
+            'title'               => Arr::get($bookmark, 'title'),
+            'link'                => Arr::get($bookmark, 'link'),
+            'emoji'               => Arr::get($bookmark, 'emoji'),
+            'position'            => Arr::get($bookmark, 'rank'),
+            'data'                => $bookmark,
+            'removed_in_slack_at' => null,
+        ]);
+    }
+
+    public function removeBookmark(SlackChannelBookmark $bookmark): void
+    {
+        $bookmark->update(['removed_in_slack_at' => now()]);
     }
 
     public function asCommand(Command $command): int

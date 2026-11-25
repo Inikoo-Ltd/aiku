@@ -195,12 +195,12 @@ test('each Slack error is shown as a sentence and leaves the stored message unch
 test('an edit keeps only the markup the message already had: anything new is escaped, entities and existing links stay as they are', function (string $original, string $edited, string $sent) {
     expect(\App\Actions\Chat\Staff\Slack\Write\EditSlackMessage::toSlackText($edited, $original))->toBe($sent);
 })->with([
-    'a literal broadcast stays literal'      => ['say &lt;!channel&gt; and &lt;@UX1&gt;', 'says &lt;!channel&gt; and &lt;@UX1&gt;', 'says &lt;!channel&gt; and &lt;@UX1&gt;'],
+    'a literal broadcast stays literal'      => ['say &lt;!channel&gt; and &lt;@UX1&gt;', 'says <!channel> and <@UX1>', 'says &lt;!channel&gt; and &lt;@UX1&gt;'],
     'a new broadcast is escaped'             => ['x', '<!channel> x', '&lt;!channel&gt; x'],
     'a new user group mention is escaped'    => ['x', '<!subteam^S1> x', '&lt;!subteam^S1&gt; x'],
     'a new mention is escaped'               => ['x', '<@UNEW> x', '&lt;@UNEW&gt; x'],
     'a new labelled link is escaped'         => ['x', '<https://x.test|label> x', '&lt;https://x.test|label&gt; x'],
-    'existing mention, link and & stay'      => ['hi <@UX1> see <https://a.test|a> &amp; co', 'hello <@UX1> see <https://a.test|a> &amp; co', 'hello <@UX1> see <https://a.test|a> &amp; co'],
+    'existing mention, link and & stay'      => ['hi <@UX1> see <https://a.test|a> &amp; co', 'hello <@UX1> see <https://a.test|a> & co', 'hello <@UX1> see <https://a.test|a> &amp; co'],
     'a lone & and < are escaped'             => ['x', 'a & b < c', 'a &amp; b &lt; c'],
     'a channel link without its label stays' => ['see <#CSECRET|secret-name>', 'see <#CSECRET> now', 'see <#CSECRET> now'],
 ]);
@@ -209,7 +209,7 @@ test('an edit that adds a broadcast mention sends it escaped and notifies no one
     $message = ($this->post)(1, ['text' => 'about &lt;!here&gt; tomorrow']);
     Http::fake(['slack.com/api/chat.update' => fn (Request $request) => Http::response(['ok' => true, 'ts' => $message->ts, 'text' => $request['text'], 'message' => ['text' => $request['text'], 'user' => $this->mySlackId]])]);
 
-    actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.messages.update'), ['ts' => $message->ts, 'text' => '<!channel> about &lt;!here&gt; today'])->assertOk();
+    actingAs($this->me)->patchJson(($this->url)('grp.chat.staff.slack.messages.update'), ['ts' => $message->ts, 'text' => '<!channel> about <!here> today'])->assertOk();
 
     Http::assertSent(fn (Request $request) => $request['text'] === '&lt;!channel&gt; about &lt;!here&gt; today');
     expect($message->refresh()->text)->toBe('&lt;!channel&gt; about &lt;!here&gt; today');
@@ -341,4 +341,55 @@ test('the echo event arriving before Slack\'s HTTP answer leaves one version and
         ->and($kinds($edited))->toContain('changed')->not->toContain('new')
         ->and($kinds($deleted))->toBe(['deleted'])
         ->and($kinds($reacted))->toBe(['reaction']);
+});
+
+test('a message pinned and unpinned from aiku is kept at once, already_pinned counts as success and too_many_pins is told, INI-468', function () {
+    $message = ($this->post)(1, ['user' => "UOTHER{$this->s}"]);
+    Http::fake([
+        'slack.com/api/pins.add'    => Http::sequence()->push(['ok' => true])->push(['ok' => false, 'error' => 'already_pinned'])->push(['ok' => false, 'error' => 'too_many_pins']),
+        'slack.com/api/pins.remove' => Http::response(['ok' => false, 'error' => 'no_pin']),
+    ]);
+    $pin = fn (bool $pinned) => actingAs($this->me)->postJson(($this->url)('grp.chat.staff.slack.pin.toggle'), ['ts' => $message->ts, 'pinned' => $pinned]);
+
+    $pin(true)->assertOk()->assertJsonPath('message.is_pinned', true)->assertJsonPath('pinned_count', 1);
+    expect($message->refresh()->pinned_by_slack_user_id)->toBe($this->mySlackId);
+    $pin(true)->assertOk()->assertJsonPath('message.is_pinned', true);
+    $pin(false)->assertOk()->assertJsonPath('message.is_pinned', false)->assertJsonPath('pinned_count', 0);
+    $pin(true)->assertUnprocessable()->assertJsonValidationErrors('slack');
+    expect($message->refresh()->pinned_at)->toBeNull()
+        ->and(Event::dispatched(SlackChannelMessageChanged::class)->filter(fn (array $args) => $args[0]->kind === 'pin'))->toHaveCount(3);
+});
+
+test('bookmarks added, edited and removed from aiku are kept, a link that is not http or https is refused before Slack, INI-468', function () {
+    Http::fake([
+        'slack.com/api/bookmarks.add'    => Http::response(['ok' => true, 'bookmark' => ['id' => "Bk{$this->s}", 'channel_id' => $this->channel->slack_id, 'title' => 'Rota', 'link' => 'https://example.com/rota', 'emoji' => ':books:', 'rank' => 'U']]),
+        'slack.com/api/bookmarks.edit'   => Http::response(['ok' => true, 'bookmark' => ['id' => "Bk{$this->s}", 'channel_id' => $this->channel->slack_id, 'title' => 'Rota 2', 'link' => 'https://example.com/rota2', 'rank' => 'U']]),
+        'slack.com/api/bookmarks.remove' => Http::response(['ok' => true]),
+    ]);
+
+    actingAs($this->me)->postJson(($this->url)('grp.chat.staff.slack.bookmarks.store'), ['title' => 'Bad', 'link' => 'javascript:alert(1)'])->assertUnprocessable()->assertJsonValidationErrors('link');
+    Http::assertNothingSent();
+
+    actingAs($this->me)->postJson(($this->url)('grp.chat.staff.slack.bookmarks.store'), ['title' => 'Rota', 'link' => 'https://example.com/rota', 'emoji' => 'books'])
+        ->assertOk()->assertJsonPath('bookmarks.0.title', 'Rota')->assertJsonPath('bookmarks.0.emoji_name', 'books');
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'bookmarks.add') && $request['type'] === 'link' && $request['emoji'] === ':books:' && $request['channel_id'] === $this->channel->slack_id);
+
+    $bookmark = $this->channel->bookmarks()->firstOrFail();
+    $route    = fn (string $name) => route($name, ['slackChannel' => $this->channel->id, 'bookmark' => $bookmark->id]);
+    actingAs($this->me)->patchJson($route('grp.chat.staff.slack.bookmarks.update'), ['title' => 'Rota 2', 'link' => 'https://example.com/rota2'])->assertOk()->assertJsonPath('bookmarks.0.title', 'Rota 2');
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'bookmarks.edit') && $request['bookmark_id'] === "Bk{$this->s}");
+    expect($this->channel->bookmarks()->count())->toBe(1);
+
+    actingAs($this->me)->deleteJson($route('grp.chat.staff.slack.bookmarks.delete'))->assertOk()->assertJsonCount(0, 'bookmarks');
+    expect($bookmark->refresh()->removed_in_slack_at)->not->toBeNull();
+});
+
+test('a connection without the pins scope is asked to reconnect and Slack is never called, INI-468', function () {
+    SlackConnection::where('user_id', $this->me->id)->update(['scopes' => 'chat:write,reactions:write']);
+    $message = ($this->post)(1, ['user' => "UOTHER{$this->s}"]);
+
+    actingAs($this->me)->postJson(($this->url)('grp.chat.staff.slack.pin.toggle'), ['ts' => $message->ts, 'pinned' => true])->assertUnprocessable()->assertJsonPath('errors.slack.0', 'Reconnect your Slack account to write here');
+    actingAs($this->me)->postJson(($this->url)('grp.chat.staff.slack.bookmarks.store'), ['title' => 'Rota', 'link' => 'https://example.com'])->assertUnprocessable()->assertJsonValidationErrors('slack');
+    Http::assertNothingSent();
+    expect($message->refresh()->pinned_at)->toBeNull();
 });

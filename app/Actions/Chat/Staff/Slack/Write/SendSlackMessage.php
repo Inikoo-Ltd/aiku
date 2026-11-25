@@ -145,11 +145,19 @@ class SendSlackMessage
     {
         $parts = preg_split(self::BARE_LINK, $text, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$text];
 
-        return implode('', array_map(
+        return self::keepQuotes(implode('', array_map(
             fn (string $part, int $index) => $index % 2 ? $part : str_replace(['&', '<', '>'], ['&amp;', '&lt;', '&gt;'], $part),
             $parts,
             array_keys($parts)
-        ));
+        )));
+    }
+
+    /**
+     * Slack makes a quote of a line that starts with a raw >, so the box's own quote marker must not stay escaped.
+     */
+    public static function keepQuotes(string $escaped): string
+    {
+        return (string) preg_replace_callback('/^(?:&gt; ?)+/m', fn (array $match) => str_replace('&gt;', '>', $match[0]), $escaped);
     }
 
     /**
@@ -209,7 +217,7 @@ class SendSlackMessage
     /**
      * Slack threads are one level deep: a reply to a reply goes to the thread's first message.
      */
-    private function threadRoot(SlackChannel $slackChannel, string $threadTs): string
+    public function threadRoot(SlackChannel $slackChannel, string $threadTs): string
     {
         $parent = SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $threadTs)->first(['ts', 'thread_ts']);
         if (!$parent) {

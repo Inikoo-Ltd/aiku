@@ -21,7 +21,7 @@ import { ctrans } from "@/Composables/useTrans"
 import ChatFormattingToolbar from "@/Components/Chat/ChatFormattingToolbar.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { DESK_EMOJI_NAMES } from "@/Components/Messaging/deskEmojiNames"
-import { deskDocToSlackText } from "@/Components/Messaging/deskMarkup"
+import { boxTextToDoc, deskDocToSlackText } from "@/Components/Messaging/deskMarkup"
 import EmojiPicker from "@/Components/Messaging/EmojiPicker.vue"
 
 library.add(faAt, faBracketsCurly, faCode, faPaperPlane, faPlus, faQuoteRight, faSmile)
@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
     people?: DeskPerson[]
     channels?: DeskPerson[]
     mentionTokens?: boolean
+    styledContent?: boolean
     canSend?: boolean
     canEditLast?: boolean
     attachLabel?: string
@@ -99,6 +100,7 @@ const renderSuggestions = (kind: "@" | "#" | ":") => () => ({
             return true
         }
         if (event.key === "Escape") {
+            event.stopPropagation()
             suggest.open = false
             return true
         }
@@ -140,6 +142,7 @@ let lastEmitted = props.modelValue
 
 const editor = useEditor({
     editable: !props.disabled,
+    content: props.modelValue ? { type: "doc", content: boxTextToDoc(props.modelValue, props.people, props.channels, props.styledContent) } : undefined,
     extensions: [
         StarterKit.configure({ heading: false, horizontalRule: false, link: false, underline: false, trailingNode: false }),
         Link.configure({ autolink: true, openOnClick: false, HTMLAttributes: { class: "text-[#1264a3] underline", target: null, rel: null } }),
@@ -202,7 +205,7 @@ const editor = useEditor({
 watch(() => props.modelValue, (value) => {
     if (!editor.value || value === lastEmitted) return
     lastEmitted = value
-    editor.value.commands.setContent(value ? value.split("\n").map((line) => ({ type: "paragraph", content: line ? [{ type: "text", text: line }] : [] })) : "", { emitUpdate: false })
+    editor.value.commands.setContent(value ? boxTextToDoc(value, props.people, props.channels, props.styledContent) : "", { emitUpdate: false })
 })
 
 watch(() => props.disabled, (disabled) => editor.value?.setEditable(!disabled))
