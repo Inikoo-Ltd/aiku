@@ -14,18 +14,25 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalDetails;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Sets, or clears with null, the staff member who owns the relationship with each selected supplier, chosen from the
- * contacts the supplier sees on its portal. The portal labels that person Main among "Your contacts".
+ * contacts the supplier sees on its portal, or David Hardy and Tomas Belan. The portal labels that person Main among "Your contacts".
  */
 class SetSuppliersRelationshipContact extends OrgAction
 {
+    /**
+     * David Hardy and Tomas Belan can own the relationship with any supplier, listed on its portal or not (Vika, 25 Nov 2026).
+     */
+    public const array ALWAYS_AVAILABLE_USERNAMES = ['david', 'tomas'];
+
     /**
      * A supplier only takes a staff member who is one of its portal contacts; the others are left as they are.
      *
@@ -51,7 +58,27 @@ class SetSuppliersRelationshipContact extends OrgAction
      */
     public static function contactUserIds(Supplier $supplier): array
     {
-        return GetSupplierPortalDetails::make()->purchasingContacts($supplier)->pluck('user_id')->all();
+        return self::contacts($supplier)->pluck('user_id')->all();
+    }
+
+    /**
+     * The supplier's portal contacts plus the always available staff not already among them.
+     *
+     * @return Collection<int, array{user_id: int, name: string|null, organisations: list<string>}>
+     */
+    public static function contacts(Supplier $supplier): Collection
+    {
+        $portalContacts = GetSupplierPortalDetails::make()->purchasingContacts($supplier)
+            ->map(fn (array $contact) => Arr::only($contact, ['user_id', 'name', 'organisations']));
+
+        $alwaysAvailable = User::where('group_id', $supplier->group_id)
+            ->where('status', true)
+            ->whereIn('username', self::ALWAYS_AVAILABLE_USERNAMES)
+            ->whereNotIn('id', $portalContacts->pluck('user_id'))
+            ->get(['id', 'username', 'contact_name'])
+            ->map(fn (User $user) => ['user_id' => $user->id, 'name' => $user->contact_name ?: $user->username, 'organisations' => []]);
+
+        return $portalContacts->concat($alwaysAvailable)->values();
     }
 
     /**
@@ -63,7 +90,7 @@ class SetSuppliersRelationshipContact extends OrgAction
     public static function contactOptions(Collection $suppliers): array
     {
         return $suppliers
-            ->flatMap(fn (Supplier $supplier) => GetSupplierPortalDetails::make()->purchasingContacts($supplier))
+            ->flatMap(fn (Supplier $supplier) => self::contacts($supplier))
             ->groupBy('user_id')
             ->map(fn (Collection $rows) => [
                 'value'           => $rows->first()['user_id'],
@@ -80,7 +107,7 @@ class SetSuppliersRelationshipContact extends OrgAction
     {
         return function (string $attribute, mixed $value, Closure $fail) use ($supplier) {
             if ($value !== null && !in_array((int) $value, self::contactUserIds($supplier), true)) {
-                $fail(__('Choose one of the contacts shown on this supplier\'s portal.'));
+                $fail(__('Choose one of the contacts shown on this supplier\'s portal, or David Hardy or Tomas Belan.'));
             }
         };
     }

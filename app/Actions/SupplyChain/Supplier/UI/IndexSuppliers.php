@@ -288,7 +288,7 @@ class IndexSuppliers extends OrgAction
                 ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'relationship_contact', label: __('Relationship contact'), canBeHidden: false, sortable: true);
+                ->column(key: 'relationship_contact', label: __('Main relationship contact'), canBeHidden: false, sortable: true);
 
             if (GetSupplierAgreementStatus::make()->requiredVersionNumber($parent->group_id ?? $parent->id) !== null) {
                 $table->column(key: 'agreement', label: __('Agreement'), canBeHidden: false);

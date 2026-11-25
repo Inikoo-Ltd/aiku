@@ -64,7 +64,7 @@ async function save(relationshipContactUserId: number | null) {
             relationship_contact_user_id: relationshipContactUserId,
         })
         if (!response.data.updated) {
-            error.value = ctrans("Choose one of the contacts shown on this supplier's portal.")
+            error.value = ctrans("Choose one of the contacts shown on this supplier's portal, or David Hardy or Tomas Belan.")
             return
         }
         isEditing.value = false
@@ -80,9 +80,9 @@ async function save(relationshipContactUserId: number | null) {
 <template>
     <div class="px-6 py-3.5">
         <div class="group flex items-center gap-x-4">
-            <FontAwesomeIcon v-tooltip="ctrans('Relationship contact')" icon="fal fa-user-tie" class="flex-none text-gray-400" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-tooltip="ctrans('Main relationship contact')" icon="fal fa-user-tie" class="flex-none text-gray-400" fixed-width aria-hidden="true" />
             <div class="min-w-0 flex-1 text-sm">
-                <span class="text-gray-400">{{ ctrans("Relationship contact") }}:</span>
+                <span class="text-gray-400">{{ ctrans("Main relationship contact") }}:</span>
                 <span v-if="data.name" class="font-medium text-gray-900">&nbsp;{{ data.name }}</span>
                 <span v-else class="italic text-gray-400"> {{ ctrans("Not set") }}</span>
             </div>
@@ -132,13 +132,13 @@ async function save(relationshipContactUserId: number | null) {
                         <template #option="{ option }">
                             <div class="min-w-0 text-xs">
                                 <div class="font-semibold text-gray-800">{{ option.label }}</div>
-                                <div class="truncate text-gray-500">{{ option.organisations.join(" · ") }}</div>
+                                <div v-if="option.organisations.length" class="truncate text-gray-500">{{ option.organisations.join(" · ") }}</div>
                             </div>
                         </template>
                     </Select>
                     <LoadingIcon v-if="isSaving" />
                 </div>
-                <p class="text-xs text-gray-500">{{ ctrans("Only the contacts shown on this supplier's portal. The portal labels the chosen one Main.") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans("The contacts shown on this supplier's portal, or David Hardy and Tomas Belan. The portal labels the chosen one Main.") }}</p>
             </template>
             <p v-if="error" class="text-xs text-red-500">{{ error }}</p>
         </div>

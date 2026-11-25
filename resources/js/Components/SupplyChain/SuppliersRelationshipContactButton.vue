@@ -132,14 +132,14 @@ async function save(relationshipContactUserId: number | null) {
                                 <div class="flex w-full items-center justify-between gap-3 text-xs">
                                     <div class="min-w-0">
                                         <div class="font-semibold text-gray-800">{{ option.label }}</div>
-                                        <div class="truncate text-gray-500">{{ option.organisations.join(" · ") }}</div>
+                                        <div v-if="option.organisations.length" class="truncate text-gray-500">{{ option.organisations.join(" · ") }}</div>
                                     </div>
                                     <span class="shrink-0 tabular-nums text-gray-500">{{ ctrans(":count of :total suppliers", { count: option.suppliers_count, total: suppliersCount }) }}</span>
                                 </div>
                             </template>
                         </Select>
                     </label>
-                    <p class="text-xs text-gray-500">{{ ctrans("Only the contacts shown on these suppliers' portals. The portal labels the chosen one Main.") }}</p>
+                    <p class="text-xs text-gray-500">{{ ctrans("The contacts shown on these suppliers' portals, or David Hardy and Tomas Belan. The portal labels the chosen one Main.") }}</p>
                     <div v-if="skippedCount > 0" class="flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                         <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
                         {{ ctrans(":count suppliers do not show :name on their portal and are left as they are", { count: skippedCount, name: selectedOption?.label ?? "" }) }}

@@ -108,8 +108,8 @@ trait WithSupplierEditFields
             ],
             [
                 'key'    => 'settings',
-                'label'  => __('Settings'),
-                'title'  => __('settings '),
+                'label'  => __('Settings/terms'),
+                'title'  => __('Settings/terms'),
                 'icon'   => 'fa-light fa-cog',
                 'fields' => [
                     'currency_id' => [
@@ -383,11 +383,11 @@ trait WithSupplierEditFields
         return [
             'relationship_contact_user_id' => [
                 'type'        => 'select',
-                'label'       => __('Relationship contact'),
-                'information' => __('Labelled Main among the contacts on the supplier portal'),
+                'label'       => __('Main relationship contact'),
+                'information' => __('Labelled Main among the contacts on the supplier portal. Choose one of its portal contacts, or David Hardy or Tomas Belan'),
                 'placeholder' => __('Select one of the portal contacts'),
                 'options'     => array_map(
-                    fn (array $option) => ['value' => $option['value'], 'label' => $option['label'].' ('.implode(', ', $option['organisations']).')'],
+                    fn (array $option) => ['value' => $option['value'], 'label' => $option['organisations'] ? $option['label'].' ('.implode(', ', $option['organisations']).')' : $option['label']],
                     SetSuppliersRelationshipContact::contactOptions(collect([$supplier]))
                 ),
                 'value'       => $supplier->relationship_contact_user_id,
