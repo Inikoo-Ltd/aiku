@@ -100,7 +100,8 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     ]);
                 }
 
-                $outstanding   = round($this->producedQuantity($item) - (float) $item->quantity_received, 3);
+                $this->refuseFinalTaskOutOfRecipe($item);
+                $outstanding   = $item->receivableQuantity();
                 $producedUnits = $allocations === null
                     ? $outstanding
                     : min($outstanding, round((float) ($allocations[$item->id] ?? 0), 3));
@@ -159,7 +160,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 }
             }
 
-            $stillOut = $items->contains(fn (JobOrderItem $item) => !$item->refresh()->isFinished() || round($this->producedQuantity($item) - (float) $item->quantity_received, 3) > 0);
+            $stillOut = $items->contains(fn (JobOrderItem $item) => !$item->refresh()->isFinished() || $item->receivableQuantity() > 0);
 
             if (!$stillOut) {
                 $jobOrder->update([
@@ -204,7 +205,8 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
         $received = false;
         foreach ($items as $item) {
-            $madeUnits = round($this->producedQuantity($item) - (float) $item->quantity_received, 3);
+            $this->refuseFinalTaskOutOfRecipe($item);
+            $madeUnits = round($item->producedQuantity() - (float) $item->quantity_received, 3);
             if ($madeUnits <= 0) {
                 continue;
             }
@@ -265,21 +267,15 @@ class ReceiveJobOrderIntoStock extends OrgAction
         ]);
     }
 
-    private function producedQuantity(JobOrderItem $item): float
+    private function refuseFinalTaskOutOfRecipe(JobOrderItem $item): void
     {
         $lastTask = $item->finalTask();
 
-        if (!$lastTask) {
-            return 0.0;
-        }
-
-        if (!$lastTask->isInRecipe()) {
+        if ($lastTask && !$lastTask->isInRecipe()) {
             throw ValidationException::withMessages([
                 'location_id' => __('Artefact :code no longer has task :task in its recipe', ['code' => $item->artefact->code, 'task' => $lastTask->manufactureTask?->name]),
             ]);
         }
-
-        return min((float) $item->quantity, $lastTask->artefactsIn());
     }
 
     /**

@@ -21,6 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_tasks
  * @property int $number_tasks_done
  * @property string|null $hold_reason
+ * @property int|null $done_not_received_days
  */
 class JobOrdersResource extends JsonResource
 {
@@ -37,6 +38,7 @@ class JobOrdersResource extends JsonResource
             'number_tasks'      => (int)$this->number_tasks,
             'number_tasks_done' => (int)$this->number_tasks_done,
             'hold_reason'       => $this->hold_reason,
+            'done_not_received_days' => $this->done_not_received_days,
         ];
     }
 }

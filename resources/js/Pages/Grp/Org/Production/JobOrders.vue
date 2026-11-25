@@ -41,6 +41,7 @@ function jobOrderRoute(jobOrder: { slug: string }) {
                 {{ jobOrder.reference }}
             </Link>
             <span v-if="jobOrder.hold_reason" v-tooltip="jobOrder.hold_reason" class="ml-2 rounded bg-yellow-100 px-1.5 text-xs font-semibold text-yellow-800">{{ ctrans("On hold") }}</span>
+            <span v-if="jobOrder.done_not_received_days !== null" class="ml-2 whitespace-nowrap rounded bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">{{ ctrans("Done – not received :days days", { days: jobOrder.done_not_received_days }) }}</span>
         </template>
         <template #cell(artisan)="{ item: jobOrder }">
             {{ jobOrder.artisan ?? '-' }}

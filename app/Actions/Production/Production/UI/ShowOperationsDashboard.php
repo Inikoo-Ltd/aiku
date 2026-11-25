@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\Production\UI;
 
+use App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
@@ -107,6 +108,16 @@ class ShowOperationsDashboard extends OrgAction
                                     JobOrderStateEnum::SUBMITTED,
                                     JobOrderStateEnum::CONFIRMED,
                                 ])->count(),
+                    ],
+                    [
+                        'name'  => __('Done – not received'),
+                        'color' => 'amber',
+                        'icon'  => ['fal', 'fa-box-check'],
+                        'route' => [
+                            'name'       => 'grp.org.productions.show.operations.job-orders.index',
+                            'parameters' => [...$request->route()->originalParameters(), 'elements[receiving]' => 'done_not_received'],
+                        ],
+                        'stat' => GetJobOrdersDoneNotReceived::run($production)->count(),
                     ],
                     [
                         'name' => __('Manufacture tasks'),

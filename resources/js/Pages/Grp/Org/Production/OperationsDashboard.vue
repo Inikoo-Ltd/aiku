@@ -10,7 +10,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import ManufactureWorkingCard from "@/Components/ManufactureWorkingCard.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSeedling, faThumbsDown, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes } from "@fal";
+import { faSeedling, faThumbsDown, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes, faBoxCheck } from "@fal";
 import { faCheckCircle, faTimesCircle, faPauseCircle } from "@fas";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ctrans } from "@/Composables/useTrans";
@@ -22,7 +22,7 @@ import { useLocaleStore } from "@/Stores/locale";
 
 import { PageHeadingTypes } from "@/types/PageHeading";
 
-library.add(faSeedling, faThumbsDown, faTimesCircle, faPauseCircle, faCheckCircle, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes);
+library.add(faSeedling, faThumbsDown, faTimesCircle, faPauseCircle, faCheckCircle, faUserHardHat, faTasks, faHandshake, faInventory, faChartNetwork, faSortShapesDown, faCubes, faBoxCheck);
 
 interface QueueTask {
     id: number
@@ -197,7 +197,7 @@ function elapsedSince(startedAt: string) {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <dl class="mx-4 mt-4 grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100 md:grid-cols-5">
+    <dl class="mx-4 mt-4 grid grid-cols-2 divide-x divide-gray-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100 md:grid-cols-6">
         <Link
             v-for="card in stats"
             :key="card.name"

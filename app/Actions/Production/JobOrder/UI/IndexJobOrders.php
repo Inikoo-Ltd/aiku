@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrder\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
 use App\Http\Resources\Production\JobOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -18,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
@@ -27,6 +29,9 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexJobOrders extends OrgAction
 {
+    /** @var Collection<int, array{done_at: \Illuminate\Support\Carbon, days: int, artefacts: array<int, int>}>|null */
+    private ?Collection $doneNotReceived = null;
+
     public function authorize(ActionRequest $request): bool
     {
         $this->canEdit = $request->user()->authTo([
@@ -72,7 +77,9 @@ class IndexJobOrders extends OrgAction
             );
         }
 
-        return $queryBuilder
+        $doneNotReceived = $this->doneNotReceived($production);
+
+        $jobOrders = $queryBuilder
             ->leftJoin('job_order_item_tasks', 'job_order_item_tasks.job_order_id', 'job_orders.id')
             ->leftJoin('employees', 'employees.id', 'job_orders.employee_id')
             ->select('job_orders.id', 'job_orders.slug', 'job_orders.reference', 'job_orders.state', 'job_orders.date', 'employees.contact_name as artisan')
@@ -86,12 +93,25 @@ class IndexJobOrders extends OrgAction
             ->withBetweenDates(['date', 'received_at'], $prefix)
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        $jobOrders->getCollection()->each(function (JobOrder $jobOrder) use ($doneNotReceived) {
+            $jobOrder->done_not_received_days = $doneNotReceived->get($jobOrder->id)['days'] ?? null;
+        });
+
+        return $jobOrders;
+    }
+
+    /** @return Collection<int, array{done_at: \Illuminate\Support\Carbon, days: int, artefacts: array<int, int>}> */
+    private function doneNotReceived(Production $production): Collection
+    {
+        return $this->doneNotReceived ??= GetJobOrdersDoneNotReceived::run($production);
     }
 
     /** @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}> */
     public function getElementGroups(Production $production): array
     {
-        $onHold = JobOrder::where('production_id', $production->id)->whereRaw("data->'hold' is not null")->count();
+        $onHold          = JobOrder::where('production_id', $production->id)->whereRaw("data->'hold' is not null")->count();
+        $doneNotReceived = $this->doneNotReceived($production);
 
         return [
             'hold' => [
@@ -105,6 +125,22 @@ class IndexJobOrders extends OrgAction
                         $query->whereRaw("job_orders.data->'hold' is not null");
                     } elseif (in_array('not_on_hold', $elements) && !in_array('on_hold', $elements)) {
                         $query->whereRaw("job_orders.data->'hold' is null");
+                    }
+                },
+            ],
+            'receiving' => [
+                'label'    => __('Receiving'),
+                'elements' => [
+                    'done_not_received' => [__('Done – not received'), $doneNotReceived->count()],
+                    'other'             => [__('Other'), JobOrder::where('production_id', $production->id)->count() - $doneNotReceived->count()],
+                ],
+                'engine' => function ($query, $elements) use ($doneNotReceived) {
+                    if (in_array('done_not_received', $elements) && !in_array('other', $elements)) {
+                        $ids = $doneNotReceived->keys()->map(fn ($id) => (int) $id)->all() ?: [0];
+                        $query->whereIn('job_orders.id', $ids)
+                            ->orderByRaw('array_position(array['.implode(',', $ids).']::bigint[], job_orders.id)');
+                    } elseif (in_array('other', $elements) && !in_array('done_not_received', $elements)) {
+                        $query->whereNotIn('job_orders.id', $doneNotReceived->keys()->all());
                     }
                 },
             ],

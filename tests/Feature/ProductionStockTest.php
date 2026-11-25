@@ -1936,3 +1936,71 @@ test('the production output list loads in a number of queries that does not grow
         ->and($ours->firstWhere('code', 'QB-CARRY-1')['in_progress'])->toBeTrue()
         ->and($manyJobsQueries - $fewJobsQueries)->toBeLessThan(5);
 });
+
+test('HELP-4941 a job done but not received is flagged on the list, board and dashboard after the production\'s days, until it is received', function () {
+    $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+    $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+    $artefact = StoreArtefact::make()->action($this->production, [
+        'state'        => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value,
+        'code'         => 'DNR-4941',
+        'name'         => 'Done not received',
+        'org_stock_id' => $orgStock->id,
+    ]);
+    $pack = ManufactureTask::where('production_id', $this->production->id)->where('code', 'PACK-4941')->first()
+        ?? StoreManufactureTask::make()->action($this->production, [
+            'code'                            => 'PACK-4941',
+            'name'                            => 'Packing',
+            'task_materials_cost'             => 0,
+            'task_energy_cost'                => 0,
+            'task_other_cost'                 => 0,
+            'task_work_cost'                  => 0,
+            'task_lower_target'               => 10,
+            'task_upper_target'               => 10,
+            'operative_reward_terms'          => \App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum::ABOVE_LOWER_LIMIT->value,
+            'operative_reward_allowance_type' => \App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum::OFFSET_SALARY->value,
+            'operative_reward_amount'         => 0,
+        ]);
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $pack->id                  => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-4941', 'name' => 'Warehouse 4941']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-4941', 'name' => 'Area 4941']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L-4941', 'name' => 'Loc 4941'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $lineWith = function (int $quantity, float $made, float $packed, ?int $carriedFrom = null) use ($artefact) {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => $quantity]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        if ($carriedFrom) {
+            $jobOrder->update(['data' => [...$jobOrder->data, 'carried_from' => $carriedFrom]]);
+        }
+        [$making, $packing] = $item->tasks()->orderBy('position')->get();
+        $making->update(['quantity_required' => $made, 'quantity_made' => $made, 'state' => \App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE]);
+        $packing->update(['quantity_required' => $packed, 'quantity_made' => $packed, 'state' => \App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE]);
+
+        return $item->refresh();
+    };
+
+    \Illuminate\Support\Carbon::setTestNow(now()->subDays(4));
+    $root    = $lineWith(66, 66, 66);
+    $carried = $lineWith(615, 615, 615, $root->job_order_id);
+    \Illuminate\Support\Carbon::setTestNow();
+    $fresh = $lineWith(10, 10, 10);
+
+    $flagged = \App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production);
+    expect($flagged->keys()->all())->toContain($root->job_order_id, $carried->job_order_id)
+        ->and($flagged->keys()->all())->not->toContain($fresh->job_order_id)
+        ->and($flagged->get($root->job_order_id)['days'])->toBe(4)
+        ->and(\App\Actions\Production\JobOrder\UI\IndexJobOrders::make()->getElementGroups($this->production)['receiving']['elements']['done_not_received'][1])->toBe($flagged->count());
+
+    $this->production->update(['settings' => [...($this->production->settings ?? []), 'done_not_received_days' => 10]]);
+    expect(\App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production->refresh())->keys()->all())->not->toContain($root->job_order_id);
+    $this->production->update(['settings' => \Illuminate\Support\Arr::except($this->production->settings, 'done_not_received_days')]);
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($carried->jobOrder->refresh(), ['location_id' => $location->id]);
+
+    expect((float) $carried->refresh()->quantity_received)->toBe(615.0)
+        ->and(\App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production->refresh())->keys()->all())->not->toContain($carried->job_order_id)
+        ->and(\App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production)->keys()->all())->toContain($root->job_order_id);
+});

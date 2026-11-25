@@ -243,6 +243,19 @@ class JobOrderItem extends Model
             ->get();
     }
 
+    public function producedQuantity(): float
+    {
+        $lastTask = $this->finalTask();
+
+        return $lastTask ? min((float) $this->quantity, $lastTask->artefactsIn()) : 0.0;
+    }
+
+    /** What this line has made and not yet put into stock */
+    public function receivableQuantity(): float
+    {
+        return max(0.0, round($this->producedQuantity() - (float) $this->quantity_received, 3));
+    }
+
     public function artefact(): BelongsTo
     {
         return $this->belongsTo(Artefact::class)->withTrashed();

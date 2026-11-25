@@ -117,6 +117,11 @@ class Production extends Model implements Auditable
      * A one-person factory (Spain, INI-231): the To produce board has no Preparing or Assigned lane, and
      * a card dragged from Backlog to Producing becomes a job order for whoever dragged it.
      */
+    public function doneNotReceivedDays(): int
+    {
+        return (int) ($this->settings['done_not_received_days'] ?? 3);
+    }
+
     public function hasSimpleBoard(): bool
     {
         return (bool) ($this->settings['simple_board'] ?? false);

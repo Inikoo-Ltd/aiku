@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanDepartments;
 use App\Actions\Production\Artefact\Label\DownloadArtefactLabelPdf;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
+use App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived;
 use App\Actions\Production\JobOrder\GetMadeIngredientShortfalls;
 use App\Actions\Production\PartnerShippingList\GetMixesToPrepare;
 use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
@@ -601,6 +602,7 @@ class IndexPartnerShippingList extends OrgAction
 
         $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
         $this->attachLoosePieces($byLane->only(['producing', 'done'])->flatten(1));
+        $this->attachDoneNotReceived($byLane->get('done', collect()));
 
         $preparingItems = $byLane->get('preparing', collect());
         $backlogItems   = $byLane->get('backlog', collect());
@@ -725,6 +727,19 @@ class IndexPartnerShippingList extends OrgAction
 
         $jobItems->each(function ($item) use ($loose) {
             $item->loose_pieces = $loose->pull($item->job_order_id.'-'.$item->artefact_id, 0);
+        });
+    }
+
+    /** Days a finished card has waited to be received, past the production's limit (HELP-4941) */
+    private function attachDoneNotReceived(Collection $doneItems): void
+    {
+        if ($doneItems->isEmpty()) {
+            return;
+        }
+
+        $doneNotReceived = GetJobOrdersDoneNotReceived::run($this->production);
+        $doneItems->each(function ($item) use ($doneNotReceived) {
+            $item->done_not_received_days = $doneNotReceived->get($item->job_order_id)['artefacts'][$item->artefact_id] ?? null;
         });
     }
 
