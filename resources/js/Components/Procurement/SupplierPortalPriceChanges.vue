@@ -10,7 +10,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import type { Image as ImageProxy } from "@/types/Image"
-import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
+import type { EditedSubmission, PortalForms, PriceSuggestion } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -54,6 +54,7 @@ const props = defineProps<{
 	tab: string
 	forms: PortalForms
 	currency: string | null
+	suggestions?: Record<string, PriceSuggestion>
 }>()
 
 const isPhone = useMediaQuery("(max-width: 767px)")
@@ -77,6 +78,7 @@ const selectState = (value: string | null) => {
 }
 
 const canChange = (row: ProductRow) => row.status !== "discontinued"
+const suggestionFor = (row: ProductRow) => (canChange(row) ? (props.suggestions?.[row.id] ?? null) : null)
 const proposedMoq = (row: ProductRow) => (row.price_change?.editable && row.price_change.moq && row.price_change.moq !== row.moq ? row.price_change.moq : null)
 const locale = useLocaleStore()
 const price = (amount: number | null) => (amount === null ? "—" : locale.currencyFormatUnitCost(props.currency, amount))
@@ -127,6 +129,12 @@ const stateClass: Record<string, string> = {
 									{{ row.moq ?? "—" }}<span v-if="proposedMoq(row)" class="font-semibold text-gray-900"> → {{ proposedMoq(row) }}</span>
 								</dd>
 							</dl>
+							<dl v-if="suggestionFor(row)" class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
+								<dt class="text-gray-400">{{ ctrans("Suggested price") }}</dt>
+								<dd class="whitespace-nowrap text-right tabular-nums text-[var(--app-accent)]">
+									{{ price(suggestionFor(row)!.price) }} <span class="text-xs text-gray-500">{{ suggestionFor(row)!.change_percent }}%</span>
+								</dd>
+							</dl>
 							<template v-if="row.price_change">
 								<dl class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
 									<dt class="text-gray-400">{{ ctrans("Proposed price") }}</dt>
@@ -168,6 +176,12 @@ const stateClass: Record<string, string> = {
 				</template>
 				<template #cell(cost)="{ item }: { item: ProductRow }">
 					<span class="whitespace-nowrap tabular-nums">{{ price(item.cost) }}</span>
+				</template>
+				<template #cell(suggested_price)="{ item }: { item: ProductRow }">
+					<div v-if="!suggestions" class="skeleton ml-auto h-4 w-14 rounded" />
+					<button v-else-if="suggestionFor(item)" type="button" class="whitespace-nowrap tabular-nums text-[var(--app-accent)] hover:underline" v-tooltip="ctrans('See why')" @click="selected = item">
+						{{ price(suggestionFor(item)!.price) }} <span class="text-xs text-gray-500">{{ suggestionFor(item)!.change_percent }}%</span>
+					</button>
 				</template>
 				<template #cell(proposed_price)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change" class="whitespace-nowrap font-semibold tabular-nums">{{ price(item.price_change.proposed_price) }}</span>
@@ -218,6 +232,7 @@ const stateClass: Record<string, string> = {
 				:products="[{ id: selected.id, code: selected.code, name: selected.name, price: selected.cost, moq: selected.moq, units_per_carton: selected.units_per_carton }]"
 				:currency="currency"
 				:editing="editing"
+				:suggestion="suggestionFor(selected)"
 				locked-type="price_change"
 				@done="selected = null" />
 		</Dialog>

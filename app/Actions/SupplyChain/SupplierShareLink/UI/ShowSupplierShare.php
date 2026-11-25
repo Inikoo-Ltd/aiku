@@ -133,7 +133,8 @@ class ShowSupplierShare
                 ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),
             'price_changes'        => SupplierPortalPriceChangesResource::collection(IndexSupplierPortalPriceChanges::make()->handle($supplier, 'price_changes'))
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
-            'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
+            'price_suggestions'    => Inertia::defer(fn () => GetSupplierPortalPriceSuggestions::make()->handle($supplier), 'price_suggestions'),
+            'sales'               => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier, null, Language::where('code', $language)->first()), 'feedback'),
             'delivery_feedback'    => Inertia::defer(fn () => StockDeliveryFeedbackResource::forSupplier(
                 StockDeliveryFeedback::whereNotNull('sent_at')->where('sent_at', '>=', now()->subYear())

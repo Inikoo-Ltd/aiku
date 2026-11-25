@@ -62,6 +62,7 @@ const props = defineProps<{
 	purchase_orders?: InstanceType<typeof TableSupplierPortalPurchaseOrders>["$props"]["data"]
 	purchase_order_stages?: InstanceType<typeof SupplierPortalPurchaseOrderStages>["$props"]["data"]
 	price_changes?: InstanceType<typeof SupplierPortalPriceChanges>["$props"]["data"]
+	price_suggestions?: InstanceType<typeof SupplierPortalPriceChanges>["$props"]["suggestions"]
 	open_purchase_orders?: number
 	errors?: Record<string, string>
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
@@ -339,6 +340,7 @@ onMounted(() => {
 					:data="price_changes"
 					tab="price_changes"
 					:forms="forms"
+					:suggestions="price_suggestions"
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else-if="tab === 'feedback'">

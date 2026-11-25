@@ -14,10 +14,17 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
+import { faCalendarPlus, faExclamationTriangle, faLightbulbOn, faPaperPlane, faSave, faTimes, faCheck } from "@fal"
 import SupplierPortalProductProposalUpload from "@/Components/Procurement/SupplierPortalProductProposalUpload.vue"
 
-library.add(faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes)
+library.add(faCalendarPlus, faExclamationTriangle, faLightbulbOn, faPaperPlane, faSave, faTimes, faCheck)
+
+export interface PriceSuggestion {
+	price: number
+	change_percent: number
+	sales: { sold: number; last_year: number; change_percent: number } | null
+	competitor: { gap_percent: number; on_sale: boolean } | null
+}
 
 export interface PortalForms {
 	submit: Record<string, string>
@@ -54,6 +61,7 @@ const props = defineProps<{
 	editing: EditedSubmission | null
 	initialType?: string
 	lockedType?: string
+	suggestion?: PriceSuggestion | null
 }>()
 
 const emit = defineEmits<{ (e: "done"): void }>()
@@ -193,6 +201,56 @@ const priceIncreasePercent = computed(() =>
 	currentPrice.value && form.proposed_price !== null ? Math.round(((form.proposed_price - currentPrice.value) / currentPrice.value) * 1000) / 10 : null
 )
 const isAboveInflation = computed(() => priceIncreasePercent.value !== null && priceIncreasePercent.value > INFLATION_PERCENT)
+
+const suggestionReasons = computed(() => {
+	const suggestion = props.suggestion
+	if (!suggestion) {
+		return []
+	}
+	const reasons: string[] = []
+	if (suggestion.sales) {
+		reasons.push(
+			ctrans("Our sales of this product fell :percent% in the last 12 months: :now at your price, against :before the 12 months before.", {
+				percent: Math.abs(suggestion.sales.change_percent),
+				now: String(locale.currencyFormat(props.currency ?? "", suggestion.sales.sold)),
+				before: String(locale.currencyFormat(props.currency ?? "", suggestion.sales.last_year)),
+			})
+		)
+	}
+	if (suggestion.competitor) {
+		reasons.push(ctrans("Another wholesaler sells the same item :percent% cheaper than we do, at its regular price.", { percent: Math.abs(suggestion.competitor.gap_percent) }))
+	}
+	reasons.push(ctrans("At a lower price we can sell it for less and order more from you."))
+
+	return reasons
+})
+
+const supplierReason = (suggestion: PriceSuggestion) => {
+	const reasons = [ctrans("We lower the price as you suggested.")]
+	if (suggestion.sales) {
+		reasons.push(
+			ctrans("Your sales of this product fell :percent% in the last 12 months: :now at our price, against :before the 12 months before.", {
+				percent: Math.abs(suggestion.sales.change_percent),
+				now: String(locale.currencyFormat(props.currency ?? "", suggestion.sales.sold)),
+				before: String(locale.currencyFormat(props.currency ?? "", suggestion.sales.last_year)),
+			})
+		)
+	}
+	if (suggestion.competitor) {
+		reasons.push(ctrans("Another wholesaler sells the same item :percent% cheaper than you, at its regular price.", { percent: Math.abs(suggestion.competitor.gap_percent) }))
+	}
+	reasons.push(ctrans("We hope the lower price helps you sell more and order more from us."))
+
+	return reasons.join(" ")
+}
+
+const useSuggestion = () => {
+	if (!props.suggestion) {
+		return
+	}
+	form.proposed_price = props.suggestion.price
+	form.reason = supplierReason(props.suggestion)
+}
 const fieldsFor: Record<string, string[]> = {
 	company_details: ["company_phone", "company_website", "company_address", "note"],
 	contact: ["designation", "name", "email", "mobile", "whatsapp", "wechat", "note"],
@@ -346,6 +404,21 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'price_change'">
+				<div v-if="suggestion" class="space-y-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] p-3 text-sm md:col-span-2">
+					<div class="flex flex-wrap items-center justify-between gap-2">
+						<span class="flex items-center gap-2 font-semibold text-gray-900">
+							<FontAwesomeIcon icon="fal fa-lightbulb-on" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+							{{ ctrans("Suggested price: :price", { price: String(locale.currencyFormatUnitCost(currency, suggestion.price)) }) }}
+							<span class="whitespace-nowrap font-normal tabular-nums text-gray-500">{{ suggestion.change_percent }}%</span>
+						</span>
+						<Button type="secondary" size="xs" :label="ctrans('Use suggested price')" @click="useSuggestion">
+							<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
+						</Button>
+					</div>
+					<ul class="list-disc space-y-0.5 pl-5 text-gray-700">
+						<li v-for="reason in suggestionReasons" :key="reason">{{ reason }}</li>
+					</ul>
+				</div>
 				<label :class="label">
 					<span :class="caption">{{ ctrans("Current price per unit, in :currency", { currency: currency ?? "" }) }}</span>
 					<InputNumber :modelValue="currentPrice" v-bind="locale.unitCostInputOptions(currency)" disabled />
