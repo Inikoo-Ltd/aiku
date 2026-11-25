@@ -152,6 +152,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('packeta:refresh_pickup_points')->hourlyAt(50)->when(fn () => !Cache::has(FindPacketaPickupPoint::CACHE_KEY))->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('repair:eu-tax-numbers')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('sales-analysis:warm')->dailyAt('01:30')->onOneServer()->withoutOverlapping();
+        $schedule->command('accounting:hydrate-cost-of-goods-months')->dailyAt('02:50')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('epr:build-flow-lines')->dailyAt('03:15')->timezone('UTC')->onOneServer()->withoutOverlapping();
         $schedule->command('mailbox:fetch')->everyMinute()->onOneServer()->withoutOverlapping();
         $schedule->command('procurement-mailbox:fetch')->everyMinute()->onOneServer()->withoutOverlapping();

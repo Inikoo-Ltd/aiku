@@ -550,6 +550,17 @@ test('profit and loss by month: sales, cost of goods picked, fees and costs read
 
     $groupMarch = GetProfitAndLoss::make()->handle($group, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-03-31'))['months'][0];
     expect($groupMarch)->toMatchArray(['sales' => 1800.0, 'cost_of_goods' => 700.0]);
+
+    expect(\App\Actions\Accounting\ProfitAndLoss\HydrateCostOfGoodsMonths::make()->handle($this->organisation, Carbon::parse('2000-03-01'), Carbon::parse('2001-04-30')))->toBe(14)
+        ->and((float) DB::table('cost_of_goods_months')->where('organisation_id', $this->organisation->id)->where('month', '2001-03')->value('grp_amount_external'))->toBe(700.0);
+    $stored = GetProfitAndLoss::make()->handle($this->organisation, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-04-30'));
+    expect($stored['months'][0]['cost_of_goods'])->toBe(550.0)
+        ->and($stored['months'][0]['last_year']['cost_of_goods'])->toBe(300.0)
+        ->and($stored['total'])->toBe($organisationView['total'])
+        ->and(GetProfitAndLoss::make()->handle($group, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-03-31'))['months'][0]['cost_of_goods'])->toBe(700.0);
+
+    DB::table('cost_of_goods_months')->where('organisation_id', $this->organisation->id)->where('month', '2001-03')->update(['org_amount' => 1]);
+    expect(GetProfitAndLoss::make()->handle($this->organisation, collect([$this->organisation]), Carbon::parse('2001-03-01'), Carbon::parse('2001-03-31'))['months'][0]['cost_of_goods'])->toBe(1.0);
 });
 
 test('profit and loss shows in the organisation accounting and in group financials, with its under construction banner data, only to those who may see it', function () {

@@ -147,23 +147,57 @@ class GetProfitAndLoss extends OrgAction
     }
 
     /**
+     * Closed months come from cost_of_goods_months (worked out overnight by HydrateCostOfGoodsMonths); the current month,
+     * and any month the table does not hold for every organisation, are read live from the stock movements.
+     *
      * @param array<int, int> $organisationIds
      * @return Collection<string, float>
      */
     private function costOfGoods(array $organisationIds, bool $isGroup, Carbon $from, Carbon $to): Collection
     {
+        $column   = $isGroup ? 'grp_amount_external' : 'org_amount';
+        $months   = [];
+        for ($month = $from->copy()->startOfMonth(); $month->lte($to); $month->addMonth()) {
+            $months[] = $month->format('Y-m');
+        }
+        $closed   = array_values(array_filter($months, fn (string $month) => $month < now()->format('Y-m')));
+        $stored   = DB::connection('aiku_no_sticky')->table('cost_of_goods_months')
+            ->whereIn('organisation_id', $organisationIds)
+            ->whereIn('month', $closed)
+            ->get(['organisation_id', 'month', $column.' as amount']);
+        $complete = $stored->groupBy('month')->filter(fn (Collection $rows) => $rows->count() === count($organisationIds))->keys()->all();
+        $liveFrom = collect($months)->first(fn (string $month) => !in_array($month, $complete, true));
+
+        $amounts = $stored->whereIn('month', $complete)->filter(fn (object $row) => $liveFrom === null || $row->month < $liveFrom)
+            ->groupBy('month')->map(fn (Collection $rows) => (float) $rows->sum('amount'));
+
+        if ($liveFrom !== null) {
+            self::costOfGoodsQuery($organisationIds, Carbon::parse($liveFrom.'-01')->startOfMonth(), $to)
+                ->get()
+                ->groupBy('month')
+                ->each(fn (Collection $rows, string $month) => $amounts->put($month, (float) $rows->sum($isGroup ? 'grp_amount_external' : 'org_amount')));
+        }
+
+        return $amounts;
+    }
+
+    /**
+     * Cost of goods per organisation and month: the picks net of cancelled and returned ones, in the organisation's
+     * currency, and in the group's currency without the stock picked for our own companies.
+     *
+     * @param array<int, int> $organisationIds
+     */
+    public static function costOfGoodsQuery(array $organisationIds, Carbon $from, Carbon $to): \Illuminate\Database\Query\Builder
+    {
+        $ownCompanies = "select delivery_notes.id from delivery_notes join customers on customers.id = delivery_notes.customer_id where customers.as_organisation_id is not null";
+
         return DB::connection('aiku_no_sticky')->table('org_stock_movements')
             ->whereIn('org_stock_movements.organisation_id', $organisationIds)
             ->whereIn('org_stock_movements.type', array_map(fn (OrgStockMovementTypeEnum $type) => $type->value, self::COGS_TYPES))
             ->whereBetween('org_stock_movements.date', [$from, $to])
-            ->when($isGroup, fn ($query) => $query
-                ->leftJoin('delivery_notes', fn ($join) => $join->on('delivery_notes.id', 'org_stock_movements.parent_id')->where('org_stock_movements.parent_type', 'DeliveryNote'))
-                ->leftJoin('customers', 'customers.id', 'delivery_notes.customer_id')
-                ->whereNull('customers.as_organisation_id'))
-            ->selectRaw("to_char(org_stock_movements.date, 'YYYY-MM') as month, -sum(org_stock_movements.".($isGroup ? 'grp_amount' : 'org_amount').') as amount')
-            ->groupBy('month')
-            ->pluck('amount', 'month')
-            ->map(fn ($amount) => (float) $amount);
+            ->selectRaw("org_stock_movements.organisation_id, to_char(org_stock_movements.date, 'YYYY-MM') as month")
+            ->selectRaw("-sum(org_stock_movements.org_amount) as org_amount, -coalesce(sum(org_stock_movements.grp_amount) filter (where (org_stock_movements.parent_type = 'DeliveryNote' and org_stock_movements.parent_id in ($ownCompanies)) is not true), 0) as grp_amount_external")
+            ->groupByRaw('1, 2');
     }
 
     /**
