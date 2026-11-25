@@ -221,37 +221,37 @@ class ShowPayouts extends OrgAction
             ->where('bank_transactions.match_state', BankTransactionMatchStateEnum::CARD_PROCESSOR_PAYOUT->value)
             ->whereRaw("bank_transactions.match_data->>'reconciled_at' is not null")
             ->whereRaw("jsonb_typeof(bank_transactions.match_data->'payment_ids') = 'array'")
+            ->whereNotNull('settled.payment_id')
             ->selectRaw('distinct settled.payment_id::bigint as payment_id');
 
         $amountField = $parent instanceof Group ? 'grp_amount' : 'org_amount';
         $held        = function (PaymentAccountTypeEnum $type) use ($organisations, $settled, $amountField) {
-            $payments = fn () => $this->providerPayments($organisations)
+            $payments = $this->providerPayments($organisations)
                 ->where('payments.type', 'payment')
-                ->where('payment_accounts.type', $type->value);
+                ->where('payment_accounts.type', $type->value)
+                ->select(['payments.id', 'payments.organisation_id', 'payments.currency_id', 'payments.date', 'payments.amount', 'payments.total_refund', "payments.$amountField"]);
 
-            $starts = $payments()
-                ->joinSub($settled, 'settled', 'settled.payment_id', 'payments.id')
-                ->selectRaw('payments.organisation_id, payments.currency_id, min(payments.date) as since')
-                ->groupBy(['payments.organisation_id', 'payments.currency_id']);
+            $invoiced = DB::query()->selectRaw('1')->from('model_has_payments')
+                ->join('invoices', 'invoices.order_id', 'model_has_payments.model_id')
+                ->whereColumn('model_has_payments.payment_id', 'held_payments.id')
+                ->where('model_has_payments.model_type', 'Order')
+                ->where('invoices.type', InvoiceTypeEnum::INVOICE->value)
+                ->whereNull('invoices.deleted_at')
+                ->where('invoices.in_process', false);
+            $invoicedSql = $type === PaymentAccountTypeEnum::PASTPAY ? " and exists ({$invoiced->toSql()})" : '';
 
-            return $payments()
-                ->joinSub($starts, 'starts', fn ($join) => $join->on('starts.organisation_id', 'payments.organisation_id')->on('starts.currency_id', 'payments.currency_id'))
-                ->leftJoinSub($settled, 'settled', 'settled.payment_id', 'payments.id')
-                ->whereNull('settled.payment_id')
-                ->whereColumn('payments.date', '>=', 'starts.since')
-                ->whereRaw('payments.amount - coalesce(payments.total_refund, 0) > 0')
-                ->when($type === PaymentAccountTypeEnum::PASTPAY, fn ($query) => $query->whereExists(
-                    fn ($query) => $query->selectRaw('1')->from('model_has_payments')
-                        ->join('invoices', 'invoices.order_id', 'model_has_payments.model_id')
-                        ->whereColumn('model_has_payments.payment_id', 'payments.id')
-                        ->where('model_has_payments.model_type', 'Order')
-                        ->where('invoices.type', InvoiceTypeEnum::INVOICE->value)
-                        ->whereNull('invoices.deleted_at')
-                        ->where('invoices.in_process', false)
-                ))
-                ->selectRaw("'$type->value' as provider, payments.organisation_id, currencies.code as currency, ".self::heldColumns('payments.date', '(payments.amount - coalesce(payments.total_refund, 0))', "(payments.$amountField * (payments.amount - coalesce(payments.total_refund, 0)) / payments.amount)"))
-                ->groupBy(['payments.organisation_id', 'currencies.code'])
-                ->get();
+            return collect(DB::select(
+                "with settled as materialized ({$settled->toSql()}),
+                held_payments as materialized ({$payments->toSql()}),
+                starts as (select organisation_id, currency_id, min(date) as since from held_payments where id in (select payment_id from settled) group by organisation_id, currency_id)
+                select '$type->value' as provider, held_payments.organisation_id, currencies.code as currency, ".self::heldColumns('held_payments.date', '(held_payments.amount - coalesce(held_payments.total_refund, 0))', "(held_payments.$amountField * (held_payments.amount - coalesce(held_payments.total_refund, 0)) / held_payments.amount)")."
+                from held_payments
+                join currencies on currencies.id = held_payments.currency_id
+                join starts on starts.organisation_id = held_payments.organisation_id and starts.currency_id = held_payments.currency_id
+                where held_payments.id not in (select payment_id from settled) and held_payments.date >= starts.since and held_payments.amount - coalesce(held_payments.total_refund, 0) > 0$invoicedSql
+                group by held_payments.organisation_id, currencies.code",
+                array_merge($settled->getBindings(), $payments->getBindings(), $type === PaymentAccountTypeEnum::PASTPAY ? $invoiced->getBindings() : [])
+            ));
         };
 
         return $held(PaymentAccountTypeEnum::CHECKOUT)->concat($held(PaymentAccountTypeEnum::PASTPAY));

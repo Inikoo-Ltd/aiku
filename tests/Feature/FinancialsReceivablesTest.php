@@ -28,6 +28,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -116,6 +117,10 @@ test('receivables age what is left of unpaid invoices, net of refunds, and leave
         ->and(round($held($after, 'debt') - $held($before, 'debt'), 2))->toBe(10.0)
         ->and($after['balances']['debt']['customers'] - $before['balances']['debt']['customers'])->toBe(1);
 
+    $totalsOnly = ShowReceivablesDashboard::make()->handle($this->organisation, collect([$this->organisation]), $today, totalsOnly: true);
+    expect(Arr::except($totalsOnly, ['debtors', 'balances', 'trend']))->toBe(Arr::except($after, ['debtors', 'balances', 'trend']))
+        ->and($totalsOnly['debtors'])->toBe([]);
+
     $paidLater = receivableInvoice($customer, 40, 500, 500, ['pay_status' => 'paid', 'paid_at' => $today->copy()->subDays(10)]);
     $trend     = $dashboard()['trend'];
     $at        = fn (int $weeksAgo) => $trend['totals'][count($trend['totals']) - 1 - $weeksAgo];
@@ -171,6 +176,36 @@ test('a marketplace invoice is owed by the marketplace until its payout is in th
         ]);
 
         expect(round($owed['marketplaces']['amount'] - $dashboard()['marketplaces']['amount'], 2))->toBe(60.0);
+
+        $settled    = $dashboard();
+        $bulkOrders = collect([25, 35])->map(function (int $amount) use ($customer) {
+            $order = StoreOrder::make()->action($customer, [
+                'date'             => date('Y-m-d'),
+                'delivery_address' => new Address(Address::factory()->definition()),
+                'billing_address'  => new Address(Address::factory()->definition()),
+            ]);
+            DB::table('invoices')->where('id', receivableInvoice($customer, 5, $amount)->id)->update(['order_id' => $order->id]);
+
+            return $order->id;
+        });
+        expect(round($dashboard()['marketplaces']['amount'] - $settled['marketplaces']['amount'], 2))->toBe(60.0);
+
+        BankTransaction::create([
+            'group_id'                => $bankConnection->group_id,
+            'organisation_id'         => $bankConnection->organisation_id,
+            'bank_connection_id'      => $bankConnection->id,
+            'provider_transaction_id' => 'rec'.uniqid(),
+            'provider_type'           => 'TRANSFER',
+            'direction'               => BankTransactionDirectionEnum::IN,
+            'amount'                  => 60,
+            'currency_id'             => $invoice->currency_id,
+            'status'                  => BankTransactionStatusEnum::BOOKED,
+            'booked_at'               => now(),
+            'match_state'             => BankTransactionMatchStateEnum::PAID_BY_MARKETPLACE,
+            'match_data'              => ['order_ids' => $bulkOrders->all()],
+        ]);
+
+        expect(round($dashboard()['marketplaces']['amount'], 2))->toBe(round($settled['marketplaces']['amount'], 2));
     } finally {
         DB::table('shops')->where('id', $this->shop->id)->update(['type' => $shopType->value]);
     }

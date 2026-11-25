@@ -73,7 +73,7 @@ class ShowFinancialsDashboard extends OrgAction
         $cash        = ShowCash::make()->handle($parent, $organisations);
         $incoming    = ShowBankIncomingDashboard::make()->handle($parent, '90d', $isGroup ? IndexBankIncoming::make()->forGroup($parent, $user, $organisationSlug) : IndexBankIncoming::make());
         $outgoing    = ShowBankOutgoingDashboard::make()->handle($parent, '90d', $isGroup ? IndexBankOutgoing::make()->forGroup($parent, $user, $organisationSlug) : IndexBankOutgoing::make());
-        $receivables = ShowReceivablesDashboard::make()->handle($parent, $organisations, $today);
+        $receivables = ShowReceivablesDashboard::make()->handle($parent, $organisations, $today, totalsOnly: true);
         $payouts     = ShowPayouts::make()->handle($parent, $organisations);
         $payables    = GetPayables::query($organisations->pluck('id')->all(), $parent->currency_id)->where('counted', true)->get();
         $sum         = fn (Collection $rows) => round((float) $rows->sum(fn (object $row) => (float) $row->amount), 2);

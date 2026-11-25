@@ -40,7 +40,7 @@ class ShowReceivablesDashboard extends OrgAction
      * @param Collection<int, Organisation> $organisations
      * @return array<string, mixed>
      */
-    public function handle(Organisation|Group $parent, Collection $organisations, ?Carbon $today = null): array
+    public function handle(Organisation|Group $parent, Collection $organisations, ?Carbon $today = null, bool $totalsOnly = false): array
     {
         $today   ??= now();
         $owed      = self::OWED_SQL;
@@ -65,7 +65,7 @@ class ShowReceivablesDashboard extends OrgAction
             ->map(fn (Collection $group, string $label) => ['key' => $label, 'label' => $label, 'amount' => $sum($group), 'native' => $sum($group, 'native'), 'invoices' => (int) $group->sum('invoices')])
             ->sortByDesc('amount')->values()->all();
 
-        $debtors = self::owedInvoices(DB::table('invoices'), $parent, $organisations, 'customers')
+        $debtors = $totalsOnly ? [] : self::owedInvoices(DB::table('invoices'), $parent, $organisations, 'customers')
             ->leftJoin('fulfilments', 'fulfilments.shop_id', 'shops.id')
             ->select(['customers.id', 'customers.name', 'customers.reference', 'customers.slug', 'customers.as_organisation_id', 'shops.code as shop_code', 'shops.slug as shop_slug', 'shops.type as shop_type', 'fulfilments.slug as fulfilment_slug', 'organisations.slug as organisation_slug', 'organisations.code as organisation_code'])
             ->selectRaw("sum($converted) as amount, count(*) as invoices, min(invoices.date) as oldest, max($days) as days_overdue")
@@ -87,7 +87,7 @@ class ShowReceivablesDashboard extends OrgAction
                 'route'             => self::customerRoute($row),
             ])->all();
 
-        $balances = self::customerBalances($organisations)
+        $balances = $totalsOnly ? collect() : self::customerBalances($organisations)
             ->selectRaw('customers.balance > 0 as credit, currencies.code as currency, count(*) as customers, sum(customers.balance) as native, sum('.self::convertedBalanceSql($parent).') as amount')
             ->groupByRaw('1, 2')
             ->toBase()
@@ -119,7 +119,7 @@ class ShowReceivablesDashboard extends OrgAction
             'legacy'        => ['amount' => $sum($legacy), 'invoices' => (int) $legacy->sum('invoices'), 'organisations' => $parent instanceof Group ? $ranked($legacy, 'organisation') : []],
             'marketplaces'  => ['amount' => $sum($marketplaces), 'invoices' => (int) $marketplaces->sum('invoices'), 'shops' => $ranked($marketplaces, 'shop')],
             'balances'      => ['credit' => $side(true), 'debt' => $side(false)],
-            'trend'         => $this->trend($parent, $organisations, $today),
+            'trend'         => $totalsOnly ? ['dates' => [], 'totals' => []] : $this->trend($parent, $organisations, $today),
         ];
     }
 
