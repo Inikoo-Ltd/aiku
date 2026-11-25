@@ -95,9 +95,13 @@ class ShowSupplier extends OrgAction
                     'previous' => $this->getPrevious($supplier, $request),
                     'next'     => $this->getNext($supplier, $request),
                 ],
-                'title'       => __('Supplier').': '.$supplier->name,
+                'title'       => __('Supplier').': '.$supplier->officialName(),
                 'pageHead'    => [
-                    'title'         => $supplier->name,
+                    'title'         => $supplier->officialName(),
+                    'afterTitle'    => $supplier->nickname() ? [
+                        'label'   => '('.$supplier->nickname().')',
+                        'tooltip' => __('Nickname'),
+                    ] : null,
                     'icon'          => [
                         'icon'  => 'fal fa-person-dolly',
                         'title' => __('Supplier'),
