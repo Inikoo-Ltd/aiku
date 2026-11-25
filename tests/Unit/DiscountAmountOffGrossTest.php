@@ -25,3 +25,10 @@ test('a part picked line discounts the gross it actually has, sub cent included'
     // A part pick leaves a sub cent gross. Rounding it to the cent first would make this 5.01.
     expect(discountAmountOffGross(10.005, 0.5))->toBe(5.00);
 });
+
+test('a line split in two keeps the discount of the single line it was', function () {
+    // HELP-4953: 10 x £3.49 at 5% sold as one line, picked as 5 + 5 of a substitute.
+    expect(discountAmountOffGross(34.90, 0.95))->toBe(1.75)
+        ->and(discountAmountsOffGrossGroup([1 => 17.45, 2 => 17.45], 0.95))->toBe([1 => 0.87, 2 => 0.88])
+        ->and(discountAmountsOffGrossGroup([7 => 61.95], 0.9))->toBe([7 => 6.20]);
+});

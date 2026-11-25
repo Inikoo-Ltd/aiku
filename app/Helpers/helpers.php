@@ -1017,6 +1017,36 @@ if (!function_exists('discountAmountOffGross')) {
     }
 }
 
+if (!function_exists('discountAmountsOffGrossGroup')) {
+    /**
+     * The discount of each line of a group sharing one offer, rounded once for the group (HELP-4953).
+     *
+     * Each line takes the rounded discount of the running gross less that of the lines before it, so
+     * the discounts add up to the discount of the group total and a line split in two (a substitute
+     * picked for half of it) costs what the single line was quoted. A group of one line gets exactly
+     * discountAmountOffGross().
+     *
+     * @param  array<int|string, float>  $grossAmounts  in the order the lines are allocated
+     *
+     * @return array<int|string, float>
+     */
+    function discountAmountsOffGrossGroup(array $grossAmounts, ?float $discountFactor): array
+    {
+        $discounts       = [];
+        $runningGross    = 0.0;
+        $runningDiscount = 0.0;
+
+        foreach ($grossAmounts as $key => $grossAmount) {
+            $runningGross    += (float)$grossAmount;
+            $discountSoFar   = discountAmountOffGross($runningGross, $discountFactor);
+            $discounts[$key] = round($discountSoFar - $runningDiscount, 2);
+            $runningDiscount = $discountSoFar;
+        }
+
+        return $discounts;
+    }
+}
+
 if (!function_exists('soldPackUnits')) {
     /**
      * The pack size a sold line was actually sold in.

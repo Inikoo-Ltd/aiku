@@ -42,16 +42,19 @@ trait HasOrderStateUpdates
             $picksAreFinal = $newState->isPickedOrLater();
 
             // INI-1811: Guard, is follow on products must always be 0
-            foreach ($order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get() as $transaction) {
-                $packedData = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, $deliveryNote);
+            $invoiceGenerator = GenerateInvoiceFromOrder::make();
+            $transactions     = $order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get();
+            $packedTotals     = $invoiceGenerator->recalculateTransactionsTotals($transactions, $deliveryNote);
+            $submittedTotals  = $picksAreFinal ? [] : $invoiceGenerator->recalculateTransactionsTotals($transactions, null);
+
+            foreach ($transactions as $transaction) {
+                $packedData = $packedTotals[$transaction->id];
 
                 $transactionData = [
                     'status'          => TransactionStatusEnum::PROCESSING,
                     'quantity_picked' => $packedData['quantity'],
                 ];
-                $amounts = $picksAreFinal
-                    ? $packedData
-                    : GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, null);
+                $amounts = $picksAreFinal ? $packedData : $submittedTotals[$transaction->id];
 
                 $transactionData['gross_amount']   = $amounts['gross_amount'];
                 $transactionData['net_amount']     = $amounts['net_amount'];

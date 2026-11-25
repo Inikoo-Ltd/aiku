@@ -3073,6 +3073,74 @@ test('a part picked line bills the fraction of the price it was sold at', functi
     expect($totals['net_amount'])->toBe(51.21);
 });
 
+test('lines of one offer are invoiced at the discount the customer paid', function (float $orderedQuantity, float $orderedNet, float $expected) {
+    $billingAddress  = new Address(Address::factory()->definition());
+    $deliveryAddress = new Address(Address::factory()->definition());
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', $billingAddress);
+    data_set($modelData, 'delivery_address', $deliveryAddress);
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 3.49]);
+
+    $ordered = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => $orderedQuantity]
+    ));
+    $substitute = $ordered->replicate();
+    $substitute->quantity_ordered = 5;
+    $substitute->save();
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
+
+    $offersData = ['v' => 1, 'o' => ['o' => 1, 'oa' => 1, 't' => 'percentage', 'p' => '5%']];
+    foreach ([[$ordered, $orderedQuantity, round($orderedQuantity * 3.49, 2), $orderedNet], [$substitute, 5, 17.45, 16.58]] as [$transaction, $quantity, $gross, $net]) {
+        $transaction->updateQuietly([
+            'quantity_bonus'             => 0,
+            'is_gift'                    => false,
+            'gross_amount'               => $gross,
+            'net_amount'                 => $net,
+            'offers_data'                => $offersData,
+            'current_discount_factor'    => 0.95,
+            'submitted_discount_factor'  => 0.95,
+            'submitted_quantity_ordered' => $quantity,
+            'submitted_net_amount'       => $net,
+        ]);
+
+        DB::table('delivery_note_items')->insert([
+            'group_id'          => $order->group_id,
+            'organisation_id'   => $order->organisation_id,
+            'shop_id'           => $order->shop_id,
+            'delivery_note_id'  => $deliveryNote->id,
+            'transaction_id'    => $transaction->id,
+            'state'             => 'picked',
+            'quantity_required' => $quantity,
+            'quantity_picked'   => 5,
+            'data'              => '{}',
+        ]);
+    }
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionsTotals(
+        collect([$ordered->refresh(), $substitute->refresh()]),
+        $deliveryNote
+    );
+
+    expect(round($totals[$ordered->id]['net_amount'] + $totals[$substitute->id]['net_amount'], 2))->toBe($expected);
+
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+    expect(round((float)$invoice->invoiceTransactions()->whereIn('transaction_id', [$ordered->id, $substitute->id])->sum('net_amount'), 2))->toBe($expected);
+})->with([
+    // HELP-4953: 10 x 3.49 at 5% was sold at 33.15; picked as 5 + 5 of a substitute, line by line it came to 33.16
+    'half picked, a substitute for the rest' => [10, 33.15, 33.15],
+    // sold line by line before the group rounding, picked in full: stays what was paid
+    'two lines picked as sold'               => [5, 16.58, 33.16],
+]);
+
 test('a line discounted after it was submitted is priced on its new factor', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());

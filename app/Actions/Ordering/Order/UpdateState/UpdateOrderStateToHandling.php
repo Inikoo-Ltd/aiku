@@ -47,9 +47,12 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::FINALISED,
         ])) {
             if ($oldState->isPickedOrLater()) {
+                $transactions     = $order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get();
+                $submittedTotals  = GenerateInvoiceFromOrder::make()->recalculateTransactionsTotals($transactions, null);
+
                 /** @var Transaction $transaction */
-                foreach ($order->transactions()->where('model_type', 'Product')->where('is_follow_on', false)->get() as $transaction) {
-                    $submittedAmounts = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction, null);
+                foreach ($transactions as $transaction) {
+                    $submittedAmounts = $submittedTotals[$transaction->id];
 
                     $transaction->update(
                         [

@@ -66,6 +66,9 @@ class GenerateInvoiceFromOrder extends OrgAction
     /** @var array<int, array{parts: Collection, sale: object|null, isIndivisible: bool}> */
     private array $loadedLines = [];
 
+    /** @var array<int, array<string, mixed>> */
+    private array $lineTotals = [];
+
     /**
      * HELP-4361. Once invoiced the "to be confirmed" shipping can no longer be entered, which
      * leaves the delivery note blocked from getting a label (HELP-4309). Orders without goods
@@ -102,6 +105,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             }
 
             $this->checkTaxCategories($transactions);
+            $this->lineTotals = $this->recalculateTransactionsTotals($transactions->where('model_type', 'Product'), $deliveryNote);
 
             if ($deliveryNote) {
                 $updatedData = $this->recalculateTotals($order, $deliveryNote, $transactions);
@@ -152,6 +156,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
 
             $this->storeLines($invoice, $transactions, $deliveryNote);
+            $this->lineTotals = [];
 
 
             /**
@@ -481,8 +486,68 @@ class GenerateInvoiceFromOrder extends OrgAction
         ];
     }
 
+    /**
+     * HELP-4953. Lines discounted by the same offer are discounted once on their combined gross, as
+     * the basket does, so a line split in two (half picked, a substitute added for the rest) does not
+     * move the discount by a penny from the single line the customer paid for. A group whose lines
+     * all go out exactly as sold keeps the prices they were sold at.
+     *
+     * @param  iterable<Transaction>  $transactions
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function recalculateTransactionsTotals(iterable $transactions, ?DeliveryNote $deliveryNote): array
+    {
+        $this->lineTotals = [];
+        $totals           = [];
+        foreach ($transactions as $transaction) {
+            $totals[$transaction->id] = $this->recalculateTransactionTotals($transaction, $deliveryNote);
+        }
+
+        $groups = collect($transactions)
+            ->filter(fn (Transaction $transaction) => $transaction->agreed_unit_price === null
+                && !$transaction->is_gift
+                && (float)$transaction->quantity_bonus == 0
+                && Arr::get($transaction->offers_data, 'o.t') === 'percentage'
+                && (float)$transaction->current_discount_factor < 1)
+            ->sortBy('id')
+            ->groupBy(fn (Transaction $transaction) => Arr::get($transaction->offers_data, 'o.oa').'|'.(float)$transaction->current_discount_factor.'|'.$transaction->tax_category_id)
+            ->filter(fn ($group) => $group->count() > 1 && $group->contains(
+                fn (Transaction $transaction) => !$this->goesOutAsSold($transaction, (float)$totals[$transaction->id]['quantity'])
+            ));
+
+        foreach ($groups as $group) {
+            $discounts = discountAmountsOffGrossGroup(
+                $group->mapWithKeys(fn (Transaction $transaction) => [$transaction->id => (float)$totals[$transaction->id]['gross_amount']])->all(),
+                (float)$group->first()->current_discount_factor
+            );
+
+            foreach ($group as $transaction) {
+                $net = $totals[$transaction->id]['gross_amount'] - $discounts[$transaction->id];
+
+                $totals[$transaction->id]['net_amount']     = $net;
+                $totals[$transaction->id]['org_net_amount'] = $net * $transaction->org_exchange;
+                $totals[$transaction->id]['grp_net_amount'] = $net * $transaction->grp_exchange;
+            }
+        }
+
+        return $totals;
+    }
+
+    private function goesOutAsSold(Transaction $transaction, float $quantityPicked): bool
+    {
+        return $transaction->submitted_net_amount !== null
+            && (float)$transaction->submitted_discount_factor === (float)$transaction->current_discount_factor
+            && (float)$transaction->submitted_quantity_ordered === (float)$transaction->quantity_ordered
+            && $quantityPicked == (float)$transaction->quantity_ordered + (float)$transaction->quantity_bonus;
+    }
+
     public function recalculateTransactionTotals(Transaction $transaction, ?DeliveryNote $deliveryNote): array
     {
+        if (isset($this->lineTotals[$transaction->id])) {
+            return $this->lineTotals[$transaction->id];
+        }
+
         $historicAsset = $transaction->historicAsset;
 
 

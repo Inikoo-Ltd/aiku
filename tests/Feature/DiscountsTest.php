@@ -4442,3 +4442,61 @@ test('a gold reward member invoiced less than a day ago still sees the gift sele
     $order->delete();
     $shop->forceFill(['offers_data' => $originalOffersData])->saveQuietly();
 });
+
+test('two basket lines on one percentage offer are discounted once on their total (HELP-4953)', function () {
+    $shop = $this->shop;
+    if (!$shop->offerCampaigns()->where('type', OfferCampaignTypeEnum::CATEGORY_OFFERS)->exists()) {
+        SeedShopOfferCampaigns::run($shop);
+    }
+
+    $offer = Arr::first(StoreProductCategoryDiscount::make()->handleMultiple([
+        'name'                     => 'Help 4953',
+        'code'                     => 'h4953',
+        'type'                     => 'amount',
+        'product_category_ids'     => [$this->product->family->id],
+        'trigger_data_item_amount' => 1,
+        'percentage_off'           => 0.05,
+        'duration'                 => 'permanent',
+        'start_at'                 => now()->subDay()->toDateTimeString(),
+    ])['offers']);
+
+    $order = StoreOrder::make()->action($this->customer, []);
+    $line  = StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 5]);
+    $split = $line->replicate();
+    $split->save();
+    foreach ([$line, $split] as $transaction) {
+        $transaction->updateQuietly(['gross_amount' => 17.45, 'net_amount' => 17.45]);
+    }
+
+    OrderHydrateCategoriesData::run($order->refresh());
+    CalculateOrderDiscounts::run($order->refresh());
+
+    $lines = $order->transactions()->whereIn('id', [$line->id, $split->id])->get();
+    expect($lines->pluck('current_discount_factor')->map(fn ($factor) => (float)$factor)->unique()->all())->toBe([0.95])
+        ->and(round($lines->sum('net_amount'), 2))->toBe(33.15)
+        ->and(round(DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', [$line->id, $split->id])->sum('discounted_amount'), 2))->toBe(1.75);
+
+    SuspendOffer::run($offer);
+});
+
+test('a drifted line goes back to the net it was sold at, group rounding included (HELP-4953)', function () {
+    $allowance = OfferAllowance::where('shop_id', $this->shop->id)->firstOrFail();
+    $order     = StoreOrder::make()->action($this->customer, []);
+    $line      = StoreTransaction::make()->action($order, $this->product->historicAsset, ['quantity_ordered' => 5]);
+    $line->updateQuietly([
+        'gross_amount'                => 17.45,
+        'net_amount'                  => 15.71,
+        'current_discount_factor'     => 0.9,
+        'has_discount_when_submitted' => true,
+        'submitted_offers_data'       => ['v' => 1, 'o' => ['oc' => $allowance->offer_campaign_id, 'o' => $allowance->offer_id, 'oa' => $allowance->id, 't' => 'percentage', 'p' => '5%']],
+        'submitted_discount_factor'   => 0.95,
+        'submitted_quantity_ordered'  => 5,
+        'submitted_gross_amount'      => 17.45,
+        'submitted_net_amount'        => 16.57,
+    ]);
+
+    CalculateOrderDiscounts::make()->regenerateSubmittedTransactionDiscounts($order->refresh());
+
+    // alone it would be 17.45 less 0.87 = 16.58; it was sold at 16.57 as its share of a group
+    expect((float)$line->refresh()->net_amount)->toBe(16.57);
+});

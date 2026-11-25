@@ -106,6 +106,8 @@ class CalculateOrderDiscounts implements ShouldBeUnique
                 't.family_id',
                 't.sub_department_id',
                 't.department_id',
+                't.tax_category_id',
+                't.quantity_bonus',
                 'p.is_golden_product'
             ])
             ->where('t.order_id', $order->id)
@@ -144,6 +146,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             $this->processAllowances();
         }
         $this->processDiscretionaryOffers($order);
+        $this->roundPercentageDiscountsPerOffer();
 
         DB::transaction(function () use ($order) {
             DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
@@ -294,7 +297,7 @@ class CalculateOrderDiscounts implements ShouldBeUnique
             }
 
             $percentageOff    = round(1 - $transactionWithSubmittedDiscount->submitted_discount_factor, 4);
-            $discountedAmount = discountAmountOffGross((float)$transactionWithSubmittedDiscount->gross_amount, $transactionWithSubmittedDiscount->submitted_discount_factor);
+            $discountedAmount = $this->submittedDiscountAmount($transactionWithSubmittedDiscount);
 
             [$transactionUpdates[$transactionWithSubmittedDiscount->id], $offerAllowancePivots[]] = $this->buildTransactionDiscount(
                 $order,
@@ -318,6 +321,23 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         });
     }
 
+
+    /**
+     * A line whose quantity has not moved since submission gets back the discount it was sold at,
+     * which may carry its share of its offer group's rounding (HELP-4953); recomputing it alone
+     * would move the order total a penny off what the customer paid.
+     */
+    private function submittedDiscountAmount(Transaction $transaction): float
+    {
+        if ($transaction->submitted_net_amount !== null
+            && $transaction->submitted_gross_amount !== null
+            && (float)$transaction->submitted_quantity_ordered === (float)$transaction->quantity_ordered
+            && round((float)$transaction->submitted_gross_amount - (float)$transaction->gross_amount, 2) == 0) {
+            return round((float)$transaction->gross_amount - (float)$transaction->submitted_net_amount, 2);
+        }
+
+        return discountAmountOffGross((float)$transaction->gross_amount, $transaction->submitted_discount_factor);
+    }
 
     public function getGiftsMeters(Order $order): void
     {
@@ -1083,6 +1103,31 @@ class CalculateOrderDiscounts implements ShouldBeUnique
         }
 
         $this->amountOff = min($amountOff, $matchingGross);
+    }
+
+    /**
+     * Lines discounted by the same offer at the same percentage are rounded once as a group, so
+     * splitting a line (a substitute for part of it) never moves the discount by a penny (HELP-4953).
+     */
+    private function roundPercentageDiscountsPerOffer(): void
+    {
+        $groups = $this->transactions
+            ->filter(fn ($transaction) => property_exists($transaction, 'with_offer') && $transaction->allowance_type === 'percentage' && (float)$transaction->quantity_bonus == 0)
+            ->sortKeys()
+            ->groupBy(fn ($transaction) => $transaction->offer_allowance_id.'|'.$transaction->discounted_percentage.'|'.$transaction->tax_category_id)
+            ->filter(fn ($group) => $group->count() > 1);
+
+        foreach ($groups as $group) {
+            $discounts = discountAmountsOffGrossGroup(
+                $group->mapWithKeys(fn ($transaction) => [$transaction->id => (float)$transaction->gross_amount])->all(),
+                1 - $group->first()->discounted_percentage
+            );
+
+            foreach ($group as $transaction) {
+                $transaction->discounted_amount = $discounts[$transaction->id];
+                $transaction->net_amount        = (float)$transaction->gross_amount - $discounts[$transaction->id];
+            }
+        }
     }
 
     private function applyDiscretionaryOffer(object $transaction, float $percentageOff, string $label, OfferAllowance $allowance): void
