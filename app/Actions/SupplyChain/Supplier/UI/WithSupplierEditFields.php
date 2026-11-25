@@ -108,8 +108,8 @@ trait WithSupplierEditFields
             ],
             [
                 'key'    => 'settings',
-                'label'  => __('Settings/terms'),
-                'title'  => __('Settings/terms'),
+                'label'  => __('Setting default terms'),
+                'title'  => __('Setting default terms'),
                 'icon'   => 'fa-light fa-cog',
                 'fields' => [
                     'currency_id' => [
