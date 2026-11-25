@@ -12,6 +12,7 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use App\Actions\OrgAction;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
@@ -26,6 +27,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -73,6 +75,26 @@ class EditCustomer extends OrgAction
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);
+    }
+
+    private function dicVerificationNote(Customer $customer): string
+    {
+        $verification = Arr::get($customer->data, 'dic_verification');
+        if (!$verification) {
+            return '';
+        }
+
+        $checkedOn = Carbon::parse($verification['checked_at'])->format('j M Y');
+        $register  = $verification['register_dic'] ? $verification['register_dic'].' ('.$verification['register_name'].')' : '';
+
+        return match ($verification['status']) {
+            VerifyCustomerDic::MATCHED      => __('Finančná správa register, :date: matches :register.', ['date' => $checkedOn, 'register' => $register]),
+            VerifyCustomerDic::FILLED       => __('Finančná správa register, :date: filled from :register.', ['date' => $checkedOn, 'register' => $register]),
+            VerifyCustomerDic::MISMATCH     => __('Finančná správa register, :date: DIFFERENT, the register has :register for IČO :ico.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
+            VerifyCustomerDic::NAME_DIFFERS => __('Finančná správa register, :date: IČO :ico is :register, a different name, so it was not filled.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
+            VerifyCustomerDic::NOT_REFILLED => __('Finančná správa register, :date: IČO :ico is :register, not filled again as the DIČ was cleared.', ['date' => $checkedOn, 'register' => $register, 'ico' => $verification['ico']]),
+            default                         => __('Finančná správa register, :date: no subject with IČO :ico.', ['date' => $checkedOn, 'ico' => $verification['ico']]),
+        };
     }
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
@@ -194,7 +216,7 @@ class EditCustomer extends OrgAction
             $identification['fields']['peppol_dic'] = [
                 'type'        => 'input',
                 'label'       => __('DIČ'),
-                'information' => __('10 digits, without SK. Peppol e-invoices go to it, so a wrong number sends them to another company. With a validated Slovak VAT number, the DIČ in it is used.'),
+                'information' => trim(__('10 digits, without SK. Peppol e-invoices go to it, so a wrong number sends them to another company. With a validated Slovak VAT number, the DIČ in it is used.').' '.$this->dicVerificationNote($customer)),
                 'value'       => UpdateRetinaCustomer::dicFor($customer),
             ];
         } elseif (Arr::get($customer->organisation->settings, 'e_invoicing.countries')) {

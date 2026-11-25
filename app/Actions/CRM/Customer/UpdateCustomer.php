@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Customer;
 
 use Closure;
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
+use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
@@ -316,6 +317,10 @@ class UpdateCustomer extends OrgAction
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
         $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (Arr::hasAny($changes, ['peppol_id', 'identity_document_number', 'company_name'])) {
+            VerifyCustomerDic::dispatchIfApplies($customer);
+        }
 
         if (Arr::has($changes, 'contact_name')) {
             $customer->webUsers()->where('is_root', true)->first()?->update(

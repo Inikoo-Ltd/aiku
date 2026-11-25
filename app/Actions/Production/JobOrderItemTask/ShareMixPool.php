@@ -278,8 +278,26 @@ class ShareMixPool
             if ($excess > self::EPSILON && !Arr::has($task->jobOrderItem->data ?? [], 'carried_to')) {
                 $this->giveBack($task, $excess);
             }
+            $this->reclaimOwnMix($task, $poolKey);
             $this->fill($task->production_id, $poolKey);
         });
+    }
+
+    /**
+     * A line raised after its mix was recorded takes back the kg recorded on its own sessions that no line
+     * was given (HELP-4937): that mix was made for this line, so it is not asked again.
+     */
+    private function reclaimOwnMix(JobOrderItemTask $task, string $poolKey): void
+    {
+        $need = $this->stillNeeds($task->refresh());
+        if (self::isMakingKey($poolKey) || $need <= self::EPSILON || Arr::has($task->jobOrderItem->data ?? [], 'carried_to')) {
+            return;
+        }
+
+        $ownLeftovers = $this->leftovers($task->production_id, $poolKey)->where('job_order_item_task_id', $task->id)->values();
+        if ($this->giveFrom($ownLeftovers, $task, $need) > self::EPSILON) {
+            CalculateJobOrderItemTaskQuantities::run($task);
+        }
     }
 
     /**

@@ -24,11 +24,14 @@ use App\Actions\Production\JobOrderItem\DeleteJobOrderItem;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Support\Arr;
+use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -97,9 +100,14 @@ class ShowJobOrder extends OrgAction
             $item->tasks->each(fn (JobOrderItemTask $task) => $task->setRelation('jobOrderItem', $item)->setRelation('jobOrder', $jobOrder));
         });
         $subJobsByLine   = $allItems->groupBy(fn (JobOrderItem $item) => $item->split_from_id ?? $item->id);
+        $mixPoolKeys     = $allItems->whereNull('split_from_id')->flatMap(fn (JobOrderItem $item) => $item->tasks)
+            ->filter(fn (JobOrderItemTask $task) => $task->mixBatchKg())
+            ->mapWithKeys(fn (JobOrderItemTask $task) => [$task->id => ShareMixPool::poolKey($task)])
+            ->filter();
+        $mixPoolLines    = ShareMixPool::make()->tasksNeedingByPool($this->production->id, $mixPoolKeys->unique()->values()->all());
 
         $items = $allItems->whereNull('split_from_id')
-            ->map(function (JobOrderItem $item) use ($jobOrder, $subJobsByLine, $isOpen, $currencySymbol) {
+            ->map(function (JobOrderItem $item) use ($jobOrder, $subJobsByLine, $isOpen, $currencySymbol, $mixPoolKeys, $mixPoolLines) {
                 $subJobs  = $subJobsByLine->get($item->id);
                 $isSplit  = $subJobs->count() > 1 || $item->employee_id;
                 $received = $subJobs->sum('quantity_received') > 0;
@@ -114,6 +122,9 @@ class ShowJobOrder extends OrgAction
                     'carry_over'         => JobOrderItem::carryOver($subJobs),
                     'suggested_quantity' => !$isSplit && $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size
                         ? GetOpenJobOrderItemsOffBatch::make()->getSuggestedQuantity($item)
+                        : null,
+                    'whole_mixes'        => $this->canEdit && $isOpen && !$isSplit && !$received && !data_get($item->data, 'carried_to')
+                        ? $this->wholeMixes($item, $mixPoolKeys, $mixPoolLines)
                         : null,
                     'update_route'       => $this->canEdit && $isOpen && !$isSplit && !$received ? [
                         'name'       => 'grp.models.job-order-item.update',
@@ -298,6 +309,39 @@ class ShowJobOrder extends OrgAction
             ->sortBy('position')
             ->values()
             ->all();
+    }
+
+    /**
+     * The pieces the line's whole mixes make (HELP-4936). Raising the line is offered only while no mix is
+     * made yet and none is shared with another open line or keeps its extra pieces for the next jobs: there
+     * the rest of the mix has somewhere to go, and raising one line could ask the pool for another mix.
+     *
+     * @param  Collection<int, string>  $mixPoolKeys  pool key by job step id
+     * @param  Collection<string, EloquentCollection<int, JobOrderItemTask>>  $mixPoolLines  open lines by pool key
+     * @return array{mix_kg: float, pieces_per_mix: int, suggested_quantity: int|null, shared: bool}|null
+     */
+    private function wholeMixes(JobOrderItem $item, Collection $mixPoolKeys, Collection $mixPoolLines): ?array
+    {
+        $mixSteps    = $item->tasks->filter(fn (JobOrderItemTask $task) => $task->mixBatchKg());
+        $wholeMixes  = BatchedUnitsForDemand::make()->wholeMixes(
+            (int) $item->quantity,
+            $item->artefact->orgStock?->packed_in,
+            $mixSteps->map(fn (JobOrderItemTask $task) => ['kg_per_piece' => (float) $task->recipeStep->units_per_artefact, 'mix_kg' => $task->mixBatchKg()])->all(),
+            $item->artefact->recommended_batch_size
+        );
+        if (!$wholeMixes) {
+            return null;
+        }
+
+        $shared = $mixSteps->contains(fn (JobOrderItemTask $task) => ShareMixPool::keepsExtraPieces($task)
+            || ($mixPoolLines->get($mixPoolKeys->get($task->id)) ?? collect())->contains(fn (JobOrderItemTask $other) => $other->job_order_item_id != $item->id));
+        $mixMade = $mixSteps->contains(fn (JobOrderItemTask $task) => (float) $task->quantity_made > 0);
+
+        return [
+            ...$wholeMixes,
+            'suggested_quantity' => $shared || $mixMade ? null : $wholeMixes['suggested_quantity'],
+            'shared'             => $shared,
+        ];
     }
 
     /**

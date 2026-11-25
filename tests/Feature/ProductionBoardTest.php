@@ -1223,6 +1223,21 @@ test('a job order is raised in whole outers, unless the batch itself is not whol
         ->and($batched->wholeOuters(7, null, null))->toBe(7);
 });
 
+test('a job line below whole mixes is offered the pieces its mixes make, decided by the mix that makes fewest', function () {
+    $batched = \App\Actions\Production\JobOrder\BatchedUnitsForDemand::make();
+    $colours = [['kg_per_piece' => 0.0675, 'mix_kg' => 50.0], ['kg_per_piece' => 0.0675, 'mix_kg' => 50.0]];
+
+    expect($batched->wholeMixes(200, 1, $colours))->toBe(['mix_kg' => 50.0, 'pieces_per_mix' => 740, 'suggested_quantity' => 740])
+        ->and($batched->wholeMixes(740, 1, $colours)['suggested_quantity'])->toBeNull()
+        ->and($batched->wholeMixes(900, 1, $colours)['suggested_quantity'])->toBe(1481)
+        ->and($batched->wholeMixes(200, 12, $colours)['suggested_quantity'])->toBe(732)
+        ->and($batched->wholeMixes(100, 1, [['kg_per_piece' => 0.1, 'mix_kg' => 50.0], ['kg_per_piece' => 0.1, 'mix_kg' => 20.0]]))
+        ->toBe(['mix_kg' => 20.0, 'pieces_per_mix' => 200, 'suggested_quantity' => 200])
+        ->and($batched->wholeMixes(200, 1, $colours, 740)['suggested_quantity'])->toBe(740)
+        ->and($batched->wholeMixes(500, 1, $colours, 250)['suggested_quantity'])->toBeNull()
+        ->and($batched->wholeMixes(200, 1, []))->toBeNull();
+});
+
 test('the partner order quantum is one batch of units rounded down to whole SKOs', function () {
     $quantum = fn (?int $packedIn, ?int $batchSize) => \App\Actions\Production\JobOrder\BatchedUnitsForDemand::make()->quantumInSkos($packedIn, $batchSize);
 

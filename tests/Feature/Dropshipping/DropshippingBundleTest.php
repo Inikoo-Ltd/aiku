@@ -149,7 +149,9 @@ test('update bundle products recalculates items and price', function (Bundle $bu
     ]);
 
     expect($bundle->items()->count())->toBe(1)
-        ->and($bundle->items()->first()->quantity)->toBe(3);
+        ->and($bundle->items()->first()->quantity)->toBe(3)
+        ->and((float) $bundle->bundleable->refresh()->price)->toEqual(round($this->product->price * 3 * (1 - Bundle::discountPercentage($this->product->shop) / 100), 2))
+        ->and((float) $bundle->bundleable->rrp)->toEqual(round($this->product->rrp * 3, 2));
 
     return $bundle;
 })->depends('store bundle with explicit price/rrp/code');
