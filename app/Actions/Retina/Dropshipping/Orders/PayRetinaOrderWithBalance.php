@@ -15,6 +15,7 @@ use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -54,6 +55,15 @@ class PayRetinaOrderWithBalance extends RetinaAction
                     'order'   => $order,
                 ];
             }
+        }
+
+        $chosenPickupPoint = data_get($order->data, UpdateOrderPacketaPickupPoint::DATA_KEY);
+        if ($chosenPickupPoint && $pickupPointError = UpdateOrderPacketaPickupPoint::make()->getPointError($order, $chosenPickupPoint)) {
+            return [
+                'success' => false,
+                'reason'  => $pickupPointError,
+                'order'   => $order,
+            ];
         }
 
         if ($order->payment_amount == $order->total_amount) {

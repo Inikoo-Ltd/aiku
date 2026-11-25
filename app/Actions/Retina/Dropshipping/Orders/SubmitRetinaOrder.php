@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
@@ -18,6 +19,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Ordering\Order;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -40,6 +42,11 @@ class SubmitRetinaOrder extends RetinaAction
     public function handle(Order $order): Order
     {
         GetBasketPreOrders::make()->ensureTermsAccepted($order);
+
+        $chosenPickupPoint = data_get($order->data, UpdateOrderPacketaPickupPoint::DATA_KEY);
+        if ($chosenPickupPoint && $error = UpdateOrderPacketaPickupPoint::make()->getPointError($order, $chosenPickupPoint)) {
+            throw ValidationException::withMessages(['pickup_point_id' => $error]);
+        }
 
         $order = SubmitOrder::run($order);
 

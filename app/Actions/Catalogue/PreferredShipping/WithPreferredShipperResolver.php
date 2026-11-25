@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\PreferredShipping;
 
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -92,6 +93,18 @@ trait WithPreferredShipperResolver
             ];
         }
 
+        $chosenPickupPoint = data_get($order?->data, UpdateOrderPacketaPickupPoint::DATA_KEY);
+        $packetaShipperId  = $chosenPickupPoint ? UpdateOrderPacketaPickupPoint::make()->getPacketaShipperId($deliveryNote->organisation_id) : null;
+        if ($packetaShipperId) {
+            return [
+                'locked_shipper_id'    => $packetaShipperId,
+                'preferred_shipper_id' => $packetaShipperId,
+                'locked_by'            => 'customer',
+                'locked_scope'         => __('Packeta pickup point').' '.$chosenPickupPoint['id'].' '.$chosenPickupPoint['name'],
+                'preferred_shipper'    => $this->describeShipper($packetaShipperId),
+            ];
+        }
+
         if ($deliveryNote->isCrossDispatch()) {
             $order = null;
         }
@@ -128,18 +141,26 @@ trait WithPreferredShipperResolver
 
         $postalCode = $this->normalisePostcode($deliveryNote->deliveryAddress->postal_code);
 
-        $rules = PreferredShipping::query()
-            ->where('organisation_id', $deliveryNote->organisation_id)
-            ->where('trade_scope', $this->tradeScopeForShopType($deliveryNote->shop?->type))
-            ->where(function ($query) use ($deliveryNote) {
-                $query->where('shop_id', $deliveryNote->shop_id)->orWhereNull('shop_id');
+        $rules = $this->getPreferredShippingRules($deliveryNote->organisation_id, $deliveryNote->shop_id, $deliveryNote->shop?->type, (bool) $deliveryNote->is_premium_dispatch);
+
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $this->weightForShipperChoice($deliveryNote));
+    }
+
+    /**
+     * @return Collection<int, PreferredShipping>
+     */
+    public function getPreferredShippingRules(int $organisationId, ?int $shopId, ?ShopTypeEnum $shopType, bool $isPremiumDispatch): Collection
+    {
+        return PreferredShipping::query()
+            ->where('organisation_id', $organisationId)
+            ->where('trade_scope', $this->tradeScopeForShopType($shopType))
+            ->where(function ($query) use ($shopId) {
+                $query->where('shop_id', $shopId)->orWhereNull('shop_id');
             })
-            ->when(!$deliveryNote->is_premium_dispatch, fn ($query) => $query->where('priority_only', false))
+            ->when(!$isPremiumDispatch, fn ($query) => $query->where('priority_only', false))
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
             ->orderBy('id')
             ->get();
-
-        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $this->weightForShipperChoice($deliveryNote));
     }
 
     /**

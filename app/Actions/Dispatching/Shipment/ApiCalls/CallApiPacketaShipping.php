@@ -13,6 +13,7 @@ namespace App\Actions\Dispatching\Shipment\ApiCalls;
 use App\Actions\Dispatching\Shipment\GetShipmentDeliveryType;
 use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
@@ -109,9 +110,9 @@ class CallApiPacketaShipping extends OrgAction
             ], [
                 $parent->shipping_notes,
                 $parent->customer_notes,
-            ]);
+            ], data_get($order?->data, UpdateOrderPacketaPickupPoint::DATA_KEY));
             $packetaPoint = $packetaPointSearch['point'];
-            if ($refusal = $this->refusePacketaPoint($packetaPointSearch, $weight)) {
+            if ($refusal = $this->refusePacketaPoint($packetaPointSearch, $weight, $countryCode)) {
                 return [
                     'status'    => 'fail',
                     'errorData' => ['message' => $refusal],
@@ -282,11 +283,17 @@ class CallApiPacketaShipping extends OrgAction
     }
 
     /**
-     * @param  array{mentioned: bool, point: array<string, mixed>|null, candidates: array<int, array<string, mixed>>, unavailable: bool, asks_for_point: bool}  $search
+     * @param  array{mentioned: bool, point: array<string, mixed>|null, candidates: array<int, array<string, mixed>>, unavailable: bool, asks_for_point: bool, removed_point?: array<string, mixed>|null}  $search
      */
-    public function refusePacketaPoint(array $search, float $weight): ?string
+    public function refusePacketaPoint(array $search, float $weight, string $countryCode): ?string
     {
         $point = $search['point'];
+        if ($removedPoint = $search['removed_point'] ?? null) {
+            return "The customer chose Packeta pickup point {$removedPoint['id']} {$removedPoint['name']}, which Packeta no longer lists. Write the number of another point in the shipping notes (e.g. Z-BOX 31693), or book it manually.";
+        }
+        if ($point && $point['country'] !== strtolower($countryCode)) {
+            return "Packeta pickup point {$point['id']} {$point['name']} is not in the country of the delivery address ($countryCode). Ask the customer for a point in $countryCode.";
+        }
         if ($point && $point['max_weight'] && $weight > $point['max_weight']) {
             return "The parcel weighs $weight kg and Packeta pickup point {$point['id']} {$point['name']} takes at most {$point['max_weight']} kg. Ask the customer for home delivery or another point.";
         }

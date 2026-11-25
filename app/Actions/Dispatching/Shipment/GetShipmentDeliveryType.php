@@ -47,6 +47,10 @@ class GetShipmentDeliveryType
      */
     public function resolve(array $orderData, ?string $countryCode, array $addressLines, array $notes): array
     {
+        if ($chosenPointId = data_get($orderData, 'packeta_pickup_point.id')) {
+            return $this->pickupPoint((string) $chosenPointId);
+        }
+
         $lockerCode = (new CallApiPacketaShipping())->getParcelLockerCode((string) $countryCode, 0, $addressLines, $notes);
 
         $allegroPickupPoint = data_get($orderData, 'allegro_order.delivery.pickupPoint');

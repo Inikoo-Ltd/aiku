@@ -52,6 +52,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
 import BasketPreOrders, { BasketPreOrders as BasketPreOrdersData } from "@/Components/Retina/Basket/BasketPreOrders.vue"
 import IndicativePrice from "@/Components/Utils/IndicativePrice.vue"
+import PacketaPickupPoint from "@/Components/Retina/Dropshipping/PacketaPickupPoint.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
@@ -136,6 +137,12 @@ const props = defineProps<{
     total_to_pay: number
     pre_orders?: BasketPreOrdersData | null
     address_management: AddressManagement
+    packeta_pickup_point?: {
+        api_key: string | null
+        country: string
+        selected: { id: string, name: string, type: string } | null
+        error: string | null
+    } | null
     total_products: number
     charges: {
         premium_dispatch?: ChargeResource
@@ -278,7 +285,7 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
         routePost.route_post,
         routePost.body,
         {
-            only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
+            only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay', 'packeta_pickup_point'],
             onStart: () => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'loading'
             },
@@ -443,6 +450,8 @@ const onChangeGiftMessage = async (val: boolean) => {
 }
 
 const giftMessagePanel = ref<InstanceType<typeof GiftMessagePanel> | null>(null)
+const pickupPointError = computed(() => props.packeta_pickup_point?.error ?? null)
+
 const isGiftMessageMissing = computed(() =>
     !!props.data.data?.has_gift_message && !!giftMessagePanel.value?.isMissing
 )
@@ -675,7 +684,8 @@ const onChangeInsurance = async (val: boolean) => {
 
     <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-4 md:px-6 gap-4">        
         <div class="grid md:grid-cols-3 gap-4 w-full">
-            <div class="hidden md:block"></div>
+            <PacketaPickupPoint v-if="packeta_pickup_point" :option="packeta_pickup_point" :orderId="data.data.id" />
+            <div v-else class="hidden md:block"></div>
             <!-- Input text: notes from staff  -->
             <!-- <div class="">
                 <div class="text-sm text-gray-500">
@@ -747,7 +757,8 @@ const onChangeInsurance = async (val: boolean) => {
                     full
                     :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
                         || isGiftMessageMissing
-                        || isPreOrderTermsPending"
+                        || isPreOrderTermsPending
+                        || !!pickupPointError"
                 >
                 </ButtonWithLink>
 
@@ -783,8 +794,14 @@ const onChangeInsurance = async (val: boolean) => {
                     : (isGiftMessageMissing ? ctrans('Write a gift message or upload a PDF before checking out.') : undefined)"
                 :disabled="!!Object.values(listLoadingProducts || {}).filter(status => status === 'loading')?.length
                     || insertsWithoutArtwork.length > 0
-                    || isGiftMessageMissing"
+                    || isGiftMessageMissing
+                    || !!pickupPointError"
             />
+
+            <div v-if="pickupPointError" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">
+                <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mt-[3px]" fixed-width aria-hidden="true" />
+                <div class="leading-5">{{ pickupPointError }}</div>
+            </div>
 
 
             <div v-if="insertsWithoutArtwork.length" class="mt-2 flex items-start gap-x-1 text-xs text-amber-600">

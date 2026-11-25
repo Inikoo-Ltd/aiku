@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Retina\GetRetinaPaymentMethods;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -53,6 +54,20 @@ trait WithPlaceOrderByPaymentMethod
         }
 
         GetBasketPreOrders::make()->ensureTermsAccepted($order);
+
+        $chosenPickupPoint = data_get($order->data, UpdateOrderPacketaPickupPoint::DATA_KEY);
+        if ($chosenPickupPoint) {
+            $pickupPointError = $method == OrderToBePaidByEnum::CASH_ON_DELIVERY
+                ? __('Packeta pickup points do not take cash on delivery. Choose another payment method, or remove the pickup point in the basket.')
+                : UpdateOrderPacketaPickupPoint::make()->getPointError($order, $chosenPickupPoint);
+            if ($pickupPointError) {
+                return [
+                    'success' => false,
+                    'reason'  => $pickupPointError,
+                    'order'   => $order,
+                ];
+            }
+        }
 
         if (!GetRetinaPaymentMethods::make()->checkoutPaymentAccountShops($order)->contains('type', PaymentAccountTypeEnum::from($method->value))) {
             return [

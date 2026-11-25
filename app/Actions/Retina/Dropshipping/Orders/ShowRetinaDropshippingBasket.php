@@ -10,6 +10,7 @@
 namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Traits\WithRetinaRouteModelOwnershipCheck;
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\Watcher\FixMiscalculatedTransactionAmounts;
 use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
@@ -195,6 +196,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 ],
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
+                'packeta_pickup_point' => UpdateOrderPacketaPickupPoint::make()->getBasketOption($order),
 
 
                 'charges' => [

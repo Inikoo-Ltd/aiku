@@ -41,15 +41,30 @@ class FindPacketaPickupPoint
     private const string POINT_NUMBER_PATTERN = '/\[\s*(\d{3,6})\s*]|(?:z-?box|packeta|z[aá]silkovna|z[aá]sielkov\w*|miesto|m[íi]sto)(?:[\s:\/#-]*id)?[\s:\/#-]{0,3}(\d{3,6})(?!\s?\d)|\bid[\s:]{0,2}(\d{3,6})(?!\s?\d)/iu';
 
     /**
+     * A point the customer chose on the map at checkout ($chosenPoint, kept on the order) is
+     * booked unless staff wrote another one alone in a note, which is how they redirect a parcel
+     * when Packeta refuses the chosen point.
+     *
      * @param  array<int, string|null>  $addressLines
      * @param  array<int, string|null>  $notes
+     * @param  array<string, mixed>|null  $chosenPoint
      *
-     * @return array{mentioned: bool, point: array<string, mixed>|null, candidates: array<int, array<string, mixed>>, unavailable: bool, asks_for_point: bool}
+     * @return array{mentioned: bool, point: array<string, mixed>|null, candidates: array<int, array<string, mixed>>, unavailable: bool, asks_for_point: bool, removed_point?: array<string, mixed>|null}
      */
-    public function handle(?string $countryCode, array $addressLines, array $notes): array
+    public function handle(?string $countryCode, array $addressLines, array $notes, ?array $chosenPoint = null): array
     {
-        $text   = implode("\n", array_filter([...$notes, ...$addressLines]));
-        $result = ['mentioned' => (bool) preg_match(self::PACKETA_TEXT_PATTERN, $text), 'point' => null, 'candidates' => [], 'unavailable' => false, 'asks_for_point' => (bool) preg_match(self::POINT_REQUEST_PATTERN, $text)];
+        $text    = implode("\n", array_filter([...$notes, ...$addressLines]));
+        $result  = ['mentioned' => (bool) preg_match(self::PACKETA_TEXT_PATTERN, $text), 'point' => null, 'candidates' => [], 'unavailable' => false, 'asks_for_point' => (bool) preg_match(self::POINT_REQUEST_PATTERN, $text)];
+        $country = strtolower((string) $countryCode);
+
+        if ($chosenPoint) {
+            $points = $this->getPoints();
+
+            $point = $this->findPointWrittenByStaff(array_slice($notes, 0, 1), $points, $country) ?? ($points ? $points[$chosenPoint['id']] ?? null : $chosenPoint);
+
+            return [...$result, 'mentioned' => true, 'point' => $point, 'removed_point' => $point ? null : $chosenPoint];
+        }
+
         if (!$result['mentioned']) {
             return $result;
         }
@@ -59,14 +74,11 @@ class FindPacketaPickupPoint
             return [...$result, 'unavailable' => true];
         }
 
-        $country        = strtolower((string) $countryCode);
         $normalisedText = ' '.$this->normalise($text).' ';
         $notesText      = ' '.$this->normalise(implode("\n", array_filter($notes))).' ';
 
-        foreach ($notes as $note) {
-            if (preg_match('/^\s*(?:z-?box|packeta|z[aá]silkovna)\W{0,4}(\d{3,6})\s*$/iu', (string) $note, $writtenByStaff) && ($points[$writtenByStaff[1]]['country'] ?? null) === $country) {
-                return [...$result, 'point' => $points[$writtenByStaff[1]]];
-            }
+        if ($writtenByStaff = $this->findPointWrittenByStaff($notes, $points, $country)) {
+            return [...$result, 'point' => $writtenByStaff];
         }
 
         preg_match_all(self::POINT_NUMBER_PATTERN, $text, $matches, PREG_SET_ORDER);
@@ -99,6 +111,46 @@ class FindPacketaPickupPoint
         }
 
         return [...$result, 'candidates' => $candidates->take(5)->all()];
+    }
+
+    /**
+     * @param  array<int, string|null>  $notes
+     * @param  array<string, array<string, mixed>>  $points
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findPointWrittenByStaff(array $notes, array $points, string $country): ?array
+    {
+        foreach ($notes as $note) {
+            if (preg_match('/^\s*(?:z-?box|packeta|z[aá]silkovna)\W{0,4}(\d{3,6})\s*$/iu', (string) $note, $match) && ($points[$match[1]]['country'] ?? null) === $country) {
+                return $points[$match[1]];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getCountries(): array
+    {
+        return Cache::get(self::CACHE_KEY.'-countries') ?? $this->cacheCountries($this->getPoints());
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $points
+     *
+     * @return array<int, string>
+     */
+    private function cacheCountries(array $points): array
+    {
+        $countries = array_values(array_unique(array_column($points, 'country')));
+        if ($countries) {
+            Cache::put(self::CACHE_KEY.'-countries', $countries, now()->addDays(14));
+        }
+
+        return $countries;
     }
 
     /**
@@ -138,6 +190,8 @@ class FindPacketaPickupPoint
         }
 
         Cache::put(self::CACHE_KEY, $points, now()->addDays(14));
+        Cache::forget(self::CACHE_KEY.'-countries');
+        $this->cacheCountries($points);
 
         return count($points);
     }

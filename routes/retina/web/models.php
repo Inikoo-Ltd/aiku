@@ -108,6 +108,7 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderGiftMessagePdf;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPackaging;
 use App\Actions\Retina\Dropshipping\Orders\AcceptRetinaOrderPreOrderTerms;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderInsurance;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPacketaPickupPoint;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\BulkUnlinkRetinaPortfolio;
@@ -330,6 +331,7 @@ Route::name('order.')->prefix('order/{order:id}')->whereNumber('order')->group(f
     Route::patch('update-gift-message', UpdateRetinaOrderGiftMessage::class)->name('update_gift_message');
     Route::post('update-gift-message-pdf', UpdateRetinaOrderGiftMessagePdf::class)->name('update_gift_message_pdf');
     Route::patch('update-insurance', UpdateRetinaOrderInsurance::class)->name('update_insurance');
+    Route::patch('update-packeta-pickup-point', UpdateRetinaOrderPacketaPickupPoint::class)->name('update_packeta_pickup_point');
     Route::patch('accept-pre-order-terms', AcceptRetinaOrderPreOrderTerms::class)->name('accept_pre_order_terms');
     Route::patch('update-packaging', UpdateRetinaOrderPackaging::class)->name('update_packaging');
     Route::post('store-voucher', StoreRetinaOrderVoucher::class)->name('store_voucher');

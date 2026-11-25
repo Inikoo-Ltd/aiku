@@ -9,6 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Checkout\UI;
 
+use App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint;
 use App\Actions\Ordering\Order\CaptureOrderGoogleAnalyticsClient;
 use App\Actions\Web\WebsiteConversionEvent\RecordOrderCheckoutConversionEvent;
 use App\Actions\Ordering\PreOrder\GetOrderAmountToPayNow;
@@ -51,9 +52,15 @@ class ShowRetinaDropshippingCheckout extends RetinaAction
 
 
         $insertsWithoutArtwork = GetOrderInsertsWithoutArtwork::run($order);
+        $chosenPickupPoint     = data_get($order->data, UpdateOrderPacketaPickupPoint::DATA_KEY);
+        $pickupPointError      = $chosenPickupPoint ? UpdateOrderPacketaPickupPoint::make()->getPointError($order, $chosenPickupPoint) : null;
 
-        if ($insertsWithoutArtwork) {
-            $notification = [
+        if ($insertsWithoutArtwork || $pickupPointError) {
+            $notification = $pickupPointError ? [
+                'status'      => 'error',
+                'title'       => __('Packeta pickup point'),
+                'description' => $pickupPointError,
+            ] : [
                 'status'      => 'error',
                 'title'       => __('Insert file missing'),
                 'description' => __('Upload the file for :inserts before checking out.', [

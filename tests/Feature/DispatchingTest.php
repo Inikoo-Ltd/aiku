@@ -2824,6 +2824,7 @@ function packetaPickupPointDeliveryNote(object $testCase, string $countryCode, a
         ['id' => '35338', 'name' => 'Z-BOX Mladá Boleslav, Jana Palacha 1297', 'street' => 'Jana Palacha 1297', 'city' => 'Mladá Boleslav', 'zip' => '293 01', 'country' => 'cz', 'maxWeight' => '15'],
         ['id' => '50001', 'name' => 'Z-BOX Tábor, Husova 1 (Lidl)', 'street' => 'Husova 1', 'city' => 'Tábor', 'zip' => '390 01', 'country' => 'cz', 'maxWeight' => '15'],
         ['id' => '50002', 'name' => 'Z-BOX Tábor, Husova 1 (Billa)', 'street' => 'Husova 1', 'city' => 'Tábor', 'zip' => '390 01', 'country' => 'cz', 'maxWeight' => '15'],
+        ['id' => '60002', 'name' => 'Z-BOX Banská Bystrica, Malá 1', 'street' => 'Malá 1', 'city' => 'Banská Bystrica', 'zip' => '974 01', 'country' => 'sk', 'maxWeight' => '5'],
         ['id' => '60001', 'name' => 'Z-BOX Kolín, Malá 3', 'street' => 'Malá 3', 'city' => 'Kolín', 'zip' => '280 02', 'country' => 'cz', 'maxWeight' => '5'],
     ], [
         ['id' => '155', 'name' => 'Praha 5, Plzeňská 10', 'street' => 'Plzeňská 10', 'city' => 'Praha', 'zip' => '150 00', 'country' => 'cz', 'maxWeight' => '15'],
@@ -2905,6 +2906,103 @@ test('the Packeta point list is kept when Packeta sends too few points', functio
 
     expect(fn () => \App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->refresh(new \App\Models\Dispatching\Shipper()))->toThrow(\RuntimeException::class)
         ->and(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->getPoints())->toBe(['1' => ['id' => '1']]);
+});
+
+/**
+ * @return array{0: DeliveryNote, 1: \App\Models\Ordering\Order, 2: Shipper, 3: \App\Models\Catalogue\PreferredShipping}
+ */
+function packetaChoiceOrder(object $testCase, string $pointShipperCode = 'packeta'): array
+{
+    $deliveryNote = packetaPickupPointDeliveryNote($testCase, 'SK', ['address_line_1' => 'Hlavná 5', 'locality' => 'Banská Bystrica', 'postal_code' => '974 01']);
+    $packeta      = Shipper::where('organisation_id', $deliveryNote->organisation_id)->where('api_shipper', 'packeta-sk')->where('status', true)->first()
+        ?? StoreShipper::make()->action($testCase->organisation, ['code' => 'PKT'.Str::random(4), 'name' => 'Packeta', 'trade_as' => 'pkt', 'api_shipper' => 'packeta-sk']);
+    $ruleShipper  = $pointShipperCode === 'packeta' ? $packeta : StoreShipper::make()->action($testCase->organisation, ['code' => 'DPD'.Str::random(4), 'name' => 'DPD', 'trade_as' => 'dpd']);
+    $rule         = \App\Models\Catalogue\PreferredShipping::create([
+        'group_id'        => $deliveryNote->group_id,
+        'organisation_id' => $deliveryNote->organisation_id,
+        'shop_id'         => $deliveryNote->shop_id,
+        'shipper_id'      => $ruleShipper->id,
+        'trade_scope'     => StoreShipment::make()->tradeScopeForShopType($deliveryNote->shop->type),
+        'important'       => true,
+    ]);
+    $order = $deliveryNote->orders->first();
+    $order->forceFill(['delivery_address_id' => $deliveryNote->address_id, 'estimated_weight' => 1000, 'is_shipper_locked' => false, 'data' => ['basket_log' => [['e' => 'add']]]])->saveQuietly();
+
+    return [$deliveryNote, $order->refresh(), $packeta, $rule];
+}
+
+test('a Packeta point chosen at checkout locks Packeta and the parcel is booked to it', function () {
+    [$deliveryNote, $order, $packeta, $rule] = packetaChoiceOrder($this);
+    $choice                                   = \App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint::make();
+
+    expect($choice->getBasketOption($order))->toMatchArray(['api_key' => 'key', 'country' => 'sk', 'selected' => null, 'error' => null]);
+
+    $order = $choice->handle($order, '31693');
+    expect($order->data['packeta_pickup_point'])->toMatchArray(['id' => '31693', 'name' => 'Z-BOX Banská Bystrica, Hronské predmestie 12', 'country' => 'sk'])
+        ->and($order->data['basket_log'])->toBe([['e' => 'add']])
+        ->and(\App\Actions\Dispatching\Shipment\GetShipmentDeliveryType::make()->resolve($order->data, 'SK', ['Hlavná 5', null], []))
+        ->toBe(['delivery_type' => \App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum::PICKUP_POINT, 'pickup_point_code' => '31693']);
+
+    $directive = StoreShipment::make()->getShipperDirective($deliveryNote->refresh());
+    expect($directive['locked_shipper_id'])->toBe($packeta->id)
+        ->and($directive['locked_by'])->toBe('customer')
+        ->and($directive['locked_scope'])->toContain('31693');
+
+    foreach ([null => 31693, 'Z-BOX 34611' => 34611] as $staffNote => $expectedPoint) {
+        $deliveryNote->update(['shipping_notes' => $staffNote ?: null]);
+        $client = fakePacketaSoapClient(false);
+        $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+        $action->shouldReceive('soapClient')->andReturn($client);
+
+        $response = $action->handle($deliveryNote->refresh(), $packeta);
+        expect($response['status'])->toBe('success')
+            ->and($client->packetAttributes['addressId'])->toBe($expectedPoint)
+            ->and($response['modelData']['pickup_point_code'])->toBe((string) $expectedPoint);
+    }
+
+    expect($choice->handle($order, null)->data)->not->toHaveKey('packeta_pickup_point');
+    $rule->delete();
+});
+
+test('a Packeta point chosen at checkout is refused when it cannot take the order', function (string $pointShipperCode, string $pointId, int $estimatedWeight, string $expectedMessage) {
+    [, $order, , $rule] = packetaChoiceOrder($this, $pointShipperCode);
+    $order->forceFill(['estimated_weight' => $estimatedWeight])->saveQuietly();
+
+    expect(fn () => \App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint::run($order->refresh(), $pointId))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, $expectedMessage)
+        ->and($order->refresh()->data)->not->toHaveKey('packeta_pickup_point');
+    $rule->delete();
+})->with([
+    'unknown point'               => ['packeta', '99999', 1000, 'was not found'],
+    'point in another country'    => ['packeta', '38321', 1000, 'not in the country of the delivery address'],
+    'too heavy for the point'     => ['packeta', '60002', 6000, 'takes parcels up to 5 kg'],
+    'order goes with another courier' => ['dpd', '31693', 1000, 'not available for this order'],
+]);
+
+test('a chosen Packeta point that Packeta no longer lists is refused at booking and the countries rebuild from the list', function () {
+    [$deliveryNote, $order, $packeta, $rule] = packetaChoiceOrder($this);
+    $order->forceFill(['data' => ['packeta_pickup_point' => ['id' => '77777', 'name' => 'Z-BOX Zvolen, Námestie 1', 'country' => 'sk', 'max_weight' => 15.0]]])->saveQuietly();
+    $client = fakePacketaSoapClient(false);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+
+    $response = $action->handle($deliveryNote->refresh(), $packeta);
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain('no longer lists')
+        ->and($client->packetAttributes)->toBe([]);
+
+    \Illuminate\Support\Facades\Cache::forget(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::CACHE_KEY.'-countries');
+    expect(\App\Actions\Dispatching\Shipment\ApiCalls\FindPacketaPickupPoint::make()->getCountries())->toContain('sk', 'cz', 'hu');
+    $rule->delete();
+});
+
+test('the basket blocks checkout when the chosen Packeta point no longer fits the order', function () {
+    [, $order, , $rule] = packetaChoiceOrder($this);
+    $order              = \App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint::run($order, '31693');
+    $order->forceFill(['estimated_weight' => 20000])->saveQuietly();
+
+    expect(\App\Actions\Ordering\Order\UpdateOrderPacketaPickupPoint::make()->getBasketOption($order->refresh())['error'])->toContain('takes parcels up to 15 kg');
+    $rule->delete();
 });
 
 test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {

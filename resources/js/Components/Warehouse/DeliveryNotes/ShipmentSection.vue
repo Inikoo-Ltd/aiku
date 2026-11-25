@@ -885,7 +885,9 @@ const onClickButtonShipmentPlatform = () => {
 				<div v-if="preferredShipper" class="mt-3">
 				<div v-if="lockedShipper" class="text-xs pb-2 italic text-gray-500">
 					{{ lockedByCustomer
-						? ctrans("Shipper chosen by customer — contact customer services to change")
+						? (shipper_directive?.locked_scope
+							? ctrans("Customer chose :point — contact customer services to change", { point: shipper_directive.locked_scope })
+							: ctrans("Shipper chosen by customer — contact customer services to change"))
 						: ctrans("Locked by shipping rules for :scope", { scope: shipper_directive?.locked_scope ?? "" }) }}
 				</div>
 
