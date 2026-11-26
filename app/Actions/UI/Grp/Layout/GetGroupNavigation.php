@@ -305,11 +305,12 @@ class GetGroupNavigation
         ];
 
         $groupNavigation['chat'] = [
-            'label'   => __('Chat'),
-            'tooltip' => __('Chat'),
-            'icon'    => ['fal', 'fa-comment-alt'],
-            'root'    => 'grp.chat.',
-            'route'   => [
+            'label'        => __('Chat'),
+            'tooltip'      => __('Chat'),
+            'icon'         => ['fal', 'fa-comment-alt'],
+            'root'         => 'grp.chat.',
+            'excludeRoots' => ['grp.chat.staff.'],
+            'route'        => [
                 'name' => 'grp.chat.reports',
             ],
             'topMenu' => [
@@ -321,15 +322,6 @@ class GetGroupNavigation
                         'root'    => 'grp.chat.inbox',
                         'route'   => [
                             'name' => 'grp.chat.inbox',
-                        ],
-                    ],
-                    [
-                        'label'   => __('Verba'),
-                        'tooltip' => __('Verba'),
-                        'icon'    => ['fal', 'fa-comments'],
-                        'root'    => 'grp.chat.staff.index',
-                        'route'   => [
-                            'name' => 'grp.chat.staff.index',
                         ],
                     ],
                     ...($user->hasGroupAccess() ? [[
@@ -359,6 +351,62 @@ class GetGroupNavigation
                     //         'name' => 'grp.chat.agents.show',
                     //     ],
                     // ],
+                ],
+            ],
+        ];
+
+        $groupNavigation['verba'] = [
+            'label'   => __('Verba'),
+            'tooltip' => __('Verba'),
+            'icon'    => ['fal', 'fa-comments'],
+            'root'    => 'grp.chat.staff.',
+            'route'   => [
+                'name' => 'grp.chat.staff.index',
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label'   => 'V·Desks',
+                        'note'     => __('Public channels'),
+                        'noteIcon' => ['fal', 'fa-tv-retro'],
+                        'tooltip' => 'V·Desks',
+                        'icon'    => ['fal', 'fa-hashtag'],
+                        'root'    => 'grp.chat.staff.slack.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.slack.index',
+                        ],
+                    ],
+                    [
+                        'label'   => 'Verbrations',
+                        'note'     => __('Private groups'),
+                        'noteIcon' => ['fac', 'square-compass'],
+                        'tooltip' => __('Verbrations: private groups, only the people invited see them'),
+                        'icon'    => ['fal', 'fa-draw-square'],
+                        'root'    => 'grp.chat.staff.groups.',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.groups.index',
+                        ],
+                    ],
+                    [
+                        'label'   => 'V·Ds',
+                        'note'    => __('Direct messages'),
+                        'tooltip' => __('Verba directs: direct messages and group chats'),
+                        'icon'    => ['fal', 'fa-comments'],
+                        'root'    => 'grp.chat.staff.index',
+                        'roots'   => ['grp.chat.staff.show'],
+                        'route'   => [
+                            'name' => 'grp.chat.staff.index',
+                        ],
+                    ],
+                    ...($user->hasGroupAccess() ? [[
+                        'label'   => __('Stats'),
+                        'tooltip' => __('Verba stats: messages, calls and people'),
+                        'icon'    => ['fal', 'fa-chart-line'],
+                        'root'    => 'grp.chat.staff.reports',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.reports',
+                        ],
+                    ]] : []),
                 ],
             ],
         ];

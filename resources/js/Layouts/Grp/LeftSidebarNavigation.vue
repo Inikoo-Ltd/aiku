@@ -43,7 +43,7 @@ onMounted(() => {
     }
 })
 
-const bottomNavigationKeys = computed(() => layout.user?.is_engineer ? ['projects', 'devops', 'tickets', 'chat'] : ['projects', 'tasks', 'tickets', 'chat'])
+const bottomNavigationKeys = computed(() => layout.user?.is_engineer ? ['projects', 'devops', 'tickets', 'chat', 'verba'] : ['projects', 'tasks', 'tickets', 'chat', 'verba'])
 
 const navigationScroll = ref<HTMLElement | null>(null)
 const scrolledFromTop = ref(0)

@@ -10,7 +10,7 @@ import type { SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessa
 
 export interface SlackLiveEvent {
     channel_id: number
-    kind: "new" | "changed" | "deleted" | "reaction"
+    kind: "new" | "changed" | "deleted" | "reaction" | "pin"
     ts: string
     at: number
     message: SlackStreamMessage | null

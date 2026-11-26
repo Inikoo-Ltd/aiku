@@ -7,8 +7,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
 import axios from "axios"
-import { usePage } from "@inertiajs/vue3"
-import { Dialog, Popover, Textarea } from "primevue"
+import { router, usePage } from "@inertiajs/vue3"
+import { Dialog, Popover } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -17,6 +17,8 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import DeskMessageToolbar, { type DeskToolbarMenuItem } from "@/Components/Messaging/DeskMessageToolbar.vue"
 import EmojiPicker from "@/Components/Messaging/EmojiPicker.vue"
+import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskMessageEditor.vue"
+import { slackTextToBox } from "@/Components/Messaging/deskMarkup"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import SlackNodes, { type SlackNode } from "@/Components/Messaging/Slack/SlackNodes.vue"
 import SlackMessageVersions from "@/Components/Messaging/Slack/SlackMessageVersions.vue"
@@ -61,7 +63,7 @@ const time = (iso: string) => useFormatTime(iso, { formatTime: "HH:mm" })
 const reactionTooltip = (reaction: SlackStreamMessage["reactions"][number]) =>
     reaction.people.length ? reaction.people.join(", ") : ctrans(":count people", { count: String(reaction.count) })
 
-type SlackWrite = { allowed: boolean; reason: string | null; stand_in?: boolean; connect_url: string | null }
+type SlackWrite = { allowed: boolean; reason: string | null; stand_in?: boolean; connect_url: string | null; people?: DeskPerson[]; channels?: DeskPerson[] }
 type Reaction = SlackStreamMessage["reactions"][number]
 
 const page = usePage()
@@ -163,8 +165,21 @@ const copyLink = async () => {
         error.value = ctrans("Could not copy the link")
     }
 }
+const togglePin = async () => {
+    if (busy.value || !ready()) return
+    busy.value = true
+    try {
+        await send("post", "grp.chat.staff.slack.pin.toggle", { pinned: !shown.value.is_pinned })
+        router.reload({ only: ["slack_channel"] })
+    } catch (exception) {
+        error.value = errorOf(exception)
+    } finally {
+        busy.value = false
+    }
+}
 const toolbarMenu = computed<DeskToolbarMenuItem[]>(() => [
     { label: ctrans("Copy link"), icon: "fal fa-link", command: copyLink },
+    ...(canAct.value ? [{ label: shown.value.is_pinned ? ctrans("Unpin from channel") : ctrans("Pin to channel"), icon: "fal fa-thumbtack", command: togglePin }] : []),
     ...(isOwn.value
         ? [
             { label: ctrans("Edit message"), icon: "fal fa-pencil", command: startEdit },
@@ -202,10 +217,10 @@ const startEdit = async () => {
             busy.value = false
         }
     }
-    original.value = text ?? ""
+    original.value = slackTextToBox(text ?? "", write.value?.people, write.value?.channels)
     draft.value = original.value
     editing.value = true
-    nextTick(() => editBox.value?.$el?.focus())
+    nextTick(() => editBox.value?.focus())
 }
 const cancelEdit = () => {
     editing.value = false
@@ -224,21 +239,12 @@ const saveEdit = async () => {
     busy.value = true
     error.value = null
     try {
-        await send("patch", "grp.chat.staff.slack.messages.update", { text: draft.value })
+        await send("patch", "grp.chat.staff.slack.messages.update", { text: draft.value, format: "readable" })
         editing.value = false
     } catch (exception) {
         error.value = errorOf(exception)
     } finally {
         busy.value = false
-    }
-}
-const onEditKey = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-        event.preventDefault()
-        cancelEdit()
-    } else if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
-        event.preventDefault()
-        saveEdit()
     }
 }
 
@@ -310,16 +316,17 @@ const confirmDelete = async () => {
                 </div>
 
                 <div v-if="editing" class="mt-0.5">
-                    <Textarea
+                    <DeskMessageEditor
                         ref="editBox"
                         v-model="draft"
-                        auto-resize
-                        rows="1"
-                        maxlength="4000"
-                        class="w-full !text-sm"
+                        :sending="busy"
                         :disabled="busy"
-                        :aria-label="ctrans('Edit message')"
-                        @keydown="onEditKey" />
+                        :people="write?.people ?? []"
+                        :channels="write?.channels ?? []"
+                        mention-tokens
+                        attach-disabled
+                        @submit="saveEdit"
+                        @keydown.esc.prevent="cancelEdit" />
                     <div class="mt-1 flex items-center gap-x-2">
                         <Button type="tertiary" size="xxs" :label="ctrans('Cancel')" :disabled="busy" @click="cancelEdit">
                             <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>

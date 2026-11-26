@@ -67,6 +67,7 @@ const StaffCallHost = defineAsyncComponent(() => import("@/Components/Messaging/
 
 
 const layout = useLayoutStore()
+const isVerbaRoute = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff."))
 const isEmbedded = window.self !== window.top
 const sidebarOpen = ref(false)
 useAppAccentVariables(() => layout.app?.theme)
@@ -261,6 +262,7 @@ const safeTheme = computed(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
+            v-if="!isVerbaRoute"
             class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
             :class="[
 				layout.messagingSidebar.show

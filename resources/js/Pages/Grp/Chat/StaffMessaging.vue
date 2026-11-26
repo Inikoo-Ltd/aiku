@@ -17,10 +17,12 @@ import { faChevronLeft } from "@far"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
-import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
+import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
+import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
+import { useLayoutStore } from "@/Stores/layout"
 import { deskShortcutList, isMac, useDeskShortcuts } from "@/Composables/useDeskShortcuts"
 import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackChannelStream.vue"
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
@@ -194,6 +196,8 @@ const conversationAvatar = (conversation: any) =>
 const isTaskThread = (conversation: { context_type?: string | null }) => conversation.context_type === "StaffTask"
 
 const messagingConversations = computed(() => store.conversations.filter((c) => !isTaskThread(c)))
+const isVerbration = (conversation: { type?: string; context_type?: string | null; name?: string | null } | null | undefined) => !!conversation && conversation.type === "group" && !conversation.context_type && !!conversation.name
+const conversationRoute = (ulid: string) => (isVerbration(store.conversationByUlid(ulid)) ? "grp.chat.staff.groups.show" : "grp.chat.staff.show")
 const taskThreadCount = computed(() => store.conversations.length - messagingConversations.value.length)
 const showSlackChannel = computed(() => !!props.slack_channel && openSlackChannelId.value === props.slack_channel.id && !selectedUlid.value)
 
@@ -231,14 +235,14 @@ const openTaskThreadPage = (ulid: string) => {
 const showConversationUrl = (ulid: string) => {
     if (!props.slack_channel) {
         router.replace({
-            url: route("grp.chat.staff.show", ulid),
+            url: route(conversationRoute(ulid), ulid),
             preserveState: true,
             preserveScroll: true,
             props: (current) => ({ ...current, selected_ulid: ulid }),
         })
         return
     }
-    router.visit(route("grp.chat.staff.show", ulid), {
+    router.visit(route(conversationRoute(ulid), ulid), {
         only: ["breadcrumbs", "title", "selected_ulid", "slack_channel"],
         preserveState: true,
         preserveScroll: true,
@@ -270,7 +274,7 @@ const closeConversation = () => {
     store.fullViewUlid = null
     selectedUlid.value = null
     router.replace({
-        url: route("grp.chat.staff.index"),
+        url: route(isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"),
         preserveState: true,
         preserveScroll: true,
         props: (current) => ({ ...current, selected_ulid: null }),
@@ -335,8 +339,15 @@ const sidebarFilter = ref("")
 const filterText = computed(() => sidebarFilter.value.trim().toLowerCase())
 const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().includes(filterText.value)
 
-const isChannelRowShown = (channelId: number) => !isCollapsed("channels") || isSelectedChannel(channelId) || unreadOf(channelId) > 0
-const isConversationRowShown = (conversation: { ulid: string; unread_count: number }) => !isCollapsed("dms") || selectedUlid.value === conversation.ulid || conversation.unread_count > 0
+const layoutStore = useLayoutStore()
+const isDesks = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.slack."))
+const isGroups = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.groups."))
+const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
+const isNewVerbrationOpen = ref(false)
+const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbrations") : ctrans("Filter V·Ds")))
+
+const isChannelRowShown = (channelId: number) => isDesks.value || isSelectedChannel(channelId) || unreadOf(channelId) > 0
+const isConversationRowShown = (conversation: { ulid: string; unread_count: number }) => !isDesks.value || selectedUlid.value === conversation.ulid || conversation.unread_count > 0
 
 const starredKeys = ref<string[]>(props.desk_starred ?? [])
 const isStarred = (key: string) => starredKeys.value.includes(key)
@@ -347,15 +358,19 @@ const toggleStar = (key: string) => {
 }
 
 const starredChannels = computed(() => [...activeSlackChannels.value, ...archivedSlackChannels.value].filter((channel) => isStarred("slack-" + channel.id)))
-const starredConversations = computed(() => messagingConversations.value.filter((conversation) => isStarred("dm-" + conversation.ulid)))
+const starredConversations = computed(() => tabConversations.value.filter((conversation) => isStarred("dm-" + conversation.ulid)))
 const shownStarredChannels = computed(() => starredChannels.value.filter((channel) => (filterText.value ? matchesFilter(channel.name) : !isCollapsed("starred") || isSelectedChannel(channel.id) || unreadOf(channel.id) > 0)))
 const shownStarredConversations = computed(() => starredConversations.value.filter((conversation) => (filterText.value ? matchesFilter(conversationTitle(conversation)) : !isCollapsed("starred") || selectedUlid.value === conversation.ulid || conversation.unread_count > 0)))
-const hasStarred = computed(() => (filterText.value ? shownStarredChannels.value.length + shownStarredConversations.value.length : starredChannels.value.length + starredConversations.value.length) > 0)
+const hasStarred = computed(() =>
+    isDesks.value
+        ? (filterText.value ? shownStarredChannels.value.length : starredChannels.value.length) > 0
+        : (filterText.value ? shownStarredConversations.value.length : starredConversations.value.length) > 0,
+)
 
 const shownActiveChannels = computed(() => activeSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : isChannelRowShown(channel.id))))
 const shownArchivedChannels = computed(() => archivedSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : showArchived.value)))
-const shownConversations = computed(() => messagingConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid) && (filterText.value ? matchesFilter(conversationTitle(conversation)) : isConversationRowShown(conversation))))
-const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && !shownActiveChannels.value.length && !shownArchivedChannels.value.length && !shownConversations.value.length)
+const shownConversations = computed(() => tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid) && (filterText.value ? matchesFilter(conversationTitle(conversation)) : isConversationRowShown(conversation))))
+const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && (isDesks.value ? !shownActiveChannels.value.length && !shownArchivedChannels.value.length : !shownConversations.value.length))
 
 const compactChannels = computed(() => activeSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (isSelectedChannel(channel.id) || unreadOf(channel.id) > 0)))
 const compactConversations = computed(() => messagingConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid)))
@@ -423,24 +438,11 @@ onUnmounted(() => {
 <template>
     <Head :title="title" />
 
-    <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh-5.75rem)] font-desk text-[15px]">
+    <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh-2.75rem)] lg:h-[calc(100dvh-2.5rem)] font-desk text-[15px]">
         <nav
             class="w-full md:w-64 shrink-0 flex-col bg-[var(--desk-sidebar)] text-[var(--desk-text)]"
             :class="[selectedUlid || showSlackChannel ? 'hidden' : 'flex', isSidebarCollapsed ? 'md:hidden' : 'md:flex']"
             :aria-label="ctrans('Verba')">
-            <div class="flex h-[50px] shrink-0 items-center gap-x-2 border-b border-[var(--desk-border)] pl-4 pr-3">
-                <DeskIcon class="text-lg" />
-                <h1 class="flex-1 truncate text-[18px] font-black leading-none text-white">{{ ctrans("Verba") }}</h1>
-                <button
-                    type="button"
-                    class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[var(--desk-sidebar)] transition hover:opacity-90"
-                    :aria-label="ctrans('New message')"
-                    v-tooltip="ctrans('New message')"
-                    @click="isJumpOpen = true">
-                    <FontAwesomeIcon icon="fal fa-edit" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-
             <div class="min-h-0 flex-1 overflow-y-auto py-2">
                 <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-white/10 px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-white/20 focus-within:ring-1 focus-within:ring-white/60 hover:bg-white/20">
                     <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
@@ -448,20 +450,29 @@ onUnmounted(() => {
                         ref="filterInput"
                         v-model="sidebarFilter"
                         unstyled
-                        class="min-w-0 flex-1 bg-transparent text-white placeholder:text-[var(--desk-text)] focus:outline-none"
-                        :placeholder="ctrans('Find a conversation…')"
-                        :aria-label="ctrans('Find a conversation…')"
+                        class="min-w-0 flex-1 border-0 bg-transparent p-0 text-white shadow-none outline-none ring-0 placeholder:text-[var(--desk-text)] focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
+                        :placeholder="filterLabel"
+                        :aria-label="filterLabel"
                         @keydown.esc.stop="sidebarFilter = ''" />
                     <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
                         <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                     </button>
+                    <button
+                        v-if="isDesks && hasSlackUnread && !sidebarFilter"
+                        type="button"
+                        class="flex h-5 w-5 items-center justify-center rounded hover:bg-[var(--desk-hover)]"
+                        :aria-label="ctrans('Mark all as read')"
+                        v-tooltip="ctrans('Mark all as read') + ' (Shift+Esc)'"
+                        @click.prevent="markAllSlackChannelsRead">
+                        <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
+                    </button>
                 </label>
 
-                <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ ctrans("No channels or people match “:filter”", { filter: sidebarFilter.trim() }) }}</p>
+                <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbrations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
 
                 <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
 
-                <div v-if="isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
+                <div v-if="isDesks && isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
                     <div class="h-3 w-20 rounded bg-white/10" />
                     <div class="h-5 rounded bg-white/10" />
                     <div class="h-5 rounded bg-white/10" />
@@ -480,17 +491,20 @@ onUnmounted(() => {
                         </button>
                     </div>
                     <DeskSidebarRow
+                        v-if="isDesks"
                         v-for="channel in shownStarredChannels"
                         :key="'starred-slack-' + channel.id"
                         :label="channel.name ?? ''"
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         :icon="channel.is_archived ? 'fal fa-archive' : 'fal fa-hashtag'"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-muted="channel.is_archived"
                         is-starred
                         @toggle-star="toggleStar('slack-' + channel.id)" />
                     <DeskSidebarRow
+                        v-if="!isDesks"
                         v-for="conversation in shownStarredConversations"
                         :key="'starred-' + conversation.ulid"
                         :label="conversationTitle(conversation)"
@@ -503,22 +517,7 @@ onUnmounted(() => {
                         @toggle-star="toggleStar('dm-' + conversation.ulid)" />
                 </section>
 
-                <section v-if="hasSlack && (!filterText || shownActiveChannels.length)" class="mt-1">
-                    <div class="group flex h-7 items-center pr-2">
-                        <button type="button" class="flex flex-1 items-center gap-x-1 rounded px-2 py-0.5 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="!isCollapsed('channels')" @click="toggleSection('channels')">
-                            <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="isCollapsed('channels') && '-rotate-90'" fixed-width aria-hidden="true" />
-                            <span>{{ ctrans("Channels") }}</span>
-                        </button>
-                        <button
-                            v-if="hasSlackUnread"
-                            type="button"
-                            class="flex h-6 w-6 items-center justify-center rounded opacity-0 hover:bg-[var(--desk-hover)] focus:opacity-100 group-hover:opacity-100"
-                            :aria-label="ctrans('Mark all as read')"
-                            v-tooltip="ctrans('Mark all as read') + ' (Shift+Esc)'"
-                            @click="markAllSlackChannelsRead">
-                            <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
-                        </button>
-                    </div>
+                <section v-if="isDesks && hasSlack && (!filterText || shownActiveChannels.length)" class="mt-1">
                     <DeskSidebarRow
                         v-for="channel in shownActiveChannels"
                         :key="'slack-' + channel.id"
@@ -526,12 +525,13 @@ onUnmounted(() => {
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         icon="fal fa-hashtag"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-starred="false"
                         @toggle-star="toggleStar('slack-' + channel.id)" />
                 </section>
 
-                <section v-if="hasSlack && (filterText ? shownArchivedChannels.length : archivedSlackChannels.length)" class="mt-3">
+                <section v-if="isDesks && hasSlack && (filterText ? shownArchivedChannels.length : archivedSlackChannels.length)" class="mt-3">
                     <button type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" v-if="!filterText" :aria-expanded="showArchived" @click="toggleSection('archived')">
                         <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showArchived && '-rotate-90'" fixed-width aria-hidden="true" />
                         <span>{{ ctrans("Archived (:count)", { count: String(archivedSlackChannels.length) }) }}</span>
@@ -551,13 +551,7 @@ onUnmounted(() => {
                     </template>
                 </section>
 
-                <section v-if="!filterText || shownConversations.length" class="mt-3">
-                    <div class="flex h-7 items-center pr-2">
-                        <button type="button" class="flex flex-1 items-center gap-x-1 rounded px-2 py-0.5 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="!isCollapsed('dms')" @click="toggleSection('dms')">
-                            <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="isCollapsed('dms') && '-rotate-90'" fixed-width aria-hidden="true" />
-                            <span>{{ ctrans("Direct messages") }}</span>
-                        </button>
-                    </div>
+                <section v-if="!isDesks && (!filterText || shownConversations.length)" class="mt-1">
                     <DeskSidebarRow
                         v-for="conversation in shownConversations"
                         :key="conversation.ulid"
@@ -569,18 +563,19 @@ onUnmounted(() => {
                         :is-starred="false"
                         @select="selectConversation(conversation.ulid)"
                         @toggle-star="toggleStar('dm-' + conversation.ulid)" />
+                    <p v-if="isGroups && !tabConversations.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("No Verbrations yet. Start one for a team or a topic: only the people you invite see it.") }}</p>
                     <button
                         v-if="!filterText"
                         type="button"
                         class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
-                        @click="isJumpOpen = true">
+                        @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
                         <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-sm">+</span>
-                        <span class="truncate">{{ ctrans("Add coworkers") }}</span>
+                        <span class="truncate">{{ isGroups ? ctrans("New Verbration") : ctrans("Add coworkers") }}</span>
                     </button>
                 </section>
 
                 <Link
-                    v-if="taskThreadCount && !filterText"
+                    v-if="!isDesks && !isGroups && taskThreadCount && !filterText"
                     :href="route('grp.tasks.index')"
                     class="mx-2 mt-3 flex h-7 items-center gap-x-2 rounded-md px-4 text-[13px] hover:bg-[var(--desk-hover)]">
                     <FontAwesomeIcon icon="fal fa-tasks" fixed-width aria-hidden="true" />
@@ -623,6 +618,7 @@ onUnmounted(() => {
                         :href="route('grp.chat.staff.slack.show', channel.id)"
                         icon="fal fa-hashtag"
                         :unread="unreadOf(channel.id)"
+                        :has-draft="draftChannelIds.has(channel.id)"
                         :is-active="isSelectedChannel(channel.id)"
                         :is-muted="channel.is_archived" />
                     <DeskSidebarRow
@@ -707,6 +703,7 @@ onUnmounted(() => {
         </div>
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />
+        <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="selectConversation" />
 
         <Dialog v-model:visible="isShortcutsOpen" modal dismissable-mask :header="ctrans('Keyboard shortcuts')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '92vw' }">
             <ul class="divide-y divide-gray-100 font-desk text-sm">

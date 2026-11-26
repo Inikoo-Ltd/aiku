@@ -10,12 +10,14 @@
 
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Actions\Chat\Staff\Slack\CopySlackMessageFile;
 use App\Actions\Chat\Staff\Slack\Write\SendSlackMessage;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Events\BroadcastPersonalNotification;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
+use App\Models\Chat\SlackFile;
 use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\User;
@@ -24,10 +26,13 @@ use App\Notifications\SlackMentionNotification;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
 
@@ -406,4 +411,206 @@ test('a person who has not connected Slack posts through the Desk bot under thei
 
     actingAs($this->reader)->get(route('grp.chat.staff.slack.show', ['slackChannel' => $this->general->id]))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.write.stand_in', true)->where('slack_channel.write.allowed', true));
+});
+
+test('what the formatting bar writes reaches Slack as its own markup: bold, italic, strike, code, code block, quote, lists and bare links; typed < > & are escaped everywhere else, INI-463', function () {
+    ($this->slack)();
+
+    ($this->send)($this->general, "*bold* _it_ ~gone~ `code` a > b & c\n```\nx <b> & y\n```\n> quote\n> more\n• one\n• two\n1. first\nhttps://aiku.io/a?b=1&c=2 and <https://aiku.io/x>\n&gt; typed entity")->assertOk();
+
+    expect(($this->posts)()[0][0]['text'])->toBe("*bold* _it_ ~gone~ `code` a &gt; b &amp; c\n```\nx &lt;b&gt; &amp; y\n```\n> quote\n> more\n• one\n• two\n1. first\nhttps://aiku.io/a?b=1&amp;c=2 and <https://aiku.io/x>\n&amp;gt; typed entity");
+});
+
+test('the markup the box sends is rendered by the renderer as formatting: bold, italic, strike, code, code block, quote, bullet and numbered lists and a link, INI-463', function () {
+    ($this->slack)(function (Request $request) {
+        $ts = sprintf('%d.%06d', now()->timestamp, 900001);
+
+        return Http::response(['ok' => true, 'channel' => $request['channel'], 'ts' => $ts, 'message' => ['type' => 'message', 'user' => "UWRITE{$this->s}", 'text' => preg_replace(['/^>/m', '/(?<!<)(https?:\/\/\S+)/'], ['&gt;', '<$1>'], $request['text']), 'ts' => $ts]]);
+    });
+
+    ($this->send)($this->general, "*bold* _it_ ~gone~ `code`\n```\nblock\n```\n> quote\n• one\n• two\n\n1. first\n2. second\n\nhttps://aiku.io/x")->assertOk();
+
+    $stored = ($this->messages)($this->general)->first();
+    $types  = [];
+    array_walk_recursive(FormatSlackMessages::make()->handle([$stored])[$stored->id], function ($value, $key) use (&$types) {
+        if ($key === 'type') {
+            $types[] = $value;
+        }
+    });
+
+    expect($types)->toContain('bold', 'italic', 'strike', 'code', 'pre', 'quote', 'list', 'link');
+});
+
+test('editing a message: its mentions come back as chips and are sent as real mentions for live people only, typed codes and typed entities stay plain, INI-461', function () {
+    ($this->slack)();
+    $chosen = fn (string $token) => "\u{E000}{$token}\u{E000}";
+    $ts     = ($this->send)($this->general, $chosen("@UBOB{$this->s}").' hello')->assertOk()->json('ts');
+    Http::fake(['slack.com/api/chat.update' => fn (Request $request) => Http::response(['ok' => true, 'channel' => $request['channel'], 'ts' => $request['ts'], 'text' => $request['text'], 'message' => ['text' => $request['text'], 'user' => "UWRITE{$this->s}"]])]);
+
+    actingAs($this->writer)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $this->general->id]), [
+        'ts'   => $ts,
+        'format' => 'readable',
+        'text' => $chosen("@UBOB{$this->s}").' and '.$chosen("@UREAD{$this->s}").' '.$chosen('@UNKNOWN1')." typed <@UWRITE{$this->s}> <!channel> & more > less",
+    ])->assertOk();
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat.update')
+        && $request['text'] === "<@UBOB{$this->s}> and <@UREAD{$this->s}> @UNKNOWN1 typed &lt;@UWRITE{$this->s}&gt; &lt;!channel&gt; &amp; more &gt; less");
+});
+
+test('an edit may keep a here or channel the message already had without asking again, but cannot add one in a large channel without confirmation, INI-461', function () {
+    ($this->slack)();
+    foreach (range(1, SendSlackMessage::EVERYONE_CONFIRM_ABOVE + 1) as $member) {
+        $this->general->members()->create(['slack_user_id' => "UMEMBER{$member}{$this->s}"]);
+    }
+    $ts = ($this->send)($this->general, 'Hello')->assertOk()->json('ts');
+    Http::fake(['slack.com/api/chat.update' => fn (Request $request) => Http::response(['ok' => true, 'ts' => $request['ts'], 'text' => $request['text'], 'message' => ['text' => $request['text'], 'user' => "UWRITE{$this->s}"]])]);
+    $edit = fn (string $text) => actingAs($this->writer)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $this->general->id]), ['ts' => $ts, 'text' => $text]);
+
+    $edit("Hello \u{E000}!here\u{E000}")->assertStatus(422)->assertJsonValidationErrors('notify_everyone');
+    $edit("Hello \u{E000}!here\u{E000}")->assertStatus(422);
+    actingAs($this->writer)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $this->general->id]), ['ts' => $ts, 'text' => "Hello \u{E000}!here\u{E000}", 'notify_everyone' => true])->assertOk();
+    $edit("Hello again \u{E000}!here\u{E000}")->assertOk();
+    $edit("Hello again \u{E000}!here\u{E000} \u{E000}!channel\u{E000}")->assertStatus(422)->assertJsonValidationErrors('notify_everyone');
+});
+
+test('an edit from a box that still sends Slack\'s own entities keeps them, while the readable box escapes every &, INI-461', function () {
+    ($this->slack)();
+    $ts = ($this->send)($this->general, 'Hello')->assertOk()->json('ts');
+    Http::fake(['slack.com/api/chat.update' => fn (Request $request) => Http::response(['ok' => true, 'ts' => $request['ts'], 'text' => $request['text'], 'message' => ['text' => $request['text'], 'user' => "UWRITE{$this->s}"]])]);
+    $edit = fn (array $extra) => actingAs($this->writer)->patchJson(route('grp.chat.staff.slack.messages.update', ['slackChannel' => $this->general->id]), ['ts' => $ts, 'text' => 'a &amp; b &lt;x&gt;', ...$extra])->assertOk();
+
+    $edit([]);
+    $edit(['format' => 'readable']);
+
+    $sent = Http::recorded(fn (Request $request) => str_contains($request->url(), 'chat.update'))->map(fn (array $pair) => $pair[0]['text'])->all();
+    expect($sent)->toBe(['a &amp; b &lt;x&gt;', 'a &amp;amp; b &amp;lt;x&amp;gt;']);
+});
+
+
+describe('files sent from aiku, INI-465', function () {
+    beforeEach(function () {
+        Storage::fake(config('media-library.disk_name'));
+        $this->fileCalls   = [];
+        $this->bytesStatus   = 200;
+        $this->completeThrows = false;
+        Http::fake([
+            'slack.com/api/files.getUploadURLExternal' => function (Request $request) {
+                $this->fileCalls[] = 'getUploadURLExternal';
+                $id = 'F'.Str::upper(Str::random(8));
+
+                return Http::response(['ok' => true, 'file_id' => $id, 'upload_url' => "https://files.slack.com/upload/v1/$id"]);
+            },
+            'files.slack.com/upload/*' => function () {
+                $this->fileCalls[] = 'bytes';
+
+                return Http::response('OK - 4', $this->bytesStatus);
+            },
+            'slack.com/api/files.completeUploadExternal' => function () {
+                $this->fileCalls[] = 'completeUploadExternal';
+                if ($this->completeThrows) {
+                    throw new ConnectionException('timeout');
+                }
+
+                return Http::response(['ok' => true, 'files' => []]);
+            },
+        ]);
+        $this->upload = fn (UploadedFile $file, ?User $as = null, ?SlackChannel $channel = null) => actingAs($as ?? $this->writer)
+            ->post(route('grp.chat.staff.slack.files.upload', ['slackChannel' => ($channel ?? $this->general)->id]), ['file' => $file], ['Accept' => 'application/json']);
+        $this->completeFiles = fn (array $ids, array $extra = []) => actingAs($this->writer)
+            ->postJson(route('grp.chat.staff.slack.files.send', ['slackChannel' => $this->general->id]), ['file_ids' => $ids, 'idempotency_key' => Str::uuid()->toString(), ...$extra]);
+    });
+
+    test('a file goes through Slack\'s three calls in order with the person token, our copy is kept at once and the file_share event downloads nothing', function () {
+        $response = ($this->upload)(UploadedFile::fake()->image('pallet.png', 20, 20))->assertOk();
+        $fileId   = $response->json('file_id');
+        ($this->completeFiles)([$fileId], ['text' => 'See <!channel> & this'])->assertOk()->assertJsonPath('file_ids.0', $fileId);
+
+        expect($this->fileCalls)->toBe(['getUploadURLExternal', 'bytes', 'completeUploadExternal']);
+        $calls = Http::recorded(fn (Request $request) => str_contains($request->url(), 'slack.com/api/files.'))->values();
+        expect($calls[0][0]->header('Authorization')[0])->toBe('Bearer '.$this->token)
+            ->and($calls[0][0]['filename'])->toBe('pallet.png')
+            ->and($calls[1][0]->header('Authorization')[0])->toBe('Bearer '.$this->token)
+            ->and($calls[1][0]['channel_id'])->toBe($this->general->slack_id)
+            ->and($calls[1][0]['initial_comment'])->toBe('See &lt;!channel&gt; &amp; this')
+            ->and(json_decode($calls[1][0]['files'], true))->toBe([['id' => $fileId, 'title' => 'pallet.png']])
+            ->and($calls[1][0]->data())->not->toHaveKey('thread_ts');
+
+        $copy = SlackFile::where('slack_id', $fileId)->first();
+        expect($copy->state->value)->toBe('copied')->and($copy->media_id)->not->toBeNull();
+
+        $message = StoreSlackMessage::make()->handle([
+            'type' => 'message', 'subtype' => 'file_share', 'channel' => $this->general->slack_id, 'channel_type' => 'channel',
+            'user' => "UWRITE{$this->s}", 'ts' => sprintf('%d.%06d', now()->timestamp, 900001), 'text' => 'See',
+            'files' => [['id' => $fileId, 'name' => 'pallet.png', 'mimetype' => 'image/png', 'size' => 100, 'url_private_download' => "https://files.slack.com/files-pri/T1-$fileId/pallet.png"]],
+        ]);
+        expect($message->sent_from_aiku)->toBeTrue();
+
+        $before = count(Http::recorded());
+        CopySlackMessageFile::make()->handle($message, $message->data['files'][0]);
+        expect(count(Http::recorded()))->toBe($before)->and(SlackFile::where('slack_id', $fileId)->count())->toBe(1);
+    });
+
+    test('a file in a thread carries the thread root, and a reply to a reply goes to the root', function () {
+        $root = SlackMessage::create(['slack_channel_id' => $this->general->id, 'ts' => '1700000000.000100', 'text' => 'root', 'sent_at' => now(), 'data' => []]);
+        $reply = SlackMessage::create(['slack_channel_id' => $this->general->id, 'ts' => '1700000000.000200', 'thread_ts' => $root->ts, 'text' => 'reply', 'sent_at' => now(), 'data' => []]);
+        $fileId = ($this->upload)(UploadedFile::fake()->createWithContent('notes.pdf', "%PDF-1.4\n%test\n"))->assertOk()->json('file_id');
+
+        ($this->completeFiles)([$fileId], ['thread_ts' => $reply->ts])->assertOk();
+
+        $calls = Http::recorded(fn (Request $request) => str_contains($request->url(), 'files.completeUploadExternal'))->values();
+        expect($calls[0][0]['thread_ts'])->toBe($root->ts);
+    });
+
+    test('a file over the cap is refused before anything is sent to Slack', function () {
+        ($this->upload)(UploadedFile::fake()->createWithContent('big.pdf', "%PDF-1.4\n".str_repeat('a', 25 * 1024 * 1024)))->assertUnprocessable();
+
+        expect($this->fileCalls)->toBe([]);
+    });
+
+    test('the real content decides the type, not the file name', function () {
+        $page = UploadedFile::fake()->createWithContent('photo.png', '<html><body><script>alert(1)</script></body></html>');
+        ($this->upload)($page)->assertUnprocessable();
+
+        expect($this->fileCalls)->toBe([]);
+    });
+
+    test('one failed file does not lose the others: each file is its own request and only files uploaded earlier can be completed', function () {
+        $good = ($this->upload)(UploadedFile::fake()->image('a.png', 10, 10))->assertOk()->json('file_id');
+        $this->bytesStatus = 500;
+        ($this->upload)(UploadedFile::fake()->image('b.png', 10, 10))->assertUnprocessable();
+
+        ($this->completeFiles)([$good])->assertOk();
+        ($this->completeFiles)(['FNEVERUPLOADED'])->assertUnprocessable();
+        ($this->completeFiles)([$good, 'FNEVERUPLOADED'])->assertUnprocessable();
+    });
+
+    test('a person who has not connected is asked to connect, and a read-only or archived channel refuses', function () {
+        $fileId = ($this->upload)(UploadedFile::fake()->image('a.png', 10, 10))->assertOk()->json('file_id');
+        SlackConnection::where('user_id', $this->writer->id)->delete();
+
+        ($this->upload)(UploadedFile::fake()->image('b.png', 10, 10))->assertUnprocessable();
+        ($this->completeFiles)([$fileId])->assertUnprocessable();
+
+        SlackConnection::create(['user_id' => $this->writer->id, 'slack_user_id' => "UWRITE{$this->s}", 'team_id' => 'T1', 'token' => $this->token, 'scopes' => implode(',', SlackWriteAccess::USER_SCOPES), 'connected_at' => now()]);
+        ($this->upload)(UploadedFile::fake()->image('c.png', 10, 10), null, $this->archived)->assertForbidden();
+        ($this->upload)(UploadedFile::fake()->image('d.png', 10, 10), null, $this->private)->assertForbidden();
+    });
+
+    test('an unreachable Slack on complete keeps the claim and markers so a retry does not double-send, and a definite refusal frees them', function () {
+        $fileId = ($this->upload)(UploadedFile::fake()->image('a.png', 10, 10))->assertOk()->json('file_id');
+        $key    = Str::uuid()->toString();
+        $this->completeThrows = true;
+
+        ($this->completeFiles)([$fileId], ['idempotency_key' => $key])->assertUnprocessable();
+        expect(Cache::has(\App\Actions\Chat\Staff\Slack\Write\SendSlackFiles::sentMarkerKey($fileId)))->toBeTrue();
+        ($this->completeFiles)([$fileId], ['idempotency_key' => $key])->assertUnprocessable();
+        expect(array_count_values($this->fileCalls)['completeUploadExternal'])->toBe(1);
+    });
+
+    test('a file uploaded in another channel cannot be completed here', function () {
+        $fileId = ($this->upload)(UploadedFile::fake()->image('a.png', 10, 10))->assertOk()->json('file_id');
+        $other  = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "COTHER{$this->s}", 'name' => "other-{$this->s}", 'is_member' => true]);
+
+        actingAs($this->writer)->postJson(route('grp.chat.staff.slack.files.send', ['slackChannel' => $other->id]), ['file_ids' => [$fileId], 'idempotency_key' => Str::uuid()->toString()])->assertUnprocessable();
+    });
 });

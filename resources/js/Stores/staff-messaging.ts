@@ -261,6 +261,15 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             this.openConversation(conversation.ulid)
         },
 
+        async createGroup(name: string, userIds: number[]): Promise<StaffConversation> {
+            const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { name, user_ids: userIds })
+            const conversation: StaffConversation = data.data
+            if (!this.conversations.some((c) => c.ulid === conversation.ulid)) {
+                this.conversations.unshift(conversation)
+            }
+            return conversation
+        },
+
         async openContext(contextType: string, contextId: number, audience: string, message?: string) {
             const { data } = await axios.post(route("grp.chat.staff.context.open"), { context_type: contextType, context_id: contextId, audience })
             const conversation: StaffConversation = data.data

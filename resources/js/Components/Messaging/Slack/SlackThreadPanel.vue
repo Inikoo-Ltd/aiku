@@ -202,6 +202,6 @@ const copyLink = async () => {
             <p v-if="error" class="py-3 text-[13px] text-red-600">{{ error }}</p>
         </div>
 
-        <SlackMessageComposer v-if="write && parent && !parent.is_deleted" :channel-id="channelId" :write="write" :thread-ts="ts" :channel-name="channelName" :placeholder="ctrans('Reply…')" @sent="onSent" />
+        <SlackMessageComposer v-if="write && parent && !parent.is_deleted" :channel-id="channelId" :write="write" :live-channel="liveChannel" :thread-ts="ts" :channel-name="channelName" :placeholder="ctrans('Reply…')" @sent="onSent" />
     </aside>
 </template>

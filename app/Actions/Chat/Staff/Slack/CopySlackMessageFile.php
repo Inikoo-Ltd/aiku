@@ -70,6 +70,10 @@ class CopySlackMessageFile
             'state'            => SlackFileStateEnum::PENDING,
             'data'             => $file,
         ]);
+        if ($slackFile->slack_message_id === null) {
+            $slackFile->update(['slack_message_id' => $message->id]);
+        }
+        // shortcut: a file uploaded from aiku whose message never arrives stays an orphan row, prune when it matters
         if (!$this->claim($slackFile)) {
             return $slackFile->refresh();
         }
@@ -236,32 +240,40 @@ class CopySlackMessageFile
             if (str_contains(strtolower((string) $response->header('Content-Type')), 'text/html') && !str_contains((string) $slackFile->mime_type, 'html')) {
                 $this->fail($slackFile, 'Slack answered with a login page, the bot token has no access to the file');
             }
-            if (filesize($path) > self::maxBytes()) {
-                $slackFile->update(['state' => SlackFileStateEnum::SKIPPED, 'reason' => self::tooLargeReason()]);
-
-                return $slackFile;
-            }
-            if (filesize($path) > self::mediaLimit()) {
-                return $this->keepOnLargeDisk($slackFile, $path);
-            }
-
-            $isImage   = in_array($slackFile->mime_type, self::IMAGE_MIME_TYPES, true);
-            $extension = pathinfo((string) $slackFile->name, PATHINFO_EXTENSION) ?: Arr::get($slackFile->data, 'filetype') ?: 'bin';
-            $media     = StoreMediaFromFile::run($slackFile, [
-                'path'         => $path,
-                'originalName' => $slackFile->name ?: $slackFile->slack_id,
-                'extension'    => $extension,
-                'checksum'     => md5_file($path),
-            ], 'slack_files', $isImage ? 'image' : 'file');
-
-            $slackFile->update(['state' => SlackFileStateEnum::COPIED, 'reason' => null, 'media_id' => $media->id]);
-
-            return $slackFile;
+            return $this->keepFromPath($slackFile, $path);
         } finally {
             if (file_exists($path)) {
                 unlink($path);
             }
         }
+    }
+
+    /**
+     * Keeps the bytes at $path as aiku's copy: media up to its limit, the large files disk above it, skipped above that.
+     */
+    public function keepFromPath(SlackFile $slackFile, string $path): SlackFile
+    {
+        if (filesize($path) > self::maxBytes()) {
+            $slackFile->update(['state' => SlackFileStateEnum::SKIPPED, 'reason' => self::tooLargeReason()]);
+
+            return $slackFile;
+        }
+        if (filesize($path) > self::mediaLimit()) {
+            return $this->keepOnLargeDisk($slackFile, $path);
+        }
+
+        $isImage   = in_array($slackFile->mime_type, self::IMAGE_MIME_TYPES, true);
+        $extension = pathinfo((string) $slackFile->name, PATHINFO_EXTENSION) ?: Arr::get($slackFile->data, 'filetype') ?: 'bin';
+        $media     = StoreMediaFromFile::run($slackFile, [
+            'path'         => $path,
+            'originalName' => $slackFile->name ?: $slackFile->slack_id,
+            'extension'    => $extension,
+            'checksum'     => md5_file($path),
+        ], 'slack_files', $isImage ? 'image' : 'file');
+
+        $slackFile->update(['state' => SlackFileStateEnum::COPIED, 'reason' => null, 'media_id' => $media->id]);
+
+        return $slackFile;
     }
 
     private function keepOnLargeDisk(SlackFile $slackFile, string $path): SlackFile

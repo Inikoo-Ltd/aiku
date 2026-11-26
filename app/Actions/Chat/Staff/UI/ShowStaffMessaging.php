@@ -59,6 +59,10 @@ class ShowStaffMessaging extends OrgAction
             return redirect()->route('grp.tasks.show', $conversation->context->reference);
         }
 
+        if ($conversation && $conversation->isVerbration() !== $request->routeIs('grp.chat.staff.groups.show')) {
+            return redirect()->route($conversation->isVerbration() ? 'grp.chat.staff.groups.show' : 'grp.chat.staff.show', $conversation->ulid);
+        }
+
         return Inertia::render(
             'Chat/StaffMessaging',
             [

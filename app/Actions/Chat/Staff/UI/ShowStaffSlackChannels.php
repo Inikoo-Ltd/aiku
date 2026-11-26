@@ -139,7 +139,7 @@ class ShowStaffSlackChannels extends OrgAction
     /**
      * A bookmark link is whatever someone typed in Slack: it is linked only when it passes the formatter's check.
      *
-     * @return list<array{id: int, title: string, url: string|null, emoji: array<string, mixed>|null}>
+     * @return list<array{id: int, title: string, url: string|null, emoji_name: string|null, emoji: array<string, mixed>|null}>
      */
     public function bookmarks(SlackChannel $slackChannel): array
     {
@@ -152,6 +152,7 @@ class ShowStaffSlackChannels extends OrgAction
             'id'    => $bookmark->id,
             'title' => $bookmark->title ?: ($bookmark->link ?? ''),
             'url'   => FormatSlackMessages::isSafeUrl($bookmark->link) ? $bookmark->link : null,
+            'emoji_name' => $emojiName($bookmark->emoji),
             'emoji' => $emoji[$emojiName($bookmark->emoji) ?? ''] ?? null,
         ])->values()->all();
     }
@@ -214,7 +215,7 @@ class ShowStaffSlackChannels extends OrgAction
      *
      * When the person can write, also who and which channels the box may mention: live people, members of this channel first.
      *
-     * @return array{allowed: bool, reason: string|null, stand_in: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int}
+     * @return array{allowed: bool, reason: string|null, stand_in: bool, connect_url: string|null, people?: list<array{id: string, label: string}>, channels?: list<array{id: string, label: string}>, member_count?: int, max_file_bytes?: int}
      */
     public function writeState(User $user, ?SlackChannel $slackChannel = null): array
     {
@@ -243,6 +244,7 @@ class ShowStaffSlackChannels extends OrgAction
             'people'       => [['id' => '!here', 'label' => 'here'], ['id' => '!channel', 'label' => 'channel'], ...$people],
             'channels'     => SlackChannel::visibleTo($user)->orderBy('name')->get(['slack_id', 'name'])->map(fn (SlackChannel $channel) => ['id' => $channel->slack_id, 'label' => (string) $channel->name])->all(),
             'member_count' => $members->count(),
+            'max_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::maxBytes(),
         ];
     }
 }

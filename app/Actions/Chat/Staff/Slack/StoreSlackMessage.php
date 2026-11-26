@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack;
 
+use App\Actions\Chat\Staff\Slack\Write\SendSlackFiles;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
@@ -16,6 +17,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -57,6 +59,9 @@ class StoreSlackMessage
         }
 
         $isNew = $message->wasRecentlyCreated && $subtype !== 'message_changed';
+        if (!$message->sent_from_aiku && !$message->trashed() && $this->carriesFileSentFromAiku($message)) {
+            $message->forceFill(['sent_from_aiku' => true])->saveQuietly();
+        }
         rescue(fn () => SlackChannelMessageChanged::dispatch($channel, $message, $message->trashed() ? 'deleted' : ($isNew ? 'new' : 'changed')));
 
         if (!$message->trashed()) {
@@ -69,6 +74,20 @@ class StoreSlackMessage
         }
 
         return $message;
+    }
+
+    /**
+     * Files sent from aiku leave a short-lived marker per Slack file id (SendSlackFiles), since the message itself only arrives with Slack's event.
+     */
+    private function carriesFileSentFromAiku(SlackMessage $message): bool
+    {
+        foreach ((array) Arr::get($message->data, 'files', []) as $file) {
+            if (is_array($file) && ($id = Arr::get($file, 'id')) && Cache::has(SendSlackFiles::sentMarkerKey((string) $id))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
