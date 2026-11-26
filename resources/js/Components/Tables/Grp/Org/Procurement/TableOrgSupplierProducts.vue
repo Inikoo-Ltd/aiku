@@ -61,6 +61,36 @@ function openOrganisationState(productCode: string, organisation: BuyingOrganisa
   isOrganisationStateDialogOpen.value = true
 }
 
+function organisationTooltip(organisation: BuyingOrganisation, canChange: boolean) {
+  const lines = [
+    organisation.is_available
+      ? ctrans(":organisation can order it from this supplier", { organisation: organisation.code })
+      : !organisation.is_supplier_product_available
+        ? ctrans("Not available: the supplier product is unavailable for every organisation")
+        : ctrans("Not available: switched off for :organisation", { organisation: organisation.code }),
+    ctrans("State: :state", { state: organisation.state.label }),
+  ]
+
+  if (organisation.linked_sko_codes.length) {
+    lines.push(ctrans("Linked to SKO :sko", { sko: organisation.linked_sko_codes.join(", ") }))
+  } else {
+    lines.push(ctrans("Not linked to any SKO of :organisation", { organisation: organisation.code }))
+  }
+
+  organisation.sko_suppliers.forEach((skoSupplier) => {
+    const replacements = { sko: skoSupplier.sko_code, suppliers: skoSupplier.supplier_codes.join(", ") }
+    lines.push(organisation.linked_sko_codes.length
+      ? ctrans(":sko is also ordered from :suppliers", replacements)
+      : ctrans(":sko is ordered from :suppliers", replacements))
+  })
+
+  if (canChange) {
+    lines.push(ctrans("Click to change"))
+  }
+
+  return { value: lines.join("\n"), pt: { text: { class: "whitespace-pre-line text-xs" } } }
+}
+
 function organisationChipClass(organisation: BuyingOrganisation) {
   return organisation.is_available
     ? "border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]"
@@ -188,7 +218,7 @@ function orgSupplierRoute(orgSupplierSlug: string) {
           <button
             v-if="organisation.can_edit && organisationStateOptions?.length"
             type="button"
-            v-tooltip="ctrans(':organisation: :state', { organisation: organisation.code, state: organisation.state.label })"
+            v-tooltip="organisationTooltip(organisation, true)"
             class="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs hover:border-[var(--app-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)]"
             :class="organisationChipClass(organisation)"
             @click="openOrganisationState(supplier_product.code, organisation)"
@@ -197,7 +227,7 @@ function orgSupplierRoute(orgSupplierSlug: string) {
           </button>
           <span
             v-else
-            v-tooltip="ctrans(':organisation: :state', { organisation: organisation.code, state: organisation.state.label })"
+            v-tooltip="organisationTooltip(organisation, false)"
             class="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs"
             :class="organisationChipClass(organisation)"
           >

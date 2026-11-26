@@ -41,6 +41,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Support\AgentOrganisationSelection;
@@ -267,30 +268,67 @@ class IndexOrgSupplierProducts extends OrgAction
      */
     private function addBuyingOrganisations(LengthAwarePaginator $orgSupplierProducts, Collection $orgSupplierIds): void
     {
+        $supplierProductIds = $orgSupplierProducts->getCollection()->pluck('supplier_product_id');
+
         $buyingRows = OrgSupplierProduct::query()
             ->with('organisation:id,code')
             ->whereIn('org_supplier_id', $orgSupplierIds)
-            ->whereIn('supplier_product_id', $orgSupplierProducts->getCollection()->pluck('supplier_product_id'))
+            ->whereIn('supplier_product_id', $supplierProductIds)
             ->orderBy('id')
-            ->get(['id', 'organisation_id', 'supplier_product_id', 'state', 'is_available'])
-            ->groupBy('supplier_product_id');
+            ->get(['id', 'organisation_id', 'supplier_product_id', 'state', 'is_available']);
+
+        $linkedSkoCodes = DB::table('org_stock_has_org_supplier_products')
+            ->join('org_stocks', 'org_stocks.id', 'org_stock_has_org_supplier_products.org_stock_id')
+            ->whereIn('org_stock_has_org_supplier_products.org_supplier_product_id', $buyingRows->pluck('id'))
+            ->where('org_stock_has_org_supplier_products.status', true)
+            ->get(['org_stock_has_org_supplier_products.org_supplier_product_id', 'org_stocks.code'])
+            ->groupBy('org_supplier_product_id')
+            ->map(fn (Collection $links) => $links->pluck('code'));
+
+        $skoSuppliers = DB::table('org_stocks')
+            ->join('stock_has_supplier_products', 'stock_has_supplier_products.stock_id', 'org_stocks.stock_id')
+            ->join('org_stock_has_org_supplier_products', function ($join) {
+                $join->on('org_stock_has_org_supplier_products.org_stock_id', 'org_stocks.id')
+                    ->where('org_stock_has_org_supplier_products.status', true);
+            })
+            ->join('org_supplier_products as sko_org_supplier_products', 'sko_org_supplier_products.id', 'org_stock_has_org_supplier_products.org_supplier_product_id')
+            ->join('supplier_products as sko_supplier_products', 'sko_supplier_products.id', 'sko_org_supplier_products.supplier_product_id')
+            ->join('suppliers', 'suppliers.id', 'sko_supplier_products.supplier_id')
+            ->whereIn('stock_has_supplier_products.supplier_product_id', $supplierProductIds)
+            ->whereIn('org_stocks.organisation_id', $buyingRows->pluck('organisation_id')->unique())
+            ->whereNotIn('sko_org_supplier_products.org_supplier_id', $orgSupplierIds)
+            ->distinct()
+            ->get(['stock_has_supplier_products.supplier_product_id', 'org_stocks.organisation_id', 'org_stocks.code as sko_code', 'suppliers.code as supplier_code'])
+            ->groupBy(fn ($link) => $link->supplier_product_id.'-'.$link->organisation_id);
 
         $user           = request()->user();
         $canEditByOrgId = [];
         $stateLabels    = OrgSupplierProductStateEnum::labels();
+        $buyingRows     = $buyingRows->groupBy('supplier_product_id');
 
         foreach ($orgSupplierProducts->getCollection() as $row) {
+            $isSupplierProductAvailable = (bool) $row->is_supplier_product_available;
+
             $row->buying_organisations = $buyingRows->get($row->supplier_product_id, collect())
                 ->groupBy('organisation_id')
-                ->map(function (Collection $organisationRows, int $organisationId) use ($row, $user, &$canEditByOrgId, $stateLabels) {
-                    $shownRow = $organisationRows->firstWhere('is_available', true) ?? $organisationRows->first();
+                ->map(function (Collection $organisationRows, int $organisationId) use ($row, $user, &$canEditByOrgId, $stateLabels, $linkedSkoCodes, $skoSuppliers, $isSupplierProductAvailable) {
+                    $shownRow                   = $organisationRows->firstWhere('is_available', true) ?? $organisationRows->first();
+                    $isOrganisationRowAvailable = $organisationRows->contains('is_available', true);
 
                     return [
-                        'code'                    => $shownRow->organisation->code,
-                        'state'                   => ['value' => $shownRow->state, 'label' => $stateLabels[$shownRow->state] ?? $shownRow->state],
-                        'is_available'            => $row->is_supplier_product_available && $organisationRows->contains('is_available', true),
-                        'org_supplier_product_ids' => $organisationRows->pluck('id')->all(),
-                        'can_edit'                => $canEditByOrgId[$organisationId] ??= $user->authTo("procurement.$organisationId.edit"),
+                        'code'                          => $shownRow->organisation->code,
+                        'state'                         => ['value' => $shownRow->state, 'label' => $stateLabels[$shownRow->state] ?? $shownRow->state],
+                        'is_available'                  => $isSupplierProductAvailable && $isOrganisationRowAvailable,
+                        'is_organisation_row_available' => $isOrganisationRowAvailable,
+                        'is_supplier_product_available' => $isSupplierProductAvailable,
+                        'linked_sko_codes'              => $organisationRows->flatMap(fn (OrgSupplierProduct $organisationRow) => $linkedSkoCodes->get($organisationRow->id, collect()))->unique()->values()->all(),
+                        'sko_suppliers'                 => $skoSuppliers->get($row->supplier_product_id.'-'.$organisationId, collect())
+                            ->groupBy('sko_code')
+                            ->map(fn (Collection $links, string $skoCode) => ['sko_code' => $skoCode, 'supplier_codes' => $links->pluck('supplier_code')->unique()->sort()->values()->all()])
+                            ->values()
+                            ->all(),
+                        'org_supplier_product_ids'      => $organisationRows->pluck('id')->all(),
+                        'can_edit'                      => $canEditByOrgId[$organisationId] ??= $user->authTo("procurement.$organisationId.edit"),
                     ];
                 })
                 ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
