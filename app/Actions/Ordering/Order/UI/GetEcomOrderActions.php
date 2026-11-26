@@ -227,7 +227,7 @@ class GetEcomOrderActions
                 ],
                 OrderStateEnum::FINALISED => [
 
-                    $order->invoices->count() == 0 ?
+                    $order->invoices->count() == 0 && !$order->sharedBillingInvoice() ?
                         [
                             'type'    => 'button',
                             'style'   => '',
@@ -246,7 +246,7 @@ class GetEcomOrderActions
 
                 OrderStateEnum::DISPATCHED => [
 
-                    $order->invoices->count() == 0 ?
+                    $order->invoices->count() == 0 && !$order->sharedBillingInvoice() ?
                         [
                             'type'    => 'button',
                             'style'   => '',

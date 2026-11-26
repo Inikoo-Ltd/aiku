@@ -30,6 +30,14 @@ use Spatie\QueryBuilder\Sorts\Sort;
 
 class IndexStockDeliveryItems extends OrgAction
 {
+    public static function pendingItemStates(): array
+    {
+        return StockDeliveryItemStateEnum::valuesExcept([
+            StockDeliveryItemStateEnum::PLACED,
+            StockDeliveryItemStateEnum::CANCELLED,
+        ]);
+    }
+
     protected function getElementGroups(StockDelivery $stockDelivery, bool $byProduct = false): array
     {
         $productCounts = $byProduct ? self::productCountsByState($stockDelivery) : null;
@@ -73,6 +81,7 @@ class IndexStockDeliveryItems extends OrgAction
         ];
 
         $counts = $stockDelivery->items()
+            ->whereIn('stock_delivery_items.state', self::pendingItemStates())
             ->selectRaw(collect($conditions)->map(fn (string $condition, string $key) => "count(*) filter (where $condition) as $key")->implode(', '))
             ->first();
 

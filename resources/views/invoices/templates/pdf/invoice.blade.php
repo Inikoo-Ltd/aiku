@@ -102,6 +102,9 @@
 </head>
 <body>
 @php($order = $invoice->order)
+@php($billedOrders = $order ? \App\Models\Ordering\Order::whereIn('id', $invoice->invoiceTransactions()->whereNotNull('order_id')->pluck('order_id')->push($order->id)->unique())->get(['id', 'gross_amount', 'goods_amount']) : collect())
+@php($itemsGross = (float) $billedOrders->sum('gross_amount'))
+@php($itemsNet = (float) $billedOrders->sum('goods_amount'))
 <htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
@@ -578,24 +581,24 @@
                 <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
             </tr>
 
-        @elseif ($order && ($order?->goods_amount != $order->gross_amount))
+        @elseif ($order && ($itemsNet != $itemsGross))
 
             <tr>
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td colspan="{{ $totalsLabelColspan }}">{{ __('Total Gross') }}</td>
-                <td>{{ $invoice->currency->symbol . $order->gross_amount }}</td>
+                <td>{{ $invoice->currency->symbol . number_format($itemsGross, 2) }}</td>
             </tr>
 
             <tr>
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td colspan="{{ $totalsLabelColspan }}" style="color: #16a34a">{{ __('Discounts') }}</td>
-                <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($order->gross_amount - $order->goods_amount, 2) }}</td>
+                <td style="color: #16a34a">- {{ $invoice->currency->symbol . number_format($itemsGross - $itemsNet, 2) }}</td>
             </tr>
 
             <tr>
                 <td style="border:none" colspan="{{ $totalsFillerColspan }}"></td>
                 <td colspan="{{ $totalsLabelColspan }}">{{ __('Items Net') }}</td>
-                <td>{{ $invoice->currency->symbol . $order->goods_amount }}</td>
+                <td>{{ $invoice->currency->symbol . number_format($itemsNet, 2) }}</td>
             </tr>
 
             <tr>
