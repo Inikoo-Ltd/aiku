@@ -12,6 +12,8 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterShop;
+use App\Models\Production\Artefact;
+use App\Models\Production\ManufacturePayBand;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -20,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Computes master_assets.effective_cost: the cost of one outer in group currency,
+ * Computes master_assets.effective_cost: the cost of one outer in group currency, each trade unit
  * averaged across the organisations that stock it, weighted by their available stock
  * (sales are served where the stock is). Falls back to a simple average when nothing
  * is in stock anywhere. A trade unit made in-house counts only the organisations making it.
@@ -37,6 +39,9 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
 
     /** @var array<int, float|null> */
     private array $orgToGroupRate = [];
+
+    /** @var array<string, float|null> */
+    private array $productionUnitCosts = [];
 
     public function getJobUniqueId(MasterAsset $masterAsset): string
     {
@@ -67,9 +72,9 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
 
     public function handle(MasterAsset $masterAsset): void
     {
-        $perOrg = $this->costsByOrganisation($masterAsset);
+        $cost = $this->cost($masterAsset);
 
-        if (!$perOrg) {
+        if ($cost === null) {
             if ($masterAsset->effective_cost !== null) {
                 $masterAsset->updateQuietly(['effective_cost' => null]);
             }
@@ -77,12 +82,7 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
             return;
         }
 
-        $weightedCost = $this->weightedCost($perOrg);
-        if ($weightedCost === null) {
-            return;
-        }
-
-        $effectiveCost = round($weightedCost, 4);
+        $effectiveCost = round($cost, 4);
 
         if ((float) $masterAsset->effective_cost !== $effectiveCost) {
             $masterAsset->updateQuietly(['effective_cost' => $effectiveCost]);
@@ -99,8 +99,8 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
             return null;
         }
 
-        $currentCost = $this->weightedCost($this->costsByOrganisation($masterAsset));
-        $newCost     = $this->weightedCost($this->costsByOrganisation($masterAsset, $stockId, $priceRatio));
+        $currentCost = $this->cost($masterAsset);
+        $newCost     = $this->cost($masterAsset, $stockId, $priceRatio);
 
         if (!$currentCost || $newCost === null) {
             return null;
@@ -110,46 +110,58 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
     }
 
     /**
-     * @return array<int, array{cost: float, availability: array<int, float>, weight: float}>
+     * One outer in group currency: each trade unit at the average unit cost of the organisations costing it,
+     * weighted by the units each has available (sales are served where the stock is), or a plain average when
+     * none has stock, times its quantity in the outer. Null when no trade unit has a cost.
      */
-    private function costsByOrganisation(MasterAsset $masterAsset, ?int $repricedStockId = null, float $priceRatio = 1): array
+    private function cost(MasterAsset $masterAsset, ?int $repricedStockId = null, float $priceRatio = 1): ?float
     {
-        $perOrg = [];
+        $total   = 0.0;
+        $costed  = false;
+        $toGroup = fn (int $organisationId) => $this->getOrgToGroupRate($organisationId);
 
         foreach ($masterAsset->tradeUnits as $tradeUnit) {
-            $tradeUnitQuantity = (float) $tradeUnit->pivot->quantity;
+            $orgStocks   = self::costingOrgStocks($tradeUnit->orgStocks, $toGroup);
+            $makersOnly  = $orgStocks->every(fn (OrgStock $orgStock) => $orgStock->is_made_in_house)
+                && $orgStocks->count() < $tradeUnit->orgStocks->count();
+            $buyerMax    = $tradeUnit->orgStocks->reject(fn (OrgStock $orgStock) => $orgStock->is_made_in_house)
+                ->map(fn (OrgStock $orgStock) => self::skuCost($orgStock) / (float) ($orgStock->packed_in ?: 1) * (float) $toGroup($orgStock->organisation_id))
+                ->max();
 
-            foreach (self::costingOrgStocks($tradeUnit->orgStocks, fn (int $organisationId) => $this->getOrgToGroupRate($organisationId)) as $orgStock) {
+            $weightedSum = $weights = $plainSum = 0.0;
+            $count       = 0;
+            foreach ($orgStocks as $orgStock) {
+                $rate    = $toGroup($orgStock->organisation_id);
                 $skuCost = self::skuCost($orgStock);
-                if ($skuCost <= 0) {
+                if (!$rate || $skuCost <= 0) {
                     continue;
                 }
-
                 if ($repricedStockId !== null && $orgStock->stock_id === $repricedStockId) {
                     $skuCost *= $priceRatio;
                 }
 
-                $unitCost = $skuCost / (float) ($orgStock->packed_in ?: 1);
+                $unitCost = $skuCost / (float) ($orgStock->packed_in ?: 1) * $rate;
+                if ($makersOnly) {
+                    $floor    = ($this->productionUnitCost($orgStock->organisation_id, $tradeUnit->id) ?? 0) * $rate;
+                    $unitCost = max($unitCost, $buyerMax ? min($floor, $buyerMax) : $floor);
+                }
 
-                $perOrg[$orgStock->organisation_id]['cost'] = ($perOrg[$orgStock->organisation_id]['cost'] ?? 0)
-                    + $unitCost * $tradeUnitQuantity;
-                $perOrg[$orgStock->organisation_id]['availability'][$tradeUnit->id]
-                    = ($perOrg[$orgStock->organisation_id]['availability'][$tradeUnit->id] ?? 0)
-                    + max(0, (float) $orgStock->quantity_available) / ($tradeUnitQuantity ?: 1);
+                $available    = max(0, (float) $orgStock->quantity_available);
+                $weightedSum += $unitCost * $available;
+                $weights     += $available;
+                $plainSum    += $unitCost;
+                $count++;
             }
+
+            if (!$count) {
+                continue;
+            }
+
+            $costed = true;
+            $total += ($weights > 0 ? $weightedSum / $weights : $plainSum / $count) * (float) $tradeUnit->pivot->quantity;
         }
 
-        // An org's weight is the sellable outers it can actually assemble: for a multi
-        // trade unit bundle that is bounded by the scarcest component, not the sum of
-        // all components' stock (which double-counts bundles vs single-unit assets)
-        foreach ($perOrg as &$orgData) {
-            $orgData['weight'] = min($orgData['availability']);
-        }
-        unset($orgData);
-
-        $coveringEveryTradeUnit = array_filter($perOrg, fn (array $orgData) => count($orgData['availability']) === $masterAsset->tradeUnits->count());
-
-        return $coveringEveryTradeUnit ?: $perOrg;
+        return $costed ? $total : null;
     }
 
     /**
@@ -186,6 +198,49 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         return $makers->isNotEmpty() ? $makers : $orgStocks;
     }
 
+    /**
+     * What one trade unit costs the organisation making it today, from its artefact's recipe: raw materials at
+     * their current cost plus labour at each step's target per hour paid at band 0. A floor under the maker's
+     * stock cost, which may be years old (INI-567). Null without a recipe.
+     */
+    public function productionUnitCost(int $organisationId, int $tradeUnitId): ?float
+    {
+        $key = $organisationId.':'.$tradeUnitId;
+        if (array_key_exists($key, $this->productionUnitCosts)) {
+            return $this->productionUnitCosts[$key];
+        }
+
+        $artefact = Artefact::where('organisation_id', $organisationId)
+            ->where('trade_unit_id', $tradeUnitId)
+            ->orderByRaw("state = 'active' desc")
+            ->orderBy('id')
+            ->first(['id', 'production_id']);
+
+        if (!$artefact) {
+            return $this->productionUnitCosts[$key] = null;
+        }
+
+        $materials = (float) DB::table('artefacts_manufacture_tasks')
+            ->join('recipe_step_raw_materials', 'recipe_step_raw_materials.artefact_manufacture_task_id', '=', 'artefacts_manufacture_tasks.id')
+            ->join('raw_materials', 'raw_materials.id', '=', 'recipe_step_raw_materials.raw_material_id')
+            ->where('artefacts_manufacture_tasks.artefact_id', $artefact->id)
+            ->whereNull('raw_materials.deleted_at')
+            ->sum(DB::raw('recipe_step_raw_materials.quantity_per_unit * raw_materials.unit_cost'));
+
+        $hoursPerUnit = (float) DB::table('artefacts_manufacture_tasks')
+            ->join('manufacture_tasks', 'manufacture_tasks.id', '=', 'artefacts_manufacture_tasks.manufacture_task_id')
+            ->where('artefacts_manufacture_tasks.artefact_id', $artefact->id)
+            ->sum(DB::raw('COALESCE(artefacts_manufacture_tasks.units_per_artefact, 1) / NULLIF(COALESCE(artefacts_manufacture_tasks.standard_rate, manufacture_tasks.standard_rate), 0)'));
+
+        $hourlyRate = $hoursPerUnit > 0
+            ? (float) ManufacturePayBand::query()->effectiveAt($artefact->production_id, now())->where('code', '0')->value('hourly_rate')
+            : 0;
+
+        $cost = $materials + $hoursPerUnit * $hourlyRate;
+
+        return $this->productionUnitCosts[$key] = $cost > 0 ? $cost : null;
+    }
+
     private static function skuCost(OrgStock $orgStock): float
     {
         foreach ([$orgStock->lpp_per_sku, $orgStock->current_supplier_sku_cost, $orgStock->sku_value] as $cost) {
@@ -195,37 +250,6 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         }
 
         return 0;
-    }
-
-    /**
-     * @param  array<int, array{cost: float, availability: array<int, float>, weight: float}>  $perOrg
-     */
-    private function weightedCost(array $perOrg): ?float
-    {
-        $weightedSum = 0;
-        $totalWeight = 0;
-        $plainSum    = 0;
-        $orgCount    = 0;
-
-        foreach ($perOrg as $organisationId => $data) {
-            $rate = $this->getOrgToGroupRate($organisationId);
-            if (!$rate) {
-                continue;
-            }
-
-            $groupCost = $data['cost'] * $rate;
-
-            $weightedSum += $groupCost * $data['weight'];
-            $totalWeight += $data['weight'];
-            $plainSum    += $groupCost;
-            $orgCount++;
-        }
-
-        if (!$orgCount) {
-            return null;
-        }
-
-        return $totalWeight > 0 ? $weightedSum / $totalWeight : $plainSum / $orgCount;
     }
 
     private function getOrgToGroupRate(int $organisationId): ?float

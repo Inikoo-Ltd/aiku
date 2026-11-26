@@ -33,11 +33,12 @@ class GetMasterAssetsPartnerPricing
     public const string AROMA_MASTER_SHOP_SLUG = 'aroma';
 
     /**
-     * INI-567, 26 Nov 2026: rough Aromatics overhead per unit made, in group currency (about £1.24M a year over about
-     * 1.5M units: staff time not booked on products, building, energy, ads and software). Shown as a hint next to the
-     * cost, never added to effective_cost. Replace with real figures once Aroma's main bank account is connected.
+     * INI-567, 26 Nov 2026: rough Aromatics production overhead per unit made, in group currency, revised after QA
+     * (≈ £470–530k a year over ≈ 1.7–1.9M units: production time not on the tablets, production management, building
+     * and energy; selling and warehouse staff left out). Shown as a hint next to the cost, never added to
+     * effective_cost. Replace with real figures once Aroma's main bank account is connected.
      */
-    public const float ESTIMATED_OVERHEAD_PER_UNIT = 0.81;
+    public const float ESTIMATED_OVERHEAD_PER_UNIT = 0.30;
 
     public static function estimatedOverhead(MasterAsset $masterAsset): float
     {
