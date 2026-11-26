@@ -15,10 +15,14 @@ use App\Actions\Procurement\OrgSupplierProducts\RepairOrgSupplierProductsSupplie
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSupplierProducts;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SupplyChain\SupplierProduct\MergeSupplierProducts;
+use App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum;
+use App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestTypeEnum;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierChangeRequest;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -157,6 +161,37 @@ class MergeSuppliers
         if ($blockers) {
             throw ValidationException::withMessages(['target_supplier_id' => implode(' ', $blockers)]);
         }
+    }
+
+    /**
+     * Who merged an archived duplicate comes from the approved merge suggestion; a merge without one shows only when.
+     *
+     * @return array{supplier: Supplier, code: string, name: string, merged_by: string|null, merged_at: mixed}|null
+     */
+    public static function mergedInto(Supplier $duplicate): ?array
+    {
+        $keptSupplierId = Arr::get($duplicate->data ?? [], 'merged_into_supplier_id');
+        $kept           = $keptSupplierId ? Supplier::find($keptSupplierId) : null;
+
+        if (!$kept) {
+            return null;
+        }
+
+        $approvedMerge = SupplierChangeRequest::where('supplier_id', $duplicate->id)
+            ->where('target_supplier_id', $kept->id)
+            ->where('type', SupplierChangeRequestTypeEnum::MERGE)
+            ->where('state', SupplierChangeRequestStateEnum::APPROVED)
+            ->with('decidedBy')
+            ->latest('decided_at')
+            ->first();
+
+        return [
+            'supplier'  => $kept,
+            'code'      => $kept->code,
+            'name'      => $kept->name,
+            'merged_by' => $approvedMerge?->decidedBy?->contact_name ?: $approvedMerge?->decidedBy?->username,
+            'merged_at' => $approvedMerge?->decided_at ?? $duplicate->archived_at,
+        ];
     }
 
     /**

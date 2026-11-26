@@ -35,6 +35,7 @@ import AgentAgreementsByOrganisation from '@/Components/Procurement/AgentAgreeme
 import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
 import PurchaseOrderForOrganisationMenu from '@/Components/Procurement/PurchaseOrderForOrganisationMenu.vue'
 import SupplierArchiveButton from '@/Components/SupplyChain/SupplierArchiveButton.vue'
+import SupplierMergedInto from '@/Components/SupplyChain/SupplierMergedInto.vue'
 import SupplierArchivedBadge from '@/Components/SupplyChain/SupplierArchivedBadge.vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
@@ -78,7 +79,7 @@ const props = defineProps<{
     attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
     attachmentScopes: { name: string; code: string }[]
     archive?: InstanceType<typeof SupplierArchiveButton>["$props"]["archive"] | null
-    archived?: { is_archived: boolean; archived_at: string | null }
+    archived?: { is_archived: boolean; archived_at: string | null; merged_into?: InstanceType<typeof SupplierMergedInto>["$props"]["mergedInto"] | null }
     productDevelopments?: InstanceType<typeof ProductDevelopmentRelatedList>["$props"]["data"] | null
 }>()
 
@@ -120,6 +121,7 @@ const getErrors = () => {
         <template #afterTitle2>
             <SupplierAgreementStatusBadge v-if="agreement?.supplier_agreement?.status" :status="agreement.supplier_agreement" class="ml-2" />
             <SupplierArchivedBadge v-if="archived?.is_archived" :archivedAt="archived.archived_at" class="ml-2" />
+            <SupplierMergedInto v-if="archived?.merged_into" :mergedInto="archived.merged_into" class="ml-2" />
         </template>
         <template #button-group-purchase-order-organisation="{ action }">
             <PurchaseOrderForOrganisationMenu :action="action" />

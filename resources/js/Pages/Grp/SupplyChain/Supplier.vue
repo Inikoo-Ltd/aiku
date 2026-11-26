@@ -31,6 +31,7 @@ import { routeType } from "@/types/route"
 import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
 import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.vue'
 import SupplierArchiveButton from '@/Components/SupplyChain/SupplierArchiveButton.vue'
+import SupplierMergedInto from '@/Components/SupplyChain/SupplierMergedInto.vue'
 import SupplierArchivedBadge from '@/Components/SupplyChain/SupplierArchivedBadge.vue'
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -63,6 +64,7 @@ const props = defineProps<{
         is_archived: boolean
         supplier_name: string
         archived_at: string | null
+        merged_into?: InstanceType<typeof SupplierMergedInto>["$props"]["mergedInto"] | null
         can_archive: boolean
         route: routeType
     }
@@ -92,6 +94,7 @@ const component = computed(() => {
         <template #afterTitle2>
             <SupplierAgreementStatusBadge v-if="agreement?.supplier_agreement?.status" :status="agreement.supplier_agreement" class="ml-2" />
             <SupplierArchivedBadge v-if="archive.is_archived" :archivedAt="archive.archived_at" class="ml-2" />
+            <SupplierMergedInto v-if="archive.merged_into" :mergedInto="archive.merged_into" class="ml-2" />
         </template>
         <template #other>
             <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />

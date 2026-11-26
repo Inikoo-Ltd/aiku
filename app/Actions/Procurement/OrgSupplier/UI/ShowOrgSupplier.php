@@ -25,6 +25,7 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
+use App\Actions\SupplyChain\Supplier\MergeSuppliers;
 use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
 use App\Actions\SupplyChain\Supplier\UpdateSupplier;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
@@ -135,6 +136,7 @@ class ShowOrgSupplier extends OrgAction
                 'archived' => [
                     'is_archived' => !$supplier->status,
                     'archived_at' => $supplier->status ? null : $supplier->archived_at,
+                    'merged_into' => $this->mergedInto($supplier, $selection, $request),
                 ],
 
                 'agreement' => GetAgreement::run($supplier, $agreementOrganisation, $request->user(), $forAgent)
@@ -291,7 +293,7 @@ class ShowOrgSupplier extends OrgAction
 
     private function siblings(OrgSupplier $orgSupplier): Builder
     {
-        $query = OrgSupplier::where('organisation_id', $orgSupplier->organisation_id)->whereHas('supplier');
+        $query = OrgSupplier::where('organisation_id', $orgSupplier->organisation_id)->where('status', true)->whereHas('supplier');
 
         if (isset($this->parent) && $this->parent instanceof OrgAgent) {
             $query->where('org_agent_id', $this->parent->id);
@@ -323,6 +325,36 @@ class ShowOrgSupplier extends OrgAction
     }
 
     /**
+     * A supplier merged into another stays archived for good, so the page points to the supplier that took over.
+     *
+     * @return array{code: string, name: string, merged_by: string|null, merged_at: mixed, route: array{name: string, parameters: array<string, mixed>}|null}|null
+     */
+    private function mergedInto(Supplier $supplier, ?AgentOrganisationSelection $selection, ActionRequest $request): ?array
+    {
+        $mergedInto = MergeSuppliers::mergedInto($supplier);
+
+        if (!$mergedInto) {
+            return null;
+        }
+
+        $kept  = Arr::pull($mergedInto, 'supplier');
+        $route = null;
+        if ($selection) {
+            $route = [
+                'name'       => $request->route()->getName(),
+                'parameters' => [...$request->route()->originalParameters(), 'supplier' => $kept->slug],
+            ];
+        } elseif ($orgSupplier = OrgSupplier::where('organisation_id', $this->organisation->id)->where('supplier_id', $kept->id)->first()) {
+            $route = [
+                'name'       => $request->route()->getName(),
+                'parameters' => [...$request->route()->originalParameters(), 'orgSupplier' => $orgSupplier->slug],
+            ];
+        }
+
+        return [...$mergedInto, 'route' => $route];
+    }
+
+    /**
      * Previous / next walk the agent's suppliers in the order of its suppliers list, by code; the arrows carry the
      * page's query, so the selected organisation stays.
      */
@@ -331,6 +363,7 @@ class ShowOrgSupplier extends OrgAction
         $organisation = $this->organisation ?? request()->route('organisation');
         $agent        = $this->getOrganisationAgent($organisation);
         $sibling      = Supplier::where('agent_id', $agent->id)
+            ->where('status', true)
             ->whereHas('orgSuppliers', fn (Builder $query) => $query->whereIn('org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id')))
             ->whereRaw("(code, id) $direction (?, ?)", [$supplier->code, $supplier->id])
             ->orderBy('code', $direction === '<' ? 'desc' : 'asc')

@@ -20,6 +20,7 @@ use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
 use App\Actions\SupplyChain\Supplier\DeactivateSupplier;
+use App\Actions\SupplyChain\Supplier\MergeSuppliers;
 use App\Actions\SupplyChain\Supplier\ReactivateSupplier;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
@@ -139,6 +140,7 @@ class ShowSupplier extends OrgAction
                     'is_archived'   => !$supplier->status,
                     'supplier_name' => $supplier->name,
                     'archived_at'   => $supplier->archived_at,
+                    'merged_into'   => $this->mergedInto($supplier, $request),
                     'open_purchase_orders' => $supplier->status ? DeactivateSupplier::make()->openPurchaseOrders($supplier) : [],
                     'can_archive'   => DeactivateSupplier::canArchive($request->user(), $supplier) && !ReactivateSupplier::wasMerged($supplier),
                     'route'         => [
@@ -316,4 +318,25 @@ class ShowSupplier extends OrgAction
         ];
     }
 
+    /**
+     * @return array{code: string, name: string, merged_by: string|null, merged_at: mixed, route: array{name: string, parameters: array<string, mixed>}}|null
+     */
+    private function mergedInto(Supplier $supplier, ActionRequest $request): ?array
+    {
+        $mergedInto = MergeSuppliers::mergedInto($supplier);
+
+        if (!$mergedInto) {
+            return null;
+        }
+
+        $kept = Arr::pull($mergedInto, 'supplier');
+
+        return [
+            ...$mergedInto,
+            'route' => [
+                'name'       => $request->route()->getName(),
+                'parameters' => [...$request->route()->originalParameters(), 'supplier' => $kept->slug],
+            ],
+        ];
+    }
 }
