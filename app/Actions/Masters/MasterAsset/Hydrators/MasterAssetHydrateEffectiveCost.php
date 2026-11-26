@@ -119,14 +119,8 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         foreach ($masterAsset->tradeUnits as $tradeUnit) {
             $tradeUnitQuantity = (float) $tradeUnit->pivot->quantity;
 
-            foreach (self::costingOrgStocks($tradeUnit->orgStocks) as $orgStock) {
-                $skuCost = (float) ($orgStock->lpp_per_sku ?? 0);
-                if ($skuCost <= 0) {
-                    $skuCost = (float) ($orgStock->current_supplier_sku_cost ?? 0);
-                }
-                if ($skuCost <= 0) {
-                    $skuCost = (float) ($orgStock->sku_value ?? 0);
-                }
+            foreach (self::costingOrgStocks($tradeUnit->orgStocks, fn (int $organisationId) => $this->getOrgToGroupRate($organisationId)) as $orgStock) {
+                $skuCost = self::skuCost($orgStock);
                 if ($skuCost <= 0) {
                     continue;
                 }
@@ -153,22 +147,54 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         }
         unset($orgData);
 
-        return $perOrg;
+        $coveringEveryTradeUnit = array_filter($perOrg, fn (array $orgData) => count($orgData['availability']) === $masterAsset->tradeUnits->count());
+
+        return $coveringEveryTradeUnit ?: $perOrg;
     }
 
     /**
      * A trade unit one of our organisations makes is costed by its makers only: the others buy it from them,
-     * so their purchase price is the maker's selling price, not a cost (INI-567).
+     * so their purchase price is the maker's selling price, not a cost (INI-567). The flag is set by any artefact,
+     * so a maker counts only with a real purchase price that is plausible against what the others paid for it:
+     * at most their dearest price and at least a fifth of their cheapest. Otherwise every organisation counts.
      *
      * @param  Collection<int, OrgStock>  $orgStocks
+     * @param  callable(int): (float|null)|null  $toGroupRate
      * @return Collection<int, OrgStock>
      */
-    public static function costingOrgStocks(Collection $orgStocks): Collection
+    public static function costingOrgStocks(Collection $orgStocks, ?callable $toGroupRate = null): Collection
     {
-        $makers = $orgStocks->filter(fn (OrgStock $orgStock) => $orgStock->is_made_in_house
-            && max((float) $orgStock->lpp_per_sku, (float) $orgStock->current_supplier_sku_cost, (float) $orgStock->sku_value) > 0);
+        $groupUnitCost = function (OrgStock $orgStock) use ($toGroupRate): float {
+            $rate = $toGroupRate ? (float) $toGroupRate($orgStock->organisation_id) : 1.0;
+
+            return self::skuCost($orgStock) / (float) ($orgStock->packed_in ?: 1) * $rate;
+        };
+
+        $buyerCosts = $orgStocks->reject(fn (OrgStock $orgStock) => $orgStock->is_made_in_house)
+            ->map($groupUnitCost)
+            ->filter(fn (float $cost) => $cost > 0);
+
+        $makers = $orgStocks->filter(function (OrgStock $orgStock) use ($groupUnitCost, $buyerCosts) {
+            if (!$orgStock->is_made_in_house || (float) $orgStock->lpp_per_sku <= 0) {
+                return false;
+            }
+            $cost = $groupUnitCost($orgStock);
+
+            return $cost > 0 && ($buyerCosts->isEmpty() || ($cost <= $buyerCosts->max() && $cost >= $buyerCosts->min() * 0.2));
+        });
 
         return $makers->isNotEmpty() ? $makers : $orgStocks;
+    }
+
+    private static function skuCost(OrgStock $orgStock): float
+    {
+        foreach ([$orgStock->lpp_per_sku, $orgStock->current_supplier_sku_cost, $orgStock->sku_value] as $cost) {
+            if ((float) $cost > 0) {
+                return (float) $cost;
+            }
+        }
+
+        return 0;
     }
 
     /**
