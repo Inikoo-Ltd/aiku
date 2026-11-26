@@ -150,7 +150,10 @@ const subscribeApp = async () => {
 // Embedded Signup is Meta's own popup: Facebook Login hands back a short lived code, and the
 // signup page posts the account and number it connected to this window as a message. Both are
 // needed, in either order, before the server can finish the connection.
-const canConnect = computed(() => !!(props.fieldData.routes.embedded_signup && props.fieldData.embedded_signup?.app_id && props.fieldData.embedded_signup?.config_id))
+// A number already registered on the Cloud API has left the Business app, and Meta cannot bring
+// it back into Coexistence, so the signup would only fail.
+const isOnCloudApi = computed(() => !isCoexistence.value && isConnected.value && status.value?.platform_type === "CLOUD_API")
+const canConnect = computed(() => !isOnCloudApi.value && !!(props.fieldData.routes.embedded_signup && props.fieldData.embedded_signup?.app_id && props.fieldData.embedded_signup?.config_id))
 const isConnecting = ref(false)
 const connectError = ref("")
 let signupCode: string | null = null

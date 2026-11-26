@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -20,10 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateAnnouncement extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
+    use WithWebEditAuthorisation;
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): Response|RedirectResponse
     {

@@ -1020,6 +1020,32 @@ test('the create blog and webpage pages and buttons show only to users who can s
     SetUserAuthorisedModels::run($this->user);
 })->depends('launch website');
 
+test('the create announcement page, button and save are refused to users who can only view the website', function (Website $website) {
+    $originalRoles = $this->user->roles->pluck('name')->toArray();
+    $shopId        = $website->shop_id;
+    $websiteRoute  = [$this->organisation->slug, $this->shop->slug, $website->slug];
+    $createActions = fn () => collect(get(route('grp.org.shops.show.web.announcements.index', $websiteRoute))->viewData('page')['props']['pageHead']['actions'] ?? [])
+        ->pluck('route.name')
+        ->filter(fn (?string $name) => $name && str_ends_with($name, '.create'));
+
+    actingAsUserWithOnlyPermissions($this->user, ["web.$shopId.view", "web.$shopId.edit.landing-pages"]);
+
+    get(route('grp.org.shops.show.web.announcements.create', $websiteRoute))->assertForbidden();
+    expect($createActions())->toBeEmpty();
+    post(route('grp.models.shop.website.announcement.store', [$shopId, $website->id]), ['name' => 'Viewer announcement'])->assertForbidden();
+    expect($website->announcements()->where('name', 'Viewer announcement')->exists())->toBeFalse();
+
+    actingAsUserWithOnlyPermissions($this->user, ["web.$shopId.view", "web.$shopId.edit"]);
+
+    get(route('grp.org.shops.show.web.announcements.create', $websiteRoute))->assertOk();
+    expect($createActions())->toContain('grp.org.shops.show.web.announcements.create');
+    post(route('grp.models.shop.website.announcement.store', [$shopId, $website->id]), ['name' => 'Editor announcement'])->assertRedirect();
+    expect($website->announcements()->where('name', 'Editor announcement')->exists())->toBeTrue();
+
+    actingAsUserWithRoles($this->user, $originalRoles);
+    SetUserAuthorisedModels::run($this->user);
+})->depends('create webpage');
+
 
 test('web sitemap creation', function () {
 

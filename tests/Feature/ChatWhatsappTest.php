@@ -1185,6 +1185,184 @@ test('the WhatsApp Business app history is filed as dated, read messages on a cl
     $this->shop->update(['settings' => $original]);
 });
 
+/**
+ * Builds a wamid the way Meta encodes it: the phone number on the far side, then the message key.
+ * The live copy of a message and its history copy differ only in that phone number.
+ */
+function fakeWamid(string $phone, string $key): string
+{
+    return 'wamid.'.base64_encode("\x1c\x18".chr(strlen($phone)).$phone."\x15\x02\x00\x11\x18".chr(strlen($key)).$key."\x00");
+}
+
+test('a WhatsApp message key is read from the wamid and is the same for the live and history copies', function () {
+    $live    = 'wamid.HBgNNjI4MTk1MzkyNzUyMxUCABEYFENFRkJENDMxNzQyRjFGQjM2M0VCAA==';
+    $history = 'wamid.HBgNNjI4MjI2NDc5OTc5MhUCABEYFENFRkJENDMxNzQyRjFGQjM2M0VCAA==';
+    $echo    = 'wamid.HBgTSUQuMTE5OTIzNzU3NjExMDI4NRUUABEYIEE1MjQzMDIzNDAzQUY1MUUyODdEMEY2OEE2MDE1QzcyAA==';
+
+    expect(\App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::waMessageKey($live))->toBe('CEFBD431742F1FB363EB')
+        ->and(\App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::waMessageKey($history))->toBe('CEFBD431742F1FB363EB')
+        ->and(\App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::waMessageKey($echo))->toBe('A5243023403AF51E287D0F68A6015C72')
+        ->and(\App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::waMessageKey('wamid.hist-abc'))->toBeNull()
+        ->and(\App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::waMessageKey(null))->toBeNull();
+});
+
+test('the WhatsApp Business app history skips messages already in the conversation and is imported once when Meta resends it', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+    $customer      = '4475000001'.random_int(10, 99);
+    $business      = '34678502048';
+    $sentAt        = now()->subMinutes(30)->startOfMinute();
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'phone_number' => '+'.$customer]);
+
+    $greetingKey = strtoupper(Str::random(20));
+    \App\Actions\Chat\MetaChatSession\StoreMetaChatMessage::run($session, [
+        'meta_message_id' => fakeWamid($customer, $greetingKey),
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::SYSTEM,
+        'message_text'    => 'Thank you for your message',
+        'created_at'      => $sentAt,
+    ]);
+
+    $echoKey = strtoupper(Str::random(32));
+    \App\Actions\Chat\Whatsapp\StoreWhatsappMessageEcho::make()->handle([
+        'metadata'       => ['phone_number_id' => $phoneNumberId, 'display_phone_number' => $business],
+        'message_echoes' => [['from' => $business, 'to' => $customer, 'id' => fakeWamid('ID.1199237576110285', $echoKey), 'timestamp' => (string) $sentAt->timestamp, 'type' => 'text', 'text' => ['body' => 'Hello']]],
+    ]);
+
+    \App\Actions\Chat\MetaChatSession\StoreMetaChatMessage::run($session, [
+        'meta_message_id' => 'wamid.live-'.Str::random(8),
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::AGENT,
+        'message_text'    => 'hello this is a reply from aiku',
+        'created_at'      => $sentAt->copy()->addMinutes(2),
+    ]);
+
+    $history = [
+        'metadata' => ['phone_number_id' => $phoneNumberId, 'display_phone_number' => $business],
+        'history'  => [[
+            'threads' => [[
+                'id'       => $customer,
+                'messages' => [
+                    ['from' => $business, 'to' => $customer, 'id' => fakeWamid($business, $greetingKey), 'timestamp' => (string) $sentAt->copy()->addSecond()->timestamp, 'type' => 'text', 'text' => ['body' => 'Thank you for your message']],
+                    ['from' => $business, 'to' => $customer, 'id' => fakeWamid($business, $echoKey), 'timestamp' => (string) $sentAt->copy()->subSeconds(2)->timestamp, 'type' => 'text', 'text' => ['body' => 'Hello']],
+                    ['from' => $business, 'to' => $customer, 'id' => 'wamid.hist-'.Str::random(8), 'timestamp' => (string) $sentAt->copy()->addMinutes(2)->addSeconds(2)->timestamp, 'type' => 'text', 'text' => ['body' => 'hello this is a reply from aiku']],
+                    ['from' => $customer, 'id' => fakeWamid($customer, strtoupper(Str::random(32))), 'timestamp' => (string) $sentAt->copy()->addMinutes(5)->timestamp, 'type' => 'text', 'text' => ['body' => 'Hello']],
+                ],
+            ]],
+        ]],
+    ];
+
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::make()->handle($history);
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::make()->handle($history);
+
+    $messages = $session->messages()->orderBy('created_at')->get();
+    $imported = $messages->filter(fn ($message) => Arr::get($message->metadata, 'source') === 'whatsapp_business_app_history');
+
+    expect($messages)->toHaveCount(4)
+        ->and($imported)->toHaveCount(1)
+        ->and($imported->first()->sender_type)->toBe(ChatSenderTypeEnum::GUEST)
+        ->and($imported->first()->message_text)->toBe('Hello');
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('WhatsApp history types that carry no text are imported with words, and an edit changes the message it edits', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+    $customer      = '4475000002'.random_int(10, 99);
+    $business      = '34678502048';
+    $sentAt        = now()->subMonth()->startOfMinute();
+    $editedId      = fakeWamid($business, strtoupper(Str::random(32)));
+    $orphanEditOf  = fakeWamid($business, strtoupper(Str::random(32)));
+
+    $message = fn (int $minutes, array $fields) => array_merge([
+        'from'      => $customer,
+        'id'        => fakeWamid($customer, strtoupper(Str::random(32))),
+        'timestamp' => (string) $sentAt->copy()->addMinutes($minutes)->timestamp,
+    ], $fields);
+
+    $history = fn (array $messages) => [
+        'metadata' => ['phone_number_id' => $phoneNumberId, 'display_phone_number' => $business],
+        'history'  => [['threads' => [['id' => $customer, 'messages' => $messages]]]],
+    ];
+
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::make()->handle($history([
+        $message(1, ['type' => 'errors', 'errors' => [['code' => 131051, 'title' => 'Message type unknown']]]),
+        $message(2, ['from' => $business, 'to' => $customer, 'type' => 'interactive', 'interactive' => ['type' => 'product', 'product' => ['title' => 'TERPAL KOLAM']]]),
+        $message(3, ['from' => $business, 'to' => $customer, 'id' => $editedId, 'type' => 'text', 'text' => ['body' => 'Halo, bisa buat janji?']]),
+        $message(4, ['from' => $business, 'to' => $customer, 'type' => 'edit', 'edit' => ['original_message_id' => $editedId, 'message' => ['type' => 'text', 'text' => ['body' => 'Halo, bisa buat janji hari ini?']]]]),
+        $message(5, ['from' => $business, 'to' => $customer, 'type' => 'edit', 'edit' => ['original_message_id' => $orphanEditOf, 'message' => ['type' => 'text', 'text' => ['body' => 'Edited later']]]]),
+    ]));
+
+    \App\Actions\Chat\Whatsapp\ImportWhatsappChatHistory::make()->handle($history([
+        $message(0, ['from' => $business, 'to' => $customer, 'id' => $orphanEditOf, 'type' => 'text', 'text' => ['body' => 'Edited before']]),
+    ]));
+
+    $session  = MetaChatSession::where('shop_id', $this->shop->id)->where('phone_number', '+'.$customer)->latest('id')->first();
+    $messages = $session->messages()->orderBy('created_at')->get();
+
+    expect($messages->pluck('message_text')->all())->toBe([
+        'Unsupported message',
+        'TERPAL KOLAM',
+        'Halo, bisa buat janji hari ini?',
+        'Edited later',
+    ])
+        ->and($messages->every(fn ($message) => filled($message->message_text)))->toBeTrue();
+
+    $session->messages()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
+test('repairing WhatsApp history removes the copies of messages already in the conversation and fills the empty ones', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $phoneNumberId = 'coex-'.Str::random(8);
+    $original      = useCoexistenceNumber($this->shop, $phoneNumberId);
+    $customer      = '4475000003'.random_int(10, 99);
+    $business      = '34678502048';
+    $sentAt        = now()->subDay()->startOfMinute();
+    $key           = strtoupper(Str::random(20));
+    $history       = ['source' => 'whatsapp_business_app_history'];
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'phone_number' => '+'.$customer]);
+    $store   = fn (array $fields) => \App\Actions\Chat\MetaChatSession\StoreMetaChatMessage::run($session, array_merge([
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::AGENT,
+        'created_at'   => $sentAt,
+    ], $fields));
+
+    $live       = $store(['meta_message_id' => fakeWamid($customer, $key), 'message_text' => 'hello chat from aiku']);
+    $copy       = $store(['meta_message_id' => fakeWamid($business, $key), 'message_text' => 'hello chat from aiku', 'metadata' => $history + ['wa_type' => 'text']]);
+    $empty      = $store(['meta_message_id' => 'wamid.hist-'.Str::random(8), 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => null, 'created_at' => $sentAt->copy()->subHour(), 'metadata' => $history + ['wa_type' => 'errors', 'wa_payload' => [['code' => 131051]]]]);
+    $genuine    = $store(['meta_message_id' => 'wamid.hist-'.Str::random(8), 'sender_type' => ChatSenderTypeEnum::GUEST, 'message_text' => 'hello chat from aiku', 'created_at' => $sentAt->copy()->subHours(2), 'metadata' => $history + ['wa_type' => 'text']]);
+
+    $dryRun = \App\Actions\Chat\Whatsapp\RepairWhatsappChatHistory::make()->handle($this->shop, true);
+
+    expect($dryRun['duplicates'])->toBe([$copy->id])
+        ->and($dryRun['texts'])->toBe([$empty->id])
+        ->and($copy->fresh()->trashed())->toBeFalse()
+        ->and($empty->fresh()->message_text)->toBeNull();
+
+    \App\Actions\Chat\Whatsapp\RepairWhatsappChatHistory::make()->handle($this->shop);
+
+    expect($copy->fresh()->trashed())->toBeTrue()
+        ->and($live->fresh()->trashed())->toBeFalse()
+        ->and($genuine->fresh()->trashed())->toBeFalse()
+        ->and($empty->fresh()->message_text)->toBe('Unsupported message');
+
+    $session->messages()->withTrashed()->forceDelete();
+    $session->forceDelete();
+    $this->shop->update(['settings' => $original]);
+});
+
 test('the webhook routes echoes and history to their jobs and still skips fields Aiku does not use', function () {
     \Illuminate\Support\Facades\Queue::fake();
 

@@ -27240,5 +27240,15 @@
     "Optional. Without a pickup point the parcel goes to the delivery address.": "Nepovinné. Bez výdejního místa půjde zásilka na doručovací adresu.",
     "Packeta pickup point or Z-BOX": "Výdejní místo Zásilkovny nebo Z-BOX",
     "Packeta's map could not be opened, please try again.": "Mapu Zásilkovny se nepodařilo otevřít, zkuste to prosím znovu.",
-    "The pickup point could not be saved, please try again.": "Výdejní místo se nepodařilo uložit, zkuste to prosím znovu."
+    "The pickup point could not be saved, please try again.": "Výdejní místo se nepodařilo uložit, zkuste to prosím znovu.",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Koexistence",
+    "Connect WhatsApp Business app": "Připojit aplikaci WhatsApp Business",
+    "Could not connect this number.": "Toto číslo se nepodařilo připojit.",
+    "Facebook could not be reached to open the WhatsApp signup.": "Nepodařilo se spojit s Facebookem a otevřít registraci WhatsApp.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "K tomuto účtu je přihlášena jen jiná aplikace Meta (:apps), takže zprávy jdou tam místo do Aiku.",
+    "The WhatsApp signup was not finished.": "Registrace WhatsApp nebyla dokončena.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Číslo zůstává v aplikaci WhatsApp Business na telefonu obchodu a Aiku ho také čte a píše z něj.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Hovory WhatsApp na toto číslo zvoní jen na telefonu obchodu, ne v Aiku. Otevřete aplikaci WhatsApp Business na tom telefonu alespoň jednou za 13 dní, jinak Meta číslo od Aiku odpojí.",
+    "Media shared on the WhatsApp Business app": "Média sdílená v aplikaci WhatsApp Business"
 }
