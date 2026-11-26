@@ -63,11 +63,11 @@ const togglePaid = (row: ServiceInvoiceRow) =>
 
 const confirmDelete = (row: ServiceInvoiceRow) =>
 	confirm.require({
+		group: "stock-delivery",
 		message: ctrans("Remove the invoice :reference from :issuer? The costs it filled go back to pending on every container it covers.", { reference: row.reference ?? "", issuer: row.issuer }),
 		header: ctrans("Remove service invoice"),
-		acceptLabel: ctrans("Remove"),
-		rejectLabel: ctrans("Cancel"),
-		acceptClass: "p-button-danger",
+		rejectProps: { label: ctrans("Cancel") },
+		acceptProps: { label: ctrans("Remove"), severity: "danger" },
 		accept: () =>
 			router.delete(route(row.delete_route.name, row.delete_route.parameters), {
 				preserveScroll: true,
