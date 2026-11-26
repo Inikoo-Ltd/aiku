@@ -17,6 +17,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStockMovements;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 
@@ -51,6 +52,7 @@ class IndexMobileLocationStockMovements
             'data' => collect($movements->items())->map(fn (OrgStockMovement $movement) => array_merge(
                 Arr::only(OrgStockMovementsResource::make($movement)->resolve(), self::FIELDS),
                 [
+                    'note'           => IndexMobileOrgStockMovements::plainNote($movement->note),
                     'org_stock_code' => $codes->get($movement->getAttribute('org_stock_slug')),
                     'user_name'      => $movement->user?->contact_name ?: $movement->user?->username,
                 ]
