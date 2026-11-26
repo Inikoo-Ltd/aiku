@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\User;
 
+use App\Events\BroadcastUserPermissionsChanged;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -131,6 +132,8 @@ class SetUserAuthorisedModels
         }
 
         $user->givePermissionTo(array_keys($directPermissions));
+
+        rescue(fn () => BroadcastUserPermissionsChanged::dispatch($user->id));
     }
 
 

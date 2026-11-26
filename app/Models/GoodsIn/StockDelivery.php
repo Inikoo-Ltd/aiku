@@ -8,6 +8,7 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\SupplyChain\SupplierInvoice;
@@ -131,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class StockDelivery extends Model implements HasMedia, Auditable
 {
+    use BroadcastsMobileRecordChanges;
     use SoftDeletes;
     use HasAddress;
     use HasAddresses;

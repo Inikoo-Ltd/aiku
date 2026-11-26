@@ -7,6 +7,7 @@
  */
 
 use App\Broadcasting\ChatListChannel;
+use App\Broadcasting\MobileRecordChannel;
 use App\Broadcasting\MetaChatSessionChannel;
 use App\Broadcasting\WhatsappCallChannel;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
@@ -15,6 +16,8 @@ use App\Models\Chat\ChatAssignment;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\SlackChannel;
 use App\Models\CRM\WebUser;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\Warehouse;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Ticket;
 use App\Models\Goods\TradeUnit;
@@ -209,8 +212,8 @@ Broadcast::channel("app.general", function () {
     return true;
 });
 
-Broadcast::channel("grp.dn.{deliveryNoteId}", function () {
-    return true;
+Broadcast::channel("grp.dn.{deliveryNoteId}", function (User|WebUser|ShopifyUser $user, int $deliveryNoteId) {
+    return $user instanceof User && (DeliveryNote::find($deliveryNoteId)?->canBeViewedBy($user) ?? false);
 });
 
 Broadcast::channel("translate.{randomString}.channel", function () {
@@ -226,16 +229,28 @@ Broadcast::channel("updateWebblocks.{websiteSlug}", function () {
     return true;
 });
 
-Broadcast::channel("grp.{organisation}.stock_movement", function () {
-    return true;
+Broadcast::channel("grp.{organisation}.stock_movement", function (User|WebUser|ShopifyUser $user, string $organisation) {
+    return $user instanceof User && $user->authorisedOrganisations()->where('organisations.slug', $organisation)->exists();
 });
 
 Broadcast::channel("grp.{organisation}.product_availability", function (User $user, string $organisation) {
     return $user->authorisedOrganisations()->where('organisations.slug', $organisation)->exists();
 });
 
-Broadcast::channel("grp.{organisation}.warehouse.{warehouse}.low_stock_audit", function () {
-    return true;
+Broadcast::channel("grp.{organisation}.warehouse.{warehouse}.low_stock_audit", function (User|WebUser|ShopifyUser $user, string $organisation, string $warehouse) {
+    if (!$user instanceof User) {
+        return false;
+    }
+
+    $warehouseModel = Warehouse::where('slug', $warehouse)->whereHas('organisation', fn ($query) => $query->where('slug', $organisation))->first();
+
+    return $warehouseModel !== null && $user->authTo([
+        "inventory.$warehouseModel->organisation_id.view",
+        "accounting.$warehouseModel->organisation_id.view",
+        "supervisor-stocks.$warehouseModel->id.view",
+        "stocks.$warehouseModel->id.view",
+        "fulfilment.$warehouseModel->id.view",
+    ]);
 });
 
 Broadcast::channel("grp.{order}.transaction_update", function (User $user) {
@@ -270,6 +285,8 @@ Broadcast::channel('chat-session.{ulid}', function (WebUser|User $user, string $
 Broadcast::channel('meta-chat-session.{ulid}', MetaChatSessionChannel::class);
 
 Broadcast::channel('chat-list.{shopId}', ChatListChannel::class);
+
+Broadcast::channel('grp.mobile.{type}.{id}', MobileRecordChannel::class);
 
 Broadcast::channel('whatsapp-calls.{shopId}', WhatsappCallChannel::class);
 

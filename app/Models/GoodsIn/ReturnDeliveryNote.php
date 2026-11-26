@@ -9,6 +9,7 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -81,6 +82,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class ReturnDeliveryNote extends Model implements Auditable
 {
+    use BroadcastsMobileRecordChanges;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;

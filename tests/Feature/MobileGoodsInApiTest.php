@@ -409,6 +409,7 @@ test('mobile stock delivery detail sends no money, this warehouse locations, ite
             ['key' => 'check', 'label' => 'Check'],
             ['key' => 'place', 'label' => 'Place'],
             ['key' => 'checklist', 'label' => 'Checklist'],
+            ['key' => 'add_item', 'label' => 'Add extra item'],
         ]);
 
     $moneyKeys = collect(mobileGoodsInKeys($response->json('data')))->filter(fn (string $key) => Str::contains($key, ['amount', 'cost', 'price', 'value', 'currency', 'exchange']));
@@ -505,6 +506,60 @@ test('mobile cancel is for procurement, refuses a partner delivery and records w
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['state' => 'This delivery is managed by the partner until you receive it']);
     expect($partner->refresh()->state)->toBe(StockDeliveryStateEnum::IN_PROCESS);
+});
+
+test('mobile add extra item lists the supplier products not on the delivery, by search or scanned SKO, and adds one as received and counted', function () {
+    $onDelivery    = mobileGoodsInSko($this->organisation);
+    $stockDelivery = mobileGoodsInDelivery($this->organisation, [[$onDelivery, 10]]);
+    $extra         = mobileGoodsInSko($this->organisation, 4);
+    $orgSupplier   = $stockDelivery->parent;
+    $product       = StoreSupplierProduct::make()->action($orgSupplier->supplier, [
+        'code'             => $stockDelivery->reference.'-EXTRA',
+        'name'             => 'Extra lavender oil',
+        'cost'             => 50,
+        'units_per_pack'   => 4,
+        'units_per_carton' => 100,
+    ]);
+    $product->stocks()->attach($extra->stock_id);
+    $orgSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, $product);
+    $addable            = fn (array $query = []) => getGoodsOut('grp.api.mobile.warehouses.stock_deliveries.addable_items', array_merge(['warehouse' => $this->warehouse->id, 'stockDelivery' => $stockDelivery->id], $query));
+
+    mobileGoodsInClerk($this);
+    $addable()->assertUnprocessable()->assertJsonValidationErrors(['state' => 'Items can only be added while the delivery is being booked in']);
+    expect(collect(mobileGoodsInShow($this->warehouse, $stockDelivery)->json('data.available_actions'))->pluck('key'))->not->toContain('add_item');
+
+    $stockDelivery = mobileGoodsInReceived($stockDelivery);
+    $row           = collect($addable(['q' => 'lavender'])->assertOk()->json('data'))->firstWhere('id', $orgSupplierProduct->id);
+
+    expect($row)->toBe([
+        'id'    => $orgSupplierProduct->id,
+        'field' => 'org_supplier_product_id',
+        'code'  => $product->code,
+        'name'  => 'Extra lavender oil',
+        'sko'   => ['id' => $extra->id, 'code' => $extra->code, 'name' => $extra->name, 'packed_in' => 4],
+    ])
+        ->and(collect($addable(['org_stock_id' => $extra->id])->json('data'))->pluck('id')->all())->toBe([$orgSupplierProduct->id])
+        ->and(collect($addable(['org_stock_id' => $onDelivery->id])->json('data'))->pluck('id')->all())->not->toContain($orgSupplierProduct->id)
+        ->and(collect(mobileGoodsInShow($this->warehouse, $stockDelivery)->json('data.available_actions'))->pluck('key'))->toContain('add_item');
+
+    mobileGoodsInPost('items.add', $this->warehouse, $stockDelivery, ['item_id' => $orgSupplierProduct->id, 'sko_quantity' => 2.5])
+        ->assertOk()
+        ->assertJsonPath('result.message', $extra->code.' added as an extra item.');
+
+    $added = $stockDelivery->items()->where('org_stock_id', $extra->id)->firstOrFail();
+    expect((float) $added->unit_quantity)->toBe(10.0)
+        ->and((float) $added->unit_quantity_checked)->toBe(10.0)
+        ->and($added->org_supplier_product_id)->toBe($orgSupplierProduct->id);
+
+    mobileGoodsInPost('items.add', $this->warehouse, $stockDelivery, ['item_id' => $orgSupplierProduct->id, 'sko_quantity' => 1])
+        ->assertUnprocessable();
+    mobileGoodsInPost('items.add', $this->warehouse, $stockDelivery, ['item_id' => 0, 'sko_quantity' => -1])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['item_id', 'sko_quantity']);
+
+    mobileGoodsInClerk($this, [], ["incoming.{$this->warehouse->id}.view"]);
+    $addable()->assertForbidden();
+    mobileGoodsInPost('items.add', $this->warehouse, $stockDelivery, ['item_id' => $orgSupplierProduct->id, 'sko_quantity' => 1])->assertForbidden();
 });
 
 test('mobile check counts in decimal SKOs, 0 is not received and a value below what is placed is raised and said', function () {

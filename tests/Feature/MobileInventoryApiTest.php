@@ -242,6 +242,43 @@ test('mobile SKO list follows the web buckets, family, search, sort and counts w
         ->assertJsonValidationErrors(['bucket', 'family_id', 'sort']);
 });
 
+test('mobile SKO list filters by the live stock cover bucket and by the location types of this warehouse', function () {
+    [, $warehouse] = mobileInventoryViewer($this->group);
+    $prefix        = 'MSF'.Str::upper(Str::random(5));
+    [$both]        = mobileInventorySko($warehouse, $prefix.'A');
+    $storingOnly   = mobileInventoryOrgStock($warehouse->organisation, $prefix.'B');
+    mobileInventoryLink($storingOnly, mobileInventoryLocation($warehouse, $storingOnly->code.'-S'), 12, LocationStockTypeEnum::STORING);
+    $elsewhere = mobileInventoryOrgStock($warehouse->organisation, $prefix.'C');
+    mobileInventoryLink($elsewhere, mobileInventoryLocation(StoreWarehouse::make()->action($warehouse->organisation, Warehouse::factory()->definition()), $elsewhere->code.'-P'), 5, LocationStockTypeEnum::PICKING);
+
+    $stockCover = GetOrganisationStockCoverBuckets::make();
+    $bucketOf   = fn (OrgStock $orgStock) => $stockCover->scope(DB::table('org_stocks'), $warehouse->organisation)
+        ->where('org_stocks.id', $orgStock->id)
+        ->selectRaw($stockCover->bucketExpression().' as bucket')
+        ->value('bucket');
+    $bucket      = $bucketOf($both);
+    $otherBucket = collect(array_keys(GetOrganisationStockCoverBuckets::BUCKETS))->first(fn (string $key) => $key !== $bucket);
+    $codes       = fn (array $query) => collect(getJson(route('grp.api.mobile.warehouses.org_stocks', array_merge(['warehouse' => $warehouse->id, 'q' => $prefix, 'bucket' => 'all'], $query)), mobileInventoryHeaders())
+        ->assertOk()
+        ->json('data'))->pluck('code')->all();
+
+    expect($bucket)->not->toBeNull()
+        ->and($codes(['stock_status' => $bucket]))->toContain($both->code)
+        ->and($codes(['stock_status' => $otherBucket]))->not->toContain($both->code)
+        ->and($codes(['location_type' => 'picking']))->toBe([$both->code])
+        ->and($codes(['location_type' => 'storing']))->toBe([$both->code, $storingOnly->code])
+        ->and($codes(['location_type' => 'storing', 'stock_status' => $otherBucket]))->not->toContain($both->code);
+
+    getJson(route('grp.api.mobile.warehouses.org_stocks', ['warehouse' => $warehouse->id]), mobileInventoryHeaders())
+        ->assertOk()
+        ->assertJsonPath('filters.stock_status.0', ['key' => 'out', 'label' => 'Out of stock'])
+        ->assertJsonPath('filters.location_type', [['key' => 'picking', 'label' => 'Picking'], ['key' => 'storing', 'label' => 'Storing']]);
+
+    getJson(route('grp.api.mobile.warehouses.org_stocks', ['warehouse' => $warehouse->id, 'stock_status' => 'sad', 'location_type' => 'roof']), mobileInventoryHeaders())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['stock_status', 'location_type']);
+});
+
 test('mobile SKO family page gives the web family SKO and quantity status and fraction labels on its SKOs', function () {
     [, $warehouse] = mobileInventoryViewer($this->group);
     $stockFamily   = StoreStockFamily::make()->action($warehouse->group, StockFamily::factory()->definition());

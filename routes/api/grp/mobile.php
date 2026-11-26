@@ -41,6 +41,8 @@ use App\Actions\Api\Group\Clocking\UpdateMobileLeave;
 use App\Actions\Api\Group\Clocking\UpdateMobileOvertimeRequest;
 use App\Actions\Api\Group\GetMobileProfile;
 use App\Actions\Api\Group\StoreMobileTicket;
+use App\Actions\Api\Group\GetMobileRealtime;
+use App\Actions\Api\Group\AuthorizeMobileBroadcastChannel;
 use App\Actions\Api\Group\UpdateMobileProfileLanguage;
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\Api\Group\GoodsIn\CheckAllMobileStockDeliveryItems;
@@ -61,6 +63,8 @@ use App\Actions\Api\Group\GoodsIn\ShowMobileReturn;
 use App\Actions\Api\Group\GoodsIn\ShowMobileStockDelivery;
 use App\Actions\Api\Group\GoodsIn\StartMobileReturn;
 use App\Actions\Api\Group\GoodsIn\CancelMobileStockDelivery;
+use App\Actions\Api\Group\GoodsIn\AddMobileStockDeliveryItem;
+use App\Actions\Api\Group\GoodsIn\IndexMobileStockDeliveryAddableItems;
 use App\Actions\Api\Group\GoodsIn\UnreceiveMobileStockDelivery;
 use App\Actions\Api\Group\GoodsOut\AddMobilePickingSessionDeliveryNotes;
 use App\Actions\Api\Group\GoodsOut\AttachMobilePickingSessionTrolley;
@@ -189,6 +193,8 @@ Route::middleware([VerifyMobileAppKey::class, SetMobileApiLocale::class])->group
         Route::get('/profile', GetMobileProfile::class)->name('profile');
         Route::patch('/profile/language', UpdateMobileProfileLanguage::class)->name('profile.language');
         Route::post('/tickets', StoreMobileTicket::class)->name('tickets.store')->middleware('throttle:10,10');
+        Route::get('/realtime', GetMobileRealtime::class)->name('realtime');
+        Route::post('/broadcasting/auth', AuthorizeMobileBroadcastChannel::class)->name('broadcasting.auth');
         Route::put('/push-token', UpdateMobilePushToken::class)->name('push_token.update');
         Route::delete('/push-token', DeleteMobilePushToken::class)->name('push_token.delete');
 
@@ -266,6 +272,8 @@ Route::middleware([VerifyMobileAppKey::class, SetMobileApiLocale::class])->group
             Route::post('/receive', ReceiveMobileStockDelivery::class)->name('receive');
             Route::post('/unreceive', UnreceiveMobileStockDelivery::class)->name('unreceive');
             Route::post('/cancel', CancelMobileStockDelivery::class)->name('cancel');
+            Route::get('/addable-items', IndexMobileStockDeliveryAddableItems::class)->name('addable_items');
+            Route::post('/items', AddMobileStockDeliveryItem::class)->name('items.add');
             Route::post('/check-all', CheckAllMobileStockDeliveryItems::class)->name('check_all');
             Route::post('/checklist', RecordMobileStockDeliveryGoodsInCheck::class)->name('checklist');
             Route::post('/items/{stockDeliveryItem:id}/check', CheckMobileStockDeliveryItem::class)->name('items.check');

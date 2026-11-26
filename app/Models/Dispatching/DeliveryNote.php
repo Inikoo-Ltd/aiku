@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -215,6 +216,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class DeliveryNote extends Model implements Auditable
 {
+    use BroadcastsMobileRecordChanges;
     use SoftDeletes;
     use HasSlug;
     use HasFactory;

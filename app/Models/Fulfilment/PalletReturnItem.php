@@ -8,6 +8,7 @@
 
 namespace App\Models\Fulfilment;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemStateEnum;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\PickingSession;
@@ -50,6 +51,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PalletReturnItem extends Model
 {
+    use BroadcastsMobileRecordChanges;
+
     protected $guarded = [];
 
     protected $casts = [

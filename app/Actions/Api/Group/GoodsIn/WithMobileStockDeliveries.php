@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryGoodsInChecklist;
@@ -153,6 +154,10 @@ trait WithMobileStockDeliveries
 
         if ($canBookIn && in_array($stockDelivery->state, GetStockDeliveryGoodsInChecklist::STATES, true)) {
             $actions[] = $this->actionOption('checklist', __('Checklist'));
+        }
+
+        if ($canBookIn && AddItemNotOnPurchaseOrderToStockDelivery::acceptsItems($stockDelivery)) {
+            $actions[] = $this->actionOption('add_item', __('Add extra item'));
         }
 
         if (self::canCancelStockDeliveries($user, $stockDelivery) && $this->canBeCancelledFromTheApp($stockDelivery)) {

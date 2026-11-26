@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
@@ -117,6 +118,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class DeliveryNoteItem extends Model
 {
+    use BroadcastsMobileRecordChanges;
     use InShop;
 
     protected $table = 'delivery_note_items';
