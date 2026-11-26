@@ -18,6 +18,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 import Select from "primevue/select"
 import InputText from "primevue/inputtext"
+import ToggleSwitch from "primevue/toggleswitch"
 import Popover from "primevue/popover"
 import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
@@ -103,9 +104,18 @@ interface Filters {
     condition: string | null
     state: string | null
     feedback: FeedbackLevel | null
+    supplier_country: string | null
+    no_stock: boolean
+    not_ordered_years: number | null
     search: string | null
     sort: string
     period: Period
+}
+
+interface SupplierCountryOption {
+    code: string
+    name: string
+    count: number
 }
 
 const props = defineProps<{
@@ -116,6 +126,7 @@ const props = defineProps<{
     can_edit: boolean
     organisations?: OrganisationMeta[]
     families?: string[]
+    supplier_countries?: SupplierCountryOption[]
     missing_rates?: string[]
     rates?: RateInfo[]
     period: Period
@@ -145,7 +156,7 @@ const props = defineProps<{
     can_change_group?: boolean
 }>()
 
-const dashboardProps = ["queryBuilderProps", "built_at", "organisations", "families", "missing_rates", "rates", "kpis", "rows", "pagination", "editable_organisations", "can_change_group", "filters", "period"]
+const dashboardProps = ["queryBuilderProps", "built_at", "organisations", "families", "supplier_countries", "missing_rates", "rates", "kpis", "rows", "pagination", "editable_organisations", "can_change_group", "filters", "period"]
 
 const conditions: Record<Condition, { label: string; tooltip: string; class: string }> = {
     ok: { label: ctrans("OK"), tooltip: ctrans("Covered"), class: "bg-green-50 text-green-700" },
@@ -227,13 +238,26 @@ onUnmounted(() => {
     stopFinish?.()
 })
 
-function load(changes: Partial<Filters> = {}, page = 1): void {
-    Object.assign(filterState, changes)
+function filterParams(): Record<string, string | number> {
     const params: Record<string, string | number> = {}
     for (const [key, value] of Object.entries(filterState)) {
-        if (value !== null && value !== "" && !(key === "sort" && value === "-sales") && !(key === "period" && value === "90d")) {
-            params[key] = value
+        if (value === null || value === "" || value === false) {
+            continue
         }
+        params[key] = value === true ? 1 : value
+    }
+
+    return params
+}
+
+function load(changes: Partial<Filters> = {}, page = 1): void {
+    Object.assign(filterState, changes)
+    const params = filterParams()
+    if (params.sort === "-sales") {
+        delete params.sort
+    }
+    if (params.period === "90d") {
+        delete params.period
     }
     if (page > 1) {
         params.page = page
@@ -247,7 +271,7 @@ function load(changes: Partial<Filters> = {}, page = 1): void {
 }
 
 function reset(): void {
-    load({ organisation: null, family: null, condition: null, state: null, feedback: null, search: null, sort: "-sales", period: "90d" })
+    load({ organisation: null, family: null, condition: null, state: null, feedback: null, supplier_country: null, no_stock: false, not_ordered_years: null, search: null, sort: "-sales", period: "90d" })
 }
 
 function toggleCondition(condition: string): void {
@@ -352,17 +376,11 @@ function suggestionSummary(times: number, people: number): string {
 }
 
 const hasFilters = computed(() =>
-    ["organisation", "family", "condition", "state", "feedback", "search"].some((key) => props.filters[key as keyof Filters])
+    ["organisation", "family", "condition", "state", "feedback", "supplier_country", "no_stock", "not_ordered_years", "search"].some((key) => props.filters[key as keyof Filters])
 )
 
 function exportCsv(): void {
-    const params: Record<string, string> = {}
-    for (const [key, value] of Object.entries(filterState)) {
-        if (value !== null && value !== "") {
-            params[key] = value as string
-        }
-    }
-    window.location.href = route("grp.goods.export", params)
+    window.location.href = route("grp.goods.export", filterParams())
 }
 
 const money = (amount: number | null, compact = false): string =>
@@ -501,6 +519,15 @@ function onSetDone(): void {
 const fieldClass = "[&.p-focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 
 const filterSelectPt = { label: { class: "!text-sm" } }
+
+const supplierCountryOptions = computed(() =>
+    (props.supplier_countries ?? []).map((country) => ({ value: country.code, label: `${country.name} (${country.count})` }))
+)
+
+const notOrderedYearsOptions = [1, 2, 3, 4, 5].map((years) => ({
+    value: years,
+    label: years === 1 ? ctrans("Not ordered in 1 year") : ctrans("Not ordered in :years years", { years }),
+}))
 
 const rowSelectPt = {
     label: { class: "!text-xs" },
@@ -735,6 +762,43 @@ function priceRequestLabel(count: number): string {
             :disabled="loading"
             @change="load()"
         />
+        <Select
+            v-model="filterState.supplier_country"
+            :options="supplierCountryOptions"
+            optionLabel="label"
+            optionValue="value"
+            filter
+            showClear
+            class="w-48"
+            :class="fieldClass"
+            :pt="filterSelectPt"
+            :placeholder="ctrans('Any supplier country')"
+            :aria-label="ctrans('Supplier country')"
+            :disabled="loading || !supplier_countries"
+            @change="load()"
+        />
+        <Select
+            v-model="filterState.not_ordered_years"
+            v-tooltip="ctrans('No purchase order or stock delivery from a supplier in this time, or never ordered')"
+            :options="notOrderedYearsOptions"
+            optionLabel="label"
+            optionValue="value"
+            showClear
+            class="w-52"
+            :class="fieldClass"
+            :pt="filterSelectPt"
+            :placeholder="ctrans('Any last order')"
+            :aria-label="ctrans('Last ordered from supplier')"
+            :disabled="loading"
+            @change="load()"
+        />
+        <label
+            v-tooltip="ctrans('Nothing in the warehouse and nothing on the way')"
+            class="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700"
+        >
+            <ToggleSwitch v-model="filterState.no_stock" :disabled="loading" :aria-label="ctrans('No stock')" @update:modelValue="load()" />
+            {{ ctrans("No stock") }}
+        </label>
         <InputText
             v-model="filterState.search"
             type="search"

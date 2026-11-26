@@ -32,6 +32,7 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -93,6 +94,8 @@ class ShowGoodsDashboard extends OrgAction
 
     public const array SORTS = ['code', 'sales', 'trend', 'cover', 'suggestions', 'complaints', 'feedback'];
 
+    public const array NOT_ORDERED_YEARS = [1, 2, 3, 4, 5];
+
     public const int COMPLAINT_MONTHS = 12;
 
     /**
@@ -122,11 +125,11 @@ class ShowGoodsDashboard extends OrgAction
         DeliveryNoteItemReplacementReasonEnum::CUSTOMER_ERROR->value,
     ];
 
-    public const array DEFERRED_PROPS = ['built_at', 'organisations', 'families', 'missing_rates', 'rates', 'kpis', 'rows', 'pagination', 'editable_organisations', 'can_change_group'];
+    public const array DEFERRED_PROPS = ['built_at', 'organisations', 'families', 'supplier_countries', 'missing_rates', 'rates', 'kpis', 'rows', 'pagination', 'editable_organisations', 'can_change_group'];
 
     public static function cacheKey(int $groupId): string
     {
-        return 'product-command-control:v2:'.$groupId;
+        return 'product-command-control:v3:'.$groupId;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -144,6 +147,9 @@ class ShowGoodsDashboard extends OrgAction
             'condition'    => ['sometimes', 'nullable', Rule::in(self::CONDITIONS)],
             'state'        => ['sometimes', 'nullable', Rule::in(OrgStockStateEnum::values())],
             'feedback'     => ['sometimes', 'nullable', Rule::in(array_keys(self::FEEDBACK_LEVELS))],
+            'supplier_country'  => ['sometimes', 'nullable', 'string', 'size:2'],
+            'no_stock'          => ['sometimes', 'nullable', 'boolean'],
+            'not_ordered_years' => ['sometimes', 'nullable', 'integer', Rule::in(self::NOT_ORDERED_YEARS)],
             'search'       => ['sometimes', 'nullable', 'string', 'max:255'],
             'sort'         => ['sometimes', 'nullable', Rule::in(array_merge(self::SORTS, array_map(fn ($sort) => '-'.$sort, self::SORTS)))],
             'period'       => ['sometimes', 'nullable', Rule::in(self::PERIODS)],
@@ -195,6 +201,7 @@ class ShowGoodsDashboard extends OrgAction
             'built_at'      => $dataset['built_at'],
             'organisations' => $dataset['organisations'],
             'families'      => $dataset['families'],
+            'supplier_countries' => $dataset['supplier_countries'],
             'missing_rates' => $dataset['missing_rates'],
             'rates'         => $dataset['rates'],
             'period'        => $period,
@@ -214,16 +221,21 @@ class ShowGoodsDashboard extends OrgAction
     }
 
     /**
-     * @return array{organisation: ?string, family: ?string, condition: ?string, state: ?string, search: ?string, sort: string, period: string}
+     * @return array{organisation: ?string, family: ?string, condition: ?string, state: ?string, feedback: ?string, supplier_country: ?string, no_stock: bool, not_ordered_years: ?int, search: ?string, sort: string, period: string}
      */
     private function normalisedFilters(array $filters): array
     {
+        $notOrderedYears = Arr::get($filters, 'not_ordered_years');
+
         return [
             'organisation' => Arr::get($filters, 'organisation'),
             'family'       => Arr::get($filters, 'family'),
             'condition'    => Arr::get($filters, 'condition'),
             'state'        => Arr::get($filters, 'state'),
             'feedback'     => Arr::get($filters, 'feedback'),
+            'supplier_country'  => Arr::get($filters, 'supplier_country') ? strtoupper(Arr::get($filters, 'supplier_country')) : null,
+            'no_stock'          => (bool) Arr::get($filters, 'no_stock'),
+            'not_ordered_years' => $notOrderedYears ? (int) $notOrderedYears : null,
             'search'       => Arr::get($filters, 'search'),
             'sort'         => Arr::get($filters, 'sort') ?: '-sales',
             'period'       => Arr::get($filters, 'period') ?: self::DEFAULT_PERIOD,
@@ -364,23 +376,27 @@ class ShowGoodsDashboard extends OrgAction
 
         $rates = $this->currencyRates($organisations, $this->group->currency);
 
-        $cells   = $this->orgStockCells($organisations->keys()->all());
-        $inbound = $this->inboundByOrgStock($cells->pluck('id')->all());
+        $cells       = $this->orgStockCells($organisations->keys()->all());
+        $inbound     = $this->inboundByOrgStock($cells->pluck('id')->all());
+        $lastOrdered = $this->lastOrderedAtByOrgStock();
 
         $cellsByStock = [];
         foreach ($cells as $cell) {
             $cell->inbound_quantity = $inbound[$cell->id]['quantity'] ?? 0.0;
             $cell->next_expected_at = $inbound[$cell->id]['eta'] ?? null;
+            $cell->last_ordered_at  = $lastOrdered[$cell->id] ?? null;
             $cellsByStock[$cell->stock_id][] = $cell;
         }
 
         $organisationsSorted = $organisations->sortBy('id')->values();
         $complaints          = $this->complaintsByStock();
+        $supplierCountries   = $this->supplierCountriesByStock();
 
         $rows = collect($cellsByStock)
             ->map(fn (array $stockCells, int $stockId) => array_merge(
                 $this->row($stockCells, $organisationsSorted, $rates),
-                $complaints[$stockId] ?? self::NO_COMPLAINTS
+                $complaints[$stockId] ?? self::NO_COMPLAINTS,
+                ['supplier_countries' => $supplierCountries[$stockId] ?? []]
             ))
             ->values();
 
@@ -393,6 +409,7 @@ class ShowGoodsDashboard extends OrgAction
                 'warehouse_slug' => $organisation->warehouses->first()?->slug,
             ])->values()->all(),
             'families'      => $rows->pluck('family_code')->filter()->unique()->sort()->values()->all(),
+            'supplier_countries' => $this->supplierCountryOptions($rows),
             'missing_rates' => $organisations->filter(fn (Organisation $organisation) => ($rates->get($organisation->id)['rate'] ?? null) === null)
                 ->pluck('code')->values()->all(),
             'rates'         => $organisations->map(fn (Organisation $organisation) => array_merge(
@@ -404,8 +421,83 @@ class ShowGoodsDashboard extends OrgAction
     }
 
     /**
-     * @return Collection<int, array{rate: float|null, date: string|null, source: string|null}>
+     * The last time each org stock was ordered from a supplier: the latest purchase order or stock
+     * delivery that carried it, cancelled ones left out. Old deliveries brought over without their
+     * purchase order still count.
+     *
+     * @return array<int, string> date by org stock id
      */
+    private function lastOrderedAtByOrgStock(): array
+    {
+        $purchaseOrderLines = DB::table('purchase_order_transactions')
+            ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
+            ->where('purchase_order_transactions.group_id', $this->group->id)
+            ->whereNull('purchase_order_transactions.deleted_at')
+            ->whereNull('purchase_orders.deleted_at')
+            ->where('purchase_orders.state', '!=', PurchaseOrderStateEnum::CANCELLED->value)
+            ->selectRaw('purchase_order_transactions.org_stock_id, coalesce(purchase_orders.submitted_at, purchase_orders.date) as ordered_at');
+
+        $deliveryLines = DB::table('stock_delivery_items')
+            ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
+            ->where('stock_delivery_items.group_id', $this->group->id)
+            ->whereNull('stock_delivery_items.deleted_at')
+            ->whereNull('stock_deliveries.deleted_at')
+            ->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED->value)
+            ->selectRaw('stock_delivery_items.org_stock_id, stock_deliveries.date as ordered_at');
+
+        return DB::query()
+            ->fromSub($purchaseOrderLines->unionAll($deliveryLines), 'ordered')
+            ->whereNotNull('org_stock_id')
+            ->groupBy('org_stock_id')
+            ->selectRaw('org_stock_id, max(ordered_at) as last_ordered_at')
+            ->pluck('last_ordered_at', 'org_stock_id')
+            ->map(fn ($date) => $date ? Carbon::parse($date)->toDateString() : null)
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * The countries of the suppliers each stock can be bought from, from the supplier's address.
+     *
+     * @return array<int, array<int, string>> country codes by stock id
+     */
+    private function supplierCountriesByStock(): array
+    {
+        $countries = [];
+
+        DB::table('stock_has_supplier_products')
+            ->join('supplier_products', 'supplier_products.id', 'stock_has_supplier_products.supplier_product_id')
+            ->join('suppliers', 'suppliers.id', 'supplier_products.supplier_id')
+            ->join('addresses', 'addresses.id', 'suppliers.address_id')
+            ->where('supplier_products.group_id', $this->group->id)
+            ->whereNull('supplier_products.deleted_at')
+            ->whereNull('suppliers.deleted_at')
+            ->whereNotNull('addresses.country_code')
+            ->distinct()
+            ->select(['stock_has_supplier_products.stock_id', 'addresses.country_code'])
+            ->get()
+            ->each(function ($row) use (&$countries) {
+                $countries[$row->stock_id][] = $row->country_code;
+            });
+
+        return $countries;
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, count: int}>
+     */
+    private function supplierCountryOptions(Collection $rows): array
+    {
+        $counts = array_count_values($rows->reject(fn (array $row) => $row['all_retired'])->pluck('supplier_countries')->flatten()->all());
+        $names  = DB::table('countries')->whereIn('code', array_keys($counts))->pluck('name', 'code');
+
+        return collect($counts)
+            ->map(fn (int $count, string $code) => ['code' => $code, 'name' => $names[$code] ?? $code, 'count' => $count])
+            ->sortBy('name')
+            ->values()
+            ->all();
+    }
+
     /**
      * @return Collection<int, Organisation>
      */
@@ -943,6 +1035,7 @@ class ShowGoodsDashboard extends OrgAction
                 'cover_weeks'      => (float) $cell->predicted_daily_usage > 0 ? round(max(0.0, (float) $cell->quantity_available) / (float) $cell->predicted_daily_usage / 7, 1) : null,
                 'next_expected_at' => $cell->next_expected_at,
                 'has_po'           => (float) $cell->inbound_quantity > 0,
+                'last_ordered_at'  => $cell->last_ordered_at,
                 'condition'        => $this->condition($cell),
                 'stock_value'      => $rate === null ? null : round((float) $cell->stock_value * $rate, 2),
                 'commercial_value' => $rate === null ? null : round((float) $cell->stock_commercial_value * $rate, 2),
@@ -1056,6 +1149,22 @@ class ShowGoodsDashboard extends OrgAction
         $family       = Arr::get($filters, 'family');
         $state        = Arr::get($filters, 'state');
         $search       = trim((string) Arr::get($filters, 'search'));
+        $supplierCountry = Arr::get($filters, 'supplier_country');
+
+        if ($supplierCountry && !in_array(strtoupper($supplierCountry), $row['supplier_countries'], true)) {
+            return false;
+        }
+
+        $scopedCells = $this->scopedCells($row, $organisation);
+
+        if (Arr::get($filters, 'no_stock') && !$this->hasNoStock($scopedCells)) {
+            return false;
+        }
+
+        $notOrderedYears = (int) Arr::get($filters, 'not_ordered_years');
+        if ($notOrderedYears && !$this->notOrderedSince($scopedCells, now()->subYears($notOrderedYears)->toDateString())) {
+            return false;
+        }
 
         if ($row['all_retired'] && $state !== OrgStockStateEnum::DISCONTINUED->value && $search === '') {
             return false;
@@ -1065,6 +1174,28 @@ class ShowGoodsDashboard extends OrgAction
             && (!$family || $row['family_code'] === $family)
             && (!$state || $row['state'] === $state)
             && ($search === '' || Str::contains($row['code'].' '.$row['name'].' '.$row['family_code'], $search, ignoreCase: true));
+    }
+
+    private function hasNoStock(array $cells): bool
+    {
+        foreach ($cells as $cell) {
+            if ($cell['on_hand'] > 0 || $cell['inbound'] > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function notOrderedSince(array $cells, string $since): bool
+    {
+        foreach ($cells as $cell) {
+            if (($cell['last_ordered_at'] ?? null) && $cell['last_ordered_at'] >= $since) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
