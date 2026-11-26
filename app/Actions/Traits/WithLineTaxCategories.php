@@ -237,7 +237,7 @@ trait WithLineTaxCategories
     {
         $taxRows = [];
         if ($order->shop->type != ShopTypeEnum::EXTERNAL) {
-            $taxBreakdown = $order->taxBreakdown();
+            $taxBreakdown = $order->splitRecargoDeEquivalencia($order->taxBreakdown());
             foreach ($taxBreakdown as $taxRow) {
                 $taxRows[] = [
                     'label'       => __('Tax').' ('.$taxRow['name'].')',
@@ -406,6 +406,67 @@ trait WithLineTaxCategories
         }
 
         return $breakdown;
+    }
+
+    /**
+     * Recargo de equivalencia is charged as one combined rate, but a Spanish invoice must show the
+     * IVA quota and the RE quota on separate lines (PRE-142). The RE quota takes the rounding
+     * remainder so the two still add up to the tax stored on the document.
+     *
+     * @param  array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>  $breakdown
+     *
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function splitRecargoDeEquivalencia(array $breakdown): array
+    {
+        $ivaRateByCombinedRate = ['0.2620' => 0.21, '0.1140' => 0.10, '0.0450' => 0.04];
+
+        $rows = [];
+        foreach ($breakdown as $row) {
+            $ivaRate = $ivaRateByCombinedRate[number_format($row['rate'], 4, '.', '')] ?? null;
+            if ($ivaRate === null || !Arr::get(TaxCategory::find($row['tax_category_id'])?->data, 'is_re')) {
+                $rows[] = $row;
+                continue;
+            }
+
+            $taxMatchesNet = abs(round($row['net_amount'] * $row['rate'], 2) - $row['tax_amount']) <= 0.01;
+            $ivaAmount     = round($taxMatchesNet ? $row['net_amount'] * $ivaRate : $row['tax_amount'] * $ivaRate / $row['rate'], 2);
+            $reRate        = round($row['rate'] - $ivaRate, 4);
+
+            $rows[] = array_merge($row, ['name' => 'IVA ('.$this->spanishPercentage($ivaRate).')', 'rate' => $ivaRate, 'tax_amount' => $ivaAmount]);
+            $rows[] = array_merge($row, ['name' => 'Recargo de equivalencia ('.$this->spanishPercentage($reRate).')', 'rate' => $reRate, 'tax_amount' => round($row['tax_amount'] - $ivaAmount, 2)]);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The tax rows a printed document shows. When the rows derived from the lines do not add up
+     * to the stored header, the header's own category and figures are printed instead, still
+     * split into IVA and RE quotas when the category is recargo de equivalencia.
+     *
+     * @return array<int, array{tax_category_id: int, name: string, rate: float, net_amount: float, tax_amount: float}>
+     */
+    public function printedTaxBreakdown(?array $breakdown = null): array
+    {
+        $breakdown ??= $this->taxBreakdown();
+
+        if (!$breakdown && $this->taxCategory) {
+            $breakdown = [[
+                'tax_category_id' => $this->taxCategory->id,
+                'name'            => $this->taxCategory->name,
+                'rate'            => (float)$this->taxCategory->rate,
+                'net_amount'      => (float)$this->net_amount,
+                'tax_amount'      => (float)$this->tax_amount,
+            ]];
+        }
+
+        return $this->splitRecargoDeEquivalencia($breakdown);
+    }
+
+    private function spanishPercentage(float $rate): string
+    {
+        return str_replace('.', ',', rtrim(rtrim(number_format($rate * 100, 2, '.', ''), '0'), '.')).'%';
     }
 
     /**

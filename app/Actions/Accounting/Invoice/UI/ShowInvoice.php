@@ -553,7 +553,7 @@ class ShowInvoice extends OrgAction
     {
         $taxRows = [];
         if ($invoice->shop->type != ShopTypeEnum::EXTERNAL && !$invoice->is_tax_only) {
-            $taxBreakdown = $invoice->taxBreakdown();
+            $taxBreakdown = $invoice->splitRecargoDeEquivalencia($invoice->taxBreakdown());
             foreach ($taxBreakdown as $taxRow) {
                 $taxRows[] = [
                     'label'       => __('Tax').' ('.$taxRow['name'].')',

@@ -1214,3 +1214,32 @@ test('invoicing a multi-line order stores every line and the header exactly as b
         ->toBe(collect($weightedParts)->pluck('id')->sort()->values()->all())
         ->and($pushedJobs()->contains(ProcessAssetTimeSeriesRecords::class))->toBeTrue();
 });
+
+test('a recargo de equivalencia row prints as an IVA quota and an RE quota that add up to the stored tax', function () {
+    $reCategory = TaxCategory::where('data->is_re', true)->where('rate', 0.262)->orderBy('id')->firstOrFail();
+    $standard   = TaxCategory::where('rate', 0.2)->orderBy('id')->firstOrFail();
+
+    $rows = (new Invoice())->splitRecargoDeEquivalencia([
+        ['tax_category_id' => $reCategory->id, 'name' => $reCategory->name, 'rate' => 0.262, 'net_amount' => 17.60, 'tax_amount' => 4.61],
+        ['tax_category_id' => $standard->id, 'name' => $standard->name, 'rate' => 0.2, 'net_amount' => 10.0, 'tax_amount' => 2.0],
+        ['tax_category_id' => $reCategory->id, 'name' => $reCategory->name, 'rate' => 0.262, 'net_amount' => -17.60, 'tax_amount' => -4.61],
+        ['tax_category_id' => $reCategory->id, 'name' => $reCategory->name, 'rate' => 0.262, 'net_amount' => 0.0, 'tax_amount' => 2.62],
+    ]);
+
+    expect(array_column($rows, 'name'))->toBe(['IVA (21%)', 'Recargo de equivalencia (5,2%)', $standard->name, 'IVA (21%)', 'Recargo de equivalencia (5,2%)', 'IVA (21%)', 'Recargo de equivalencia (5,2%)'])
+        ->and(array_column($rows, 'rate'))->toBe([0.21, 0.052, 0.2, 0.21, 0.052, 0.21, 0.052])
+        ->and(array_column($rows, 'tax_amount'))->toBe([3.7, 0.91, 2.0, -3.7, -0.91, 2.1, 0.52])
+        ->and(array_column($rows, 'net_amount'))->toBe([17.60, 17.60, 10.0, -17.60, -17.60, 0.0, 0.0]);
+});
+
+test('a printed recargo de equivalencia document whose lines do not add up still splits the stored header', function () {
+    $reCategory = TaxCategory::where('data->is_re', true)->where('rate', 0.114)->orderBy('id')->firstOrFail();
+
+    $invoice = new Invoice(['net_amount' => 100.0, 'tax_amount' => 11.4]);
+    $invoice->setRelation('taxCategory', $reCategory);
+
+    expect($invoice->printedTaxBreakdown([]))->toBe([
+        ['tax_category_id' => $reCategory->id, 'name' => 'IVA (10%)', 'rate' => 0.1, 'net_amount' => 100.0, 'tax_amount' => 10.0],
+        ['tax_category_id' => $reCategory->id, 'name' => 'Recargo de equivalencia (1,4%)', 'rate' => 0.014, 'net_amount' => 100.0, 'tax_amount' => 1.4],
+    ]);
+});
