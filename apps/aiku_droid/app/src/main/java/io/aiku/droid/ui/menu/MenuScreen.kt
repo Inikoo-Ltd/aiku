@@ -170,12 +170,9 @@ fun MenuScreen() {
                 Icon(painter = painterResource(R.drawable.ic_fa_warehouse_alt), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(text = stringResource(R.string.home_module_warehouse), fontSize = 12.sp, color = colors.textTertiary)
-                    Text(
-                        text = listOf(warehouse.organisation.name, warehouseKicker()).filter { it.isNotBlank() }.joinToString(" · "),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.text,
-                    )
+                    listOf(warehouse.organisation.name, warehouseKicker()).filter { it.isNotBlank() }.forEach { line ->
+                        Text(text = line, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+                    }
                 }
                 Text(text = stringResource(R.string.menu_change), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.link)
             }

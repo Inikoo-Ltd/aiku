@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,6 +87,10 @@ private const val ATTENTION_BORDER_ALPHA = 0.35f
 private const val MORNING_ENDS_AT = 12
 private const val AFTERNOON_ENDS_AT = 18
 private const val SHORTCUT_COLUMNS = 4
+
+private val BUTTON_BESIDE_GAP = 14.dp
+private val BUTTON_BELOW_GAP = 14.dp
+private val MIN_TEXT_BESIDE_BUTTON = 150.dp
 
 private data class Shortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any, val badge: Int? = null)
 
@@ -236,35 +242,66 @@ private fun ClockingCard(summary: ClockingSummaryLines?, weekTotal: String?, las
     val isClockedIn = summary?.isClockedIn == true
     val (iconBackground, iconTint) = if (isClockedIn) colors.successSoft to colors.success else colors.background to colors.textTertiary
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ButtonBesideOrBelow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardShape)
             .background(colors.surface)
             .border(1.dp, colors.border, CardShape)
             .padding(16.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(iconBackground)) {
-            Icon(painter = painterResource(R.drawable.ic_fa_user_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (summary == null) 8.dp else 2.dp)) {
-            if (summary == null) {
-                SkeletonBlock(modifier = Modifier.fillMaxWidth(0.6f).height(14.dp))
-                SkeletonBlock(modifier = Modifier.fillMaxWidth(0.45f).height(11.dp))
-            } else {
-                Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
-                Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
-                if (weekTotal != null) {
-                    Text(text = weekTotal, fontSize = 13.sp, color = colors.textTertiary)
+        main = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(iconBackground)) {
+                    Icon(painter = painterResource(R.drawable.ic_fa_user_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
                 }
-                if (lastUpdated != null) {
-                    Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (summary == null) 8.dp else 2.dp)) {
+                    if (summary == null) {
+                        SkeletonBlock(modifier = Modifier.fillMaxWidth(0.6f).height(14.dp))
+                        SkeletonBlock(modifier = Modifier.fillMaxWidth(0.45f).height(11.dp))
+                    } else {
+                        Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                        Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
+                        if (weekTotal != null) {
+                            Text(text = weekTotal, fontSize = 13.sp, color = colors.textTertiary)
+                        }
+                        if (lastUpdated != null) {
+                            Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
+                        }
+                    }
                 }
             }
+        },
+        button = { AikuButton(text = stringResource(R.string.home_clocking), onClick = onOpen, height = 44.dp) },
+    )
+}
+
+@Composable
+private fun ButtonBesideOrBelow(main: @Composable () -> Unit, button: @Composable () -> Unit, modifier: Modifier = Modifier) {
+    Layout(contents = listOf(main, button), modifier = modifier) { (mainMeasurables, buttonMeasurables), constraints ->
+        val width = constraints.maxWidth
+        val besideGap = BUTTON_BESIDE_GAP.roundToPx()
+        val buttonMeasurable = buttonMeasurables.single()
+        val mainMeasurable = mainMeasurables.single()
+        val besideWidth = width - buttonMeasurable.maxIntrinsicWidth(constraints.maxHeight) - besideGap
+        val fitsBeside = besideWidth >= MIN_TEXT_BESIDE_BUTTON.roundToPx() && besideWidth >= mainMeasurable.minIntrinsicWidth(constraints.maxHeight)
+
+        if (fitsBeside) {
+            val mainPlaceable = mainMeasurable.measure(Constraints.fixedWidth(besideWidth))
+            val buttonPlaceable = buttonMeasurable.measure(Constraints(maxWidth = width - besideWidth - besideGap))
+            val height = maxOf(mainPlaceable.height, buttonPlaceable.height)
+            layout(width, height) {
+                mainPlaceable.place(0, (height - mainPlaceable.height) / 2)
+                buttonPlaceable.place(width - buttonPlaceable.width, (height - buttonPlaceable.height) / 2)
+            }
+        } else {
+            val belowGap = BUTTON_BELOW_GAP.roundToPx()
+            val mainPlaceable = mainMeasurable.measure(Constraints.fixedWidth(width))
+            val buttonPlaceable = buttonMeasurable.measure(Constraints.fixedWidth(width))
+            layout(width, mainPlaceable.height + belowGap + buttonPlaceable.height) {
+                mainPlaceable.place(0, 0)
+                buttonPlaceable.place(0, mainPlaceable.height + belowGap)
+            }
         }
-        AikuButton(text = stringResource(R.string.home_clocking), onClick = onOpen, height = 44.dp)
     }
 }
 
