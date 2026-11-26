@@ -34,6 +34,10 @@ use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Helpers\Language;
+use App\Models\Helpers\Media;
+use App\Models\Goods\TradeUnit;
+use App\Actions\Helpers\Images\GetPictureSources;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
 use App\Models\Production\ManufactureBreak;
 use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
@@ -121,7 +125,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
+            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.images' => self::orderedImagesQuery(...), 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
             ->first();
         $shiftEndPause    = $openSession?->shiftEndPause();
         $shiftEndPausedAt = $shiftEndPause?->started_at ?? $openSession?->left_open_after_shift_at;
@@ -142,7 +146,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.artefactFamily', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
+            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.artefactFamily', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.artefact.tradeUnit.images' => self::orderedImagesQuery(...), 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
@@ -575,6 +579,27 @@ class ShowManufactureFloor extends OrgAction
         return $order?->state === OrderStateEnum::SUBMITTED && $order->submitted_at ? (int) $order->submitted_at->copy()->startOfDay()->diffInDays(today()) : null;
     }
 
+    protected static function orderedImagesQuery(MorphToMany $query): void
+    {
+        $query->whereRaw("model_has_media.scope IS DISTINCT FROM 'audio'")->orderByPivot('position')->orderBy('media.id');
+    }
+
+    /**
+     * @return array<int, array{source: array|null}>
+     */
+    protected function zoomImages(?TradeUnit $tradeUnit): array
+    {
+        if (!$tradeUnit?->image_id) {
+            return [];
+        }
+
+        return $tradeUnit->images
+            ->sortByDesc(fn (Media $image) => $image->id === $tradeUnit->image_id)
+            ->map(fn (Media $image) => ['source' => GetPictureSources::run($image->getImage()->resize(1200, 1200))])
+            ->values()
+            ->all();
+    }
+
     /**
      * @param Collection<int, JobOrderItemTask>|null $group the steps combined with this one, itself included
      */
@@ -597,6 +622,7 @@ class ShowManufactureFloor extends OrgAction
             'artefact_name'       => $isCombined ? (isset($this->sharedMixLeads[$task->id]) ? __('Shared mix') : __('Combined batch')) : $task->jobOrderItem->displayName(),
             'artefact_family_id'  => $isCombined ? null : $task->jobOrderItem->artefact->artefact_family_id,
             'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
+            'artefact_images'     => $isCombined ? [] : $this->zoomImages($task->jobOrderItem->artefact->tradeUnit),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
             'order_reference'     => $isCombined ? null : Arr::get($task->jobOrderItem->data, 'order'),
             'order_waiting_days'  => $isCombined ? null : $this->orderWaitingDays($task->jobOrderItem),

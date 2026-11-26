@@ -17,7 +17,7 @@ import DevelopmentFeedback from '@/Components/Production/DevelopmentFeedback.vue
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
-import Image from '@common/Components/Image.vue'
+import TappableArtefactImage from '@/Components/Production/TappableArtefactImage.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { mixBatchesLabel } from '@/Composables/mixBatches'
 import { packCount, pieceWord, progressLabel, unitWord } from '@/Composables/packs'
@@ -82,6 +82,7 @@ interface FloorTask {
     artefact_name: string
     artefact_family_id: number | null
     artefact_image: object | null
+    artefact_images?: { source: object | null }[]
     job_order_reference: string
     order_reference: string | null
     order_waiting_days?: number | null
@@ -469,7 +470,7 @@ function startTask(task: FloorTask) {
                         </template>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Image v-if="task.artefact_image" :src="task.artefact_image" class="aspect-square w-10 shrink-0 overflow-hidden rounded" />
+                        <TappableArtefactImage v-if="task.artefact_image" :src="task.artefact_image" :images="task.artefact_images" class="aspect-square w-10 shrink-0 overflow-hidden rounded" />
                         <div class="text-sm text-gray-700 line-clamp-2">{{ task.artefact_name }}</div>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 flex justify-between">
@@ -609,9 +610,13 @@ function startTask(task: FloorTask) {
                 <div class="text-sm text-gray-500">{{ selectedTask.task_name }} · {{ ctrans('Job order') }} {{ selectedTask.job_order_reference }}</div>
                 <div v-if="selectedTask.continued_from" class="text-sm font-medium text-gray-700">{{ ctrans('Continued from :reference', { reference: selectedTask.continued_from }) }}</div>
                 <div v-if="selectedTask.continued_in" class="text-sm font-medium text-amber-700">{{ ctrans('Closed at :quantity, the rest continued in :reference', { quantity: selectedTask.quantity_required, reference: selectedTask.continued_in }) }}</div>
-                <Image v-if="selectedTask.artefact_image" :src="selectedTask.artefact_image" class="mx-auto mt-3 aspect-square w-40 overflow-hidden rounded-xl shadow" />
-                <div class="text-5xl font-bold mt-3">{{ selectedTask.artefact_code }}</div>
-                <div class="text-3xl font-semibold text-gray-800 mt-1">{{ selectedTask.artefact_name }}</div>
+                <div class="mt-3 flex items-center justify-center gap-5">
+                    <TappableArtefactImage v-if="selectedTask.artefact_image" :src="selectedTask.artefact_image" :images="selectedTask.artefact_images" class="aspect-square w-32 shrink-0 overflow-hidden rounded-xl shadow" />
+                    <div :class="selectedTask.artefact_image ? 'text-left' : ''">
+                        <div class="text-5xl font-bold">{{ selectedTask.artefact_code }}</div>
+                        <div class="text-3xl font-semibold text-gray-800 mt-1">{{ selectedTask.artefact_name }}</div>
+                    </div>
+                </div>
                 <a v-if="selectedTask.packing_slips_url" :href="selectedTask.packing_slips_url" target="_blank" class="mx-auto mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-3 text-xl font-semibold text-gray-700">
                     <FontAwesomeIcon icon="fal fa-print" fixed-width aria-hidden="true" />
                     {{ ctrans('Print packing slips') }}

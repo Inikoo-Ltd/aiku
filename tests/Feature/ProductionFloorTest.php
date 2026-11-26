@@ -536,9 +536,23 @@ test('pausing keeps the job and its count, and the floor links a carried job to 
     expect($carried->reference)->toBe($jobOrder->reference.'a')
         ->and((float) $carriedTask->quantity_required)->toBe(10.0);
 
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->organisation->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $task->jobOrderItem->artefact->updateQuietly(['trade_unit_id' => $tradeUnit->id]);
+    $path      = tempnam(sys_get_temp_dir(), 'fimg').'.png';
+    file_put_contents($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
+    $pictures = collect(['front', 'back'])->map(function (string $name) use ($tradeUnit, $path) {
+        $media = \App\Actions\Helpers\Media\StoreMediaFromFile::run($tradeUnit, ['path' => $path, 'originalName' => "$name.png", 'extension' => 'png', 'checksum' => md5($name)], 'image');
+        $tradeUnit->images()->attach($media->id, ['group_id' => $tradeUnit->group_id, 'scope' => 'image', 'data' => '{}']);
+
+        return $media;
+    });
+    $tradeUnit->updateQuietly(['image_id' => $pictures->last()->id]);
+
     $task->update(['state' => JobOrderItemTaskStateEnum::TODO]);
     $cards = collect($floor()->viewData('page')['props']['tasks'])->keyBy('id');
-    expect($cards[$carriedTask->id]['continued_from'])->toBe($jobOrder->reference)
+    expect($cards[$task->id]['artefact_images'])->toHaveCount(2)
+        ->and($cards[$task->id]['artefact_images'][0]['source'])->toEqual(\App\Actions\Helpers\Images\GetPictureSources::run($pictures->last()->getImage()->resize(1200, 1200)))
+        ->and($cards[$carriedTask->id]['continued_from'])->toBe($jobOrder->reference)
         ->and($cards[$carriedTask->id]['continued_in'])->toBeNull()
         ->and($cards[$task->id]['continued_in'])->toBe($carried->reference)
         ->and($cards[$task->id]['continued_from'])->toBeNull()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faChevronCircleLeft,
@@ -29,6 +29,76 @@ const onPrevNavigation = () => {
 
 const onNextNavigation = () => {
   selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+}
+
+const zoom = ref(1)
+const pan = ref({ x: 0, y: 0 })
+const zoomStyle = computed(() => ({ transform: `translate(${pan.value.x}px, ${pan.value.y}px) scale(${zoom.value})` }))
+let touchStart: { x: number; y: number; distance: number; zoom: number; pan: { x: number; y: number } } | null = null
+let wasPinched = false
+
+const touchDistance = (touches: TouchList) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+
+watch(selectedIndex, () => {
+  zoom.value = 1
+  pan.value = { x: 0, y: 0 }
+})
+
+function onTouchStart(e: TouchEvent) {
+  wasPinched ||= e.touches.length > 1
+  touchStart = {
+    x: e.touches[0].clientX,
+    y: e.touches[0].clientY,
+    distance: e.touches.length > 1 ? touchDistance(e.touches) : 0,
+    zoom: zoom.value,
+    pan: { ...pan.value },
+  }
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!touchStart) return
+  if (e.touches.length > 1 && touchStart.distance) {
+    zoom.value = Math.min(5, Math.max(1, (touchStart.zoom * touchDistance(e.touches)) / touchStart.distance))
+    if (zoom.value === 1) pan.value = { x: 0, y: 0 }
+  } else if (zoom.value > 1) {
+    pan.value = { x: touchStart.pan.x + e.touches[0].clientX - touchStart.x, y: touchStart.pan.y + e.touches[0].clientY - touchStart.y }
+  }
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (e.touches.length) {
+    onTouchStart(e)
+    return
+  }
+  if (touchStart && !wasPinched && zoom.value === 1) {
+    const dx = e.changedTouches[0].clientX - touchStart.x
+    const dy = e.changedTouches[0].clientY - touchStart.y
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && props.images.length > 1) {
+      if (dx < 0) onNextNavigation()
+      else onPrevNavigation()
+    } else if (dy > 80 && dy > Math.abs(dx)) {
+      visible.value = false
+    } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && isOutsidePicture(e.currentTarget as HTMLElement, e.changedTouches[0])) {
+      e.preventDefault()
+      visible.value = false
+    }
+  }
+  onTouchCancel()
+}
+
+function onTouchCancel() {
+  touchStart = null
+  wasPinched = false
+}
+
+function isOutsidePicture(box: HTMLElement, touch: Touch) {
+  const picture = box.querySelector('img')
+  if (!picture?.naturalWidth) return false
+  const rect = picture.getBoundingClientRect()
+  const scale = Math.min(rect.width / picture.naturalWidth, rect.height / picture.naturalHeight)
+  const marginX = (rect.width - picture.naturalWidth * scale) / 2
+  const marginY = (rect.height - picture.naturalHeight * scale) / 2
+  return touch.clientX < rect.left + marginX || touch.clientX > rect.right - marginX || touch.clientY < rect.top + marginY || touch.clientY > rect.bottom - marginY
 }
 
 const isDownloading = ref(false)
@@ -81,7 +151,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     class="w-[calc(100vw-3rem)] max-w-6xl !bg-transparent !shadow-none !border-0 !border-transparent">    
     <div class="relative w-full flex flex-col items-center justify-center" @click.self="visible = false">
       <div class="w-full flex justify-end mb-2" @click.self="visible = false">
-        <button class="text-white text-3xl hover:text-gray-300 z-50" aria-label="Close viewer"
+        <button class="text-white text-4xl p-2 hover:text-gray-300 z-50" aria-label="Close viewer"
           @click="visible = false">
           <FontAwesomeIcon :icon="faTimes" fixed-width />
         </button>
@@ -89,14 +159,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
       <!-- Image Viewer -->
       <div v-if="!showVideo && currentImage?.original_url"
-        class="relative w-full h-[75vh] flex items-center justify-center overflow-hidden" @click.self="visible = false">
+        class="relative w-full h-[75vh] flex items-center justify-center overflow-hidden touch-none" @click.self="visible = false"
+        @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd" @touchcancel="onTouchCancel">
         <img :src="currentImage.original_url" :alt="currentImage?.alt || `Image ${selectedIndex + 1}`"
-          class="max-h-full max-w-full object-contain" />
+          class="max-h-full max-w-full object-contain" :style="zoomStyle" />
       </div>
-      <div v-else-if="!showVideo" class="relative w-full h-[75vh] overflow-hidden rounded select-none"
-        @click.self="visible = false">
-        <Image :src="currentImage?.zoom || currentImage?.source"
-          :alt="currentImage?.alt || `Image ${selectedIndex + 1}`" :style="{ objectFit: 'contain' }" :imageCover="true" />
+      <div v-else-if="!showVideo" class="relative w-full h-[75vh] overflow-hidden rounded select-none touch-none"
+        @click.self="visible = false" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd" @touchcancel="onTouchCancel">
+        <div class="h-full w-full" :style="zoomStyle" @click.self="visible = false">
+          <Image :src="currentImage?.zoom || currentImage?.source"
+            :alt="currentImage?.alt || `Image ${selectedIndex + 1}`" :style="{ objectFit: 'contain' }" :imageCover="true" />
+        </div>
       </div>
 
       <div v-if="!showVideo && currentImage?.download_url" class="w-full flex justify-center mt-4"
@@ -106,7 +179,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
 
       <!-- Video Viewer -->
-      <div v-else class="w-full aspect-video flex items-center justify-center">
+      <div v-else-if="showVideo" class="w-full aspect-video flex items-center justify-center">
         <iframe class="w-full h-full rounded-lg" :src="video" frameborder="0" allow="autoplay; fullscreen"
           allowfullscreen></iframe>
       </div>

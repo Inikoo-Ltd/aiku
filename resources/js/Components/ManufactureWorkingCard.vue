@@ -13,7 +13,7 @@ import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
-import Image from '@common/Components/Image.vue'
+import TappableArtefactImage from '@/Components/Production/TappableArtefactImage.vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -35,6 +35,7 @@ const props = defineProps<{
             artefact_code: string | null
             artefact_name: string | null
             artefact_image?: object | null
+            artefact_images?: { source: object | null }[]
             job_order_reference: string | null
             quantity_made: number
             quantity_required: number
@@ -373,7 +374,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 <div class="text-xs uppercase tracking-wide text-[var(--app-accent)]">{{ isQuantityOnly ? ctrans('Record quantity made') : ctrans('Working on') }}</div>
                 <div class="text-4xl font-semibold mt-1">{{ session.task.task_name }}</div>
                 <div class="flex items-center gap-4 mt-2">
-                    <Image v-if="session.task.artefact_image" :src="session.task.artefact_image" class="aspect-square w-24 shrink-0 overflow-hidden rounded-xl shadow" />
+                    <TappableArtefactImage v-if="session.task.artefact_image" :src="session.task.artefact_image" :images="session.task.artefact_images" class="aspect-square w-24 shrink-0 overflow-hidden rounded-xl shadow" />
                     <div>
                         <div class="text-4xl font-bold">{{ session.task.artefact_code }}</div>
                         <div class="text-2xl font-semibold text-gray-800">{{ session.task.artefact_name }}</div>
