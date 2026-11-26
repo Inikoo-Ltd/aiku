@@ -40,7 +40,7 @@ class GetSupplierProductMoveTargets extends OrgAction
 
         $supplierProducts = SupplierProduct::where('agent_id', $agent->id)
             ->whereIn('id', $this->validatedData['supplier_products'])
-            ->get(['id', 'supplier_id', 'code']);
+            ->get(['id', 'supplier_id', 'code', 'state']);
         abort_unless($supplierProducts->count() === count($this->validatedData['supplier_products']), 404);
 
         return MoveSupplierProductsToSupplier::make()->getTargets($agent, $supplierProducts);

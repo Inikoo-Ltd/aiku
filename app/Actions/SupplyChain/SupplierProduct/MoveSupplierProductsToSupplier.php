@@ -68,16 +68,19 @@ class MoveSupplierProductsToSupplier extends OrgAction
     {
         $this->assertCanMove($supplier, $supplierProducts);
 
-        $twins = $this->twinsOf($supplier, $supplierProducts);
-        $this->assertNewProductsFilled($supplier, $supplierProducts->reject(fn (SupplierProduct $supplierProduct) => $twins->has($supplierProduct->id)), $newProducts);
+        $twins          = $this->twinsOf($supplier, $supplierProducts);
+        $untwinned      = $supplierProducts->reject(fn (SupplierProduct $supplierProduct) => $twins->has($supplierProduct->id));
+        $sameSkoLeads   = $this->sameSkoLeadsOf($untwinned);
+        $movingProducts = $untwinned->reject(fn (SupplierProduct $supplierProduct) => $sameSkoLeads->has($supplierProduct->id));
+        $this->assertNewProductsFilled($supplier, $movingProducts, $newProducts);
 
         $sourceSuppliers = Supplier::whereIn('id', $supplierProducts->pluck('supplier_id')->unique())->get();
         $orgSuppliers    = collect();
         $result          = ['moved' => 0, 'merged' => 0];
 
-        DB::transaction(function () use ($supplier, $supplierProducts, $twins, $newProducts, $orgSuppliers, &$result) {
-            foreach ($supplierProducts as $supplierProduct) {
-                $twin = $twins->get($supplierProduct->id);
+        DB::transaction(function () use ($supplier, $supplierProducts, $twins, $sameSkoLeads, $newProducts, $orgSuppliers, &$result) {
+            foreach ($supplierProducts->sortBy(fn (SupplierProduct $supplierProduct) => $sameSkoLeads->has($supplierProduct->id) ? 1 : 0) as $supplierProduct) {
+                $twin = $twins->get($supplierProduct->id) ?? $sameSkoLeads->get($supplierProduct->id)?->refresh();
 
                 if ($twin) {
                     $this->mergeIntoTwin($supplierProduct, $twin);
@@ -147,6 +150,29 @@ class MoveSupplierProductsToSupplier extends OrgAction
     }
 
     /**
+     * Chosen products selling exactly the same SKOs as another chosen product (UK and EU plug of one SKO) do not
+     * both move: one moves, an active one first, and the others merge into it once it is at the target.
+     *
+     * @param  Collection<int, SupplierProduct>  $supplierProducts  the chosen products the target has no twin for
+     * @return Collection<int, SupplierProduct>  the product that moves, keyed by the id of each product merging into it
+     */
+    public function sameSkoLeadsOf(Collection $supplierProducts): Collection
+    {
+        $stocks = $this->stockIdsOf($supplierProducts->pluck('id')->all());
+        $leads  = collect();
+
+        $supplierProducts
+            ->filter(fn (SupplierProduct $supplierProduct) => $stocks->has($supplierProduct->id))
+            ->sortBy(fn (SupplierProduct $supplierProduct) => [$supplierProduct->state === SupplierProductStateEnum::ACTIVE ? 0 : 1, $supplierProduct->id])
+            ->groupBy(fn (SupplierProduct $supplierProduct) => implode(',', $stocks->get($supplierProduct->id)))
+            ->each(function (Collection $sameSkoProducts) use ($leads) {
+                $sameSkoProducts->skip(1)->each(fn (SupplierProduct $supplierProduct) => $leads->put($supplierProduct->id, $sameSkoProducts->first()));
+            });
+
+        return $leads;
+    }
+
+    /**
      * @param  array<int, int>  $supplierProductIds
      * @return Collection<int, array<int, int>>
      */
@@ -197,8 +223,9 @@ class MoveSupplierProductsToSupplier extends OrgAction
 
             if ($code === '') {
                 $errors["$key.code"] = __('Give the code at :supplier.', ['supplier' => $supplier->code]);
-            } elseif (in_array(mb_strtolower($code), $typedCodes, true)
-                || $supplier->supplierProducts()->whereRaw('lower(code) = ?', [mb_strtolower($code)])->exists()) {
+            } elseif (in_array(mb_strtolower($code), $typedCodes, true)) {
+                $errors["$key.code"] = __('Code :code is given to another product moving to :supplier.', ['supplier' => $supplier->code, 'code' => $code]);
+            } elseif ($supplier->supplierProducts()->whereRaw('lower(code) = ?', [mb_strtolower($code)])->exists()) {
                 $errors["$key.code"] = __(':supplier already has a product :code.', ['supplier' => $supplier->code, 'code' => $code]);
             }
             $typedCodes[] = mb_strtolower($code);
@@ -406,9 +433,10 @@ class MoveSupplierProductsToSupplier extends OrgAction
             ->orderBy('code')
             ->get();
         $twinsBySupplier = $this->twinsBySupplier($suppliers->pluck('id')->all(), $supplierProducts);
+        $sameSkoLeads    = $this->sameSkoLeadsOf($supplierProducts);
 
         return $suppliers
-            ->map(function (Supplier $supplier) use ($supplierProducts, $twinsBySupplier) {
+            ->map(function (Supplier $supplier) use ($supplierProducts, $twinsBySupplier, $sameSkoLeads) {
                 $twins    = $twinsBySupplier->get($supplier->id, collect());
                 $products = $supplierProducts->mapWithKeys(fn (SupplierProduct $supplierProduct) => [
                     $supplierProduct->id => ($twin = $twins->get($supplierProduct->id)) ? [
@@ -417,6 +445,9 @@ class MoveSupplierProductsToSupplier extends OrgAction
                         'units_per_carton' => (float) $twin->units_per_carton,
                     ] : null,
                 ]);
+                $mergesIntoMoving = $sameSkoLeads
+                    ->reject(fn (SupplierProduct $lead, int $supplierProductId) => $twins->has($supplierProductId))
+                    ->map(fn (SupplierProduct $lead) => $lead->id);
 
                 return [
                     'id'             => $supplier->id,
@@ -429,6 +460,7 @@ class MoveSupplierProductsToSupplier extends OrgAction
                     'currency'       => $supplier->currency?->code,
                     'products'       => $products->all(),
                     'products_count' => $products->filter()->count(),
+                    'merges_into'    => (object) $mergesIntoMoving->all(),
                 ];
             })
             ->values()

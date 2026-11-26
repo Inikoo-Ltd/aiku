@@ -34,6 +34,7 @@ type TargetSupplier = {
 	currency: string | null
 	products: Record<number, TargetProduct | null>
 	products_count: number
+	merges_into: Record<number, number>
 }
 
 export type MovableSupplierProduct = {
@@ -93,7 +94,12 @@ const supplierOptions = computed(() =>
 )
 
 const twinOf = (item: MovableSupplierProduct) => supplier.value?.products[item.id] ?? null
-const needsProduct = (item: MovableSupplierProduct) => !!supplier.value && !twinOf(item)
+const movingProductOf = (item: MovableSupplierProduct) => {
+	const movingProductId = supplier.value?.merges_into[item.id]
+
+	return movingProductId ? props.items.find((other) => other.id === movingProductId) ?? null : null
+}
+const needsProduct = (item: MovableSupplierProduct) => !!supplier.value && !twinOf(item) && !movingProductOf(item)
 const productError = (item: MovableSupplierProduct, field: string) => errors.value[`products.${item.id}.${field}`] ?? null
 const typedNumber = (event: InputNumberInputEvent) => (typeof event.value === "number" ? event.value : null)
 
@@ -278,6 +284,16 @@ function submit() {
 							supplier: supplier.code,
 							code: twinOf(item)!.code,
 							cost: locale.currencyFormatUnitCost(supplier.currency ?? "", twinOf(item)!.cost),
+							old: item.code,
+						}) }}</span>
+					</p>
+
+					<p v-else-if="movingProductOf(item)" class="flex gap-2 rounded-md border border-green-200 bg-green-50 p-2 text-xs text-green-800">
+						<FontAwesomeIcon :icon="faCodeMerge" class="mt-0.5 text-green-600" fixed-width aria-hidden="true" />
+						<span>{{ ctrans("Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued", {
+							code: movingProductOf(item)!.code,
+							name: movingProductOf(item)!.name ?? "",
+							supplier: supplier.code,
 							old: item.code,
 						}) }}</span>
 					</p>
