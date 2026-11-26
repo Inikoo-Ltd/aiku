@@ -7013,6 +7013,15 @@ describe('pre-orders (HELP-3432)', function () {
             ->and($child->canChangeTaxCategory())->toBeFalse()
             ->and(GenerateInvoiceFromOrder::make()->paidPreOrderToInvoiceWith($parent))->toBeNull();
 
+        DB::table('orders')->where('id', $parent->id)->update(['gross_amount' => DB::raw('goods_amount + 1')]);
+        $pdfViewData = null;
+        Event::listen('composing: invoices.templates.pdf.invoice', function ($view) use (&$pdfViewData) {
+            $pdfViewData ??= $view->getData();
+        });
+        \App\Actions\Accounting\Invoice\PdfInvoice::make()->getInvoicePdfContent($invoice->refresh());
+        $itemsNet = number_format((float) $parent->fresh()->goods_amount + (float) $child->goods_amount, 2);
+        expect(view('invoices.templates.pdf.invoice', $pdfViewData)->render())->toMatch('/'.preg_quote(__('Items Net'), '/').'<\/td>\s*<td>[^0-9<]*'.preg_quote($itemsNet, '/').'<\/td>/');
+
         \App\Actions\Ordering\PreOrder\CancelPreOrder::run($preOrder->fresh(), \App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum::SUPPLIER_CANNOT_SUPPLY);
         $creditNote = Invoice::where('original_invoice_id', $invoice->id)->where('type', InvoiceTypeEnum::REFUND)->firstOrFail();
 
