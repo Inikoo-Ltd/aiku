@@ -15,21 +15,14 @@ import Select from "primevue/select"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import CopyTargetSupplierOption from "@/Components/Procurement/CopyTargetSupplierOption.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
-
-type SourceSupplier = {
-	id: number
-	agent_id: number
-	label: string
-	number_products: number
-	company_name: string | null
-	contact_name: string | null
-}
+import { CopyTarget, copyTargetFilterFields } from "@/types/supplier-products-copy"
 
 type SourceProduct = {
 	id: number
@@ -49,7 +42,7 @@ const props = defineProps<{
 		supplier_id: number
 		source_products_route: routeType
 	}
-	sourceSuppliers?: SourceSupplier[]
+	sourceSuppliers?: CopyTarget[]
 	isLoadingSuppliers?: boolean
 }>()
 
@@ -60,6 +53,7 @@ const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]
 
 const sourceAgentId = ref<number>(props.copyProducts.agent_id)
 const sourceSupplierId = ref<number | null>(null)
+const supplierSearch = ref("")
 const search = ref("")
 const products = ref<SourceProduct[]>([])
 const selectedProducts = ref<Record<number, boolean>>({})
@@ -195,7 +189,10 @@ function addProducts() {
 				optionValue="id"
 				filter
 				autoFilterFocus
-				:filterFields="['label', 'company_name', 'contact_name']"
+				:filterFields="copyTargetFilterFields"
+				:filterPlaceholder="ctrans('Code, name, contact or product code')"
+				@filter="(event) => supplierSearch = event.value"
+				@hide="supplierSearch = ''"
 				fluid
 				:loading="isLoadingSuppliers"
 				:placeholder="ctrans('Select a supplier')"
@@ -203,15 +200,7 @@ function addProducts() {
 				@change="onSourceSupplierChange"
 			>
 				<template #option="{ option }">
-					<div class="flex w-full items-center justify-between gap-3">
-						<div class="min-w-0">
-							<div class="truncate">{{ option.label }}</div>
-							<div v-if="option.company_name" class="truncate text-xs text-gray-500">{{ option.company_name }}</div>
-						</div>
-						<span class="shrink-0 text-xs tabular-nums text-gray-500">
-							{{ ctransChoice(":count product|:count products", option.number_products, { count: String(option.number_products) }) }}
-						</span>
-					</div>
+					<CopyTargetSupplierOption :supplier="option" :search="supplierSearch" />
 				</template>
 			</Select>
 

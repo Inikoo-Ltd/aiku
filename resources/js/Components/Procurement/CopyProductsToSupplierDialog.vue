@@ -12,11 +12,12 @@ import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import CopyTargetSupplierOption from "@/Components/Procurement/CopyTargetSupplierOption.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faPlus, faTimes } from "@fal"
-import { ctrans, ctransChoice } from "@/Composables/useTrans"
-import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
+import { ctrans } from "@/Composables/useTrans"
+import { CopyProducts, CopyTarget, copyTargetFilterFields } from "@/types/supplier-products-copy"
 
 library.add(faCheck, faPlus, faTimes)
 
@@ -36,6 +37,7 @@ const visible = defineModel<boolean>("visible", { default: false })
 
 const isCopying = ref(false)
 const targetSupplierId = ref<number | null>(null)
+const supplierSearch = ref("")
 const isMakePreferred = ref(false)
 const copyError = ref<string | null>(null)
 const targetAgentId = ref<number | null>(props.copyProducts.agent_id)
@@ -126,22 +128,17 @@ defineExpose({ createSupplierWithSelectedProducts })
 				optionValue="id"
 				filter
 				autoFilterFocus
-				:filterFields="['label', 'company_name', 'contact_name']"
+				:filterFields="copyTargetFilterFields"
+				:filterPlaceholder="ctrans('Code, name, contact or product code')"
+				@filter="(event) => supplierSearch = event.value"
+				@hide="supplierSearch = ''"
 				fluid
 				:loading="isLoadingTargets"
 				:placeholder="ctrans('Select a supplier')"
 				:emptyMessage="ctrans('No other supplier')"
 			>
 				<template #option="{ option }">
-					<div class="flex w-full items-center justify-between gap-3">
-						<div class="min-w-0">
-							<div class="truncate">{{ option.label }}</div>
-							<div v-if="option.company_name" class="truncate text-xs text-gray-500">{{ option.company_name }}</div>
-						</div>
-						<span class="shrink-0 text-xs tabular-nums text-gray-500">
-							{{ ctransChoice(":count product|:count products", option.number_products, { count: String(option.number_products) }) }}
-						</span>
-					</div>
+					<CopyTargetSupplierOption :supplier="option" :search="supplierSearch" />
 				</template>
 			</Select>
 			<label v-if="copyProducts.can_make_preferred" for="copy-products-make-preferred" class="mt-2 flex cursor-pointer items-start gap-2">
