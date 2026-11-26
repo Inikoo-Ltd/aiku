@@ -158,7 +158,7 @@ return [
         'finance' => [
             'payments', 'model_has_payments', 'payment_*', 'org_payment_service_provider*', 'credit_transactions', 'top_ups', 'top_up_*',
             'order_payment_api_points', 'adjustments', 'intrastat_*', '*_accounting_stats', 'invoice_transaction_date_repairs',
-            'invoice_e_invoice_transmissions', 'received_e_invoices',
+            'invoice_e_invoice_transmissions', 'received_e_invoices', 'cost_of_goods_months',
         ],
 
         'hr' => [

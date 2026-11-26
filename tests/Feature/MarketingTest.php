@@ -6136,8 +6136,8 @@ describe('merging Google Ads ghost campaigns', function () {
             ->and($rows)->toHaveCount(2)
             ->and($rows->pluck('traffic_source_campaign_id')->unique()->all())->toBe([$this->pmax->id])
             ->and((float) $rows[0]->share)->toBe(1.0)
-            ->and(Carbon\Carbon::parse($rows[0]->first_touch_at)->toDateTimeString())->toBe('2026-11-10 10:00:00')
-            ->and(Carbon\Carbon::parse($rows[0]->last_touch_at)->toDateTimeString())->toBe('2026-11-12 10:00:00')
+            ->and(Carbon::parse($rows[0]->first_touch_at)->toDateTimeString())->toBe('2026-11-10 10:00:00')
+            ->and(Carbon::parse($rows[0]->last_touch_at)->toDateTimeString())->toBe('2026-11-12 10:00:00')
             ->and($this->ghostA->fresh()->merged_into_id)->toBe($this->pmax->id);
     });
 
