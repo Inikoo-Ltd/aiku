@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Home;
 
+use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\Traits\WithAICreditErrorHandler;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Models\Chat\SlackChannel;
@@ -39,6 +40,10 @@ class EditStaffMessageStories
 
     public const int FIRST_RUN_HOURS = 24;
 
+    public const float MAYBE_NEWS = 0.3;
+
+    public const int JEV_CHUNK = 25;
+
     public string $commandSignature = 'chat:edit-stories';
 
     /**
@@ -66,10 +71,20 @@ class EditStaffMessageStories
             'text'    => mb_substr((string) $message->text, 0, 600),
         ]))->values();
 
+        $quickIds = StaffMessageStory::query()
+            ->where('source', StaffMessageStory::SOURCE_QUICK)
+            ->where(fn ($query) => $query->whereIn('staff_message_id', $staff->pluck('id'))->orWhereIn('slack_message_id', $slack->pluck('id')))
+            ->get(['staff_message_id', 'slack_message_id'])
+            ->map(fn (StaffMessageStory $story) => $story->staff_message_id ? 's'.$story->staff_message_id : 'k'.$story->slack_message_id)
+            ->all();
+
+        $lines = $this->maybeNews($lines, $quickIds);
+
         $written = 0;
         if ($lines->isNotEmpty()) {
             $staffById = $staff->keyBy('id');
             $slackById = $slack->keyBy('id');
+            $kept      = [];
 
             foreach ($this->askEditor($lines) as $story) {
                 $message = str_starts_with($story['id'], 's') ? $staffById->get((int) substr($story['id'], 1)) : $slackById->get((int) substr($story['id'], 1));
@@ -77,23 +92,16 @@ class EditStaffMessageStories
                     continue;
                 }
 
-                $isStaff = $message instanceof StaffMessage;
-                StaffMessageStory::updateOrCreate(
-                    $isStaff ? ['staff_message_id' => $message->id] : ['slack_message_id' => $message->id],
-                    [
-                        'group_id'              => $group->id,
-                        'staff_conversation_id' => $isStaff ? $message->staff_conversation_id : null,
-                        'slack_channel_id'      => $isStaff ? null : $message->slack_channel_id,
-                        'author_user_id'        => $message->user_id,
-                        'category'              => in_array($story['category'], StaffMessageStory::CATEGORIES, true) ? $story['category'] : 'other',
-                        'importance'            => max(1, min(5, (int) $story['importance'])),
-                        'headline'              => mb_substr(trim($story['headline']), 0, 120),
-                        'blurb'                 => mb_substr(trim($story['blurb']), 0, 400),
-                        'happened_at'           => $isStaff ? $message->created_at : $message->sent_at,
-                    ]
-                );
+                StaffMessageStory::storeFor($message, $story, StaffMessageStory::SOURCE_EDITOR);
+                $kept[] = $story['id'];
                 $written++;
             }
+
+            $dropped = array_diff($quickIds, $kept);
+            StaffMessageStory::query()->where('source', StaffMessageStory::SOURCE_QUICK)->where(fn ($query) => $query
+                ->whereIn('staff_message_id', collect($dropped)->filter(fn ($id) => $id[0] === 's')->map(fn ($id) => (int) substr($id, 1)))
+                ->orWhereIn('slack_message_id', collect($dropped)->filter(fn ($id) => $id[0] === 'k')->map(fn ($id) => (int) substr($id, 1))))
+                ->delete();
         }
 
         Cache::forever($cursorKey, [
@@ -102,6 +110,35 @@ class EditStaffMessageStories
         ]);
 
         return $written;
+    }
+
+    /**
+     * Jev scores every message in a few cheap calls; only the ones that may be news, and those with a quick story to
+     * review, go on to the editor model. Without an answer from Jev everything goes on.
+     *
+     * @param  Collection<int, array<string, mixed>>  $lines
+     * @param  list<string>  $quickIds
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function maybeNews(Collection $lines, array $quickIds): Collection
+    {
+        return $lines->chunk(self::JEV_CHUNK)->flatMap(function (Collection $chunk) use ($quickIds) {
+            $answers = AskJev::make()->handle(
+                ['messages' => $chunk->values()->all()],
+                $chunk->mapWithKeys(fn ($line) => [$line['id'] => [
+                    'type'         => 'noul',
+                    'instructions' => 'Colleagues posted these messages in company team channels. Could message '.$line['id'].' be news worth showing to everyone in its channel on the company news feed?',
+                    'criteria'     => [
+                        'true'  => 'A new product or sample, a celebration, an announcement, a decision, a big order or sale, an operations problem or win.',
+                        'false' => 'Small talk, a question to one person, thanks, a routine status line, a link without context.',
+                    ],
+                ]])->all()
+            );
+
+            return $chunk->filter(fn ($line) => in_array($line['id'], $quickIds, true)
+                || $answers === null
+                || (float) ($answers[$line['id']]['noul'] ?? 1) >= self::MAYBE_NEWS);
+        })->values();
     }
 
     /**
@@ -152,6 +189,7 @@ class EditStaffMessageStories
     {
         $prompt = "You are the editor-in-chief of the internal news feed of a wholesale company (gifts, crystals, incense, aromatherapy; warehouses in the UK, Slovakia, Spain, Indonesia)."
             ."\nBelow are messages staff wrote in team channels since the last edition. Pick only those worth a story for colleagues: a new product or sample shown (especially with a photo), a celebration (birthday, welcome, farewell, anniversary, baby, team photo), an announcement, a decision, a big order or sale, an operations problem or win."
+            ."\nSome of these already have a quick story written seconds after posting; return a story for them only if they deserve one, otherwise leave them out and the quick story is removed."
             ."\nSkip small talk, questions to one person, thanks, routine status lines, links without context. Most messages are not stories; an empty list is fine."
             ."\nFor each story: id as given, category (".implode(', ', StaffMessageStory::CATEGORIES)."), importance 1 (nice to know) to 5 (everyone must see), a short headline (max 10 words, no clickbait, no emoji), and a blurb of one or two plain sentences saying what happened and who. Write in English. Never invent facts that are not in the message."
             ."\n\nMessages (JSON lines):\n".$lines->map(fn ($line) => json_encode($line, JSON_UNESCAPED_UNICODE))->implode("\n");

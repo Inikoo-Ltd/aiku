@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack;
 
+use App\Actions\Chat\Staff\Home\QuickEditStaffMessageStory;
 use App\Actions\Chat\Staff\Slack\Write\SendSlackFiles;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
@@ -70,6 +71,9 @@ class StoreSlackMessage
             }
             if ($isNew || !$message->wasRecentlyCreated) {
                 rescue(fn () => NotifySlackMentions::run($message));
+            }
+            if ($isNew && QuickEditStaffMessageStory::isCandidate($message)) {
+                QuickEditStaffMessageStory::dispatch($message);
             }
         }
 

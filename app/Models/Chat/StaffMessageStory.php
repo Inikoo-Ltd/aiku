@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $slack_message_id
  * @property int|null $slack_channel_id
  * @property int|null $author_user_id
+ * @property string $source quick (written seconds after posting, the editor may replace or remove it) or editor
  * @property string $category
  * @property int $importance
  * @property string $headline
@@ -32,6 +33,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class StaffMessageStory extends Model
 {
+    public const string SOURCE_QUICK = 'quick';
+
+    public const string SOURCE_EDITOR = 'editor';
+
     public const array CATEGORIES = ['celebration', 'product', 'people', 'announcement', 'ops', 'sales', 'other'];
 
     protected $guarded = [];
@@ -42,6 +47,30 @@ class StaffMessageStory extends Model
             'happened_at' => 'datetime',
             'importance'  => 'integer',
         ];
+    }
+
+    /**
+     * @param  array{category: string, importance: int|string, headline: string, blurb: string}  $story
+     */
+    public static function storeFor(StaffMessage|SlackMessage $message, array $story, string $source): self
+    {
+        $isStaff = $message instanceof StaffMessage;
+
+        return self::updateOrCreate(
+            $isStaff ? ['staff_message_id' => $message->id] : ['slack_message_id' => $message->id],
+            [
+                'group_id'              => $isStaff ? $message->conversation->group_id : $message->channel->group_id,
+                'staff_conversation_id' => $isStaff ? $message->staff_conversation_id : null,
+                'slack_channel_id'      => $isStaff ? null : $message->slack_channel_id,
+                'author_user_id'        => $message->user_id,
+                'source'                => $source,
+                'category'              => in_array($story['category'], self::CATEGORIES, true) ? $story['category'] : 'other',
+                'importance'            => max(1, min(5, (int) $story['importance'])),
+                'headline'              => mb_substr(trim($story['headline']), 0, 120),
+                'blurb'                 => mb_substr(trim($story['blurb']), 0, 400),
+                'happened_at'           => $isStaff ? $message->created_at : $message->sent_at,
+            ]
+        );
     }
 
     public function staffMessage(): BelongsTo

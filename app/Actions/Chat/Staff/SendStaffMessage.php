@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff;
 
+use App\Actions\Chat\Staff\Home\QuickEditStaffMessageStory;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Events\StaffMessageSent;
 use App\Http\Resources\Chat\StaffMessageResource;
@@ -52,6 +53,9 @@ class SendStaffMessage
         $conversation->participants()->updateExistingPivot($sender->id, ['last_read_at' => $message->created_at->format(StaffConversation::PRECISE_DATE_FORMAT)]);
 
         StaffMessageSent::dispatch($message);
+        if (QuickEditStaffMessageStory::isCandidate($message)) {
+            QuickEditStaffMessageStory::dispatch($message);
+        }
         TranslateStaffMessage::dispatch($message->id);
 
         return $message;

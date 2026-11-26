@@ -27,6 +27,7 @@ return new class () extends Migration {
             $table->foreign('slack_channel_id')->references('id')->on('slack_channels')->cascadeOnDelete();
             $table->unsignedInteger('author_user_id')->nullable();
             $table->foreign('author_user_id')->references('id')->on('users')->nullOnDelete();
+            $table->string('source', 16)->default('editor');
             $table->string('category', 32);
             $table->unsignedSmallInteger('importance');
             $table->string('headline');
