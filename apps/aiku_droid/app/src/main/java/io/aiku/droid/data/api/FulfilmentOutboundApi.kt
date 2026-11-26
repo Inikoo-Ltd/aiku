@@ -267,6 +267,7 @@ data class PalletReturn(
     @SerialName("dispatch_blocked") val dispatchBlocked: String? = null,
     @SerialName("can_scan") val canScan: Boolean = false,
     @SerialName("available_actions") val availableActions: List<DeliveryNoteAction> = emptyList(),
+    val leaving: PalletReturnLeaving = PalletReturnLeaving(),
 ) {
     val isItems: Boolean get() = typeGroup == PalletReturnTypeGroup.ITEMS
 
@@ -286,6 +287,23 @@ data class PalletReturn(
     fun timelineAt(state: String): String? = timeline.firstOrNull { it.state == state }?.at?.takeIf { it.isNotBlank() }
 }
 
+@Serializable
+data class PalletReturnLeaving(
+    @SerialName("delivery_address") val deliveryAddress: List<String>? = null,
+    @SerialName("can_set_collection") val canSetCollection: Boolean = false,
+    @SerialName("can_set_shipment") val canSetShipment: Boolean = false,
+) {
+    val canChange: Boolean get() = canSetCollection || canSetShipment
+}
+
+@Serializable
+data class ReturnAddress(
+    val id: Long,
+    val lines: List<String> = emptyList(),
+    @SerialName("is_default_delivery") val isDefaultDelivery: Boolean = false,
+    @SerialName("is_selected") val isSelected: Boolean = false,
+)
+
 sealed interface PalletReturnWrite {
     data object StartPicking : PalletReturnWrite
     data object FinishPicking : PalletReturnWrite
@@ -300,6 +318,7 @@ sealed interface PalletReturnWrite {
     data class AddShipment(val shipperId: Long, val tracking: String?) : PalletReturnWrite
     data class DeleteShipment(val shipmentId: Long) : PalletReturnWrite
     data class PrintLabel(val shipmentId: Long) : PalletReturnWrite
+    data class SetLeaving(val collection: Boolean, val addressId: Long?) : PalletReturnWrite
 }
 
 data class PalletReturnOutcome(val palletReturn: PalletReturn, val status: String, val message: String?)
@@ -455,6 +474,8 @@ interface FulfilmentOutboundApi {
 
     suspend fun palletReturnShippers(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<Shipper>>
 
+    suspend fun palletReturnAddresses(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<ReturnAddress>>
+
     suspend fun downloadShipmentLabel(token: String, warehouseId: Long, returnId: Long, shipmentId: Long, target: File): AttachmentDownload
 
     suspend fun storedItems(token: String, warehouseId: Long, query: StoredItemQuery): GoodsOutResult<StoredItemPage>
@@ -499,6 +520,11 @@ class OkHttpFulfilmentOutboundApi(private val http: OkHttpMobileApi) : Fulfilmen
     override suspend fun palletReturnShippers(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<Shipper>> =
         http.execute(http.get("${returnUrl(warehouseId, returnId)}/shippers", token))
             ?.let { (statusCode, body) -> FulfilmentOutboundResponses.parseShippers(statusCode, body) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun palletReturnAddresses(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<ReturnAddress>> =
+        http.execute(http.get("${returnUrl(warehouseId, returnId)}/addresses", token))
+            ?.let { (statusCode, body) -> FulfilmentOutboundResponses.parseAddresses(statusCode, body) }
             ?: GoodsOutResult.Unreachable
 
     override suspend fun downloadShipmentLabel(token: String, warehouseId: Long, returnId: Long, shipmentId: Long, target: File): AttachmentDownload =

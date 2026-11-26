@@ -34,6 +34,7 @@ import io.aiku.droid.ui.components.AikuCard
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
+import io.aiku.droid.ui.components.ConfirmDialog
 import io.aiku.droid.ui.components.DetailCard
 import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.IconTile
@@ -42,6 +43,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.forConfirm
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.fulfilment.inbound.InboundLoading
 import io.aiku.droid.ui.fulfilment.inbound.MovePalletSheet
@@ -49,6 +51,7 @@ import io.aiku.droid.ui.fulfilment.inbound.PalletUiState
 import io.aiku.droid.ui.fulfilment.inbound.PalletViewModel
 import io.aiku.droid.ui.fulfilment.inbound.StartAudit
 import io.aiku.droid.ui.fulfilment.inbound.StoredItemList
+import io.aiku.droid.ui.fulfilment.inbound.fulfilmentInboundActionLook
 import io.aiku.droid.ui.fulfilment.inbound.incidentStates
 import io.aiku.droid.ui.fulfilment.inbound.incidentTone
 import io.aiku.droid.ui.fulfilment.inbound.palletDoneText
@@ -69,7 +72,7 @@ import io.aiku.droid.ui.navigation.StoredItemAuditRoute
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private enum class PalletSheet { Move, Incident }
+private enum class PalletSheet { Move, Incident, BackToStoring }
 
 private data class PalletAction(
     @StringRes val title: Int,
@@ -114,6 +117,7 @@ private fun PalletContent(viewModel: PalletViewModel, state: PalletUiState, pall
     val incidentStates = pallet.incidentStates()
     val move = pallet.action(FulfilmentInboundActionKey.MOVE)
     val audit = pallet.action(FulfilmentInboundActionKey.AUDIT)
+    val backToStoring = pallet.action(FulfilmentInboundActionKey.BACK_TO_STORING)
     val closeSheet: () -> Unit = {
         sheet = null
         sheetProblem = null
@@ -148,6 +152,14 @@ private fun PalletContent(viewModel: PalletViewModel, state: PalletUiState, pall
             tone = Tone.Danger,
             onClick = { openSheet(PalletSheet.Incident) },
         ).takeIf { incidentStates.isNotEmpty() },
+        PalletAction(
+            title = R.string.fulfilment_back_to_storing,
+            subtitle = R.string.fulfilment_back_to_storing_body,
+            icon = R.drawable.ic_ui_undo,
+            tone = Tone.Warn,
+            isWorking = state.working == PalletWrite.BackToStoring,
+            onClick = { openSheet(PalletSheet.BackToStoring) },
+        ).takeIf { backToStoring != null },
     )
 
     GoodsInEvents(
@@ -227,6 +239,19 @@ private fun PalletContent(viewModel: PalletViewModel, state: PalletUiState, pall
             problem = sheetProblem ?: state.writeErrors[FulfilmentInboundErrorKey.MESSAGE]?.firstOrNull(),
             onSave = viewModel::reportIncident,
             onDismiss = closeSheet,
+        )
+        PalletSheet.BackToStoring -> ConfirmDialog(
+            title = stringResource(R.string.fulfilment_back_to_storing_title, pallet.reference),
+            body = pallet.palletReturn?.reference?.takeIf { it.isNotBlank() }
+                ?.let { stringResource(R.string.fulfilment_back_to_storing_return_body, it) }
+                ?: stringResource(R.string.fulfilment_back_to_storing_body),
+            confirmLabel = backToStoring?.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.fulfilment_back_to_storing),
+            onConfirm = {
+                closeSheet()
+                viewModel.setBackToStoring()
+            },
+            onDismiss = closeSheet,
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.BACK_TO_STORING).forConfirm(),
         )
         null -> Unit
     }

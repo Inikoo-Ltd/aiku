@@ -117,6 +117,8 @@ class PalletDeliveryViewModel(
 
     fun undoNotReceived(palletId: Long) = act(PalletDeliveryWrite.UndoNotReceived(palletId))
 
+    fun notReceivedRemaining() = act(PalletDeliveryWrite.NotReceivedRemaining)
+
     fun scanForBookIn(code: String) {
         val scanned = code.trim()
         val current = mutableState.value

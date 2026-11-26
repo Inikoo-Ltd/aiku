@@ -125,7 +125,7 @@ private fun ConflictEvents(event: ConflictEvent?, onHandled: () -> Unit) {
     }
 }
 
-private val RESOLUTION_ORDER = listOf(
+internal val RESOLUTION_ORDER = listOf(
     OfflineResolution.Retry,
     OfflineResolution.Recount,
     OfflineResolution.PutBack,

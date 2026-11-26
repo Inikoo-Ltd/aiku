@@ -28,6 +28,7 @@ import io.aiku.droid.data.api.OkHttpWarehouseDashboardApi
 import io.aiku.droid.data.api.PickingSessionApi
 import io.aiku.droid.data.api.SearchApi
 import io.aiku.droid.data.api.StaffChatApi
+import io.aiku.droid.data.api.SupportApi
 import io.aiku.droid.data.api.SupportReferenceInterceptor
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehouseDashboardApi
@@ -125,6 +126,8 @@ class AppContainer(context: Context) {
     val hrApi: HrApi = mobileApi
 
     val goodsOutApi: GoodsOutApi = mobileApi
+
+    val supportApi: SupportApi = mobileApi
 
     val pickingSessionApi: PickingSessionApi = mobileApi
 

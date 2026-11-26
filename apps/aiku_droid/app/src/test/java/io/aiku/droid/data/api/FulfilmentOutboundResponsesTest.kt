@@ -328,4 +328,35 @@ class FulfilmentOutboundResponsesTest {
         )
         assertEquals(listOf("date", "reference", "customer", "-dispatched_at"), PalletReturnSort.entries.map { it.key })
     }
+
+    @Test
+    fun `how a return leaves reads the address, the rights and the customer's addresses`() {
+        val withLeaving = palletReturnJson.trimEnd().removeSuffix("}") + ""","leaving":{"delivery_address":["1 Dock Road","Hull","GB"],"can_set_collection":true,"can_set_shipment":false}}"""
+        val palletReturn = (FulfilmentOutboundResponses.parsePalletReturn(200, """{"data":$withLeaving}""") as GoodsOutResult.Loaded).value
+        val older = (FulfilmentOutboundResponses.parsePalletReturn(200, """{"data":$palletReturnJson}""") as GoodsOutResult.Loaded).value
+        val addresses = (
+            FulfilmentOutboundResponses.parseAddresses(200, """{"data":[{"id":4,"lines":["1 Dock Road","Hull"],"is_default_delivery":true,"is_selected":false},{"id":5,"lines":["Unit 2"],"is_default_delivery":false,"is_selected":true}]}""")
+                as GoodsOutResult.Loaded
+            ).value
+
+        assertEquals(listOf("1 Dock Road", "Hull", "GB"), palletReturn.leaving.deliveryAddress)
+        assertTrue(palletReturn.leaving.canChange)
+        assertFalse(palletReturn.leaving.canSetShipment)
+        assertFalse(older.leaving.canChange)
+        assertEquals(listOf(4L, 5L), addresses.map { it.id })
+        assertTrue(addresses[0].isDefaultDelivery)
+        assertTrue(addresses[1].isSelected)
+    }
+
+    @Test
+    fun `switching how a return leaves sends collection or the chosen address`() {
+        val collect = FulfilmentOutboundResponses.palletReturnWriteRequest(PalletReturnWrite.SetLeaving(collection = true, addressId = null))
+        val ship = FulfilmentOutboundResponses.palletReturnWriteRequest(PalletReturnWrite.SetLeaving(collection = false, addressId = 5))
+
+        assertEquals("leaving", collect.path)
+        assertEquals(JsonPrimitive(true), collect.body?.get("collection"))
+        assertFalse(collect.body?.containsKey("address_id") == true)
+        assertEquals(JsonPrimitive(false), ship.body?.get("collection"))
+        assertEquals(JsonPrimitive(5), ship.body?.get("address_id"))
+    }
 }

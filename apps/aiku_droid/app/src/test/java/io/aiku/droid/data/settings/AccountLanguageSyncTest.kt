@@ -211,6 +211,25 @@ class AccountLanguageSyncTest {
     }
 
     @Test
+    fun `a language chosen on the sign-in screen is saved to the account after signing in`() {
+        val sessions = FakeSessions(session = null)
+        val sync = sync(sessions)
+        api.accountLanguage = "de"
+
+        sync.choose(AppLanguage.French)
+
+        assertEquals(AppLanguage.French, settings.current.value)
+        assertEquals(emptyList<String>(), api.updates)
+
+        sessions.start(StaffSession(token = "8|new", userId = 42, username = "stock", displayName = "Ana"), rememberOnDevice = true)
+
+        assertEquals(listOf("fr"), api.updates)
+        assertEquals("fr", api.accountLanguage)
+        assertEquals(AppLanguage.French, settings.current.value)
+        assertNull(pending.pendingTag)
+    }
+
+    @Test
     fun `a profile that was loading when a language was chosen does not undo the choice`() {
         api.accountLanguage = "de"
         val gate = CompletableDeferred<Unit>()

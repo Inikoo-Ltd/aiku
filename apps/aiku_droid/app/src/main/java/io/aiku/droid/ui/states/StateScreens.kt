@@ -255,7 +255,11 @@ fun ServerErrorScreen(onRetry: () -> Unit, statusCode: Int? = null) {
             )
         }
         if (isReportOpen) {
-            ReportProblemSheet(onDismiss = { isReportOpen = false }, initialCategory = ReportProblemCategory.AppError)
+            ReportProblemSheet(
+                onDismiss = { isReportOpen = false },
+                initialCategory = ReportProblemCategory.AppError,
+                errorCode = ErrorCode.forServerStatus(statusCode),
+            )
         }
     }
 }

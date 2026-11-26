@@ -195,6 +195,7 @@ class GoodsInResponsesTest {
         assertEquals(JsonPrimitive(2), failed.body?.get("incident_quantity"))
         assertEquals("receive", GoodsInResponses.stockDeliveryWriteRequest(StockDeliveryWrite.Receive).path)
         assertEquals("unreceive", GoodsInResponses.stockDeliveryWriteRequest(StockDeliveryWrite.Unreceive).path)
+        assertEquals("cancel", GoodsInResponses.stockDeliveryWriteRequest(StockDeliveryWrite.Cancel).path)
         assertEquals("check-all", GoodsInResponses.stockDeliveryWriteRequest(StockDeliveryWrite.CheckAll).path)
     }
 

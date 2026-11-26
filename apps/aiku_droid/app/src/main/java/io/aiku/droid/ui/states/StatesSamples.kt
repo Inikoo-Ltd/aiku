@@ -6,7 +6,6 @@ internal const val STATES_SYNC_QUEUE_SUMMARY_SAMPLE = "Picked 6 × SKO-00733 · 
 
 internal val statesSearchSuggestionsSample = listOf("rosemary", "SKO-0", "A-03")
 
-internal const val STATES_REPORT_DETAILS_SAMPLE = "Scanned 5012345678900 at B-06-02 · not found"
 
 internal const val STATES_UNKNOWN_BARCODE_SAMPLE = "5060123456789"
 internal const val STATES_CAMERA_CONTEXT_SAMPLE = "Goods in · SDaw-0093"

@@ -166,6 +166,13 @@ internal fun PickedContent(viewModel: PalletReturnViewModel, state: PalletReturn
         ReturnRefreshProblem(problem = state.problem, onRetry = viewModel::retry)
         ReturnStateBlock(palletReturn = palletReturn)
         ReturnNotices(palletReturn = palletReturn)
+        ReturnLeaving(
+            palletReturn = palletReturn,
+            addresses = state.addresses,
+            working = state.working,
+            onLoadAddresses = viewModel::loadAddresses,
+            onSave = viewModel::setLeaving,
+        )
         PickedSummary(palletReturn = palletReturn)
         if (palletReturn.inserts.total > 0) {
             val printButton: (@Composable () -> Unit)? = printInserts?.let { action ->

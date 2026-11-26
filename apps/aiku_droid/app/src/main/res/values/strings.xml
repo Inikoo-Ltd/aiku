@@ -79,6 +79,9 @@
 
     <string name="footer_open_source">aiku is open source software (AGPL-3.0)</string>
     <string name="footer_email" translatable="false">hello@aiku.io</string>
+    <string name="footer_github" translatable="false">GitHub</string>
+    <string name="footer_documentation">Documentation</string>
+    <string name="login_language_intro">The sign-in screens change at once. After you sign in, this becomes your account language.</string>
 
     <string name="nav_back">Back</string>
     <string name="nav_scan">Scan barcode</string>

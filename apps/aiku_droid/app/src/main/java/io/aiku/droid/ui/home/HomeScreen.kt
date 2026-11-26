@@ -67,6 +67,7 @@ import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
 import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalStartScreen
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.MainTab
@@ -99,6 +100,7 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
     val weekTotal = clockingWeekTotal(clockingState, now)
     val workBadges = LocalWorkBadges.current
     val needYou by LocalOfflineIndicator.current.needsYouCount.collectAsStateWithLifecycle()
+    val resumeTarget = LocalStartScreen.current.resumeTarget
     val badges by workBadges.badges.collectAsStateWithLifecycle()
     val shortcuts = listOfNotNull(
         Shortcut(R.string.module_goods_out, R.drawable.ic_fa_arrow_from_left, GoodsOutBacklogRoute, badges.goodsOutUnassignedBadge).takeIf { can.viewGoodsOut },
@@ -134,7 +136,17 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
             lastUpdated = clockingState.lastUpdated,
             onOpen = { navigator.open(ClockingRoute) },
         )
-        ConflictsRow(needYou = needYou, onOpen = { navigator.open(ResolveConflictsRoute) })
+        if (needYou > 0) {
+            ConflictsRow(needYou = needYou, onOpen = { navigator.open(ResolveConflictsRoute) })
+        }
+        if (hasWarehouse && resumeTarget != null) {
+            ModuleRow(
+                icon = R.drawable.ic_fa_history,
+                name = stringResource(R.string.home_continue_title),
+                subtitle = stringResource(resumeTarget.label),
+                onClick = { navigator.open(resumeTarget.route) },
+            )
+        }
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 GroupLabel(text = stringResource(R.string.home_shortcuts))
@@ -300,7 +312,6 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
 @Composable
 private fun ConflictsRow(needYou: Int, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
-    val needsAttention = needYou > 0
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -308,36 +319,32 @@ private fun ConflictsRow(needYou: Int, onOpen: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardShape)
-            .background(if (needsAttention) colors.warnSoft else colors.surface)
-            .border(1.dp, if (needsAttention) colors.warnInk.copy(alpha = ATTENTION_BORDER_ALPHA) else colors.border, CardShape)
+            .background(colors.warnSoft)
+            .border(1.dp, colors.warnInk.copy(alpha = ATTENTION_BORDER_ALPHA), CardShape)
             .clickable(role = Role.Button, onClick = onOpen)
             .padding(14.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(if (needsAttention) colors.surface else colors.soft),
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(colors.surface),
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_fa_exclamation_triangle),
                 contentDescription = null,
-                tint = if (needsAttention) colors.warnInk else colors.link,
+                tint = colors.warnInk,
                 modifier = Modifier.size(22.dp),
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = stringResource(R.string.sync_conflicts_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (needsAttention) colors.warnInk else colors.text)
+            Text(text = stringResource(R.string.sync_conflicts_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.warnInk)
             Text(
-                text = if (needsAttention) {
-                    pluralStringResource(R.plurals.offline_indicator_need_you, needYou, needYou)
-                } else {
-                    stringResource(R.string.offline_stock_conflicts_empty_title)
-                },
+                text = pluralStringResource(R.plurals.offline_indicator_need_you, needYou, needYou),
                 fontSize = 13.sp,
-                fontWeight = if (needsAttention) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (needsAttention) colors.warnInk else colors.textTertiary,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.warnInk,
             )
         }
-        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = if (needsAttention) colors.warnInk else colors.faint, modifier = Modifier.size(20.dp))
+        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = colors.warnInk, modifier = Modifier.size(20.dp))
     }
 }
 

@@ -81,6 +81,7 @@ private sealed interface DeliverySheet {
     data object More : DeliverySheet
     data object ConfirmCheckAll : DeliverySheet
     data class ConfirmUnreceive(val action: DeliveryNoteAction) : DeliverySheet
+    data class ConfirmCancel(val action: DeliveryNoteAction) : DeliverySheet
 }
 
 @Composable
@@ -132,6 +133,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
     var sheetProblem by remember { mutableStateOf<String?>(null) }
     val view = state.view
     val unreceive = delivery.action(GoodsInActionKey.UNRECEIVE)
+    val cancel = delivery.action(GoodsInActionKey.CANCEL)
     val closeSheet: () -> Unit = {
         sheet = null
         sheetProblem = null
@@ -186,7 +188,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                 title = delivery.reference,
                 kicker = stringResource(R.string.goodsin_kicker_stock_delivery, delivery.supplier?.label?.takeIf { it.isNotBlank() } ?: delivery.stateLabel),
                 actions = {
-                    if (unreceive != null) {
+                    if (unreceive != null || cancel != null) {
                         HeaderIconButton(
                             icon = R.drawable.ic_ui_more,
                             description = stringResource(R.string.more_actions),
@@ -289,6 +291,17 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                     )
                 }
             }
+            if (cancel != null) {
+                ListGroup {
+                    ActionLinkRow(
+                        icon = R.drawable.ic_ui_x_circle,
+                        title = cancel.label.ifBlank { stringResource(R.string.goodsin_cancel_delivery) },
+                        subtitle = cancel.disabledReason ?: stringResource(R.string.goodsin_cancel_delivery_body),
+                        tone = ActionTone.Danger,
+                        onClick = if (cancel.isDisabled) null else ({ openSheet(DeliverySheet.ConfirmCancel(cancel)) }),
+                    )
+                }
+            }
         }
         DeliverySheet.ConfirmCheckAll -> ConfirmDialog(
             title = stringResource(R.string.goodsin_check_all_title),
@@ -312,6 +325,17 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             onDismiss = closeSheet,
             confirmLook = goodsInActionLook(GoodsInActionKey.UNRECEIVE).forConfirm(),
         )
+        is DeliverySheet.ConfirmCancel -> ConfirmDialog(
+            title = stringResource(R.string.goodsin_cancel_delivery_title, delivery.reference),
+            body = stringResource(R.string.goodsin_cancel_delivery_body),
+            confirmLabel = current.action.label.ifBlank { stringResource(R.string.goodsin_cancel_delivery) },
+            onConfirm = {
+                sheet = null
+                viewModel.cancel()
+            },
+            onDismiss = closeSheet,
+            confirmLook = goodsInActionLook(GoodsInActionKey.CANCEL).forConfirm(),
+        )
         null -> Unit
     }
 }
@@ -330,6 +354,7 @@ internal fun checkDoneText(done: GoodsInEvent.Done, delivery: StockDelivery, tex
 private fun doneText(done: GoodsInEvent.Done, delivery: StockDelivery, text: (Int, Array<out Any>) -> String): String? = when (val action = done.action) {
     StockDeliveryWrite.Receive -> text(R.string.goodsin_toast_marked_received, arrayOf(delivery.reference))
     StockDeliveryWrite.Unreceive -> text(R.string.goodsin_toast_unmarked_received, arrayOf(delivery.reference))
+    StockDeliveryWrite.Cancel -> text(R.string.goodsin_toast_cancelled, arrayOf(delivery.reference))
     StockDeliveryWrite.CheckAll -> text(R.string.goodsin_toast_checked_all, arrayOf(delivery.reference))
     is StockDeliveryWrite.Check -> checkDoneText(done, delivery, text)
     is StockDeliveryWrite.RecordCheck -> text(if (action.result == CheckResult.Passed) R.string.goodsin_toast_check_passed else R.string.goodsin_toast_check_failed, emptyArray())

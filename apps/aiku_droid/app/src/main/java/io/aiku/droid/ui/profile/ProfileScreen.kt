@@ -28,6 +28,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,11 +56,13 @@ import io.aiku.droid.data.settings.ScanPreferences
 import io.aiku.droid.ui.clocking.LocalClocking
 import io.aiku.droid.ui.clocking.clockingWeekTotal
 import io.aiku.droid.ui.clocking.rememberClockingNow
+import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
+import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ListRow
@@ -74,6 +77,7 @@ import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.LanguageRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalStartScreen
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.NoWarehouseAccess
@@ -118,6 +122,8 @@ fun ProfileScreen(
     val weekTotal = clockingWeekTotal(clockingState, rememberClockingNow())
     val noValue = stringResource(R.string.clocking_no_value)
     var areNotificationsAllowed by remember { mutableStateOf(context.areWorkNotificationsAllowed()) }
+    val startScreen = LocalStartScreen.current
+    var isChoosingStartScreen by rememberSaveable { mutableStateOf(false) }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { areNotificationsAllowed = context.areWorkNotificationsAllowed() }
 
@@ -189,6 +195,12 @@ fun ProfileScreen(
                 )
                 RowDivider()
                 AppRow(
+                    label = stringResource(R.string.profile_open_on),
+                    value = stringResource(if (startScreen.isOpeningOnLastScreen) R.string.profile_open_on_last_screen else R.string.profile_open_on_home),
+                    onClick = { isChoosingStartScreen = true },
+                )
+                RowDivider()
+                AppRow(
                     label = stringResource(R.string.profile_offline_sync),
                     value = pluralStringResource(R.plurals.profile_sync_waiting, syncWaiting, syncWaiting),
                     onClick = { navigator.open(SyncQueueRoute) },
@@ -229,6 +241,37 @@ fun ProfileScreen(
             ProfileSection(title = stringResource(R.string.states_previews)) {
                 SkeletonPreviews()
             }
+        }
+    }
+
+    if (isChoosingStartScreen) {
+        StartScreenSheet(
+            isOpeningOnLastScreen = startScreen.isOpeningOnLastScreen,
+            onChoose = { isOn ->
+                isChoosingStartScreen = false
+                startScreen.updateOpenOnLastScreen(isOn)
+            },
+            onDismiss = { isChoosingStartScreen = false },
+        )
+    }
+}
+
+@Composable
+private fun StartScreenSheet(isOpeningOnLastScreen: Boolean, onChoose: (Boolean) -> Unit, onDismiss: () -> Unit) {
+    AikuBottomSheet(title = stringResource(R.string.profile_open_on), onDismiss = onDismiss) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.selectableGroup()) {
+            ChoiceRow(
+                title = stringResource(R.string.profile_open_on_home),
+                subtitle = stringResource(R.string.profile_open_on_home_caption),
+                selected = !isOpeningOnLastScreen,
+                onClick = { onChoose(false) },
+            )
+            ChoiceRow(
+                title = stringResource(R.string.profile_open_on_last_screen),
+                subtitle = stringResource(R.string.profile_open_on_last_screen_caption),
+                selected = isOpeningOnLastScreen,
+                onClick = { onChoose(true) },
+            )
         }
     }
 }

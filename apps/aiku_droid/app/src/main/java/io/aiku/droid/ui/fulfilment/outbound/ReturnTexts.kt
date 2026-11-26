@@ -37,6 +37,7 @@ internal fun returnDoneText(action: Any, palletReturn: PalletReturn, resources: 
     is PalletReturnWrite.AddShipment -> resources.getString(R.string.fulfilment_out_toast_shipment_added)
     is PalletReturnWrite.DeleteShipment -> resources.getString(R.string.fulfilment_out_toast_shipment_deleted)
     is PalletReturnWrite.PrintLabel -> resources.getString(R.string.fulfilment_out_toast_label_printed)
+    is PalletReturnWrite.SetLeaving -> resources.getString(if (action.collection) R.string.fulfilment_leaving_toast_collects else R.string.fulfilment_leaving_toast_shipped, palletReturn.reference)
     else -> null
 }
 

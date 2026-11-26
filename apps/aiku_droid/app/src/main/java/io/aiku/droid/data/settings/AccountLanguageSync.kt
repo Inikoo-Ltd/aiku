@@ -51,16 +51,18 @@ class AccountLanguageSync(
 
     fun start() {
         val restoredToken = sessions.session.value?.token
+        var wasSignedIn = restoredToken != null
         scope.launch {
             sessions.session
                 .map { it?.token }
                 .distinctUntilChanged()
                 .collect { token ->
                     when (token) {
-                        null -> forgetPending()
+                        null -> if (wasSignedIn) forgetPending()
                         restoredToken -> Unit
                         else -> sync(token)
                     }
+                    wasSignedIn = token != null
                 }
         }
     }
@@ -73,8 +75,8 @@ class AccountLanguageSync(
     fun choose(language: AppLanguage) {
         settings.choose(language)
         localChoices++
-        val token = sessions.session.value?.token ?: return
         pending.pendingTag = language.tag
+        val token = sessions.session.value?.token ?: return
         send(token, language.tag)
     }
 

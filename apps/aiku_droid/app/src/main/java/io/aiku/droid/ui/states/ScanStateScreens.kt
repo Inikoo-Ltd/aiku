@@ -70,7 +70,12 @@ fun NotFoundScreen(barcode: String, onScanAgain: () -> Unit, modifier: Modifier 
         ErrorHelp(code = ErrorCode.BarcodeUnknown, centered = true)
     }
     if (isReportOpen) {
-        ReportProblemSheet(onDismiss = { isReportOpen = false }, initialCategory = ReportProblemCategory.UnknownBarcode)
+        ReportProblemSheet(
+            onDismiss = { isReportOpen = false },
+            initialCategory = ReportProblemCategory.UnknownBarcode,
+            errorCode = ErrorCode.BarcodeUnknown,
+            lastScan = barcode,
+        )
     }
 }
 

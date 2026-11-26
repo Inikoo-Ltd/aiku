@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +44,7 @@ import io.aiku.droid.data.api.ChatContextKind
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DispatchChannel
 import io.aiku.droid.data.api.LocationTab
+import io.aiku.droid.data.api.OfflineOperationRecord
 import io.aiku.droid.data.api.PickedBay
 import io.aiku.droid.data.api.ReturnStateFilter
 import io.aiku.droid.data.api.SkoBucket
@@ -195,6 +198,7 @@ import io.aiku.droid.ui.navigation.ClockingAdjustmentsRoute
 import io.aiku.droid.ui.navigation.ClockingCalendarRoute
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
+import io.aiku.droid.ui.navigation.ConflictRecordRoute
 import io.aiku.droid.ui.navigation.ConflictRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteCancelledRoute
 import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
@@ -222,6 +226,7 @@ import io.aiku.droid.ui.navigation.LeaveRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalAppearanceController
 import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalStartScreen
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.LocationRoute
@@ -243,6 +248,8 @@ import io.aiku.droid.ui.navigation.PickingSessionsRoute
 import io.aiku.droid.ui.navigation.PlaceItemRoute
 import io.aiku.droid.ui.navigation.ProfileRoute
 import io.aiku.droid.ui.navigation.ResolveConflictsRoute
+import io.aiku.droid.ui.navigation.ResumableScreens
+import io.aiku.droid.ui.navigation.ResumeTarget
 import io.aiku.droid.ui.navigation.ReturnDispatchedRoute
 import io.aiku.droid.ui.navigation.ReturnPickItemsRoute
 import io.aiku.droid.ui.navigation.ReturnPickPalletsRoute
@@ -256,6 +263,7 @@ import io.aiku.droid.ui.navigation.SkuFamiliesRoute
 import io.aiku.droid.ui.navigation.SkuFamilyRoute
 import io.aiku.droid.ui.navigation.SkuRoute
 import io.aiku.droid.ui.navigation.SkusRoute
+import io.aiku.droid.ui.navigation.StartScreenController
 import io.aiku.droid.ui.navigation.StatePreviewRoute
 import io.aiku.droid.ui.navigation.StockDeliveriesRoute
 import io.aiku.droid.ui.navigation.StockDeliveryRoute
@@ -283,11 +291,15 @@ import io.aiku.droid.ui.scan.ScanScreen
 import io.aiku.droid.ui.search.SearchScreen
 import io.aiku.droid.ui.search.SearchViewModel
 import io.aiku.droid.ui.states.LoadingScreen
+import io.aiku.droid.ui.states.LocalSupportServices
 import io.aiku.droid.ui.states.OfflineScreen
 import io.aiku.droid.ui.states.ReportProblemSheet
 import io.aiku.droid.ui.states.ServerErrorScreen
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.states.StatePreviewScreen
+import io.aiku.droid.ui.states.SupportServices
+import io.aiku.droid.ui.sync.ConflictRecordScreen
+import io.aiku.droid.ui.sync.ConflictRecordViewModel
 import io.aiku.droid.ui.sync.ConflictScreen
 import io.aiku.droid.ui.sync.ConflictViewModel
 import io.aiku.droid.ui.sync.OnlineOnlyGate
@@ -439,11 +451,51 @@ private fun WarehouseApp(
         container.pushInbox.markRead(pushOpen.notificationId, onRead = badgesViewModel::refresh)
     }
     AskForNotificationsOnce(container.notificationPrompt)
+    val organisationId = selected?.organisation?.id
+    DisposableEffect(organisationId) {
+        container.settings.showOrganisation(organisationId)
+        onDispose { container.settings.showOrganisation(null) }
+    }
     val appearance by container.settings.appearance.collectAsStateWithLifecycle()
-    val appearanceController = remember(appearance) {
+    val isThemePerOrganisation by container.settings.isThemePerOrganisation.collectAsStateWithLifecycle()
+    val appearanceController = remember(appearance, isThemePerOrganisation) {
         object : AppearanceController {
             override val appearance: Appearance = appearance
+            override val isThemePerOrganisation: Boolean = isThemePerOrganisation
             override fun update(appearance: Appearance) = container.settings.updateAppearance(appearance)
+            override fun updateThemePerOrganisation(isOn: Boolean) = container.settings.updateThemePerOrganisation(isOn)
+        }
+    }
+    val warehouseId = selected?.id
+    var resumeTarget by remember(session.userId, warehouseId) {
+        mutableStateOf(warehouseId?.let { container.settings.lastScreen(session.userId, it) }?.let(ResumableScreens::restore))
+    }
+    LaunchedEffect(navController, session.userId, warehouseId) {
+        if (warehouseId == null) {
+            return@LaunchedEffect
+        }
+        navController.currentBackStackEntryFlow.collect { entry ->
+            val saved = ResumableScreens.save(entry) ?: return@collect
+            container.settings.saveLastScreen(session.userId, warehouseId, saved)
+            resumeTarget = ResumableScreens.restore(saved)
+        }
+    }
+    var hasOpenedStartScreen by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (hasOpenedStartScreen) {
+            return@LaunchedEffect
+        }
+        hasOpenedStartScreen = true
+        if (container.settings.isOpeningOnLastScreen.value) {
+            resumeTarget?.let { navigator.open(it.route) }
+        }
+    }
+    val isOpeningOnLastScreen by container.settings.isOpeningOnLastScreen.collectAsStateWithLifecycle()
+    val startScreenController = remember(isOpeningOnLastScreen, resumeTarget) {
+        object : StartScreenController {
+            override val isOpeningOnLastScreen: Boolean = isOpeningOnLastScreen
+            override val resumeTarget: ResumeTarget? = resumeTarget
+            override fun updateOpenOnLastScreen(isOn: Boolean) = container.settings.updateOpenOnLastScreen(isOn)
         }
     }
 
@@ -453,6 +505,7 @@ private fun WarehouseApp(
         LocalWarehouses provides warehouses,
         LocalStaff provides session,
         LocalAppearanceController provides appearanceController,
+        LocalStartScreen provides startScreenController,
         LocalToasts provides toasts,
         LocalClocking provides clockingViewModel,
         LocalLeave provides leaveViewModel,
@@ -465,6 +518,7 @@ private fun WarehouseApp(
         LocalScanController provides container.scans,
         LocalImageSource provides container.images,
         LocalInventoryServices provides remember(container) { InventoryServices(container.inventoryApi, container.sessions) },
+        LocalSupportServices provides remember(container) { SupportServices(container.supportApi, container.sessions) },
         LocalOfflineIndicator provides container.offlineWork,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -600,6 +654,16 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
         }
         composable<ResolveConflictsRoute> {
             ResolveConflictsScreen(viewModel(factory = viewModelFactory { initializer { ResolveConflictsViewModel(container.offlineOperationsApi, container.sessions) } }))
+        }
+        composable<ConflictRecordRoute> { entry ->
+            val route = entry.toRoute<ConflictRecordRoute>()
+            val conflicts: ConflictRecordViewModel = viewModel(
+                key = "conflict-record-${route.type}-${route.id}",
+                factory = viewModelFactory {
+                    initializer { ConflictRecordViewModel(container.offlineOperationsApi, container.sessions, container.offlineWork, OfflineOperationRecord(type = route.type, id = route.id)) }
+                },
+            )
+            ConflictRecordScreen(conflicts, route.title)
         }
         composable<ConflictRoute> { entry ->
             val route = entry.toRoute<ConflictRoute>()

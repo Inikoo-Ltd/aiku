@@ -32,11 +32,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,9 +55,9 @@ import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.ProgressBar
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalAppearanceController
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.AikuTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -102,7 +98,11 @@ fun AppearanceScreen() {
             ModeCard(selected = appearance.mode, onSelect = { controller.update(appearance.copy(mode = it)) })
             ThemeCard(selected = appearance.theme, onSelect = { controller.update(appearance.copy(theme = it)) })
             ThemePreview()
-            OrganisationColourCard()
+            OrganisationColourCard(
+                isOn = controller.isThemePerOrganisation,
+                organisationName = LocalWarehouse.current.organisation.name,
+                onChange = controller::updateThemePerOrganisation,
+            )
             Text(
                 text = stringResource(R.string.profile_saved_note),
                 fontSize = 12.sp,
@@ -375,13 +375,11 @@ private fun PreviewButton(text: String, container: Color, border: Color, content
 }
 
 @Composable
-private fun OrganisationColourCard() {
+private fun OrganisationColourCard(isOn: Boolean, organisationName: String, onChange: (Boolean) -> Unit) {
     val colors = LocalAikuColors.current
-    var isColourPerOrganisation by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
-            .fakeData(12.dp)
             .fillMaxWidth()
             .clip(CardShape)
             .background(colors.surface)
@@ -394,14 +392,22 @@ private fun OrganisationColourCard() {
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 64.dp)
-                .toggleable(value = isColourPerOrganisation, role = Role.Checkbox, onValueChange = { isColourPerOrganisation = it }),
+                .toggleable(value = isOn, role = Role.Checkbox, onValueChange = onChange),
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(text = stringResource(R.string.profile_org_colour), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-                Text(text = stringResource(R.string.profile_org_colour_caption), fontSize = 13.sp, color = colors.textTertiary)
+                Text(
+                    text = if (isOn && organisationName.isNotBlank()) {
+                        stringResource(R.string.profile_org_colour_on_caption, organisationName)
+                    } else {
+                        stringResource(R.string.profile_org_colour_caption)
+                    },
+                    fontSize = 13.sp,
+                    color = colors.textTertiary,
+                )
             }
             Checkbox(
-                checked = isColourPerOrganisation,
+                checked = isOn,
                 onCheckedChange = null,
                 colors = CheckboxDefaults.colors(
                     checkedColor = colors.primary,

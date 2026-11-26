@@ -13,23 +13,88 @@ interface WarehouseSelection {
     var selectedWarehouseId: Long?
 }
 
+data class SavedScreen(val type: String, val payload: String)
+
 class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSelection, ScanSettings {
 
-    private val currentAppearance = MutableStateFlow(readAppearance())
+    private var baseAppearance = readAppearance()
+
+    private var activeOrganisationId: Long? = null
+
+    private val currentThemePerOrganisation = MutableStateFlow(preferences.getBoolean(THEME_PER_ORGANISATION_KEY, false))
+
+    val isThemePerOrganisation: StateFlow<Boolean> = currentThemePerOrganisation.asStateFlow()
+
+    private val currentAppearance = MutableStateFlow(effectiveAppearance())
 
     val appearance: StateFlow<Appearance> = currentAppearance.asStateFlow()
+
+    private val currentOpenOnLastScreen = MutableStateFlow(preferences.getBoolean(OPEN_ON_LAST_SCREEN_KEY, false))
+
+    val isOpeningOnLastScreen: StateFlow<Boolean> = currentOpenOnLastScreen.asStateFlow()
 
     private val currentScanPreferences = MutableStateFlow(readScanPreferences())
 
     override val scanPreferences: StateFlow<ScanPreferences> = currentScanPreferences.asStateFlow()
 
     fun updateAppearance(appearance: Appearance) {
-        preferences.edit {
-            putString(THEME_KEY, appearance.theme.name)
-            putString(MODE_KEY, appearance.mode.name)
+        val organisationId = activeOrganisationId
+        if (currentThemePerOrganisation.value && organisationId != null) {
+            preferences.edit {
+                putString(organisationThemeKey(organisationId), appearance.theme.name)
+                putString(MODE_KEY, appearance.mode.name)
+            }
+            baseAppearance = baseAppearance.copy(mode = appearance.mode)
+        } else {
+            preferences.edit {
+                putString(THEME_KEY, appearance.theme.name)
+                putString(MODE_KEY, appearance.mode.name)
+            }
+            baseAppearance = appearance
         }
-        currentAppearance.value = appearance
+        currentAppearance.value = effectiveAppearance()
     }
+
+    fun updateThemePerOrganisation(isOn: Boolean) {
+        preferences.edit { putBoolean(THEME_PER_ORGANISATION_KEY, isOn) }
+        currentThemePerOrganisation.value = isOn
+        currentAppearance.value = effectiveAppearance()
+    }
+
+    fun showOrganisation(organisationId: Long?) {
+        activeOrganisationId = organisationId
+        currentAppearance.value = effectiveAppearance()
+    }
+
+    fun updateOpenOnLastScreen(isOn: Boolean) {
+        preferences.edit { putBoolean(OPEN_ON_LAST_SCREEN_KEY, isOn) }
+        currentOpenOnLastScreen.value = isOn
+    }
+
+    fun lastScreen(userId: Long, warehouseId: Long): SavedScreen? {
+        val saved = preferences.getString(lastScreenKey(userId, warehouseId), null) ?: return null
+        val type = saved.substringBefore(SAVED_SCREEN_SEPARATOR)
+        val payload = saved.substringAfter(SAVED_SCREEN_SEPARATOR, missingDelimiterValue = "")
+        return SavedScreen(type = type, payload = payload).takeIf { type.isNotBlank() && payload.isNotBlank() }
+    }
+
+    fun saveLastScreen(userId: Long, warehouseId: Long, screen: SavedScreen) {
+        preferences.edit { putString(lastScreenKey(userId, warehouseId), screen.type + SAVED_SCREEN_SEPARATOR + screen.payload) }
+    }
+
+    private fun effectiveAppearance(): Appearance {
+        val organisationId = activeOrganisationId
+        val organisationTheme = if (currentThemePerOrganisation.value && organisationId != null) {
+            AikuTheme.entries.firstOrNull { it.name == preferences.getString(organisationThemeKey(organisationId), null) }
+        } else {
+            null
+        }
+        return baseAppearance.copy(theme = organisationTheme ?: baseAppearance.theme)
+    }
+
+    private fun organisationThemeKey(organisationId: Long) = ORGANISATION_THEME_KEY_PREFIX + organisationId
+
+    private fun lastScreenKey(userId: Long, warehouseId: Long) = "$LAST_SCREEN_KEY_PREFIX${userId}_$warehouseId"
 
     override fun updateScanPreferences(chosen: ScanPreferences) {
         preferences.edit {
@@ -68,5 +133,10 @@ class DeviceSettings(private val preferences: SharedPreferences) : WarehouseSele
         const val SCAN_SOUND_KEY = "scan_sound"
         const val SCAN_VIBRATION_KEY = "scan_vibration"
         const val NO_WAREHOUSE = -1L
+        const val THEME_PER_ORGANISATION_KEY = "appearance_theme_per_organisation"
+        const val ORGANISATION_THEME_KEY_PREFIX = "appearance_theme_organisation_"
+        const val OPEN_ON_LAST_SCREEN_KEY = "open_on_last_screen"
+        const val LAST_SCREEN_KEY_PREFIX = "last_screen_"
+        const val SAVED_SCREEN_SEPARATOR = "\n"
     }
 }

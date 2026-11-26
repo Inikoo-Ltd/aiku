@@ -19,6 +19,7 @@ internal fun palletDeliveryDoneText(done: GoodsInEvent.Done, delivery: PalletDel
         }
         is PalletDeliveryWrite.NotReceived -> text(R.string.fulfilment_not_received_toast, arrayOf(delivery.pallet(action.palletId)?.reference.orEmpty()))
         is PalletDeliveryWrite.UndoNotReceived -> text(R.string.fulfilment_inbound_toast_undo_not_received, arrayOf(delivery.pallet(action.palletId)?.reference.orEmpty()))
+        PalletDeliveryWrite.NotReceivedRemaining -> done.message
         else -> null
     }
 
@@ -28,5 +29,6 @@ internal fun palletDoneText(done: GoodsInEvent.Done, pallet: Pallet, text: (Int,
         if (action.state == PalletIncidentState.Lost) R.string.fulfilment_incident_lost_toast else R.string.fulfilment_incident_damaged_toast,
         arrayOf(pallet.reference),
     )
+    PalletWrite.BackToStoring -> text(R.string.fulfilment_back_to_storing_toast, arrayOf(pallet.reference))
     else -> null
 }

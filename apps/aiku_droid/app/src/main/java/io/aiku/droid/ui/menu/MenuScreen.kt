@@ -225,6 +225,13 @@ fun MenuScreen() {
                 subtitle = stringResource(R.string.menu_appearance_subtitle),
                 onClick = { navigator.open(AppearanceRoute) },
             )
+            RowDivider()
+            MenuRow(
+                icon = R.drawable.ic_ui_warning,
+                title = stringResource(R.string.states_report_title),
+                subtitle = stringResource(R.string.menu_report_problem_subtitle),
+                onClick = navigator::showReportProblem,
+            )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,

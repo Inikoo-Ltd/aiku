@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,8 +24,10 @@ import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.StatusBadge
+import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
+import io.aiku.droid.ui.navigation.ConflictRecordRoute
 import io.aiku.droid.ui.navigation.ConflictRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
@@ -59,11 +62,24 @@ fun ResolveConflictsScreen(viewModel: ResolveConflictsViewModel) {
                 tone = EmptyTone.Success,
             )
             state.operations.isNotEmpty() -> ListGroup {
-                state.operations.forEachIndexed { index, operation ->
+                groupConflicts(state.operations).forEachIndexed { index, group ->
                     if (index > 0) {
                         RowDivider()
                     }
-                    OperationRow(operation = operation, onOpen = { id -> navigator.open(ConflictRoute(id = id, title = operation.labels.title)) })
+                    val record = group.record
+                    val recordKey = group.recordKey
+                    if (group.lines.size > 1 && record != null && recordKey != null) {
+                        val title = recordTitle(recordKey, group.reference)
+                        ListRow(
+                            title = title,
+                            subtitle = pluralStringResource(R.plurals.sync_conflicts_record_lines, group.lines.size, group.lines.size),
+                            badges = { StatusBadge(text = group.lines.size.toString(), tone = Tone.Warn) },
+                            onClick = { navigator.open(ConflictRecordRoute(type = record.type, id = record.id, title = title)) },
+                        )
+                    } else {
+                        val operation = group.lines.first()
+                        OperationRow(operation = operation, onOpen = { id -> navigator.open(ConflictRoute(id = id, title = operation.labels.title)) })
+                    }
                 }
             }
             !state.hasLoaded && state.problem == null -> SkeletonListCard(rows = 3)
@@ -79,10 +95,11 @@ fun ResolveConflictsScreen(viewModel: ResolveConflictsViewModel) {
 }
 
 @Composable
-private fun OperationRow(operation: OfflineOperationEntry, onOpen: (Long) -> Unit) {
+internal fun OperationRow(operation: OfflineOperationEntry, onOpen: (Long) -> Unit, showItem: Boolean = false) {
     val id = operation.key
     val title = operation.labels.title.ifBlank { entryOperationLabel(operation) }
     val subtitle = listOfNotNull(
+        operation.labels.subtitle?.takeIf { showItem && it.isNotBlank() },
         instructionText(operation),
         reasonText(operation.reason),
         operation.message?.takeIf { it.isNotBlank() },

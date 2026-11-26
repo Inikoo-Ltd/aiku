@@ -57,6 +57,12 @@
     <string name="profile_preview_receive">Receive</string>
     <string name="profile_org_colour">Colour per organisation</string>
     <string name="profile_org_colour_caption">Different bar colour for each organisation</string>
+    <string name="profile_org_colour_on_caption">The theme colour above is kept for %1$s. Each organisation keeps its own.</string>
+    <string name="profile_open_on">Open the app on</string>
+    <string name="profile_open_on_home">Home</string>
+    <string name="profile_open_on_home_caption">Always start on the Home tab</string>
+    <string name="profile_open_on_last_screen">Where I left off</string>
+    <string name="profile_open_on_last_screen_caption">Start on the last list you had open in this warehouse. Back goes to Home.</string>
     <string name="profile_saved_note">Saved on this phone only. The Aiku web app keeps its own appearance.</string>
 
     <plurals name="profile_switcher_warehouse_count">

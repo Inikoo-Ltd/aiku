@@ -57,7 +57,6 @@
     <string name="states_conflict_delivery_note_reload">Reload delivery note</string>
 
     <string name="states_report_title">Report a problem</string>
-    <string name="states_report_subtitle">Goes to your supervisor or the inventory admin</string>
     <string name="states_report_unknown_barcode_category">Unknown barcode</string>
     <string name="states_report_wrong_stock">Wrong stock</string>
     <string name="states_report_data_problem">Data problem</string>
@@ -65,10 +64,8 @@
     <string name="states_report_other">Other</string>
     <string name="states_report_what_happened">What happened?</string>
     <string name="states_report_added_automatically">Added automatically</string>
-    <string name="states_report_added_details">Screen, location, last scan, time, app version</string>
     <string name="states_report_add_photo">Add photo</string>
     <string name="states_report_send">Send report</string>
-    <string name="states_report_sent">Report sent</string>
     <string name="states_not_designed_title">Not designed yet</string>
     <string name="states_not_designed_body">%1$s is not on the design canvas yet. It comes in a later step.</string>
     <string name="states_action_failed_title">Location transfer</string>
@@ -92,4 +89,13 @@
     <string name="errors_open_in_browser">Open in browser</string>
     <string name="errors_page_failed_title">Couldn’t load the help page</string>
     <string name="errors_page_failed_body">Check the connection, or open the page in the browser.</string>
+    <string name="states_report_subtitle_ticket">Goes to the Aiku team as a help ticket</string>
+    <string name="states_report_added_details_ticket">Screen, warehouse, error code, support reference and app version</string>
+    <string name="states_report_photos">Photos (optional)</string>
+    <string name="states_report_details_required">Tell us what happened.</string>
+    <string name="states_report_offline">No connection. Your report is still here; send it again when you are back online.</string>
+    <string name="states_report_too_many">You sent several reports in a short time. Try again in a few minutes.</string>
+    <string name="states_report_signed_out">You are signed out. Sign in again to send the report.</string>
+    <string name="states_report_failed">The report could not be sent. Try again in a moment.</string>
+    <string name="states_report_sent_as">Report sent as %1$s</string>
 </resources>

@@ -25,7 +25,7 @@ class OkHttpMobileApi(
     private val client: OkHttpClient,
     baseUrl: String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi {
+) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi, SupportApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
     internal val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
@@ -156,6 +156,17 @@ class OkHttpMobileApi(
         }
             ?.let { (statusCode, responseBody) -> HrResponses.parseLeave(statusCode, responseBody) }
             ?: HrWriteResult.Unreachable
+
+    override suspend fun reportProblem(token: String, report: ProblemReport): ProblemReportResult =
+        executeBuilt {
+            Request.Builder()
+                .url("$mobileApiUrl/tickets")
+                .post(multipart(SupportResponses.fields(report), report.images, SupportResponses.IMAGES_FIELD))
+                .header("Authorization", "Bearer $token")
+                .build()
+        }
+            ?.let { (statusCode, responseBody) -> SupportResponses.parse(statusCode, responseBody) }
+            ?: ProblemReportResult.Unreachable
 
     override suspend fun replaceLeaveAttachments(token: String, leaveId: Long, attachments: List<UploadFile>): HrWriteResult<Leave> =
         executeBuilt {
@@ -528,12 +539,12 @@ class OkHttpMobileApi(
             .toString()
     }
 
-    private fun multipart(fields: List<Pair<String, String>>, attachments: List<UploadFile>): RequestBody = MultipartBody.Builder()
+    private fun multipart(fields: List<Pair<String, String>>, attachments: List<UploadFile>, fileField: String = ATTACHMENTS_FIELD): RequestBody = MultipartBody.Builder()
         .setType(MultipartBody.FORM)
         .apply { fields.forEach { (name, value) -> addFormDataPart(name, value) } }
         .apply {
             attachments.forEach { file ->
-                addFormDataPart(ATTACHMENTS_FIELD, file.name, file.readBytes().toRequestBody(file.mimeType.toMediaTypeOrNull()))
+                addFormDataPart(fileField, file.name, file.readBytes().toRequestBody(file.mimeType.toMediaTypeOrNull()))
             }
         }
         .build()

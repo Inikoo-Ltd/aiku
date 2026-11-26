@@ -40,6 +40,7 @@ object StockDeliveryState {
 object GoodsInActionKey {
     const val RECEIVE = "receive"
     const val UNRECEIVE = "unreceive"
+    const val CANCEL = "cancel"
     const val CHECK = "check"
     const val PLACE = "place"
     const val CHECKLIST = "checklist"
@@ -364,6 +365,7 @@ sealed interface PlaceTarget {
 sealed interface StockDeliveryWrite {
     data object Receive : StockDeliveryWrite
     data object Unreceive : StockDeliveryWrite
+    data object Cancel : StockDeliveryWrite
     data object CheckAll : StockDeliveryWrite
     data class Check(val itemId: Long, val skoQuantity: Double) : StockDeliveryWrite
     data class Place(
