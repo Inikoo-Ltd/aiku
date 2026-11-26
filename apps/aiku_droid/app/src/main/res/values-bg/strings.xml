@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Одит на локацията</string>
     <string name="locations_audit_one_subtitle">Пребройте това SKO в тази локация</string>
     <string name="locations_audit_saved">Одитът на %1$s е запазен</string>
-    <string name="locations_audit_subtitle">Пребройте всяко SKO в тази локация</string>
     <string name="locations_audit_title">Одит на %1$s</string>
     <string name="locations_audited">Одитирана %1$s</string>
     <string name="locations_auto_remove">Автоматично премахване на празни локации</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%1$d от %2$d ред е решен</item>
         <item quantity="other">%1$d от %2$d реда са решени</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Състояние на наличността</string>
+    <string name="inventory_filter_location_type">Вид локация</string>
+    <string name="goodsin_add_extra">Добави допълнителен артикул</string>
+    <string name="goodsin_add_extra_question">Да се добави ли като допълнителен артикул?</string>
+    <string name="goodsin_add_extra_body">Продукт, който пристигна, но не е в нито една поръчка за покупка на тази доставка</string>
+    <string name="goodsin_add_extra_search">Търсене в продуктите на доставчика</string>
+    <string name="goodsin_add_extra_failed">Продуктите, които могат да се добавят, не можаха да се заредят</string>
+    <string name="goodsin_add_extra_none">Няма продукт за добавяне. Опитайте друго търсене.</string>
+    <string name="goodsin_add_extra_not_supplied">Този SKO не е продукт на този доставчик, затова не може да се добави тук.</string>
+    <string name="goodsin_add_extra_quantity">Колко SKO пристигнаха</string>
+    <string name="goodsin_add_extra_note">Добавя се като получен и преброен. Разположете го като другите артикули.</string>
+    <string name="locations_audit_blind_subtitle">Пребройте какво има на рафта. Количествата в Aiku се показват, когато приключите.</string>
+    <string name="locations_audit_complete">Приключи одита</string>
+    <string name="locations_audit_nothing_counted">Първо пребройте поне един SKO.</string>
+    <string name="locations_audit_found_sko">Открит SKO тук (сканирай)</string>
+    <string name="locations_audit_finding_sko">Търсене на %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s не е SKO</string>
+    <string name="locations_audit_counted">Преброени %1$s</string>
+    <string name="locations_audit_to_count">За броене</string>
+    <string name="locations_audit_count_done">Готово: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: преброено спрямо Aiku</string>
+    <string name="locations_audit_summary_subtitle">Проверете всяка разлика, посочете причината ѝ и запазете.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Добави %1$s SKO от %2$s</item>
+        <item quantity="other">Добави %1$s SKO от %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Приключи одита · остава %d</item>
+        <item quantity="other">Приключи одита · остават %d</item>
+    </plurals>
+    <string name="filter_search">Търсене</string>
+    <string name="filter_no_match">Няма съвпадения</string>
 </resources>

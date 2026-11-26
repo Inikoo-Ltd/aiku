@@ -78,6 +78,7 @@ data class FilterSheetSection(
     val isSingleChoice: Boolean = false,
     val isAtMostOne: Boolean = false,
     val isSort: Boolean = false,
+    val isSearchable: Boolean = false,
     val initiallySelected: Set<Int> = emptySet(),
     val isSample: Boolean = false,
     val extraCount: Int = 0,
@@ -95,6 +96,8 @@ private const val PANEL_WIDTH_FRACTION = 0.88f
 private val PanelMaxWidth = 420.dp
 private val PanelShape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
 private const val SORT_MENU_WIDTH_FRACTION = 0.78f
+private const val SEARCHABLE_MAX_SHOWN = 100
+private val SEARCHABLE_MENU_MAX_HEIGHT = 420.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -167,7 +170,15 @@ fun FilterSheet(
                             color = colors.textQuaternary,
                         )
                     }
-                    if (section.isSort && section.options.isNotEmpty()) {
+                    if (section.isSearchable && section.options.isNotEmpty()) {
+                        SearchableSelect(
+                            options = section.options,
+                            selectedIndex = selected.firstOrNull(),
+                            onSelect = { optionIndex ->
+                                onSelectionChange(selection.mapIndexed { index, current -> if (index == sectionIndex) setOfNotNull(optionIndex) else current })
+                            },
+                        )
+                    } else if (section.isSort && section.options.isNotEmpty()) {
                         SortSelect(
                             options = section.options,
                             selectedIndex = selected.firstOrNull(),
@@ -274,6 +285,103 @@ private fun RightPanel(onDismiss: () -> Unit, content: @Composable ColumnScope.(
                 ) {
                     content(close)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchableSelect(options: List<FilterSheetOption>, selectedIndex: Int?, onSelect: (Int?) -> Unit) {
+    val colors = LocalAikuColors.current
+    val shape = RoundedCornerShape(10.dp)
+    var isOpen by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    val selectedLabel = selectedIndex?.let { options.getOrNull(it)?.label }
+    val matches = remember(options, query) {
+        val needle = query.trim()
+        options.withIndex().filter { (_, option) -> needle.isEmpty() || option.label.contains(needle, ignoreCase = true) }.take(SEARCHABLE_MAX_SHOWN)
+    }
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(shape)
+                .background(colors.surface)
+                .border(1.dp, if (isOpen) colors.primary else colors.borderStrong, shape)
+                .clickable(role = Role.DropdownList) {
+                    query = ""
+                    isOpen = true
+                }
+                .padding(horizontal = 12.dp),
+        ) {
+            Text(
+                text = selectedLabel ?: stringResource(R.string.filter_any),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (selectedLabel == null) colors.textQuaternary else colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(painter = painterResource(R.drawable.ic_ui_chevron_down), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(18.dp))
+        }
+        DropdownMenu(
+            expanded = isOpen,
+            onDismissRequest = { isOpen = false },
+            containerColor = colors.surface,
+            shape = shape,
+            modifier = Modifier.fillMaxWidth(SORT_MENU_WIDTH_FRACTION).heightIn(max = SEARCHABLE_MENU_MAX_HEIGHT),
+        ) {
+            SearchField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = stringResource(R.string.filter_search),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+            if (selectedIndex != null) {
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(R.string.filter_any), fontSize = 15.sp, color = colors.textTertiary) },
+                    onClick = {
+                        isOpen = false
+                        onSelect(null)
+                    },
+                )
+            }
+            if (matches.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.filter_no_match),
+                    fontSize = 14.sp,
+                    color = colors.textTertiary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            matches.forEach { (index, option) ->
+                val isSelected = index == selectedIndex
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = option.label,
+                            fontSize = 15.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isSelected) colors.link else colors.text,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    trailingIcon = if (isSelected) {
+                        { Icon(painter = painterResource(R.drawable.ic_ui_check), contentDescription = null, tint = colors.link, modifier = Modifier.size(18.dp)) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        isOpen = false
+                        onSelect(index)
+                    },
+                )
             }
         }
     }

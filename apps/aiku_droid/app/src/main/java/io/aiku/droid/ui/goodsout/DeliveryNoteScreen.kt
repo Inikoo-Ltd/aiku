@@ -33,6 +33,7 @@ import io.aiku.droid.data.api.DeliveryNoteWrite
 import io.aiku.droid.data.api.NoteActionKey
 import io.aiku.droid.data.api.NoteField
 import io.aiku.droid.data.api.StaffRef
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -68,6 +69,9 @@ import io.aiku.droid.ui.goodsout.extra.UndoStep
 import io.aiku.droid.ui.goodsout.extra.UndoStepConfirmSheet
 import io.aiku.droid.ui.goodsout.extra.joinedWithAnd
 import io.aiku.droid.ui.inventory.fractionGlyphs
+import io.aiku.droid.ui.live.LIVE_RECORD_DELIVERY_NOTE
+import io.aiku.droid.ui.live.LIVE_RECORD_EVENTS
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
@@ -97,6 +101,7 @@ fun DeliveryNoteScreen(note: DeliveryNoteViewModel, reference: String) {
     val state by note.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { note.onStart() }
+    LiveEffect(channel = state.note?.id?.let { LiveChannelNames.record(LIVE_RECORD_DELIVERY_NOTE, it) }, events = LIVE_RECORD_EVENTS) { note.onStart() }
 
     RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         val loaded = state.note

@@ -26,6 +26,7 @@ import io.aiku.droid.data.api.StockDelivery
 import io.aiku.droid.data.api.StockDeliveryItem
 import io.aiku.droid.data.api.StockDeliveryState
 import io.aiku.droid.data.api.StockDeliveryWrite
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
@@ -57,6 +58,9 @@ import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.inventory.countText
 import io.aiku.droid.ui.inventory.scanProblemText
+import io.aiku.droid.ui.live.LIVE_RECORD_EVENTS
+import io.aiku.droid.ui.live.LIVE_RECORD_STOCK_DELIVERY
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
@@ -82,6 +86,7 @@ private sealed interface DeliverySheet {
     data object ConfirmCheckAll : DeliverySheet
     data class ConfirmUnreceive(val action: DeliveryNoteAction) : DeliverySheet
     data class ConfirmCancel(val action: DeliveryNoteAction) : DeliverySheet
+    data class AddExtra(val scanned: ScannedExtra?) : DeliverySheet
 }
 
 @Composable
@@ -89,6 +94,7 @@ fun StockDeliveryScreen(delivery: StockDeliveryViewModel, reference: String) {
     val state by delivery.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { delivery.onStart() }
+    LiveEffect(channel = state.delivery?.id?.let { LiveChannelNames.record(LIVE_RECORD_STOCK_DELIVERY, it) }, events = LIVE_RECORD_EVENTS) { delivery.onStart() }
 
     RequireAbility(ability = Ability.ViewGoodsIn, title = stringResource(R.string.module_goods_in), activeTab = MainTab.Menu) {
         val loaded = state.delivery
@@ -134,6 +140,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
     val view = state.view
     val unreceive = delivery.action(GoodsInActionKey.UNRECEIVE)
     val cancel = delivery.action(GoodsInActionKey.CANCEL)
+    val addItem = delivery.action(GoodsInActionKey.ADD_ITEM)
     val closeSheet: () -> Unit = {
         sheet = null
         sheetProblem = null
@@ -174,7 +181,12 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             is LineScanOutcome.Choose -> openSheet(DeliverySheet.ChooseLine(outcome.code, outcome.itemIds))
             is LineScanOutcome.NotOnDelivery -> {
                 scanFeedback.rejected()
-                notOnDeliveryText?.let { toasts.show(it, ToastKind.Info) }
+                val skoId = outcome.skoId
+                if (skoId != null && state.canAddItems) {
+                    openSheet(DeliverySheet.AddExtra(ScannedExtra(code = outcome.code, skoId = skoId)))
+                } else {
+                    notOnDeliveryText?.let { toasts.show(it, ToastKind.Info) }
+                }
             }
             is LineScanOutcome.Failed -> failedText?.let { toasts.show(it, ToastKind.Error) }
             null -> return@LaunchedEffect
@@ -188,7 +200,7 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                 title = delivery.reference,
                 kicker = stringResource(R.string.goodsin_kicker_stock_delivery, delivery.supplier?.label?.takeIf { it.isNotBlank() } ?: delivery.stateLabel),
                 actions = {
-                    if (unreceive != null || cancel != null) {
+                    if (unreceive != null || cancel != null || addItem != null) {
                         HeaderIconButton(
                             icon = R.drawable.ic_ui_more,
                             description = stringResource(R.string.more_actions),
@@ -291,6 +303,17 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
                     )
                 }
             }
+            if (addItem != null) {
+                ListGroup {
+                    ActionLinkRow(
+                        icon = R.drawable.ic_ui_plus,
+                        title = addItem.label.ifBlank { stringResource(R.string.goodsin_add_extra) },
+                        subtitle = addItem.disabledReason ?: stringResource(R.string.goodsin_add_extra_body),
+                        tone = ActionTone.Primary,
+                        onClick = if (addItem.isDisabled) null else ({ openSheet(DeliverySheet.AddExtra(scanned = null)) }),
+                    )
+                }
+            }
             if (cancel != null) {
                 ListGroup {
                     ActionLinkRow(
@@ -335,6 +358,16 @@ private fun StockDeliveryContent(viewModel: StockDeliveryViewModel, state: Stock
             },
             onDismiss = closeSheet,
             confirmLook = goodsInActionLook(GoodsInActionKey.CANCEL).forConfirm(),
+        )
+        is DeliverySheet.AddExtra -> AddExtraItemSheet(
+            delivery = delivery,
+            scanned = current.scanned,
+            addable = state.addable,
+            isWorking = state.working is StockDeliveryWrite.AddItem,
+            problem = sheetProblem,
+            onSearch = viewModel::loadAddable,
+            onAdd = viewModel::addItem,
+            onDismiss = closeSheet,
         )
         null -> Unit
     }

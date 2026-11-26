@@ -41,6 +41,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.ChatContextKind
 import io.aiku.droid.data.api.ChatMessage
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
@@ -57,6 +58,9 @@ import io.aiku.droid.ui.goodsout.LoadingMore
 import io.aiku.droid.ui.goodsout.dateTimeText
 import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.goodsout.problemText
+import io.aiku.droid.ui.live.LIVE_CHAT_EVENTS
+import io.aiku.droid.ui.live.LiveEffect
+import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -76,6 +80,7 @@ fun AskCrmScreen(chat: StaffChatViewModel, kind: ChatContextKind, reference: Str
         chat.onVisible()
         onStopOrDispose { chat.onHidden() }
     }
+    LiveEffect(channel = LiveChannelNames.personal(LocalStaff.current.userId), events = LIVE_CHAT_EVENTS) { chat.onLiveMessage() }
 
     RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         if (state.isSessionExpired) {

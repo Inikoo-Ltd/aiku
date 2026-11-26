@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Inventura lokacije</string>
     <string name="locations_audit_one_subtitle">Prebrojite ovaj SKO na ovoj lokaciji</string>
     <string name="locations_audit_saved">Inventura %1$s spremljena</string>
-    <string name="locations_audit_subtitle">Prebrojite svaki SKO na ovoj lokaciji</string>
     <string name="locations_audit_title">Inventura %1$s</string>
     <string name="locations_audited">Inventura %1$s</string>
     <string name="locations_auto_remove">Automatski ukloni prazne lokacije</string>
@@ -2654,4 +2653,38 @@
         <item quantity="few">Riješeno %1$d od %2$d retka</item>
         <item quantity="other">Riješeno %1$d od %2$d redaka</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Stanje zaliha</string>
+    <string name="inventory_filter_location_type">Vrsta lokacije</string>
+    <string name="goodsin_add_extra">Dodaj dodatnu stavku</string>
+    <string name="goodsin_add_extra_question">Dodati kao dodatnu stavku?</string>
+    <string name="goodsin_add_extra_body">Proizvod koji je stigao, ali nije ni na jednoj narudžbenici ove isporuke</string>
+    <string name="goodsin_add_extra_search">Pretraži proizvode dobavljača</string>
+    <string name="goodsin_add_extra_failed">Učitavanje proizvoda koje možete dodati nije uspjelo</string>
+    <string name="goodsin_add_extra_none">Nema proizvoda za dodavanje. Pokušajte s drugim pretraživanjem.</string>
+    <string name="goodsin_add_extra_not_supplied">Ovaj SKO nije proizvod ovog dobavljača pa se ovdje ne može dodati.</string>
+    <string name="goodsin_add_extra_quantity">Koliko je SKO-a stiglo</string>
+    <string name="goodsin_add_extra_note">Dodaje se kao primljeno i prebrojano. Smjestite ga kao ostale stavke.</string>
+    <string name="locations_audit_blind_subtitle">Prebrojite što je na polici. Količine iz Aikua prikazuju se kad završite.</string>
+    <string name="locations_audit_complete">Završi inventuru</string>
+    <string name="locations_audit_nothing_counted">Najprije prebrojite barem jedan SKO.</string>
+    <string name="locations_audit_found_sko">SKO pronađen ovdje (skeniraj)</string>
+    <string name="locations_audit_finding_sko">Traži se %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s nije SKO</string>
+    <string name="locations_audit_counted">Prebrojano %1$s</string>
+    <string name="locations_audit_to_count">Za brojanje</string>
+    <string name="locations_audit_count_done">Gotovo: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: prebrojano naspram Aikua</string>
+    <string name="locations_audit_summary_subtitle">Provjerite svaku razliku, navedite razlog i spremite.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Dodaj %1$s SKO %2$s</item>
+        <item quantity="few">Dodaj %1$s SKO-a %2$s</item>
+        <item quantity="other">Dodaj %1$s SKO-a %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Završi inventuru · preostao %d</item>
+        <item quantity="few">Završi inventuru · preostala %d</item>
+        <item quantity="other">Završi inventuru · preostalo %d</item>
+    </plurals>
+    <string name="filter_search">Pretraži</string>
+    <string name="filter_no_match">Nema podudaranja</string>
 </resources>

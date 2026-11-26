@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Raktárhely leltározása</string>
     <string name="locations_audit_one_subtitle">Számolja meg ezt az SKO-t ezen a raktárhelyen</string>
     <string name="locations_audit_saved">%1$s leltára mentve</string>
-    <string name="locations_audit_subtitle">Számolja meg az összes SKO-t ezen a raktárhelyen</string>
     <string name="locations_audit_title">%1$s leltározása</string>
     <string name="locations_audited">Leltározva: %1$s</string>
     <string name="locations_auto_remove">Üres raktárhelyek automatikus eltávolítása</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%2$d sorból %1$d megoldva</item>
         <item quantity="other">%2$d sorból %1$d megoldva</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Készletállapot</string>
+    <string name="inventory_filter_location_type">Helytípus</string>
+    <string name="goodsin_add_extra">Plusz tétel hozzáadása</string>
+    <string name="goodsin_add_extra_question">Hozzáadja plusz tételként?</string>
+    <string name="goodsin_add_extra_body">Olyan termék, amely megérkezett, de a beszállítás egyik beszerzési rendelésén sem szerepel</string>
+    <string name="goodsin_add_extra_search">Keresés a beszállító termékei között</string>
+    <string name="goodsin_add_extra_failed">Nem sikerült betölteni a hozzáadható termékeket</string>
+    <string name="goodsin_add_extra_none">Nincs hozzáadható termék. Próbáljon más keresést.</string>
+    <string name="goodsin_add_extra_not_supplied">Ez az SKO nem ennek a beszállítónak a terméke, ezért itt nem adható hozzá.</string>
+    <string name="goodsin_add_extra_quantity">Hány SKO érkezett</string>
+    <string name="goodsin_add_extra_note">Beérkezettként és megszámoltként kerül be. Helyezze el, mint a többi tételt.</string>
+    <string name="locations_audit_blind_subtitle">Számolja meg, mi van a polcon. Az Aiku mennyiségei a befejezéskor jelennek meg.</string>
+    <string name="locations_audit_complete">Leltár befejezése</string>
+    <string name="locations_audit_nothing_counted">Előbb számoljon meg legalább egy SKO-t.</string>
+    <string name="locations_audit_found_sko">Itt talált SKO (beolvasás)</string>
+    <string name="locations_audit_finding_sko">%1$s keresése…</string>
+    <string name="locations_audit_found_not_sko">%1$s nem SKO</string>
+    <string name="locations_audit_counted">Megszámolva: %1$s</string>
+    <string name="locations_audit_to_count">Számolandó</string>
+    <string name="locations_audit_count_done">Kész: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: megszámolt vs. Aiku</string>
+    <string name="locations_audit_summary_subtitle">Ellenőrizze az eltéréseket, adja meg az okukat, majd mentse.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">%1$s SKO hozzáadása: %2$s</item>
+        <item quantity="other">%1$s SKO hozzáadása: %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Leltár befejezése · %d hátravan</item>
+        <item quantity="other">Leltár befejezése · %d hátravan</item>
+    </plurals>
+    <string name="filter_search">Keresés</string>
+    <string name="filter_no_match">Nincs találat</string>
 </resources>

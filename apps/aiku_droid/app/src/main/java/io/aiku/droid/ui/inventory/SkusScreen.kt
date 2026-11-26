@@ -16,6 +16,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -28,7 +29,6 @@ import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.FilterChips
 import io.aiku.droid.ui.components.FilterOption
-import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.ItemRow
 import io.aiku.droid.ui.components.ListGroup
@@ -38,6 +38,7 @@ import io.aiku.droid.ui.components.PullRefresh
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.SearchScanField
+import io.aiku.droid.ui.components.SearchWithFilter
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.ToastKind
 import io.aiku.droid.ui.components.Tone
@@ -152,18 +153,6 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
             ModuleHeader(
                 section = WarehouseSection.Skus,
                 title = stringResource(skoListTitle(filter.bucket)),
-                actions = {
-                    HeaderIconButton(
-                        icon = R.drawable.ic_ui_search,
-                        description = stringResource(R.string.filter_open),
-                        onClick = {
-                            skos.loadFamilies()
-                            showFilter = true
-                        },
-                        filled = true,
-                        badgeCount = filter.activeFilterCount,
-                    )
-                },
             )
         },
         activeTab = MainTab.Menu,
@@ -179,12 +168,22 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
         if (filter.isFiltered) {
             ClearFiltersRow(count = filter.activeFilterCount, isSorted = filter.sort != null, onClear = skos::clearFilters, detail = familyCode)
         }
-        SearchScanField(
-            placeholder = stringResource(R.string.inventory_skos_search),
-            value = filter.search,
-            onValueChange = skos::search,
-            onScan = { navigator.open(ScanRoute) },
-        )
+        SearchWithFilter(
+            filterCount = filter.activeFilterCount,
+            onFilter = {
+                skos.loadFamilies()
+                showFilter = true
+            },
+            buttonSize = 46.dp,
+        ) { modifier ->
+            SearchScanField(
+                placeholder = stringResource(R.string.inventory_skos_search),
+                value = filter.search,
+                onValueChange = skos::search,
+                onScan = { navigator.open(ScanRoute) },
+                modifier = modifier,
+            )
+        }
         state.lookingUpCode?.let { code -> InlineAlert(title = stringResource(R.string.scan_looking_up, code), tone = AlertTone.Info) }
         list.firstPageProblem?.let { problem ->
             StockLoadProblem(problem = problem, title = stringResource(R.string.inventory_skos_failed), onRetry = skos::retry)
@@ -217,6 +216,7 @@ private fun SkusContent(state: SkosUiState, skos: SkosViewModel) {
         SkuFilterSheet(
             filter = filter,
             families = state.families,
+            options = state.filterOptions,
             totalFor = state::totalFor,
             onDraftChange = skos::previewTotal,
             onApply = { applied ->

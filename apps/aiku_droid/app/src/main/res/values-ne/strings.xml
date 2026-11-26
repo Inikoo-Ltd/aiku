@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">लोकेसन अडिट गर्नुहोस्</string>
     <string name="locations_audit_one_subtitle">यो लोकेसनमा यो SKO गन्नुहोस्</string>
     <string name="locations_audit_saved">%1$s को अडिट सुरक्षित गरियो</string>
-    <string name="locations_audit_subtitle">यो लोकेसनका सबै SKO गन्नुहोस्</string>
     <string name="locations_audit_title">%1$s अडिट गर्नुहोस्</string>
     <string name="locations_audited">अडिट गरिएको %1$s</string>
     <string name="locations_auto_remove">खाली लोकेसनहरू स्वतः हटाउनुहोस्</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%2$d मध्ये %1$d लाइन समाधान भयो</item>
         <item quantity="other">%2$d मध्ये %1$d लाइनहरू समाधान भए</item>
     </plurals>
+    <string name="inventory_filter_stock_status">स्टक स्थिति</string>
+    <string name="inventory_filter_location_type">स्थानको प्रकार</string>
+    <string name="goodsin_add_extra">अतिरिक्त वस्तु थप्नुहोस्</string>
+    <string name="goodsin_add_extra_question">यसलाई अतिरिक्त वस्तुको रूपमा थप्ने?</string>
+    <string name="goodsin_add_extra_body">आएको तर यस डेलिभरीको कुनै पनि खरिद अर्डरमा नभएको उत्पादन</string>
+    <string name="goodsin_add_extra_search">आपूर्तिकर्ताका उत्पादनहरू खोज्नुहोस्</string>
+    <string name="goodsin_add_extra_failed">थप्न सकिने उत्पादनहरू लोड गर्न सकिएन</string>
+    <string name="goodsin_add_extra_none">थप्न कुनै उत्पादन छैन। अर्को खोज प्रयास गर्नुहोस्।</string>
+    <string name="goodsin_add_extra_not_supplied">यो SKO यस आपूर्तिकर्ताको उत्पादन होइन, त्यसैले यहाँ थप्न सकिँदैन।</string>
+    <string name="goodsin_add_extra_quantity">कति SKO आए</string>
+    <string name="goodsin_add_extra_note">प्राप्त र गनिएको रूपमा थपिन्छ। अरू वस्तुहरू जस्तै यसलाई राख्नुहोस्।</string>
+    <string name="locations_audit_blind_subtitle">सेल्फमा के छ गन्नुहोस्। पूरा गरेपछि Aiku का मात्राहरू देखिन्छन्।</string>
+    <string name="locations_audit_complete">अडिट पूरा गर्नुहोस्</string>
+    <string name="locations_audit_nothing_counted">पहिले कम्तीमा एउटा SKO गन्नुहोस्।</string>
+    <string name="locations_audit_found_sko">यहाँ भेटिएको SKO (स्क्यान गर्नुहोस्)</string>
+    <string name="locations_audit_finding_sko">%1$s खोजिँदै…</string>
+    <string name="locations_audit_found_not_sko">%1$s SKO होइन</string>
+    <string name="locations_audit_counted">गनिएको %1$s</string>
+    <string name="locations_audit_to_count">गन्न बाँकी</string>
+    <string name="locations_audit_count_done">सकियो: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: गनिएको र Aiku</string>
+    <string name="locations_audit_summary_subtitle">हरेक फरक जाँच्नुहोस्, कारण दिनुहोस्, अनि सुरक्षित गर्नुहोस्।</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">%2$s को %1$s SKO थप्नुहोस्</item>
+        <item quantity="other">%2$s का %1$s SKO थप्नुहोस्</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">अडिट पूरा गर्नुहोस् · %d बाँकी</item>
+        <item quantity="other">अडिट पूरा गर्नुहोस् · %d बाँकी</item>
+    </plurals>
+    <string name="filter_search">खोज्नुहोस्</string>
+    <string name="filter_no_match">केही मिलेन</string>
 </resources>

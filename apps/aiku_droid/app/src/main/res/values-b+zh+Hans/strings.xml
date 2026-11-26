@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">盘点库位</string>
     <string name="locations_audit_one_subtitle">清点此库位中的此 SKO</string>
     <string name="locations_audit_saved">%1$s 的盘点已保存</string>
-    <string name="locations_audit_subtitle">清点此库位中的每个 SKO</string>
     <string name="locations_audit_title">盘点 %1$s</string>
     <string name="locations_audited">盘点于 %1$s</string>
     <string name="locations_auto_remove">自动移除空库位</string>
@@ -2428,4 +2427,34 @@
     <plurals name="sync_conflicts_resolved_count">
         <item quantity="other">已处理 %2$d 行中的 %1$d 行</item>
     </plurals>
+    <string name="inventory_filter_stock_status">库存状态</string>
+    <string name="inventory_filter_location_type">库位类型</string>
+    <string name="goodsin_add_extra">添加额外商品</string>
+    <string name="goodsin_add_extra_question">作为额外商品添加？</string>
+    <string name="goodsin_add_extra_body">已到货但不在本到货单任何采购订单中的商品</string>
+    <string name="goodsin_add_extra_search">搜索供应商的商品</string>
+    <string name="goodsin_add_extra_failed">无法加载可添加的商品</string>
+    <string name="goodsin_add_extra_none">没有可添加的商品。请换个搜索词。</string>
+    <string name="goodsin_add_extra_not_supplied">此 SKO 不是该供应商的商品，无法在此添加。</string>
+    <string name="goodsin_add_extra_quantity">到货的 SKO 数量</string>
+    <string name="goodsin_add_extra_note">按已收货、已清点添加。请像其他商品一样上架。</string>
+    <string name="locations_audit_blind_subtitle">清点货架上的实物。完成后才会显示 Aiku 中的数量。</string>
+    <string name="locations_audit_complete">完成盘点</string>
+    <string name="locations_audit_nothing_counted">请先至少清点一个 SKO。</string>
+    <string name="locations_audit_found_sko">在此发现的 SKO（扫描）</string>
+    <string name="locations_audit_finding_sko">正在查找 %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s 不是 SKO</string>
+    <string name="locations_audit_counted">已清点 %1$s</string>
+    <string name="locations_audit_to_count">待清点</string>
+    <string name="locations_audit_count_done">完成：%1$s</string>
+    <string name="locations_audit_summary_title">%1$s：清点与 Aiku 对比</string>
+    <string name="locations_audit_summary_subtitle">请检查每处差异，填写原因后保存。</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="other">添加 %1$s 个 %2$s SKO</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="other">完成盘点 · 还剩 %d</item>
+    </plurals>
+    <string name="filter_search">搜索</string>
+    <string name="filter_no_match">没有匹配项</string>
 </resources>

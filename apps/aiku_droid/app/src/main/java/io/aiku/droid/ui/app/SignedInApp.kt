@@ -52,6 +52,7 @@ import io.aiku.droid.data.api.StockDeliverySource
 import io.aiku.droid.data.api.StockDeliveryStateFilter
 import io.aiku.droid.data.api.Trolley
 import io.aiku.droid.data.api.WarehouseAccess
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.data.offline.SyncReason
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.push.AskForNotificationsOnce
@@ -170,6 +171,10 @@ import io.aiku.droid.ui.inventory.SkuScreen
 import io.aiku.droid.ui.inventory.SkusScreen
 import io.aiku.droid.ui.inventory.StockHistoryScreen
 import io.aiku.droid.ui.inventory.StockMovementsViewModel
+import io.aiku.droid.ui.live.LIVE_BADGE_EVENTS
+import io.aiku.droid.ui.live.LIVE_PERMISSION_EVENTS
+import io.aiku.droid.ui.live.LiveEffect
+import io.aiku.droid.ui.live.LocalLiveChannels
 import io.aiku.droid.ui.locations.AreaScreen
 import io.aiku.droid.ui.locations.AreasScreen
 import io.aiku.droid.ui.locations.AreasViewModel
@@ -324,6 +329,7 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
     val state by warehousesViewModel.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { warehousesViewModel.refresh() }
+    LiveEffect(channel = LiveChannelNames.personal(session.userId), events = LIVE_PERMISSION_EVENTS, live = container.liveUpdates) { warehousesViewModel.refresh() }
 
     when (val current = state) {
         WarehousesUiState.Loading -> LoadingScreen()
@@ -399,6 +405,7 @@ private fun WarehouseApp(
     LaunchedEffect(selected?.id) { badgesViewModel.showWarehouse(selected?.id) }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { badgesViewModel.refresh() }
     LaunchedEffect(badgesViewModel) { container.pushInbox.arrivals.collect { badgesViewModel.refresh() } }
+    LiveEffect(channel = LiveChannelNames.personal(session.userId), events = LIVE_BADGE_EVENTS, live = container.liveUpdates) { badgesViewModel.refresh() }
     val isClockingSessionExpired by clockingViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isLeaveSessionExpired by leaveViewModel.isSessionExpired.collectAsStateWithLifecycle()
     val isAdjustmentsSessionExpired by adjustmentsViewModel.isSessionExpired.collectAsStateWithLifecycle()
@@ -520,6 +527,7 @@ private fun WarehouseApp(
         LocalInventoryServices provides remember(container) { InventoryServices(container.inventoryApi, container.sessions) },
         LocalSupportServices provides remember(container) { SupportServices(container.supportApi, container.sessions) },
         LocalOfflineIndicator provides container.offlineWork,
+        LocalLiveChannels provides container.liveUpdates,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(
@@ -901,7 +909,7 @@ private fun AppNavHost(navController: NavHostController, container: AppContainer
             val kind = ChatContextKind.ofKey(route.context) ?: ChatContextKind.DeliveryNote
             val chat: StaffChatViewModel = viewModel(
                 key = "chat-${route.context}-${route.id}",
-                factory = viewModelFactory { initializer { StaffChatViewModel(container.staffChatApi, container.sessions, kind, route.id) } },
+                factory = viewModelFactory { initializer { StaffChatViewModel(container.staffChatApi, container.sessions, kind, route.id, isLive = { container.liveUpdates.isConnected.value }) } },
             )
             AskCrmScreen(chat = chat, kind = kind, reference = route.reference)
         }

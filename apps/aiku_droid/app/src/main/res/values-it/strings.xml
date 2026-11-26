@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Verifica ubicazione</string>
     <string name="locations_audit_one_subtitle">Conti questo SKO in questa ubicazione</string>
     <string name="locations_audit_saved">Verifica di %1$s salvata</string>
-    <string name="locations_audit_subtitle">Conti ogni SKO in questa ubicazione</string>
     <string name="locations_audit_title">Verifica %1$s</string>
     <string name="locations_audited">Verificata %1$s</string>
     <string name="locations_auto_remove">Rimuovi automaticamente le ubicazioni vuote</string>
@@ -2654,4 +2653,38 @@
         <item quantity="many">%1$d su %2$d di righe risolte</item>
         <item quantity="other">%1$d righe su %2$d risolte</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Stato dello stock</string>
+    <string name="inventory_filter_location_type">Tipo di ubicazione</string>
+    <string name="goodsin_add_extra">Aggiungi articolo extra</string>
+    <string name="goodsin_add_extra_question">Aggiungerlo come articolo extra?</string>
+    <string name="goodsin_add_extra_body">Un prodotto arrivato ma che non è in nessun ordine d’acquisto di questa consegna</string>
+    <string name="goodsin_add_extra_search">Cerca tra i prodotti del fornitore</string>
+    <string name="goodsin_add_extra_failed">Impossibile caricare i prodotti da aggiungere</string>
+    <string name="goodsin_add_extra_none">Nessun prodotto da aggiungere. Provi un’altra ricerca.</string>
+    <string name="goodsin_add_extra_not_supplied">Questo SKO non è un prodotto di questo fornitore, quindi non si può aggiungere qui.</string>
+    <string name="goodsin_add_extra_quantity">Quanti SKO sono arrivati</string>
+    <string name="goodsin_add_extra_note">Viene aggiunto come ricevuto e contato. Lo collochi come gli altri articoli.</string>
+    <string name="locations_audit_blind_subtitle">Conti cosa c’è sullo scaffale. Le quantità di Aiku compaiono quando ha finito.</string>
+    <string name="locations_audit_complete">Completa verifica</string>
+    <string name="locations_audit_nothing_counted">Conti prima almeno uno SKO.</string>
+    <string name="locations_audit_found_sko">SKO trovato qui (scansiona)</string>
+    <string name="locations_audit_finding_sko">Ricerca di %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s non è uno SKO</string>
+    <string name="locations_audit_counted">Contati %1$s</string>
+    <string name="locations_audit_to_count">Da contare</string>
+    <string name="locations_audit_count_done">Fatto: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: contato rispetto ad Aiku</string>
+    <string name="locations_audit_summary_subtitle">Controlli ogni differenza, indichi il motivo, poi salvi.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Aggiungi %1$s SKO di %2$s</item>
+        <item quantity="many">Aggiungi %1$s SKO di %2$s</item>
+        <item quantity="other">Aggiungi %1$s SKO di %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Completa verifica · ne manca %d</item>
+        <item quantity="many">Completa verifica · ne mancano %d</item>
+        <item quantity="other">Completa verifica · ne mancano %d</item>
+    </plurals>
+    <string name="filter_search">Cerca</string>
+    <string name="filter_no_match">Nessun risultato</string>
 </resources>

@@ -97,6 +97,19 @@
     <string name="goodsin_scan_to_check">Scan to check</string>
     <string name="goodsin_scan_to_check_body">Scan an SKO barcode to open its line</string>
     <string name="goodsin_scan_not_on_delivery">%1$s is not on %2$s</string>
+    <string name="goodsin_add_extra">Add extra item</string>
+    <string name="goodsin_add_extra_question">Add it as an extra item?</string>
+    <string name="goodsin_add_extra_body">A product that came but is on none of the purchase orders of this delivery</string>
+    <string name="goodsin_add_extra_search">Search the supplier\'s products</string>
+    <string name="goodsin_add_extra_failed">Couldn\'t load the products you can add</string>
+    <string name="goodsin_add_extra_none">No product to add. Try another search.</string>
+    <string name="goodsin_add_extra_not_supplied">This SKO is not a product of this supplier, so it can\'t be added here.</string>
+    <string name="goodsin_add_extra_quantity">How many SKOs came</string>
+    <string name="goodsin_add_extra_note">Added as received and counted. Place it like the other items.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Add %1$s SKO of %2$s</item>
+        <item quantity="other">Add %1$s SKOs of %2$s</item>
+    </plurals>
     <plurals name="goodsin_checked_count">
         <item quantity="one">%1$d of %2$d checked</item>
         <item quantity="other">%1$d of %2$d checked</item>

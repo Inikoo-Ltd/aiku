@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Audit lokasi</string>
     <string name="locations_audit_one_subtitle">Hitung SKO ini di lokasi ini</string>
     <string name="locations_audit_saved">Audit %1$s disimpan</string>
-    <string name="locations_audit_subtitle">Hitung setiap SKO di lokasi ini</string>
     <string name="locations_audit_title">Audit %1$s</string>
     <string name="locations_audited">Diaudit %1$s</string>
     <string name="locations_auto_remove">Hapus lokasi kosong secara otomatis</string>
@@ -2428,4 +2427,34 @@
     <plurals name="sync_conflicts_resolved_count">
         <item quantity="other">%1$d dari %2$d baris terselesaikan</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Status stok</string>
+    <string name="inventory_filter_location_type">Jenis lokasi</string>
+    <string name="goodsin_add_extra">Tambah item tambahan</string>
+    <string name="goodsin_add_extra_question">Tambahkan sebagai item tambahan?</string>
+    <string name="goodsin_add_extra_body">Produk yang datang tetapi tidak ada di pesanan pembelian mana pun dari penerimaan ini</string>
+    <string name="goodsin_add_extra_search">Cari produk pemasok</string>
+    <string name="goodsin_add_extra_failed">Tidak dapat memuat produk yang bisa ditambahkan</string>
+    <string name="goodsin_add_extra_none">Tidak ada produk untuk ditambahkan. Coba pencarian lain.</string>
+    <string name="goodsin_add_extra_not_supplied">SKO ini bukan produk pemasok ini, jadi tidak bisa ditambahkan di sini.</string>
+    <string name="goodsin_add_extra_quantity">Berapa SKO yang datang</string>
+    <string name="goodsin_add_extra_note">Ditambahkan sebagai diterima dan sudah dihitung. Tempatkan seperti item lainnya.</string>
+    <string name="locations_audit_blind_subtitle">Hitung yang ada di rak. Jumlah di Aiku muncul setelah Anda selesai.</string>
+    <string name="locations_audit_complete">Selesaikan audit</string>
+    <string name="locations_audit_nothing_counted">Hitung setidaknya satu SKO terlebih dahulu.</string>
+    <string name="locations_audit_found_sko">SKO ditemukan di sini (pindai)</string>
+    <string name="locations_audit_finding_sko">Mencari %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s bukan SKO</string>
+    <string name="locations_audit_counted">Terhitung %1$s</string>
+    <string name="locations_audit_to_count">Belum dihitung</string>
+    <string name="locations_audit_count_done">Selesai: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: dihitung vs Aiku</string>
+    <string name="locations_audit_summary_subtitle">Periksa setiap selisih, beri alasannya, lalu simpan.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="other">Tambah %1$s SKO %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="other">Selesaikan audit · %d tersisa</item>
+    </plurals>
+    <string name="filter_search">Cari</string>
+    <string name="filter_no_match">Tidak ada yang cocok</string>
 </resources>
