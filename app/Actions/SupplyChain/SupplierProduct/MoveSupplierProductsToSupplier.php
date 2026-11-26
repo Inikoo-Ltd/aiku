@@ -297,9 +297,11 @@ class MoveSupplierProductsToSupplier extends OrgAction
                 ?? StoreOrgSupplierProduct::make()->action($this->targetOrgSupplier($twin->supplier, $orgSupplierProduct->organisation_id), $twin);
 
             if ($orgSupplierProduct->state === OrgSupplierProductStateEnum::ACTIVE->value) {
+                $twinWasAvailable = $twinOrgSupplierProduct->state === OrgSupplierProductStateEnum::ACTIVE->value && $twinOrgSupplierProduct->is_available;
+
                 UpdateOrgSupplierProduct::make()->action($twinOrgSupplierProduct, [
                     'state'        => OrgSupplierProductStateEnum::ACTIVE->value,
-                    'is_available' => $orgSupplierProduct->is_available,
+                    'is_available' => $twinWasAvailable || $orgSupplierProduct->is_available,
                 ]);
             }
 

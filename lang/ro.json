@@ -26240,5 +26240,21 @@
     "The WhatsApp signup was not finished.": "Înregistrarea WhatsApp nu a fost finalizată.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Numărul rămâne în aplicația WhatsApp Business de pe telefonul magazinului, iar Aiku citește și scrie și el pe el.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Apelurile WhatsApp către acest număr sună doar pe telefonul magazinului, nu în Aiku. Deschide aplicația WhatsApp Business pe acel telefon cel puțin o dată la 13 zile, altfel Meta deconectează numărul de la Aiku.",
-    "Media shared on the WhatsApp Business app": "Media partajată în aplicația WhatsApp Business"
+    "Media shared on the WhatsApp Business app": "Media partajată în aplicația WhatsApp Business",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier vinde deja acest SKO ca :code, la :cost pe unitate: SKO-urile sale se cumpără de la :supplier, iar :old este retras",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier nu vinde încă acest SKO: produsul se mută acolo cu istoricul său, cu aceste detalii",
+    "Code, name, contact or product code": "Cod, nume, contact sau cod produs",
+    "Has :count of :total": "Are :count din :total",
+    "Has all products": "Are toate produsele",
+    "Has this product": "Are acest produs",
+    "Move :count products to another supplier": "Mută :count produse la alt furnizor",
+    "Move to another supplier (:count)": "Mută la alt furnizor (:count)",
+    "Nickname": "Poreclă",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Niciun alt furnizor al agentului nu vinde aceste produse: debifează caseta pentru a-i vedea pe toți",
+    "Only suppliers that sell all :count products": "Doar furnizorii care vând toate cele :count produse",
+    "Only suppliers that sell this product": "Doar furnizorii care vând acest produs",
+    "Open supplier :supplier": "Deschide furnizorul :supplier",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Același SKO ca :code :name, care se mută la :supplier: SKO-urile sale se cumpără prin acel produs, iar :old este retras",
+    "Search code, company, nickname or contact": "Caută cod, companie, poreclă sau contact",
+    "Tick the products to move": "Bifează produsele de mutat"
 }

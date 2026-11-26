@@ -9309,5 +9309,21 @@
     "The WhatsApp signup was not finished.": "A WhatsApp-regisztráció nem fejeződött be.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "A szám a bolt telefonján lévő WhatsApp Business alkalmazásban marad, és az Aiku is olvassa és ír róla.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Az erre a számra érkező WhatsApp-hívások csak a bolt telefonján csörögnek, az Aikuban nem. Legalább 13 naponta nyisd meg a WhatsApp Business alkalmazást azon a telefonon, különben a Meta leválasztja a számot az Aikuról.",
-    "Media shared on the WhatsApp Business app": "A WhatsApp Business alkalmazásban megosztott média"
+    "Media shared on the WhatsApp Business app": "A WhatsApp Business alkalmazásban megosztott média",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier már árulja ezt az SKO-t :code kóddal, darabonként :cost áron: az SKO-it :supplier szállítótól veszik, a :old kivezetésre kerül",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier még nem árulja ezt az SKO-t: a termék az előzményeivel együtt átkerül oda, ezekkel az adatokkal",
+    "Code, name, contact or product code": "Kód, név, kapcsolattartó vagy termékkód",
+    "Has :count of :total": ":count / :total megvan",
+    "Has all products": "Minden termék megvan",
+    "Has this product": "Ez a termék megvan",
+    "Move :count products to another supplier": ":count termék áthelyezése másik szállítóhoz",
+    "Move to another supplier (:count)": "Áthelyezés másik szállítóhoz (:count)",
+    "Nickname": "Becenév",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Az ügynök egyik másik szállítója sem árulja ezeket a termékeket: vedd ki a pipát, hogy mindet lásd",
+    "Only suppliers that sell all :count products": "Csak a mind a :count terméket áruló szállítók",
+    "Only suppliers that sell this product": "Csak az ezt a terméket áruló szállítók",
+    "Open supplier :supplier": ":supplier szállító megnyitása",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Ugyanaz az SKO, mint :code :name, amely átkerül :supplier szállítóhoz: az SKO-it ettől a terméktől veszik, a :old kivezetésre kerül",
+    "Search code, company, nickname or contact": "Keresés kód, cég, becenév vagy kapcsolattartó szerint",
+    "Tick the products to move": "Jelöld be az áthelyezendő termékeket"
 }

@@ -27250,5 +27250,21 @@
     "The WhatsApp signup was not finished.": "Registrace WhatsApp nebyla dokončena.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Číslo zůstává v aplikaci WhatsApp Business na telefonu obchodu a Aiku ho také čte a píše z něj.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Hovory WhatsApp na toto číslo zvoní jen na telefonu obchodu, ne v Aiku. Otevřete aplikaci WhatsApp Business na tom telefonu alespoň jednou za 13 dní, jinak Meta číslo od Aiku odpojí.",
-    "Media shared on the WhatsApp Business app": "Média sdílená v aplikaci WhatsApp Business"
+    "Media shared on the WhatsApp Business app": "Média sdílená v aplikaci WhatsApp Business",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier už prodává toto SKO jako :code za :cost za kus: jeho SKO se nakupují od :supplier a :old se vyřadí",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier toto SKO ještě neprodává: produkt se tam přesune i s historií, s těmito údaji",
+    "Code, name, contact or product code": "Kód, název, kontakt nebo kód produktu",
+    "Has :count of :total": "Má :count z :total",
+    "Has all products": "Má všechny produkty",
+    "Has this product": "Má tento produkt",
+    "Move :count products to another supplier": "Přesunout :count produktů k jinému dodavateli",
+    "Move to another supplier (:count)": "Přesunout k jinému dodavateli (:count)",
+    "Nickname": "Přezdívka",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Žádný jiný dodavatel agenta tyto produkty neprodává: zrušte zaškrtnutí a uvidíte všechny",
+    "Only suppliers that sell all :count products": "Jen dodavatelé, kteří prodávají všech :count produktů",
+    "Only suppliers that sell this product": "Jen dodavatelé, kteří prodávají tento produkt",
+    "Open supplier :supplier": "Otevřít dodavatele :supplier",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Stejné SKO jako :code :name, který se přesouvá k :supplier: jeho SKO se nakupují z tohoto produktu a :old se vyřadí",
+    "Search code, company, nickname or contact": "Hledat kód, firmu, přezdívku nebo kontakt",
+    "Tick the products to move": "Zaškrtněte produkty, které chcete přesunout"
 }

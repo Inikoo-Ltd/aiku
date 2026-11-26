@@ -26839,5 +26839,21 @@
     "Your DIČ for electronic invoices": "Your DIČ for electronic invoices",
     "From 2027 we must send invoices to Slovak companies and sole traders as electronic invoices, to their DIČ. Please add yours.": "From 2027 we must send invoices to Slovak companies and sole traders as electronic invoices, to their DIČ. Please add yours.",
     "I buy as a private person, I have no DIČ": "I buy as a private person, I have no DIČ",
-    "Could not save, please try again.": "Could not save, please try again."
+    "Could not save, please try again.": "Could not save, please try again.",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier does not sell this SKO yet: the product moves there with its history, under these details",
+    "Code, name, contact or product code": "Code, name, contact or product code",
+    "Has :count of :total": "Has :count of :total",
+    "Has all products": "Has all products",
+    "Has this product": "Has this product",
+    "Move :count products to another supplier": "Move :count products to another supplier",
+    "Move to another supplier (:count)": "Move to another supplier (:count)",
+    "Nickname": "Nickname",
+    "No other supplier of the agent sells these products: untick the box to see them all": "No other supplier of the agent sells these products: untick the box to see them all",
+    "Only suppliers that sell all :count products": "Only suppliers that sell all :count products",
+    "Only suppliers that sell this product": "Only suppliers that sell this product",
+    "Open supplier :supplier": "Open supplier :supplier",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued",
+    "Search code, company, nickname or contact": "Search code, company, nickname or contact",
+    "Tick the products to move": "Tick the products to move"
 }

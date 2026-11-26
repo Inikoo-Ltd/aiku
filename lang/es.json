@@ -27106,5 +27106,21 @@
     "The WhatsApp signup was not finished.": "El registro de WhatsApp no se completó.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "El número sigue en la app WhatsApp Business del teléfono de la tienda y Aiku también lee y escribe en él.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Las llamadas de WhatsApp a este número suenan solo en el teléfono de la tienda, no en Aiku. Abre la app WhatsApp Business en ese teléfono al menos cada 13 días o Meta desconectará el número de Aiku.",
-    "Media shared on the WhatsApp Business app": "Archivo compartido en la app WhatsApp Business"
+    "Media shared on the WhatsApp Business app": "Archivo compartido en la app WhatsApp Business",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier ya vende este SKO como :code, a :cost por unidad: sus SKO se compran a :supplier y :old se descataloga",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier aún no vende este SKO: el producto pasa allí con su historial, con estos datos",
+    "Code, name, contact or product code": "Código, nombre, contacto o código de producto",
+    "Has :count of :total": "Tiene :count de :total",
+    "Has all products": "Tiene todos los productos",
+    "Has this product": "Tiene este producto",
+    "Move :count products to another supplier": "Mover :count productos a otro proveedor",
+    "Move to another supplier (:count)": "Mover a otro proveedor (:count)",
+    "Nickname": "Apodo",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Ningún otro proveedor del agente vende estos productos: desmarca la casilla para verlos todos",
+    "Only suppliers that sell all :count products": "Solo proveedores que venden los :count productos",
+    "Only suppliers that sell this product": "Solo proveedores que venden este producto",
+    "Open supplier :supplier": "Abrir proveedor :supplier",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Mismo SKO que :code :name, que pasa a :supplier: sus SKO se compran a ese producto y :old se descataloga",
+    "Search code, company, nickname or contact": "Buscar código, empresa, apodo o contacto",
+    "Tick the products to move": "Marca los productos que quieres mover"
 }

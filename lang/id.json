@@ -23745,5 +23745,21 @@
     "The WhatsApp signup was not finished.": "Pendaftaran WhatsApp tidak diselesaikan.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Nomor tetap ada di aplikasi WhatsApp Business di ponsel toko, dan Aiku juga membaca dan menulis lewat nomor itu.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Panggilan WhatsApp ke nomor ini hanya berdering di ponsel toko, tidak di Aiku. Buka aplikasi WhatsApp Business di ponsel itu setidaknya setiap 13 hari, atau Meta akan memutus nomor ini dari Aiku.",
-    "Media shared on the WhatsApp Business app": "Media yang dibagikan di aplikasi WhatsApp Business"
+    "Media shared on the WhatsApp Business app": "Media yang dibagikan di aplikasi WhatsApp Business",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier sudah menjual SKO ini sebagai :code, :cost per unit: SKO-nya dibeli dari :supplier dan :old dihentikan",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier belum menjual SKO ini: produk pindah ke sana beserta riwayatnya, dengan detail ini",
+    "Code, name, contact or product code": "Kode, nama, kontak atau kode produk",
+    "Has :count of :total": "Punya :count dari :total",
+    "Has all products": "Punya semua produk",
+    "Has this product": "Punya produk ini",
+    "Move :count products to another supplier": "Pindahkan :count produk ke supplier lain",
+    "Move to another supplier (:count)": "Pindahkan ke supplier lain (:count)",
+    "Nickname": "Nama panggilan",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Tidak ada supplier lain dari agen ini yang menjual produk ini: hapus centang untuk melihat semuanya",
+    "Only suppliers that sell all :count products": "Hanya supplier yang menjual semua :count produk",
+    "Only suppliers that sell this product": "Hanya supplier yang menjual produk ini",
+    "Open supplier :supplier": "Buka supplier :supplier",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "SKO sama dengan :code :name, yang pindah ke :supplier: SKO-nya dibeli dari produk itu dan :old dihentikan",
+    "Search code, company, nickname or contact": "Cari kode, perusahaan, nama panggilan atau kontak",
+    "Tick the products to move": "Centang produk yang akan dipindahkan"
 }

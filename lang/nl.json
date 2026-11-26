@@ -10108,5 +10108,21 @@
     "The WhatsApp signup was not finished.": "De WhatsApp-aanmelding is niet afgerond.",
     "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Het nummer blijft in de WhatsApp Business-app op de winkeltelefoon en Aiku leest en schrijft er ook mee.",
     "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "WhatsApp-oproepen naar dit nummer gaan alleen over op de winkeltelefoon, niet in Aiku. Open de WhatsApp Business-app op die telefoon minstens elke 13 dagen, anders koppelt Meta het nummer los van Aiku.",
-    "Media shared on the WhatsApp Business app": "Media gedeeld in de WhatsApp Business-app"
+    "Media shared on the WhatsApp Business app": "Media gedeeld in de WhatsApp Business-app",
+    ":supplier already sells this SKO as :code, :cost a unit: its SKOs are bought from :supplier and :old is discontinued": ":supplier verkoopt deze SKO al als :code, voor :cost per stuk: de SKO's worden bij :supplier ingekocht en :old wordt stopgezet",
+    ":supplier does not sell this SKO yet: the product moves there with its history, under these details": ":supplier verkoopt deze SKO nog niet: het product gaat daarheen met zijn geschiedenis, met deze gegevens",
+    "Code, name, contact or product code": "Code, naam, contact of productcode",
+    "Has :count of :total": "Heeft :count van :total",
+    "Has all products": "Heeft alle producten",
+    "Has this product": "Heeft dit product",
+    "Move :count products to another supplier": ":count producten naar een andere leverancier verplaatsen",
+    "Move to another supplier (:count)": "Naar een andere leverancier verplaatsen (:count)",
+    "Nickname": "Bijnaam",
+    "No other supplier of the agent sells these products: untick the box to see them all": "Geen andere leverancier van de agent verkoopt deze producten: vink het vakje uit om ze allemaal te zien",
+    "Only suppliers that sell all :count products": "Alleen leveranciers die alle :count producten verkopen",
+    "Only suppliers that sell this product": "Alleen leveranciers die dit product verkopen",
+    "Open supplier :supplier": "Leverancier :supplier openen",
+    "Same SKO as :code :name, which moves to :supplier: its SKOs are bought from that product and :old is discontinued": "Zelfde SKO als :code :name, dat naar :supplier gaat: de SKO's worden via dat product ingekocht en :old wordt stopgezet",
+    "Search code, company, nickname or contact": "Zoek op code, bedrijf, bijnaam of contact",
+    "Tick the products to move": "Vink de producten aan die je wilt verplaatsen"
 }
