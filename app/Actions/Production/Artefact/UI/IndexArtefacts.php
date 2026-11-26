@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Production\Artefact\GetArtefactsCostCompleteness;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Enums\UI\Production\ArtefactsTabsEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
@@ -104,6 +105,7 @@ class IndexArtefacts extends OrgAction
     protected function getElementGroups(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
     {
         $assignmentCounts = $this->getAssignmentCounts($parent);
+        $costCounts       = GetArtefactsCostCompleteness::run($this->parentColumn($parent), $parent->id)['counts'];
 
         return [
             'state' => [
@@ -154,6 +156,18 @@ class IndexArtefacts extends OrgAction
                     $this->applyAssignmentFilter($query, 'artefacts.shelf_life_days', $elements);
                 },
             ],
+            'costing' => [
+                'label'    => __('Costing'),
+                'elements' => [
+                    'complete'          => [__('Cost complete'), $costCounts['complete']],
+                    'no_labour'         => [__('Step without target'), $costCounts['no_labour']],
+                    'unpriced_material' => [__('Material without cost'), $costCounts['unpriced_material']],
+                    'no_recipe'         => [__('No recipe materials'), $costCounts['no_recipe']],
+                ],
+                'engine'   => function ($query, $elements) {
+                    $query->whereRaw('('.GetArtefactsCostCompleteness::statusSql().') IN ('.implode(',', array_fill(0, count($elements), '?')).')', $elements);
+                },
+            ],
             'family' => [
                 'label'    => __('Family'),
                 'elements' => [
@@ -170,17 +184,20 @@ class IndexArtefacts extends OrgAction
     /**
      * @return array{department_assigned: int, department_unassigned: int, family_assigned: int, family_unassigned: int, batch_size_assigned: int, batch_size_unassigned: int, batch_size_fractional: int, shelf_life_assigned: int, shelf_life_unassigned: int}
      */
-    private function getAssignmentCounts(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
+    private function parentColumn(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): string
     {
-        $column = match (true) {
+        return match (true) {
             $parent instanceof Group              => 'group_id',
             $parent instanceof Organisation       => 'organisation_id',
             $parent instanceof ArtefactDepartment => 'artefact_department_id',
             $parent instanceof ArtefactFamily     => 'artefact_family_id',
             default                               => 'production_id',
         };
+    }
 
-        $counts = Artefact::where($column, $parent->id)
+    private function getAssignmentCounts(Group|Production|Organisation|ArtefactDepartment|ArtefactFamily $parent): array
+    {
+        $counts = Artefact::where($this->parentColumn($parent), $parent->id)
             ->selectRaw('count(artefact_department_id) as department_assigned')
             ->selectRaw('count(*) - count(artefact_department_id) as department_unassigned')
             ->selectRaw('count(artefact_family_id) as family_assigned')

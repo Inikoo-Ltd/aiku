@@ -44,6 +44,7 @@ use App\Enums\Production\RawMaterial\RawMaterialTypeEnum;
 use App\Enums\Production\RawMaterial\RawMaterialUnitEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
+use App\Enums\UI\Production\ArtefactsTabsEnum;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTask;
@@ -548,6 +549,65 @@ test('crafts dashboard families card carries the family state counts', function 
             ->and($tooltips)->toContain('Discontinued')
             ->and(collect($card['metas'])->firstWhere('tooltip', 'Discontinued')['count'])->toBeGreaterThanOrEqual(1);
     });
+});
+
+test('cost completeness puts each active artefact in its first gap and the artefacts list filters by it', function () {
+    $completeness = fn () => \App\Actions\Production\Artefact\GetArtefactsCostCompleteness::run('production_id', $this->production->id)['counts'];
+    $before       = $completeness();
+
+    $material = fn (float $unitCost) => StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'CC-'.strtoupper(substr(uniqid(), -6)),
+        'description' => 'Cost completeness material',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => $unitCost,
+    ]);
+    $artefact = function (string $status, ?float $unitCost, ?float $standardRate) use ($material) {
+        $artefact = StoreArtefact::make()->action($this->production, [
+            'state' => ArtefactStateEnum::ACTIVE->value,
+            'code'  => 'CC-'.$status.'-'.strtoupper(substr(uniqid(), -5)),
+            'name'  => 'Cost completeness '.$status,
+        ]);
+        if ($unitCost !== null) {
+            $step = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
+            $step->update(['standard_rate' => $standardRate]);
+            RecipeStepRawMaterial::create([
+                'group_id'                     => $this->production->group_id,
+                'organisation_id'              => $this->production->organisation_id,
+                'artefact_manufacture_task_id' => $step->id,
+                'raw_material_id'              => $material($unitCost)->id,
+                'quantity_per_unit'            => 1,
+            ]);
+        }
+
+        return $artefact;
+    };
+
+    $made = [
+        'complete'          => $artefact('complete', 2.5, 30),
+        'no_labour'         => $artefact('no_labour', 2.5, null),
+        'unpriced_material' => $artefact('unpriced_material', 0, 30),
+        'no_recipe'         => $artefact('no_recipe', null, null),
+    ];
+
+    $after = $completeness();
+    expect(array_map(fn (string $status) => $after[$status] - $before[$status], array_combine(array_keys($made), array_keys($made))))
+        ->toBe(['complete' => 1, 'no_labour' => 1, 'unpriced_material' => 1, 'no_recipe' => 1]);
+
+    foreach ($made as $status => $madeArtefact) {
+        $listed = get(route('grp.org.productions.show.crafts.artefacts.index', [
+            $this->organisation->slug, $this->production->slug, 'artefacts_elements[costing]' => $status, 'per_page' => 1000,
+        ]))->assertOk()->viewData('page')['props'][ArtefactsTabsEnum::ARTEFACTS->value]['data'];
+
+        expect(collect($listed)->pluck('code'))->toContain($madeArtefact->code);
+    }
+
+    get(route('grp.org.productions.show.crafts.dashboard', [$this->organisation->slug, $this->production->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('costCompleteness.counts', $after)
+            ->where('costCompleteness.total', array_sum($after)));
 });
 
 test('set artefacts batch size in bulk and rehydrate the family', function () {

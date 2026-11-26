@@ -47,6 +47,7 @@ import SalesAnalysisMovers from "@/Components/SalesAnalysis/SalesAnalysisMovers.
 import { useLayoutStore } from "@/Stores/layout"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import ArtefactCostCompletenessMeter from "@/Components/Production/ArtefactCostCompletenessMeter.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
   faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faTruckContainer
@@ -54,6 +55,7 @@ library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppi
 
 const props = defineProps<{
   pageHead: PageHeadingTypes
+  cost_completeness?: InstanceType<typeof ArtefactCostCompletenessMeter>['$props']['status'] | null
   tabs: {
     current: string
     navigation: {}
@@ -141,6 +143,9 @@ const isOpenModalAddShop = ref(false)
   </PageHeading>
 
   <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+  <div v-if="currentTab === 'showcase' && cost_completeness?.total" class="px-4 pt-4">
+    <ArtefactCostCompletenessMeter :status="cost_completeness" />
+  </div>
   <div v-if="currentTab === 'showcase'" class="grid gap-4 px-4 pt-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
     <SalesAnalysisTeaser :teaser="sales_analysis_teaser" />
     <SalesAnalysisMovers :teaser="sales_analysis_teaser" />

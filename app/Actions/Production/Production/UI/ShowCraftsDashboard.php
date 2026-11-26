@@ -11,6 +11,7 @@ namespace App\Actions\Production\Production\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\GetArtefactsCostCompleteness;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\Artefact\UI\ShowDevelopmentRoom;
 use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
@@ -94,6 +95,7 @@ class ShowCraftsDashboard extends OrgAction
 
                 ],
                 'stats' => $this->withoutUnreachableLinks($this->getStats($production, $request->route()->originalParameters()), $request->user(), $production),
+                'costCompleteness' => GetArtefactsCostCompleteness::make()->forProduction($production, $request->user()),
                 'statsBoxNegativeTitle' => __('Artefact problems'),
                 'statsBoxNegative' => $this->withoutUnreachableLinks([
                     [
