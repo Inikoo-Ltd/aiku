@@ -189,20 +189,23 @@ const groups = computed(() => {
 
 <template>
     <div class="flex h-full w-full min-w-0 flex-col text-[#1d1c1d]">
-        <form class="shrink-0 border-b border-[#e2e2e2] bg-white px-4 py-2.5" role="search" @submit.prevent="search()">
-            <div class="flex items-center gap-2">
-                <div class="relative min-w-0 flex-1">
+        <form class="shrink-0 bg-white" :class="isActive && 'border-b border-[#e2e2e2] px-4 py-2.5'" @submit.prevent="search()">
+            <Teleport to="#VerbaTopSearch" defer>
+                <div class="relative min-w-0 flex-1" role="search">
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-[#616061]" fixed-width aria-hidden="true" />
                     <InputText
                         v-model="query"
-                        :placeholder="ctrans('Search Slack messages…')"
-                        :aria-label="ctrans('Search Slack messages')"
+                        :placeholder="ctrans('Search V·Desks…')"
+                        :aria-label="ctrans('Search V·Desks messages')"
                         maxlength="200"
                         size="small"
-                        class="w-full !rounded-md !border-[#dddddd] !py-1.5 !pl-8 !text-[13px]"
+                        class="w-full !rounded-md !border-[#dddddd] !py-1 !pl-8 !text-[13px]"
                         :class="fieldFocusClass"
-                        @focus="showResults = true" />
+                        @focus="showResults = true"
+                        @keydown.enter.prevent="search()" />
                 </div>
+            </Teleport>
+            <div v-if="isActive" class="flex items-center justify-end gap-2">
                 <button v-if="isActive && !showResults" type="button" class="inline-flex h-8 shrink-0 items-center gap-x-1.5 rounded-md border border-[#dddddd] px-3 text-[13px] font-bold hover:bg-[#f8f8f8]" @click="showResults = true">
                     <FontAwesomeIcon icon="fal fa-arrow-left" fixed-width aria-hidden="true" />{{ ctrans("Back to results") }}
                 </button>

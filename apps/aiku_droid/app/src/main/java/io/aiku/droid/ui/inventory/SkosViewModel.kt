@@ -10,6 +10,7 @@ import io.aiku.droid.data.api.OrgStockFamily
 import io.aiku.droid.data.api.OrgStockRow
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.SkoBucket
+import io.aiku.droid.data.api.SkoFilterOptions
 import io.aiku.droid.data.api.SkoCounts
 import io.aiku.droid.data.api.SkoQuery
 import io.aiku.droid.data.api.SkoSort
@@ -36,15 +37,26 @@ data class SkoFilter(
     val search: String = "",
     val familyId: Long? = null,
     val sort: SkoSort? = null,
+    val stockStatus: String? = null,
+    val locationType: String? = null,
 ) {
-    val activeFilterCount: Int get() = if (familyId != null) 1 else 0
+    val activeFilterCount: Int get() = listOfNotNull(familyId, stockStatus, locationType).size
 
     val isFiltered: Boolean get() = activeFilterCount > 0 || sort != null
 
     fun cleared(): SkoFilter = SkoFilter(bucket = bucket, search = search)
 
     fun query(page: Int, perPage: Int): SkoQuery =
-        SkoQuery(bucket = bucket, familyId = familyId, search = search.trim().takeIf { it.isNotEmpty() }, sort = sort, page = page, perPage = perPage)
+        SkoQuery(
+            bucket = bucket,
+            familyId = familyId,
+            search = search.trim().takeIf { it.isNotEmpty() },
+            sort = sort,
+            stockStatus = stockStatus,
+            locationType = locationType,
+            page = page,
+            perPage = perPage,
+        )
 }
 
 data class SkoFilterPreview(val filter: SkoFilter, val total: Int)
@@ -56,6 +68,7 @@ data class SkosUiState(
     val currencyCode: String? = null,
     val preview: SkoFilterPreview? = null,
     val families: List<OrgStockFamily>? = null,
+    val filterOptions: SkoFilterOptions? = null,
     val lookingUpCode: String? = null,
     val scanOutcome: StockScanOutcome? = null,
     val isSessionExpired: Boolean = false,
@@ -217,6 +230,7 @@ class SkosViewModel(
                         list = current.list.loaded(result.value.rows, result.value.meta) { it.listKey() },
                         counts = result.value.counts ?: current.counts,
                         currencyCode = result.value.currencyCode ?: current.currencyCode,
+                        filterOptions = result.value.filterOptions ?: current.filterOptions,
                     )
                 }
                 GoodsOutResult.SessionExpired -> expireSession()

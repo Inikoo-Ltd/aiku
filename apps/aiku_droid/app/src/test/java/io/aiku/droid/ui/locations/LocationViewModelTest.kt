@@ -1,8 +1,8 @@
 package io.aiku.droid.ui.locations
 
-import io.aiku.droid.ui.sync.FakeOfflineWork
 import io.aiku.droid.data.api.AuditCount
 import io.aiku.droid.data.api.Edited
+import io.aiku.droid.data.api.EmptyLocationsRemoval
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.ListMeta
 import io.aiku.droid.data.api.LocationDetail
@@ -14,11 +14,14 @@ import io.aiku.droid.data.api.LocationSummary
 import io.aiku.droid.data.api.LocationWrite
 import io.aiku.droid.data.api.LocationWriteOutcome
 import io.aiku.droid.data.api.LocationsOverview
-import io.aiku.droid.data.api.EmptyLocationsRemoval
+import io.aiku.droid.data.api.OrgStockDetail
+import io.aiku.droid.data.api.OrgStockWrite
+import io.aiku.droid.data.api.OrgStockWriteOutcome
 import io.aiku.droid.data.api.PickingChannel
 import io.aiku.droid.data.api.ScanLookup
 import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.ScannedLocation
+import io.aiku.droid.data.api.ScannedSko
 import io.aiku.droid.data.api.StockLevel
 import io.aiku.droid.data.api.StockRights
 import io.aiku.droid.data.api.WarehouseAbilities
@@ -27,6 +30,7 @@ import io.aiku.droid.ui.inventory.FakeInventoryApi
 import io.aiku.droid.ui.inventory.FakeSessions
 import io.aiku.droid.ui.inventory.PickedLocation
 import io.aiku.droid.ui.inventory.StockEvent
+import io.aiku.droid.ui.sync.FakeOfflineWork
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -247,5 +251,36 @@ class LocationViewModelTest {
         assertTrue(state.overview?.emptyLocationsRemoval?.enabled == true)
         assertEquals(3, state.overview?.emptyLocationsRemoval?.toRemove)
         assertEquals(StockEvent.Done(AutoRemoveChange(enabled = true)), state.event)
+    }
+
+    @Test
+    fun `an SKO found on the shelf opens its line, or is added to the location first`() {
+        val location = loaded()
+
+        api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "5060", type = ScanMatch.SKO, sko = ScannedSko(id = 77, code = "AWO-12")))
+        location.findSko("5060")
+        assertEquals(FoundSko.Here(5501), location.state.value.foundSko)
+        assertTrue(api.orgStockWrites.isEmpty())
+
+        location.foundSkoHandled()
+        val found = LocationOrgStock(id = 88, code = "LAV-10", type = "storing", locationOrgStockId = 5600)
+        api.location = GoodsOutResult.Loaded(detail(skos = listOf(sko, found)))
+        api.orgStockWriteResult = GoodsOutResult.Loaded(OrgStockWriteOutcome(orgStock = OrgStockDetail(id = 88, code = "LAV-10"), status = "done", message = null))
+        api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "7070", type = ScanMatch.SKO, sko = ScannedSko(id = 88, code = "LAV-10")))
+        location.findSko("7070")
+        assertEquals(OrgStockWrite.AddLocation(locationId = 220, type = LocationStockType.Storing), api.orgStockWrites.single())
+        assertEquals(FoundSko.Here(5600), location.state.value.foundSko)
+        assertEquals(listOf(5501L, 5600L), location.state.value.location?.orgStocks?.map { it.locationOrgStockId })
+
+        location.foundSkoHandled()
+        api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "A-01", type = ScanMatch.LOCATION))
+        location.findSko("A-01")
+        assertEquals(FoundSko.NotSko("A-01"), location.state.value.foundSko)
+
+        location.foundSkoHandled()
+        api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "9090", type = ScanMatch.SKO, sko = ScannedSko(id = 99, code = "NEW")))
+        api.orgStockWriteResult = GoodsOutResult.Forbidden("You can not add locations")
+        location.findSko("9090")
+        assertEquals(FoundSko.Refused("You can not add locations", GoodsOutProblem.Forbidden), location.state.value.foundSko)
     }
 }

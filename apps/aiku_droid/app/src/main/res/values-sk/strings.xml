@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Audit lokácie</string>
     <string name="locations_audit_one_subtitle">Spočítajte toto SKO na tejto lokácii</string>
     <string name="locations_audit_saved">Audit %1$s uložený</string>
-    <string name="locations_audit_subtitle">Spočítajte každé SKO na tejto lokácii</string>
     <string name="locations_audit_title">Audit %1$s</string>
     <string name="locations_audited">Auditované %1$s</string>
     <string name="locations_auto_remove">Automaticky odstraňovať prázdne lokácie</string>
@@ -2767,4 +2766,40 @@
         <item quantity="many">Vyriešené %1$d z %2$d riadka</item>
         <item quantity="other">Vyriešené %1$d z %2$d riadkov</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Stav zásob</string>
+    <string name="inventory_filter_location_type">Typ umiestnenia</string>
+    <string name="goodsin_add_extra">Pridať položku navyše</string>
+    <string name="goodsin_add_extra_question">Pridať ako položku navyše?</string>
+    <string name="goodsin_add_extra_body">Produkt, ktorý prišiel, ale nie je na žiadnej objednávke tejto dodávky</string>
+    <string name="goodsin_add_extra_search">Hľadať v produktoch dodávateľa</string>
+    <string name="goodsin_add_extra_failed">Produkty na pridanie sa nepodarilo načítať</string>
+    <string name="goodsin_add_extra_none">Žiadny produkt na pridanie. Skúste iné hľadanie.</string>
+    <string name="goodsin_add_extra_not_supplied">Toto SKO nie je produktom tohto dodávateľa, preto ho sem nemožno pridať.</string>
+    <string name="goodsin_add_extra_quantity">Koľko SKO prišlo</string>
+    <string name="goodsin_add_extra_note">Pridá sa ako prijaté a spočítané. Umiestnite ho ako ostatné položky.</string>
+    <string name="locations_audit_blind_subtitle">Spočítajte, čo je v regáli. Množstvá z Aiku sa ukážu po dokončení.</string>
+    <string name="locations_audit_complete">Dokončiť audit</string>
+    <string name="locations_audit_nothing_counted">Najprv spočítajte aspoň jedno SKO.</string>
+    <string name="locations_audit_found_sko">SKO nájdené tu (naskenovať)</string>
+    <string name="locations_audit_finding_sko">Hľadá sa %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s nie je SKO</string>
+    <string name="locations_audit_counted">Spočítané %1$s</string>
+    <string name="locations_audit_to_count">Na spočítanie</string>
+    <string name="locations_audit_count_done">Hotovo: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: spočítané vs. Aiku</string>
+    <string name="locations_audit_summary_subtitle">Skontrolujte každý rozdiel, uveďte dôvod a uložte.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Pridať %1$s SKO %2$s</item>
+        <item quantity="few">Pridať %1$s SKO %2$s</item>
+        <item quantity="many">Pridať %1$s SKO %2$s</item>
+        <item quantity="other">Pridať %1$s SKO %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Dokončiť audit · zostáva %d</item>
+        <item quantity="few">Dokončiť audit · zostávajú %d</item>
+        <item quantity="many">Dokončiť audit · zostáva %d</item>
+        <item quantity="other">Dokončiť audit · zostáva %d</item>
+    </plurals>
+    <string name="filter_search">Hľadať</string>
+    <string name="filter_no_match">Nič nezodpovedá</string>
 </resources>

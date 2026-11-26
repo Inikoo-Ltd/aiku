@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Locatie controleren</string>
     <string name="locations_audit_one_subtitle">Tel deze SKO op deze locatie</string>
     <string name="locations_audit_saved">Controle van %1$s opgeslagen</string>
-    <string name="locations_audit_subtitle">Tel elke SKO op deze locatie</string>
     <string name="locations_audit_title">%1$s controleren</string>
     <string name="locations_audited">Gecontroleerd %1$s</string>
     <string name="locations_auto_remove">Lege locaties automatisch verwijderen</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%1$d van %2$d regel afgehandeld</item>
         <item quantity="other">%1$d van %2$d regels afgehandeld</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Voorraadstatus</string>
+    <string name="inventory_filter_location_type">Type locatie</string>
+    <string name="goodsin_add_extra">Extra artikel toevoegen</string>
+    <string name="goodsin_add_extra_question">Toevoegen als extra artikel?</string>
+    <string name="goodsin_add_extra_body">Een product dat is binnengekomen maar op geen enkele inkooporder van deze levering staat</string>
+    <string name="goodsin_add_extra_search">Zoek in de producten van de leverancier</string>
+    <string name="goodsin_add_extra_failed">De producten die je kunt toevoegen konden niet worden geladen</string>
+    <string name="goodsin_add_extra_none">Geen product om toe te voegen. Probeer een andere zoekopdracht.</string>
+    <string name="goodsin_add_extra_not_supplied">Deze SKO is geen product van deze leverancier en kan hier niet worden toegevoegd.</string>
+    <string name="goodsin_add_extra_quantity">Hoeveel SKO’s er zijn binnengekomen</string>
+    <string name="goodsin_add_extra_note">Wordt toegevoegd als ontvangen en geteld. Zet het weg zoals de andere artikelen.</string>
+    <string name="locations_audit_blind_subtitle">Tel wat er in het schap ligt. De aantallen van Aiku verschijnen als je klaar bent.</string>
+    <string name="locations_audit_complete">Controle afronden</string>
+    <string name="locations_audit_nothing_counted">Tel eerst minstens één SKO.</string>
+    <string name="locations_audit_found_sko">Hier gevonden SKO (scannen)</string>
+    <string name="locations_audit_finding_sko">%1$s opzoeken…</string>
+    <string name="locations_audit_found_not_sko">%1$s is geen SKO</string>
+    <string name="locations_audit_counted">Geteld %1$s</string>
+    <string name="locations_audit_to_count">Te tellen</string>
+    <string name="locations_audit_count_done">Klaar: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: geteld vs. Aiku</string>
+    <string name="locations_audit_summary_subtitle">Controleer elk verschil, geef de reden en sla op.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">%1$s SKO van %2$s toevoegen</item>
+        <item quantity="other">%1$s SKO’s van %2$s toevoegen</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Controle afronden · nog %d</item>
+        <item quantity="other">Controle afronden · nog %d</item>
+    </plurals>
+    <string name="filter_search">Zoeken</string>
+    <string name="filter_no_match">Niets gevonden</string>
 </resources>

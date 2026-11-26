@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.goodsin
 
+import io.aiku.droid.data.api.AddableItem
 import io.aiku.droid.data.api.CustomerReturn
 import io.aiku.droid.data.api.DeliveryNoteAction
 import io.aiku.droid.data.api.GoodsInApi
@@ -51,6 +52,14 @@ class FakeGoodsInApi : GoodsInApi {
         deliveryWrites += write
         deliveryWriteGate?.await()
         return deliveryWriteResults(write)
+    }
+
+    val addableQueries = mutableListOf<Pair<String?, Long?>>()
+    var addable: List<AddableItem> = emptyList()
+
+    override suspend fun addableItems(token: String, warehouseId: Long, stockDeliveryId: Long, search: String?, orgStockId: Long?): GoodsOutResult<List<AddableItem>> {
+        addableQueries += search to orgStockId
+        return GoodsOutResult.Loaded(addable.filter { orgStockId == null || it.sko?.id == orgStockId })
     }
 
     override suspend fun returns(token: String, warehouseId: Long, query: ReturnQuery): GoodsOutResult<ReturnPage> {

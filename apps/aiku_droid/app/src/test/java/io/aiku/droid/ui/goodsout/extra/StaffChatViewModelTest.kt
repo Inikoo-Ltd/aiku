@@ -72,6 +72,32 @@ class StaffChatViewModelTest {
     }
 
     @Test
+    fun `while live updates are connected the chat waits for a message instead of polling`() {
+        api.pages[ChatPageQuery.Latest] = ChatMessagePage(data = listOf(message(1)))
+        api.pages[ChatPageQuery.After(1)] = ChatMessagePage(data = listOf(message(2)))
+        var isLive = true
+        val viewModel = StaffChatViewModel(api, sessions, ChatContextKind.DeliveryNote, contextId = 9, isLive = { isLive })
+
+        viewModel.onVisible()
+        dispatcher.scheduler.advanceTimeBy(CHAT_POLL_MILLIS * 3)
+        assertEquals(listOf<ChatPageQuery>(ChatPageQuery.Latest), api.queries)
+
+        viewModel.onLiveMessage()
+        assertEquals(listOf<ChatPageQuery>(ChatPageQuery.Latest, ChatPageQuery.After(1)), api.queries)
+        assertEquals(listOf(1L, 2L), viewModel.state.value.messages.map { it.id })
+
+        isLive = false
+        api.pages[ChatPageQuery.After(2)] = ChatMessagePage(data = emptyList())
+        dispatcher.scheduler.advanceTimeBy(CHAT_POLL_MILLIS + 1)
+        assertEquals(ChatPageQuery.After(2), api.queries.last())
+
+        viewModel.onHidden()
+        val asked = api.queries.size
+        viewModel.onLiveMessage()
+        assertEquals(asked, api.queries.size)
+    }
+
+    @Test
     fun `older messages load before the oldest one and sending appends the stored message`() {
         api.pages[ChatPageQuery.Latest] = ChatMessagePage(data = listOf(message(5), message(6)), hasMore = true)
         api.pages[ChatPageQuery.Before(5)] = ChatMessagePage(data = listOf(message(3), message(4)), hasMore = false)

@@ -40,6 +40,7 @@ import io.aiku.droid.data.api.ChannelCounts
 import io.aiku.droid.data.api.DeliveryNoteBucket
 import io.aiku.droid.data.api.DispatchPerson
 import io.aiku.droid.data.api.DispatchRole
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AikuCard
@@ -57,8 +58,11 @@ import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.goodsout.extra.KICKER_SEPARATOR
 import io.aiku.droid.ui.goodsout.extra.sessionPersonName
+import io.aiku.droid.ui.live.LIVE_BACKLOG_EVENTS
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.navigation.PickingSessionsRoute
@@ -87,6 +91,7 @@ fun GoodsOutBacklogScreen(backlog: GoodsOutBacklogViewModel) {
     )
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { backlog.onStart() }
+    LiveEffect(channel = LiveChannelNames.dispatchingBacklog(LocalWarehouse.current.organisation.id), events = LIVE_BACKLOG_EVENTS) { backlog.onStart() }
 
     RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         if (state.isSessionExpired) {

@@ -9,6 +9,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionTypeEnum;
@@ -72,6 +73,7 @@ use App\Models\Dispatching\Trolley;
  */
 class PickingSession extends Model
 {
+    use BroadcastsMobileRecordChanges;
     use HasFactory;
     use HasSlug;
     use SendsWorkNotifications;

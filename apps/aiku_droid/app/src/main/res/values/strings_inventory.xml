@@ -158,6 +158,8 @@
 
     <string name="inventory_filter_title">Filter SKOs</string>
     <string name="inventory_filter_family">SKO family</string>
+    <string name="inventory_filter_stock_status">Stock status</string>
+    <string name="inventory_filter_location_type">Location type</string>
     <string name="inventory_filter_sort">Sort by</string>
     <string name="inventory_sort_reference">Reference</string>
     <string name="inventory_sort_name">Name</string>

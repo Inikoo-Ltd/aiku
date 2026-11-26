@@ -88,6 +88,7 @@ private data class OrgStockListResponse(
     val meta: ListMeta = ListMeta(),
     val counts: SkoCounts? = null,
     @SerialName("currency_code") val currencyCode: String? = null,
+    val filters: SkoFilterOptions? = null,
 )
 
 @Serializable
@@ -133,6 +134,8 @@ object InventoryResponses {
         query.familyId?.let { "family_id" to it.toString() },
         query.search.trimmedOrNull()?.let { "q" to it },
         query.sort?.let { "sort" to it.key },
+        query.stockStatus?.let { "stock_status" to it },
+        query.locationType?.let { "location_type" to it },
         "page" to query.page.toString(),
         "per_page" to query.perPage.toString(),
     )
@@ -285,7 +288,7 @@ object InventoryResponses {
 
     fun parseOrgStocks(statusCode: Int, body: String): GoodsOutResult<OrgStockPage> = when (statusCode) {
         HTTP_OK -> decode<OrgStockListResponse>(body)
-            ?.let { GoodsOutResult.Loaded(OrgStockPage(rows = it.data, meta = it.meta, counts = it.counts, currencyCode = it.currencyCode)) }
+            ?.let { GoodsOutResult.Loaded(OrgStockPage(rows = it.data, meta = it.meta, counts = it.counts, currencyCode = it.currencyCode, filterOptions = it.filters)) }
             ?: GoodsOutResult.ServerError(statusCode)
         else -> GoodsOutResponses.failure(statusCode, body)
     }

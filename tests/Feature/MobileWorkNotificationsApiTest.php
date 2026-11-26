@@ -12,6 +12,12 @@
 namespace Tests\Feature;
 
 use App\Actions\CRM\WebUser\StoreWebUser;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Broadcasting\BroadcastManager;
+use App\Events\BroadcastUserPermissionsChanged;
+use App\Events\BroadcastMobileRecordChanged;
+use App\Broadcasting\MobileRecordChannel;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToUnassigned;
@@ -30,6 +36,8 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Exceptions\FcmAccessTokenRefused;
 use App\Exceptions\FcmMessageRejected;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Language;
 use App\Models\Inventory\Warehouse;
@@ -764,4 +772,99 @@ test('without Firebase credentials nothing is pushed and the inbox still gets th
 
     Http::assertNothingSent();
     expect(wnEvents($picker))->toBe(['delivery_note:assigned']);
+});
+
+test('the delivery note, stock movement and low stock audit channels are for staff who may see them, never a customer', function () {
+    $note    = wnNote($this, ['state' => DeliveryNoteStateEnum::HANDLING]);
+    $viewer  = wnWorker($this);
+    $nobody  = wnWorker($this, []);
+    createWebsite($this->shop);
+    $webUser = StoreWebUser::make()->action($this->customer->refresh(), [
+        'username' => 'wn'.Str::lower(Str::random(10)),
+        'email'    => Str::lower(Str::random(10)).'@work-notices.test',
+        'password' => 'secret',
+    ]);
+    $channel = fn (string $name) => Broadcast::driver()->getChannels()->get($name);
+    $org     = $this->organisation->slug;
+
+    expect($channel('grp.dn.{deliveryNoteId}')($viewer, $note->id))->toBeTrue()
+        ->and($channel('grp.dn.{deliveryNoteId}')($nobody, $note->id))->toBeFalse()
+        ->and($channel('grp.dn.{deliveryNoteId}')($webUser, $note->id))->toBeFalse()
+        ->and($channel('grp.dn.{deliveryNoteId}')($viewer, 999999999))->toBeFalse()
+        ->and($channel('grp.{organisation}.stock_movement')($viewer, $org))->toBeTrue()
+        ->and($channel('grp.{organisation}.stock_movement')($viewer, 'no-such-organisation'))->toBeFalse()
+        ->and($channel('grp.{organisation}.stock_movement')($webUser, $org))->toBeFalse()
+        ->and($channel('grp.{organisation}.warehouse.{warehouse}.low_stock_audit')($viewer, $org, $this->warehouse->slug))->toBeTrue()
+        ->and($channel('grp.{organisation}.warehouse.{warehouse}.low_stock_audit')($nobody, $org, $this->warehouse->slug))->toBeFalse()
+        ->and($channel('grp.{organisation}.warehouse.{warehouse}.low_stock_audit')($webUser, $org, $this->warehouse->slug))->toBeFalse()
+        ->and($channel('grp.{organisation}.warehouse.{warehouse}.low_stock_audit')($viewer, 'no-such-organisation', $this->warehouse->slug))->toBeFalse();
+});
+
+test('an open record pings the staff app on its own channel, for those who may open it in the app', function () {
+    $picker    = wnWorker($this);
+    $newPicker = wnWorker($this);
+    $nobody    = wnWorker($this, []);
+    $note      = wnNote($this, ['state' => DeliveryNoteStateEnum::HANDLING, 'picker_user_id' => $picker->id]);
+    $pinged    = fn (string $type, int $id) => Event::dispatched(BroadcastMobileRecordChanged::class, fn (BroadcastMobileRecordChanged $event) => $event->type === $type && $event->id === $id)->count();
+
+    Event::fake([BroadcastMobileRecordChanged::class]);
+    UpdateDeliveryNote::make()->action($note, ['picker_user_id' => $newPicker->id]);
+    expect($pinged('delivery_note', $note->id))->toBeGreaterThan(0);
+
+    Event::fake([BroadcastMobileRecordChanged::class]);
+    WorkNotifier::modified($note, 'lines');
+    BroadcastMobileRecordChanged::dispatchFor(new DeliveryNoteItem(['delivery_note_id' => $note->id]));
+    BroadcastMobileRecordChanged::dispatchFor(new StockDeliveryItem(['stock_delivery_id' => 77]));
+    BroadcastMobileRecordChanged::dispatchFor(new Warehouse());
+    expect($pinged('delivery_note', $note->id))->toBe(2)
+        ->and($pinged('stock_delivery', 77))->toBe(1)
+        ->and(Event::dispatched(BroadcastMobileRecordChanged::class)->count())->toBe(3);
+
+    $event = new BroadcastMobileRecordChanged('delivery_note', $note->id);
+    expect($event->broadcastOn()[0]->name)->toBe('private-grp.mobile.delivery_note.'.$note->id)
+        ->and($event->broadcastAs())->toBe('record-changed')
+        ->and($event->uniqueId())->toBe('delivery_note:'.$note->id);
+
+    $channel = new MobileRecordChannel();
+    expect($channel->join($picker, 'delivery_note', (string) $note->id))->toBeTrue()
+        ->and($channel->join($nobody, 'delivery_note', (string) $note->id))->toBeFalse()
+        ->and($channel->join($picker, 'invoice', (string) $note->id))->toBeFalse()
+        ->and($channel->join($picker, 'delivery_note', '1 or 1'))->toBeFalse();
+});
+
+test('a change of rights tells the user\'s open app to fetch its permissions again', function () {
+    $worker = wnWorker($this);
+    Event::fake([BroadcastUserPermissionsChanged::class]);
+
+    SetUserAuthorisedModels::run($worker);
+
+    Event::assertDispatched(BroadcastUserPermissionsChanged::class, fn (BroadcastUserPermissionsChanged $event) => $event->userId === $worker->id
+        && $event->broadcastOn()[0]->name === 'private-grp.personal.'.$worker->id
+        && $event->broadcastAs() === 'permissions-changed');
+});
+
+test('the app gets the websocket server and signs only its own channels with its token', function () {
+    $worker = wnWorker($this);
+    $other  = wnWorker($this);
+    $note   = wnNote($this, ['state' => DeliveryNoteStateEnum::HANDLING]);
+    config([
+        'broadcasting.default'                   => 'pusher',
+        'broadcasting.connections.pusher.key'    => 'aiku-test-key',
+        'broadcasting.connections.pusher.secret' => 'aiku-test-secret',
+        'broadcasting.connections.pusher.app_id' => '1',
+    ]);
+    app(BroadcastManager::class)->forgetDrivers();
+    require base_path('routes/channels.php');
+    wnActingAs($worker);
+    $auth   = fn (string $channel) => wnMobile('POST', 'grp.api.mobile.broadcasting.auth', [], ['socket_id' => '1234.5678', 'channel_name' => $channel]);
+
+    wnMobile('GET', 'grp.api.mobile.realtime')->assertOk()->assertJsonPath('data.key', 'aiku-test-key');
+
+    expect($auth('private-grp.personal.'.$worker->id)->assertOk()->json('auth'))->toStartWith('aiku-test-key:')
+        ->and($auth('private-grp.mobile.delivery_note.'.$note->id)->assertOk()->json('auth'))->toStartWith('aiku-test-key:');
+    $auth('private-grp.personal.'.$other->id)->assertForbidden();
+    $auth('private-grp.dn.'.$note->id)->assertUnprocessable()->assertJsonValidationErrors('channel_name');
+
+    config(['broadcasting.connections.pusher.key' => null]);
+    wnMobile('GET', 'grp.api.mobile.realtime')->assertOk()->assertJsonPath('data', null);
 });

@@ -2,7 +2,9 @@ package io.aiku.droid.ui.goodsin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.aiku.droid.data.api.AddableItem
 import io.aiku.droid.data.api.CheckResult
+import io.aiku.droid.data.api.GoodsInActionKey
 import io.aiku.droid.data.api.GoodsInApi
 import io.aiku.droid.data.api.GoodsInResponses
 import io.aiku.droid.data.api.GoodsInWriteStatus
@@ -20,6 +22,7 @@ import io.aiku.droid.data.offline.OfflineWork
 import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.data.offline.QueuedActionState
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.goodsout.Choices
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.LocationFinder
@@ -28,6 +31,7 @@ import io.aiku.droid.ui.scan.scanProblem
 import io.aiku.droid.ui.sync.QueueEvent
 import io.aiku.droid.ui.sync.RecordQueue
 import io.aiku.droid.ui.sync.StatusGate
+import java.time.Instant
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +39,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
-import java.time.Instant
 
 private const val HTTP_OK = 200
 
@@ -47,7 +50,7 @@ sealed interface GoodsInEvent {
 sealed interface LineScanOutcome {
     data class Line(val itemId: Long) : LineScanOutcome
     data class Choose(val code: String, val itemIds: List<Long>) : LineScanOutcome
-    data class NotOnDelivery(val code: String) : LineScanOutcome
+    data class NotOnDelivery(val code: String, val skoId: Long? = null) : LineScanOutcome
     data class Failed(val code: String, val problem: ScanProblem) : LineScanOutcome
 }
 
@@ -67,8 +70,11 @@ data class StockDeliveryUiState(
     val pending: List<QueuedAction> = emptyList(),
     val copyAt: Instant? = null,
     val queueEvent: QueueEvent? = null,
+    val addable: Choices<AddableItem> = Choices(),
 ) {
     val isWorking: Boolean get() = working != null
+
+    val canAddItems: Boolean get() = delivery?.can(GoodsInActionKey.ADD_ITEM) == true
 
     val view: DeliveryView?
         get() {
@@ -130,6 +136,7 @@ class StockDeliveryViewModel(
     )
 
     private var loadJob: Job? = null
+    private var addableJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -250,7 +257,7 @@ class StockDeliveryViewModel(
                 is GoodsOutResult.Loaded -> {
                     val skoId = result.value.sko?.id?.takeIf { result.value.type == ScanMatch.SKO }
                     val lines = candidates.filter { skoId != null && it.sko?.id == skoId }.map { it.id }
-                    lineOutcome(scanned, lines)
+                    lineOutcome(scanned, lines, skoId)
                 }
                 is GoodsOutResult.NotFound -> LineScanOutcome.NotOnDelivery(scanned)
                 GoodsOutResult.SessionExpired -> null.also { expireSession() }
@@ -264,8 +271,24 @@ class StockDeliveryViewModel(
         mutableState.update { it.copy(scanOutcome = null) }
     }
 
-    private fun lineOutcome(code: String, itemIds: List<Long>): LineScanOutcome = when (itemIds.size) {
-        0 -> LineScanOutcome.NotOnDelivery(code)
+    fun loadAddable(search: String?, orgStockId: Long? = null) {
+        val token = token() ?: return
+        val delivery = mutableState.value.delivery ?: return
+        mutableState.update { it.copy(addable = it.addable.copy(isLoading = true, problem = null)) }
+        addableJob?.cancel()
+        addableJob = viewModelScope.launch {
+            when (val result = api.addableItems(token, warehouseId, delivery.id, search, orgStockId)) {
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(addable = Choices(items = result.value)) }
+                GoodsOutResult.SessionExpired -> expireSession()
+                else -> mutableState.update { it.copy(addable = it.addable.copy(isLoading = false, problem = result.problem())) }
+            }
+        }
+    }
+
+    fun addItem(itemId: Long, skoQuantity: Double) = act(StockDeliveryWrite.AddItem(itemId = itemId, skoQuantity = skoQuantity))
+
+    private fun lineOutcome(code: String, itemIds: List<Long>, skoId: Long? = null): LineScanOutcome = when (itemIds.size) {
+        0 -> LineScanOutcome.NotOnDelivery(code, skoId)
         1 -> LineScanOutcome.Line(itemIds.single())
         else -> LineScanOutcome.Choose(code = code, itemIds = itemIds)
     }

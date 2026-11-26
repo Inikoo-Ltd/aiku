@@ -43,6 +43,7 @@ import io.aiku.droid.data.api.ReturnPut
 import io.aiku.droid.data.api.ReturnState
 import io.aiku.droid.data.api.ReturnType
 import io.aiku.droid.data.api.ReturnWrite
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.data.offline.OfflineOperation
 import io.aiku.droid.data.offline.QueuedAction
 import io.aiku.droid.ui.components.AikuButton
@@ -73,6 +74,9 @@ import io.aiku.droid.ui.goodsout.deliveryNoteRoute
 import io.aiku.droid.ui.goodsout.organisationZone
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.inventory.momentText
+import io.aiku.droid.ui.live.LIVE_RECORD_EVENTS
+import io.aiku.droid.ui.live.LIVE_RECORD_RETURN
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.locations.LIST_SEPARATOR
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
@@ -107,6 +111,7 @@ fun GoodsInReturnScreen(customerReturn: ReturnViewModel, reference: String) {
     val state by customerReturn.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { customerReturn.onStart() }
+    LiveEffect(channel = state.customerReturn?.id?.let { LiveChannelNames.record(LIVE_RECORD_RETURN, it) }, events = LIVE_RECORD_EVENTS) { customerReturn.onStart() }
 
     RequireAbility(ability = Ability.ViewReturns, title = stringResource(R.string.module_goods_in), activeTab = MainTab.Menu) {
         val loaded = state.customerReturn

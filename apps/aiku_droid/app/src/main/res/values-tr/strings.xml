@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Lokasyonu say</string>
     <string name="locations_audit_one_subtitle">Bu lokasyondaki bu SKO\'yu sayın</string>
     <string name="locations_audit_saved">%1$s sayımı kaydedildi</string>
-    <string name="locations_audit_subtitle">Bu lokasyondaki her SKO\'yu sayın</string>
     <string name="locations_audit_title">%1$s sayımı</string>
     <string name="locations_audited">Denetlendi %1$s</string>
     <string name="locations_auto_remove">Boş lokasyonları otomatik kaldır</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%2$d satırdan %1$d tanesi çözüldü</item>
         <item quantity="other">%2$d satırdan %1$d tanesi çözüldü</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Stok durumu</string>
+    <string name="inventory_filter_location_type">Konum türü</string>
+    <string name="goodsin_add_extra">Ek kalem ekle</string>
+    <string name="goodsin_add_extra_question">Ek kalem olarak eklensin mi?</string>
+    <string name="goodsin_add_extra_body">Gelen ama bu teslimatın hiçbir satın alma siparişinde olmayan ürün</string>
+    <string name="goodsin_add_extra_search">Tedarikçinin ürünlerinde ara</string>
+    <string name="goodsin_add_extra_failed">Eklenebilecek ürünler yüklenemedi</string>
+    <string name="goodsin_add_extra_none">Eklenecek ürün yok. Başka bir arama deneyin.</string>
+    <string name="goodsin_add_extra_not_supplied">Bu SKO bu tedarikçinin ürünü değil, bu yüzden buraya eklenemez.</string>
+    <string name="goodsin_add_extra_quantity">Kaç SKO geldi</string>
+    <string name="goodsin_add_extra_note">Teslim alınmış ve sayılmış olarak eklenir. Diğer kalemler gibi yerleştirin.</string>
+    <string name="locations_audit_blind_subtitle">Raftta ne olduğunu sayın. Aiku’daki miktarlar bitirdiğinizde görünür.</string>
+    <string name="locations_audit_complete">Sayımı tamamla</string>
+    <string name="locations_audit_nothing_counted">Önce en az bir SKO sayın.</string>
+    <string name="locations_audit_found_sko">Burada bulunan SKO (tara)</string>
+    <string name="locations_audit_finding_sko">%1$s aranıyor…</string>
+    <string name="locations_audit_found_not_sko">%1$s bir SKO değil</string>
+    <string name="locations_audit_counted">Sayıldı: %1$s</string>
+    <string name="locations_audit_to_count">Sayılacak</string>
+    <string name="locations_audit_count_done">Tamam: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: sayılan ve Aiku</string>
+    <string name="locations_audit_summary_subtitle">Her farkı kontrol edin, nedenini seçin, sonra kaydedin.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">%2$s ürününden %1$s SKO ekle</item>
+        <item quantity="other">%2$s ürününden %1$s SKO ekle</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Sayımı tamamla · %d kaldı</item>
+        <item quantity="other">Sayımı tamamla · %d kaldı</item>
+    </plurals>
+    <string name="filter_search">Ara</string>
+    <string name="filter_no_match">Eşleşen yok</string>
 </resources>

@@ -94,6 +94,7 @@ defineEmits<{
 const imageSkeleton: { [key: string]: boolean } = reactive({})
 
 const layoutStore = inject("layout", layoutStructure)
+const isVerbaRoute = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff."))
 
 const subsectionScroller = ref<HTMLElement | null>(null)
 const COUNTRY_OUTLINES = ["CN", "ID", "IN", "MA", "NP", "TR"]
@@ -196,8 +197,10 @@ const label = {
                         </Transition>
                     </div>
 
+                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block w-64 shrink-0 self-stretch bg-[#3f0e40]" aria-hidden="true" />
+
                     <!-- Dropdown: TopBars -->
-                    <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left" v-slot="{ open: isOrgMenuOpen, close: closeOrgMenu }">
+                    <Menu v-if="!isVerbaRoute && (layoutStore.group || (layoutStore.organisations.data?.length > 1))" as="div" class="ml-2 relative text-left" v-slot="{ open: isOrgMenuOpen, close: closeOrgMenu }">
                         <MenuButton v-slot="{ open }"
                                     class="inline-flex lg:min-w-32 lg:w-[184px] h-[26px] lg:h-8 overflow-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 max-lg:h-7 max-lg:w-auto max-lg:gap-x-2.5 max-lg:rounded-md max-lg:border-0 max-lg:px-3 max-lg:py-0 max-lg:text-gray-500 max-lg:ring-1 max-lg:ring-gray-300"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
@@ -311,7 +314,7 @@ const label = {
                         <!-- Section: Dropdown -->
                         <div
                             v-if="
-                    layoutStore.group
+                    !isVerbaRoute && (layoutStore.group
                     || (layoutStore.organisations.data?.length > 1)
                     || (
                             layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation) &&
@@ -320,7 +323,7 @@ const label = {
                                 || layoutStore.currentRoute.includes('grp.org.dashboard.')
                             )
                         )
-                    || (layoutStore.navigation.org?.[layoutStore.currentParams.organisation]?.warehouses_navigation && (route(layoutStore.currentRoute, layoutStore.currentParams)).includes('warehouse'))
+                    || (layoutStore.navigation.org?.[layoutStore.currentParams.organisation]?.warehouses_navigation && (route(layoutStore.currentRoute, layoutStore.currentParams)).includes('warehouse')))
                 "
                             class="hidden lg:flex border border-gray-300 rounded"
                         >

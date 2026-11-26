@@ -46,6 +46,7 @@ class StaffChatViewModel(
     private val kind: ChatContextKind,
     private val contextId: Long,
     private val pollMillis: Long = CHAT_POLL_MILLIS,
+    private val isLive: () -> Boolean = { false },
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow(StaffChatUiState())
@@ -66,8 +67,16 @@ class StaffChatViewModel(
             }
             while (isActive) {
                 delay(pollMillis)
-                fetchNewer()
+                if (!isLive()) {
+                    fetchNewer()
+                }
             }
+        }
+    }
+
+    fun onLiveMessage() {
+        if (visibleJob?.isActive == true && mutableState.value.conversation != null) {
+            viewModelScope.launch { fetchNewer() }
         }
     }
 

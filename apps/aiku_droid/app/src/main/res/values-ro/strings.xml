@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Auditați locația</string>
     <string name="locations_audit_one_subtitle">Numărați acest SKO în această locație</string>
     <string name="locations_audit_saved">Auditul pentru %1$s a fost salvat</string>
-    <string name="locations_audit_subtitle">Numărați fiecare SKO din această locație</string>
     <string name="locations_audit_title">Auditați %1$s</string>
     <string name="locations_audited">Auditat %1$s</string>
     <string name="locations_auto_remove">Eliminați automat locațiile goale</string>
@@ -2654,4 +2653,38 @@
         <item quantity="few">%1$d din %2$d rânduri rezolvate</item>
         <item quantity="other">%1$d din %2$d de rânduri rezolvate</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Starea stocului</string>
+    <string name="inventory_filter_location_type">Tipul locației</string>
+    <string name="goodsin_add_extra">Adăugați un articol suplimentar</string>
+    <string name="goodsin_add_extra_question">Îl adăugați ca articol suplimentar?</string>
+    <string name="goodsin_add_extra_body">Un produs care a sosit, dar nu este pe nicio comandă de achiziție a acestei livrări</string>
+    <string name="goodsin_add_extra_search">Căutați în produsele furnizorului</string>
+    <string name="goodsin_add_extra_failed">Produsele care pot fi adăugate nu au putut fi încărcate</string>
+    <string name="goodsin_add_extra_none">Niciun produs de adăugat. Încercați altă căutare.</string>
+    <string name="goodsin_add_extra_not_supplied">Acest SKO nu este un produs al acestui furnizor, deci nu poate fi adăugat aici.</string>
+    <string name="goodsin_add_extra_quantity">Câte SKO au sosit</string>
+    <string name="goodsin_add_extra_note">Se adaugă ca recepționat și numărat. Amplasați-l ca pe celelalte articole.</string>
+    <string name="locations_audit_blind_subtitle">Numărați ce este pe raft. Cantitățile din Aiku apar când terminați.</string>
+    <string name="locations_audit_complete">Finalizați auditul</string>
+    <string name="locations_audit_nothing_counted">Numărați mai întâi cel puțin un SKO.</string>
+    <string name="locations_audit_found_sko">SKO găsit aici (scanați)</string>
+    <string name="locations_audit_finding_sko">Se caută %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s nu este un SKO</string>
+    <string name="locations_audit_counted">Numărat %1$s</string>
+    <string name="locations_audit_to_count">De numărat</string>
+    <string name="locations_audit_count_done">Gata: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: numărat față de Aiku</string>
+    <string name="locations_audit_summary_subtitle">Verificați fiecare diferență, indicați motivul, apoi salvați.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Adăugați %1$s SKO din %2$s</item>
+        <item quantity="few">Adăugați %1$s SKO din %2$s</item>
+        <item quantity="other">Adăugați %1$s de SKO din %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Finalizați auditul · a rămas %d</item>
+        <item quantity="few">Finalizați auditul · au rămas %d</item>
+        <item quantity="other">Finalizați auditul · au rămas %d</item>
+    </plurals>
+    <string name="filter_search">Căutați</string>
+    <string name="filter_no_match">Nicio potrivire</string>
 </resources>

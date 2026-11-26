@@ -1,5 +1,6 @@
 package io.aiku.droid
 
+import io.aiku.droid.data.live.LiveUpdates
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
@@ -196,6 +197,21 @@ class AppContainer(context: Context) {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    val liveUpdates = LiveUpdates(
+        client = AikuHttpClient.create(
+            apiBaseUrl = BuildConfig.AIKU_API_BASE_URL,
+            appKey = BuildConfig.AIKU_APP_KEY,
+            developmentHostAddress = BuildConfig.DEVELOPMENT_HOST_ADDRESS,
+            developmentCaCertificate = BuildConfig.DEVELOPMENT_CA_CERTIFICATE,
+            acceptLanguage = { language.acceptLanguage },
+        ),
+        api = mobileApi,
+        sessions = sessions,
+        scope = applicationScope,
+        clientName = LIVE_CLIENT_NAME,
+        clientVersion = BuildConfig.VERSION_NAME,
+    )
+
     private val pushTokens = FirebasePushTokenSource(context.applicationContext)
 
     val workNotifications = WorkNotifications(context.applicationContext)
@@ -271,6 +287,7 @@ class AppContainer(context: Context) {
         }
         accountLanguage.start()
         screenCache.start(applicationScope)
+        liveUpdates.start()
     }
 
     fun startPush() {
@@ -293,5 +310,6 @@ class AppContainer(context: Context) {
         const val OFFLINE_PREFERENCES = "aiku_offline"
         const val OFFLINE_KEY_ALIAS = "aiku_offline_key"
         const val MAX_DEVICE_NAME_LENGTH = 100
+        const val LIVE_CLIENT_NAME = "aiku-droid"
     }
 }
