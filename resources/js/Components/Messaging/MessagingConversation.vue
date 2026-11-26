@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from "@/Common/Components/Image.vue"
+import FilesAndLinksPanel, { type SharedItem } from "@/Components/Messaging/FilesAndLinksPanel.vue"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { useLiveUsers } from "@/Stores/active-users"
 import { callEntryText as callEntryTextFor, deliveredAtOf, tickStateOf, useStaffMessaging, type StaffConversation, type StaffConversationTask, type StaffMessage, type StaffParticipant } from "@/Stores/staff-messaging"
@@ -31,7 +32,7 @@ import DeskMessageEditor, { type DeskPerson } from "@/Components/Messaging/DeskM
 import DeskMessageToolbar, { type DeskToolbarMenuItem } from "@/Components/Messaging/DeskMessageToolbar.vue"
 import { STAFF_MESSAGE_COUNT_SHOWN_FROM, STAFF_MESSAGE_MAX_CHARACTERS, staffMessageCharacters } from "@/Components/Messaging/staffMessageLimit"
 import { useLocaleStore } from "@/Stores/locale"
-import { faTasks } from "@fal"
+import { faTasks, faCommentDots, faFolder } from "@fal"
 import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
@@ -55,7 +56,7 @@ const emit = defineEmits<{
 
 const store = useStaffMessaging()
 const calls = useStaffCalls()
-library.add(faPhone, faPhoneSlash, faVideo, faDesktop, faTasks)
+library.add(faPhone, faPhoneSlash, faVideo, faDesktop, faTasks, faCommentDots, faFolder)
 
 const isDesk = computed(() => !!props.desk)
 
@@ -162,6 +163,11 @@ const otherParticipants = computed(() => participants.value.filter((p) => p.id !
 const displayName = computed(() => props.conversation.name || otherParticipants.value.map((p) => p.name).join(", "))
 const displayAvatar = computed(() => otherParticipants.value[0]?.avatar ?? null)
 const lastSeenAt = computed(() => props.conversation.type === "dm" && otherParticipants.value[0]?.last_seen_at ? otherParticipants.value[0].last_seen_at : null)
+
+const ACTIVE_WINDOW_MS = 15 * 60 * 1000
+const now = ref(Date.now())
+let nowInterval: ReturnType<typeof setInterval> | null = null
+const isIdle = computed(() => isOnline.value && !!lastSeenAt.value && now.value - new Date(lastSeenAt.value).getTime() >= ACTIVE_WINDOW_MS)
 
 const freshTaskInfo = ref<StaffConversationTask | null>(null)
 const taskInfo = computed(() => freshTaskInfo.value ?? props.conversation.task ?? null)
@@ -427,6 +433,36 @@ const onScroll = () => {
 
 let isLoadingOlder = false
 let hasOlder = true
+
+const activeTab = ref<"messages" | "files">("messages")
+const hasOpenedFiles = ref(false)
+const showsTabs = computed(() => isDesk.value && !props.embedded)
+const highlightedMessageId = ref<number | null>(null)
+watch(activeTab, (tab) => (hasOpenedFiles.value ||= tab === "files"))
+watch(() => props.conversation.ulid, () => {
+    activeTab.value = "messages"
+    hasOpenedFiles.value = false
+})
+
+const MAX_PAGES_TO_FIND = 40
+const showMessage = async (item: SharedItem) => {
+    activeTab.value = "messages"
+    isNearBottom = false
+    await nextTick()
+    const find = () => messagesContainer.value?.querySelector<HTMLElement>(`[data-message-id="${item.message_id}"]`)
+    for (let page = 0; !find() && hasOlder && page < MAX_PAGES_TO_FIND; page++) {
+        const before = messages.value.length
+        await store.loadMessages(props.conversation.ulid, messages.value[0]?.id)
+        hasOlder = messages.value.length > before
+        await nextTick()
+    }
+    const element = find()
+    const container = messagesContainer.value
+    if (!element || !container) return
+    container.scrollTop += element.getBoundingClientRect().top - container.getBoundingClientRect().top - (container.clientHeight - element.offsetHeight) / 2
+    highlightedMessageId.value = item.message_id
+    setTimeout(() => (highlightedMessageId.value === item.message_id ? (highlightedMessageId.value = null) : null), 2500)
+}
 const loadOlder = async () => {
     if (isLoadingOlder || !hasOlder || !messages.value.length) return
     isLoadingOlder = true
@@ -486,11 +522,13 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
     scrollBottom()
+    nowInterval = setInterval(() => (now.value = Date.now()), 60 * 1000)
     window.addEventListener("keydown", handleEscapeKey)
     document.addEventListener("click", handleClickOutside, true)
 })
 
 onUnmounted(() => {
+    if (nowInterval) clearInterval(nowInterval)
     window.removeEventListener("keydown", handleEscapeKey)
     document.removeEventListener("click", handleClickOutside, true)
 })
@@ -608,15 +646,18 @@ const onReactionPick = (emoji: string) => {
             <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2 text-gray-600" @click="emit('back')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
-            <div class="relative h-7 w-7 rounded-full overflow-hidden shrink-0" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">
-                <Image v-if="displayAvatar" :src="displayAvatar" :alt="displayName" image-cover />
-                <span v-else class="flex items-center justify-center h-full text-xs" :class="fullScreen ? 'text-gray-600' : 'text-[var(--chat-text)]'">{{ displayName?.[0] }}</span>
-                <span class="absolute bottom-0 right-0 h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[var(--chat-bg)]', isOnline ? (fullScreen ? 'bg-green-500' : 'bg-[var(--chat-green)]') : (fullScreen ? 'bg-gray-400' : 'bg-[var(--chat-muted)]')]" />
+            <div class="relative h-7 w-7 shrink-0">
+                <div class="h-full w-full rounded-full overflow-hidden" :class="fullScreen ? 'bg-gray-200' : 'bg-[var(--chat-line)]'">
+                    <Image v-if="displayAvatar" :src="displayAvatar" :alt="displayName" image-cover />
+                    <span v-else class="flex items-center justify-center h-full text-xs" :class="fullScreen ? 'text-gray-600' : 'text-[var(--chat-text)]'">{{ displayName?.[0] }}</span>
+                </div>
+                <span class="absolute bottom-0 right-0 z-[1] h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[var(--chat-bg)]', !isOnline ? (fullScreen ? 'bg-gray-400' : 'bg-[var(--chat-muted)]') : isIdle ? (fullScreen ? 'bg-yellow-400' : 'bg-[var(--chat-yellow)]') : (fullScreen ? 'bg-green-500' : 'bg-[var(--chat-green)]')]" />
             </div>
             <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
                 <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
                     <span v-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
+                    <span v-else-if="conversation.type === 'dm' && isOnline">{{ isIdle ? ctrans('Idle') : ctrans('Active') }}</span>
                     <span v-else-if="conversation.context_url" class="flex min-w-0 items-center gap-1.5">
                         <a :href="conversation.context_url" class="truncate" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                         <span v-if="taskInfo?.status_label" class="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap">
@@ -772,8 +813,30 @@ const onReactionPick = (emoji: string) => {
 
         <StaffTaskSubtaskProgress v-if="taskInfo?.subtasks.length && !embedded" :subtasks="taskInfo.subtasks" @opened="refreshTaskInfo" />
 
+        <div v-if="showsTabs" class="flex shrink-0 items-center gap-x-1 border-b border-gray-200 px-3" role="tablist" :aria-label="ctrans('Conversation views')">
+            <button
+                v-for="tab in [{ key: 'messages', label: ctrans('Messages'), icon: 'fal fa-comment-dots' }, { key: 'files', label: ctrans('Files & links'), icon: 'fal fa-folder' }]"
+                :key="tab.key"
+                type="button"
+                role="tab"
+                :aria-selected="activeTab === tab.key"
+                class="-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-[13px] font-semibold transition-colors"
+                :class="activeTab === tab.key ? 'border-[var(--app-accent)] text-[#1d1c1d]' : 'border-transparent text-[#616061] hover:text-[#1d1c1d]'"
+                @click="activeTab = tab.key as 'messages' | 'files'">
+                <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />{{ tab.label }}
+            </button>
+        </div>
+
+        <FilesAndLinksPanel
+            v-if="showsTabs && hasOpenedFiles"
+            v-show="activeTab === 'files'"
+            :url="route('grp.chat.staff.conversations.files-links', { staffConversation: conversation.ulid })"
+            :kinds="['all', 'media', 'links']"
+            class="min-h-0 flex-1"
+            @jump="showMessage" />
+
         <!-- Messages -->
-        <div ref="messagesContainer" class="flex-1 overflow-y-auto py-2" :class="isDesk ? 'text-[#1d1c1d]' : 'px-3'" @scroll="onScroll">
+        <div v-show="activeTab === 'messages'" ref="messagesContainer" class="flex-1 overflow-y-auto py-2" :class="isDesk ? 'text-[#1d1c1d]' : 'px-3'" @scroll="onScroll">
             <div v-if="isLoadingFirstMessages" class="space-y-3 py-2" :aria-label="ctrans('Loading…')" aria-busy="true">
                 <div v-for="(side, row) in ['left', 'right', 'left', 'right']" :key="'message-skeleton-' + row" class="flex items-end gap-2" :class="side === 'right' ? 'justify-end' : 'justify-start'">
                     <span v-if="side === 'left' && isGroupChat" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-gray-200" />
@@ -788,9 +851,10 @@ const onReactionPick = (emoji: string) => {
             <div
                 v-for="(message, messageIndex) in messages"
                 :key="message.id"
-                class="flex"
+                :data-message-id="message.id"
+                class="flex transition-colors duration-700"
                 :class="isDesk
-                    ? ['group relative px-5 hover:bg-[#f8f8f8]', message.call ? 'justify-center py-1' : startsRun(messageIndex) ? 'mt-2 pt-1 pb-0.5' : 'py-0.5']
+                    ? ['group relative px-5 hover:bg-[#f8f8f8]', highlightedMessageId === message.id && '!bg-amber-100/70', message.call ? 'justify-center py-1' : startsRun(messageIndex) ? 'mt-2 pt-1 pb-0.5' : 'py-0.5']
                     : [
                         message.call ? 'justify-center' : message.user_id === myId ? 'justify-end' : 'justify-start',
                         messageIndex === 0 ? '' : isGroupChat && !startsRun(messageIndex) ? 'mt-0.5' : 'mt-2.5',
@@ -1010,13 +1074,13 @@ const onReactionPick = (emoji: string) => {
             </div>
         </Popover>
 
-        <div v-if="leftAt" class="shrink-0 border-t border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs text-gray-500" :style="fullScreen ? { paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' } : {}">
+        <div v-if="leftAt" v-show="activeTab === 'messages'" class="shrink-0 border-t border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs text-gray-500" :style="fullScreen ? { paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' } : {}">
             <FontAwesomeIcon icon="fal fa-exclamation-circle" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
             {{ ctrans("You were taken off this on :date. You can read the chat up to then; you will see everything again if you are added back.", { date: useFormatTime(leftAt, { formatTime: 'hm' }) }) }}
         </div>
 
         <!-- Composer -->
-        <div v-else class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
+        <div v-else v-show="activeTab === 'messages'" class="border-t border-gray-200 px-2 pt-2 shrink-0" :style="fullScreen ? { paddingBottom: 'env(safe-area-inset-bottom)' } : {}">
             <div v-if="parentMessage" class="flex items-center justify-between px-2 py-1 mb-1 rounded bg-gray-100 text-xs text-gray-600">
                 <span class="truncate">{{ ctrans('Replying to') }}: {{ parentMessage.body }}</span>
                 <button class="ml-2 shrink-0" @click="clearReply">

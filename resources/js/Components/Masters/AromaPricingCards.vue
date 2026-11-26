@@ -23,6 +23,7 @@ export interface AromaMaterialCost {
 	effective_cost: number | null
 	materials_total: number
 	rest: number
+	overhead: number
 	materials: {
 		code: string
 		name: string
@@ -195,6 +196,16 @@ const partnerMarginTooltip = (margin: number | null): string => {
 							</div>
 							<div v-else-if="data.materialCost.effective_cost !== null && data.materialCost.materials_total > data.materialCost.effective_cost" class="text-amber-600">
 								{{ data.materialCost.source === 'stock' ? ctrans('Our stock costs more than the effective cost') : ctrans('The materials cost more than the effective cost') }}
+							</div>
+							<div v-if="data.materialCost.overhead > 0" class="mt-2 border-t border-dashed border-gray-200 pt-2 text-gray-500">
+								<div class="flex justify-between" v-tooltip="ctrans('Rough share of Aromatics running costs per unit made (staff time not on products, building, energy, ads, software). A hint only: it is not in the effective cost.')">
+									<span>{{ ctrans('Overhead estimate, not in the cost') }}</span>
+									<span>+{{ locale.currencyFormat(data.materialCost.currency_code, data.materialCost.overhead) }}</span>
+								</div>
+								<div v-if="data.materialCost.effective_cost !== null" class="flex justify-between">
+									<span>{{ ctrans('Effective cost with overhead') }}</span>
+									<span class="font-medium text-gray-700">{{ locale.currencyFormat(data.materialCost.currency_code, data.materialCost.effective_cost + data.materialCost.overhead) }}</span>
+								</div>
 							</div>
 						</div>
 					</div>

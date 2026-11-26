@@ -22,6 +22,10 @@ use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Helpers\Organisation\UI\GetOrganisationOptions;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Models\Masters\MasterShop;
+use App\Actions\Masters\MasterAsset\UI\GetMasterAssetsPartnerPricing;
+use App\Actions\Production\Artefact\GetArtefactsCostCompleteness;
+use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -86,6 +90,7 @@ class ShowMasterShop extends OrgAction
                     'navigation' => MasterShopTabsEnum::navigation()
                 ],
                 'organisations_list' => GetOrganisationOptions::run($request->user()),
+                'cost_completeness'  => $this->costCompleteness($masterShop, $request),
 
                 MasterShopTabsEnum::SALES_ANALYSIS->value => $this->tab == MasterShopTabsEnum::SALES_ANALYSIS->value
                     ? Inertia::defer(fn () => GetShopSalesAnalysis::run($masterShop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'organisations', 'shops', 'partners'])), 'sales_analysis')
@@ -119,6 +124,20 @@ class ShowMasterShop extends OrgAction
             ->table(IndexCatalogueOnItsWay::make()->tableStructure($masterShop, MasterShopTabsEnum::ON_ITS_WAY->value));
     }
 
+
+    /**
+     * INI-567: the master shop of a manufacturing hub (Aromatics) shows how many of the hub's artefacts have a complete cost.
+     */
+    private function costCompleteness(MasterShop $masterShop, ActionRequest $request): ?array
+    {
+        if (!GetMasterAssetsPartnerPricing::appliesTo($masterShop)) {
+            return null;
+        }
+
+        $organisation = Organisation::find(Shop::where('master_shop_id', $masterShop->id)->value('organisation_id'));
+
+        return $organisation ? GetArtefactsCostCompleteness::make()->forOrganisation($organisation, $request->user()) : null;
+    }
 
     public function jsonResponse(MasterShop $masterShop): MasterShopResource
     {

@@ -241,7 +241,7 @@ trait IsOrder
         }
 
         $invoicesData = [];
-        foreach ($order->invoices as $invoice) {
+        foreach ($order->invoices->concat(array_filter([$order->sharedBillingInvoice()])) as $invoice) {
             if (request()->routeIs('retina.*')) {
                 $routeShow     = [
                     'name'       => 'retina.dropshipping.invoices.show',

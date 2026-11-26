@@ -746,7 +746,7 @@ test('agent manager only sees their own agent organisation', function () {
     $subNavigation = collect($this->get(route('grp.org.agent.org_suppliers.show', [$organisation->slug, $orgSupplierOfAnotherOrganisation->supplier->slug]))->inertiaProps('pageHead.subNavigation'));
     expect($subNavigation->filter(fn ($item) => str_starts_with($item['route']['name'], 'grp.org.'))->map(fn ($item) => $item['route']['parameters']['organisation'] ?? $item['route']['parameters'][0])->unique()->values()->all())
         ->toBe([$organisation->slug])
-        ->and($subNavigation->firstWhere('label', __('Open purchase orders')))->toHaveKey('number');
+        ->and($subNavigation->firstWhere('label', __('Purchase Orders')))->toHaveKey('openNumber');
 
     $ownOrgAgent      = OrgAgent::where('agent_id', $this->agent->id)->where('organisation_id', '!=', $organisation->id)->firstOrFail();
     [$ownOrgSupplier] = createAgentOrgSupplierWithProduct($this, $ownOrgAgent);

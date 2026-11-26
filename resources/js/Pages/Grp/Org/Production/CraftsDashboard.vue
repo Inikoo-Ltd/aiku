@@ -15,6 +15,7 @@ import { faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFol
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import ArtefactCostCompletenessMeter from "@/Components/Production/ArtefactCostCompletenessMeter.vue"
 
 library.add(faNetworkWired, faHamsa, faExclamationTriangle, faClipboardCheck, faFolder, faFolderTree, faUnlink, faSeedling, faTags, faChartNetwork)
 
@@ -24,6 +25,7 @@ defineProps<{
     stats: StatsBoxTS[]
     statsBoxNegative: StatsBoxTS[]
     statsBoxNegativeTitle: string
+    costCompleteness?: InstanceType<typeof ArtefactCostCompletenessMeter>['$props']['status']
 }>()
 </script>
 
@@ -36,6 +38,10 @@ defineProps<{
         <dl class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             <StatsBox v-for="(stat, index) in stats" :key="index" :stat="stat" />
         </dl>
+    </div>
+
+    <div v-if="costCompleteness?.total" class="mx-4 mt-6">
+        <ArtefactCostCompletenessMeter :status="costCompleteness" />
     </div>
 
     <div class="mx-4 mt-6 flex flex-col gap-2">

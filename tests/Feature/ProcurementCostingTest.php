@@ -5028,7 +5028,7 @@ test('an agent has one page per supplier with an organisation selector, and the 
 
     $productRows = $this->get(route('grp.org.agent.org_suppliers.show.supplier_products.index', [$agentOrganisation->slug, $supplier->slug]))
         ->assertOk()->viewData('page')['props']['index']['data'];
-    expect(collect($productRows)->pluck('organisation_code')->unique()->sort()->values()->all())
+    expect(collect($productRows)->pluck('buying_organisations')->flatten(1)->pluck('code')->unique()->sort()->values()->all())
         ->toBe(OrgSupplierProduct::whereIn('org_supplier_id', OrgSupplier::where('supplier_id', $supplier->id)->select('id'))->with('organisation')->get()->pluck('organisation.code')->unique()->sort()->values()->all());
 
     $editLabels = fn () => collect($this->get(route('grp.org.agent.org_suppliers.edit', [$agentOrganisation->slug, $supplier->slug]).'?organisation='.$otherBuyer->slug)

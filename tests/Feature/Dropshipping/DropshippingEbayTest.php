@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Product\StoreProduct;
+use Illuminate\Broadcasting\UniqueBroadcastEvent;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -741,7 +742,7 @@ test('an eBay order on postage bought through eBay is not pushed to eBay, and th
     expect(FulfillOrderToEbay::run($order->refresh()))->toBe([]);
 
     Http::assertNothingSent();
-    Queue::assertNothingPushed();
+    expect(collect(Queue::pushedJobs())->keys()->reject(fn (string $job) => $job === UniqueBroadcastEvent::class)->all())->toBe([]);
     $order->refresh();
     expect($order->shipping_notes)->toStartWith('Leave at the door')
         ->and($order->shipping_notes)->toContain('eBay label')

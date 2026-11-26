@@ -263,7 +263,7 @@ const safeTheme = computed(() => {
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
             v-if="!isVerbaRoute"
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
+            class="bg-white fixed z-[19] transition-all duration-300 ease-in-out px-4"
             :class="[
 				layout.messagingSidebar.show
 					? 'md:pr-[calc(1rem_+_var(--chat-pane,0px))]'
@@ -298,7 +298,7 @@ const safeTheme = computed(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col md:pr-[var(--chat-pane,0px)] pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 text-gray-700 transition-all duration-300 ease-in-out"
             :class="[
 				['Tickets/Ticket', 'Chat/StaffMessaging'].includes(usePage().component) ? 'pb-0' : ['Tasks/StaffTask', 'SupplyChain/SupplyChainPurchaseOrderJourney', 'Tasks/StaffTasksBoard', 'Tickets/TicketsBoard', 'Goods/CreateProductDevelopment', 'Goods/ProductDevelopmentsBoard'].includes(usePage().component) ? 'pb-6' : 'pb-6 md:pb-24',
 				layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',

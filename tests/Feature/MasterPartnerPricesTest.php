@@ -373,6 +373,7 @@ test('the Aromatics master product showcase splits the effective cost by the rec
         ->and($materialCost['materials_total'])->toBe(2.5)
         ->and($materialCost['effective_cost'])->toBe(5.0)
         ->and($materialCost['rest'])->toBe(2.5)
+        ->and($materialCost['overhead'])->toBe(round(GetMasterAssetsPartnerPricing::ESTIMATED_OVERHEAD_PER_UNIT * ((float) $this->masterAsset->units ?: 1), 4))
         ->and(collect($materialCost['materials'])->pluck('code')->all())->toBe([$oil->code, $bottle->code])
         ->and($materialCost['materials'][0]['quantity'])->toBe(0.5)
         ->and($materialCost['materials'][0]['cost'])->toBe(1.5)

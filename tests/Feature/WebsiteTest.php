@@ -1044,7 +1044,7 @@ test('the create announcement page, button and save are refused to users who can
 
     actingAsUserWithRoles($this->user, $originalRoles);
     SetUserAuthorisedModels::run($this->user);
-})->depends('create webpage');
+})->depends('launch website');
 
 
 test('web sitemap creation', function () {

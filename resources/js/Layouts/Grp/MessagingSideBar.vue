@@ -468,7 +468,7 @@ onUnmounted(() => {
         <div
             v-if="isMobile"
             @click="handleToggle"
-            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-2/3 w-7 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
+            class="absolute z-10 left-0 top-2/4 -translate-y-1/2 -translate-x-2/3 w-7 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
             :title="layout.messagingSidebar.show ? 'Collapse the bar' : 'Expand the bar'">
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
@@ -476,7 +476,7 @@ onUnmounted(() => {
                 fixed-width aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
         </div>
-        <div v-else class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-1/2 flex flex-col gap-y-1.5 opacity-0 transition-opacity duration-200 group-hover/rail:opacity-100 has-[:focus-visible]:opacity-100 [@media(hover:none)]:opacity-100">
+        <div v-else class="absolute z-10 left-0 top-2/4 -translate-y-1/2 -translate-x-1/2 flex flex-col gap-y-1.5 opacity-0 transition-opacity duration-200 group-hover/rail:opacity-100 has-[:focus-visible]:opacity-100 [@media(hover:none)]:opacity-100">
             <button
                 v-if="layout.messagingSidebar.show === false"
                 type="button"

@@ -91,6 +91,7 @@ interface PartnerPricingMeta {
 interface PartnerPricingRow {
     list_price: number
     cost: number | null
+    overhead?: number
     prices: Record<string, number | null>
     sibling: {
         id: number
@@ -704,6 +705,13 @@ const marginPct = (masterProduct: MasterProductPricing, code: string): string | 
             <span v-else class="whitespace-nowrap tabular-nums">
                 {{ formatMoney(costsFor(masterProduct.effective_cost)?.[masterProduct.currency_code] ?? null, masterProduct.currency_code) }}
             </span>
+            <div
+                v-if="masterProduct.partner_pricing?.overhead"
+                class="whitespace-nowrap text-right text-xs tabular-nums text-gray-400"
+                v-tooltip="ctrans('Overhead estimate, not in the cost: a rough share of Aromatics running costs per unit made (staff time not on products, building, energy, ads, software)')"
+            >
+                +{{ formatMoney(costsFor(masterProduct.partner_pricing.overhead)?.[majorCurrencies?.[0] ?? masterProduct.currency_code] ?? null, majorCurrencies?.[0] ?? masterProduct.currency_code) }} {{ ctrans('overhead') }}
+            </div>
         </template>
 
         <template #cell(price)="{ item: masterProduct }">
