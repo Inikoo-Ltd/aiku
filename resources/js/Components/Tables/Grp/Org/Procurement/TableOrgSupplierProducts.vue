@@ -21,6 +21,7 @@ import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProduc
 import SupplierProductsCopyActions from "@/Components/Procurement/SupplierProductsCopyActions.vue"
 import SupplierProductStateSelect from "@/Components/SupplyChain/SupplierProductStateSelect.vue"
 import SupplierProductsBulkStateButton from "@/Components/SupplyChain/SupplierProductsBulkStateButton.vue"
+import OrgSupplierProductOrganisationStateDialog, { BuyingOrganisation } from "@/Components/Procurement/OrgSupplierProductOrganisationStateDialog.vue"
 import Icon from "@/Components/Icon.vue"
 import { SupplierProductStateOption, SupplierProductStateRow } from "@/Composables/useSupplierProductState"
 import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
@@ -41,6 +42,7 @@ const props = defineProps<{
   }
   linkGroupSkoRoute?: routeType | null
   stateOptions?: SupplierProductStateOption[] | null
+  organisationStateOptions?: SupplierProductStateOption[]
 }>()
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
@@ -48,6 +50,22 @@ const selectedRows = ref<Record<string, boolean>>({})
 const selectedIds = computed(() => Object.keys(selectedRows.value).filter((id) => selectedRows.value[id]).map(Number))
 
 const isLabelsDialogOpen = ref(false)
+
+const isOrganisationStateDialogOpen = ref(false)
+const organisationStateProductCode = ref("")
+const organisationStateOrganisation = ref<BuyingOrganisation | null>(null)
+
+function openOrganisationState(productCode: string, organisation: BuyingOrganisation) {
+  organisationStateProductCode.value = productCode
+  organisationStateOrganisation.value = organisation
+  isOrganisationStateDialogOpen.value = true
+}
+
+function organisationChipClass(organisation: BuyingOrganisation) {
+  return organisation.is_available
+    ? "border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]"
+    : "border-gray-200 bg-gray-50 text-gray-400"
+}
 
 function reloadData() {
   router.reload({ only: [props.tab ?? "index"] })
@@ -164,6 +182,31 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       </Link>
       <span v-else>{{ supplier_product.supplier_name }}</span>
     </template>
+    <template #cell(available_organisations)="{ item: supplier_product }">
+      <span v-if="supplier_product.buying_organisations?.length" class="flex flex-wrap gap-1">
+        <template v-for="organisation in supplier_product.buying_organisations" :key="organisation.code">
+          <button
+            v-if="organisation.can_edit && organisationStateOptions?.length"
+            type="button"
+            v-tooltip="ctrans(':organisation: :state', { organisation: organisation.code, state: organisation.state.label })"
+            class="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs hover:border-[var(--app-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)]"
+            :class="organisationChipClass(organisation)"
+            @click="openOrganisationState(supplier_product.code, organisation)"
+          >
+            {{ organisation.code }}
+          </button>
+          <span
+            v-else
+            v-tooltip="ctrans(':organisation: :state', { organisation: organisation.code, state: organisation.state.label })"
+            class="whitespace-nowrap rounded border px-1.5 py-0.5 text-xs"
+            :class="organisationChipClass(organisation)"
+          >
+            {{ organisation.code }}
+          </span>
+        </template>
+      </span>
+      <span v-else class="text-gray-300">-</span>
+    </template>
     <template #cell(state)="{ item: supplier_product }">
       <SupplierProductStateSelect
         v-if="stateOptions?.length && supplier_product.supplier_product_id"
@@ -222,6 +265,15 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       </button>
     </template>
   </Table>
+
+  <OrgSupplierProductOrganisationStateDialog
+    v-if="organisationStateOptions?.length"
+    v-model:visible="isOrganisationStateDialogOpen"
+    :productCode="organisationStateProductCode"
+    :organisation="organisationStateOrganisation"
+    :stateOptions="organisationStateOptions"
+    @saved="reloadData"
+  />
 
   <SupplierProductLabelsDialog
     v-if="labelsPrint"

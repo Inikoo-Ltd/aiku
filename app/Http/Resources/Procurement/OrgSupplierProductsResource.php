@@ -28,6 +28,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int|null $moq
  * @property string|null $availability_status
  * @property numeric|null $completeness
+ * @property string|null $available_organisations
+ * @property array<int, array{code: string, state: array{value: string, label: string}, is_available: bool, org_supplier_product_ids: array<int, int>, can_edit: bool}>|null $buying_organisations
  */
 class OrgSupplierProductsResource extends JsonResource
 {
@@ -38,7 +40,8 @@ class OrgSupplierProductsResource extends JsonResource
             'code'              => $this->code,
             'name'              => $this->name,
             'slug'              => $this->slug,
-            'organisation_code' => $this->organisation_code ?? null,
+            'available_organisations' => $this->available_organisations ?? null,
+            'buying_organisations'    => $this->buying_organisations ?? null,
             'supplier_name'     => $this->supplier_name,
             'org_supplier_slug' => $this->org_supplier_slug,
             'cost'              => $this->cost,

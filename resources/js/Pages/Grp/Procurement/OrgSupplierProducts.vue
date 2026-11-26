@@ -38,6 +38,7 @@ const props = defineProps<{
     }
     link_group_sko_route?: routeType | null
     state_options?: { value: string, label: string }[] | null
+    organisation_state_options?: { value: string, label: string }[]
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -58,6 +59,6 @@ const component = computed(() => ({
         :is="component"
         :data="props[currentTab]"
         :tab="currentTab"
-        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets, labelsPrint: labels_print, linkGroupSkoRoute: link_group_sko_route, stateOptions: state_options } : {}"
+        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets, labelsPrint: labels_print, linkGroupSkoRoute: link_group_sko_route, stateOptions: state_options, organisationStateOptions: organisation_state_options } : {}"
     />
 </template>
