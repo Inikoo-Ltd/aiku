@@ -8,6 +8,7 @@
 */
 
 use App\Actions\GoodsIn\ReturnDeliveryNote\CancelReturnDeliveryNote;
+use App\Actions\GoodsIn\ReturnDeliveryNote\SetAllItemsReturnedReturnDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\SetDoneReturnDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\SetReturnedReturnDeliveryNote;
 use App\Actions\GoodsIn\ReturnDeliveryNote\SetReturningReturnDeliveryNote;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::name('return_delivery_note.')->prefix('return-delivery-note/{returnDeliveryNote:id}')->group(function () {
     Route::patch('unassign', UnassignReturnDeliveryNoteHandler::class)->name('unassign');
     Route::patch('update', UpdateReturnDeliveryNote::class)->name('update');
+    Route::patch('return-all-items', SetAllItemsReturnedReturnDeliveryNote::class)->name('return_all_items');
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('cancel', CancelReturnDeliveryNote::class)->name('cancel');

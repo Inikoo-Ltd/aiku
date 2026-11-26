@@ -209,6 +209,20 @@ class ShowReturnDeliveryNote extends OrgAction
 
                     ],
                 ] : null,
+                $hasUnHandledItems ? [
+                    'type'    => 'button',
+                    'style'   => 'secondary',
+                    'icon'    => 'fal fa-check-double',
+                    'label'   => __('Return all'),
+                    'key'     => 'return-all-items',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.return_delivery_note.return_all_items',
+                        'parameters' => [
+                            'returnDeliveryNote' => $returnDeliveryNote->id
+                        ]
+                    ],
+                ] : null,
                 $hasHandledItem ? [
                     'type'          => 'button',
                     'style'         => 'save',
