@@ -10,6 +10,8 @@ namespace App\Actions\Comms\Mailbox;
 
 use App\Actions\Chat\ChatSession\ClassifyChatSessionNoise;
 use App\Actions\Chat\ChatSession\StoreChatSession;
+use App\Actions\Dropshipping\Zentrada\ImportZentradaOrderFromEmail;
+use App\Actions\Dropshipping\Zentrada\SaveZentradaNoticeFromEmail;
 use App\Actions\Fulfilment\PalletReturn\ImportPalletReturnsFromPickNotice;
 use App\Actions\Chat\ChatSession\SuggestChatSessionCustomer;
 use App\Actions\Chat\ChatSession\SendChatMessage;
@@ -200,6 +202,19 @@ class ProcessInboundEmail
             $client->fileAway($gmailMessageId, 'aiku/pick-notices', Arr::get($raw, 'labelIds', []));
 
             return null;
+        }
+
+        if (ImportZentradaOrderFromEmail::isTradeSafeMail($shop, $raw, $from['address'])) {
+            $isDeliveryOrder = ImportZentradaOrderFromEmail::isDeliveryOrderSubject($subject);
+            $savedAgainst    = $isDeliveryOrder
+                ? ImportZentradaOrderFromEmail::run($shop, $client, $gmailMessageId, $raw)
+                : SaveZentradaNoticeFromEmail::run($shop, $client, $gmailMessageId, $raw);
+
+            if ($savedAgainst !== null) {
+                $client->fileAway($gmailMessageId, $isDeliveryOrder ? 'aiku/zentrada-orders' : 'aiku/zentrada', Arr::get($raw, 'labelIds', []));
+
+                return null;
+            }
         }
 
         $bouncedSession = self::isDeliveryFailure($from['address']) ? $this->findSessionByThread($shop, $threadId) : null;

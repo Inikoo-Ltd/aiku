@@ -1807,6 +1807,37 @@ class EditShop extends OrgAction
 
         $fields['zentrada_tier_1_quantity']['information'] = __('Volume prices are sent only when both the packing units and the discount are set. Up to 3, ordered by packing units.');
 
+        $fields['zentrada_import_orders'] = [
+            'type'        => 'toggle',
+            'label'       => __('Import orders from TradeSafe emails'),
+            'value'       => (bool) Arr::get($shop->settings, 'zentrada.import_orders', false),
+            'information' => __('Turns each "Delivery order transaction" email from TradeSafe that reaches this shop\'s mailbox into an order, sent to the warehouse when every line matches the feed and is in stock.'),
+        ];
+        $fields['zentrada_customer_reference'] = [
+            'type'        => 'input',
+            'label'       => __('Customer billed for Zentrada orders'),
+            'placeholder' => '27227',
+            'value'       => (string) Arr::get($shop->settings, 'zentrada.customer_reference', ''),
+            'information' => __('Customer reference of the Zentrada account the orders are invoiced to.'),
+        ];
+        $fields['zentrada_non_eu_customer_reference'] = [
+            'type'        => 'input',
+            'label'       => __('Customer billed for deliveries outside the EU'),
+            'placeholder' => '61482',
+            'value'       => (string) Arr::get($shop->settings, 'zentrada.non_eu_customer_reference', ''),
+            'information' => __('Empty bills them to the customer above.'),
+        ];
+        $fields['zentrada_orders_user_id'] = [
+            'type'        => 'select',
+            'label'       => __('Person checking Zentrada orders'),
+            'information' => __('Gets a task when an order cannot be imported or is held back. Empty sends it to customer services.'),
+            'options'     => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+            'labelProp'   => 'name',
+            'valueProp'   => 'id',
+            'searchable'  => true,
+            'value'       => Arr::get($shop->settings, 'zentrada.orders_user_id'),
+        ];
+
         return [
             'label'  => __('Zentrada feed'),
             'icon'   => 'fal fa-badge-percent',

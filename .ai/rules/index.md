@@ -54,3 +54,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Enums/SysAdmin/User/UserNotificationEnum.php | .ai/rules/user.md |
 | app/Actions/Web/WebBlock/** | .ai/rules/web-block.md |
 | app/Actions/Web/Webpage/** | .ai/rules/webpage.md |
+| app/Actions/Dropshipping/Zentrada/** | .ai/rules/zentrada.md |
