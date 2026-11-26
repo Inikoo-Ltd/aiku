@@ -2791,6 +2791,16 @@ test('packeta refuses a pick-up point it cannot book instead of booking home del
         ->and($client->packetAttributes)->toBe([]);
 });
 
+test('gls refuses a delivery that asks for a sameday easybox instead of booking home delivery', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['shipping_notes' => 'Sameday Easy BOX ID: 71 - easybox Grand Crangasi', 'customer_notes' => null]);
+
+    $response = \App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSkShipping::make()->handle($deliveryNote->refresh(), new \App\Models\Dispatching\Shipper());
+
+    expect($response['status'])->toBe('fail')
+        ->and($response['errorData']['message'])->toContain('Book it with Packeta or manually');
+});
+
 function fakePacketaPickupPointFeeds(array $boxes, array $branches): void
 {
     $filler = array_map(fn (int $id) => ['id' => (string) (900000 + $id), 'name' => "Z-BOX Filler $id", 'street' => "Filler $id", 'city' => 'Filler', 'zip' => '000 00', 'country' => 'hu', 'maxWeight' => '15'], range(1, 10000));

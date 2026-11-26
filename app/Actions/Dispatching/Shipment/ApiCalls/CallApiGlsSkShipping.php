@@ -10,8 +10,10 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GetShipmentDeliveryType;
 use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\Shipment\ShipmentDeliveryTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
@@ -29,6 +31,8 @@ class CallApiGlsSkShipping extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+
+    private const string EASYBOX_PATTERN = '/easy\s*-?\s*box/iu';
 
     public function getAccessToken(Shipper $shipper): array
     {
@@ -49,6 +53,16 @@ class CallApiGlsSkShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
+        if ($parent instanceof DeliveryNote && $this->asksForPickupPoint($parent)) {
+            return [
+                'status'    => 'fail',
+                'modelData' => [],
+                'errorData' => [
+                    'message' => 'This delivery asks for a pick-up point (e.g. Sameday easybox, Z-BOX) and GLS only delivers to the address. Book it with Packeta or manually with the pick-up point.',
+                ],
+            ];
+        }
+
         $credentials  = $this->getAccessToken($shipper);
         $username     = Arr::get($credentials, 'username');
         $password     = Arr::get($credentials, 'password');
@@ -269,5 +283,19 @@ class CallApiGlsSkShipping extends OrgAction
         }
 
         return $prepareParams;
+    }
+
+    /**
+     * PRE-141. Easybox is matched here only: Packeta books a Bulgarian Easybox address as home delivery, so the shared classifier leaves it out.
+     */
+    private function asksForPickupPoint(DeliveryNote $deliveryNote): bool
+    {
+        if (GetShipmentDeliveryType::run($deliveryNote)['delivery_type'] === ShipmentDeliveryTypeEnum::PICKUP_POINT) {
+            return true;
+        }
+
+        $address = $deliveryNote->deliveryAddress;
+
+        return (bool) preg_match(self::EASYBOX_PATTERN, implode(' ', array_filter([$address?->address_line_1, $address?->address_line_2, $deliveryNote->shipping_notes, $deliveryNote->customer_notes])));
     }
 }
