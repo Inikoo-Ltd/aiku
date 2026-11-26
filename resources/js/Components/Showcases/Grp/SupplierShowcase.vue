@@ -42,6 +42,7 @@ import ZoomableImage from '@/Components/Utils/ZoomableImage.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import SupplierRelationshipContact from '@/Components/SupplyChain/SupplierRelationshipContact.vue'
+import SupplierArchivedBadge from '@/Components/SupplyChain/SupplierArchivedBadge.vue'
 import { useLocaleStore } from '@/Stores/locale'
 
 library.add(
@@ -98,6 +99,8 @@ const props = defineProps<{
         relationshipContact?: InstanceType<typeof SupplierRelationshipContact>['$props']['data']
         contactCard: {
             created_at?: string
+            is_archived?: boolean
+            archived_at?: string | null
             company?: string
             nickname?: string | null
             update_route?: RouteLink | null
@@ -437,7 +440,8 @@ const formatHoliday = (holiday: FactoryHoliday) => {
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center gap-4 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
                     <div
-                        class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 ring-1 ring-gray-300">
+                        class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 ring-1 ring-gray-300"
+                        :class="contactCard?.is_archived ? 'opacity-60 grayscale' : ''">
                         <ZoomableImage
                             v-if="contactCard?.photo"
                             :src="contactCard.photo"
@@ -448,7 +452,8 @@ const formatHoliday = (holiday: FactoryHoliday) => {
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="truncate text-base font-semibold text-gray-900">{{ title }}</h2>
+                            <h2 class="truncate text-base font-semibold" :class="contactCard?.is_archived ? 'text-gray-500' : 'text-gray-900'">{{ title }}</h2>
+                            <SupplierArchivedBadge v-if="contactCard?.is_archived" :archivedAt="contactCard.archived_at" />
                             <span
                                 v-if="currencyLabel"
                                 v-tooltip="contactCard?.currency?.name"

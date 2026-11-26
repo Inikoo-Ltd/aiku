@@ -7,8 +7,6 @@
 <script setup lang="ts">
 import ProductDevelopmentRelatedList from "@/Components/Goods/ProductDevelopment/ProductDevelopmentRelatedList.vue"
 import { Head } from '@inertiajs/vue3'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { useFormatTime } from '@/Composables/useFormatTime'
 import { computed, ref } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
@@ -19,8 +17,7 @@ import {
     faPaperclip,
     faPersonDolly,
     faTruckContainer,
-    faFileSignature,
-    faArchive
+    faFileSignature
 } from '@fal'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import Tabs from '@/Components/Navigation/Tabs.vue'
@@ -34,6 +31,7 @@ import { routeType } from "@/types/route"
 import TableSupplierMessages from '@/Components/Tables/Grp/Org/Procurement/TableSupplierMessages.vue'
 import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.vue'
 import SupplierArchiveButton from '@/Components/SupplyChain/SupplierArchiveButton.vue'
+import SupplierArchivedBadge from '@/Components/SupplyChain/SupplierArchivedBadge.vue'
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
@@ -93,10 +91,7 @@ const component = computed(() => {
     <PageHeading :data="pageHead">
         <template #afterTitle2>
             <SupplierAgreementStatusBadge v-if="agreement?.supplier_agreement?.status" :status="agreement.supplier_agreement" class="ml-2" />
-            <span v-if="archive.is_archived" class="ml-2 inline-flex items-center gap-1 whitespace-nowrap rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-                <FontAwesomeIcon :icon="faArchive" fixed-width aria-hidden="true" />
-                {{ archive.archived_at ? ctrans('Archived :date', { date: useFormatTime(archive.archived_at) }) : ctrans('Archived') }}
-            </span>
+            <SupplierArchivedBadge v-if="archive.is_archived" :archivedAt="archive.archived_at" class="ml-2" />
         </template>
         <template #other>
             <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />

@@ -30,6 +30,8 @@ class GetSupplierShowcase
             'relationshipContact' => $this->relationshipContact($supplier),
             'contactCard' => [
                 'created_at' => $supplier->created_at,
+                'is_archived' => !$supplier->status,
+                'archived_at' => $supplier->status ? null : $supplier->archived_at,
                 'company'    => $supplier->company_name,
                 'nickname'   => $supplier->nickname(),
                 'update_route' => $editRoute ? [
