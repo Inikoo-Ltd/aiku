@@ -44,7 +44,7 @@ EXCLUDES=(
   mailshot_has_dispatched_emails customer_has_dispatched_emails
   location_org_stock_histories org_stock_histories org_stock_movements audits
   failed_jobs
-  staff_messages staff_message_reactions staff_message_translations
+  staff_messages staff_message_reactions staff_message_translations staff_message_stories
   slack_messages slack_message_reactions slack_message_versions slack_files
 )
 EXCLUDE_ARGS=""; for t in "${EXCLUDES[@]}"; do EXCLUDE_ARGS+=" --exclude-table-data=$t"; done

@@ -9,10 +9,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
+    Route::get('/feed', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('feed');
     Route::get('/reports', \App\Actions\Chat\Staff\UI\ShowStaffChatReports::class)->name('reports');
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/groups', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('groups.index');
     Route::get('/groups/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('groups.show');
+    Route::get('/home', \App\Actions\Chat\Staff\Home\GetStaffHome::class)->name('home');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
     Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');
     Route::post('/conversations', \App\Actions\Chat\Staff\StoreStaffConversation::class)->name('conversations.store');

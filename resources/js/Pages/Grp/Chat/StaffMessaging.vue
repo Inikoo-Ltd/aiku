@@ -22,6 +22,7 @@ import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
 import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
 import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
+import VerbaHome from "@/Components/Messaging/VerbaHome.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useLayoutStore } from "@/Stores/layout"
 import { deskShortcutList, isMac, useDeskShortcuts } from "@/Composables/useDeskShortcuts"
@@ -336,6 +337,7 @@ const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().incl
 
 const layoutStore = useLayoutStore()
 const isDesks = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.slack."))
+const isFeed = computed(() => usePage().url.split("?")[0].endsWith("/vx/feed"))
 const isGroups = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.groups."))
 const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
 const isNewVerbrationOpen = ref(false)
@@ -448,6 +450,7 @@ onUnmounted(() => {
 
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
+            v-if="!isFeed"
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
             :class="[selectedUlid || showSlackChannel ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
@@ -677,6 +680,7 @@ onUnmounted(() => {
         </div>
 
         <button
+            v-if="!isFeed"
             type="button"
             class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
@@ -687,9 +691,10 @@ onUnmounted(() => {
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
         </button>
 
-        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
+        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
+            <VerbaHome v-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
             <MessagingConversation
-                v-if="selectedConversation"
+                v-else-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
                 desk
@@ -708,15 +713,9 @@ onUnmounted(() => {
                     :live-channel="knownSlackLiveChannel"
                     @read="onSlackChannelRead(slack_channel.id, $event)"
                     @back="router.visit(route('grp.chat.staff.slack.index'))" />
-                <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-                    <FontAwesomeIcon icon="fal fa-comments" class="text-5xl mb-3" fixed-width aria-hidden="true" />
-                    <span class="text-sm">{{ ctrans('Select a conversation') }}</span>
-                </div>
+                <VerbaHome v-else @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
             </SlackMessageSearch>
-            <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <FontAwesomeIcon icon="fal fa-comments" class="text-5xl mb-3" fixed-width aria-hidden="true" />
-                <span class="text-sm">{{ ctrans('Select a conversation') }}</span>
-            </div>
+            <VerbaHome v-else @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
         </div>
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />

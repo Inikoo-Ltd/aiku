@@ -1756,6 +1756,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:edit-stories')->everyThirtyMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping(25)->sentryMonitor(
+                    monitorSlug: 'EditStaffMessageStories',
+                ),
+                name: 'EditStaffMessageStories',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:hydrate-reply-examples')->dailyAt('03:50')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'HydrateChatReplyExamples',
                 ),

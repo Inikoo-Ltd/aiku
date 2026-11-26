@@ -2086,7 +2086,7 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
     $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
     $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
 
-    expect($verba)->toBe(['V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
+    expect($verba)->toBe([__('Home'), 'V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
         ->and($chat)->not->toContain(__('Verba'));
 });
 
@@ -2107,4 +2107,37 @@ test('a named group is a Verbration: it is never merged into the DM with the sam
     actingAs($this->user)->get(route('grp.chat.staff.show', $group->ulid))->assertRedirect(route('grp.chat.staff.groups.show', $group->ulid));
     actingAs($this->user)->get(route('grp.chat.staff.groups.show', $group->ulid))->assertOk();
     actingAs($this->user)->get(route('grp.chat.staff.groups.show', $dm->ulid))->assertRedirect(route('grp.chat.staff.show', $dm->ulid));
+});
+
+test('Verba Home: the AI editor writes stories only from group chats, never DMs, and a story is shown only to members of its conversation, INI-570', function () {
+    Event::fake([\App\Events\StaffMessageSent::class]);
+    $member   = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    $outsider = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    $group    = \App\Models\Chat\StaffConversation::where('ulid', actingAs($this->user)->postJson(route('grp.chat.staff.conversations.store'), ['user_ids' => [$member->id], 'name' => 'Product team'])->json('data.ulid'))->firstOrFail();
+    $dm       = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$outsider->id]]);
+
+    \Illuminate\Support\Facades\Cache::forget('staff-stories-cursor:'.$this->user->group_id);
+    $news    = \App\Actions\Chat\Staff\SendStaffMessage::run($group, $this->user, ['body' => 'The new amethyst geode lamps arrived today, samples on my desk']);
+    $private = \App\Actions\Chat\Staff\SendStaffMessage::run($dm, $this->user, ['body' => 'This private message must never reach the editor at all']);
+
+    $sent = null;
+    Http::fake(['*' => function (HttpRequest $request) use (&$sent, $news) {
+        $sent = $request->data()['messages'][0]['content'];
+
+        return Http::response(['choices' => [['message' => ['content' => json_encode(['stories' => [
+            ['id' => 's'.$news->id, 'category' => 'product', 'importance' => 4, 'headline' => 'Amethyst geode lamps are here', 'blurb' => 'Samples arrived today.'],
+        ]])]]]]);
+    }]);
+
+    expect(\App\Actions\Chat\Staff\Home\EditStaffMessageStories::run($this->user->group))->toBe(1)
+        ->and($sent)->toContain('amethyst geode')
+        ->and($sent)->not->toContain('private message');
+
+    $headlines = fn (User $user) => collect(actingAs($user)->getJson(route('grp.chat.staff.home'))->assertOk()->json('stories'))->pluck('headline')->all();
+
+    expect($headlines($member))->toContain('Amethyst geode lamps are here')
+        ->and($headlines($outsider))->not->toContain('Amethyst geode lamps are here')
+        ->and(collect(actingAs($this->user)->getJson(route('grp.chat.staff.home'))->json('people'))->pluck('conversation_ulid'))->toContain($dm->ulid);
+
+    expect(\App\Actions\Chat\Staff\Home\EditStaffMessageStories::run($this->user->group))->toBe(0);
 });

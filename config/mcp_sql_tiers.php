@@ -73,6 +73,7 @@ return [
     'unrestricted_hidden_columns' => [
         'staff_messages'             => ['body'],
         'staff_message_translations' => ['body'],
+        'staff_message_stories'      => ['headline', 'blurb'],
         'slack_messages'             => ['text', 'data', 'search_vector'],
         'slack_message_versions'     => ['text', 'data'],
         'slack_files'                => ['name', 'data'],
