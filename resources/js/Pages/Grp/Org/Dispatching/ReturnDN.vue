@@ -17,7 +17,7 @@ import BoxNote from '@/Components/Pallet/BoxNote.vue'
 import TableReturnDNItems from '@/Components/Warehouse/DeliveryNotes/TableReturnDNItems.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import BoxStatsDeliveryNote from '@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue'
-import { faBoxOpen, faCheck, faExchangeAlt, faTimes, faUserSlash } from '@fal'
+import { faBoxOpen, faCheck, faCheckDouble, faExchangeAlt, faTimes, faUserSlash } from '@fal'
 import { ctrans } from "@/Composables/useTrans"
 import { Select, ToggleSwitch } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -176,6 +176,7 @@ watch(
 library.add(
 	faUserSlash,
 	faExchangeAlt,
+	faCheckDouble,
 	faBoxCheck
 )
 
@@ -355,6 +356,32 @@ const confirmAndSubmitRefund = () => {
 				:type="action.type"
 				:style="action.style"
 			/>
+		</template>
+
+		<template #button-return-all-items="{ action }">
+			<ModalConfirmation
+				:title="ctrans('Return all items to their locations?')"
+				:description="ctrans('Every item still to do goes back to its default location. Items without a location stay to do.')"
+				isFullLoading
+				:noLabel="ctrans('Cancel')"
+			>
+				<template #default="{ changeModel }">
+					<Button
+						@click="changeModel"
+						:label="action.label"
+						:icon="action.icon"
+						:style="action.style"
+					/>
+				</template>
+				<template #btn-yes>
+					<Button
+						:label="ctrans('Return all')"
+						@click="setAsReturned(action.route)"
+						type="submit"
+						:icon="action.icon"
+					/>
+				</template>
+			</ModalConfirmation>
 		</template>
 
 		<template #button-finish-return="{ action }">

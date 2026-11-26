@@ -2793,6 +2793,28 @@ describe('sql tiers', function () {
         expect(GetMcpSqlTiers::run($this->user))->toContain('base');
     });
 
+    test('the unrestricted login reads chat ids and times but never what staff wrote', function () {
+        $login = 'mcp_unrestricted_'.uniqid();
+        config()->set('mcp.sql_read_only_user', $login);
+        DB::statement("CREATE ROLE $login NOLOGIN");
+        DB::statement("GRANT SELECT ON staff_messages, slack_messages, shops TO $login");
+
+        try {
+            SyncMcpSqlRoles::run();
+            $can = fn (string $table, string $column) => DB::selectOne('SELECT has_column_privilege(?, ?, ?, ?) AS ok', [$login, $table, $column, 'SELECT'])->ok;
+
+            expect($can('staff_messages', 'body'))->toBeFalse()
+                ->and($can('staff_messages', 'created_at'))->toBeTrue()
+                ->and($can('slack_messages', 'text'))->toBeFalse()
+                ->and($can('slack_messages', 'data'))->toBeFalse()
+                ->and($can('slack_messages', 'sent_at'))->toBeTrue()
+                ->and($can('shops', 'name'))->toBeTrue();
+        } finally {
+            DB::statement("DROP OWNED BY $login");
+            DB::statement("DROP ROLE $login");
+        }
+    });
+
     test('tiers come from the job positions given to the user', function () {
         $position = JobPosition::where('code', 'acc-c')->firstOrFail();
         $this->user->pseudoJobPositions()->attach($position->id, ['group_id' => $this->group->id, 'scopes' => []]);

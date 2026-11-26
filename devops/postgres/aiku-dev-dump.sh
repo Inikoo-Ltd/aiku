@@ -13,6 +13,8 @@
 #     rows with dispatched_email_id blanked, so procurement notes and agreed terms stay
 #   - bank_* and manufacture_payroll_adjustments, as the full dump does; agent_payments
 #     keep their rows with bank_transaction_id blanked
+#   - what staff wrote to each other: staff_messages and slack_messages (with their
+#     reactions, translations, versions and files); conversations and channels stay
 # org_stock_movements stays: pickings point at it.
 #
 # Runs on boro as inikoo, after backup_aiku.sh, from the primary. Everything is
@@ -41,6 +43,7 @@ EMPTY_TABLES=(
   dispatched_emails email_tracking_events email_copies mailshot_recipients
   mailshot_has_dispatched_emails customer_has_dispatched_emails ses_notifications notifications
   manufacture_payroll_adjustments
+  staff_messages slack_messages
 )
 EMPTY_PATTERNS=('crawl\_%' 'search\_console\_%' 'bank\_%')
 NULLED_COLUMNS=(shipments.label supplier_messages.dispatched_email_id agent_payments.bank_transaction_id)

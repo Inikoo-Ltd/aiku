@@ -10248,3 +10248,28 @@ test('backlog forecast follows last year scaled by the last four weeks, with a b
     expect($forecast->projection(array_slice($created, 0, 300), array_slice($closed, 0, 300), 500))->toBe([])
         ->and($forecast->projection($created, array_map(fn (int $count) => $count * 3, $closed), 50)[27]['backlog'])->toBe(0);
 });
+
+test('return all puts every item still to do back into its default location (HELP-4957)', function () {
+    [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+
+    $returnDeliveryNote = \App\Actions\GoodsIn\ReturnDeliveryNote\ProcessReturnDeliveryNote::make()->handle($deliveryNote, []);
+    $returnItem         = $returnDeliveryNote->returnDeliveryNoteItem()->first();
+    $returnItem->update(['total_expected_qty' => 2]);
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $deliveryNoteItem->org_stock_id)->first();
+    $route            = route('grp.models.return_delivery_note.return_all_items', $returnDeliveryNote->id);
+
+    actingAs($this->user);
+
+    $this->patchJson($route)->assertJsonValidationErrors('message');
+    expect($returnItem->sowings()->count())->toBe(0);
+
+    $returnDeliveryNote->update(['state' => ReturnDeliveryNoteStateEnum::RETURNING]);
+    $this->patchJson($route)->assertSessionHasNoErrors();
+
+    $returnItem->refresh();
+    expect((float) $returnItem->total_item_returned)->toBe(2.0)
+        ->and($returnItem->is_handled)->toBeTrue()
+        ->and($returnItem->sowings()->first()->location_id)->toBe($locationOrgStock->location_id);
+});

@@ -37,12 +37,15 @@ for v in "$REPLICA" "$PROD_DB" "$STAGING_DB" "$STAGING_ROLE"; do
 done
 
 # Big log/history tables — structure kept, data skipped (staging doesn't need
-# them; failed_jobs excluded so prod job payloads never even land on disk here)
+# them; failed_jobs excluded so prod job payloads never even land on disk here;
+# staff and Slack messages so nobody reads what staff wrote to each other)
 EXCLUDES=(
   dispatched_emails email_tracking_events email_copies
   mailshot_has_dispatched_emails customer_has_dispatched_emails
   location_org_stock_histories org_stock_histories org_stock_movements audits
   failed_jobs
+  staff_messages staff_message_reactions staff_message_translations
+  slack_messages slack_message_reactions slack_message_versions slack_files
 )
 EXCLUDE_ARGS=""; for t in "${EXCLUDES[@]}"; do EXCLUDE_ARGS+=" --exclude-table-data=$t"; done
 

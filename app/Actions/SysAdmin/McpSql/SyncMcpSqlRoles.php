@@ -46,6 +46,7 @@ class SyncMcpSqlRoles
                 ->each(fn ($role) => $this->dropRole($role->rolname));
 
             $counts = $this->createTierRoles();
+            $this->hideColumnsFromUnrestrictedLogin();
 
             $connection = GetMcpSqlConnection::make();
             $roles->filter(fn ($role) => str_starts_with($role->rolname, $this->mcpRolePrefix().'set_'))
@@ -104,6 +105,26 @@ class SyncMcpSqlRoles
         }
 
         return $counts;
+    }
+
+    protected function hideColumnsFromUnrestrictedLogin(): void
+    {
+        $login = config('mcp.sql_read_only_user');
+        if (blank($login) || $login === config('database.connections.'.config('database.default').'.username')
+            || !DB::selectOne('SELECT 1 AS found FROM pg_roles WHERE rolname = ?', [$login])) {
+            return;
+        }
+
+        $hidden  = config('mcp_sql_tiers.unrestricted_hidden_columns');
+        $columns = collect(DB::select("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = ANY(?)", ['{'.implode(',', array_keys($hidden)).'}']))
+            ->groupBy('table_name')
+            ->map(fn (Collection $rows) => $rows->pluck('column_name')->all());
+
+        $role = $this->quoteIdentifier($login);
+        foreach ($columns as $table => $tableColumns) {
+            DB::statement('REVOKE SELECT ON '.$this->quoteIdentifier($table).' FROM '.$role);
+            $this->grantColumns($table, array_diff($tableColumns, $hidden[$table]), $role);
+        }
     }
 
     protected function createTierRole(string $tier): string
