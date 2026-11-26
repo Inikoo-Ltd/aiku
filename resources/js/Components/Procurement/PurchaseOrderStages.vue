@@ -78,6 +78,7 @@ interface Stage {
     planned?: string | null
     planned_note?: string | null
     deliveries: { reached: number, total: number } | null
+    received_lines?: { received: number, total: number, quantity_received: number, quantity_ordered: number } | null
     not_required?: boolean
     unpaid?: boolean
     note?: string | null
@@ -159,7 +160,14 @@ const groupGridClass = (count: number): string => {
     return `grid-cols-2 md:grid-cols-4 ${wideColumns[count] ?? "xl:grid-cols-7"}`
 }
 
-const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
+const isPartial = (stage: Stage): boolean => !!stage.received_lines
+    && stage.current
+    && stage.received_lines.quantity_received > 0
+    && stage.received_lines.quantity_received < stage.received_lines.quantity_ordered
+const isComplete = (stage: Stage): boolean => (stage.reached || !!stage.not_required) && !isPartial(stage)
+const receivedPercentage = (stage: Stage): number => stage.received_lines?.quantity_ordered
+    ? Math.min(100, Math.round(stage.received_lines.quantity_received / stage.received_lines.quantity_ordered * 100))
+    : 0
 
 const zeroDate = computed(() => props.stages.find((stage) => stage.number === 1)?.date ?? null)
 const zeroOffsetLabel = (offset: number): string => offset < 0 ? `Z${offset}` : `Z+${offset}`
@@ -554,7 +562,7 @@ function save() {
                     :type="stage.key === 'handed_over' ? 'button' : undefined"
                     class="flex items-center gap-2 text-left font-medium"
                     :class="[
-                        isComplete(stage) ? 'text-gray-800' : 'text-gray-400',
+                        isComplete(stage) || isPartial(stage) ? 'text-gray-800' : 'text-gray-400',
                         stage.key === 'handed_over' ? 'cursor-pointer rounded hover:text-[var(--app-accent)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
                     ]"
                     v-tooltip="stage.description"
@@ -564,6 +572,7 @@ function save() {
                     <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                     {{ stage.label }}
                     <FontAwesomeIcon v-if="!stage.unpaid && isComplete(stage)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="isPartial(stage)" icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                 </component>
                 <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
             </div>
@@ -600,6 +609,18 @@ function save() {
                     </span>
                     <div class="mt-0.5 text-xs text-red-600">{{ cho.misses.join(", ") }}</div>
                 </template>
+            </div>
+
+            <div v-if="isPartial(stage) && stage.received_lines" class="mt-1.5 text-xs">
+                <div class="h-1.5 overflow-hidden rounded-full bg-gray-200" role="progressbar" :aria-valuenow="receivedPercentage(stage)" aria-valuemin="0" aria-valuemax="100">
+                    <div class="h-full rounded-full bg-green-500" :style="{ width: `${receivedPercentage(stage)}%` }" />
+                </div>
+                <div class="mt-1 tabular-nums text-green-700">
+                    {{ ctrans(":received of :ordered received", { received: stage.received_lines.quantity_received, ordered: stage.received_lines.quantity_ordered }) }}
+                </div>
+                <div class="tabular-nums text-gray-500">
+                    {{ ctrans(":received of :total lines complete", { received: stage.received_lines.received, total: stage.received_lines.total }) }}
+                </div>
             </div>
 
             <div v-if="stage.deliveries && stage.deliveries.total" class="mt-1 flex items-center gap-1 text-xs text-gray-500">

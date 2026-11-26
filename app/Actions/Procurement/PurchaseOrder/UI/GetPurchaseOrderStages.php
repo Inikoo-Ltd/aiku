@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
+use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction;
 use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
@@ -361,6 +362,7 @@ class GetPurchaseOrderStages
                 ? (int) Carbon::parse($expected[$stage->value]['date'])->diffInDays($today)
                 : 0,
             'deliveries'  => $stages[$stage->value]['deliveries'],
+            'received_lines' => $stage === Stage::IN_WAREHOUSE && $this->usesAgentWarehouse($purchaseOrder) ? $this->receivedLineCounts($purchaseOrder) : null,
             'note'        => match (true) {
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
                 $stage === Stage::DEPOSIT_PAID && ($paidByAgent = $this->paidByAgentNote($purchaseOrder)) !== null => $paidByAgent,
@@ -676,6 +678,36 @@ class GetPurchaseOrderStages
     /**
      * @return array{warehouse_arrived_at: ?Carbon, warehouse_checked_at: ?Carbon, warehouse_packed_at: ?Carbon}
      */
+    /**
+     * How much of the order the agent warehouse has accepted, by quantity and by lines received in full, so a stage
+     * reached by a first receipt still shows what is missing.
+     *
+     * @return array{received: int, total: int, quantity_received: float, quantity_ordered: float}|null
+     */
+    private function receivedLineCounts(PurchaseOrder $purchaseOrder): ?array
+    {
+        $lines = $purchaseOrder->purchaseOrderTransactions()
+            ->leftJoinSub(IndexAgentProductsInProduction::receivedLines(), 'received_lines', 'received_lines.purchase_order_transaction_id', 'purchase_order_transactions.id')
+            ->whereNotNull('purchase_order_transactions.supplier_product_id')
+            ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
+            ->selectRaw('count(*) as total')
+            ->selectRaw('count(*) filter (where purchase_order_transactions.quantity_ordered <= coalesce(received_lines.quantity_accepted, 0)) as received')
+            ->selectRaw('sum(least(coalesce(received_lines.quantity_accepted, 0), purchase_order_transactions.quantity_ordered)) as quantity_received')
+            ->selectRaw('sum(purchase_order_transactions.quantity_ordered) as quantity_ordered')
+            ->first();
+
+        if (!$lines || (int) $lines->total === 0) {
+            return null;
+        }
+
+        return [
+            'received'          => (int) $lines->received,
+            'total'             => (int) $lines->total,
+            'quantity_received' => (float) $lines->quantity_received,
+            'quantity_ordered'  => (float) $lines->quantity_ordered,
+        ];
+    }
+
     private function warehouseDates(PurchaseOrder $purchaseOrder): array
     {
         return $this->warehouseDates[$purchaseOrder->id] ??= $this->computeWarehouseDates($purchaseOrder);
