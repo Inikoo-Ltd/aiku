@@ -13,13 +13,13 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes, faExclamationTriangle, faArrowRight } from "@fal"
+import { faCheck, faTimes, faExclamationTriangle, faArrowRight, faInfoCircle } from "@fal"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { SupplierProductStateOption, SupplierProductStateRow, isDiscontinuedState, stateSelectPt } from "@/Composables/useSupplierProductState"
+import { SupplierProductStateOption, SupplierProductStateRow, isDiscontinuedState, stateSelectPt, useOrganisationsKeepStateNotice } from "@/Composables/useSupplierProductState"
 
-library.add(faCheck, faTimes, faExclamationTriangle, faArrowRight)
+library.add(faCheck, faTimes, faExclamationTriangle, faArrowRight, faInfoCircle)
 
 const props = defineProps<{
     selectedIds: number[]
@@ -32,6 +32,7 @@ const emits = defineEmits<{
     (e: "saved"): void
 }>()
 
+const organisationsKeepStateNotice = useOrganisationsKeepStateNotice()
 const isDialogOpen = ref(false)
 const bulkState = ref<string | null>(null)
 const discontinuedReason = ref("")
@@ -150,6 +151,11 @@ async function save() {
                         :disabled="isSaving"
                     />
                 </label>
+
+                <div v-if="organisationsKeepStateNotice" class="flex items-start gap-1.5 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2 text-xs text-gray-700">
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                    {{ organisationsKeepStateNotice }}
+                </div>
 
                 <div v-if="effects.length" class="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     <div class="mb-1 flex items-center gap-1 font-semibold">

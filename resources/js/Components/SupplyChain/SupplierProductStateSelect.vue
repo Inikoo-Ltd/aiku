@@ -13,13 +13,13 @@ import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faTimes } from "@fal"
+import { faCheck, faTimes, faInfoCircle } from "@fal"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { SupplierProductState, SupplierProductStateOption, isDiscontinuedState, stateSelectPt } from "@/Composables/useSupplierProductState"
+import { SupplierProductState, SupplierProductStateOption, isDiscontinuedState, stateSelectPt, useOrganisationsKeepStateNotice } from "@/Composables/useSupplierProductState"
 
-library.add(faCheck, faTimes)
+library.add(faCheck, faTimes, faInfoCircle)
 
 const props = defineProps<{
     supplierProductId: number
@@ -32,6 +32,7 @@ const emits = defineEmits<{
     (e: "saved"): void
 }>()
 
+const organisationsKeepStateNotice = useOrganisationsKeepStateNotice()
 const newState = ref<string | null>(null)
 const isSaving = ref(false)
 const error = ref<string | null>(null)
@@ -108,6 +109,7 @@ async function saveState(reason?: string) {
             :label="ctrans('Set')"
             :disabled="!newState || newState === state?.value"
             :loading="isSaving"
+            :tooltip="organisationsKeepStateNotice ?? undefined"
             @click="requestState"
         />
         <span v-if="error" class="text-xs text-red-500">{{ error }}</span>
@@ -119,6 +121,10 @@ async function saveState(reason?: string) {
             :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
             :draggable="false"
         >
+            <p v-if="organisationsKeepStateNotice" class="mb-3 flex items-start gap-1.5 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2 text-xs text-gray-700">
+                <FontAwesomeIcon icon="fal fa-info-circle" class="mt-0.5 text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                {{ organisationsKeepStateNotice }}
+            </p>
             <label class="block space-y-1 text-sm">
                 <span class="text-xs font-semibold text-gray-600">{{ ctrans("Reason") }}</span>
                 <Textarea

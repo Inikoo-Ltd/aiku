@@ -5,6 +5,10 @@
  * Copyright: 2026
  */
 
+import { computed, inject } from "vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { ctrans } from "@/Composables/useTrans"
+
 export type SupplierProductState = { value: string, label: string, icon: object }
 
 export type SupplierProductStateOption = { value: string, label: string }
@@ -20,4 +24,12 @@ export const stateSelectPt = {
     option: ({ context }: { context: { disabled: boolean } }) => ({
         class: context.disabled ? "!cursor-not-allowed !text-gray-400 !opacity-100" : "",
     }),
+}
+
+export const useOrganisationsKeepStateNotice = () => {
+    const layout = inject("layout", layoutStructure)
+
+    return computed(() => (layout.organisations?.data?.length
+        ? ctrans("This changes the state at the agent only: the SKOs and products in the organisations keep their own state")
+        : null))
 }
