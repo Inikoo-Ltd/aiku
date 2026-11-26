@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Actions\Goods\Stock\SyncStockTradeUnits;
@@ -363,7 +364,7 @@ test('UI show org supplier', function () {
                     ->where('title', $this->orgSupplier->supplier->name)
                     ->etc()
             )
-            ->where('pageHead.subNavigation.1.number', 86)
+            ->where('pageHead.subNavigation.1.number', WithOrgSupplierSubNavigation::numberActiveSupplierProducts([$this->orgSupplier->id]))
             ->where('pageHead.actions.0.label', __('Purchase Order'))
             ->where('pageHead.actions.0.route.name', 'grp.models.org-supplier.purchase-order.store')
             ->where('pageHead.actions.1.route.name', 'grp.org.procurement.org_suppliers.edit')
