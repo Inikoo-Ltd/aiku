@@ -10,6 +10,7 @@ namespace App\Actions\Web\Announcement;
 
 use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Enums\Announcement\AnnouncementPositionEnum;
 use App\Models\Catalogue\Shop;
@@ -27,6 +28,7 @@ use Symfony\Component\HttpFoundation\Response;
 class StoreAnnouncement extends OrgAction
 {
     use WithAttributes;
+    use WithWebEditAuthorisation;
 
     private Website $parent;
     private string $scope;
@@ -76,11 +78,6 @@ class StoreAnnouncement extends OrgAction
             'website'      => $announcement->website->slug,
             'announcement' => $announcement->ulid
         ]);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
     }
 
     public function rules(): array
