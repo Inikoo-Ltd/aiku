@@ -13,6 +13,7 @@ use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
@@ -68,6 +69,30 @@ class DeactivateSupplier
         return $supplier->purchaseOrders()
             ->whereIn('state', PurchaseOrderStateEnum::live())
             ->pluck('reference');
+    }
+
+    /**
+     * @return array<int, array{reference: string, state: string, organisation: string, route: array{name: string, parameters: array<int, string>}}>
+     */
+    public function openPurchaseOrders(Supplier $supplier): array
+    {
+        $stateLabels = PurchaseOrderStateEnum::labels();
+
+        return $supplier->purchaseOrders()
+            ->whereIn('state', PurchaseOrderStateEnum::live())
+            ->with('organisation:id,slug,code')
+            ->orderBy('reference')
+            ->get(['id', 'slug', 'reference', 'state', 'organisation_id'])
+            ->map(fn (PurchaseOrder $purchaseOrder) => [
+                'reference'    => $purchaseOrder->reference,
+                'state'        => $stateLabels[$purchaseOrder->state->value] ?? $purchaseOrder->state->value,
+                'organisation' => $purchaseOrder->organisation->code,
+                'route'        => [
+                    'name'       => 'grp.org.procurement.purchase_orders.show',
+                    'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],
+                ],
+            ])
+            ->all();
     }
 
     /**

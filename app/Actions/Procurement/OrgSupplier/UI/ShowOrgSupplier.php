@@ -390,6 +390,7 @@ class ShowOrgSupplier extends OrgAction
             'is_archived'   => !$supplier->status,
             'supplier_name' => $supplier->name,
             'archived_at'   => $supplier->archived_at,
+            'open_purchase_orders' => $supplier->status ? DeactivateSupplier::make()->openPurchaseOrders($supplier) : [],
             'can_archive'   => !ReactivateSupplier::wasMerged($supplier),
             'route'         => [
                 'name'       => $supplier->status ? 'grp.models.supplier.archive' : 'grp.models.supplier.unarchive',
