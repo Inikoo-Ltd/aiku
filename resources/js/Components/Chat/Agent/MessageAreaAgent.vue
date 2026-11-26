@@ -899,7 +899,7 @@ const markCleared = (draftId: number) => {
     }
 }
 
-// An email reply starts from Aiku's draft, unless the agent has begun one of their own or
+// A reply (email or website chat) starts from Aiku's draft, unless the agent has begun one of their own or
 // already cleared this draft out of the box. A newer draft replaces an older one left untouched.
 const offerAiDraft = (text: string, draftId?: number, translated: { mine: string, theirs: string } | null = null) => {
     if (draftId) latestAiDraftId = draftId
@@ -1026,7 +1026,7 @@ const clearReplyBox = () => {
 
 const aiDraftInEditor = computed(() => aiDraftText.value !== null && !!newMessage.value.trim())
 const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== aiDraftText.value)
-const showAuraRow = computed(() => aiDraftInEditor.value || isEmailChat.value)
+const showAuraRow = computed(() => aiDraftInEditor.value || isEmailChat.value || !!aiDraftBox.value?.draft?.text)
 
 const wordsOf = (text: string) => new Set(text.replace(/<[^>]+>/g, " ").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean))
 const auraShare = computed(() => {
@@ -2357,9 +2357,6 @@ const handleClickOutside = (e: MouseEvent) => {
             </template>
             <ChatAiDraftBox v-if="readOnly" :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
-            <template v-else-if="isEmailChat && !isTrashed && !isClosed" />
-            <ChatAiDraftBox v-else-if="!isTrashed && !isClosed" :session-ulid="chatSession?.ulid" @use="(text) => newMessage = text"
-                @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
             <ChatBackToNewest v-if="!isEmailChat" :target="messagesContainer" />
             <button v-if="isEmailChat && !isReplySlotVisible && !readOnly && !isClosed && !isTrashed && !(isLoadingThread && !messagesLocal.length)" type="button"
                 class="sticky bottom-0 z-10 !mt-2 flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-xs text-gray-600 shadow-md hover:bg-gray-50"
@@ -2527,7 +2524,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <span>{{ ctrans("The customer writes in :language. A reply in another language is translated to :language before it is sent.", { language: customerLanguage.name }) }}</span>
             </div>
 
-            <div :class="isEmailChat ? 'flex flex-wrap items-start gap-x-4 gap-y-2' : ''">
+            <div class="flex flex-wrap items-start gap-x-4 gap-y-2">
             <div class="flex min-w-0 flex-1 basis-[28rem] flex-col">
             <div class="relative flex min-w-0 flex-col rounded-xl border bg-white shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-shadow"
                 :class="colleagueWriting && newMessage.trim() && !aiDraftInEditor ? 'border-red-500 focus-within:border-red-500 ring-2 ring-red-200' : aiDraftInEditor && aiDraftTranslationOf ? 'border-pink-400 ring-2 ring-pink-100' : aiDraftInEditor ? 'border-pink-300' : 'border-gray-200'">
@@ -2557,7 +2554,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         <EditorWritingQualityCheck v-if="isEmailChat" :key="(session as any)?.ulid" compact :editor="messageEditor?.editor" context="customer_email" />
                     </div>
                     <div class="ml-auto flex items-center gap-1.5">
-                    <label v-if="aiDraftInEditor && aiDraftBox?.draft?.translate_for_me && aiDraftBox.draft.text" class="flex shrink-0 items-center gap-1.5 font-normal"
+                    <label v-if="isEmailChat && aiDraftInEditor && aiDraftBox?.draft?.translate_for_me && aiDraftBox.draft.text" class="flex shrink-0 items-center gap-1.5 font-normal"
                         :class="[aiDraftBox.draft.edit_in_my_language ? 'text-pink-700' : 'text-pink-500', aiDraftBox.savingEditLanguage || aiDraftBox.translating ? 'cursor-wait opacity-50' : 'cursor-pointer']"
                         :title="aiDraftBox.draft.customer_language ? ctrans('Remembered for customers who write in :language, until you turn it off', { language: aiDraftBox.draft.customer_language }) : undefined">
                         <ToggleSwitch :model-value="!!aiDraftBox.draft.edit_in_my_language" :disabled="aiDraftBox.savingEditLanguage || aiDraftBox.translating"
@@ -2660,7 +2657,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 {{ aiDraftEdited ? ctrans("Your reply, based on the Aura AI draft") : ctrans("Aura AI draft: read it, change what you need, then send") }}
             </p>
             </div>
-            <div v-if="isEmailChat && !readOnly && !isTrashed && !isClosed" data-aura-box class="flex min-w-0 flex-col gap-1.5"
+            <div v-if="!readOnly && !isTrashed && !isClosed" data-aura-box class="flex min-w-0 flex-col gap-1.5"
                 :class="auraNoteBeside || auraOldNote || (auraFollowUpNote && !aiDraftBox?.draft) ? 'basis-56 grow lg:grow-0 lg:basis-2/5' : !aiDraftBox?.draft || !(aiDraftBox?.hasNotes || auraFollowUpNote) ? 'hidden' : auraCollapsed ? 'grow-0 self-stretch' : 'basis-56 grow lg:grow-0 lg:basis-2/5'">
                 <button v-if="auraCollapsed && aiDraftBox?.draft" type="button"
                     class="group/aura flex w-7 flex-col items-center gap-2 rounded-xl border border-pink-300 bg-pink-50 py-2 hover:bg-pink-100"
@@ -2692,7 +2689,7 @@ const handleClickOutside = (e: MouseEvent) => {
                 <Button v-if="auraNoteBeside?.note_answer_in && canEndChat" data-aura="close_answer_in" type="tertiary" size="m" class="self-start !border-pink-600 !bg-pink-600 !text-white hover:!bg-pink-700 disabled:!opacity-50"
                     :disabled="closingToAnswerIn" :label="ctrans('Close this chat, answer in the other one')" @click="closeAndAnswerIn(auraNoteBeside.note_answer_in)" />
                 </template>
-                <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
+                <ChatAiDraftBox v-show="!(auraCollapsed && aiDraftBox?.draft)" ref="aiDraftBox" inline :own-language-edits="isEmailChat" :session-ulid="chatSession?.ulid" :reply-subject="replySubject"
                     class="min-w-0 flex-1"
                     @use="offerAiDraft" @discarded="clearAiDraft" @disposed="emit('spam-success')" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)"
                     @collapse="setAuraCollapsed(true)" />

@@ -22,6 +22,7 @@ const props = defineProps<{
     readOnly?: boolean
     preview?: boolean
     inline?: boolean
+    ownLanguageEdits?: boolean
     replySubject?: string
 }>()
 
@@ -260,7 +261,7 @@ const toggleTranslation = async () => {
 
 // HELP-4534: an agent who does not write the customer's language edits the draft in their own;
 // the reply is translated back before it is emailed, and sent unchanged it is Aiku's original.
-const editsInMyLanguage = computed(() => !!draft.value?.translate_for_me && !!draft.value?.edit_in_my_language)
+const editsInMyLanguage = computed(() => !!props.ownLanguageEdits && !!draft.value?.translate_for_me && !!draft.value?.edit_in_my_language)
 
 const offerToEditor = async () => {
     if (!props.inline || !draft.value?.text || hidden.value) return

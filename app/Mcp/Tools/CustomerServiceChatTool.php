@@ -25,6 +25,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Product;
 use App\Enums\CRM\Livechat\ChatAiDraftStatusEnum;
+use App\Enums\CRM\Livechat\ChatChannelEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatEvent;
@@ -59,6 +60,8 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
     public const int TYPICAL_REPLY_DAYS = 30;
 
     public const int B2B_DRAFT_LENGTH_TIMES = 3;
+
+    public const int B2B_CHAT_DRAFT_LENGTH_TIMES = 2;
 
     public const int MAX_PRODUCTS = 10;
 
@@ -185,9 +188,10 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
             return null;
         }
 
-        $limit = self::B2B_DRAFT_LENGTH_TIMES * $typical;
+        $isEmail = $chatSession instanceof ChatSession && $chatSession->channel === ChatChannelEnum::EMAIL;
+        $limit   = ($isEmail ? self::B2B_DRAFT_LENGTH_TIMES : self::B2B_CHAT_DRAFT_LENGTH_TIMES) * $typical;
 
-        $onWhatsapp = $chatSession instanceof MetaChatSession ? ' On WhatsApp staff answer only the one thing asked, in a line or two, with no greeting paragraph and no extras the customer did not ask for.' : '';
+        $onWhatsapp = $isEmail ? '' : ' In a chat or on WhatsApp staff answer only the one thing asked, in one or two lines, with no greeting paragraph and no extras the customer did not ask for.';
 
         return "Staff in this wholesale shop usually answer in about {$typical} characters on this channel (house_rules.typical_staff_reply_chars) and rewrite long drafts: keep the draft close to that, at most {$limit} characters, unless the customer asked several separate questions. No recap of the order, no apology paragraph, no list of what you checked (that goes in checked).{$onWhatsapp}";
     }

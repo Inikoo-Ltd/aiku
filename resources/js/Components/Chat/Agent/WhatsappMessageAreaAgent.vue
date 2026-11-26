@@ -313,6 +313,53 @@ useComposerDraft(() => props.session?.ulid, newMessage)
 /** HELP-4896: colleagues see this conversation open, and written to once the agent types; Aiku's draft placed in the box does not count. */
 const usedAiDraftText = ref<string | null>(null)
 const isOwnTextInBox = computed(() => !!newMessage.value.trim() && newMessage.value !== usedAiDraftText.value)
+
+const aiDraftBox = ref<InstanceType<typeof ChatAiDraftBox> | null>(null)
+const auraCollapsed = ref(false)
+// ponytail: one storage key per draft an agent emptied out of the box, never pruned, as on website chat and email
+const clearedKey = (draftId: number) => `chat-ai-draft-cleared:${draftId}`
+const wasCleared = (draftId: number) => {
+    try {
+        return localStorage.getItem(clearedKey(draftId)) !== null
+    } catch {
+        return false
+    }
+}
+let offeredDraft: { id: number, sessionUlid: string | undefined } | null = null
+const placeAiDraft = (text: string, draftId?: number) => {
+    offeredDraft = draftId ? { id: draftId, sessionUlid: chatSession.value?.ulid } : null
+    usedAiDraftText.value = text
+    newMessage.value = text
+}
+const offerAiDraft = (text: string, draftId?: number) => {
+    if (templateOnly.value || hasTemplate.value || (draftId && wasCleared(draftId))) return
+    if (newMessage.value.trim() && newMessage.value !== usedAiDraftText.value && newMessage.value !== text) return
+    placeAiDraft(text, draftId)
+}
+const useAiDraftNow = () => {
+    const draft = aiDraftBox.value?.draft
+    if (!draft?.text) return
+    try {
+        localStorage.removeItem(clearedKey(draft.id))
+    } catch {}
+    placeAiDraft(draft.text, draft.id)
+}
+const clearAiDraft = () => {
+    if (newMessage.value === usedAiDraftText.value) newMessage.value = ""
+    usedAiDraftText.value = null
+}
+const aiDraftInEditor = computed(() => usedAiDraftText.value !== null && !!newMessage.value.trim())
+const aiDraftEdited = computed(() => aiDraftInEditor.value && newMessage.value !== usedAiDraftText.value)
+watch(newMessage, (value) => {
+    if (usedAiDraftText.value === null) return
+    if (value.trim() && value !== usedAiDraftText.value) aiDraftBox.value?.take()
+    if (!value.trim() && offeredDraft && offeredDraft.sessionUlid === chatSession.value?.ulid) {
+        try {
+            localStorage.setItem(clearedKey(offeredDraft.id), "1")
+        } catch {}
+        usedAiDraftText.value = null
+    }
+})
 const announcePresence = () => {
     if (props.readOnly) return
     const shopId = chatSession.value?.shop?.id
@@ -1334,7 +1381,13 @@ onUnmounted(() => {
             </template>
             <ChatAiDraftBox v-if="readOnly" whatsapp :session-ulid="chatSession?.ulid" preview
                 @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
-            <ChatAiDraftBox v-else-if="!isClosed" whatsapp :session-ulid="chatSession?.ulid" @use="(text) => { usedAiDraftText = text; newMessage = text }" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            <template v-else-if="!isClosed">
+                <button v-if="auraCollapsed && aiDraftBox?.hasNotes" type="button"
+                    class="mb-1.5 self-start rounded-full border border-pink-300 bg-pink-50 px-2.5 py-0.5 text-[11px] font-semibold text-pink-700 hover:bg-pink-100"
+                    @click="auraCollapsed = false">Aura</button>
+                <ChatAiDraftBox v-show="aiDraftBox?.hasNotes && !auraCollapsed" ref="aiDraftBox" inline whatsapp :session-ulid="chatSession?.ulid" class="mb-1.5 ml-3"
+                    @use="offerAiDraft" @discarded="clearAiDraft" @collapse="auraCollapsed = true" @loaded="followDraft" @jump-to-message="jumpToMessage(unansweredMessageId)" />
+            </template>
             <ChatBackToNewest :target="messagesContainer" />
         </div>
 
@@ -1484,6 +1537,11 @@ onUnmounted(() => {
                     @paste="onPasteAttachment" @submit="sendMessage" enter-sends :disabled="templateOnly"
                     :placeholder="templateOnly ? ctrans('24h window closed, send a template message') : ctrans('Type message...')"
                     class="px-4 pt-3 pb-1 rounded-t-xl [&_.ProseMirror]:max-h-[120px] [@media(max-height:800px)]:[&_.ProseMirror]:max-h-20" />
+                <p v-if="aiDraftInEditor" class="px-4 text-[11px] text-pink-700">
+                    {{ aiDraftEdited ? ctrans("Your reply, based on the Aura AI draft") : ctrans("Aura AI draft: read it, change what you need, then send") }}
+                </p>
+                <button v-else-if="aiDraftBox?.draft?.text && !templateOnly && !hasTemplate" type="button" class="mx-4 text-[11px] text-pink-700 underline hover:text-pink-900"
+                    @click="useAiDraftNow">{{ ctrans("Use Aura draft instead") }}</button>
 
                 <div class="flex items-center justify-between px-2 pb-2 pt-1">
                     <div class="flex items-center gap-1">

@@ -3169,6 +3169,7 @@ describe('customer service tools', function () {
         $shopType = $this->shop->type;
         $this->shop->update(['type' => App\Enums\Catalogue\Shop\ShopTypeEnum::B2B]);
         $opened = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $this->chat->ulid]))->content(), true);
+        $openedEmail = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $emailChat->ulid]))->content(), true);
         $whatsapp = mcpTestWhatsappChat($this->shop, $this->csCustomer, 'My candle holders arrived broken', now()->subMinutes(20));
         App\Models\Chat\MetaChatMessage::create([
             'meta_chat_session_id' => $whatsapp->id,
@@ -3181,10 +3182,11 @@ describe('customer service tools', function () {
         $openedWhatsapp = json_decode((string) app(App\Mcp\Tools\CustomerServiceChatTool::class)->handle(new Laravel\Mcp\Request(['chat_id' => $whatsapp->ulid]))->content(), true);
         $this->shop->update(['type' => $shopType]);
         expect($openedWhatsapp['house_rules']['typical_staff_reply_chars'])->toBe(80)
-            ->and($openedWhatsapp['how_to_answer'])->toContain('at most 240 characters')->toContain('only the one thing asked');
+            ->and($openedWhatsapp['how_to_answer'])->toContain('at most 160 characters')->toContain('one or two lines');
+        expect($openedEmail['how_to_answer'])->toContain('at most 1200 characters')->not->toContain('one or two lines');
         expect($opened['house_rules']['typical_staff_reply_chars'])->toBe(100)
             ->and($opened['house_rules']['shop_facts'])->toBe([['title' => 'Currency', 'body' => 'Prices are in GBP']])
-            ->and($opened['how_to_answer'])->toContain('at most 300 characters')
+            ->and($opened['how_to_answer'])->toContain('at most 200 characters')->toContain('one or two lines')
             ->and($opened['how_to_answer'])->toContain('no [[gaps]]')->not->toContain('leave a gap')
             ->and($opened['how_staff_answered'])->toBe([['customer' => 'A glass arrived broken', 'staff_replied' => 'Sorry, we have credited it to your account.', 'at' => '2026-11-02']]);
 
