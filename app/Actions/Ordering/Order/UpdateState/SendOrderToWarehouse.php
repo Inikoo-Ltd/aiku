@@ -43,6 +43,7 @@ use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
@@ -65,6 +66,11 @@ class SendOrderToWarehouse extends OrgAction
     public const string HELD_MARKER = '⚠️ Order held:';
 
     public const string SENT_WITHOUT_AN_ADDRESS_MARKER = 'Sent without an address on purpose';
+
+    public const string SENT_DESPITE_HOLD_MARKER = 'Sent to the warehouse despite the hold';
+
+    /** Set from the "Send anyway" button of the held bar: staff take responsibility for the missing bottles or SKOs (HELP-4969) */
+    private bool $despiteHold = false;
 
     private bool $releaseFromGate = false;
 
@@ -113,9 +119,11 @@ class SendOrderToWarehouse extends OrgAction
      */
     private function missingComposition(Order $order): bool
     {
-        $productCodes = Product::whereIn('id', $order->transactions()->where('model_type', 'Product')->select('model_id'))
-            ->whereDoesntHave('orgStocks')
-            ->pluck('code');
+        if ($this->sentDespiteHold($order)) {
+            return false;
+        }
+
+        $productCodes = $this->productCodesWithoutSkos($order);
 
         if ($productCodes->isEmpty()) {
             return false;
@@ -136,6 +144,10 @@ class SendOrderToWarehouse extends OrgAction
     /** Bottles filled to order hold the whole order until the artisan has filled them; FillToOrder::release sends it (HELP-4556) */
     private function waitingForFilling(Order $order): bool
     {
+        if ($this->sentDespiteHold($order)) {
+            return false;
+        }
+
         if (StoreToProduceItemsFromOrder::make()->handle($order, fillsOnly: true)) {
             DB::afterCommit(fn () => rescue(fn () => AssignToProduceLinesAutomatically::run($order)));
         }
@@ -208,6 +220,39 @@ class SendOrderToWarehouse extends OrgAction
             'office_released_country' => $countryCode,
             'office_released_at'      => now()->toIso8601String(),
         ])]);
+    }
+
+    private function sentDespiteHold(Order $order): bool
+    {
+        return $this->despiteHold || str_contains((string)$order->private_warehouse_note, self::SENT_DESPITE_HOLD_MARKER);
+    }
+
+    /** @return Collection<int, string> */
+    private function productCodesWithoutSkos(Order $order): Collection
+    {
+        return Product::whereIn('id', $order->transactions()->where('model_type', 'Product')->select('model_id'))
+            ->whereDoesntHave('orgStocks')
+            ->pluck('code');
+    }
+
+    /** Read live for the order page: the holds only the bottles being filled or a fixed product composition can clear */
+    public function blockedReason(Order $order): ?string
+    {
+        if ($order->state != OrderStateEnum::SUBMITTED || $this->sentDespiteHold($order)) {
+            return null;
+        }
+
+        $productCodes = $this->productCodesWithoutSkos($order);
+        if ($productCodes->isNotEmpty()) {
+            return __(':products have no SKOs, fix the product composition before sending it to the warehouse', ['products' => $productCodes->implode(', ')]);
+        }
+
+        $lines = FillToOrder::make()->pendingLines($order);
+        if ($lines->isNotEmpty()) {
+            return __('waiting for filling: :products', ['products' => $lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ')]);
+        }
+
+        return null;
     }
 
     /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */
@@ -476,6 +521,7 @@ class SendOrderToWarehouse extends OrgAction
                     ->where('organisation_id', ($this->dispatcher ?? $this->organisation)->id),
             ],
             'without_an_address' => ['sometimes', 'boolean'],
+            'despite_hold'       => ['sometimes', 'boolean'],
         ];
     }
 
@@ -536,6 +582,17 @@ class SendOrderToWarehouse extends OrgAction
         $this->initialisationFromShop($order->shop, $request);
 
         $this->withoutAnAddress = (bool)Arr::pull($this->validatedData, 'without_an_address', false);
+        $despiteHold            = (bool)Arr::pull($this->validatedData, 'despite_hold', false);
+
+        if ($despiteHold && $blockedReason = $this->blockedReason($order)) {
+            $this->update($order, [
+                'private_warehouse_note' => collect([
+                    self::withoutHeldNote($order->private_warehouse_note),
+                    self::SENT_DESPITE_HOLD_MARKER.' ('.$blockedReason.') '.__('by :user', ['user' => $request->user()->contact_name ?: $request->user()->username]),
+                ])->filter()->implode(' — ')
+            ]);
+        }
+        $this->despiteHold = $despiteHold;
 
         /** Otherwise the ordinary button quietly does nothing and the order sits there (HELP-3102) */
         if (!$this->withoutAnAddress && $order->isMissingARequiredAddress()) {

@@ -74,6 +74,7 @@ use App\Models\Ordering\Purge;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use App\Actions\Chat\ChatSession\StartCustomerEmailChat;
@@ -292,6 +293,17 @@ class ShowOrder extends OrgAction
             default => GetEcomOrderActions::run($order, $canEdit),
         };
 
+        /** The button used to reload and do nothing on a held order (HELP-4969): it is disabled and the held bar says why */
+        $sendToWarehouseBlockedReason = $canEdit ? SendOrderToWarehouse::make()->blockedReason($order) : null;
+        if ($sendToWarehouseBlockedReason) {
+            $actions = array_map(
+                fn ($action) => Arr::get($action, 'key') === 'action' && Arr::get($action, 'route.name') === 'grp.models.order.state.in-warehouse'
+                    ? [...$action, 'disabled' => true]
+                    : $action,
+                $actions
+            );
+        }
+
         if (!$canEdit
             && !$lockedInAurora
             && !$preOrderLocked
@@ -489,6 +501,15 @@ class ShowOrder extends OrgAction
                 ] : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
+                'send_to_warehouse_hold' => $sendToWarehouseBlockedReason ? [
+                    'reason' => $sendToWarehouseBlockedReason,
+                    'route'  => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.state.in-warehouse',
+                        'parameters' => ['order' => $order->id],
+                        'body'       => ['despite_hold' => true],
+                    ],
+                ] : null,
                 'email_customer' => $order->customer && StartCustomerEmailChat::canBeStartedBy($request->user(), $order->customer) ? [
                     'email'   => $order->customer->email,
                     'subject' => __('Your order :reference', ['reference' => $order->reference]),

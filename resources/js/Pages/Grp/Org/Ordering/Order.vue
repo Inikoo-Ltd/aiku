@@ -144,6 +144,7 @@ const props = defineProps<{
     split_pre_order?: { reference: string, slug: string } | null
     e_invoice_dic_missing?: { name: string, parameters: (string | number)[] } | null
     aurora_notice?: string | null
+    send_to_warehouse_hold?: { reason: string, route: routeType } | null
     production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
     title: string
@@ -364,6 +365,7 @@ const openEmailCustomer = () => {
 
 
 const isModalUploadOpen = ref(false)
+const sendDespiteHoldError = ref<string | null>(null)
 const exportProofHelp = ref()
 const showExportProofHelp = (event: MouseEvent) => exportProofHelp.value?.show(event, event.currentTarget)
 const isModalProductListOpen = ref(false)
@@ -1728,6 +1730,25 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             </div>
         </template>
     </ConfirmDialog>
+
+    <div v-if="send_to_warehouse_hold" class="m-3 flex flex-wrap items-center gap-4 rounded-lg border-2 border-amber-400 bg-amber-50 p-4 text-amber-900">
+        <FontAwesomeIcon :icon="fadExclamationTriangle" class="text-3xl text-amber-500" fixed-width aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+            <div class="text-lg font-semibold">{{ ctrans("Can not be sent to the warehouse yet") }}</div>
+            <div class="text-sm">{{ ctrans("Held: :reason", { reason: send_to_warehouse_hold.reason }) }}</div>
+            <div v-if="sendDespiteHoldError" role="alert" class="mt-1 text-xs text-red-600">{{ sendDespiteHoldError }}</div>
+        </div>
+        <ButtonWithLink
+            type="tertiary"
+            icon="fal fa-exclamation-triangle"
+            :label="ctrans('Send to warehouse anyway')"
+            :tooltip="ctrans('Send it to the warehouse without waiting, the warehouse note will say who did it')"
+            :routeTarget="send_to_warehouse_hold.route"
+            :isWithError="false"
+            @start="() => (sendDespiteHoldError = null)"
+            @error="(errors: Record<string, string>) => (sendDespiteHoldError = Object.values(errors ?? {})[0] ?? ctrans('Could not send it, please try again'))"
+        />
+    </div>
 
     <PageHeading :data="pageHeadWithUploadInAddGroup">
         <template #button-add-product="{ action }">

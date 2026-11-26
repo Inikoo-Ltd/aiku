@@ -2642,3 +2642,40 @@ test('an order short of a product made in-house tells the floor supervisors, and
     expect(\App\Actions\Production\PartnerShippingList\NotifyProductionShortfall::run($order, [$lines[0]->id]))->toBe(0);
     \Illuminate\Support\Facades\Notification::assertNothingSent();
 });
+
+test('an order held for filling tells staff why on its page, and staff can still send it anyway', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-10ml']);
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILLHOLD-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    $orgStock->update(['quantity_in_locations' => 100, 'quantity_available' => 100]);
+    \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+
+    $sendToWarehouse = \App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make();
+    expect($sendToWarehouse->blockedReason($order->refresh()))->toBe('waiting for filling: '.$product->code);
+
+    actingAs($this->guest->getUser());
+    $this->patch(route('grp.models.order.state.in-warehouse', $order->id))->assertSessionHasNoErrors();
+    expect($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED);
+
+    $this->patch(route('grp.models.order.state.in-warehouse', $order->id), ['despite_hold' => true])->assertSessionHasNoErrors();
+    expect($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->private_warehouse_note)->toContain(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::SENT_DESPITE_HOLD_MARKER.' (waiting for filling: '.$product->code.')')
+        ->and(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toBeNull()
+        ->and($sendToWarehouse->blockedReason($order))->toBeNull();
+});
