@@ -935,6 +935,8 @@ use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProjectUpdate;
 use App\Actions\Helpers\TicketProject\UpdateTicketProjectUpdate;
 use App\Actions\Helpers\TicketProject\DeleteTicketProjectUpdate;
+use App\Actions\Helpers\TicketProject\StoreTicketProjectFile;
+use App\Actions\Helpers\TicketProject\DeleteTicketProjectFile;
 use App\Actions\Helpers\TicketProject\UpdateTicketProject;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
@@ -1002,6 +1004,8 @@ Route::prefix('ticket-project')->name('ticket_project.')->group(function () {
     Route::patch('update/{ticketProjectUpdate:id}', UpdateTicketProjectUpdate::class)->name('update.update')->whereNumber('ticketProjectUpdate');
     Route::delete('update/{ticketProjectUpdate:id}', DeleteTicketProjectUpdate::class)->name('update.delete')->whereNumber('ticketProjectUpdate');
     Route::post('{ticketProject:id}/work', AttachWorkToProject::class)->name('work.attach')->whereNumber('ticketProject');
+    Route::post('{ticketProject:id}/files', StoreTicketProjectFile::class)->name('files.store')->whereNumber('ticketProject');
+    Route::delete('{ticketProject:id}/files/{media:ulid}', DeleteTicketProjectFile::class)->name('files.delete')->whereNumber('ticketProject')->withoutScopedBindings();
 });
 
 Route::prefix('employee/{employee:id}')->name('employee.')->group(function () {

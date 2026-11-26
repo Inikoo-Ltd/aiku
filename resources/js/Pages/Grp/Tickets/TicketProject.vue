@@ -28,9 +28,9 @@ import TicketProjectQuietBadge from "@/Components/Tickets/TicketProjectQuietBadg
 import SlackToDeskIcons from "@/Components/Tickets/SlackToDeskIcons.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack } from "@fal"
+import { faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faPaperclip, faFile } from "@fal"
 
-library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack)
+library.add(faProjectDiagram, faPlus, faPencil, faTimes, faCheckSquare, faSquare, faLink, faChevronDown, faChevronRight, faArrowUp, faArrowDown, faSearch, faList, faColumns, faPlusCircle, faCheckCircle, faRocket, faFlagCheckered, faCommentAltLines, faTachometerAlt, faTasks, faChartLine, faHistory, faCodeCommit, faExclamationTriangle, faClock, faCircle, faCalendarDay, faInfoCircle, faCheck, faTrashAlt, faThumbtack, faPaperclip, faFile)
 
 type Person = { id: number; name: string; avatar: Record<string, string> | null }
 type Route = { name: string; parameters?: Record<string, unknown> }
@@ -90,9 +90,10 @@ const props = defineProps<{
     activity: { at: string; icon: string; text: string; url: string | null; by: string | null }[]
     workload: { person: Person | null; todo: number; in_progress: number; done: number }[]
     updates: { id: number; body: string; health: Health | null; health_label: string | null; author: Person | null; created_at: string; is_edited: boolean; can_edit: boolean; can_delete: boolean }[]
+    files: { ulid: string; name: string; size: number; mime: string | null; url: string; uploaded_by: string | null; created_at: string }[]
     can_edit: boolean
     options: { statuses: { label: string; value: string }[]; healths: { label: string; value: string }[]; staff: { label: string; value: number }[]; parents: { label: string; value: number }[] }
-    routes: { update: Route; post_update: Route; attach_work: Route; create_ticket: Route }
+    routes: { update: Route; post_update: Route; attach_work: Route; store_file: Route; create_ticket: Route }
 }>()
 
 type TabKey = "overview" | "work" | "timeline" | "commits" | "activity"
@@ -211,6 +212,40 @@ const saveEditedUpdate = () => {
         onSuccess: () => (editingUpdateId.value = null),
     })
 }
+
+const fileInput = ref<HTMLInputElement | null>(null)
+const isUploadingFiles = ref(false)
+const fileError = ref<string | null>(null)
+const uploadFiles = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    const files = Array.from(input.files ?? [])
+    if (!files.length) {
+        return
+    }
+    isUploadingFiles.value = true
+    fileError.value = null
+    router.post(route(props.routes.store_file.name, props.routes.store_file.parameters), { files }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onError: (errors) => (fileError.value = Object.values(errors)[0] ?? ctrans("The file could not be added. Please try again.")),
+        onFinish: () => {
+            isUploadingFiles.value = false
+            input.value = ""
+        },
+    })
+}
+const deletingFileUlid = ref<string | null>(null)
+const deleteFile = (ulid: string, closeModal: () => void) => {
+    deletingFileUlid.value = ulid
+    fileError.value = null
+    router.delete(route("grp.models.ticket_project.files.delete", { ticketProject: props.project.id, media: ulid }), {
+        preserveScroll: true,
+        onSuccess: () => closeModal(),
+        onError: () => (fileError.value = ctrans("The file could not be deleted. Reload the page and try again.")),
+        onFinish: () => (deletingFileUlid.value = null),
+    })
+}
+const fileSize = (bytes: number) => (bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(bytes / 1024)) + " KB")
 
 const deletingUpdateId = ref<number | null>(null)
 const deleteUpdateError = ref<string | null>(null)
@@ -767,6 +802,58 @@ const burnUpOptions = {
         </div>
 
         <aside class="space-y-6">
+            <section class="rounded-lg border border-gray-200 p-4">
+                <h2 class="mb-2 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {{ ctrans("Files") }}
+                    <button
+                        v-if="can_edit"
+                        v-tooltip="ctrans('Add files')"
+                        type="button"
+                        class="text-gray-400 hover:text-gray-700 disabled:opacity-40"
+                        :aria-label="ctrans('Add files')"
+                        :disabled="isUploadingFiles"
+                        @click="fileInput?.click()">
+                        <LoadingIcon v-if="isUploadingFiles" />
+                        <FontAwesomeIcon v-else icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+                    </button>
+                </h2>
+                <input v-if="can_edit" ref="fileInput" type="file" multiple class="hidden" @change="uploadFiles" />
+                <p v-if="fileError" class="mb-2 text-xs text-red-600">{{ fileError }}</p>
+                <p v-if="!files.length" class="text-sm text-gray-500">{{ ctrans("No files yet") }}</p>
+                <ul class="space-y-2 text-sm">
+                    <li v-for="file in files" :key="file.ulid" class="flex items-start gap-2">
+                        <FontAwesomeIcon icon="fal fa-file" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
+                        <div class="min-w-0 flex-1">
+                            <a :href="file.url" target="_blank" rel="noopener" class="block truncate text-gray-700 hover:underline">{{ file.name }}</a>
+                            <p class="text-xs text-gray-400">
+                                {{ fileSize(file.size) }} · {{ file.uploaded_by ?? ctrans("Unknown") }} · {{ useFormatTime(file.created_at, { formatTime: "mdy" }) }}
+                            </p>
+                        </div>
+                        <ModalConfirmation v-if="can_edit" :title="ctrans('Delete :file?', { file: file.name })" :description="ctrans('The file will be removed from the project for everyone.')">
+                            <template #default="{ changeModel }">
+                                <button
+                                    v-tooltip="ctrans('Delete')"
+                                    type="button"
+                                    class="p-1 text-gray-400 hover:text-red-600 disabled:opacity-40"
+                                    :aria-label="ctrans('Delete file')"
+                                    :disabled="deletingFileUlid === file.ulid"
+                                    @click="changeModel">
+                                    <LoadingIcon v-if="deletingFileUlid === file.ulid" />
+                                    <FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
+                                </button>
+                            </template>
+                            <template #btn-yes="{ closeModal }">
+                                <Button type="tertiary" :label="ctrans('Yes, delete')" :loading="deletingFileUlid === file.ulid" @click="deleteFile(file.ulid, closeModal)">
+                                    <template #icon>
+                                        <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
+                            </template>
+                        </ModalConfirmation>
+                    </li>
+                </ul>
+            </section>
+
             <section class="rounded-lg border border-gray-200 p-4">
                 <h2 class="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-gray-400">
                     {{ ctrans("Milestones") }}

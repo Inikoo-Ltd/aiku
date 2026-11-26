@@ -380,6 +380,7 @@ class ShowTicketProject extends OrgAction
                 'activity'    => self::activity($project, $work, $updates, $commits),
                 'workload'    => self::workload($work),
                 'updates'     => $updates->all(),
+                'files'       => $project->projectFiles(),
                 'can_edit'    => $project->canBeEditedBy($user),
                 'options'     => [
                     'statuses' => TicketProjectStatusEnum::options(),
@@ -393,6 +394,7 @@ class ShowTicketProject extends OrgAction
                     'update'      => ['name' => 'grp.models.ticket_project.update', 'parameters' => ['ticketProject' => $project->id]],
                     'post_update' => ['name' => 'grp.models.ticket_project.update.store', 'parameters' => ['ticketProject' => $project->id]],
                     'attach_work' => ['name' => 'grp.models.ticket_project.work.attach', 'parameters' => ['ticketProject' => $project->id]],
+                    'store_file'  => ['name' => 'grp.models.ticket_project.files.store', 'parameters' => ['ticketProject' => $project->id]],
                     'create_ticket' => ['name' => 'grp.tickets.create', 'parameters' => ['project' => $project->slug]],
                 ],
             ]

@@ -22,7 +22,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Projects group tickets (HELP-n, INI-n) and staff tasks (TASK-n) of one big piece of work under milestones, with progress updates. A project can have sub-projects one level deep; the progress of a parent includes the work of its sub-projects. Without a project: lists projects with parent, sub-projects, status, pinned (an ongoing area with no end date, kept at the top), health, owner, team, dates, progress (work done against time used) and quiet_days (days since the last real activity of an active project, null when not active). With a project slug: shows its goal, milestones (with done/total work), every ticket and task the user can see with state, assignee and milestone, the latest progress updates, deployed commits, open work per person and quiet_days. Use project-write-tool to change anything. Read only.')]
+#[Description('Projects group tickets (HELP-n, INI-n) and staff tasks (TASK-n) of one big piece of work under milestones, with progress updates. A project can have sub-projects one level deep; the progress of a parent includes the work of its sub-projects. Without a project: lists projects with parent, sub-projects, status, pinned (an ongoing area with no end date, kept at the top), health, owner, team, dates, progress (work done against time used) and quiet_days (days since the last real activity of an active project, null when not active). With a project slug: shows its goal, milestones (with done/total work), every ticket and task the user can see with state, assignee and milestone, the latest progress updates, its files (documents of the whole project, with links), deployed commits, open work per person and quiet_days. Use project-write-tool to change anything. Read only.')]
 #[IsReadOnly]
 class ProjectsTool extends Tool
 {
@@ -132,6 +132,7 @@ class ProjectsTool extends Tool
                 'milestone' => $item['milestone_id'] ? $milestones->get($item['milestone_id'])?->name : null,
             ])->values()->all(),
             'updates'  => $updates->all(),
+            'files'    => $project->projectFiles(),
             'commits'  => array_slice(ShowTicketProject::commits($work), 0, 20),
             'workload' => collect(ShowTicketProject::workload($work))->map(fn (array $row) => [
                 'person'      => $row['person']['name'] ?? null,

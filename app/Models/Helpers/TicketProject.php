@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -45,11 +47,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StaffTask> $staffTasks
  * @mixin \Eloquent
  */
-class TicketProject extends Model
+class TicketProject extends Model implements HasMedia
 {
     use SoftDeletes;
     use HasSlug;
     use InGroup;
+    use InteractsWithMedia;
+
+    public const string FILES_COLLECTION = 'project_files';
 
     protected $guarded = [];
 
@@ -133,5 +138,31 @@ class TicketProject extends Model
             || $this->owner_id === $user->id
             || $this->members()->whereKey($user->id)->exists()
         );
+    }
+
+    public function hasFile(Media $media): bool
+    {
+        return $media->model_type === $this->getMorphClass()
+            && $media->model_id === $this->id
+            && $media->collection_name === self::FILES_COLLECTION;
+    }
+
+    /**
+     * @return array<int, array{ulid: string, name: string, size: int, mime: string|null, url: string, uploaded_by: string|null, created_at: mixed}>
+     */
+    public function projectFiles(): array
+    {
+        $files    = $this->getMedia(self::FILES_COLLECTION)->sortByDesc('id');
+        $uploader = User::whereIn('id', $files->map(fn (Media $media) => $media->getCustomProperty('uploaded_by'))->filter()->unique())->get()->keyBy('id');
+
+        return $files->map(fn (Media $media) => [
+            'ulid'        => $media->ulid,
+            'name'        => $media->name,
+            'size'        => (int) $media->size,
+            'mime'        => $media->mime_type,
+            'url'         => route('grp.projects.files.show', ['ticketProject' => $this->slug, 'media' => $media->ulid]),
+            'uploaded_by' => ($person = $uploader->get($media->getCustomProperty('uploaded_by'))) ? ($person->contact_name ?: $person->username) : null,
+            'created_at'  => $media->created_at,
+        ])->values()->all();
     }
 }

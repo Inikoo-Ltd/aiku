@@ -343,6 +343,7 @@ class AppServiceProvider extends ServiceProvider
                 'Tag'                              => 'App\Models\Helpers\Tag',
                 'Ticket'                           => 'App\Models\Helpers\Ticket',
                 'TicketComment'                    => 'App\Models\Helpers\TicketComment',
+                'TicketProject'                    => 'App\Models\Helpers\TicketProject',
                 'TaxNumber'                        => 'App\Models\Helpers\TaxNumber',
                 'Upload'                           => 'App\Models\Helpers\Upload',
                 'UploadRecord'                     => 'App\Models\Helpers\UploadRecord',

@@ -8,7 +8,9 @@
 
 use App\Actions\Helpers\TicketProject\UI\IndexTicketProjects;
 use App\Actions\Helpers\TicketProject\UI\ShowTicketProject;
+use App\Actions\Helpers\TicketProject\UI\ShowTicketProjectFile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', IndexTicketProjects::class)->name('index');
 Route::get('/{ticketProject:slug}', ShowTicketProject::class)->name('show');
+Route::get('/{ticketProject:slug}/files/{media:ulid}', ShowTicketProjectFile::class)->name('files.show')->withoutScopedBindings();

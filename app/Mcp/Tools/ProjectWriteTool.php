@@ -9,7 +9,9 @@
 namespace App\Mcp\Tools;
 
 use App\Actions\Helpers\TicketProject\AssignWorkToProject;
+use App\Actions\Helpers\Ticket\StoreTicketUpload;
 use App\Actions\Helpers\TicketProject\AttachWorkToProject;
+use App\Actions\Helpers\TicketProject\StoreTicketProjectFile;
 use App\Actions\Helpers\TicketProject\StoreTicketProject;
 use App\Actions\Helpers\TicketProject\StoreTicketProjectUpdate;
 use App\Actions\Helpers\TicketProject\UpdateTicketProject;
@@ -29,13 +31,13 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner, team (aiku usernames) and parent (makes it a sub-project of that project). update: change name, goal, status, pinned (true makes it an ongoing area kept at the top, with no target date), start_date, target_date, owner, parent ("none" to make it top-level again), or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
+#[Description('Changes projects (see projects-tool), acting as the authenticated user with the same rights as the project page: the owner, the team and ticket leads can change a project; anyone can create one. Pick one action. create: a new project from name, start_date and optional goal, target_date, owner, team (aiku usernames) and parent (makes it a sub-project of that project). update: change name, goal, status, pinned (true makes it an ongoing area kept at the top, with no target date), start_date, target_date, owner, parent ("none" to make it top-level again), or add_team/remove_team usernames. add_work: put tickets and staff tasks into the project by reference (e.g. "HELP-12, TASK-4"), optionally under a milestone. move_work: move items already in the project to another milestone (milestone "none" takes them off any milestone), or take them out of the project with remove=true. milestone: create a milestone (new name), or change an existing one (by name or id) with rename, start_date, due_date, done true/false, delete=true, or position (1 = first). post_update: post a progress update with optional health (on_track, at_risk, off_track); the owner and team are notified by bell and email. add_file: put files on the project (documents of the whole project, not of one ticket) from uploads, upload_ids from ticket-upload-link-tool. Changes show in the item\'s history. Confirm with the user before deleting milestones or taking work out.')]
 class ProjectWriteTool extends Tool
 {
     public function handle(Request $request): Response
     {
         $request->validate([
-            'action' => ['required', 'in:create,update,add_work,move_work,milestone,post_update'],
+            'action' => ['required', 'in:create,update,add_work,move_work,milestone,post_update,add_file'],
         ]);
 
         $user   = $request->user();
@@ -62,6 +64,7 @@ class ProjectWriteTool extends Tool
                 'move_work'   => $this->moveWork($request, $user, $project),
                 'milestone'   => $this->milestone($request, $project),
                 'post_update' => $this->postUpdate($request, $user, $project),
+                'add_file'    => $this->addFile($request, $user, $project),
             };
         } catch (ValidationException $exception) {
             return Response::error(implode(' ', $exception->validator->errors()->all()));
@@ -268,6 +271,31 @@ class ProjectWriteTool extends Tool
         return Response::json(['posted' => $update->id, 'health' => $update->health?->value, 'notified' => 'owner and team']);
     }
 
+    private function addFile(Request $request, User $user, TicketProject $project): Response
+    {
+        $uploadIds = array_values(array_filter((array) $request->get('uploads', []), 'is_string'));
+        if ($uploadIds === [] || count($uploadIds) > 5) {
+            return Response::error('Give 1 to 5 upload_ids in uploads, from ticket-upload-link-tool.');
+        }
+
+        $files = [];
+        foreach ($uploadIds as $uploadId) {
+            $file = StoreTicketUpload::find($user->id, $uploadId);
+            if (!$file) {
+                return Response::error("No file uploaded for $uploadId. Upload it to the link from ticket-upload-link-tool first, as the same user.");
+            }
+            $files[$uploadId] = $file;
+        }
+
+        $added = [];
+        foreach ($files as $uploadId => $file) {
+            $added[] = StoreTicketProjectFile::make()->handle($project, $user, $file)->name;
+            StoreTicketUpload::forget($user->id, $uploadId);
+        }
+
+        return Response::json(['added' => $added, 'files' => $project->refresh()->projectFiles()]);
+    }
+
     /**
      * @return TicketProjectMilestone|null|false null when none was asked for, false when it does not exist
      */
@@ -342,7 +370,7 @@ class ProjectWriteTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'action'      => $schema->string()->description('create, update, add_work, move_work, milestone or post_update')->required(),
+            'action'      => $schema->string()->description('create, update, add_work, move_work, milestone, post_update or add_file')->required(),
             'project'     => $schema->string()->description('Project slug or exact name (all actions except create)'),
             'name'        => $schema->string()->description('create/update: project name'),
             'goal'        => $schema->string()->description('create/update: what the project must achieve'),
@@ -365,6 +393,7 @@ class ProjectWriteTool extends Tool
             'position'    => $schema->integer()->description('milestone: place in the list, 1 = first'),
             'body'        => $schema->string()->description('post_update: the update text'),
             'health'      => $schema->string()->description('post_update: on_track, at_risk or off_track'),
+            'uploads'     => $schema->array()->description('add_file: up to 5 upload_ids from ticket-upload-link-tool, after uploading each file with curl')->items($schema->string()),
         ];
     }
 }

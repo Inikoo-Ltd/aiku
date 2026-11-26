@@ -668,6 +668,41 @@ test('a progress update can be edited by its author and deleted by its author, t
     expect($own->fresh())->toBeNull();
 });
 
+test('a project keeps files its team adds, anyone in the group opens them and only the team deletes them', function () {
+    $owner    = User::factory()->create(['group_id' => $this->group->id]);
+    $outsider = User::factory()->create(['group_id' => $this->group->id]);
+    $project  = StoreTicketProject::make()->action($this->group, ['name' => 'Project files', 'start_date' => now()->toDateString(), 'owner_id' => $owner->id]);
+
+    actingAs($outsider);
+    post(route('grp.models.ticket_project.files.store', $project->id), ['files' => [UploadedFile::fake()->create('nope.pdf', 10, 'application/pdf')]])->assertForbidden();
+
+    actingAs($owner);
+    post(route('grp.models.ticket_project.files.store', $project->id), ['files' => [UploadedFile::fake()->create('evil.php', 1, 'text/x-php')]])->assertSessionHasErrors();
+    post(route('grp.models.ticket_project.files.store', $project->id), ['files' => [UploadedFile::fake()->createWithContent('Assessment.pdf', "%PDF-1.4\n%%EOF")]])->assertRedirect()->assertSessionHasNoErrors();
+    $file = $project->fresh()->projectFiles()[0];
+    expect($file['name'])->toBe('Assessment.pdf')
+        ->and($file['uploaded_by'])->toBe($owner->contact_name ?: $owner->username);
+
+    actingAs($outsider);
+    get($file['url'])->assertOk();
+    get(route('grp.projects.show', $project->slug))->assertInertia(fn (AssertableInertia $page) => $page->has('files', 1)->where('can_edit', false));
+    delete(route('grp.models.ticket_project.files.delete', ['ticketProject' => $project->id, 'media' => $file['ulid']]))->assertForbidden();
+
+    $other      = StoreTicketProject::make()->action($this->group, ['name' => 'Other files', 'start_date' => now()->toDateString(), 'owner_id' => $owner->id]);
+    get(route('grp.projects.files.show', ['ticketProject' => $other->slug, 'media' => $file['ulid']]))->assertNotFound();
+
+    $uploadId = (string) Str::ulid();
+    Illuminate\Support\Facades\Storage::disk(config('media-library.disk_name'))->put(App\Actions\Helpers\Ticket\StoreTicketUpload::path($owner->id, $uploadId).'/Minutes.pdf', "%PDF-1.4\n%%EOF");
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_file', 'project' => $project->slug, 'uploads' => [$uploadId]])->assertHasErrors();
+    AikuServer::actingAs($owner)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_file', 'project' => $project->slug, 'uploads' => [$uploadId]])->assertOk()->assertSee('Minutes.pdf');
+    expect(App\Actions\Helpers\Ticket\StoreTicketUpload::find($owner->id, $uploadId))->toBeNull();
+    AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => $project->slug])->assertOk()->assertSee('Minutes.pdf')->assertSee('Assessment.pdf');
+
+    actingAs($owner);
+    delete(route('grp.models.ticket_project.files.delete', ['ticketProject' => $project->id, 'media' => $file['ulid']]))->assertRedirect();
+    expect(collect($project->fresh()->projectFiles())->pluck('name')->all())->toBe(['Minutes.pdf']);
+});
+
 test('the project page warns about a stale update, overdue milestones and untracked remaining work', function () {
     $member  = User::factory()->create(['group_id' => $this->group->id]);
     $project = StoreTicketProject::make()->action($this->group, ['name' => 'Factory switch-over', 'start_date' => now()->subDays(60)->toDateString(), 'target_date' => now()->addDays(30)->toDateString()]);
