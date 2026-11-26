@@ -73,6 +73,7 @@ const productCarouselRoutes = computed(() => {
     lookupProducts: { name: "grp.json.shop.products_by_codes", parameters: { shop: shopId } },
     searchProducts: { name: "grp.json.shop.products", parameters: { shop: shopSlug } },
     searchFamilies: { name: "grp.json.shop.families", parameters: { shop: shopId } },
+    previewProducts: props.webpageData?.id ? { name: "grp.json.webpage.blog_product_carousel_preview", parameters: { webpage: props.webpageData.id } } : undefined,
   }
 })
 

@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
-import InputNumber from "primevue/inputnumber"
+import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import AutoComplete from "primevue/autocomplete"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faExclamationTriangle, faArrowUp, faArrowDown, faBox, faFolder } from "@fal"
@@ -11,10 +11,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import Image from "@common/Components/Image.vue"
+import ProductCarouselPreview from "./ProductCarouselPreview.vue"
 import { ctrans } from "@/Composables/useTrans"
 import {
 	CAROUSEL_TEXT_TAGS,
 	type CarouselTextTag,
+	type CarouselWidth,
 	DEFAULT_PRODUCT_NAME_TAG,
 	DEFAULT_TITLE_TAG,
 	MAX_PRODUCTS_PER_CAROUSEL,
@@ -23,6 +25,7 @@ import {
 	type ProductCarouselRoutes,
 	type ProductCarouselSource,
 	carouselTextTag,
+	carouselWidth,
 	familyProductsLimit,
 } from "./productCarouselAttributes"
 
@@ -58,6 +61,7 @@ const title = ref(props.attributes.title)
 const perView = ref(String(props.attributes.perView))
 const titleTag = ref<CarouselTextTag>(carouselTextTag(props.attributes.titleTag, DEFAULT_TITLE_TAG))
 const productNameTag = ref<CarouselTextTag>(carouselTextTag(props.attributes.productNameTag, DEFAULT_PRODUCT_NAME_TAG))
+const width = ref<CarouselWidth>(carouselWidth(props.attributes.width))
 const limit = ref(familyProductsLimit(props.attributes.limit))
 const pickedProducts = ref<PickedProduct[]>(props.attributes.codes.map((code) => ({ code })))
 const productQuery = ref<any>(null)
@@ -75,6 +79,11 @@ const sourceOptions = computed(() => [
 const textTagOptions = computed(() =>
 	CAROUSEL_TEXT_TAGS.map((tag) => ({ label: tag === "p" ? ctrans("Paragraph") : tag.toUpperCase(), value: tag })),
 )
+
+const widthOptions = computed(() => [
+	{ label: ctrans("Article"), value: "content" as CarouselWidth },
+	{ label: ctrans("Wide"), value: "wide" as CarouselWidth },
+])
 
 const perViewOptions = PRODUCTS_PER_VIEW_OPTIONS.map((value) => ({ label: String(value), value: String(value) }))
 
@@ -176,6 +185,18 @@ async function searchFamilies(event: { query: string }) {
 	familySuggestions.value = response.data?.data ?? []
 }
 
+const draftAttributes = computed<ProductCarouselAttributes>(() => ({
+	source: source.value,
+	codes: source.value === "products" ? pickedProducts.value.map((product) => product.code) : [],
+	family: source.value === "family" ? family.value?.code ?? "" : "",
+	limit: familyProductsLimit(limit.value),
+	title: title.value.trim(),
+	perView: Number(perView.value),
+	titleTag: titleTag.value,
+	productNameTag: productNameTag.value,
+	width: width.value,
+}))
+
 function closeDialog() {
 	visible.value = false
 	emit("close")
@@ -190,16 +211,7 @@ function save() {
 		formError.value = ctrans("Select a family.")
 		return
 	}
-	emit("update", {
-		source: source.value,
-		codes: source.value === "products" ? pickedProducts.value.map((product) => product.code) : [],
-		family: source.value === "family" ? family.value?.code ?? "" : "",
-		limit: familyProductsLimit(limit.value),
-		title: title.value.trim(),
-		perView: Number(perView.value),
-		titleTag: titleTag.value,
-		productNameTag: productNameTag.value,
-	})
+	emit("update", draftAttributes.value)
 	closeDialog()
 }
 </script>
@@ -209,7 +221,7 @@ function save() {
 		v-model:visible="visible"
 		:header="isNew ? ctrans('Add product carousel') : ctrans('Edit product carousel')"
 		modal
-		class="w-full max-w-2xl"
+		class="w-full max-w-3xl"
 		@hide="closeDialog"
 	>
 		<form class="flex flex-col space-y-4" @submit.prevent="save">
@@ -341,7 +353,7 @@ function save() {
 						{{ ctrans("Number of products") }}
 					</label>
 					<div class="w-40">
-						<InputNumber v-model="limit" inputId="input-product-carousel-limit" :min="1" :max="MAX_PRODUCTS_PER_CAROUSEL" showButtons fluid />
+						<InputNumber v-model="limit" inputId="input-product-carousel-limit" :min="1" :max="MAX_PRODUCTS_PER_CAROUSEL" showButtons fluid @input="(event: InputNumberInputEvent) => (limit = typeof event.value === 'number' ? event.value : limit)" />
 					</div>
 				</div>
 			</template>
@@ -349,7 +361,20 @@ function save() {
 			<div>
 				<div class="mb-2 select-none text-sm text-gray-600">{{ ctrans("Products shown at once on desktop") }}</div>
 				<SegmentedToggle v-model="perView" :options="perViewOptions" :ariaLabel="ctrans('Products shown at once on desktop')" />
-				<p class="mt-1 text-xs text-gray-500">{{ ctrans("Tablets and phones show fewer, and visitors swipe for the rest.") }}</p>
+				<p class="mt-1 text-xs text-gray-500">{{ ctrans("Fewer products at once makes each product bigger. Tablets and phones show fewer, and visitors swipe or use the arrows for the rest.") }}</p>
+			</div>
+
+			<div>
+				<div class="mb-2 select-none text-sm text-gray-600">{{ ctrans("Width") }}</div>
+				<SegmentedToggle v-model="width" :options="widthOptions" :ariaLabel="ctrans('Width')" />
+				<p class="mt-1 text-xs text-gray-500">{{ ctrans("Wide uses all the space beside the menu on large screens, wider than the text. Phones and tablets are unchanged.") }}</p>
+			</div>
+
+			<div>
+				<div class="mb-2 select-none text-sm text-gray-600">{{ ctrans("Preview") }}</div>
+				<div class="rounded-md border border-gray-200 bg-gray-50 p-3">
+					<ProductCarouselPreview :attributes="draftAttributes" :previewRoute="routes?.previewProducts" />
+				</div>
 			</div>
 
 			<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>

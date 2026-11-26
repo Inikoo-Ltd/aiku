@@ -25,8 +25,16 @@ class GetIrisBlogProductCarousels
      */
     public function handle(Webpage $webpage, ?string $content): array
     {
-        $carousels = $this->carouselsInContent((string) $content);
+        return $this->forCarousels($webpage, $this->carouselsInContent((string) $content));
+    }
 
+    /**
+     * @param  Collection<int, array{source: string, codes: array<int, string>, family: ?string, limit: int}>  $carousels
+     *
+     * @return array{products: array<string, array<string, mixed>>, families: array<string, array<int, string>>}
+     */
+    public function forCarousels(Webpage $webpage, Collection $carousels): array
+    {
         $families = $this->familyProductCodes($webpage, $this->familyLimits($carousels));
 
         $codes = $carousels
@@ -43,30 +51,61 @@ class GetIrisBlogProductCarousels
     }
 
     /**
+     * @param  array{source: string, codes: array<int, string>, family: ?string, limit: int}  $carousel
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function productsInCarousel(Webpage $webpage, array $carousel): array
+    {
+        $resolved = $this->forCarousels($webpage, collect([$carousel]));
+
+        $codes = $carousel['source'] === 'family'
+            ? array_slice($resolved['families'][$carousel['family']] ?? [], 0, $carousel['limit'])
+            : $carousel['codes'];
+
+        return collect($codes)
+            ->map(fn (string $code) => $resolved['products'][$code] ?? null)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{source: string, codes: array<int, string>, family: ?string, limit: int}
+     */
+    public function carousel(?string $source, ?string $codes, ?string $family, ?string $limit): array
+    {
+        $source = $source === 'family' ? 'family' : 'products';
+
+        return [
+            'source' => $source,
+            'codes'  => $source === 'products'
+                ? collect(explode(',', (string) $codes))
+                    ->map(fn (string $code) => mb_strtolower(trim($code)))
+                    ->filter()
+                    ->unique()
+                    ->take(self::MAX_PRODUCTS_PER_CAROUSEL)
+                    ->values()
+                    ->all()
+                : [],
+            'family' => $source === 'family' ? (mb_strtolower(trim((string) $family)) ?: null) : null,
+            'limit'  => $this->familyLimit($limit),
+        ];
+    }
+
+    /**
      * @return Collection<int, array{source: string, codes: array<int, string>, family: ?string, limit: int}>
      */
     public function carouselsInContent(string $content): Collection
     {
         preg_match_all('/<div\b[^>]*\bdata-product-carousel\b[^>]*>/i', $content, $carouselTags);
 
-        return collect($carouselTags[0])->map(function (string $carouselTag) {
-            $source = $this->attribute($carouselTag, 'data-source') === 'family' ? 'family' : 'products';
-
-            return [
-                'source' => $source,
-                'codes'  => $source === 'products'
-                    ? collect(explode(',', (string) $this->attribute($carouselTag, 'data-codes')))
-                        ->map(fn (string $code) => mb_strtolower(trim($code)))
-                        ->filter()
-                        ->unique()
-                        ->take(self::MAX_PRODUCTS_PER_CAROUSEL)
-                        ->values()
-                        ->all()
-                    : [],
-                'family' => $source === 'family' ? (mb_strtolower(trim((string) $this->attribute($carouselTag, 'data-family'))) ?: null) : null,
-                'limit'  => $this->familyLimit($this->attribute($carouselTag, 'data-limit')),
-            ];
-        });
+        return collect($carouselTags[0])->map(fn (string $carouselTag) => $this->carousel(
+            $this->attribute($carouselTag, 'data-source'),
+            $this->attribute($carouselTag, 'data-codes'),
+            $this->attribute($carouselTag, 'data-family'),
+            $this->attribute($carouselTag, 'data-limit'),
+        ));
     }
 
     /**

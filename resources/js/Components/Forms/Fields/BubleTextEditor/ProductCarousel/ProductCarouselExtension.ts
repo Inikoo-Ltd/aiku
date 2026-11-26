@@ -1,5 +1,7 @@
 import { Node } from "@tiptap/core"
-import { DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, type ProductCarouselAttributes, carouselTextTag, defaultProductCarouselAttributes, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "./productCarouselAttributes.ts"
+import { VueNodeViewRenderer } from "@tiptap/vue-3"
+import type { Component } from "vue"
+import { DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, type ProductCarouselAttributes, carouselTextTag, carouselWidth, defaultProductCarouselAttributes, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "./productCarouselAttributes.ts"
 
 export { type ProductCarouselAttributes, defaultProductCarouselAttributes } from "./productCarouselAttributes.ts"
 
@@ -16,8 +18,8 @@ declare module "@tiptap/core" {
 interface ProductCarouselOptions {
 	onEdit: (position: number) => void
 	title: string
-	emptyText: string
-	familyText: (family: string, limit: number) => string
+	nodeView: Component | null
+	previewRoute: () => { name: string, parameters: Record<string, any> } | undefined
 }
 
 export const ProductCarousel = Node.create<ProductCarouselOptions>({
@@ -31,8 +33,8 @@ export const ProductCarousel = Node.create<ProductCarouselOptions>({
 		return {
 			onEdit: () => {},
 			title: "Product carousel",
-			emptyText: "No products yet",
-			familyText: (family: string, limit: number) => `Family ${family}, up to ${limit} products`,
+			nodeView: null,
+			previewRoute: () => undefined,
 		}
 	},
 
@@ -78,6 +80,11 @@ export const ProductCarousel = Node.create<ProductCarouselOptions>({
 				parseHTML: (element) => carouselTextTag(element.getAttribute("data-product-name-tag"), DEFAULT_PRODUCT_NAME_TAG),
 				renderHTML: (attributes) => ({ "data-product-name-tag": carouselTextTag(attributes.productNameTag, DEFAULT_PRODUCT_NAME_TAG) }),
 			},
+			width: {
+				default: defaultProductCarouselAttributes().width,
+				parseHTML: (element) => carouselWidth(element.getAttribute("data-width")),
+				renderHTML: (attributes) => ({ "data-width": carouselWidth(attributes.width) }),
+			},
 		}
 	},
 
@@ -90,60 +97,7 @@ export const ProductCarousel = Node.create<ProductCarouselOptions>({
 	},
 
 	addNodeView() {
-		return ({ node, getPos }) => {
-			const wrapper = document.createElement("div")
-			wrapper.className = "tiptap-product-carousel"
-			wrapper.setAttribute("contenteditable", "false")
-			wrapper.style.cssText = "margin:1rem 0;padding:0.75rem 1rem;border:1px dashed var(--app-accent-muted, #9ca3af);border-radius:0.5rem;background:var(--app-accent-soft, #f9fafb);font-size:0.8125rem;color:#374151;cursor:pointer;"
-
-			const heading = document.createElement("div")
-			heading.style.cssText = "font-weight:600;margin-bottom:0.25rem;"
-			const subtitle = document.createElement("div")
-			subtitle.style.cssText = "margin-bottom:0.375rem;color:#4b5563;"
-			const codes = document.createElement("div")
-			codes.style.cssText = "display:flex;flex-wrap:wrap;gap:0.25rem;"
-			wrapper.append(heading, subtitle, codes)
-
-			const render = (attributes: ProductCarouselAttributes) => {
-				heading.textContent = this.options.title
-				subtitle.textContent = attributes.title ?? ""
-				subtitle.style.display = attributes.title ? "" : "none"
-				codes.replaceChildren(
-					...(productCarouselSource(attributes.source) === "family"
-						? [attributes.family ? this.options.familyText(attributes.family, familyProductsLimit(attributes.limit)) : this.options.emptyText]
-						: attributes.codes?.length ? attributes.codes : [this.options.emptyText]
-					).map((code) => {
-						const chip = document.createElement("span")
-						chip.textContent = code
-						chip.style.cssText = "padding:0.0625rem 0.5rem;border-radius:9999px;background:#ffffff;border:1px solid #e5e7eb;font-family:ui-monospace,monospace;font-size:0.75rem;"
-
-						return chip
-					}),
-				)
-			}
-
-			render(node.attrs as ProductCarouselAttributes)
-
-			wrapper.addEventListener("dblclick", (event) => {
-				event.preventDefault()
-				const position = typeof getPos === "function" ? getPos() : undefined
-				if (typeof position === "number") {
-					this.options.onEdit(position)
-				}
-			})
-
-			return {
-				dom: wrapper,
-				update: (updatedNode) => {
-					if (updatedNode.type.name !== PRODUCT_CAROUSEL_NODE) {
-						return false
-					}
-					render(updatedNode.attrs as ProductCarouselAttributes)
-
-					return true
-				},
-			}
-		}
+		return this.options.nodeView ? VueNodeViewRenderer(this.options.nodeView) : null
 	},
 
 	addCommands() {

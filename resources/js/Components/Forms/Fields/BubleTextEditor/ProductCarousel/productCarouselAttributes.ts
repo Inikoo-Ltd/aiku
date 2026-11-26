@@ -2,7 +2,7 @@ export const MAX_PRODUCTS_PER_CAROUSEL = 20
 
 export const DEFAULT_FAMILY_PRODUCTS_LIMIT = 12
 
-export const PRODUCTS_PER_VIEW_OPTIONS = [3, 4, 5, 6] as const
+export const PRODUCTS_PER_VIEW_OPTIONS = [2, 3, 4, 5, 6] as const
 
 export type ProductCarouselSource = "products" | "family"
 
@@ -14,6 +14,10 @@ export const DEFAULT_TITLE_TAG: CarouselTextTag = "h3"
 
 export const DEFAULT_PRODUCT_NAME_TAG: CarouselTextTag = "p"
 
+export const CAROUSEL_WIDTHS = ["content", "wide"] as const
+
+export type CarouselWidth = (typeof CAROUSEL_WIDTHS)[number]
+
 export interface ProductCarouselAttributes {
 	source: ProductCarouselSource
 	codes: string[]
@@ -23,12 +27,14 @@ export interface ProductCarouselAttributes {
 	perView: number
 	titleTag: CarouselTextTag
 	productNameTag: CarouselTextTag
+	width: CarouselWidth
 }
 
 export interface ProductCarouselRoutes {
 	lookupProducts: { name: string, parameters: Record<string, any> }
 	searchProducts: { name: string, parameters: Record<string, any> }
 	searchFamilies: { name: string, parameters: Record<string, any> }
+	previewProducts?: { name: string, parameters: Record<string, any> }
 }
 
 export const defaultProductCarouselAttributes = (): ProductCarouselAttributes => ({
@@ -40,6 +46,7 @@ export const defaultProductCarouselAttributes = (): ProductCarouselAttributes =>
 	perView: 4,
 	titleTag: DEFAULT_TITLE_TAG,
 	productNameTag: DEFAULT_PRODUCT_NAME_TAG,
+	width: "content",
 })
 
 export const parseProductCodes = (text: string): string[] => {
@@ -79,3 +86,16 @@ export const carouselTextTag = (value: unknown, fallback: CarouselTextTag): Caro
 
 	return (CAROUSEL_TEXT_TAGS as readonly string[]).includes(tag) ? (tag as CarouselTextTag) : fallback
 }
+
+export const carouselWidth = (value: unknown): CarouselWidth => (value === "wide" ? "wide" : "content")
+
+export const productCarouselPreviewParams = (attributes: Pick<ProductCarouselAttributes, "source" | "codes" | "family" | "limit">): Record<string, string | number> => {
+	const source = productCarouselSource(attributes.source)
+
+	return source === "family"
+		? { source, family: attributes.family ?? "", limit: familyProductsLimit(attributes.limit) }
+		: { source, codes: parseProductCodes((attributes.codes ?? []).join(",")).join(",") }
+}
+
+export const productCarouselHasContent = (attributes: Pick<ProductCarouselAttributes, "source" | "codes" | "family">): boolean =>
+	productCarouselSource(attributes.source) === "family" ? !!attributes.family : !!attributes.codes?.length

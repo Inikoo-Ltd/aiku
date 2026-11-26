@@ -200,6 +200,7 @@ use App\Actions\Web\WebLayoutTemplate\IndexWebLayoutTemplates;
 use App\Actions\Web\Webpage\Json\GetBlogAuthors;
 use App\Actions\Web\Webpage\Json\GetBlogWebpages;
 use App\Actions\Web\Webpage\Json\GetWebpageSnapshotsComparison;
+use App\Actions\Web\Webpage\Json\GetBlogProductCarouselPreview;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
 use App\Actions\Web\Webpage\UI\GetWebpagesForWorkshopSelect;
 use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
@@ -411,6 +412,7 @@ Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/produc
 
 Route::get('webpage/{webpage:id}/product-trends', GetProductTrendsInWorkshop::class)->name('webpage.product_trends.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/snapshots-comparison', GetWebpageSnapshotsComparison::class)->name('webpage.snapshots_comparison')->withoutScopedBindings();
+Route::get('webpage/{webpage:id}/blog-product-carousel-preview', GetBlogProductCarouselPreview::class)->name('webpage.blog_product_carousel_preview')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/product-alternatives', GetProductAlternativesInWorkshop::class)->name('webpage.product_alternatives.index')->withoutScopedBindings();
 
 Route::get('master-product-category/{masterProductCategory:id}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();

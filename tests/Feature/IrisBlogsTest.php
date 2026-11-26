@@ -433,3 +433,43 @@ test('a blog family carousel shows the family products of the website shop with 
         ->and(array_keys($structure['carousel_products']))->toBe($familyCodes)
         ->and(GetIrisBlogProductCarousels::make()->codesInContent($content))->toBe([]);
 });
+
+test('the blog workshop previews one product carousel with the storefront cards in their order, before it is saved', function () {
+    [, $product] = createProduct($this->shop);
+    $productWebpage = $product->webpage ?? StoreProductWebpage::make()->action($product);
+    $productWebpage->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+    $product->refresh()->updateQuietly(['is_for_sale' => true, 'is_minion_variant' => false, 'price' => 100]);
+    $family = $product->family;
+
+    $blog = createBlogWebpage($this->website, 'Carousel preview', []);
+
+    actingAs($this->user);
+
+    getJson(route('grp.json.webpage.blog_product_carousel_preview', [
+        'webpage' => $blog->id,
+        'source'  => 'products',
+        'codes'   => 'NOT-A-PRODUCT,'.strtoupper($product->code),
+    ]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $product->id)
+        ->assertJsonPath('data.0.code', $product->code)
+        ->assertJsonPath('currency_code', $this->shop->currency->code)
+        ->assertJsonStructure(['data' => [['name', 'web_images', 'stock', 'url', 'price', 'units', 'unit', 'rrp_per_unit']]]);
+
+    getJson(route('grp.json.webpage.blog_product_carousel_preview', [
+        'webpage' => $blog->id,
+        'source'  => 'family',
+        'family'  => strtoupper($family->code),
+        'limit'   => 1,
+    ]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    getJson(route('grp.json.webpage.blog_product_carousel_preview', ['webpage' => $blog->id, 'source' => 'products']))
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+
+    getJson(route('grp.json.webpage.blog_product_carousel_preview', ['webpage' => $blog->id, 'source' => 'collection']))
+        ->assertUnprocessable();
+});
