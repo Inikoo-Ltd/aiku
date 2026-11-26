@@ -15,6 +15,7 @@ use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Computes master_assets.effective_cost: the cost of one outer in group currency,
  * averaged across the organisations that stock it, weighted by their available stock
  * (sales are served where the stock is). Falls back to a simple average when nothing
- * is in stock anywhere. Per-org cost mirrors the product-creation math:
+ * is in stock anywhere. A trade unit made in-house counts only the organisations making it.
+ * Per-org cost mirrors the product-creation math:
  * current_supplier_sku_cost / packed_in * trade unit quantity, org → group currency.
  */
 class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
@@ -117,7 +119,7 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         foreach ($masterAsset->tradeUnits as $tradeUnit) {
             $tradeUnitQuantity = (float) $tradeUnit->pivot->quantity;
 
-            foreach ($tradeUnit->orgStocks as $orgStock) {
+            foreach (self::costingOrgStocks($tradeUnit->orgStocks) as $orgStock) {
                 $skuCost = (float) ($orgStock->lpp_per_sku ?? 0);
                 if ($skuCost <= 0) {
                     $skuCost = (float) ($orgStock->current_supplier_sku_cost ?? 0);
@@ -152,6 +154,21 @@ class MasterAssetHydrateEffectiveCost implements ShouldBeUnique
         unset($orgData);
 
         return $perOrg;
+    }
+
+    /**
+     * A trade unit one of our organisations makes is costed by its makers only: the others buy it from them,
+     * so their purchase price is the maker's selling price, not a cost (INI-567).
+     *
+     * @param  Collection<int, OrgStock>  $orgStocks
+     * @return Collection<int, OrgStock>
+     */
+    public static function costingOrgStocks(Collection $orgStocks): Collection
+    {
+        $makers = $orgStocks->filter(fn (OrgStock $orgStock) => $orgStock->is_made_in_house
+            && max((float) $orgStock->lpp_per_sku, (float) $orgStock->current_supplier_sku_cost, (float) $orgStock->sku_value) > 0);
+
+        return $makers->isNotEmpty() ? $makers : $orgStocks;
     }
 
     /**

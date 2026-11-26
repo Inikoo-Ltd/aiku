@@ -2149,6 +2149,16 @@ test('hydrate effective cost weights org costs by available stock', function () 
         ->toBe(round(6 / 2 * 2 * $exchange, 4));
 });
 
+test('effective cost of a trade unit made in-house counts only its makers, never what partners paid them', function () {
+    $maker        = new \App\Models\Inventory\OrgStock(['is_made_in_house' => true, 'lpp_per_sku' => 4.10]);
+    $partner      = new \App\Models\Inventory\OrgStock(['is_made_in_house' => false, 'lpp_per_sku' => 7.72]);
+    $costlessMaker = new \App\Models\Inventory\OrgStock(['is_made_in_house' => true, 'lpp_per_sku' => 0, 'sku_value' => 0]);
+
+    expect(MasterAssetHydrateEffectiveCost::costingOrgStocks(collect([$maker, $partner]))->all())->toBe([$maker])
+        ->and(MasterAssetHydrateEffectiveCost::costingOrgStocks(collect([$partner]))->all())->toBe([$partner])
+        ->and(MasterAssetHydrateEffectiveCost::costingOrgStocks(collect([$costlessMaker, $partner]))->all())->toBe([$costlessMaker, $partner]);
+});
+
 test('effective cost hydrator is scheduled nightly and queued low-priority', function () {
     expect(\App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost::make()->jobQueue)
         ->toBe('low-priority');
