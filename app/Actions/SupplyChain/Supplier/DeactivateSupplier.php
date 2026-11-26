@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\Supplier;
 
 use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\SupplyChain\Agent\Hydrators\AgentHydrateSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSuppliers;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -19,12 +20,14 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Takes a supplier out of use in every organisation, once nothing is still being ordered from it. The record
+ * Takes a supplier out of use in every organisation, once no submitted or agreed order is left; its draft orders
+ * are cancelled with the reason that the supplier was archived. The record
  * and its history stay, and its products are left as they are. The org suppliers switched off here are kept
  * in data.archived_org_supplier_ids so ReactivateSupplier switches back on only those.
  */
@@ -42,16 +45,20 @@ class DeactivateSupplier
             ]);
         }
 
-        $activeOrgSuppliers = $supplier->orgSuppliers()->where('status', true)->get();
+        DB::transaction(function () use ($supplier) {
+            $activeOrgSuppliers = $supplier->orgSuppliers()->where('status', true)->get();
 
-        $data = $supplier->data ?? [];
-        Arr::set($data, 'archived_org_supplier_ids', $activeOrgSuppliers->pluck('id')->all());
+            $data = $supplier->data ?? [];
+            Arr::set($data, 'archived_org_supplier_ids', $activeOrgSuppliers->pluck('id')->all());
 
-        $supplier->update(['status' => false, 'archived_at' => now(), 'data' => $data]);
+            $supplier->update(['status' => false, 'archived_at' => now(), 'data' => $data]);
 
-        foreach ($activeOrgSuppliers as $orgSupplier) {
-            UpdateOrgSupplier::make()->action($orgSupplier, ['status' => false]);
-        }
+            foreach ($activeOrgSuppliers as $orgSupplier) {
+                UpdateOrgSupplier::make()->action($orgSupplier, ['status' => false]);
+            }
+
+            $this->cancelDraftPurchaseOrders($supplier);
+        });
 
         if ($supplier->agent) {
             AgentHydrateSuppliers::dispatch($supplier->agent);
@@ -61,18 +68,32 @@ class DeactivateSupplier
         return $supplier;
     }
 
+    private function cancelDraftPurchaseOrders(Supplier $supplier): void
+    {
+        $supplier->purchaseOrders()
+            ->where('state', PurchaseOrderStateEnum::IN_PROCESS)
+            ->get()
+            ->each(fn (PurchaseOrder $purchaseOrder) => UpdatePurchaseOrderStateToCancelled::make()->handle(
+                $purchaseOrder,
+                __('Supplier :code was archived', ['code' => $supplier->code]),
+                UpdatePurchaseOrderStateToCancelled::SOURCE_SUPPLIER_ARCHIVED
+            ));
+    }
+
     /**
+     * Submitted or agreed orders block archiving; drafts do not, they are cancelled when the supplier is archived.
+     *
      * @return Collection<int, string>
      */
     public function openPurchaseOrderReferences(Supplier $supplier): Collection
     {
         return $supplier->purchaseOrders()
-            ->whereIn('state', PurchaseOrderStateEnum::live())
+            ->whereIn('state', PurchaseOrderStateEnum::open())
             ->pluck('reference');
     }
 
     /**
-     * @return array<int, array{reference: string, state: string, organisation: string, route: array{name: string, parameters: array<int, string>}}>
+     * @return array<int, array{reference: string, state: string, organisation: string, is_draft: bool, route: array{name: string, parameters: array<int, string>}}>
      */
     public function openPurchaseOrders(Supplier $supplier): array
     {
@@ -87,6 +108,7 @@ class DeactivateSupplier
                 'reference'    => $purchaseOrder->reference,
                 'state'        => $stateLabels[$purchaseOrder->state->value] ?? $purchaseOrder->state->value,
                 'organisation' => $purchaseOrder->organisation->code,
+                'is_draft'     => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS,
                 'route'        => [
                     'name'       => 'grp.org.procurement.purchase_orders.show',
                     'parameters' => [$purchaseOrder->organisation->slug, $purchaseOrder->slug],

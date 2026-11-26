@@ -18,6 +18,7 @@ const props = defineProps<{
             reference: string
             state: string
             organisation: string
+            is_draft: boolean
             route: routeType
         }[]
         route: routeType
@@ -25,6 +26,8 @@ const props = defineProps<{
 }>()
 
 const openPurchaseOrders = computed(() => props.archive.is_archived ? [] : props.archive.open_purchase_orders ?? [])
+const blockingPurchaseOrders = computed(() => openPurchaseOrders.value.filter((purchaseOrder) => !purchaseOrder.is_draft))
+const draftPurchaseOrders = computed(() => openPurchaseOrders.value.filter((purchaseOrder) => purchaseOrder.is_draft))
 
 const isDialogOpen = ref(false)
 const isSaving = ref(false)
@@ -65,10 +68,10 @@ const submit = () => {
     <Dialog v-model:visible="isDialogOpen" modal :header="archive.is_archived ? ctrans('Unarchive supplier') : ctrans('Archive supplier?')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <div class="space-y-3 text-sm text-gray-700">
             <p v-if="archive.is_archived">{{ ctrans(':name will be active again in the organisations it was archived from.', { name: archive.supplier_name }) }}</p>
-            <div v-else-if="openPurchaseOrders.length" class="space-y-2">
-                <p class="text-red-600">{{ ctrans(':name cannot be archived while it still has open purchase orders. Finish, cancel or delete them first:', { name: archive.supplier_name }) }}</p>
+            <div v-else-if="blockingPurchaseOrders.length" class="space-y-2">
+                <p class="text-red-600">{{ ctrans(':name cannot be archived while it still has submitted or agreed purchase orders. Finish or cancel them first:', { name: archive.supplier_name }) }}</p>
                 <ul class="space-y-1">
-                    <li v-for="purchaseOrder in openPurchaseOrders" :key="purchaseOrder.reference" class="flex items-center gap-2">
+                    <li v-for="purchaseOrder in blockingPurchaseOrders" :key="purchaseOrder.reference" class="flex items-center gap-2">
                         <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="primaryLink font-medium">{{ purchaseOrder.reference }}</Link>
                         <span class="text-xs text-gray-500">{{ purchaseOrder.organisation }} · {{ purchaseOrder.state }}</span>
                     </li>
@@ -77,8 +80,17 @@ const submit = () => {
             <template v-else>
                 <p>{{ ctrans(':name will be archived in every organisation. Its history is kept.', { name: archive.supplier_name }) }}</p>
                 <p class="text-gray-500">{{ ctrans('Its products are not changed and stay active.') }}</p>
+                <div v-if="draftPurchaseOrders.length" class="space-y-1 rounded border border-amber-200 bg-amber-50 p-2">
+                    <p class="text-amber-800">{{ ctrans('These draft purchase orders will be cancelled because the supplier is archived:') }}</p>
+                    <ul class="space-y-1">
+                        <li v-for="purchaseOrder in draftPurchaseOrders" :key="purchaseOrder.reference" class="flex items-center gap-2">
+                            <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="primaryLink font-medium">{{ purchaseOrder.reference }}</Link>
+                            <span class="text-xs text-gray-500">{{ purchaseOrder.organisation }}</span>
+                        </li>
+                    </ul>
+                </div>
             </template>
-            <p v-if="error && !openPurchaseOrders.length" class="text-xs text-red-600">{{ error }}</p>
+            <p v-if="error && !blockingPurchaseOrders.length" class="text-xs text-red-600">{{ error }}</p>
         </div>
         <template #footer>
             <div class="flex w-full gap-2">
@@ -92,7 +104,7 @@ const submit = () => {
                         <FontAwesomeIcon :icon="faBoxOpen" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
-                <Button v-else type="red" :icon="faArchive" full :disabled="openPurchaseOrders.length > 0" :label="ctrans('Yes, archive')" :loading="isSaving" @click="submit" />
+                <Button v-else type="red" :icon="faArchive" full :disabled="blockingPurchaseOrders.length > 0" :label="ctrans('Yes, archive')" :loading="isSaving" @click="submit" />
             </div>
         </template>
     </Dialog>
