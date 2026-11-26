@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { useDeskSidebar } from "@/Composables/useDeskSidebar"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { Link, router } from "@inertiajs/vue3"
 import { computed, defineAsyncComponent, reactive, inject, ref } from "vue"
@@ -95,6 +96,7 @@ const imageSkeleton: { [key: string]: boolean } = reactive({})
 
 const layoutStore = inject("layout", layoutStructure)
 const isVerbaRoute = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff."))
+const { isSidebarCollapsed: isDeskSidebarCollapsed } = useDeskSidebar()
 
 const subsectionScroller = ref<HTMLElement | null>(null)
 const COUNTRY_OUTLINES = ["CN", "ID", "IN", "MA", "NP", "TR"]
@@ -197,7 +199,7 @@ const label = {
                         </Transition>
                     </div>
 
-                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block w-64 shrink-0 self-stretch bg-[#3f0e40]" aria-hidden="true" />
+                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block shrink-0 self-stretch bg-[#3f0e40] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'" aria-hidden="true" />
 
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="!isVerbaRoute && (layoutStore.group || (layoutStore.organisations.data?.length > 1))" as="div" class="ml-2 relative text-left" v-slot="{ open: isOrgMenuOpen, close: closeOrgMenu }">

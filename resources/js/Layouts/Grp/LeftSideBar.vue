@@ -143,7 +143,8 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
         <!-- Toggle: collapse-expand LeftSideBar -->
         <div
             @click="handleToggleLeftBar"
-            class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+            class="hidden absolute z-10 right-0 -translate-y-1/2 translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+            :class="layout.hasTopBanner ? 'top-[calc(50dvh-2.75rem)] lg:top-[calc(50dvh-4rem)]' : 'top-[calc(50dvh-2.75rem)] lg:top-[calc(50dvh-2.5rem)]'"
             :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
             :style="{
 				'background-color': `color-mix(in srgb, ${layout.app.navigation_theme[0]} 85%, black)`,

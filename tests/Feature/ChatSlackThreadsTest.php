@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Chat\Staff\Json\GetSlackChannelFilesAndLinks;
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
 use App\Models\Chat\SlackChannel;
@@ -211,4 +212,46 @@ test('Slack message versions: earlier wordings newest first for a visible channe
 
     $row = collect(slackStreamPage($this->viewer, ['slackChannel' => $this->channel->id])['data'])->firstWhere('ts', $ts(1));
     expect($row['versions_url'])->toBe($url($this->channel, $ts(1)));
+});
+
+test('Slack files and links: files, media and web links of a visible channel, thread replies included, filtered, searched, sorted and paged', function () {
+    $store = $this->store;
+    $file  = fn (string $id, string $name, string $mime) => ['id' => $id, 'name' => $name, 'mimetype' => $mime];
+
+    $store(1, 'Price list attached', ['data' => ['files' => [$file("FXL{$this->s}", 'aroma-prices.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')]]]);
+    $store(2, 'Read the spec <https://example.com/spec|Spec doc> and <mailto:ann@example.com|Ann>');
+    $store(3, 'No links or files here');
+    $store(4, 'Photo of the shelf', ['data' => ['files' => [$file("FPNG{$this->s}", 'shelf.png', 'image/png')]]]);
+    $store(5, 'Parent');
+    $store(6, 'See <https://example.com/thread>', ['thread_ts' => ($this->ts)(5)]);
+    $store(7, '<https://example.com/gone>')->delete();
+    $store(8, '<https://example.com/hidden>', [], $this->hidden);
+
+    $url  = fn (array $query = []) => route('grp.chat.staff.slack.files-links', ['slackChannel' => $this->channel->id] + $query);
+    $keys = fn (array $items) => array_map(fn (array $item) => $item['kind'].':'.($item['file']['name'] ?? $item['link']['url']), $items);
+
+    $all = actingAs($this->viewer)->getJson($url())->assertOk()->json();
+    expect($keys($all['items']))->toBe(['link:https://example.com/thread', 'media:shelf.png', 'link:https://example.com/spec', 'file:aroma-prices.xlsx'])
+        ->and($all['next_cursor'])->toBeNull()
+        ->and($all['items'][0]['thread_ts'])->toBe(($this->ts)(5))
+        ->and($all['items'][2]['link']['text'])->toBe('Spec doc')
+        ->and($all['items'][3]['shared_by'])->toBe('Ann Author');
+
+    expect($keys(actingAs($this->viewer)->getJson($url(['kind' => 'files']))->json('items')))->toBe(['file:aroma-prices.xlsx'])
+        ->and($keys(actingAs($this->viewer)->getJson($url(['kind' => 'media']))->json('items')))->toBe(['media:shelf.png'])
+        ->and($keys(actingAs($this->viewer)->getJson($url(['kind' => 'links', 'sort' => 'oldest']))->json('items')))->toBe(['link:https://example.com/spec', 'link:https://example.com/thread'])
+        ->and($keys(actingAs($this->viewer)->getJson($url(['q' => 'AROMA']))->json('items')))->toBe(['file:aroma-prices.xlsx']);
+
+    foreach (range(10, 10 + GetSlackChannelFilesAndLinks::PER_PAGE) as $i) {
+        $store($i, "Link {$i} <https://example.com/{$i}>");
+    }
+    $first = actingAs($this->viewer)->getJson($url(['kind' => 'links']))->json();
+    $rest  = actingAs($this->viewer)->getJson($url(['kind' => 'links', 'cursor' => $first['next_cursor']]))->json();
+    expect($first['next_cursor'])->not->toBeNull()
+        ->and(count($first['items']) + count($rest['items']))->toBe(GetSlackChannelFilesAndLinks::PER_PAGE + 3)
+        ->and($rest['next_cursor'])->toBeNull();
+
+    actingAs($this->viewer)->getJson($url(['kind' => 'everything']))->assertUnprocessable();
+    actingAs($this->stranger)->getJson($url())->assertForbidden();
+    actingAs($this->viewer)->getJson(route('grp.chat.staff.slack.files-links', $this->hidden->id))->assertForbidden();
 });

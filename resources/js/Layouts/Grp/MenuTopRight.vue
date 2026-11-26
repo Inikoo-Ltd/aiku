@@ -75,7 +75,7 @@ const isUserMac = navigator.platform.includes('Mac')
     <!-- Avatar Group -->
     <div class="py-0.5 z-10 bg-gray-50 pl-3 pr-6 flex justify-between gap-x-2 flex-shrink-0">
         <div class="flex items-center gap-x-0 sm:gap-x-4 sm:divide-x divide-gray-200">
-            <div v-if="isVerbaRoute" id="VerbaTopSearch" class="w-56 lg:w-80" />
+            <div v-if="isVerbaRoute" id="VerbaTopSearch" class="hidden sm:block sm:w-48 md:w-56 lg:w-80 sm:empty:hidden" />
             <!-- Button: Search -->
             <button v-show="!isVerbaRoute" @click="showSearchDialog = !showSearchDialog" id="search"
                 class="h-7 w-fit flex items-center justify-center gap-x-3 ring-1 ring-gray-300 rounded-md px-3 text-gray-500 hover:bg-gray-200 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">

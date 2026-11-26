@@ -249,7 +249,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             }, CACHE_WRITE_DELAY_MS))
         },
 
-        async openWithUser(userId: number) {
+        async openWithUser(userId: number, { openWindow = true }: { openWindow?: boolean } = {}): Promise<StaffConversation> {
             const { data } = await axios.post(route("grp.chat.staff.conversations.store"), { user_ids: [userId] })
             const conversation: StaffConversation = data.data
             const existingIndex = this.conversations.findIndex((c) => c.ulid === conversation.ulid)
@@ -258,7 +258,8 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             } else {
                 this.conversations[existingIndex] = conversation
             }
-            this.openConversation(conversation.ulid)
+            if (openWindow) this.openConversation(conversation.ulid)
+            return conversation
         },
 
         async createGroup(name: string, userIds: number[]): Promise<StaffConversation> {

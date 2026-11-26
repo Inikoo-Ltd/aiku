@@ -17,6 +17,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');
     Route::post('/conversations', \App\Actions\Chat\Staff\StoreStaffConversation::class)->name('conversations.store');
     Route::get('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\Json\GetStaffMessages::class)->name('conversations.messages.index');
+    Route::get('/conversations/{staffConversation}/files-links', \App\Actions\Chat\Staff\Json\GetStaffConversationFilesAndLinks::class)->name('conversations.files-links');
     Route::post('/conversations/{staffConversation}/messages', \App\Actions\Chat\Staff\SendStaffMessage::class)->name('conversations.messages.store');
     Route::post('/conversations/{staffConversation}/archive', \App\Actions\Chat\Staff\ArchiveStaffConversation::class)->name('conversations.archive');
     Route::post('/conversations/{staffConversation}/read', \App\Actions\Chat\Staff\MarkStaffConversationRead::class)->name('conversations.read');
@@ -39,6 +40,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/slack/{slackChannel}/thread', \App\Actions\Chat\Staff\Json\GetSlackThread::class)->name('slack.thread');
     Route::get('/slack/{slackChannel}/versions', \App\Actions\Chat\Staff\Json\GetSlackMessageVersions::class)->name('slack.versions');
     Route::get('/slack/{slackChannel}/pins', \App\Actions\Chat\Staff\Json\GetSlackChannelPins::class)->name('slack.pins');
+    Route::get('/slack/{slackChannel}/files-links', \App\Actions\Chat\Staff\Json\GetSlackChannelFilesAndLinks::class)->name('slack.files-links');
     Route::post('/slack/{slackChannel}/read', \App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class)->name('slack.read');
     Route::post('/slack-read-all', [\App\Actions\Chat\Staff\Slack\MarkSlackChannelRead::class, 'inAllChannels'])->name('slack.read-all');
     Route::middleware('throttle:10,1,slack-connect')->group(function () {

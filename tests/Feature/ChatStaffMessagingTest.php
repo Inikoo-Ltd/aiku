@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use Illuminate\Support\Arr;
+use App\Actions\Chat\Staff\Json\GetStaffConversationFilesAndLinks;
 use App\Actions\Chat\ChatSession\AssignChatToAgent;
 use App\Actions\Chat\ChatSession\CloseChatSession;
 use App\Actions\Chat\ChatSession\SendChatMessage;
@@ -175,6 +176,50 @@ describe('staff messaging', function () {
         $response->assertSuccessful();
         expect($response->json('data.image'))->not->toBeNull()
             ->and($response->json('data.body'))->toBe('');
+    });
+
+    test('files and links lists pictures, GIFs and web links, filtered, searched, sorted and paged, never past the moment the person left', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['name' => 'Files '.\Illuminate\Support\Str::random(8), 'user_ids' => [$this->otherUser->id]]);
+        $send = fn (array $data, ?User $as = null) => actingAs($as ?? $this->user)->post(route('grp.chat.staff.conversations.messages.store', $conversation), $data)->assertSuccessful();
+
+        $send(['body' => 'Spec at https://example.com/spec. Also https://example.com/spec']);
+        $send(['image' => \Illuminate\Http\UploadedFile::fake()->image('shelf-photo.png', 40, 40)]);
+        $send(['body' => 'https://media.example.com/party.gif']);
+        $send(['body' => 'nothing to see']);
+        $send(['body' => 'Order https://example.com/order/7'], $this->otherUser);
+
+        $url   = fn (array $query = []) => route('grp.chat.staff.conversations.files-links', ['staffConversation' => $conversation->ulid] + $query);
+        $keys  = fn (array $items) => array_map(fn (array $item) => $item['kind'].':'.($item['link']['url'] ?? $item['media']['gif_url'] ?? $item['media']['name']), $items);
+        $fetch = fn (array $query = [], ?User $as = null) => actingAs($as ?? $this->user)->getJson($url($query))->assertOk()->json();
+
+        $all = $fetch();
+        expect($keys($all['items']))->toBe(['link:https://example.com/order/7', 'media:https://media.example.com/party.gif', 'media:shelf-photo.png', 'link:https://example.com/spec'])
+            ->and($all['next_cursor'])->toBeNull()
+            ->and($all['items'][0]['shared_by'])->toBe($this->otherUser->chatName())
+            ->and($all['items'][2]['media']['image'])->not->toBeNull();
+
+        expect($keys($fetch(['kind' => 'media'])['items']))->toBe(['media:https://media.example.com/party.gif', 'media:shelf-photo.png'])
+            ->and($keys($fetch(['kind' => 'links', 'sort' => 'oldest'])['items']))->toBe(['link:https://example.com/spec', 'link:https://example.com/order/7'])
+            ->and($keys($fetch(['q' => 'SHELF'])['items']))->toBe(['media:shelf-photo.png']);
+
+        $conversation->messages()->orderBy('id')->first()->update(['created_at' => now()->subHour()]);
+        $conversation->participants()->updateExistingPivot($this->otherUser->id, ['left_at' => now()->subMinutes(30)->format(\App\Models\Chat\StaffConversation::PRECISE_DATE_FORMAT)]);
+        expect($keys($fetch(['kind' => 'links'], $this->otherUser)['items']))->toBe(['link:https://example.com/spec']);
+
+        foreach (range(1, GetStaffConversationFilesAndLinks::PER_PAGE + 1) as $i) {
+            $send(['body' => "Link https://example.com/page/{$i}"]);
+        }
+        $first = $fetch(['kind' => 'links']);
+        $rest  = $fetch(['kind' => 'links', 'cursor' => $first['next_cursor']]);
+        expect($first['next_cursor'])->not->toBeNull()
+            ->and(count($first['items']) + count($rest['items']))->toBe(GetStaffConversationFilesAndLinks::PER_PAGE + 3)
+            ->and($rest['next_cursor'])->toBeNull();
+
+        actingAs($this->user)->getJson($url(['kind' => 'files']))->assertUnprocessable();
+        actingAs(User::factory()->create(['group_id' => $this->user->group_id]))->getJson($url())->assertForbidden();
     });
 
     test('non participant is rejected by the message endpoint', function () {

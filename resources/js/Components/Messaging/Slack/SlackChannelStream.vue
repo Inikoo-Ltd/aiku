@@ -10,7 +10,7 @@ import axios from "axios"
 import { Deferred, InfiniteScroll, router, usePage } from "@inertiajs/vue3"
 import { Dialog, InputText, Popover } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
+import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isToday, isYesterday } from "date-fns"
 import { ctrans } from "@/Composables/useTrans"
@@ -20,12 +20,13 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SlackNodes from "@/Components/Messaging/Slack/SlackNodes.vue"
 import SlackMessageRow, { type SlackStreamMessage } from "@/Components/Messaging/Slack/SlackMessageRow.vue"
 import SlackThreadPanel from "@/Components/Messaging/Slack/SlackThreadPanel.vue"
+import FilesAndLinksPanel, { type SharedItem } from "@/Components/Messaging/FilesAndLinksPanel.vue"
 import SlackMessageComposer, { type SlackSentMessage, type SlackWriteState } from "@/Components/Messaging/Slack/SlackMessageComposer.vue"
 import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
 export type { SlackStreamMessage }
 
-library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
+library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
 
 export interface SlackBookmark {
     id: number
@@ -210,7 +211,18 @@ const togglePins = async (event: Event) => {
     }
 }
 
-const jumpTo = (pin: SlackStreamMessage) => {
+const activeTab = ref<"messages" | "files">("messages")
+const hasOpenedFiles = ref(false)
+watch(activeTab, (tab) => (hasOpenedFiles.value ||= tab === "files"))
+watch(() => props.channel.id, () => (activeTab.value = "messages"))
+
+const showSharedItem = async (item: SharedItem) => {
+    activeTab.value = "messages"
+    await nextTick()
+    if (item.ts) jumpTo({ ts: item.ts, thread_ts: item.thread_ts ?? null, is_broadcast: !!item.is_broadcast })
+}
+
+const jumpTo = (pin: Pick<SlackStreamMessage, "ts" | "thread_ts" | "is_broadcast">) => {
     pinsPopover.value?.hide()
     if (pin.thread_ts && pin.thread_ts !== pin.ts && !pin.is_broadcast) {
         openThread(pin.thread_ts, pin.ts)
@@ -379,9 +391,22 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                     </span>
                     <Button v-if="write?.allowed" type="tertiary" size="xs" class="shrink-0 whitespace-nowrap" icon="fal fa-plus" :label="ctrans('Add a bookmark')" @click="openBookmark(null)" />
                 </div>
+                <div class="flex items-center gap-x-1 px-3" role="tablist" :aria-label="ctrans('Channel views')">
+                    <button
+                        v-for="tab in [{ key: 'messages', label: ctrans('Messages'), icon: 'fal fa-comment-dots' }, { key: 'files', label: ctrans('Files & links'), icon: 'fal fa-folder' }]"
+                        :key="tab.key"
+                        type="button"
+                        role="tab"
+                        :aria-selected="activeTab === tab.key"
+                        class="-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-[13px] font-semibold transition-colors"
+                        :class="activeTab === tab.key ? 'border-[var(--app-accent)] text-[#1d1c1d]' : 'border-transparent text-[#616061] hover:text-[#1d1c1d]'"
+                        @click="activeTab = tab.key as 'messages' | 'files'">
+                        <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />{{ tab.label }}
+                    </button>
+                </div>
             </div>
 
-            <div ref="streamEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-3" @scroll.passive="onStreamScroll">
+            <div v-show="activeTab === 'messages'" ref="streamEl" class="min-h-0 flex-1 overflow-y-auto px-3 pb-3" @scroll.passive="onStreamScroll">
                 <Deferred data="slack_messages">
                     <template #fallback>
                         <div class="space-y-4 py-4" :aria-label="ctrans('Loading…')" aria-busy="true">
@@ -429,15 +454,16 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                     </InfiniteScroll>
                 </Deferred>
             </div>
+            <FilesAndLinksPanel v-if="hasOpenedFiles" v-show="activeTab === 'files'" :url="route('grp.chat.staff.slack.files-links', { slackChannel: channel.id })" class="min-h-0 flex-1" @jump="showSharedItem" />
             <Button
-                v-if="newBelow"
+                v-if="newBelow && activeTab === 'messages'"
                 type="tertiary"
                 size="xs"
                 icon="fal fa-arrow-down"
                 class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
-            <SlackMessageComposer v-if="write" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
+            <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 
         <SlackThreadPanel v-if="openThreadTs" :channel-id="channel.id" :live-channel="liveChannel" :ts="openThreadTs" :focus-ts="focusReplyTs" :channel-links="channelLinks" :write="write" @close="openThreadTs = null" @sent="onThreadSent" />
