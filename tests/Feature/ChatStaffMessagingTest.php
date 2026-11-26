@@ -2164,4 +2164,10 @@ test('Verba Home: Jev picks the news, Haiku writes it within seconds as a quick 
     expect($headlines($member))->toContain('Edited: geode lamps are here')
         ->and($headlines($outsider))->not->toContain('Edited: geode lamps are here')
         ->and(collect(actingAs($this->user)->getJson(route('grp.chat.staff.home'))->json('people'))->pluck('conversation_ulid'))->toContain($dm->ulid);
+
+    $news->delete();
+    expect($headlines($member))->not->toContain('Edited: geode lamps are here');
+
+    Config::set('services.openrouter.api_key', null);
+    expect(\App\Actions\Chat\Staff\Home\EditStaffMessageStories::run($this->user->group))->toBe(0);
 });

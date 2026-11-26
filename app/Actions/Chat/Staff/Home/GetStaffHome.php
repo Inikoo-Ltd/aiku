@@ -29,6 +29,8 @@ class GetStaffHome
 
     public const int PEOPLE = 5;
 
+    public const int QUICK_MINUTES = 90;
+
     /**
      * @return array{stories: list<array<string, mixed>>, people: list<array<string, mixed>>}
      */
@@ -37,6 +39,8 @@ class GetStaffHome
         $stories = StaffMessageStory::query()
             ->visibleTo($user)
             ->where('happened_at', '>=', now()->subDays(self::DAYS))
+            ->where(fn ($query) => $query->whereHas('staffMessage')->orWhereHas('slackMessage'))
+            ->where(fn ($query) => $query->where('source', StaffMessageStory::SOURCE_EDITOR)->orWhere('created_at', '>=', now()->subMinutes(self::QUICK_MINUTES)))
             ->with(['author', 'staffMessage', 'slackMessage', 'staffConversation', 'slackChannel'])
             ->orderByRaw('happened_at::date desc')
             ->orderByDesc('importance')

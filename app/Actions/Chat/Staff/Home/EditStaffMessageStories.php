@@ -51,11 +51,15 @@ class EditStaffMessageStories
      */
     public function handle(Group $group): int
     {
+        if (!$this->usesOpenRouter()) {
+            return 0;
+        }
+
         $cursorKey = 'staff-stories-cursor:'.$group->id;
         $cursor    = Cache::get($cursorKey, ['staff' => null, 'slack' => null]);
 
         $staff = $this->staffCandidates($group, $cursor['staff']);
-        $slack = $this->slackCandidates($group, $cursor['slack']);
+        [$slack, $slackReadTo] = $this->slackCandidates($group, $cursor['slack']);
 
         $lines = $staff->map(fn (StaffMessage $message) => [
             'id'      => 's'.$message->id,
@@ -106,7 +110,7 @@ class EditStaffMessageStories
 
         Cache::forever($cursorKey, [
             'staff' => $staff->max('id') ?? $cursor['staff'] ?? StaffMessage::max('id'),
-            'slack' => $slack->max('id') ?? $cursor['slack'] ?? SlackMessage::max('id'),
+            'slack' => $slackReadTo ?? $cursor['slack'] ?? SlackMessage::max('id'),
         ]);
 
         return $written;
@@ -159,21 +163,27 @@ class EditStaffMessageStories
     }
 
     /**
-     * @return Collection<int, SlackMessage>
+     * The filter on length and images runs after the query, so the cursor moves to the last row read, not the last kept.
+     *
+     * @return array{0: Collection<int, SlackMessage>, 1: int|null}
      */
-    private function slackCandidates(Group $group, ?int $afterId): Collection
+    private function slackCandidates(Group $group, ?int $afterId): array
     {
-        return SlackMessage::query()
+        $rows = SlackMessage::query()
             ->with(['channel', 'user'])
             ->whereIn('slack_channel_id', SlackChannel::query()->kept()->where('group_id', $group->id)->select('id'))
             ->where(fn ($query) => $query->whereNull('thread_ts')->orWhereColumn('thread_ts', 'ts'))
             ->where(fn ($query) => $query->whereNull('subtype')->orWhere('subtype', 'file_share'))
-            ->when($afterId, fn ($query) => $query->where('id', '>', $afterId), fn ($query) => $query->where('sent_at', '>=', now()->subHours(self::FIRST_RUN_HOURS)))
+            ->where('sent_at', '>=', now()->subHours(self::FIRST_RUN_HOURS))
+            ->when($afterId, fn ($query) => $query->where('id', '>', $afterId))
             ->orderBy('id')
             ->limit(self::BATCH)
-            ->get()
-            ->filter(fn (SlackMessage $message) => $this->slackHasImage($message) || mb_strlen((string) $message->text) >= self::MIN_CHARACTERS)
-            ->values();
+            ->get();
+
+        return [
+            $rows->filter(fn (SlackMessage $message) => $this->slackHasImage($message) || mb_strlen((string) $message->text) >= self::MIN_CHARACTERS)->values(),
+            $rows->max('id'),
+        ];
     }
 
     private function slackHasImage(SlackMessage $message): bool
@@ -232,7 +242,8 @@ class EditStaffMessageStories
     public function asCommand(Command $command): int
     {
         foreach (Group::all() as $group) {
-            $command->info($group->slug.': '.$this->handle($group).' stories');
+            $written = rescue(fn () => $this->handle($group), fn () => null);
+            $command->info($group->slug.': '.($written ?? 'failed').' stories');
         }
 
         return 0;

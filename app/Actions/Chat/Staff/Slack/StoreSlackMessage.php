@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack;
 
 use App\Actions\Chat\Staff\Home\QuickEditStaffMessageStory;
+use App\Models\Chat\StaffMessageStory;
 use App\Actions\Chat\Staff\Slack\Write\SendSlackFiles;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
@@ -60,6 +61,7 @@ class StoreSlackMessage
         }
 
         $isNew = $message->wasRecentlyCreated && $subtype !== 'message_changed';
+        $isEdited = !$message->wasRecentlyCreated && $message->wasChanged('text');
         if (!$message->sent_from_aiku && !$message->trashed() && $this->carriesFileSentFromAiku($message)) {
             $message->forceFill(['sent_from_aiku' => true])->saveQuietly();
         }
@@ -72,7 +74,10 @@ class StoreSlackMessage
             if ($isNew || !$message->wasRecentlyCreated) {
                 rescue(fn () => NotifySlackMentions::run($message));
             }
-            if ($isNew && QuickEditStaffMessageStory::isCandidate($message)) {
+            if ($isEdited) {
+                StaffMessageStory::query()->where('slack_message_id', $message->id)->delete();
+            }
+            if (($isNew || $isEdited) && QuickEditStaffMessageStory::isCandidate($message)) {
                 QuickEditStaffMessageStory::dispatch($message);
             }
         }
@@ -157,6 +162,9 @@ class StoreSlackMessage
     {
         $message = $channel->messages()->where('ts', $ts)->first();
         $message?->delete();
+        if ($message) {
+            StaffMessageStory::query()->where('slack_message_id', $message->id)->delete();
+        }
 
         return $message;
     }
