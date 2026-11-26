@@ -66,6 +66,20 @@ return [
     ],
 
     /*
+     * Columns the full read only login of unrestricted users (mcp_sql_unrestricted) cannot read either:
+     * what staff wrote to each other. Ids, times, authors and counts stay readable for fixing things
+     * (Raul, 26 Nov 2026, INI-427).
+     */
+    'unrestricted_hidden_columns' => [
+        'staff_messages'             => ['body'],
+        'staff_message_translations' => ['body'],
+        'slack_messages'             => ['text', 'data', 'search_vector'],
+        'slack_message_versions'     => ['text', 'data'],
+        'slack_files'                => ['name', 'data'],
+        'slack_connections'          => ['token'],
+    ],
+
+    /*
      * Tables the broad base globs (*_stats, product_*) would hand to everyone, that belong to
      * one tier instead: per person activity, HR and money totals, customer links.
      */

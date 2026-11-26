@@ -22,7 +22,7 @@ import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 import { useHtmlWithScripts, useInlineScriptBlocks } from "@/Composables/useHtmlWithScripts"
 import BlogProductCarouselIris from "@/Iris/Components/IrisBlocks/BlogProductCarouselIris.vue"
-import { type CarouselTextTag, DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, carouselTextTag, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
+import { type CarouselTextTag, type CarouselWidth, DEFAULT_PRODUCT_NAME_TAG, DEFAULT_TITLE_TAG, carouselTextTag, carouselWidth, familyProductsLimit, parseProductCodes, productCarouselSource, productsPerView } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
 import { ProductResource } from "@/types/Iris/Products"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
@@ -70,6 +70,7 @@ interface ProductCarouselTarget {
   perView: number
   titleTag: CarouselTextTag
   productNameTag: CarouselTextTag
+  width: CarouselWidth
 }
 
 const productCarousels = ref<ProductCarouselTarget[]>([])
@@ -90,11 +91,35 @@ const findProductCarousels = async () => {
         perView: productsPerView(element.getAttribute("data-per-view")),
         titleTag: carouselTextTag(element.getAttribute("data-title-tag"), DEFAULT_TITLE_TAG),
         productNameTag: carouselTextTag(element.getAttribute("data-product-name-tag"), DEFAULT_PRODUCT_NAME_TAG),
+        width: carouselWidth(element.getAttribute("data-width")),
       }
     })
 }
 
-onMounted(findProductCarousels)
+const articleRef = ref<HTMLElement | null>(null)
+const wideCarouselOverhang = ref(0)
+let articleColumnObserver: ResizeObserver | null = null
+
+const measureWideCarouselOverhang = () => {
+  const article = articleRef.value
+  const grid = article?.parentElement
+  if (!article || !grid) {
+    return
+  }
+  const columnWidth = parseFloat(getComputedStyle(grid).gridTemplateColumns.split(" ").at(-1) ?? "")
+  wideCarouselOverhang.value = Number.isFinite(columnWidth) ? Math.max(0, Math.floor((columnWidth - article.clientWidth) / 2)) : 0
+}
+
+onMounted(() => {
+  findProductCarousels()
+  measureWideCarouselOverhang()
+  if (articleRef.value?.parentElement && typeof ResizeObserver !== "undefined") {
+    articleColumnObserver = new ResizeObserver(measureWideCarouselOverhang)
+    articleColumnObserver.observe(articleRef.value.parentElement)
+  }
+})
+
+onUnmounted(() => articleColumnObserver?.disconnect())
 watch(contentHtml, findProductCarousels, { flush: "post" })
 const headings = computed(() => tableOfContents.value.headings)
 
@@ -195,7 +220,7 @@ const screenType = inject("screenType", "desktop")
     </aside>
 
     <!-- Main Content -->
-    <article class="w-full min-w-0 max-w-3xl mx-auto">
+    <article ref="articleRef" class="w-full min-w-0 max-w-3xl mx-auto" :style="{ '--blog-wide-carousel-overhang': `${wideCarouselOverhang}px` }">
       <h1 v-html="titleHtml" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
@@ -217,7 +242,7 @@ const screenType = inject("screenType", "desktop")
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10 break-words" ref="contentRef" v-html="contentHtml" />
         <Teleport v-for="(carousel, index) in productCarousels" :key="index" :to="carousel.element">
-          <BlogProductCarouselIris :codes="carousel.codes" :title="carousel.title" :perView="carousel.perView" :titleTag="carousel.titleTag" :productNameTag="carousel.productNameTag" :products="fieldValue.carousel_products ?? {}" />
+          <BlogProductCarouselIris :codes="carousel.codes" :title="carousel.title" :perView="carousel.perView" :titleTag="carousel.titleTag" :productNameTag="carousel.productNameTag" :wide="carousel.width === 'wide'" :products="fieldValue.carousel_products ?? {}" />
         </Teleport>
       </div>
 
@@ -274,6 +299,12 @@ const screenType = inject("screenType", "desktop")
 .prose :deep(img) {
   height: auto;
   border-radius: 0.5rem;
+}
+
+.prose :deep(.blog-product-carousel-wide) {
+  width: calc(100% + 2 * var(--blog-wide-carousel-overhang, 0px));
+  max-width: none;
+  margin-left: calc(-1 * var(--blog-wide-carousel-overhang, 0px));
 }
 
 .prose :deep([data-product-carousel] img) {

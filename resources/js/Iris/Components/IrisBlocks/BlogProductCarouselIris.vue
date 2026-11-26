@@ -17,6 +17,7 @@ const props = defineProps<{
 	perView: number
 	titleTag?: CarouselTextTag
 	productNameTag?: CarouselTextTag
+	wide?: boolean
 	products: Record<string, ProductResource>
 }>()
 
@@ -40,24 +41,25 @@ const swiperInstance = shallowRef<any>(null)
 const isBeginning = shallowRef(true)
 const isEnd = shallowRef(false)
 
+const isScrollable = shallowRef(false)
+
 const updateEdges = (swiper: any) => {
 	isBeginning.value = swiper.isBeginning
 	isEnd.value = swiper.isEnd
+	isScrollable.value = !swiper.isLocked && carouselProducts.value.length > 1
 }
 
 const onSwiper = (swiper: any) => {
 	swiperInstance.value = swiper
 	updateEdges(swiper)
 }
-
-const hasMoreThanFits = computed(() => carouselProducts.value.length > props.perView)
 </script>
 
 <template>
-	<section v-if="carouselProducts.length" class="blog-product-carousel" :aria-label="title || ctrans('Products')">
-		<div v-if="title || hasMoreThanFits" class="blog-product-carousel-header">
+	<section v-if="carouselProducts.length" class="blog-product-carousel" :class="{ 'blog-product-carousel-wide': wide }" :aria-label="title || ctrans('Products')">
+		<div v-if="title || isScrollable" class="blog-product-carousel-header">
 			<component :is="titleTag ?? 'h3'" v-if="title" class="blog-product-carousel-title">{{ title }}</component>
-			<div v-if="hasMoreThanFits" class="blog-product-carousel-nav">
+			<div v-if="isScrollable" class="blog-product-carousel-nav">
 				<button type="button" :aria-label="ctrans('Previous')" :disabled="isBeginning" @click="swiperInstance?.slidePrev()">
 					<FontAwesomeIcon :icon="faChevronLeft" fixed-width aria-hidden="true" />
 				</button>
@@ -72,10 +74,15 @@ const hasMoreThanFits = computed(() => carouselProducts.value.length > props.per
 			:space-between="12"
 			:watch-overflow="true"
 			class="w-full"
+			:class="{ 'blog-product-carousel-draggable': isScrollable }"
 			@swiper="onSwiper"
 			@slide-change="updateEdges"
 			@reach-end="updateEdges"
 			@reach-beginning="updateEdges"
+			@lock="updateEdges"
+			@unlock="updateEdges"
+			@breakpoint="updateEdges"
+			@resize="updateEdges"
 		>
 			<SwiperSlide v-for="product in carouselProducts" :key="product.id" class="!h-auto">
 				<RangeAdvisorProductCard
@@ -134,6 +141,14 @@ const hasMoreThanFits = computed(() => carouselProducts.value.length > props.per
 .blog-product-carousel-nav button:hover:not(:disabled) {
 	border-color: var(--theme-color-4);
 	color: var(--theme-color-4);
+}
+
+.blog-product-carousel-draggable :deep(.swiper-wrapper) {
+	cursor: grab;
+}
+
+.blog-product-carousel-draggable :deep(.swiper-wrapper:active) {
+	cursor: grabbing;
 }
 
 .blog-product-carousel-nav button:disabled {

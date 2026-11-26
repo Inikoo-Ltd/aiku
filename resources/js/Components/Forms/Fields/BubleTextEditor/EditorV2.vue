@@ -42,6 +42,7 @@ import { ScriptBlock, SCRIPT_BLOCK_NODE } from "@/Components/Forms/Fields/BubleT
 import TiptapScriptBlockDialog from "@/Components/Forms/Fields/BubleTextEditor/ScriptBlock/TiptapScriptBlockDialog.vue"
 import { ProductCarousel, PRODUCT_CAROUSEL_NODE, type ProductCarouselAttributes, defaultProductCarouselAttributes } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/ProductCarouselExtension"
 import TiptapProductCarouselDialog from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/TiptapProductCarouselDialog.vue"
+import ProductCarouselNodeView from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/ProductCarouselNodeView.vue"
 import type { ProductCarouselRoutes } from "@/Components/Forms/Fields/BubleTextEditor/ProductCarousel/productCarouselAttributes"
 import { DEFAULT_EDITOR_TOOLS, fontSizeInPixels } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 
@@ -270,8 +271,8 @@ const editorInstance = useEditor({
         ProductCarousel.configure({
             onEdit: (position: number) => openProductCarouselDialog(position),
             title: `${ctrans("Product carousel")} · ${ctrans("double click to edit")}`,
-            emptyText: ctrans("No products yet"),
-            familyText: (family: string, limit: number) => ctrans("Family :family, up to :limit products", { family, limit }),
+            nodeView: ProductCarouselNodeView,
+            previewRoute: () => props.productCarouselRoutes?.previewProducts,
         }),
         Youtube,
         Highlight.configure({
