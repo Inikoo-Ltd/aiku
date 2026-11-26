@@ -21,6 +21,7 @@ use App\Http\Resources\Procurement\PurchaseOrderResource;
 use App\Models\Helpers\Audit;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -164,6 +165,10 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
 
         if ($cancellation['source'] === UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED) {
             return __('This order was cancelled because it was left with nothing to order');
+        }
+
+        if ($cancellation['source'] === UpdatePurchaseOrderStateToCancelled::SOURCE_SUPPLIER_ARCHIVED && Supplier::whereKey($purchaseOrder->supplier_id)->where('status', false)->exists()) {
+            return __('This order was cancelled because its supplier was archived. Unarchive the supplier first');
         }
 
         $transactions = self::restorableTransactions($purchaseOrder, $cancellation);

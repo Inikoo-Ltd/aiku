@@ -18,6 +18,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faExclamationTriangle, faBan, faArrowRight, faCoins, faExternalLink } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 
 type TheirProduct = { code: string; cost: number; units_per_carton: number }
 
@@ -40,13 +42,9 @@ type JoinableOrder = {
 	is_same_agent_order: boolean
 }
 
-type Supplier = {
+type Supplier = SupplierOptionFields & {
 	org_supplier_id: number
-	code: string
 	name: string
-	company_name: string | null
-	contact_name: string | null
-	nickname: string | null
 	slug: string
 	reference: string
 	products: Record<number, TheirProduct | null>
@@ -93,6 +91,7 @@ const productFields = ["code", "name", "cost", "units_per_carton"]
 
 const options = ref<Options | null>(null)
 const orgSupplierId = ref<number | null>(null)
+const supplierSearch = ref("")
 const newOrder = 0
 const intoPurchaseOrderId = ref<number>(newOrder)
 const reference = ref("")
@@ -103,7 +102,7 @@ const errors = ref<Record<string, string>>({})
 
 const supplierOptions = computed(() => (options.value?.suppliers ?? []).map((supplier) => ({
 	...supplier,
-	label: [supplier.code, supplier.company_name, supplier.contact_name, supplier.nickname].filter(Boolean).join(" "),
+	label: [supplier.code, supplier.company_name, supplier.contact_name, supplier.nickname].filter(Boolean).join(" · "),
 })))
 const targetSupplier = computed(() => options.value?.suppliers.find((supplier) => supplier.org_supplier_id === orgSupplierId.value) ?? null)
 const lines = computed(() => options.value?.lines ?? [])
@@ -282,23 +281,26 @@ async function submit() {
 						optionValue="org_supplier_id"
 						filter
 						autoFilterFocus
+						:filterFields="supplierOptionFilterFields"
+						:filterPlaceholder="ctrans('Code, name, contact or product code')"
+						@filter="(event) => supplierSearch = event.value"
+						@hide="supplierSearch = ''"
 						:placeholder="ctrans('Choose a supplier of the agent')"
 						:emptyMessage="ctrans('The agent has no other supplier in :currency', { currency: options.currency ?? '' })"
 						:class="fieldFocusClass"
 						fluid
 					>
 						<template #option="{ option }">
-							<div class="flex w-full min-w-0 items-center gap-2">
-								<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
-								<span class="min-w-0 truncate text-gray-500">{{ [option.company_name, option.contact_name].filter(Boolean).join(" · ") || option.name }}</span>
-								<span v-if="option.nickname" class="shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{{ option.nickname }}</span>
-								<span
-									class="ml-auto shrink-0 whitespace-nowrap text-xs"
-									:class="option.products_count === lines.length ? 'text-gray-500' : 'text-amber-700'"
-								>
-									{{ ctrans(":count of :total items sold", { count: option.products_count, total: lines.length }) }}
-								</span>
-							</div>
+							<SupplierSelectOption :supplier="option" :search="supplierSearch">
+								<template #aside>
+									<span
+										class="whitespace-nowrap text-xs"
+										:class="option.products_count === lines.length ? 'text-gray-500' : 'text-amber-700'"
+									>
+										{{ ctrans(":count of :total items sold", { count: option.products_count, total: lines.length }) }}
+									</span>
+								</template>
+							</SupplierSelectOption>
 						</template>
 					</Select>
 					<a

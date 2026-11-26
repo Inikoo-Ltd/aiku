@@ -18,6 +18,7 @@ use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\SupplyChain\Supplier\Hydrators\SupplierHydrateSupplierProducts;
 use App\Enums\Procurement\OrgSupplierProduct\OrgSupplierProductStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -434,9 +435,10 @@ class MoveSupplierProductsToSupplier extends OrgAction
             ->get();
         $twinsBySupplier = $this->twinsBySupplier($suppliers->pluck('id')->all(), $supplierProducts);
         $sameSkoLeads    = $this->sameSkoLeadsOf($supplierProducts);
+        $optionFields    = GetSupplierOptionFields::make()->handle($suppliers);
 
         return $suppliers
-            ->map(function (Supplier $supplier) use ($supplierProducts, $twinsBySupplier, $sameSkoLeads) {
+            ->map(function (Supplier $supplier) use ($supplierProducts, $twinsBySupplier, $sameSkoLeads, $optionFields) {
                 $twins    = $twinsBySupplier->get($supplier->id, collect());
                 $products = $supplierProducts->mapWithKeys(fn (SupplierProduct $supplierProduct) => [
                     $supplierProduct->id => ($twin = $twins->get($supplierProduct->id)) ? [
@@ -452,11 +454,8 @@ class MoveSupplierProductsToSupplier extends OrgAction
                 return [
                     'id'             => $supplier->id,
                     'slug'           => $supplier->slug,
-                    'code'           => $supplier->code,
                     'name'           => $supplier->officialName(),
-                    'nickname'       => $supplier->nickname(),
-                    'company_name'   => $supplier->company_name,
-                    'contact_name'   => $supplier->contact_name,
+                    ...$optionFields->get($supplier->id),
                     'currency'       => $supplier->currency?->code,
                     'products'       => $products->all(),
                     'products_count' => $products->filter()->count(),

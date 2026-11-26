@@ -32,6 +32,7 @@ import io.aiku.droid.data.api.PalletReturnActionKey
 import io.aiku.droid.data.api.PalletReturnState
 import io.aiku.droid.data.api.PalletReturnWrite
 import io.aiku.droid.data.api.StoredItemAuditActionKey
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -52,6 +53,9 @@ import io.aiku.droid.ui.goodsin.goodsInDate
 import io.aiku.droid.ui.goodsout.GoodsOutLoadProblem
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.organisationZone
+import io.aiku.droid.ui.live.LIVE_RECORD_EVENTS
+import io.aiku.droid.ui.live.LIVE_RECORD_PALLET_RETURN
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.states.SessionExpiredScreen
@@ -96,6 +100,7 @@ internal fun PalletReturnFrame(
     val loaded = state.palletReturn
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.onStart() }
+    LiveEffect(channel = loaded?.id?.let { LiveChannelNames.record(LIVE_RECORD_PALLET_RETURN, it) }, events = LIVE_RECORD_EVENTS) { viewModel.onStart() }
 
     when {
         state.isSessionExpired -> SessionExpiredScreen(onSignIn = viewModel::signInAgain)

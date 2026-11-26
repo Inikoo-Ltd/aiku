@@ -33,6 +33,7 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
     public const string SOURCE_USER = 'user';
     public const string SOURCE_MOVED = 'moved';
     public const string SOURCE_EMPTIED = 'emptied';
+    public const string SOURCE_SUPPLIER_ARCHIVED = 'supplier_archived';
 
     /**
      * Keeps in data.cancellation what cancelling wipes (state, the live lines, their states and amounts) so
@@ -43,7 +44,9 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
         return DB::transaction(function () use ($purchaseOrder, $reason, $source) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
 
-            if (!in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())) {
+            $isDraftOfArchivedSupplier = $source === self::SOURCE_SUPPLIER_ARCHIVED && $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS;
+
+            if (!$isDraftOfArchivedSupplier && !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())) {
                 abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
             }
 

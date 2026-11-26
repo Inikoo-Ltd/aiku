@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\EInvoice\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\Accounting\ReceivedEInvoice\ReceivedEInvoiceMatchStateEnum;
 use App\Http\Resources\Accounting\ReceivedEInvoicesResource;
@@ -126,14 +127,31 @@ class IndexReceivedEInvoices extends OrgAction
                 'canEdit'          => $this->canEdit,
                 'organisationId'   => $this->organisation->id,
                 'matchStates'      => ReceivedEInvoiceMatchStateEnum::labels(),
-                'suppliers'        => Supplier::query()
-                    ->whereIn('id', fn ($query) => $query->select('supplier_id')->from('org_suppliers')->where('organisation_id', $this->organisation->id))
-                    ->whereNull('deleted_at')
-                    ->orderBy('name')
-                    ->get(['id', 'code', 'name']),
+                'suppliers'        => Inertia::once(fn () => $this->supplierOptions()),
                 'data'             => ReceivedEInvoicesResource::collection($rows),
             ]
         )->table($this->tableStructure());
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function supplierOptions(): array
+    {
+        $suppliers = Supplier::query()
+            ->whereIn('id', fn ($query) => $query->select('supplier_id')->from('org_suppliers')->where('organisation_id', $this->organisation->id))
+            ->whereNull('deleted_at')
+            ->orderBy('code')
+            ->get(['id', 'code', 'name', 'company_name', 'contact_name']);
+        $optionFields = GetSupplierOptionFields::make()->handle($suppliers);
+
+        return $suppliers
+            ->map(fn (Supplier $supplier) => [
+                'id'   => $supplier->id,
+                'name' => $supplier->name,
+                ...$optionFields->get($supplier->id),
+            ])
+            ->all();
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

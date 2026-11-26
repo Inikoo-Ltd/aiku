@@ -186,6 +186,8 @@ internal fun LocationSheets(
             errorText = errorText,
             onSave = { counts -> location.write(LocationWrite.Audit(counts)) },
             onDismiss = onDismiss,
+            onFindSko = location::findSko,
+            onFoundSkoHandled = location::foundSkoHandled,
         )
         LocationAction.MoveAll, LocationAction.MoveSome -> MoveSkusSheet(
             detail = detail,

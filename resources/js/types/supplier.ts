@@ -20,3 +20,13 @@ export interface Supplier {
     phone: string
 
 }
+
+export interface SupplierOptionFields {
+    code: string
+    nickname: string | null
+    company_name: string | null
+    contact_name: string | null
+    product_codes?: string
+}
+
+export const supplierOptionFilterFields = ["code", "nickname", "company_name", "contact_name", "product_codes"]

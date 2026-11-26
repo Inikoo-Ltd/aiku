@@ -30,6 +30,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { productDevelopmentColor } from "@/Components/Goods/ProductDevelopment/productDevelopmentColors"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPlus, faTimes, faLightbulbOn, faArrowLeft, faSparkles, faPaintBrush, faTag, faPaperclip, faFilePdf, faImage, faFilm, faBoxOpen, faFlask } from "@fal"
@@ -58,7 +60,7 @@ const props = defineProps<{
         users: Option[]
         brands: Option[]
         agents: Option[]
-        suppliers: Option[]
+        suppliers: (Option & SupplierOptionFields)[]
     }
     searchRoutes: Record<"trade_units" | "trade_unit_families" | "packaging_families" | "sku_code", routeType>
     storeRoute: routeType
@@ -195,6 +197,8 @@ watch(() => form.agent_id, (agentId) => {
         members.value.push(row)
     }
 })
+
+const supplierSearch = ref("")
 
 const supplierOptions = computed(() => form.agent_id
     ? props.options.suppliers.filter((option) => option.agent_id === form.agent_id)
@@ -551,7 +555,26 @@ function submit() {
 
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">{{ ctrans("Supplier") }}</label>
-                            <Select :modelValue="form.supplier_id" :options="supplierOptions" optionLabel="label" optionValue="value" filter showClear :placeholder="form.agent_id ? ctrans('Select a supplier of this agent') : ctrans('Select a supplier')" class="w-full" overlayClass="text-sm" @update:modelValue="onSupplierChange" />
+                            <Select
+                                :modelValue="form.supplier_id"
+                                :options="supplierOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                filter
+                                :filterFields="supplierOptionFilterFields"
+                                :filterPlaceholder="ctrans('Code, name, contact or product code')"
+                                showClear
+                                :placeholder="form.agent_id ? ctrans('Select a supplier of this agent') : ctrans('Select a supplier')"
+                                class="w-full"
+                                overlayClass="text-sm"
+                                @update:modelValue="onSupplierChange"
+                                @filter="(event) => supplierSearch = event.value"
+                                @hide="supplierSearch = ''"
+                            >
+                                <template #option="{ option }">
+                                    <SupplierSelectOption :supplier="option" :search="supplierSearch" />
+                                </template>
+                            </Select>
                         </div>
                         </template>
 

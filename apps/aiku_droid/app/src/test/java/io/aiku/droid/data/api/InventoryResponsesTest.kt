@@ -497,4 +497,22 @@ class InventoryResponsesTest {
     fun `the auto remove switch sends enabled`() {
         assertEquals(JsonObject(mapOf("enabled" to JsonPrimitive(true))), InventoryResponses.emptyLocationsRemovalBody(true))
     }
+
+    @Test
+    fun `the SKO list sends the stock status and location type and reads their choices`() {
+        val parameters = InventoryResponses.orgStocksParameters(SkoQuery(stockStatus = "w2", locationType = "storing"))
+        val page = (
+            InventoryResponses.parseOrgStocks(
+                200,
+                """{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":0},"filters":{"stock_status":[{"key":"out","label":"Out of stock"},{"key":"w2","label":"Critical"}],"location_type":[{"key":"picking","label":"Picking"}]}}""",
+            ) as GoodsOutResult.Loaded
+            ).value
+
+        assertTrue(("stock_status" to "w2") in parameters)
+        assertTrue(("location_type" to "storing") in parameters)
+        assertTrue(InventoryResponses.orgStocksParameters(SkoQuery()).none { it.first == "stock_status" || it.first == "location_type" })
+        assertEquals(listOf("out", "w2"), page.filterOptions?.stockStatus?.map { it.key })
+        assertEquals("Critical", page.filterOptions?.stockStatus?.last()?.label)
+        assertEquals(listOf("picking"), page.filterOptions?.locationType?.map { it.key })
+    }
 }

@@ -29,7 +29,7 @@ class GetChatWidgetConfig
             'shop_id'      => $shop->id,
             'name'         => $shop->name,
             'theme'        => Arr::get($shop->settings, 'chat.widget_theme'),
-            'broadcasting' => $this->broadcasting(),
+            'broadcasting' => self::broadcasting(),
         ];
     }
 
@@ -42,7 +42,7 @@ class GetChatWidgetConfig
      *
      * @return array{key: string|null, cluster: string|null, host: string, port: int, scheme: string}|null
      */
-    private function broadcasting(): ?array
+    public static function broadcasting(): ?array
     {
         $key = config('broadcasting.connections.pusher.key');
 

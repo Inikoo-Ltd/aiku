@@ -119,7 +119,21 @@
     <string name="locations_in_location">%1$s in location</string>
 
     <string name="locations_audit_title">Audit %1$s</string>
-    <string name="locations_audit_subtitle">Count every SKO in this location</string>
+    <string name="locations_audit_blind_subtitle">Count what is on the shelf. Aiku\'s quantities show when you complete.</string>
+    <string name="locations_audit_complete">Complete audit</string>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Complete audit · %d left</item>
+        <item quantity="other">Complete audit · %d left</item>
+    </plurals>
+    <string name="locations_audit_nothing_counted">Count at least one SKO first.</string>
+    <string name="locations_audit_found_sko">SKO found here (scan)</string>
+    <string name="locations_audit_finding_sko">Looking up %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s is not an SKO</string>
+    <string name="locations_audit_counted">Counted %1$s</string>
+    <string name="locations_audit_to_count">To count</string>
+    <string name="locations_audit_count_done">Done: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: counted vs Aiku</string>
+    <string name="locations_audit_summary_subtitle">Check each difference, give its reason, then save.</string>
     <string name="locations_audit_one_subtitle">Count this SKO in this location</string>
     <string name="locations_audit_saved">Audit of %1$s saved</string>
 

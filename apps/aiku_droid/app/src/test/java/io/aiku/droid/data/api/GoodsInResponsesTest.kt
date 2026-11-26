@@ -1,5 +1,6 @@
 package io.aiku.droid.data.api
 
+import java.time.LocalDate
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -7,7 +8,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.LocalDate
 
 class GoodsInResponsesTest {
 
@@ -320,5 +320,25 @@ class GoodsInResponsesTest {
             GoodsInResponses.returnsParameters(ReturnQuery(search = "DN1", from = LocalDate.of(2026, 11, 1), sort = ReturnSort.Customer)),
         )
         assertEquals(listOf("created_at", "reference", "customer"), ReturnSort.entries.map { it.key })
+    }
+
+    @Test
+    fun `an extra item is posted with its id and SKOs, and the addable items are read`() {
+        val add = GoodsInResponses.stockDeliveryWriteRequest(StockDeliveryWrite.AddItem(itemId = 5, skoQuantity = 2.5))
+        val items = (
+            GoodsInResponses.parseAddableItems(
+                200,
+                """{"data":[{"id":5,"field":"org_supplier_product_id","code":"LAV-10","name":"Lavender oil","sko":{"id":12,"code":"LAV-10","name":"Lavender","packed_in":4}},{"id":6,"field":"org_stock_id","code":"ROSE-5","name":null,"sko":null}]}""",
+            ) as GoodsOutResult.Loaded
+            ).value
+
+        assertEquals("items", add.path)
+        assertEquals(JsonPrimitive(5), add.body?.get("item_id"))
+        assertEquals(JsonPrimitive(2.5), add.body?.get("sko_quantity"))
+        assertEquals(listOf("q" to "lav", "org_stock_id" to "12"), GoodsInResponses.addableItemsParameters(" lav ", 12))
+        assertEquals(emptyList<Pair<String, String>>(), GoodsInResponses.addableItemsParameters(" ", null))
+        assertEquals(4.0, items.first().sko?.packedIn)
+        assertEquals("org_stock_id", items.last().field)
+        assertEquals(null, items.last().sko)
     }
 }

@@ -345,6 +345,8 @@ data class SkoQuery(
     val familyId: Long? = null,
     val search: String? = null,
     val sort: SkoSort? = null,
+    val stockStatus: String? = null,
+    val locationType: String? = null,
     val page: Int = 1,
     val perPage: Int = DEFAULT_PER_PAGE,
 ) {
@@ -401,6 +403,16 @@ data class OrgStockPage(
     val meta: ListMeta,
     val counts: SkoCounts? = null,
     val currencyCode: String? = null,
+    val filterOptions: SkoFilterOptions? = null,
+)
+
+@Serializable
+data class SkoFilterChoice(val key: String, val label: String = "")
+
+@Serializable
+data class SkoFilterOptions(
+    @SerialName("stock_status") val stockStatus: List<SkoFilterChoice> = emptyList(),
+    @SerialName("location_type") val locationType: List<SkoFilterChoice> = emptyList(),
 )
 
 @Serializable

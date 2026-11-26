@@ -64,6 +64,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.StockDelivery
 import io.aiku.droid.data.api.StockDeliveryItem
+import io.aiku.droid.data.api.StockDeliveryWrite
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonLook
@@ -100,6 +101,7 @@ private sealed interface CameraSheet {
     data object TypeCode : CameraSheet
     data class Check(val itemId: Long) : CameraSheet
     data class ChooseLine(val code: String, val itemIds: List<Long>) : CameraSheet
+    data class AddExtra(val scanned: ScannedExtra) : CameraSheet
 }
 
 @Composable
@@ -161,7 +163,12 @@ private fun ScanCameraContent(viewModel: StockDeliveryViewModel, state: StockDel
             is LineScanOutcome.Choose -> sheet = CameraSheet.ChooseLine(outcome.code, outcome.itemIds)
             is LineScanOutcome.NotOnDelivery -> {
                 scanFeedback.rejected()
-                feedback = notOnDelivery?.let { CameraFeedback.Problem(it) }
+                val skoId = outcome.skoId
+                if (skoId != null && state.canAddItems) {
+                    sheet = CameraSheet.AddExtra(ScannedExtra(code = outcome.code, skoId = skoId))
+                } else {
+                    feedback = notOnDelivery?.let { CameraFeedback.Problem(it) }
+                }
             }
             is LineScanOutcome.Failed -> feedback = failed?.let { CameraFeedback.Problem(it) }
             null -> return@LaunchedEffect
@@ -248,6 +255,16 @@ private fun ScanCameraContent(viewModel: StockDeliveryViewModel, state: StockDel
                 onDismiss = closeSheet,
             )
         }
+        is CameraSheet.AddExtra -> AddExtraItemSheet(
+            delivery = delivery,
+            scanned = open.scanned,
+            addable = state.addable,
+            isWorking = state.working is StockDeliveryWrite.AddItem,
+            problem = sheetProblem,
+            onSearch = viewModel::loadAddable,
+            onAdd = viewModel::addItem,
+            onDismiss = closeSheet,
+        )
         is CameraSheet.ChooseLine -> ChooseLineSheet(
             code = open.code,
             items = open.itemIds.mapNotNull(delivery::item),

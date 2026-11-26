@@ -132,6 +132,11 @@ class ShowOrgSupplier extends OrgAction
 
                 'archive' => $selection ? $this->agentArchive($supplier, $request) : null,
 
+                'archived' => [
+                    'is_archived' => !$supplier->status,
+                    'archived_at' => $supplier->status ? null : $supplier->archived_at,
+                ],
+
                 'agreement' => GetAgreement::run($supplier, $agreementOrganisation, $request->user(), $forAgent)
                     + ['print_route' => $forAgent ? null : ['name' => 'grp.org.procurement.org_suppliers.show.agreement.pdf', 'parameters' => [$this->organisation->slug, $orgSupplier->slug]]]
                     + ['by_organisation' => $selection && !$selection->selected ? $this->agreementsByOrganisation($selection, $supplier, $request) : null]
@@ -390,6 +395,7 @@ class ShowOrgSupplier extends OrgAction
             'is_archived'   => !$supplier->status,
             'supplier_name' => $supplier->name,
             'archived_at'   => $supplier->archived_at,
+            'open_purchase_orders' => $supplier->status ? DeactivateSupplier::make()->openPurchaseOrders($supplier) : [],
             'can_archive'   => !ReactivateSupplier::wasMerged($supplier),
             'route'         => [
                 'name'       => $supplier->status ? 'grp.models.supplier.archive' : 'grp.models.supplier.unarchive',

@@ -91,6 +91,12 @@ class MainActivity : ComponentActivity() {
         container.appVersions.check()
         container.accountLanguage.onForeground()
         container.offlineWork.syncNow(SyncReason.FOREGROUND)
+        container.liveUpdates.onForeground()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        container.liveUpdates.onBackground()
     }
 
     override fun onNewIntent(intent: Intent) {

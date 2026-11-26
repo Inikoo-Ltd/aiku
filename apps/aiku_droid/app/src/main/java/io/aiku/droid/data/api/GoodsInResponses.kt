@@ -70,6 +70,10 @@ object GoodsInResponses {
         StockDeliveryWrite.Receive -> post("receive")
         StockDeliveryWrite.Unreceive -> post("unreceive")
         StockDeliveryWrite.Cancel -> post("cancel")
+        is StockDeliveryWrite.AddItem -> post("items") {
+            put("item_id", write.itemId)
+            put("sko_quantity", GoodsOutResponses.quantityValue(write.skoQuantity))
+        }
         StockDeliveryWrite.CheckAll -> post("check-all")
         is StockDeliveryWrite.Check -> post("items/${write.itemId}/check") { put("sko_quantity", GoodsOutResponses.quantityValue(write.skoQuantity)) }
         is StockDeliveryWrite.Place -> post("items/${write.itemId}/place") {
@@ -127,6 +131,13 @@ object GoodsInResponses {
     }
 
     fun parseStockDelivery(statusCode: Int, body: String): GoodsOutResult<StockDelivery> = parseData(statusCode, body)
+
+    fun addableItemsParameters(search: String?, orgStockId: Long?): List<Pair<String, String>> = listOfNotNull(
+        search.trimmedOrNull()?.let { "q" to it },
+        orgStockId?.let { "org_stock_id" to it.toString() },
+    )
+
+    fun parseAddableItems(statusCode: Int, body: String): GoodsOutResult<List<AddableItem>> = parseData(statusCode, body)
 
     fun parseStockDeliveryWrite(statusCode: Int, body: String): GoodsOutResult<StockDeliveryOutcome> = when (statusCode) {
         HTTP_OK -> decode<StockDeliveryWriteResponse>(body)

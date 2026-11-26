@@ -25,7 +25,7 @@ class OkHttpMobileApi(
     private val client: OkHttpClient,
     baseUrl: String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi, SupportApi {
+) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi, InventoryApi, GoodsInApi, SupportApi, RealtimeApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
     internal val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
@@ -465,6 +465,20 @@ class OkHttpMobileApi(
     override suspend fun stockDelivery(token: String, warehouseId: Long, stockDeliveryId: Long): GoodsOutResult<StockDelivery> =
         execute(get("$mobileApiUrl/warehouses/$warehouseId/stock-deliveries/$stockDeliveryId", token))
             ?.let { (statusCode, responseBody) -> GoodsInResponses.parseStockDelivery(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun realtimeServer(token: String): GoodsOutResult<RealtimeServer?> =
+        execute(get("$mobileApiUrl/realtime", token))
+            ?.let { (statusCode, responseBody) -> RealtimeResponses.parseServer(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun authorizeChannel(token: String, socketId: String, channel: String): String? =
+        execute(post("$mobileApiUrl/broadcasting/auth", RealtimeResponses.authBody(socketId, channel), token))
+            ?.let { (statusCode, responseBody) -> RealtimeResponses.parseAuth(statusCode, responseBody) }
+
+    override suspend fun addableItems(token: String, warehouseId: Long, stockDeliveryId: Long, search: String?, orgStockId: Long?): GoodsOutResult<List<AddableItem>> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/stock-deliveries/$stockDeliveryId/addable-items", GoodsInResponses.addableItemsParameters(search, orgStockId)), token))
+            ?.let { (statusCode, responseBody) -> GoodsInResponses.parseAddableItems(statusCode, responseBody) }
             ?: GoodsOutResult.Unreachable
 
     override suspend fun writeStockDelivery(

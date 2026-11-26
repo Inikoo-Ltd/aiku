@@ -37,6 +37,7 @@ use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
 use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
 use App\Actions\Inventory\UI\IndexWarehouseStaffTasks;
+use App\Actions\Inventory\UI\IndexWarehousePhoneSyncIssues;
 use App\Actions\Inventory\OrgStock\UI\IndexStockValueFindings;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithWrongWeight;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
@@ -68,6 +69,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowInventoryDashboard::class)->name('dashboard');
 Route::get('tasks', IndexWarehouseStaffTasks::class)->name('staff_tasks.index');
+Route::get('phone-sync-issues', IndexWarehousePhoneSyncIssues::class)->name('phone_sync_issues.index');
 
 Route::prefix('production-materials')->as('production_materials.')->group(function () {
     Route::get('/', IndexProductionMaterialRequestItems::class)->name('index');

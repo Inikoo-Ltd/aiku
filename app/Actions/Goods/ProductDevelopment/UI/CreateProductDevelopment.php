@@ -12,6 +12,7 @@ namespace App\Actions\Goods\ProductDevelopment\UI;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\Goods\ProductDevelopment\UI\Traits\WithProductDevelopmentsIndex;
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
@@ -128,8 +129,7 @@ class CreateProductDevelopment extends OrgAction
                         ->map(fn (Brand $brand) => ['value' => $brand->id, 'label' => $brand->name])->all(),
                     'agents'    => Agent::where('group_id', $group->id)->orderBy('name')->get(['id', 'name'])
                         ->map(fn (Agent $agent) => ['value' => $agent->id, 'label' => $agent->name])->all(),
-                    'suppliers' => Supplier::where('group_id', $group->id)->where('status', true)->orderBy('name')->get(['id', 'code', 'name', 'agent_id'])
-                        ->map(fn (Supplier $supplier) => ['value' => $supplier->id, 'label' => $supplier->name.' ('.$supplier->code.')', 'agent_id' => $supplier->agent_id])->all(),
+                    'suppliers' => $this->supplierOptions($group),
                 ],
                 'searchRoutes' => [
                     'trade_units'          => ['name' => 'grp.product_developments.json.search', 'parameters' => ['scope' => 'trade_units']],
@@ -143,5 +143,23 @@ class CreateProductDevelopment extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function supplierOptions(Group $group): array
+    {
+        $suppliers    = Supplier::where('group_id', $group->id)->where('status', true)->orderBy('code')->get(['id', 'code', 'name', 'company_name', 'contact_name', 'agent_id']);
+        $optionFields = GetSupplierOptionFields::make()->handle($suppliers);
+
+        return $suppliers
+            ->map(fn (Supplier $supplier) => [
+                'value'    => $supplier->id,
+                'label'    => $supplier->code.' — '.($supplier->nickname() ?? $supplier->officialName()),
+                'agent_id' => $supplier->agent_id,
+                ...$optionFields->get($supplier->id),
+            ])
+            ->all();
     }
 }

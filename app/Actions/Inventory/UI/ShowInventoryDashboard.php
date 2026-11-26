@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\UI;
 
+use App\Models\SysAdmin\User;
 use App\Actions\Dispatching\ProductionMaterials\IndexProductionMaterialRequestItems;
 use App\Actions\Inventory\OrgStock\UI\IndexStockValueFindings;
 use App\Actions\OrgAction;
@@ -263,7 +264,37 @@ class ShowInventoryDashboard extends OrgAction
             ],
             $this->getProductionMaterialsGauge($routeParameters),
             $this->getWarehouseTasksGauge($routeParameters),
+            $this->getPhoneSyncIssuesGauge($routeParameters),
         ]));
+    }
+
+    /**
+     * What the staff app did offline here that could not be recorded as done, for the stock supervisors who may
+     * resolve it. The ring is the share still needing someone out of those plus those done in the last 30 days.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getPhoneSyncIssuesGauge(array $routeParameters): ?array
+    {
+        $user = request()->user();
+        if (!$user instanceof User || !IndexWarehousePhoneSyncIssues::canView($user, $this->warehouse)) {
+            return null;
+        }
+
+        $summary = IndexWarehousePhoneSyncIssues::summary($this->warehouse);
+        $total   = $summary['open'] + $summary['closed_last_30_days'];
+
+        return [
+            'key'          => 'phone_sync_issues',
+            'label'        => __('Phone sync issues'),
+            'hint'         => __('Actions done on a phone without a connection that could not be recorded exactly as done. Each needs a check.'),
+            'value'        => $summary['open'],
+            'percentage'   => $total ? round($summary['open'] / $total * 100, 1) : 0,
+            'total'        => $total,
+            'ring_tooltip' => __(':open need someone. :done done in the last 30 days', ['open' => $summary['open'], 'done' => $summary['closed_last_30_days']]),
+            'color'        => '#d97706',
+            'route'        => ['name' => 'grp.org.warehouses.show.inventory.phone_sync_issues.index', 'parameters' => $routeParameters],
+        ];
     }
 
     /**

@@ -40,6 +40,7 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.Ability
 import io.aiku.droid.data.api.DeliveryNoteRow
 import io.aiku.droid.data.api.DispatchChannel
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.ActiveFiltersLine
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AlertTone
@@ -69,7 +70,10 @@ import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.dateRangeText
 import io.aiku.droid.ui.components.recordDate
+import io.aiku.droid.ui.live.LIVE_BACKLOG_EVENTS
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.scan.LocalScanController
 import io.aiku.droid.ui.scan.ScanEffect
@@ -87,6 +91,7 @@ fun DeliveryNotesScreen(notes: DeliveryNotesViewModel) {
     val state by notes.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { notes.onStart() }
+    LiveEffect(channel = LiveChannelNames.dispatchingBacklog(LocalWarehouse.current.organisation.id), events = LIVE_BACKLOG_EVENTS) { notes.onStart() }
 
     RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         if (state.isSessionExpired) {

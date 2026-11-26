@@ -9,6 +9,7 @@
 
 namespace App\Notifications\Work;
 
+use App\Events\BroadcastMobileRecordChanged;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\Platform;
@@ -77,6 +78,7 @@ class WorkNotifier
     {
         if ($record) {
             rescue(fn () => self::pushAll([self::forCurrentAssignees($record, 'modified', [$change])]));
+            BroadcastMobileRecordChanged::dispatchFor($record);
         }
     }
 
@@ -87,6 +89,7 @@ class WorkNotifier
     public static function takenOver(Model $record): void
     {
         rescue(fn () => self::pushAll([self::forCurrentAssignees($record, 'taken_over', [])]));
+        BroadcastMobileRecordChanged::dispatchFor($record);
     }
 
     /**

@@ -45,6 +45,7 @@ import io.aiku.droid.data.api.PickingSessionWrite
 import io.aiku.droid.data.api.SessionActionKey
 import io.aiku.droid.data.api.SessionDeliveryNote
 import io.aiku.droid.data.api.TrolleyRef
+import io.aiku.droid.data.live.LiveChannelNames
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -77,6 +78,9 @@ import io.aiku.droid.ui.goodsout.problemText
 import io.aiku.droid.ui.goodsout.quantityText
 import io.aiku.droid.ui.goodsout.stageOf
 import io.aiku.droid.ui.goodsout.stageTone
+import io.aiku.droid.ui.live.LIVE_RECORD_EVENTS
+import io.aiku.droid.ui.live.LIVE_RECORD_PICKING_SESSION
+import io.aiku.droid.ui.live.LiveEffect
 import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
@@ -108,6 +112,7 @@ fun PickingSessionScreen(session: PickingSessionViewModel, reference: String) {
     val state by session.state.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { session.onStart() }
+    LiveEffect(channel = state.session?.id?.let { LiveChannelNames.record(LIVE_RECORD_PICKING_SESSION, it) }, events = LIVE_RECORD_EVENTS) { session.onStart() }
 
     RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         val loaded = state.session

@@ -8,6 +8,7 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyOutcomeEnum;
@@ -90,6 +91,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class StockDeliveryItem extends Model implements Auditable
 {
+    use BroadcastsMobileRecordChanges;
     use HasFactory;
     use InOrganisation;
     use HasHistory;

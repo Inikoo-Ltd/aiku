@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Аудит комірки</string>
     <string name="locations_audit_one_subtitle">Порахуйте цей SKO в цій комірці</string>
     <string name="locations_audit_saved">Аудит %1$s збережено</string>
-    <string name="locations_audit_subtitle">Порахуйте кожен SKO в цій комірці</string>
     <string name="locations_audit_title">Аудит %1$s</string>
     <string name="locations_audited">Перевірено %1$s</string>
     <string name="locations_auto_remove">Автоматично видаляти порожні комірки</string>
@@ -2767,4 +2766,40 @@
         <item quantity="many">Вирішено %1$d з %2$d рядків</item>
         <item quantity="other">Вирішено %1$d з %2$d рядка</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Стан запасу</string>
+    <string name="inventory_filter_location_type">Тип локації</string>
+    <string name="goodsin_add_extra">Додати додаткову позицію</string>
+    <string name="goodsin_add_extra_question">Додати як додаткову позицію?</string>
+    <string name="goodsin_add_extra_body">Товар, який прийшов, але не входить до жодного замовлення на закупівлю цієї поставки</string>
+    <string name="goodsin_add_extra_search">Шукати серед товарів постачальника</string>
+    <string name="goodsin_add_extra_failed">Не вдалося завантажити товари, які можна додати</string>
+    <string name="goodsin_add_extra_none">Немає товару для додавання. Спробуйте інший пошук.</string>
+    <string name="goodsin_add_extra_not_supplied">Цей SKO не є товаром цього постачальника, тому його не можна додати тут.</string>
+    <string name="goodsin_add_extra_quantity">Скільки SKO прийшло</string>
+    <string name="goodsin_add_extra_note">Додається як отримане й пораховане. Розмістіть його, як інші позиції.</string>
+    <string name="locations_audit_blind_subtitle">Порахуйте, що є на полиці. Кількості з Aiku з’являться, коли завершите.</string>
+    <string name="locations_audit_complete">Завершити аудит</string>
+    <string name="locations_audit_nothing_counted">Спочатку порахуйте хоча б один SKO.</string>
+    <string name="locations_audit_found_sko">SKO знайдено тут (сканувати)</string>
+    <string name="locations_audit_finding_sko">Пошук %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s не є SKO</string>
+    <string name="locations_audit_counted">Пораховано %1$s</string>
+    <string name="locations_audit_to_count">Порахувати</string>
+    <string name="locations_audit_count_done">Готово: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: пораховано проти Aiku</string>
+    <string name="locations_audit_summary_subtitle">Перевірте кожну різницю, вкажіть причину й збережіть.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Додати %1$s SKO %2$s</item>
+        <item quantity="few">Додати %1$s SKO %2$s</item>
+        <item quantity="many">Додати %1$s SKO %2$s</item>
+        <item quantity="other">Додати %1$s SKO %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Завершити аудит · залишився %d</item>
+        <item quantity="few">Завершити аудит · залишилося %d</item>
+        <item quantity="many">Завершити аудит · залишилося %d</item>
+        <item quantity="other">Завершити аудит · залишилося %d</item>
+    </plurals>
+    <string name="filter_search">Пошук</string>
+    <string name="filter_no_match">Нічого не знайдено</string>
 </resources>

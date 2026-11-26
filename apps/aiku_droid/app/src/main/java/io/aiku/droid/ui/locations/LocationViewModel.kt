@@ -2,16 +2,18 @@ package io.aiku.droid.ui.locations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.aiku.droid.data.api.Edited
 import io.aiku.droid.data.api.GoodsOutResult
 import io.aiku.droid.data.api.InventoryApi
 import io.aiku.droid.data.api.InventoryResponses
-import io.aiku.droid.data.api.Edited
 import io.aiku.droid.data.api.LocationDetail
 import io.aiku.droid.data.api.LocationOrgStock
 import io.aiku.droid.data.api.LocationOrgStockUpdate
 import io.aiku.droid.data.api.LocationStockType
 import io.aiku.droid.data.api.LocationWrite
+import io.aiku.droid.data.api.OrgStockWrite
 import io.aiku.droid.data.api.PickingChannel
+import io.aiku.droid.data.api.ScanMatch
 import io.aiku.droid.data.api.StockLevel
 import io.aiku.droid.data.api.StockMovementReasons
 import io.aiku.droid.data.api.WarehouseAbilities
@@ -27,25 +29,25 @@ import io.aiku.droid.ui.goodsout.problem
 import io.aiku.droid.ui.inventory.LocationFinder
 import io.aiku.droid.ui.inventory.MovementReasonsMemory
 import io.aiku.droid.ui.inventory.QueuedStockWrite
+import io.aiku.droid.ui.inventory.StockEvent
 import io.aiku.droid.ui.inventory.StockOfflinePayloads
+import io.aiku.droid.ui.inventory.canEditLocations
+import io.aiku.droid.ui.inventory.canEditStocks
 import io.aiku.droid.ui.inventory.stockOperations
+import io.aiku.droid.ui.inventory.stockRefusal
 import io.aiku.droid.ui.inventory.versions
 import io.aiku.droid.ui.inventory.withQueued
 import io.aiku.droid.ui.inventory.withRequestId
-import io.aiku.droid.ui.inventory.StockEvent
-import io.aiku.droid.ui.inventory.canEditLocations
-import io.aiku.droid.ui.inventory.canEditStocks
-import io.aiku.droid.ui.inventory.stockRefusal
 import io.aiku.droid.ui.sync.QueueEvent
 import io.aiku.droid.ui.sync.RecordQueue
 import io.aiku.droid.ui.sync.StatusGate
+import java.time.Instant
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 
 private const val HTTP_OK = 200
 
@@ -81,14 +83,22 @@ data class LocationUiState(
     val pending: List<QueuedAction> = emptyList(),
     val copyAt: Instant? = null,
     val queueEvent: QueueEvent? = null,
+    val findingSko: String? = null,
+    val foundSko: FoundSko? = null,
 ) {
     val isWorking: Boolean get() = working != null
+}
+
+sealed interface FoundSko {
+    data class Here(val locationOrgStockId: Long) : FoundSko
+    data class NotSko(val code: String) : FoundSko
+    data class Refused(val message: String, val problem: GoodsOutProblem) : FoundSko
 }
 
 class LocationViewModel(
     private val api: InventoryApi,
     private val sessions: SessionRepository,
-    warehouseId: Long,
+    private val warehouseId: Long,
     private val locationId: Long,
     offlineWork: OfflineWork = NoOfflineWork,
     private val reasonsMemory: MovementReasonsMemory = MovementReasonsMemory(),
@@ -331,6 +341,54 @@ class LocationViewModel(
             }
         }
     }
+
+    fun findSko(code: String) {
+        val token = token() ?: return
+        val detail = mutableState.value.location ?: return
+        val scanned = code.trim()
+        if (scanned.isEmpty() || mutableState.value.findingSko != null) {
+            return
+        }
+        mutableState.update { it.copy(findingSko = scanned, foundSko = null) }
+        viewModelScope.launch {
+            val outcome = when (val lookup = api.scan(token, warehouseId, scanned)) {
+                is GoodsOutResult.Loaded -> {
+                    val skoId = lookup.value.sko?.id?.takeIf { lookup.value.type == ScanMatch.SKO }
+                    when {
+                        skoId == null -> FoundSko.NotSko(scanned)
+                        else -> detail.orgStocks.firstOrNull { it.id == skoId }?.let { FoundSko.Here(it.locationOrgStockId) } ?: linkHere(token, skoId)
+                    }
+                }
+                is GoodsOutResult.NotFound -> FoundSko.NotSko(scanned)
+                GoodsOutResult.SessionExpired -> null.also { expireSession() }
+                else -> FoundSko.Refused("", lookup.problem())
+            }
+            mutableState.update { it.copy(findingSko = null, foundSko = outcome) }
+        }
+    }
+
+    fun foundSkoHandled() {
+        mutableState.update { it.copy(foundSko = null) }
+    }
+
+    private suspend fun linkHere(token: String, orgStockId: Long): FoundSko? =
+        when (val added = api.writeOrgStock(token, warehouseId, orgStockId, OrgStockWrite.AddLocation(locationId = locationId, type = LocationStockType.Storing))) {
+            is GoodsOutResult.Loaded -> when (val reloaded = api.location(token, locationId)) {
+                is GoodsOutResult.Loaded -> {
+                    base = reloaded.value
+                    mutableState.update { it.copy(location = reloaded.value.withQueued(queue.pending.value)) }
+                    reloaded.value.orgStocks.firstOrNull { it.id == orgStockId }?.let { FoundSko.Here(it.locationOrgStockId) }
+                        ?: FoundSko.Refused("", GoodsOutProblem.ServerError)
+                }
+                GoodsOutResult.SessionExpired -> null.also { expireSession() }
+                else -> FoundSko.Refused("", reloaded.problem())
+            }
+            GoodsOutResult.SessionExpired -> null.also { expireSession() }
+            is GoodsOutResult.Forbidden -> FoundSko.Refused(added.message, added.problem())
+            is GoodsOutResult.Invalid -> FoundSko.Refused(added.message, added.problem())
+            is GoodsOutResult.NotFound -> FoundSko.Refused(added.message, added.problem())
+            else -> FoundSko.Refused("", added.problem())
+        }
 
     private fun token(): String? = sessions.session.value?.token
 

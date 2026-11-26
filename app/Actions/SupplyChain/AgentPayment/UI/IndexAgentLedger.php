@@ -13,6 +13,7 @@ use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
 use App\Actions\SupplyChain\AgentPayment\ImportAgentLedgerExcel;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
@@ -26,6 +27,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\AgentPayment;
+use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -245,6 +247,23 @@ class IndexAgentLedger extends OrgAction
             ])->values());
     }
 
+    /**
+     * The suppliers to pick in the supplier fee dialog, per client, with what the supplier picker shows and searches.
+     *
+     * @return array<int, list<array<string, mixed>>>
+     */
+    private function supplierFeeOptions(Agent $agent): array
+    {
+        $suppliersByClient = $this->suppliersByClient($agent);
+        $optionFields      = GetSupplierOptionFields::make()->handle(
+            Supplier::whereIn('id', $suppliersByClient->flatten(1)->pluck('id')->unique()->values())->get(['id', 'code', 'name', 'company_name', 'contact_name'])
+        );
+
+        return $suppliersByClient
+            ->map(fn (Collection $suppliers) => $suppliers->map(fn (array $supplier) => [...$supplier, ...$optionFields->get($supplier['id'], [])])->all())
+            ->all();
+    }
+
     public function tableStructure(?string $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($prefix) {
@@ -368,7 +387,7 @@ class IndexAgentLedger extends OrgAction
                     'title' => __('Ledger'),
                 ],
                 'wallets'     => $this->walletsWithSupplierFees($this->agent),
-                'supplier_fee_options' => $canEdit ? Inertia::optional(fn () => $this->suppliersByClient($this->agent)->map(fn (Collection $suppliers) => $suppliers->all())->all()) : null,
+                'supplier_fee_options' => $canEdit ? Inertia::optional(fn () => $this->supplierFeeOptions($this->agent)) : null,
                 'agent_fee_explained' => SyncAgentInvoiceChargesFromLedger::feeCalculationExplained(),
                 'form'        => $canEdit ? [
                     'store_route'     => ['name' => 'grp.models.agent.ledger_entry.store', 'parameters' => ['agent' => $this->agent->id]],

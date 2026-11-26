@@ -132,6 +132,8 @@
     <string name="filter_reset">Reset</string>
     <string name="filter_none">No filters</string>
     <string name="filter_any">Any</string>
+    <string name="filter_search">Search</string>
+    <string name="filter_no_match">Nothing matches</string>
     <string name="filter_choose_one">Choose one</string>
     <string name="filter_summary_sorted">%1$s · sorted by %2$s</string>
     <string name="filter_and_sort">Filter and sort</string>

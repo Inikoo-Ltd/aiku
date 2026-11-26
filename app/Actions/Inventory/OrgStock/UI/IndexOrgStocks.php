@@ -233,7 +233,7 @@ class IndexOrgStocks extends OrgAction
         ];
     }
 
-    public function handle(OrgStockFamily|Organisation|OrgAgent|OrgPartner $parent, $prefix = null, $bucket = null, ?Warehouse $onlyWarehouse = null): LengthAwarePaginator
+    public function handle(OrgStockFamily|Organisation|OrgAgent|OrgPartner $parent, $prefix = null, $bucket = null, ?Warehouse $onlyWarehouse = null, ?Closure $narrow = null): LengthAwarePaginator
     {
         if ($bucket) {
             $this->bucket = $bucket;
@@ -287,6 +287,10 @@ class IndexOrgStocks extends OrgAction
             WarehouseHydrateOrgStocksBelowMinimumStock::belowMinimumStock($queryBuilder->getEloquentBuilder(), $organisationId);
         } elseif ($this->bucket == 'negative') {
             self::whereNegativeStock($queryBuilder->getEloquentBuilder(), $onlyWarehouse);
+        }
+
+        if ($narrow) {
+            $narrow($queryBuilder->getEloquentBuilder());
         }
 
         $elementGroups = in_array($this->bucket, ['current', 'active', 'discontinuing', 'discontinued', 'abnormality', 'below_minimum', 'negative']) ? $this->getArtefactElementGroup($parent) : $this->getElementGroups($parent);

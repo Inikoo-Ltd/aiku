@@ -52,6 +52,7 @@ class GetPurchaseOrderChangeSupplierOptions extends OrgAction
                 'company_name'    => $supplier['company_name'],
                 'contact_name'    => $supplier['contact_name'],
                 'nickname'        => $supplier['nickname'],
+                'product_codes'   => $supplier['product_codes'],
                 'slug'            => $supplier['slug'],
                 'reference'       => ChangePurchaseOrderSupplier::referenceFor($purchaseOrder, $supplier['code']),
                 'products'        => $supplier['products'],

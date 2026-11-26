@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">ロケーションを棚卸</string>
     <string name="locations_audit_one_subtitle">このロケーションのこのSKOを数える</string>
     <string name="locations_audit_saved">%1$sの棚卸を保存しました</string>
-    <string name="locations_audit_subtitle">このロケーションのすべてのSKOを数える</string>
     <string name="locations_audit_title">%1$sを棚卸</string>
     <string name="locations_audited">棚卸 %1$s</string>
     <string name="locations_auto_remove">空きロケーションを自動で削除</string>
@@ -2428,4 +2427,34 @@
     <plurals name="sync_conflicts_resolved_count">
         <item quantity="other">%2$d行中%1$d行を解決しました</item>
     </plurals>
+    <string name="inventory_filter_stock_status">在庫状況</string>
+    <string name="inventory_filter_location_type">ロケーションの種類</string>
+    <string name="goodsin_add_extra">追加品目を加える</string>
+    <string name="goodsin_add_extra_question">追加品目として加えますか？</string>
+    <string name="goodsin_add_extra_body">届いたが、この入荷のどの発注にも載っていない商品</string>
+    <string name="goodsin_add_extra_search">仕入先の商品を検索</string>
+    <string name="goodsin_add_extra_failed">追加できる商品を読み込めませんでした</string>
+    <string name="goodsin_add_extra_none">追加できる商品がありません。別の検索をお試しください。</string>
+    <string name="goodsin_add_extra_not_supplied">このSKOはこの仕入先の商品ではないため、ここには追加できません。</string>
+    <string name="goodsin_add_extra_quantity">届いたSKOの数</string>
+    <string name="goodsin_add_extra_note">受領・検品済みとして追加されます。他の品目と同じように棚入れしてください。</string>
+    <string name="locations_audit_blind_subtitle">棚にある数を数えてください。Aikuの数量は完了時に表示されます。</string>
+    <string name="locations_audit_complete">棚卸を完了</string>
+    <string name="locations_audit_nothing_counted">まず少なくとも1つのSKOを数えてください。</string>
+    <string name="locations_audit_found_sko">ここで見つけたSKO（スキャン）</string>
+    <string name="locations_audit_finding_sko">%1$s を検索中…</string>
+    <string name="locations_audit_found_not_sko">%1$s はSKOではありません</string>
+    <string name="locations_audit_counted">数えた数 %1$s</string>
+    <string name="locations_audit_to_count">未カウント</string>
+    <string name="locations_audit_count_done">完了: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: 実数とAiku</string>
+    <string name="locations_audit_summary_subtitle">差異を確認し、それぞれ理由を選んでから保存してください。</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="other">%2$s を %1$s SKO 追加</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="other">棚卸を完了 · 残り%d</item>
+    </plurals>
+    <string name="filter_search">検索</string>
+    <string name="filter_no_match">一致するものがありません</string>
 </resources>

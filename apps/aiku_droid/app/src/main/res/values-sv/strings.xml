@@ -1556,7 +1556,6 @@
     <string name="locations_audit_location">Granska lagerplats</string>
     <string name="locations_audit_one_subtitle">Räkna den här SKO:n på den här lagerplatsen</string>
     <string name="locations_audit_saved">Granskning av %1$s sparad</string>
-    <string name="locations_audit_subtitle">Räkna varje SKO på den här lagerplatsen</string>
     <string name="locations_audit_title">Granska %1$s</string>
     <string name="locations_audited">Granskad %1$s</string>
     <string name="locations_auto_remove">Ta bort tomma lagerplatser automatiskt</string>
@@ -2541,4 +2540,36 @@
         <item quantity="one">%1$d av %2$d rad löst</item>
         <item quantity="other">%1$d av %2$d rader lösta</item>
     </plurals>
+    <string name="inventory_filter_stock_status">Lagerstatus</string>
+    <string name="inventory_filter_location_type">Platstyp</string>
+    <string name="goodsin_add_extra">Lägg till extra artikel</string>
+    <string name="goodsin_add_extra_question">Lägga till som extra artikel?</string>
+    <string name="goodsin_add_extra_body">En produkt som kom men inte finns på någon inköpsorder för leveransen</string>
+    <string name="goodsin_add_extra_search">Sök bland leverantörens produkter</string>
+    <string name="goodsin_add_extra_failed">Det gick inte att läsa in produkterna du kan lägga till</string>
+    <string name="goodsin_add_extra_none">Ingen produkt att lägga till. Prova en annan sökning.</string>
+    <string name="goodsin_add_extra_not_supplied">Denna SKO är inte en produkt från leverantören och kan inte läggas till här.</string>
+    <string name="goodsin_add_extra_quantity">Hur många SKO som kom</string>
+    <string name="goodsin_add_extra_note">Läggs till som mottagen och räknad. Placera den som de andra artiklarna.</string>
+    <string name="locations_audit_blind_subtitle">Räkna det som finns på hyllan. Aikus antal visas när du är klar.</string>
+    <string name="locations_audit_complete">Slutför granskningen</string>
+    <string name="locations_audit_nothing_counted">Räkna minst en SKO först.</string>
+    <string name="locations_audit_found_sko">SKO hittad här (skanna)</string>
+    <string name="locations_audit_finding_sko">Söker %1$s…</string>
+    <string name="locations_audit_found_not_sko">%1$s är inte en SKO</string>
+    <string name="locations_audit_counted">Räknat %1$s</string>
+    <string name="locations_audit_to_count">Att räkna</string>
+    <string name="locations_audit_count_done">Klart: %1$s</string>
+    <string name="locations_audit_summary_title">%1$s: räknat mot Aiku</string>
+    <string name="locations_audit_summary_subtitle">Kontrollera varje skillnad, ange orsaken och spara.</string>
+    <plurals name="goodsin_add_extra_button">
+        <item quantity="one">Lägg till %1$s SKO av %2$s</item>
+        <item quantity="other">Lägg till %1$s SKO av %2$s</item>
+    </plurals>
+    <plurals name="locations_audit_complete_left">
+        <item quantity="one">Slutför granskningen · %d kvar</item>
+        <item quantity="other">Slutför granskningen · %d kvar</item>
+    </plurals>
+    <string name="filter_search">Sök</string>
+    <string name="filter_no_match">Inget matchar</string>
 </resources>

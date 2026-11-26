@@ -7,11 +7,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { ctrans, ctransChoice } from "@/Composables/useTrans"
-import { CopyTarget } from "@/types/supplier-products-copy"
+import { ctrans } from "@/Composables/useTrans"
+import { SupplierOptionFields } from "@/types/supplier"
 
 const props = defineProps<{
-	supplier: CopyTarget
+	supplier: SupplierOptionFields
 	search?: string
 }>()
 
@@ -30,7 +30,7 @@ const contactLine = computed(() => [props.supplier.company_name, props.supplier.
 </script>
 
 <template>
-	<div class="flex w-full items-start justify-between gap-3">
+	<div class="flex w-full min-w-0 items-start justify-between gap-3">
 		<div class="min-w-0">
 			<div class="flex min-w-0 items-center gap-2">
 				<span class="whitespace-nowrap font-semibold">{{ supplier.code }}</span>
@@ -48,8 +48,8 @@ const contactLine = computed(() => [props.supplier.company_name, props.supplier.
 				</span>
 			</div>
 		</div>
-		<span class="shrink-0 text-xs tabular-nums text-gray-500">
-			{{ ctransChoice(":count product|:count products", supplier.number_products, { count: String(supplier.number_products) }) }}
-		</span>
+		<div v-if="$slots.aside" class="shrink-0">
+			<slot name="aside" />
+		</div>
 	</div>
 </template>

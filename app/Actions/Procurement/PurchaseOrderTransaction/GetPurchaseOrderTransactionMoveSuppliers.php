@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgSupplier;
@@ -40,6 +41,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
             ->get();
 
         $orgSupplierIds       = $orgSuppliers->pluck('id')->all();
+        $optionFields         = GetSupplierOptionFields::make()->handle($orgSuppliers->pluck('supplier'));
         $orgStockIds          = $purchaseOrderTransactions->pluck('org_stock_id')->filter()->unique()->values()->all();
         $productsBySupplier   = MovePurchaseOrderTransactionToSupplier::orgSupplierProductsOfStocks($orgSupplierIds, $orgStockIds)->groupBy('org_supplier_id');
         $openOrdersBySupplier = $move->purchaseOrdersTakingMovedLinesQuery($purchaseOrder)->whereIn('parent_id', $orgSupplierIds)->get()->groupBy('parent_id');
@@ -57,7 +59,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
 
         return $orgSuppliers
             ->sortBy(fn (OrgSupplier $orgSupplier) => $orgSupplier->supplier->code)
-            ->map(function (OrgSupplier $orgSupplier) use ($purchaseOrder, $purchaseOrderTransactions, $move, $productsBySupplier, $openOrdersBySupplier, $takenReferences, $unsettledBySupplier) {
+            ->map(function (OrgSupplier $orgSupplier) use ($purchaseOrder, $purchaseOrderTransactions, $move, $productsBySupplier, $openOrdersBySupplier, $takenReferences, $unsettledBySupplier, $optionFields) {
                 $supplierProducts   = $productsBySupplier->get($orgSupplier->id, collect());
                 $openPurchaseOrders = $openOrdersBySupplier->get($orgSupplier->id, collect())->toBase();
                 $products           = $purchaseOrderTransactions->mapWithKeys(function (PurchaseOrderTransaction $transaction) use ($supplierProducts) {
@@ -74,11 +76,8 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
                     'org_supplier_id'      => $orgSupplier->id,
                     'slug'                 => $orgSupplier->slug,
                     'is_current'           => $orgSupplier->id === $purchaseOrder->parent_id,
-                    'code'                 => $orgSupplier->supplier->code,
                     'name'                 => $orgSupplier->supplier->name,
-                    'company_name'         => $orgSupplier->supplier->company_name,
-                    'contact_name'         => $orgSupplier->supplier->contact_name,
-                    'nickname'             => $orgSupplier->supplier->nickname(),
+                    ...$optionFields->get($orgSupplier->supplier_id),
                     'currency'             => $orgSupplier->supplier->currency?->code,
                     'reference'            => $move->openPurchaseOrderOf($orgSupplier, $purchaseOrder, $openPurchaseOrders)?->reference ?? $move->referenceForMovedLines($purchaseOrder, $orgSupplier, $takenReferences),
                     'open_purchase_orders' => $openPurchaseOrders->pluck('reference')->all(),

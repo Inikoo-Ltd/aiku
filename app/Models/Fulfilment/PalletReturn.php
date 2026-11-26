@@ -8,6 +8,7 @@
 
 namespace App\Models\Fulfilment;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\Dispatching\DeliveryNoteLeaflet\DeliveryNoteLeafletStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnItemNoSetReasonStateEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnCourierEnum;
@@ -150,6 +151,7 @@ use App\Models\SysAdmin\User;
  */
 class PalletReturn extends Model implements HasMedia, Auditable
 {
+    use BroadcastsMobileRecordChanges;
     use HasSlug;
     use SoftDeletes;
     use HasAddress;

@@ -1,5 +1,7 @@
 package io.aiku.droid.ui.goodsin
 
+import io.aiku.droid.data.api.AddableItem
+import io.aiku.droid.data.api.AddableSko
 import io.aiku.droid.data.api.CheckResult
 import io.aiku.droid.data.api.GoodsInActionKey
 import io.aiku.droid.data.api.GoodsInChecklist
@@ -272,7 +274,7 @@ class StockDeliveryViewModelTest {
         delivery.scanOutcomeHandled()
         api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "u-12", type = ScanMatch.SKO, sko = ScannedSko(id = 12, code = "OTHER")))
         delivery.scanLine("u-12")
-        assertEquals(LineScanOutcome.NotOnDelivery("u-12"), delivery.state.value.scanOutcome)
+        assertEquals(LineScanOutcome.NotOnDelivery("u-12", skoId = 12), delivery.state.value.scanOutcome)
         assertEquals(listOf("u-99", "u-12"), api.scans)
     }
 
@@ -287,5 +289,33 @@ class StockDeliveryViewModelTest {
 
         assertEquals("SD-1", opened.state.value.delivery?.reference)
         assertNull(handoff.take(1))
+    }
+
+    @Test
+    fun `a scanned SKO not on the delivery can be added as an extra item, received and counted`() {
+        val delivery = viewModel(stockDelivery("received", listOf(deliveryItem(1, skoId = 77)), actions = listOf(GoodsInActionKey.CHECK, GoodsInActionKey.ADD_ITEM)))
+        api.addable = listOf(
+            AddableItem(id = 5, field = "org_supplier_product_id", code = "LAV-10", sko = AddableSko(id = 12, code = "LAV-10")),
+            AddableItem(id = 6, field = "org_supplier_product_id", code = "ROSE-5", sko = AddableSko(id = 13, code = "ROSE-5")),
+        )
+        api.scanResult = GoodsOutResult.Loaded(ScanLookup(code = "u-12", type = ScanMatch.SKO, sko = ScannedSko(id = 12, code = "LAV-10")))
+
+        delivery.scanLine("u-12")
+        assertEquals(LineScanOutcome.NotOnDelivery("u-12", skoId = 12), delivery.state.value.scanOutcome)
+        assertTrue(delivery.state.value.canAddItems)
+
+        delivery.loadAddable(search = null, orgStockId = 12)
+        assertEquals(listOf<Pair<String?, Long?>>(null to 12L), api.addableQueries)
+        assertEquals(listOf(5L), delivery.state.value.addable.items.map { it.id })
+
+        delivery.addItem(itemId = 5, skoQuantity = 2.0)
+        assertEquals(StockDeliveryWrite.AddItem(itemId = 5, skoQuantity = 2.0), api.deliveryWrites.last())
+    }
+
+    @Test
+    fun `without the add item action an SKO not on the delivery is only reported`() {
+        val delivery = viewModel(stockDelivery("received", listOf(deliveryItem(1, skoId = 77)), actions = listOf(GoodsInActionKey.CHECK)))
+
+        assertFalse(delivery.state.value.canAddItems)
     }
 }

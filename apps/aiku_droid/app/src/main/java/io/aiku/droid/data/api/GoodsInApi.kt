@@ -41,6 +41,7 @@ object GoodsInActionKey {
     const val RECEIVE = "receive"
     const val UNRECEIVE = "unreceive"
     const val CANCEL = "cancel"
+    const val ADD_ITEM = "add_item"
     const val CHECK = "check"
     const val PLACE = "place"
     const val CHECKLIST = "checklist"
@@ -362,10 +363,28 @@ sealed interface PlaceTarget {
     data class Location(val locationId: Long, override val code: String) : PlaceTarget
 }
 
+@Serializable
+data class AddableSko(
+    val id: Long,
+    val code: String = "",
+    val name: String? = null,
+    @Serializable(with = LenientDoubleOrNull::class) @SerialName("packed_in") val packedIn: Double? = null,
+)
+
+@Serializable
+data class AddableItem(
+    val id: Long,
+    val field: String = "",
+    val code: String? = null,
+    val name: String? = null,
+    val sko: AddableSko? = null,
+)
+
 sealed interface StockDeliveryWrite {
     data object Receive : StockDeliveryWrite
     data object Unreceive : StockDeliveryWrite
     data object Cancel : StockDeliveryWrite
+    data class AddItem(val itemId: Long, val skoQuantity: Double) : StockDeliveryWrite
     data object CheckAll : StockDeliveryWrite
     data class Check(val itemId: Long, val skoQuantity: Double) : StockDeliveryWrite
     data class Place(
@@ -552,6 +571,8 @@ interface GoodsInApi {
     suspend fun stockDelivery(token: String, warehouseId: Long, stockDeliveryId: Long): GoodsOutResult<StockDelivery>
 
     suspend fun writeStockDelivery(token: String, warehouseId: Long, stockDeliveryId: Long, write: StockDeliveryWrite): GoodsOutResult<StockDeliveryOutcome>
+
+    suspend fun addableItems(token: String, warehouseId: Long, stockDeliveryId: Long, search: String?, orgStockId: Long?): GoodsOutResult<List<AddableItem>>
 
     suspend fun returns(token: String, warehouseId: Long, query: ReturnQuery): GoodsOutResult<ReturnPage>
 

@@ -802,3 +802,56 @@ test('tasks asked of the warehouse stay on its inventory page with how long they
         ->and($gauge['secondary']['value'])->toBeGreaterThanOrEqual(1)
         ->and($gauge['route']['name'])->toBe('grp.org.warehouses.show.inventory.staff_tasks.index');
 });
+
+test('phone sync issues of the warehouse are listed read only for its stock supervisors, with a tile on the inventory page', function () {
+    $warehouse = createWarehouse();
+    $issue     = fn (string $state, array $attributes = []) => \App\Models\SysAdmin\MobileOfflineOperation::create(array_merge([
+        'group_id'        => $warehouse->group_id,
+        'organisation_id' => $warehouse->organisation_id,
+        'warehouse_id'    => $warehouse->id,
+        'user_id'         => $this->user->id,
+        'platform'        => 'android',
+        'app_version'     => '0.1.0 (12)',
+        'operation'       => 'audit_location',
+        'payload'         => [],
+        'synced_at'       => now(),
+        'performed_at'    => now()->subMinutes(5),
+        'state'           => $state,
+        'outcome_reason'  => 'other_change',
+        'server_snapshot' => ['answer' => ['message' => 'Counted 4 on the shelf, Aiku had 6']],
+    ], $attributes));
+
+    $open = $issue(\App\Models\SysAdmin\MobileOfflineOperation::STATE_CONFLICT);
+    $issue(\App\Models\SysAdmin\MobileOfflineOperation::STATE_RESOLVED, ['resolved_at' => now()]);
+    $issue(\App\Models\SysAdmin\MobileOfflineOperation::STATE_APPLIED);
+    $route = route('grp.org.warehouses.show.inventory.phone_sync_issues.index', [$this->organisation->slug, $warehouse->slug]);
+
+    $rows = collect(get($route)->assertOk()->inertiaProps()['issues']['data']);
+    expect($rows->pluck('id')->all())->toBe([$open->id])
+        ->and($rows->first())->toMatchArray([
+            'action'      => 'Location audit',
+            'reason'      => 'Counted 4 on the shelf, Aiku had 6',
+            'code'        => 'AIKU-SYNC-004',
+            'code_url'    => 'https://aiku.io/docs/aiku-sync-004',
+            'device'      => 'android · 0.1.0 (12)',
+            'state_label' => 'Conflict',
+            'is_open'     => true,
+        ]);
+
+    $gauge = collect(get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))->assertOk()->inertiaProps()['actionGauges'])
+        ->firstWhere('key', 'phone_sync_issues');
+    expect($gauge['value'])->toBe(1)
+        ->and($gauge['total'])->toBe(2)
+        ->and($gauge['route']['name'])->toBe('grp.org.warehouses.show.inventory.phone_sync_issues.index');
+
+    $clerk = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action(
+        $this->group,
+        array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+    $clerk->givePermissionTo("stocks.$warehouse->id.view");
+    actingAs($clerk->fresh());
+
+    get($route)->assertForbidden();
+    expect(collect(get(route('grp.org.warehouses.show.inventory.dashboard', [$this->organisation->slug, $warehouse->slug]))->assertOk()->inertiaProps()['actionGauges'])->pluck('key'))
+        ->not->toContain('phone_sync_issues');
+});

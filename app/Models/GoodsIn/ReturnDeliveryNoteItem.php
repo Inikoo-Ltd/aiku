@@ -9,6 +9,7 @@
 
 namespace App\Models\GoodsIn;
 
+use App\Models\Traits\BroadcastsMobileRecordChanges;
 use App\Enums\GoodsIn\ReturnDeliveryNoteItem\ReturnDeliveryNoteItemStateEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -60,6 +61,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ReturnDeliveryNoteItem extends Model
 {
+    use BroadcastsMobileRecordChanges;
     use InShop;
 
     protected $table = 'return_delivery_note_items';

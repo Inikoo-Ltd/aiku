@@ -8,6 +8,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import LayeredIcon from "@/Components/Utils/LayeredIcon.vue";
 import { asProcurementRouteName } from "@/Composables/useAgentRoutes";
+import { ctrans } from "@/Composables/useTrans";
 import { faAtomAlt, faDotCircle, faUserFriends, faChessBoard,faStopwatch,faClipboardListCheck, faMedal, faBoxOpen, faShip, faWarehouseAlt, faShareAlt, faPersonDolly, faBoxUsd, faClipboard, faTruckContainer, faChartLine } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
@@ -27,6 +28,7 @@ interface SubNav {
     route: routeType
     label: string
     number: string
+    openNumber?: number | null
 }
 
 const props = defineProps<{
@@ -130,6 +132,9 @@ const isSubNavActive = (subNav: SubNav) => {
                                 class="inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
                                 :class="isRouteUnderRoot(subNav) || isCurrentRoute(subNav.route?.name) ? 'bg-[var(--app-accent-soft)]' : 'bg-gray-200'">
                                 {{ locale.number(subNav.number || 0) }}
+                                <template v-if="typeof subNav.openNumber == 'number'">
+                                    ({{ ctrans(":count open", { count: locale.number(subNav.openNumber) }) }})
+                                </template>
                             </div>
                         </div>
                     </component>
@@ -165,6 +170,9 @@ const isSubNavActive = (subNav: SubNav) => {
                                 class="inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
                                 :class="isRouteUnderRoot(subNav) || isCurrentRoute(subNav.route?.name) ? 'bg-[var(--app-accent-soft)]' : 'bg-gray-200'">
                                 {{ locale.number(subNav.number || 0) }}
+                                <template v-if="typeof subNav.openNumber == 'number'">
+                                    <span class="mx-1 opacity-50">·</span>{{ ctrans(":count open", { count: locale.number(subNav.openNumber) }) }}
+                                </template>
                             </div>
                         </div>
                     </component>

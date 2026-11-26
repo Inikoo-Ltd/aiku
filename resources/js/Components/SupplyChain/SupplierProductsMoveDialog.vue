@@ -20,17 +20,15 @@ import { faCheck, faTimes, faExternalLink, faCodeMerge } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 
 type TargetProduct = { code: string; cost: number; units_per_carton: number }
 
-type TargetSupplier = {
+type TargetSupplier = SupplierOptionFields & {
 	id: number
 	slug: string
-	code: string
 	name: string
-	nickname: string | null
-	company_name: string | null
-	contact_name: string | null
 	currency: string | null
 	products: Record<number, TargetProduct | null>
 	products_count: number
@@ -72,6 +70,7 @@ const productFields = ["code", "name", "cost", "units_per_carton"]
 const targets = ref<TargetSupplier[]>([])
 const isFetching = ref(false)
 const supplierId = ref<number | null>(null)
+const supplierSearch = ref("")
 const onlySuppliersWithProducts = ref(false)
 const forms = ref<Record<number, ProductForm>>({})
 const isSaving = ref(false)
@@ -89,7 +88,6 @@ const supplierOptions = computed(() =>
 		.map((target) => ({
 			...target,
 			label: [target.code, target.company_name, target.contact_name, target.nickname].filter(Boolean).join(" · "),
-			search: [target.code, target.company_name, target.contact_name, target.nickname, target.name].filter(Boolean).join(" "),
 		}))
 )
 
@@ -214,10 +212,12 @@ function submit() {
 					optionValue="id"
 					filter
 					autoFilterFocus
-					:filterFields="['search']"
+					:filterFields="supplierOptionFilterFields"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"
-					:filterPlaceholder="ctrans('Search code, company, nickname or contact')"
+					:filterPlaceholder="ctrans('Code, name, contact or product code')"
+					@filter="(event) => supplierSearch = event.value"
+					@hide="supplierSearch = ''"
 					:emptyMessage="isFetching
 						? ctrans('Loading…')
 						: onlySuppliersWithProducts
@@ -227,29 +227,23 @@ function submit() {
 					fluid
 				>
 					<template #option="{ option }">
-						<div class="flex w-full min-w-0 items-center gap-2">
-							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
-							<span v-if="option.company_name" v-tooltip="ctrans('Company name')" class="truncate text-gray-600">{{ option.company_name }}</span>
-							<span v-if="option.contact_name" v-tooltip="ctrans('Contact name')" class="truncate text-xs text-gray-400">{{ option.contact_name }}</span>
-							<span
-								v-if="option.nickname"
-								v-tooltip="ctrans('Nickname')"
-								class="shrink-0 whitespace-nowrap rounded bg-[var(--app-accent-soft)] px-1.5 py-0.5 text-xs text-[var(--app-accent-deep)]"
-							>{{ option.nickname }}</span>
-							<span
-								v-if="sellsEveryProduct(option)"
-								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-							>
-								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-								{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
-							</span>
-							<span
-								v-else-if="sellsSomeProducts(option)"
-								class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-							>
-								{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
-							</span>
-						</div>
+						<SupplierSelectOption :supplier="option" :search="supplierSearch">
+							<template #aside>
+								<span
+									v-if="sellsEveryProduct(option)"
+									class="flex items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+								>
+									<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+									{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
+								</span>
+								<span
+									v-else-if="sellsSomeProducts(option)"
+									class="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+								>
+									{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
+								</span>
+							</template>
+						</SupplierSelectOption>
 					</template>
 				</Select>
 				<a
