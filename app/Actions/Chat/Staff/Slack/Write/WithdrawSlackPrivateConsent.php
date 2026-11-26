@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords;
 use App\Models\Chat\SlackConnection;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,6 +32,9 @@ class WithdrawSlackPrivateConsent
     {
         $user       = $request->user();
         $connection = SlackConnection::where('user_id', $user->id)->first();
+        if ($connection) {
+            PurgeSlackDirectWords::run($connection->slack_user_id);
+        }
         if ($connection?->private_consented_at === null) {
             return StartSlackConnection::backToSettings(StartSlackConnection::NOTICE_KEY, __('Private conversations are already off'));
         }

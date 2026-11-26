@@ -16,6 +16,7 @@ import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import { faChevronLeft } from "@far"
 import { faStar as faStarSolid } from "@fas"
+import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
 import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
@@ -30,7 +31,7 @@ import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } 
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
+library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
 
 interface SlackChannelListItem {
     id: number
@@ -48,6 +49,7 @@ const props = defineProps<{
     selected_ulid: string | null
     slack_channels?: SlackChannelListItem[]
     slack_private_channels?: SlackChannelListItem[]
+    slack_direct_channels?: SlackChannelListItem[]
     slack_live_channel?: string | null
     slack_channel?: SlackChannelHeader | null
     slack_messages?: { data: SlackStreamMessage[] } | null
@@ -68,7 +70,12 @@ watch(() => props.slack_private_channels, (channels) => {
 })
 const privateChannels = computed(() => [...knownPrivateChannels.value].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")))
 const isPrivateChannel = (channelId: number) => knownPrivateChannels.value.some((channel) => channel.id === channelId)
-const channelShowRoute = (channelId: number) => route(isPrivateChannel(channelId) ? "grp.chat.staff.groups.slack.show" : "grp.chat.staff.slack.show", channelId)
+const knownDirectChannels = ref<SlackChannelListItem[]>(props.slack_direct_channels ?? [])
+watch(() => props.slack_direct_channels, (channels) => {
+    if (channels !== undefined) knownDirectChannels.value = channels
+})
+const isDirectChannel = (channelId: number) => knownDirectChannels.value.some((channel) => channel.id === channelId)
+const channelShowRoute = (channelId: number) => route(isDirectChannel(channelId) ? "grp.chat.staff.direct.slack.show" : isPrivateChannel(channelId) ? "grp.chat.staff.groups.slack.show" : "grp.chat.staff.slack.show", channelId)
 watch(() => props.slack_live_channel, (channel) => {
     if (channel !== undefined) knownSlackLiveChannel.value = channel
 })
@@ -104,8 +111,8 @@ const activeSlackChannels = computed(() => (knownSlackChannels.value ?? []).filt
 const archivedSlackChannels = computed(() => (knownSlackChannels.value ?? []).filter((channel) => channel.is_archived).sort(byName))
 const slackUnread = ref<Record<number, { count: number; lastReadTs: string | null; counted: string[] }>>({})
 const slackReadError = ref<string | null>(null)
-watch([knownSlackChannels, knownPrivateChannels], ([channels, privates]) => {
-    slackUnread.value = Object.fromEntries([...(channels ?? []), ...privates].map((channel) => [channel.id, { count: channel.unread_count ?? 0, lastReadTs: channel.last_read_ts ?? null, counted: [] }]))
+watch([knownSlackChannels, knownPrivateChannels, knownDirectChannels], ([channels, privates, directs]) => {
+    slackUnread.value = Object.fromEntries([...(channels ?? []), ...privates, ...directs].map((channel) => [channel.id, { count: channel.unread_count ?? 0, lastReadTs: channel.last_read_ts ?? null, counted: [] }]))
 }, { immediate: true })
 const unreadOf = (channelId: number) => slackUnread.value[channelId]?.count ?? 0
 const hasSlackUnread = computed(() => (knownSlackChannels.value ?? []).some((channel) => unreadOf(channel.id) > 0))
@@ -383,12 +390,15 @@ const shownActiveChannels = computed(() => activeSlackChannels.value.filter((cha
 const shownArchivedChannels = computed(() => archivedSlackChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (filterText.value ? matchesFilter(channel.name) : showArchived.value)))
 const shownConversations = computed(() => tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid) && (filterText.value ? matchesFilter(conversationTitle(conversation)) : isConversationRowShown(conversation))))
 const shownPrivateChannels = computed(() => (isGroups.value ? privateChannels.value.filter((channel) => !isStarred("slack-" + channel.id) && (!filterText.value || matchesFilter(channel.name))) : []))
-const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && (isDesks.value ? !shownActiveChannels.value.length && !shownArchivedChannels.value.length : !shownConversations.value.length && !shownPrivateChannels.value.length))
+const hasNoFilterMatch = computed(() => !!filterText.value && !hasStarred.value && (isDesks.value ? !shownActiveChannels.value.length && !shownArchivedChannels.value.length : !shownConversations.value.length && !shownPrivateChannels.value.length && !shownDirectChannels.value.length))
 
 const compactChannels = computed(() => isDesks.value
     ? [...activeSlackChannels.value, ...archivedSlackChannels.value.filter((channel) => isSelectedChannel(channel.id))].filter((channel) => !isStarred("slack-" + channel.id))
     : [])
 const compactStarredChannels = computed(() => isDesks.value ? starredChannels.value : starredPrivateChannels.value)
+const isDirectsTab = computed(() => !isDesks.value && !isGroups.value)
+const shownDirectChannels = computed(() => (isDirectsTab.value ? knownDirectChannels.value.filter((channel) => !filterText.value || matchesFilter(channel.name)) : []))
+const compactDirectChannels = computed(() => (isDirectsTab.value ? knownDirectChannels.value : []))
 const compactPrivateChannels = computed(() => (isGroups.value ? privateChannels.value.filter((channel) => !isStarred("slack-" + channel.id)) : []))
 const compactStarredConversations = computed(() => isDesks.value ? [] : starredConversations.value)
 const compactConversations = computed(() => isDesks.value ? [] : tabConversations.value.filter((conversation) => !isStarred("dm-" + conversation.ulid)))
@@ -595,7 +605,16 @@ onUnmounted(() => {
                         </template>
                     </section>
     
-                    <section v-if="!isDesks && (!filterText || shownConversations.length || shownPrivateChannels.length)" class="mt-1">
+                    <section v-if="!isDesks && (!filterText || shownConversations.length || shownPrivateChannels.length || shownDirectChannels.length)" class="mt-1">
+                        <DeskSidebarRow
+                            v-for="channel in shownDirectChannels"
+                            :key="'direct-' + channel.id"
+                            :label="channel.name ?? ''"
+                            :href="route('grp.chat.staff.direct.slack.show', channel.id)"
+                            icon="fab fa-slack"
+                            :unread="unreadOf(channel.id)"
+                            :is-active="isSelectedChannel(channel.id)"
+                            :is-starred="false" />
                         <DeskSidebarRow
                             v-for="channel in shownPrivateChannels"
                             :key="'private-' + channel.id"
@@ -723,6 +742,15 @@ onUnmounted(() => {
                         :is-active="isSelectedChannel(channel.id)"
                         :is-muted="channel.is_archived" />
                     <DeskSidebarRow
+                        v-for="channel in compactDirectChannels"
+                        :key="'compact-direct-' + channel.id"
+                        compact
+                        :label="channel.name ?? ''"
+                        :href="route('grp.chat.staff.direct.slack.show', channel.id)"
+                        icon="fab fa-slack"
+                        :unread="unreadOf(channel.id)"
+                        :is-active="isSelectedChannel(channel.id)" />
+                    <DeskSidebarRow
                         v-for="channel in compactPrivateChannels"
                         :key="'compact-private-' + channel.id"
                         compact
@@ -780,7 +808,7 @@ onUnmounted(() => {
                 :reply-ts="slack_reply_ts"
                 :live-channel="null"
                 @read="onSlackChannelRead(slack_channel.id, $event)"
-                @back="router.visit(route('grp.chat.staff.groups.index'))" />
+                @back="router.visit(route(slack_channel.is_direct ? 'grp.chat.staff.index' : 'grp.chat.staff.groups.index'))" />
             <SlackMessageSearch v-else-if="hasSlack && !selectedUlid" :channels="knownSlackChannels ?? []">
                 <SlackChannelStream
                     v-if="showSlackChannel && slack_channel"

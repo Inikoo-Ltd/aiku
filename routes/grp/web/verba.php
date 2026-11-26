@@ -15,6 +15,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/groups', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('groups.index');
     Route::get('/groups/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('groups.show');
     Route::get('/groups/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inPrivateSlackChannel'])->name('groups.slack.show');
+    Route::get('/d/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inDirectSlackChannel'])->name('direct.slack.show');
     Route::post('/groups/slack', \App\Actions\Chat\Staff\Slack\Write\StoreSlackPrivateChannel::class)->middleware('throttle:10,1,slack-verbration')->name('groups.slack.store');
     Route::get('/home', \App\Actions\Chat\Staff\Home\GetStaffHome::class)->name('home');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');

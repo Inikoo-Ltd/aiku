@@ -33,6 +33,7 @@ export interface SlackStreamMessage {
     is_broadcast: boolean
     is_deleted: boolean
     is_system: boolean
+    is_gap?: boolean
     text?: string
     author: { key: string | null; user_id: number | null; name: string | null; avatar: Record<string, string> | null; is_bot: boolean }
     sent_at: string
@@ -337,6 +338,10 @@ const confirmDelete = async () => {
                         <span class="text-xxs text-gray-400">{{ ctrans("Enter to save, Esc to cancel") }}</span>
                     </div>
                 </div>
+
+                <p v-else-if="shown.is_gap" class="italic text-[#616061]">
+                    {{ shown.text !== undefined ? ctrans("Your message is not in Verba yet. Bring your messages to see it here") : ctrans("Not brought to Verba yet") }}
+                </p>
 
                 <div v-else class="text-[#1d1c1d]" :class="shown.is_edited && '[&>p:last-of-type]:inline'">
                     <SlackNodes :nodes="shown.nodes" :channel-links="channelLinks" />

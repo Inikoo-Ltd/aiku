@@ -178,6 +178,7 @@ class GetSlackChannelMessages
 
             return array_merge($common, $isViewers ? ['text' => self::editableText($message->text)] : [], [
                 'is_system'    => in_array($message->subtype, self::SYSTEM_SUBTYPES, true),
+                'is_gap'       => $slackChannel->direct_type !== null && $message->data === null,
                 'author'       => $this->author($message, $users->get($this->linkedUserId($message) ?? 0)),
                 'is_edited'    => $message->edited_at !== null,
                 'versions_url' => isset($withVersions[$message->id]) ? route('grp.chat.staff.slack.versions', ['slackChannel' => $slackChannel->id, 'ts' => $message->ts]) : null,

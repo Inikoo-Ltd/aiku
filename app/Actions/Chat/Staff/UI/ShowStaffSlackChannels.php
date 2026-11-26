@@ -55,6 +55,9 @@ class ShowStaffSlackChannels extends OrgAction
 
     public function inSlackChannel(SlackChannel $slackChannel, ActionRequest $request): Group
     {
+        if ($slackChannel->direct_type && $slackChannel->isDirectVisibleTo($request->user())) {
+            throw new HttpResponseException(redirect()->route('grp.chat.staff.direct.slack.show', [...$request->query(), 'slackChannel' => $slackChannel->id]));
+        }
         if ($slackChannel->is_private && $slackChannel->isPrivateVisibleTo($request->user())) {
             throw new HttpResponseException(redirect()->route('grp.chat.staff.groups.slack.show', [...$request->query(), 'slackChannel' => $slackChannel->id]));
         }
@@ -80,13 +83,38 @@ class ShowStaffSlackChannels extends OrgAction
     }
 
     /**
+     * A Slack DM or group DM opens on the V·Ds tab, for its members only (SlackChannel::directVisibleTo), read only.
+     */
+    public function inDirectSlackChannel(SlackChannel $slackChannel, ActionRequest $request): Group
+    {
+        abort_unless($slackChannel->isDirectVisibleTo($request->user()), 403);
+
+        $this->slackChannel = $slackChannel;
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
+    }
+
+    /**
+     * A DM is named after the other people in it, as Slack does; a DM with oneself after oneself.
+     */
+    public static function directName(SlackChannel $slackChannel, ?User $viewer): string
+    {
+        $mine   = $viewer ? SlackChannel::linkedSlackPerson($viewer)?->slack_id : null;
+        $people = SlackUser::whereIn('slack_id', $slackChannel->members()->select('slack_user_id'))->get(['slack_id', 'display_name', 'real_name', 'name']);
+        $others = $people->where('slack_id', '!=', $mine);
+
+        return ($others->isEmpty() ? $people : $others)->map(fn (SlackUser $person) => $person->display_name ?: $person->real_name ?: $person->name ?: $person->slack_id)->sort()->implode(', ');
+    }
+
+    /**
      * Each channel with this person's unread count and read position; a channel seen for the first time starts read.
      *
      * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, last_message_at: string|null, unread_count: int, last_read_ts: string|null}>
      */
-    public function channels(User $user, bool $private = false): array
+    public function channels(User $user, bool $private = false, bool $direct = false): array
     {
-        $channels = ($private ? SlackChannel::privateVisibleTo($user) : SlackChannel::visibleTo($user))
+        $channels = ($direct ? SlackChannel::directVisibleTo($user) : ($private ? SlackChannel::privateVisibleTo($user) : SlackChannel::visibleTo($user)))
             ->select(['id', 'slack_id', 'name', 'is_archived', 'data'])
             ->addSelect(['last_message_at' => SlackMessage::select('sent_at')
                 ->whereColumn('slack_messages.slack_channel_id', 'slack_channels.id')
@@ -110,7 +138,7 @@ class ShowStaffSlackChannels extends OrgAction
             ->map(fn (SlackChannel $channel) => [
                 'id'              => $channel->id,
                 'slack_id'        => $channel->slack_id,
-                'name'            => $channel->name,
+                'name'            => $direct ? self::directName($channel, $user) : $channel->name,
                 'topic'           => ($channel->data['topic']['value'] ?? null) ?: ($channel->data['purpose']['value'] ?? null) ?: null,
                 'is_archived'     => $channel->is_archived,
                 'last_message_at' => $channel->last_message_at ? Carbon::parse($channel->last_message_at)->toIso8601String() : null,
@@ -135,7 +163,7 @@ class ShowStaffSlackChannels extends OrgAction
         $starred = Arr::get($user->settings, 'desk_starred') ?? [];
 
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
+            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
         }
 
         $memo        = null;
@@ -144,10 +172,11 @@ class ShowStaffSlackChannels extends OrgAction
         };
         $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
         $private     = fn (): array => $this->channels($user, private: true);
+        $direct      = fn (): array => $this->channels($user, direct: true);
 
         return $deferred
-            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
+            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
     }
 
     private function tsParameter(ActionRequest $request, string $key): ?string
@@ -185,12 +214,13 @@ class ShowStaffSlackChannels extends OrgAction
         $list          = $this->listProps($group, $request->user());
 
         $breadcrumbs   = ShowStaffMessaging::make()->getBreadcrumbs(null);
+        $channelName   = $slackChannel?->direct_type ? self::directName($slackChannel, $request->user()) : $slackChannel?->name;
         if ($slackChannel) {
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'route' => ['name' => $slackChannel->is_private ? 'grp.chat.staff.groups.slack.show' : 'grp.chat.staff.slack.show', 'parameters' => ['slackChannel' => $slackChannel->id]],
-                    'label' => ($slackChannel->is_private ? '' : '#').$slackChannel->name,
+                    'route' => ['name' => $slackChannel->direct_type ? 'grp.chat.staff.direct.slack.show' : ($slackChannel->is_private ? 'grp.chat.staff.groups.slack.show' : 'grp.chat.staff.slack.show'), 'parameters' => ['slackChannel' => $slackChannel->id]],
+                    'label' => ($slackChannel->is_private ? '' : '#').$channelName,
                 ],
             ];
         }
@@ -199,7 +229,7 @@ class ShowStaffSlackChannels extends OrgAction
             'Chat/StaffMessaging',
             [
                 'breadcrumbs'    => $breadcrumbs,
-                'title'          => $slackChannel ? ($slackChannel->is_private ? '' : '#').$slackChannel->name : $title,
+                'title'          => $slackChannel ? ($slackChannel->is_private ? '' : '#').$channelName : $title,
                 'pageHead'       => [
                     'title' => $title,
                     'icon'  => [
@@ -211,7 +241,8 @@ class ShowStaffSlackChannels extends OrgAction
                 ...$list,
                 'slack_channel'      => fn () => $slackChannel ? [
                     'id'           => $slackChannel->id,
-                    'name'         => $slackChannel->name,
+                    'name'         => $channelName,
+                    'is_direct'    => (bool) $slackChannel->direct_type,
                     'topic'        => ($slackChannel->data['topic']['value'] ?? null) ?: null,
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
                     'is_archived'  => $slackChannel->is_archived,

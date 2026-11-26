@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_public
  * @property bool $is_ignored
  * @property bool $is_private
+ * @property string|null $direct_type
  * @property \Illuminate\Support\Carbon|null $deleted_in_slack_at
  * @property array|null $data
  * @property string|null $history_backfilled_to
@@ -82,7 +83,41 @@ class SlackChannel extends Model
      */
     public function scopeKeptPrivate(Builder $query): Builder
     {
-        return $query->where('is_private', true)->where('is_public', false)->where('is_ignored', false)->whereNull('deleted_in_slack_at');
+        return $query->where('is_private', true)->where('is_public', false)->whereNull('direct_type')->where('is_ignored', false)->whereNull('deleted_in_slack_at');
+    }
+
+    /**
+     * Direct messages and group DMs brought by people who opted in (INI-431). Never part of kept() or keptPrivate(): they are
+     * read by their members only, through directVisibleTo, and each message keeps its words only while its author has opted in.
+     */
+    public function scopeKeptDirect(Builder $query): Builder
+    {
+        return $query->whereNotNull('direct_type')->where('is_public', false)->where('is_ignored', false)->whereNull('deleted_in_slack_at');
+    }
+
+    /**
+     * The only answer to "may this aiku user read this direct message": the same rule as privateVisibleTo, current membership,
+     * no role bypass.
+     */
+    public function scopeDirectVisibleTo(Builder $query, User $user): Builder
+    {
+        $query->keptDirect()->where('group_id', $user->group_id);
+        $slackPerson = self::privateReader($user);
+        if (!$slackPerson) {
+            return $query->whereRaw('false');
+        }
+
+        return $query->whereIn('id', SlackChannelMember::where('slack_user_id', $slackPerson->slack_id)->select('slack_channel_id'));
+    }
+
+    public function isDirectVisibleTo(User $user): bool
+    {
+        return self::directVisibleTo($user)->whereKey($this->getKey())->exists();
+    }
+
+    public static function privateReader(User $user): ?SlackUser
+    {
+        return $user->status && !$user->worksOnlyForAgents() && \App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::privateOptInOpen() ? self::linkedSlackPerson($user) : null;
     }
 
     /**
@@ -133,7 +168,8 @@ class SlackChannel extends Model
     {
         return $query->where(fn (Builder $query) => $query
             ->whereIn('id', self::visibleTo($user)->select('id'))
-            ->orWhereIn('id', self::privateVisibleTo($user)->select('id')));
+            ->orWhereIn('id', self::privateVisibleTo($user)->select('id'))
+            ->orWhereIn('id', self::directVisibleTo($user)->select('id')));
     }
 
     public function isReadableBy(User $user): bool

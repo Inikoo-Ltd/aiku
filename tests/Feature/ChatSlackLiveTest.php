@@ -241,3 +241,178 @@ test('Slack live hardening: an edit of a message aiku never held is a change and
     actingAs($this->stranger)->get(route('grp.chat.staff.slack.index'))->assertOk()
         ->assertInertia(fn (AssertableInertia $inertia) => $inertia->where('slack_live_channel', null)->where('slack_channels', []));
 });
+
+function slackDirectSetup(object $test): void
+{
+    \Illuminate\Support\Facades\Config::set('services.slack.signing_secret', 'shh');
+    \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TDM');
+    $test->bee = User::factory()->create(['group_id' => $test->group->id, 'language_id' => $test->user->language_id]);
+    SlackUser::create(['slack_id' => "UBEE{$test->s}", 'user_id' => $test->bee->id, 'email' => $test->bee->email, 'real_name' => 'Bee Person']);
+    $test->connectPrivately = function (User $user, string $slackId): \App\Models\Chat\SlackConnection {
+        $connection = \App\Models\Chat\SlackConnection::updateOrCreate(['user_id' => $user->id], [
+            'slack_user_id' => $slackId,
+            'team_id'       => 'TDM',
+            'token'         => 'xoxp-test-'.$slackId,
+            'scopes'        => implode(',', [...\App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::USER_SCOPES, ...\App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::PRIVATE_SCOPES]),
+            'connected_at'  => now(),
+            'revoked_at'    => null,
+        ]);
+        $connection->grantPrivateConsent(\App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::PRIVATE_CONSENT_VERSION, \App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::PRIVATE_TERMS_VERSION);
+
+        return $connection;
+    };
+    $test->webhook = function (array $event, string $authorizedBy, bool $isBot = false) use ($test) {
+        $body      = json_encode(['type' => 'event_callback', 'event' => $event, 'authorizations' => [['team_id' => 'TDM', 'user_id' => $authorizedBy, 'is_bot' => $isBot]]]);
+        $timestamp = (string) time();
+        $server    = ['HTTP_X_SLACK_REQUEST_TIMESTAMP' => $timestamp, 'HTTP_X_SLACK_SIGNATURE' => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", 'shh'), 'CONTENT_TYPE' => 'application/json'];
+
+        return $test->call('POST', route('webhooks.slack_events'), [], [], [], $server, $body);
+    };
+    $test->dm = fn (string $author, int $i, array $extra = []) => array_merge([
+        'type' => 'message', 'channel' => "DDM{$test->s}", 'channel_type' => 'im', 'user' => $author, 'text' => "secret words $i of $author", 'ts' => ($test->ts)($i),
+    ], $extra);
+}
+
+test('Slack DMs: an event delivered through A\'s token keeps A\'s words and stores B\'s message as a gap with no text, data or files; bot-delivered, repeated and bot-authored events add nothing; B gets one invite; members read it, nobody else on any path, INI-431', function () {
+    slackDirectSetup($this);
+    $a = "UVIEW{$this->s}";
+    $b = "UBEE{$this->s}";
+    ($this->connectPrivately)($this->viewer, $a);
+
+    ($this->webhook)(($this->dm)($b, 1, ['files' => [['id' => "FDM{$this->s}", 'name' => 'payslip.pdf']]]), $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 1), $a)->assertOk();
+    ($this->webhook)(($this->dm)($a, 2, ['subtype' => 'thread_broadcast', 'thread_ts' => ($this->ts)(1), 'root' => ['text' => "root words of $b"], 'attachments' => [['is_share' => true, 'text' => "shared words of $b"], ['title' => 'link preview']]]), $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 3), $a, isBot: true)->assertOk();
+    ($this->webhook)(($this->dm)($b, 4), "UNOBODY{$this->s}")->assertOk();
+    ($this->webhook)(($this->dm)('USLACKBOT', 5, ['bot_id' => 'B1']), $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 6), $a)->assertOk();
+    ($this->webhook)(['type' => 'message', 'subtype' => 'message_changed', 'channel' => "DDM{$this->s}", 'channel_type' => 'im', 'message' => ($this->dm)($b, 6, ['text' => 'edited secret', 'edited' => ['ts' => ($this->ts)(7)]])], $a)->assertOk();
+
+    $dm   = SlackChannel::where('slack_id', "DDM{$this->s}")->sole();
+    $rows = SlackMessage::where('slack_channel_id', $dm->id)->orderBy('ts')->get();
+    expect($dm->only(['direct_type', 'is_private', 'is_public', 'is_member']))->toBe(['direct_type' => 'im', 'is_private' => true, 'is_public' => false, 'is_member' => false])
+        ->and($rows->pluck('ts')->all())->toBe([($this->ts)(1), ($this->ts)(2), ($this->ts)(6)])
+        ->and($rows[0]->only(['slack_user_id', 'user_id', 'text', 'data', 'subtype']))->toBe(['slack_user_id' => $b, 'user_id' => $this->bee->id, 'text' => null, 'data' => null, 'subtype' => null])
+        ->and($rows[2]->text)->toBeNull()
+        ->and($rows[2]->data)->toBeNull()
+        ->and($rows[2]->versions()->count())->toBe(0)
+        ->and($rows[1]->text)->toBe("secret words 2 of $a")
+        ->and($rows[1]->data)->not->toHaveKey('root')
+        ->and($rows[1]->data['attachments'])->toBe([['title' => 'link preview']])
+        ->and(SlackChannel::kept()->whereKey($dm->id)->exists())->toBeFalse()
+        ->and(SlackChannel::keptPrivate()->whereKey($dm->id)->exists())->toBeFalse()
+        ->and(\Illuminate\Notifications\DatabaseNotification::where('notifiable_id', $this->bee->id)->where('type', \App\Notifications\SlackDirectInviteNotification::class)->count())->toBe(1)
+        ->and(\Illuminate\Notifications\DatabaseNotification::where('notifiable_id', $this->viewer->id)->where('type', \App\Notifications\SlackDirectInviteNotification::class)->count())->toBe(0)
+        ->and(\App\Actions\Chat\Staff\Slack\StoreSlackMessage::make()->handle(($this->dm)($b, 8)))->toBeNull();
+
+    actingAs($this->viewer)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.is_direct', true)->where('slack_channel.write', null)->where('slack_channel.name', 'Bee Person'));
+    $stream = slackDirectStream($dm, $this->viewer);
+    expect(collect($stream)->pluck('is_gap', 'ts')->all())->toBe([($this->ts)(6) => true, ($this->ts)(2) => false, ($this->ts)(1) => true])
+        ->and(collect($stream)->firstWhere('ts', ($this->ts)(1))['files'])->toBe([]);
+    actingAs($this->viewer)->get(route('grp.chat.staff.slack.show', $dm))->assertRedirect(route('grp.chat.staff.direct.slack.show', $dm));
+    actingAs($this->bee)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertOk();
+
+    $props = function (User $user): array {
+        $props = [];
+        actingAs($user)->get(route('grp.chat.staff.slack.index'))->assertOk()
+            ->assertInertia(function (AssertableInertia $inertia) use (&$props) {
+                $props = $inertia->toArray()['props'];
+            });
+
+        return $props;
+    };
+    expect(collect($props($this->viewer)['slack_direct_channels'])->pluck('id')->all())->toContain($dm->id)
+        ->and(collect($props($this->viewer)['slack_channels'])->pluck('id')->all())->not->toContain($dm->id);
+
+    $stranger = $this->stranger;
+    SlackUser::create(['slack_id' => "USTR{$this->s}", 'user_id' => $stranger->id, 'email' => $stranger->email, 'real_name' => 'Stranger']);
+    $strangerProps = $props($stranger);
+    expect(collect([...$strangerProps['slack_direct_channels'], ...$strangerProps['slack_private_channels'], ...$strangerProps['slack_channels']])->pluck('id')->all())->not->toContain($dm->id);
+    actingAs($stranger)->get(route('grp.chat.staff.direct.slack.show', $dm))->assertForbidden();
+    actingAs($stranger)->get(route('grp.chat.staff.slack.show', $dm))->assertForbidden();
+    actingAs($stranger)->get(route('grp.chat.staff.groups.slack.show', $dm))->assertForbidden();
+    actingAs($stranger)->getJson(route('grp.chat.staff.slack.thread', [$dm, 'ts' => ($this->ts)(2)]))->assertForbidden();
+    actingAs($stranger)->getJson(route('grp.chat.staff.slack.versions', [$dm, 'ts' => ($this->ts)(2)]))->assertNotFound();
+    actingAs($stranger)->getJson(route('grp.chat.staff.slack.pins', $dm))->assertForbidden();
+    actingAs($stranger)->getJson(route('grp.chat.staff.slack.files-links', $dm))->assertForbidden();
+    actingAs($stranger)->postJson(route('grp.chat.staff.slack.read', $dm), ['ts' => ($this->ts)(2)])->assertForbidden();
+    foreach ([$stranger, $this->viewer] as $searcher) {
+        expect(actingAs($searcher)->getJson(route('grp.chat.staff.slack.search', ['q' => 'secret words']))->assertOk()->json('data'))->toBe([]);
+    }
+});
+
+test('Slack DMs: B connecting fills B\'s gaps with B\'s own token and keeps the others\' text out; live events by B then keep B\'s words; nothing is duplicated, INI-431', function () {
+    slackDirectSetup($this);
+    $a = "UVIEW{$this->s}";
+    $b = "UBEE{$this->s}";
+    ($this->connectPrivately)($this->viewer, $a);
+    ($this->webhook)(($this->dm)($b, 1), $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 2, ['thread_ts' => ($this->ts)(1)]), $a)->assertOk();
+    $dm = SlackChannel::where('slack_id', "DDM{$this->s}")->sole();
+
+    \Illuminate\Support\Facades\Http::fake([
+        'slack.com/api/conversations.members' => \Illuminate\Support\Facades\Http::response(['ok' => true, 'members' => [$a, $b]]),
+        'slack.com/api/conversations.history' => \Illuminate\Support\Facades\Http::response(['ok' => true, 'messages' => [($this->dm)($b, 1), ($this->dm)($a, 9, ['text' => 'A text seen through B'])]]),
+        'slack.com/api/conversations.replies' => \Illuminate\Support\Facades\Http::response(['ok' => true, 'messages' => [($this->dm)($b, 1), ($this->dm)($b, 2, ['thread_ts' => ($this->ts)(1)])]]),
+    ]);
+    ($this->connectPrivately)($this->bee, $b);
+    $totals = \App\Actions\Chat\Staff\Slack\FillSlackDirectGaps::run($this->bee);
+    \App\Actions\Chat\Staff\Slack\FillSlackDirectGaps::run($this->bee);
+
+    $rows = SlackMessage::where('slack_channel_id', $dm->id)->orderBy('ts')->get();
+    expect($totals)->toBe(['channels' => 1, 'filled' => 2])
+        ->and($rows->pluck('text', 'ts')->all())->toBe([($this->ts)(1) => "secret words 1 of $b", ($this->ts)(2) => "secret words 2 of $b"])
+        ->and($rows->every(fn (SlackMessage $row) => $row->versions()->doesntExist()))->toBeTrue()
+        ->and($rows[1]->thread_ts)->toBe(($this->ts)(1));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'conversations.history') && $request->header('Authorization')[0] === "Bearer xoxp-test-$b");
+
+    ($this->webhook)(($this->dm)($b, 3), $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 3), $b)->assertOk();
+    expect(SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(3))->sole()->text)->toBe("secret words 3 of $b");
+});
+
+test('Slack DMs: B switching off truly deletes B\'s DM words and earlier versions, deleted ones included, and they become gaps; A\'s words stay; deactivating a leaver deletes nothing, INI-431', function () {
+    slackDirectSetup($this);
+    $a = "UVIEW{$this->s}";
+    $b = "UBEE{$this->s}";
+    ($this->connectPrivately)($this->viewer, $a);
+    ($this->connectPrivately)($this->bee, $b);
+    ($this->webhook)(($this->dm)($b, 1), $a)->assertOk();
+    ($this->webhook)(['type' => 'message', 'subtype' => 'message_changed', 'channel' => "DDM{$this->s}", 'channel_type' => 'im', 'message' => ($this->dm)($b, 1, ['text' => 'second wording', 'edited' => ['ts' => ($this->ts)(2)]])], $a)->assertOk();
+    ($this->webhook)(($this->dm)($b, 3), $a)->assertOk();
+    ($this->webhook)(['type' => 'message', 'subtype' => 'message_deleted', 'channel' => "DDM{$this->s}", 'channel_type' => 'im', 'deleted_ts' => ($this->ts)(3)], $a)->assertOk();
+    ($this->webhook)(($this->dm)($a, 4), $a)->assertOk();
+    $dm      = SlackChannel::where('slack_id', "DDM{$this->s}")->sole();
+    $edited  = SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(1))->sole();
+    expect($edited->text)->toBe('second wording')
+        ->and($edited->versions()->count())->toBe(1)
+        ->and(SlackMessage::onlyTrashed()->where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(3))->value('text'))->toBe("secret words 3 of $b");
+
+    \Illuminate\Support\Facades\Http::fake(['slack.com/api/auth.revoke' => \Illuminate\Support\Facades\Http::response(['ok' => true])]);
+    actingAs($this->bee)->withHeaders(['X-Inertia' => 'true'])->delete(route('grp.chat.staff.slack.connect.private.delete'));
+
+    $rows = SlackMessage::withTrashed()->where('slack_channel_id', $dm->id)->orderBy('ts')->get()->keyBy('ts');
+    expect($rows[($this->ts)(1)]->only(['text', 'data', 'slack_user_id']))->toBe(['text' => null, 'data' => null, 'slack_user_id' => $b])
+        ->and($rows[($this->ts)(1)]->versions()->count())->toBe(0)
+        ->and($rows[($this->ts)(3)]->text)->toBeNull()
+        ->and($rows[($this->ts)(3)]->trashed())->toBeTrue()
+        ->and($rows[($this->ts)(4)]->text)->toBe("secret words 4 of $a")
+        ->and(collect(slackDirectStream($dm, $this->viewer))->firstWhere('ts', ($this->ts)(1))['is_gap'])->toBeTrue();
+
+    ($this->webhook)(($this->dm)($b, 5), $a)->assertOk();
+    expect(SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(5))->value('text'))->toBeNull();
+
+    \App\Actions\Chat\Staff\Slack\Write\DisconnectSlackAccount::run($this->viewer, false);
+    expect(SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(4))->value('text'))->toBe("secret words 4 of $a");
+
+    actingAs($this->viewer)->delete(route('grp.chat.staff.slack.connect.delete'))->assertRedirect();
+    expect(SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(4))->value('text'))->toBeNull();
+});
+
+function slackDirectStream(SlackChannel $channel, User $viewer): array
+{
+    $messages = \App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::streamQuery($channel)->with(\App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::relations())->orderByDesc('ts')->get(\App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::COLUMNS);
+
+    return \App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::make()->rows($channel, $messages, $viewer);
+}

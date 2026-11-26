@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords;
 use App\Models\Chat\SlackConnection;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -55,6 +56,10 @@ class DisconnectSlackAccount
     public function asController(ActionRequest $request): RedirectResponse
     {
         $mayCallSlack = app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS);
+        $connection   = SlackConnection::where('user_id', $request->user()->id)->first();
+        if ($connection) {
+            PurgeSlackDirectWords::run($connection->slack_user_id);
+        }
         $revoked      = $this->handle($request->user(), $mayCallSlack);
 
         return StartSlackConnection::backToSettings(

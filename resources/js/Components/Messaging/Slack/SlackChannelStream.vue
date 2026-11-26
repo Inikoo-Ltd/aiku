@@ -43,6 +43,7 @@ export interface SlackChannelHeader {
     purpose?: string | null
     is_archived: boolean
     is_private?: boolean
+    is_direct?: boolean
     brought_by?: string | null
     member_count?: number
     pinned_count?: number
@@ -338,7 +339,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                     </button>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-x-2">
-                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><FontAwesomeIcon v-if="channel.is_private" icon="fal fa-lock" class="mr-1 text-base" fixed-width :aria-label="ctrans('Private channel')" /><span v-else class="font-bold">#</span>{{ channel.name }}</h2>
+                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><FontAwesomeIcon v-if="channel.is_private" icon="fal fa-lock" class="mr-1 text-base" fixed-width :aria-label="channel.is_direct ? ctrans('Direct message') : ctrans('Private channel')" /><span v-else class="font-bold">#</span>{{ channel.name }}</h2>
                             <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-[#616061]">
                                 <FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" />{{ ctrans("Archived") }}
                             </span>
@@ -466,7 +467,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
             <p v-if="channel.brought_by && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">{{ ctrans("This channel is now in Verba, brought by :name", { name: channel.brought_by }) }}</p>
-            <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
+            <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ channel.is_direct ? ctrans("Slack direct message, read only. Only the people in it can see it. Reply in Slack for now.") : ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 

@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
 use App\Actions\Chat\Staff\Slack\StoreSlackPrivateMessage;
+use App\Actions\Chat\Staff\Slack\StoreSlackDirectMessage;
 use App\Actions\Chat\Staff\Slack\StoreSlackEmoji;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction;
 use App\Actions\Chat\Staff\Slack\StoreSlackPin;
@@ -98,7 +99,11 @@ class ReceiveSlackTicketReaction
 
             return response()->json(['ok' => true]);
         }
-        if (Arr::get($event, 'type') === 'message' && in_array(Arr::get($event, 'channel_type'), ['im', 'mpim'], true)) {
+        if (Arr::get($event, 'type') === 'message' && in_array(Arr::get($event, 'channel_type'), StoreSlackDirectMessage::TYPES, true)) {
+            if ($request->input('authorizations.0.is_bot') === false) {
+                rescue(fn () => StoreSlackDirectMessage::run($event, (array) $request->input('authorizations.0', [])), fn (Throwable $exception) => Log::warning('Slack direct message not stored', ['channel' => Arr::get($event, 'channel'), 'ts' => Arr::get($event, 'ts'), 'error' => $exception::class]), false);
+            }
+
             return response()->json(['ok' => true]);
         }
         if (Arr::get($event, 'type') === 'message') {

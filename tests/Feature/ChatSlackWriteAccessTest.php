@@ -489,8 +489,10 @@ test('private conversations need a second yes: the opt-in asks Slack for the pri
     Http::fake(['slack.com/api/oauth.v2.access' => function () use (&$granted, $user) {
         return Http::response(['ok' => true, 'team' => ['id' => 'TOURTEAM'], 'authed_user' => ['id' => ($this->slackIdOf)($user), 'scope' => implode(',', $granted), 'access_token' => $this->token, 'token_type' => 'user']]);
     }]);
+    \Illuminate\Support\Facades\Queue::fake();
     actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-p', 'state' => $query['state']]))
         ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']));
+    \App\Actions\Chat\Staff\Slack\FillSlackDirectGaps::assertPushed(1, fn ($action, array $arguments) => $arguments === [$user->id]);
 
     $connection = SlackConnection::where('user_id', $user->id)->firstOrFail();
     expect($connection->hasPrivateConsent())->toBeTrue()
