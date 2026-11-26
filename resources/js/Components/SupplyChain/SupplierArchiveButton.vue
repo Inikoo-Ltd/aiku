@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link, router } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { computed, ref } from "vue"
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -72,7 +72,7 @@ const submit = () => {
                 <p class="text-red-600">{{ ctrans(':name cannot be archived while it still has submitted or agreed purchase orders. Finish or cancel them first:', { name: archive.supplier_name }) }}</p>
                 <ul class="space-y-1">
                     <li v-for="purchaseOrder in blockingPurchaseOrders" :key="purchaseOrder.reference" class="flex items-center gap-2">
-                        <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="primaryLink font-medium">{{ purchaseOrder.reference }}</Link>
+                        <a :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" target="_blank" rel="noopener" class="primaryLink font-medium">{{ purchaseOrder.reference }}</a>
                         <span class="text-xs text-gray-500">{{ purchaseOrder.organisation }} · {{ purchaseOrder.state }}</span>
                     </li>
                 </ul>
@@ -84,7 +84,7 @@ const submit = () => {
                     <p class="text-amber-800">{{ ctrans('These draft purchase orders will be cancelled because the supplier is archived:') }}</p>
                     <ul class="space-y-1">
                         <li v-for="purchaseOrder in draftPurchaseOrders" :key="purchaseOrder.reference" class="flex items-center gap-2">
-                            <Link :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" class="primaryLink font-medium">{{ purchaseOrder.reference }}</Link>
+                            <a :href="route(purchaseOrder.route.name, purchaseOrder.route.parameters)" target="_blank" rel="noopener" class="font-medium underline">{{ purchaseOrder.reference }}</a>
                             <span class="text-xs text-gray-500">{{ purchaseOrder.organisation }}</span>
                         </li>
                     </ul>
