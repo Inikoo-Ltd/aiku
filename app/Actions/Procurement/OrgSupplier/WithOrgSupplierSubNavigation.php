@@ -14,12 +14,13 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierDraftsToSend;
 use App\Actions\SupplyChain\SupplierProduct\RepairSupplierProductsSupplier;
 use App\Actions\Traits\Authorisations\SupplierPortalPermissions;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\PurchaseOrder;
-use App\Models\Procurement\OrgSupplierStats;
+use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use App\Support\AgentOrganisationSelection;
 
@@ -109,13 +110,29 @@ trait WithOrgSupplierSubNavigation
             ->when($organisationIds, fn ($query) => $query->whereIn('organisation_id', $organisationIds));
 
         return [
-            'products'             => $selection ? (int) OrgSupplierStats::whereIn('org_supplier_id', $selection->selectedRows()->pluck('id'))->sum('number_current_org_supplier_products') : null,
+            'products'             => $selection ? self::numberActiveSupplierProducts($selection->selectedRows()->pluck('id')->all()) : null,
             'purchase_orders'      => (clone $purchaseOrders)->count(),
             'open_purchase_orders' => (clone $purchaseOrders)->whereIn('state', PurchaseOrderStateEnum::openValues())->count(),
             'stock_deliveries'     => StockDelivery::where(fn ($query) => IndexStockDeliveries::whereAgentSupplierDelivery($query, $agent, $orgSupplier->supplier_id))
                 ->when($organisationIds, fn ($query) => $query->whereIn('stock_deliveries.organisation_id', $organisationIds))
                 ->count(),
         ];
+    }
+
+    /**
+     * A supplier product bought by several organisations has one org supplier product in each, so the
+     * count is over distinct active supplier products, as the products table lists them by default.
+     *
+     * @param  array<int>  $orgSupplierIds
+     */
+    public static function numberActiveSupplierProducts(array $orgSupplierIds): int
+    {
+        return OrgSupplierProduct::query()
+            ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
+            ->whereIn('org_supplier_products.org_supplier_id', $orgSupplierIds)
+            ->where('supplier_products.state', SupplierProductStateEnum::ACTIVE)
+            ->distinct()
+            ->count('org_supplier_products.supplier_product_id');
     }
 
     protected function procurementOrgAgent(): ?OrgAgent
@@ -149,7 +166,7 @@ trait WithOrgSupplierSubNavigation
                     'icon'    => ['fal', 'fa-box-usd'],
                     'tooltip' => __('Products'),
                 ],
-                'number'   => $agentNumbers['products'] ?? $parent->stats->number_current_org_supplier_products,
+                'number'   => $agentNumbers['products'] ?? self::numberActiveSupplierProducts([$parent->id]),
             ],
             ...($parent->org_agent_id ? [] : [
                 [
