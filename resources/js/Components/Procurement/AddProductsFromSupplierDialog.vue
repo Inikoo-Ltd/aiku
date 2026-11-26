@@ -15,14 +15,15 @@ import Select from "primevue/select"
 import InputText from "primevue/inputtext"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import CopyTargetSupplierOption from "@/Components/Procurement/CopyTargetSupplierOption.vue"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
+import { supplierOptionFilterFields } from "@/types/supplier"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
-import { CopyTarget, copyTargetFilterFields } from "@/types/supplier-products-copy"
+import { CopyTarget } from "@/types/supplier-products-copy"
 
 type SourceProduct = {
 	id: number
@@ -189,7 +190,7 @@ function addProducts() {
 				optionValue="id"
 				filter
 				autoFilterFocus
-				:filterFields="copyTargetFilterFields"
+				:filterFields="supplierOptionFilterFields"
 				:filterPlaceholder="ctrans('Code, name, contact or product code')"
 				@filter="(event) => supplierSearch = event.value"
 				@hide="supplierSearch = ''"
@@ -200,7 +201,11 @@ function addProducts() {
 				@change="onSourceSupplierChange"
 			>
 				<template #option="{ option }">
-					<CopyTargetSupplierOption :supplier="option" :search="supplierSearch" />
+					<SupplierSelectOption :supplier="option" :search="supplierSearch">
+						<template #aside>
+							<span class="text-xs tabular-nums text-gray-500">{{ ctransChoice(":count product|:count products", option.number_products, { count: String(option.number_products) }) }}</span>
+						</template>
+					</SupplierSelectOption>
 				</template>
 			</Select>
 

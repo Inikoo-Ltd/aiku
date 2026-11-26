@@ -21,6 +21,8 @@ import { faCheck, faTimes, faExclamationTriangle, faPlus, faExternalLink } from 
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 
 type SupplierProduct = { code: string; cost: number; units_per_carton: number }
 
@@ -32,14 +34,11 @@ type UnsettledPurchaseOrder = {
 	can_take_lines: boolean
 }
 
-type SupplierOption = {
+type SupplierOption = SupplierOptionFields & {
 	org_supplier_id: number
 	slug: string
 	is_current: boolean
-	code: string
 	name: string
-	company_name: string | null
-	contact_name: string | null
 	currency: string | null
 	reference: string
 	open_purchase_orders: string[]
@@ -89,6 +88,7 @@ const isFetching = ref(false)
 const moveTarget = ref<MoveTarget>("other_supplier")
 const onlySuppliersWithProducts = ref(false)
 const orgSupplierId = ref<number | null>(null)
+const supplierSearch = ref("")
 const purchaseOrderReference = ref("")
 const referenceSuggestions = ref<string[]>([])
 const lines = ref<Record<number, LineForm>>({})
@@ -123,8 +123,7 @@ const supplierOptions = computed(() =>
 		.sort((first, second) => second.products_count - first.products_count)
 		.map((option) => ({
 			...option,
-			label: `${option.code} ${option.name}`,
-			search: [option.code, option.name, option.company_name, option.contact_name].filter(Boolean).join(" "),
+			label: [option.code, option.company_name, option.contact_name, option.nickname].filter(Boolean).join(" · "),
 		}))
 )
 
@@ -295,9 +294,12 @@ function submit() {
 					optionValue="org_supplier_id"
 					filter
 					autoFilterFocus
-					:filterFields="['search']"
+					:filterFields="supplierOptionFilterFields"
 					:loading="isFetching"
 					:placeholder="ctrans('Choose a supplier of the same agent')"
+					:filterPlaceholder="ctrans('Code, name, contact or product code')"
+					@filter="(event) => supplierSearch = event.value"
+					@hide="supplierSearch = ''"
 					:emptyMessage="isFetching
 						? ctrans('Loading…')
 						: onlySuppliersWithProducts
@@ -307,24 +309,23 @@ function submit() {
 					fluid
 				>
 					<template #option="{ option }">
-						<div class="flex w-full min-w-0 items-center gap-2">
-							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
-							<span class="truncate text-gray-500">{{ option.name }}</span>
-							<span v-if="option.company_name && option.company_name !== option.name" class="truncate text-xs text-gray-400">{{ option.company_name }}</span>
-							<span
-								v-if="sellsEveryProduct(option)"
-								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
-							>
-								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
-								{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
-							</span>
-							<span
-								v-else-if="sellsSomeProducts(option)"
-								class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-							>
-								{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
-							</span>
-						</div>
+						<SupplierSelectOption :supplier="option" :search="supplierSearch">
+							<template #aside>
+								<span
+									v-if="sellsEveryProduct(option)"
+									class="flex items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+								>
+									<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+									{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
+								</span>
+								<span
+									v-else-if="sellsSomeProducts(option)"
+									class="whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+								>
+									{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
+								</span>
+							</template>
+						</SupplierSelectOption>
 					</template>
 				</Select>
 				<a

@@ -13,14 +13,15 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInboxIn, faFileCode, faFilePdf, faLink, faTimes, faCheck, faExclamationTriangle } from "@fal"
 library.add(faInboxIn, faFileCode, faFilePdf, faLink, faTimes, faCheck, faExclamationTriangle)
 
-interface Supplier {
+interface Supplier extends SupplierOptionFields {
     id: number
-    code: string
     name: string
 }
 
@@ -64,7 +65,8 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const suppliersById = computed(() => Object.fromEntries(props.suppliers.map((supplier) => [supplier.id, supplier])))
-const supplierOptions = computed(() => props.suppliers.map((supplier) => ({ value: supplier.id, label: `${supplier.name} (${supplier.code})` })))
+const supplierOptions = computed(() => props.suppliers.map((supplier) => ({ ...supplier, value: supplier.id, label: [supplier.code, supplier.company_name, supplier.contact_name, supplier.nickname].filter(Boolean).join(" · ") })))
+const supplierSearch = ref("")
 
 const reasonLabels: Record<string, string> = {
     peppol_id: ctrans("same Peppol id"),
@@ -181,7 +183,23 @@ const stateClass = (state: string) =>
             <template v-if="form.match_state === 'matched'">
                 <label class="block">
                     <span class="text-xs text-gray-600">{{ ctrans("Supplier") }} <span class="text-red-500">*</span></span>
-                    <Select v-model="form.supplier_id" :options="supplierOptions" optionLabel="label" optionValue="value" filter class="w-full" :placeholder="ctrans('Choose a supplier')" />
+                    <Select
+                        v-model="form.supplier_id"
+                        :options="supplierOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        filter
+                        :filterFields="supplierOptionFilterFields"
+                        :filterPlaceholder="ctrans('Code, name, contact or product code')"
+                        class="w-full"
+                        :placeholder="ctrans('Choose a supplier')"
+                        @filter="(event) => supplierSearch = event.value"
+                        @hide="supplierSearch = ''"
+                    >
+                        <template #option="{ option }">
+                            <SupplierSelectOption :supplier="option" :search="supplierSearch" />
+                        </template>
+                    </Select>
                     <span v-if="errors.supplier_id" class="text-xs text-red-500">{{ errors.supplier_id }}</span>
                 </label>
                 <label class="block">

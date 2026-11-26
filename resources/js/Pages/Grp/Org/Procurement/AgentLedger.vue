@@ -31,6 +31,8 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
+import { SupplierOptionFields, supplierOptionFilterFields } from "@/types/supplier"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
 
 library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faLock, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
@@ -49,7 +51,7 @@ interface Wallet {
 	suppliers_with_different_fee: SupplierFee[]
 }
 
-interface SupplierFee {
+interface SupplierFee extends Partial<SupplierOptionFields> {
 	id: number
 	code: string
 	name: string | null
@@ -145,6 +147,7 @@ const saveFee = () => {
 const supplierFeeWallet = ref<Wallet | null>(null)
 const supplierFeeSupplierId = ref<number | null>(null)
 const supplierFeePercentage = ref<number | null>(null)
+const supplierFeeSearch = ref("")
 const supplierFeeError = ref<string | null>(null)
 const supplierFeeSaving = ref(false)
 const isSupplierFeeOpen = computed({ get: () => supplierFeeWallet.value !== null, set: (open: boolean) => !open && (supplierFeeWallet.value = null) })
@@ -158,6 +161,10 @@ const loadSupplierOptions = () => {
 }
 const supplierOptions = computed(() =>
 	walletSuppliers.value.map((supplier) => ({
+		...supplier,
+		nickname: supplier.nickname ?? null,
+		company_name: supplier.company_name ?? null,
+		contact_name: supplier.contact_name ?? null,
 		value: supplier.id,
 		label: [supplier.code, supplier.name].filter(Boolean).join(" · ") + (supplier.agent_fee_percentage !== null ? ` (${supplier.agent_fee_percentage}%)` : ""),
 	})),
@@ -663,9 +670,21 @@ const confirmRemove = (row: EntryRow) =>
 					optionLabel="label"
 					optionValue="value"
 					filter
+					:filterFields="supplierOptionFilterFields"
+					:filterPlaceholder="ctrans('Code, name, contact or product code')"
 					:placeholder="ctrans('Select a supplier')"
 					class="w-full"
-					:class="fieldFocusClass" />
+					:class="fieldFocusClass"
+					@filter="(event) => supplierFeeSearch = event.value"
+					@hide="supplierFeeSearch = ''">
+					<template #option="{ option }">
+						<SupplierSelectOption :supplier="option" :search="supplierFeeSearch">
+							<template v-if="option.agent_fee_percentage !== null" #aside>
+								<span class="whitespace-nowrap text-xs tabular-nums text-gray-500">{{ option.agent_fee_percentage }}%</span>
+							</template>
+						</SupplierSelectOption>
+					</template>
+				</Select>
 				<InputNumber
 					v-model="supplierFeePercentage"
 					:min="0"

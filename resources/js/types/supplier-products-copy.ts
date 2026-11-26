@@ -6,6 +6,7 @@
  */
 
 import { routeType } from "@/types/route"
+import { SupplierOptionFields } from "@/types/supplier"
 
 export interface CopyProducts {
 	agent_id: number
@@ -16,16 +17,9 @@ export interface CopyProducts {
 	can_make_preferred: boolean
 }
 
-export interface CopyTarget {
+export interface CopyTarget extends SupplierOptionFields {
 	id: number
 	agent_id: number
-	code: string
 	label: string
-	nickname: string | null
 	number_products: number
-	company_name: string | null
-	contact_name: string | null
-	product_codes: string
 }
-
-export const copyTargetFilterFields = ["code", "nickname", "company_name", "contact_name", "product_codes"]

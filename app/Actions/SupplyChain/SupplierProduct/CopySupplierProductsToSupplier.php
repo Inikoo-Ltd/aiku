@@ -7,6 +7,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockHasSupplierProduct;
@@ -415,22 +416,15 @@ class CopySupplierProductsToSupplier extends OrgAction
             ->orderBy('code')
             ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name']);
 
-        $productCodesBySupplier = SupplierProduct::whereIn('supplier_id', $targets->pluck('id'))
-            ->groupBy('supplier_id')
-            ->selectRaw("supplier_id, string_agg(code, ' ' order by code) as product_codes")
-            ->pluck('product_codes', 'supplier_id');
+        $optionFields = GetSupplierOptionFields::make()->handle($targets);
 
         return $targets
             ->map(fn (Supplier $target) => [
                 'id'              => $target->id,
                 'agent_id'        => $target->agent_id ?? self::FREE_SUPPLIERS_KEY,
-                'code'            => $target->code,
                 'number_products' => $target->supplier_products_count,
                 'label'           => $target->code.' — '.($target->nickname() ?? $target->officialName()),
-                'nickname'        => $target->nickname(),
-                'company_name'    => $target->company_name,
-                'contact_name'    => $target->contact_name,
-                'product_codes'   => $productCodesBySupplier->get($target->id, ''),
+                ...$optionFields->get($target->id),
             ])
             ->all();
     }

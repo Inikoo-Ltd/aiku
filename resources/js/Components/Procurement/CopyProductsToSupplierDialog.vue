@@ -12,12 +12,13 @@ import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import CopyTargetSupplierOption from "@/Components/Procurement/CopyTargetSupplierOption.vue"
+import SupplierSelectOption from "@/Components/SupplyChain/SupplierSelectOption.vue"
+import { supplierOptionFilterFields } from "@/types/supplier"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faPlus, faTimes } from "@fal"
-import { ctrans } from "@/Composables/useTrans"
-import { CopyProducts, CopyTarget, copyTargetFilterFields } from "@/types/supplier-products-copy"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 
 library.add(faCheck, faPlus, faTimes)
 
@@ -128,7 +129,7 @@ defineExpose({ createSupplierWithSelectedProducts })
 				optionValue="id"
 				filter
 				autoFilterFocus
-				:filterFields="copyTargetFilterFields"
+				:filterFields="supplierOptionFilterFields"
 				:filterPlaceholder="ctrans('Code, name, contact or product code')"
 				@filter="(event) => supplierSearch = event.value"
 				@hide="supplierSearch = ''"
@@ -138,7 +139,11 @@ defineExpose({ createSupplierWithSelectedProducts })
 				:emptyMessage="ctrans('No other supplier')"
 			>
 				<template #option="{ option }">
-					<CopyTargetSupplierOption :supplier="option" :search="supplierSearch" />
+					<SupplierSelectOption :supplier="option" :search="supplierSearch">
+						<template #aside>
+							<span class="text-xs tabular-nums text-gray-500">{{ ctransChoice(":count product|:count products", option.number_products, { count: String(option.number_products) }) }}</span>
+						</template>
+					</SupplierSelectOption>
 				</template>
 			</Select>
 			<label v-if="copyProducts.can_make_preferred" for="copy-products-make-preferred" class="mt-2 flex cursor-pointer items-start gap-2">
