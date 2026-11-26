@@ -22,6 +22,7 @@ import ToggleSwitch from "primevue/toggleswitch"
 import Popover from "primevue/popover"
 import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -55,6 +56,8 @@ interface Row {
     slug: string
     code: string
     name: string | null
+    image_thumbnail: object | null
+    image_full: { original_url: string; download_url: string } | null
     family_code: string | null
     sales: number
     trend: number | null
@@ -915,6 +918,9 @@ function priceRequestLabel(count: number): string {
             :isParentLoading="loading"
             @onSelectRow="onSelectRow"
         >
+            <template #cell(image_thumbnail)="{ item: row }">
+                <ZoomableImage :src="row.image_thumbnail" :full="row.image_full" :alt="row.code" class="h-10 w-10" />
+            </template>
             <template #cell(code)="{ item: row }">
                 <button type="button" class="group grid w-full max-w-[40rem] grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-2 text-left" :title="`${row.code} — ${row.name ?? ''}${row.family_code ? ' (' + row.family_code + ')' : ''}`" @click="openDrawer(row)">
                     <span class="truncate font-medium text-gray-900 group-hover:underline">{{ row.code }}</span>

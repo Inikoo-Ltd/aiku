@@ -23,6 +23,7 @@ import SupplierProductStateSelect from "@/Components/SupplyChain/SupplierProduct
 import SupplierProductsBulkStateButton from "@/Components/SupplyChain/SupplierProductsBulkStateButton.vue"
 import OrgSupplierProductOrganisationStateDialog, { BuyingOrganisation } from "@/Components/Procurement/OrgSupplierProductOrganisationStateDialog.vue"
 import Icon from "@/Components/Icon.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import { SupplierProductStateOption, SupplierProductStateRow } from "@/Composables/useSupplierProductState"
 import { CopyProducts, CopyTarget } from "@/types/supplier-products-copy"
 
@@ -198,6 +199,9 @@ function orgSupplierRoute(orgSupplierSlug: string) {
     :isCheckBox="Boolean(copyProducts || labelsPrint)"
     @onSelectRow="(rows: Record<string, boolean>) => selectedRows = { ...rows }"
   >
+    <template #cell(image_thumbnail)="{ item: supplier_product }">
+      <ZoomableImage :src="supplier_product.image_thumbnail" :full="supplier_product.image_full" :alt="supplier_product.code" class="h-10 w-10" />
+    </template>
     <template #cell(code)="{ item: supplier_product }">
       <Link :href="supplierProductRoute(supplier_product)" class="primaryLink">
         {{ supplier_product["code"] }}

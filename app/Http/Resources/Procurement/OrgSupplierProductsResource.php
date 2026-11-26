@@ -29,6 +29,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $availability_status
  * @property numeric|null $completeness
  * @property string|null $available_organisations
+ * @property array<string, mixed>|null $image_thumbnail
+ * @property array{original_url: string, download_url: string}|null $image_full
  * @property array<int, array{code: string, state: array{value: string, label: string}, is_available: bool, is_organisation_row_available: bool, is_supplier_product_available: bool, linked_sko_codes: array<int, string>, sko_suppliers: array<int, array{sko_code: string, supplier_codes: array<int, string>}>, org_supplier_product_ids: array<int, int>, can_edit: bool}>|null $buying_organisations
  */
 class OrgSupplierProductsResource extends JsonResource
@@ -39,6 +41,8 @@ class OrgSupplierProductsResource extends JsonResource
             'id'                => $this->id,
             'code'              => $this->code,
             'name'              => $this->name,
+            'image_thumbnail'   => $this->image_thumbnail ?? null,
+            'image_full'        => $this->image_full ?? null,
             'slug'              => $this->slug,
             'available_organisations' => $this->available_organisations ?? null,
             'buying_organisations'    => $this->buying_organisations ?? null,

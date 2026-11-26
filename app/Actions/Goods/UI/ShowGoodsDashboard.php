@@ -26,6 +26,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStockDiscontinueSuggestion;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Group;
@@ -192,8 +193,11 @@ class ShowGoodsDashboard extends OrgAction
         unset($row);
 
         $evidence = OrgStockDiscontinueSuggestion::evidenceForStocks(array_column(array_filter($pageRows, fn (array $row) => $row['suggestions'] > 0), 'id'));
+        $images   = $this->imagesByStock(array_column($pageRows, 'id'));
         foreach ($pageRows as &$row) {
             $row['suggestion_evidence'] = $evidence[$row['id']] ?? null;
+            $row['image_thumbnail']     = $images[$row['id']]['thumbnail'] ?? null;
+            $row['image_full']          = $images[$row['id']]['full'] ?? null;
         }
         unset($row);
 
@@ -253,6 +257,27 @@ class ShowGoodsDashboard extends OrgAction
         $result = $this->rowsForFilters($filters);
 
         return ['organisations' => $result['dataset']['organisations'], 'rows' => $result['filtered']];
+    }
+
+    /**
+     * @param  array<int, int>  $stockIds
+     * @return array<int, array{thumbnail: array<string, mixed>|null, full: array<string, string>|null}>
+     */
+    private function imagesByStock(array $stockIds): array
+    {
+        return Stock::query()
+            ->with(['image', 'tradeUnits' => fn ($query) => $query->whereNotNull('trade_units.image_id')->with('image')])
+            ->whereIn('id', $stockIds)
+            ->get(['id', 'image_id'])
+            ->mapWithKeys(function (Stock $stock) {
+                $imageOwner = $stock->image_id ? $stock : $stock->tradeUnits->first();
+
+                return [$stock->id => [
+                    'thumbnail' => $imageOwner?->imageSources(120, 120),
+                    'full'      => $imageOwner?->image?->fullResolutionUrls(),
+                ]];
+            })
+            ->all();
     }
 
     /**
@@ -521,6 +546,7 @@ class ShowGoodsDashboard extends OrgAction
         return function (InertiaTable $table) {
             $table
                 ->withEmptyState(['title' => __('No products match these filters.')])
+                ->column(key: 'image_thumbnail', label: '', canBeHidden: false)
                 ->column(key: 'code', label: __('Code — description'), canBeHidden: false, sortable: true)
                 ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right');
 

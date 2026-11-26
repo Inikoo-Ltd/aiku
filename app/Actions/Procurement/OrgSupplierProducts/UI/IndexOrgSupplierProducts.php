@@ -33,6 +33,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -232,6 +233,7 @@ class IndexOrgSupplierProducts extends OrgAction
                     'suppliers.name as supplier_name',
                 ])
                 ->selectRaw('min(org_supplier_products.id) as id')
+                ->selectRaw('supplier_products.id as supplier_product_id')
                 ->selectRaw('supplier_products.slug as slug')
                 ->selectRaw('suppliers.slug as org_supplier_slug')
                 ->groupBy('supplier_products.id', 'currencies.code', 'suppliers.name', 'suppliers.slug');
@@ -260,7 +262,28 @@ class IndexOrgSupplierProducts extends OrgAction
             $this->addBuyingOrganisations($orgSupplierProducts, $orgSupplierIds);
         }
 
+        $this->addImages($orgSupplierProducts);
+
         return $orgSupplierProducts;
+    }
+
+    private function addImages(LengthAwarePaginator $orgSupplierProducts): void
+    {
+        $supplierProducts = SupplierProduct::query()
+            ->with(['image', 'tradeUnits' => fn ($query) => $query->whereNotNull('trade_units.image_id')->with('image')])
+            ->whereIn('id', $orgSupplierProducts->getCollection()->pluck('supplier_product_id')->filter()->unique())
+            ->get(['id', 'image_id'])
+            ->keyBy('id');
+
+        $orgSupplierProducts->getCollection()->transform(function ($row) use ($supplierProducts) {
+            $supplierProduct = $supplierProducts->get($row->supplier_product_id);
+            $imageOwner      = $supplierProduct?->tradeUnits->first() ?? ($supplierProduct?->image_id ? $supplierProduct : null);
+
+            $row->image_thumbnail = $imageOwner?->imageSources(120, 120);
+            $row->image_full      = $imageOwner?->image?->fullResolutionUrls();
+
+            return $row;
+        });
     }
 
     /**
@@ -396,6 +419,8 @@ class IndexOrgSupplierProducts extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord($parent instanceof Organisation && $parent->type === OrganisationTypeEnum::AGENT ? [__('Product'), __('Products')] : [__('Supplier Product'), __('Supplier Products')]);
+
+            $table->column(key: 'image_thumbnail', label: '', canBeHidden: false);
 
             $table->column(key: 'internal_code', label: $this->getParentOrganisationAgent($parent) ? __('Our code') : __('Product code'), canBeHidden: false, sortable: true);
 
