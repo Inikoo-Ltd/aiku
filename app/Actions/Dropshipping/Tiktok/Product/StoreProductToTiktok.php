@@ -33,6 +33,7 @@ class StoreProductToTiktok extends RetinaAction
     use WithPortfolioErrorResponse;
     public const float FALLBACK_DIMENSION_IN_CM = 10;
     public const int FALLBACK_WEIGHT_IN_GRAMS = 100;
+    public const string CERTIFICATIONS_REQUIRED_MESSAGE = 'TikTok needs certification documents for this type of product, and we cannot send them from here. Create the product in TikTok Seller Center with its documents, then match it in My Products.';
 
     /**
      * @throws \Exception
@@ -54,6 +55,19 @@ class StoreProductToTiktok extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
+            $recommendCategory = $tiktokUser->recommendCategory([
+                'product_title' => $product->family?->name ?? Str::words($product->name, 2, '')
+            ]);
+
+            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id', '600009');
+            $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId, Arr::get($recommendCategory, 'data.categories', []));
+
+            $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
+
+            if (self::requiresCertifications($categoryRules)) {
+                throw new \Exception(self::CERTIFICATIONS_REQUIRED_MESSAGE);
+            }
+
             $productImages = [];
             foreach ($product->orderedImages() as $image) {
                 $productImage = UploadProductImageToTiktok::run($tiktokUser, $image);
@@ -66,24 +80,6 @@ class StoreProductToTiktok extends RetinaAction
                     'uri' => Arr::get($productImage, 'data.uri')
                 ];
             }
-
-            $recommendCategory = $tiktokUser->recommendCategory([
-                'product_title' => $product->family?->name ?? Str::words($product->name, 2, '')
-            ]);
-
-            $leafCategoryId = Arr::get($recommendCategory, 'data.leaf_category_id', '600009');
-            $leafCategoryId = $this->resolveSafeCategoryId($tiktokUser, $leafCategoryId, Arr::get($recommendCategory, 'data.categories', []));
-
-            $categoryRules = $tiktokUser->getCategoryRules($leafCategoryId);
-
-            $requiredCertifications = collect(Arr::get($categoryRules, 'data.product_certifications', []))
-                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
-                ->map(fn ($cert) => [
-                    'id'    => Arr::get($cert, 'id'),
-                    'files' => []
-                ])
-                ->values()
-                ->toArray();
 
             $requiredPersonResponsible = [];
 
@@ -165,7 +161,7 @@ class StoreProductToTiktok extends RetinaAction
                 'main_images' => $productImages,
                 'package_weight' => self::packageWeight($product),
                 'package_dimensions' => self::packageDimensions($product),
-                'product_certifications' => $requiredCertifications,
+                'product_certifications' => [],
                 ...$requiredPersonResponsible,
                 ...$requiredManufacturer,
                 ...$identifierCode,
@@ -270,12 +266,7 @@ class StoreProductToTiktok extends RetinaAction
         $sellerIsQualified = !is_array($permissionStatuses) || in_array('AVAILABLE', $permissionStatuses);
 
         if ($sellerIsQualified) {
-            $rules = $tiktokUser->getCategoryRules($categoryId);
-            $hasRequiredCerts = collect(Arr::get($rules, 'data.product_certifications', []))
-                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
-                ->isNotEmpty();
-
-            if (!$hasRequiredCerts) {
+            if (!self::requiresCertifications($tiktokUser->getCategoryRules($categoryId))) {
                 return $categoryId;
             }
         }
@@ -298,18 +289,22 @@ class StoreProductToTiktok extends RetinaAction
 
         foreach ($leafAvailable as $cat) {
             $catId = Arr::get($cat, 'id');
-            $catRules = $tiktokUser->getCategoryRules($catId);
-            $certRequired = collect(Arr::get($catRules, 'data.product_certifications', []))
-                ->filter(fn ($cert) => Arr::get($cert, 'is_required') === true)
-                ->isNotEmpty();
-
-            if (!$certRequired) {
+            if (!self::requiresCertifications($tiktokUser->getCategoryRules($catId))) {
                 cache()->put($cacheKey, $catId, now()->addHours(24));
                 return $catId;
             }
         }
 
         return $categoryId;
+    }
+
+    /**
+     * Our upload carries no documents, so TikTok refuses every create in such a category (PRE-140).
+     */
+    private static function requiresCertifications(mixed $categoryRules): bool
+    {
+        return collect(Arr::get($categoryRules, 'data.product_certifications', []))
+            ->contains(fn ($cert) => Arr::get($cert, 'is_required') === true);
     }
 
     /**

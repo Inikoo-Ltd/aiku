@@ -102,7 +102,7 @@ Mensajes que puedes ver al subir productos a TikTok. Son reglas de TikTok, y sol
 - <b>requires an active seller account</b>: tu cuenta de vendedor de TikTok está inactiva. Actívala en Seller Center y vuelve a subir.
 - <b>Shop probation period</b> o <b>Shop probation tier</b>: las tiendas nuevas de TikTok solo pueden publicar un número limitado de productos, por ejemplo 20, 100 o 1000. El mensaje te indica tu límite. Elimina productos que no vendas, o espera a que TikTok levante tu límite.
 - <b>category qualification for this restricted category</b>: TikTok necesita que solicites esta categoría. Solicítala en el Qualification Center de Seller Center y vuelve a subir.
-- <b>certifications must include every certification required by the selected category</b>: TikTok pide documentos para este tipo de producto. Añádelos en Seller Center, o elige otros productos.
+- <b>TikTok needs certification documents for this type of product</b>: no podemos enviar documentos con una subida. Crea el producto en Seller Center con sus documentos y luego vincúlalo en <b>Mis productos</b>, o elige otros productos.
 - <b>Product manufacturer is required</b>: añade un fabricante en Seller Center. Usamos el primer fabricante de tu cuenta.
 - <b>requires a return warehouse</b>: añade un almacén de devoluciones en Seller Center.
 - <b>at least 300 x 300 pixels</b>: una de las fotos del producto es demasiado pequeña para TikTok. Este producto no se puede subir tal cual.

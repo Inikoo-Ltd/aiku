@@ -103,7 +103,7 @@ Meldungen, die beim Hochladen von Produkten zu TikTok erscheinen können. Dies s
 - <b>requires an active seller account</b>: Ihr TikTok-Verkäuferkonto ist inaktiv. Aktivieren Sie es im Seller Center und laden Sie dann erneut hoch.
 - <b>Shop probation period</b> oder <b>Shop probation tier</b>: Neue TikTok Shops können nur eine begrenzte Anzahl von Produkten auflisten, zum Beispiel 20, 100 oder 1000. Die Meldung nennt Ihr Limit. Entfernen Sie Produkte, die Sie nicht verkaufen, oder warten Sie, bis TikTok Ihr Limit aufhebt.
 - <b>category qualification for this restricted category</b>: TikTok verlangt, dass Sie sich für diese Kategorie bewerben. Bewerben Sie sich im Qualification Center im Seller Center und laden Sie dann erneut hoch.
-- <b>certifications must include every certification required by the selected category</b>: TikTok verlangt Dokumente für diese Produktart. Fügen Sie sie im Seller Center hinzu, oder wählen Sie andere Produkte.
+- <b>TikTok needs certification documents for this type of product</b>: Mit einem Upload können wir keine Dokumente senden. Legen Sie das Produkt im Seller Center mit seinen Dokumenten an und verknüpfen Sie es dann unter <b>My Products</b>, oder wählen Sie andere Produkte.
 - <b>Product manufacturer is required</b>: Fügen Sie im Seller Center einen Hersteller hinzu. Wir nutzen den ersten Hersteller in Ihrem Konto.
 - <b>requires a return warehouse</b>: Fügen Sie im Seller Center ein Retourenlager hinzu.
 - <b>at least 300 x 300 pixels</b>: Eines der Produktbilder ist für TikTok zu klein. Dieses Produkt kann so nicht hochgeladen werden.

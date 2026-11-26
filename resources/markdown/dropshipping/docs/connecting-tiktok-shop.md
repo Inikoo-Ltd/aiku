@@ -103,7 +103,7 @@ Messages you may see when you upload products to TikTok. These are TikTok rules,
 - <b>requires an active seller account</b>: your TikTok seller account is inactive. Activate it in Seller Center, then upload again.
 - <b>Shop probation period</b> or <b>Shop probation tier</b>: new TikTok shops can only list a limited number of products, for example 20, 100 or 1000. The message tells you your limit. Remove products you do not sell, or wait until TikTok lifts your limit.
 - <b>category qualification for this restricted category</b>: TikTok needs you to apply for this category. Apply in the Qualification Center in Seller Center, then upload again.
-- <b>certifications must include every certification required by the selected category</b>: TikTok asks for documents for this type of product. Add them in Seller Center, or choose other products.
+- <b>TikTok needs certification documents for this type of product</b>: we cannot send documents with an upload. Create the product in Seller Center with its documents, then match it in <b>My Products</b>, or choose other products.
 - <b>Product manufacturer is required</b>: add a manufacturer in Seller Center. We use the first manufacturer on your account.
 - <b>requires a return warehouse</b>: add a return warehouse in Seller Center.
 - <b>at least 300 x 300 pixels</b>: one of the product pictures is too small for TikTok. This product cannot be uploaded as it is.

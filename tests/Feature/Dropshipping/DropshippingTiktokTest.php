@@ -716,6 +716,29 @@ test('a rejected upload keeps the portfolio unlisted with the tiktok message as 
         ->and(tiktokLastLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
 });
 
+test('a category that requires certifications with no safe fallback is never sent to tiktok and tells the customer what to do, PRE-140', function () {
+    $tiktokUser = tiktokChannel($this->customer);
+    cache()->forget("tiktok_safe_category_$tiktokUser->id");
+
+    fakeTiktok(['/product/202309/products/search' => tiktokOk(['products' => [], 'total_count' => 0])]);
+    $portfolio = StorePortfolio::make()->action($tiktokUser->customerSalesChannel, $this->product, []);
+    $portfolio->update(['sku' => 'CERT-1', 'customer_price' => 5]);
+
+    fakeTiktok([
+        '/categories/recommend' => tiktokOk(['leaf_category_id' => '700001', 'categories' => [['id' => '700001', 'is_leaf' => true, 'permission_statuses' => ['AVAILABLE']]]]),
+        '/rules' => tiktokOk(['product_certifications' => [['id' => 'CERT-CE', 'is_required' => true]]]),
+        '/product/202309/categories' => tiktokOk(['categories' => [['id' => '700001', 'is_leaf' => true, 'permission_statuses' => ['AVAILABLE']]]]),
+        '/attributes' => tiktokOk(['attributes' => []]),
+        '/product/202309/products' => fn () => throw new RuntimeException('the create must not be called'),
+    ]);
+
+    $portfolio = StoreProductToTiktok::run($portfolio);
+
+    expect($portfolio->platform_product_id)->toBeNull()
+        ->and(Arr::get($portfolio->errors_response, 'message'))->toBe(StoreProductToTiktok::CERTIFICATIONS_REQUIRED_MESSAGE)
+        ->and(tiktokLastLog($portfolio)->status)->toBe(PlatformPortfolioLogsStatusEnum::FAIL);
+});
+
 test('a portfolio without a listing is matched by seller sku in the shape the retina table expects and can be adopted', function () {
     $tiktokUser = tiktokChannel($this->customer);
     $productId  = '17295929697122071'.random_int(10, 99);

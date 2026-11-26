@@ -103,7 +103,7 @@ Messages que vous pouvez voir en important des produits vers TikTok. Ce sont des
 - <b>requires an active seller account</b> : votre compte vendeur TikTok est inactif. Activez-le dans Seller Center, puis importez à nouveau.
 - <b>Shop probation period</b> ou <b>Shop probation tier</b> : les nouvelles boutiques TikTok ne peuvent lister qu'un nombre limité de produits, par exemple 20, 100 ou 1000. Le message indique votre limite. Retirez des produits que vous ne vendez pas, ou attendez que TikTok lève votre limite.
 - <b>category qualification for this restricted category</b> : TikTok exige que vous postuliez pour cette catégorie. Postulez dans le Qualification Center de Seller Center, puis importez à nouveau.
-- <b>certifications must include every certification required by the selected category</b> : TikTok demande des documents pour ce type de produit. Ajoutez-les dans Seller Center, ou choisissez d'autres produits.
+- <b>TikTok needs certification documents for this type of product</b> : nous ne pouvons pas envoyer de documents avec un envoi. Créez le produit dans Seller Center avec ses documents, puis associez-le dans <b>My Products</b>, ou choisissez d'autres produits.
 - <b>Product manufacturer is required</b> : ajoutez un fabricant dans Seller Center. Nous utilisons le premier fabricant de votre compte.
 - <b>requires a return warehouse</b> : ajoutez un entrepôt de retour dans Seller Center.
 - <b>at least 300 x 300 pixels</b> : l'une des images du produit est trop petite pour TikTok. Ce produit ne peut pas être importé tel quel.

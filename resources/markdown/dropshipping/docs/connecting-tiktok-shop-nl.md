@@ -103,7 +103,7 @@ Berichten die u kunt zien wanneer u producten naar TikTok uploadt. Dit zijn rege
 - <b>requires an active seller account</b>: uw TikTok-verkopersaccount is inactief. Activeer het in Seller Center en upload daarna opnieuw.
 - <b>Shop probation period</b> of <b>Shop probation tier</b>: nieuwe TikTok-shops kunnen slechts een beperkt aantal producten vermelden, bijvoorbeeld 20, 100 of 1000. Het bericht vertelt uw limiet. Verwijder producten die u niet verkoopt, of wacht tot TikTok uw limiet opheft.
 - <b>category qualification for this restricted category</b>: TikTok vraagt u om te solliciteren voor deze categorie. Solliciteer in het Qualification Center in Seller Center en upload daarna opnieuw.
-- <b>certifications must include every certification required by the selected category</b>: TikTok vraagt documenten voor dit type product. Voeg ze toe in Seller Center, of kies andere producten.
+- <b>TikTok needs certification documents for this type of product</b>: wij kunnen geen documenten meesturen met een upload. Maak het product aan in Seller Center met de documenten en koppel het daarna in <b>My Products</b>, of kies andere producten.
 - <b>Product manufacturer is required</b>: voeg een fabrikant toe in Seller Center. Wij gebruiken de eerste fabrikant op uw account.
 - <b>requires a return warehouse</b>: voeg een retourmagazijn toe in Seller Center.
 - <b>at least 300 x 300 pixels</b>: een van de productfoto's is te klein voor TikTok. Dit product kan zo niet worden geüpload.
