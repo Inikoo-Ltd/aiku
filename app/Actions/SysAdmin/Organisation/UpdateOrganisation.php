@@ -118,6 +118,12 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.e_invoicing.countries', array_values(array_unique(Arr::pull($modelData, 'e_invoice_countries') ?? [])));
         }
 
+        if (Arr::has($modelData, 'order_release')) {
+            $orderRelease = Arr::pull($modelData, 'order_release');
+            data_set($modelData, 'settings.order_release.except_countries', (bool)Arr::get($orderRelease, 'except_countries'));
+            data_set($modelData, 'settings.order_release.hold_countries', array_values(array_unique(Arr::get($orderRelease, 'countries') ?? [])));
+        }
+
         if (Arr::has($modelData, 'show_tax_liability_date')) {
             data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
         }
@@ -402,6 +408,10 @@ class UpdateOrganisation extends OrgAction
             'e_invoice_countries'                   => ['sometimes', 'nullable', 'array'],
             'e_invoice_starts_on'                   => ['sometimes', 'nullable', 'date'],
             'e_invoice_countries.*'                 => ['string', Rule::exists('countries', 'code')],
+            'order_release'                         => ['sometimes', 'array'],
+            'order_release.except_countries'        => ['required_with:order_release', 'boolean'],
+            'order_release.countries'               => ['present_with:order_release', 'nullable', 'array'],
+            'order_release.countries.*'             => ['string', Rule::exists('countries', 'code')],
             'google_drive_folder_key'               => ['sometimes', 'string'],
             'access_id'                             => ['sometimes', 'string', 'nullable'],
             'access_key'                            => ['sometimes', 'string', 'nullable'],

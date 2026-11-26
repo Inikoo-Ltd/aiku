@@ -344,6 +344,28 @@ class EditOrganisationSettings extends OrgAction
                             'fields' => $pickingFields,
                         ],
                         [
+                            'label' => __('Order release'),
+                            'icon' => 'fal fa-hand-paper',
+                            'fields' => [
+                                'order_release' => [
+                                    'type' => 'order_release',
+                                    'noSaveButton' => true,
+                                    'label' => __('Orders that wait for the office'),
+                                    'information' => __('A waiting order stays submitted instead of going to the warehouse, until someone in the office opens it and presses "Send to warehouse". No countries chosen: nothing waits.'),
+                                    'current' => $this->orderReleaseSummary($organisation),
+                                    'saveConfirmation' => [
+                                        'title' => __('Change which orders wait for the office?'),
+                                        'yesLabel' => __('Yes, I checked it, save'),
+                                    ],
+                                    'options' => Country::orderBy('name')->get(['code', 'name'])->map(fn (Country $country) => ['code' => $country->code, 'name' => $country->name]),
+                                    'value' => [
+                                        'except_countries' => (bool)Arr::get($organisation->settings, 'order_release.except_countries', false),
+                                        'countries' => Arr::get($organisation->settings, 'order_release.hold_countries') ?: [],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        [
                             'label' => __('Verba'),
                             'icon' => 'fal fa-comments',
                             'fields' => [
@@ -623,5 +645,25 @@ class EditOrganisationSettings extends OrgAction
             'gpsr_eu_responsible_organisation_id' => $responsibleField('eu', __('EU responsible person')),
             'gpsr_uk_responsible_organisation_id' => $responsibleField('uk', __('UK responsible person')),
         ];
+    }
+
+    /** What the warehouse does today, in plain words, so a wrong setting is seen before an order stops */
+    private function orderReleaseSummary(Organisation $organisation): string
+    {
+        $countryCodes = Arr::get($organisation->settings, 'order_release.hold_countries') ?: [];
+        $names        = Country::whereIn('code', $countryCodes)->orderBy('name')->pluck('name');
+        $countries    = $names->count() <= 10
+            ? $names->implode(', ')
+            : __(':countries + :count other countries', ['countries' => $names->take(10)->implode(', '), 'count' => $names->count() - 10]);
+
+        if (Arr::get($organisation->settings, 'order_release.except_countries', false)) {
+            return $countries
+                ? __('EVERY order waits for the office, except orders to :countries.', ['countries' => $countries])
+                : __('No order waits, every order goes to the warehouse.');
+        }
+
+        return $countries
+            ? __('Orders to :countries wait for the office, every other order goes to the warehouse.', ['countries' => $countries])
+            : __('No order waits, every order goes to the warehouse.');
     }
 }

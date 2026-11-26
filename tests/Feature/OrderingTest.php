@@ -4193,6 +4193,61 @@ test('fulfilment gate holds order from warehouse until released', function () {
         ->and(\App\Models\Dispatching\FulfilmentGateRelease::where('order_id', $order->id)->count())->toBe(1);
 });
 
+test('orders to an export country wait for the office before going to the warehouse', function () {
+    $originalSettings = $this->organisation->settings;
+
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+    StoreTransaction::make()->action($order, $this->product->historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 2]
+    ));
+    SubmitOrder::make()->action($order);
+    $order->refresh();
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, ['order_release' => ['except_countries' => false, 'countries' => [$order->deliveryAddress->country_code]]]);
+    $order->unsetRelation('organisation');
+
+    expect(SendOrderToWarehouse::make()->action($order, []))->toBeNull();
+    $order->refresh();
+    expect($order->state)->toEqual(OrderStateEnum::SUBMITTED)
+        ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toContain($order->deliveryAddress->country_code);
+
+    SendOrderToWarehouse::run($order, ['warehouse_id' => $this->warehouse->id]);
+    expect($order->refresh()->state)->toEqual(OrderStateEnum::SUBMITTED);
+
+    patch(route('grp.models.order.state.in-warehouse', $order->id))->assertSessionHasNoErrors();
+    $order->refresh();
+
+    expect($order->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and(SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toBeNull()
+        ->and($order->data['office_released_country'] ?? null)->toBe($order->deliveryAddress->country_code);
+
+    \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->refresh(), ['order_release' => ['except_countries' => true, 'countries' => [$order->deliveryAddress->country_code]]]);
+    $domestic = StoreOrder::make()->action($this->customer, array_merge(Order::factory()->definition(), [
+        'billing_address'  => new Address(Address::factory()->definition()),
+        'delivery_address' => new Address(array_merge(Address::factory()->definition(), ['country_id' => $order->deliveryAddress->country_id])),
+    ]));
+    StoreTransaction::make()->action($domestic, $this->product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    SubmitOrder::make()->action($domestic);
+    $domestic->refresh();
+    SendOrderToWarehouse::make()->action($domestic, []);
+
+    expect($domestic->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
+
+    $this->withoutVite();
+    get(route('grp.org.settings.edit', $this->organisation->slug))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->contains(
+            fn ($section) => str_starts_with((string)data_get($section, 'fields.order_release.current'), 'EVERY order waits for the office, except orders to ')
+                && data_get($section, 'fields.order_release.value.except_countries') === true
+        )));
+
+    $this->organisation->update(['settings' => $originalSettings]);
+});
+
 test('fulfilment gate lets paid fully coverable order straight to warehouse', function () {
     $this->organisation->update(['settings' => array_merge($this->organisation->settings, ['fulfilment_gate' => true])]);
 

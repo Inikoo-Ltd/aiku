@@ -48,7 +48,7 @@ class SendUnpaidOrderToWarehouse extends OrgAction
                 ])->filter()->implode("\n"),
             ]);
 
-            return SendOrderToWarehouse::make()->action($order->refresh(), []);
+            return SendOrderToWarehouse::make()->action($order->refresh(), [], officeRelease: true);
         });
     }
 

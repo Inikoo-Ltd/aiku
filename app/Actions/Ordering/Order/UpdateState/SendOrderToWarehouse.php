@@ -68,6 +68,9 @@ class SendOrderToWarehouse extends OrgAction
 
     private bool $releaseFromGate = false;
 
+    /** Staff pressed a send to warehouse button: that is the office approval of a held export order (HELP-4961) */
+    private bool $officeRelease = false;
+
     /** Set from the "send it anyway" button: the customer could not be reached for an address */
     private bool $withoutAnAddress = false;
 
@@ -154,6 +157,59 @@ class SendOrderToWarehouse extends OrgAction
         return true;
     }
 
+    /**
+     * HELP-4961. Export orders that fail the office checks used to be picked and then cancelled. Orders to the
+     * countries in the organisation settings wait in submitted; the office releases them with "Send to warehouse".
+     */
+    private function awaitingOfficeApproval(Order $order): bool
+    {
+        $countryCode = $this->officeApprovalCountry($order);
+        if (!$countryCode || Arr::get($order->data, 'office_released_country') === $countryCode) {
+            return false;
+        }
+
+        $note = collect([
+            self::withoutHeldNote($order->private_warehouse_note),
+            self::HELD_MARKER.' '.__('export to :country, the office must check it and send it to the warehouse', ['country' => $countryCode]),
+        ])->filter()->implode(' — ');
+
+        if ($note !== $order->private_warehouse_note) {
+            $this->update($order, ['private_warehouse_note' => $note]);
+        }
+
+        return true;
+    }
+
+    /** The delivery country when the organisation makes orders to it wait for the office, otherwise null */
+    private function officeApprovalCountry(Order $order): ?string
+    {
+        if ($this->dispatcher || $this->releaseFromGate) {
+            return null;
+        }
+
+        $countryCodes = Arr::get($order->organisation->settings, 'order_release.hold_countries') ?: [];
+        $countryCode  = $order->deliveryAddress?->country_code;
+        if (!$countryCodes || !$countryCode || in_array($countryCode, $countryCodes, true) === (bool)Arr::get($order->organisation->settings, 'order_release.except_countries', false)) {
+            return null;
+        }
+
+        return $countryCode;
+    }
+
+    /** Recorded before any other hold, so an order the office released is not held for it again once filling or an address clears; a new delivery country needs a new release */
+    private function recordOfficeRelease(Order $order): void
+    {
+        $countryCode = $this->officeApprovalCountry($order);
+        if (!$this->officeRelease || !$countryCode || Arr::get($order->data, 'office_released_country') === $countryCode) {
+            return;
+        }
+
+        $this->update($order, ['data' => array_merge($order->data ?? [], [
+            'office_released_country' => $countryCode,
+            'office_released_at'      => now()->toIso8601String(),
+        ])]);
+    }
+
     /** Why the order is held, read from its warehouse note: "waiting for filling: FOKG-160-10ml" */
     public static function heldReason(?string $note): ?string
     {
@@ -233,7 +289,9 @@ class SendOrderToWarehouse extends OrgAction
         }
 
 
-        if ($this->missingAddress($order) || $this->missingComposition($order) || $this->waitingForFilling($order)) {
+        $this->recordOfficeRelease($order);
+
+        if ($this->missingAddress($order) || $this->missingComposition($order) || $this->waitingForFilling($order) || $this->awaitingOfficeApproval($order)) {
             return null;
         }
 
@@ -452,7 +510,7 @@ class SendOrderToWarehouse extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Order $order, array $modelData, bool $releaseFromGate = false, bool $withoutAnAddress = false, ?Organisation $dispatcher = null): ?DeliveryNote
+    public function action(Order $order, array $modelData, bool $releaseFromGate = false, bool $withoutAnAddress = false, ?Organisation $dispatcher = null, bool $officeRelease = false): ?DeliveryNote
     {
         $this->dispatcher       = $dispatcher?->id === $order->organisation_id ? null : $dispatcher;
         if ($this->dispatcher) {
@@ -461,6 +519,7 @@ class SendOrderToWarehouse extends OrgAction
         $this->asAction         = true;
         $this->releaseFromGate  = $releaseFromGate;
         $this->withoutAnAddress = $withoutAnAddress;
+        $this->officeRelease    = $officeRelease;
         $this->order            = $order;
         $this->initialisationFromShop($order->shop, $modelData);
 
@@ -472,7 +531,8 @@ class SendOrderToWarehouse extends OrgAction
      */
     public function asController(Order $order, ActionRequest $request): ?DeliveryNote
     {
-        $this->order = $order;
+        $this->order         = $order;
+        $this->officeRelease = true;
         $this->initialisationFromShop($order->shop, $request);
 
         $this->withoutAnAddress = (bool)Arr::pull($this->validatedData, 'without_an_address', false);
@@ -521,7 +581,8 @@ class SendOrderToWarehouse extends OrgAction
      */
     public function asCommand(Command $command): int
     {
-        $order = Order::where('slug', $command->argument('order'))->firstOrFail();
+        $order               = Order::where('slug', $command->argument('order'))->firstOrFail();
+        $this->officeRelease = true;
 
         $this->handle($order, [
             'warehouse_id' => $order->organisation->warehouses()->first()->id
