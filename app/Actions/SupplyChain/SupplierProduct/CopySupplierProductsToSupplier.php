@@ -394,14 +394,14 @@ class CopySupplierProductsToSupplier extends OrgAction
     }
 
     /**
-     * @return array<int, array{id: int, agent_id: int, label: string, number_products: int, company_name: string|null, contact_name: string|null}>
+     * @return array<int, array{id: int, agent_id: int, code: string, label: string, nickname: string|null, number_products: int, company_name: string|null, contact_name: string|null, product_codes: string}>
      */
     public function getCopyTargetsProps(Supplier $supplier, ?User $user): array
     {
         $agentIds             = $this->getAccessibleAgents($user)->pluck('id');
         $includeFreeSuppliers = !$supplier->agent_id && $this->canEditFreeSuppliers($user);
 
-        return Supplier::where('group_id', $supplier->group_id)
+        $targets = Supplier::where('group_id', $supplier->group_id)
             ->where(function ($query) use ($agentIds, $includeFreeSuppliers) {
                 $query->whereIn('agent_id', $agentIds);
 
@@ -413,14 +413,24 @@ class CopySupplierProductsToSupplier extends OrgAction
             ->where('id', '!=', $supplier->id)
             ->withCount('supplierProducts')
             ->orderBy('code')
-            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name'])
+            ->get(['id', 'agent_id', 'code', 'name', 'company_name', 'contact_name']);
+
+        $productCodesBySupplier = SupplierProduct::whereIn('supplier_id', $targets->pluck('id'))
+            ->groupBy('supplier_id')
+            ->selectRaw("supplier_id, string_agg(code, ' ' order by code) as product_codes")
+            ->pluck('product_codes', 'supplier_id');
+
+        return $targets
             ->map(fn (Supplier $target) => [
                 'id'              => $target->id,
                 'agent_id'        => $target->agent_id ?? self::FREE_SUPPLIERS_KEY,
+                'code'            => $target->code,
                 'number_products' => $target->supplier_products_count,
-                'label'           => $target->name && $target->name !== $target->code ? $target->code.' — '.$target->name : $target->code,
+                'label'           => $target->code.' — '.($target->nickname() ?? $target->officialName()),
+                'nickname'        => $target->nickname(),
                 'company_name'    => $target->company_name,
                 'contact_name'    => $target->contact_name,
+                'product_codes'   => $productCodesBySupplier->get($target->id, ''),
             ])
             ->all();
     }

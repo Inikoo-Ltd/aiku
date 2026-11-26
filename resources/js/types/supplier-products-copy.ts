@@ -19,8 +19,13 @@ export interface CopyProducts {
 export interface CopyTarget {
 	id: number
 	agent_id: number
+	code: string
 	label: string
+	nickname: string | null
 	number_products: number
 	company_name: string | null
 	contact_name: string | null
+	product_codes: string
 }
+
+export const copyTargetFilterFields = ["code", "nickname", "company_name", "contact_name", "product_codes"]

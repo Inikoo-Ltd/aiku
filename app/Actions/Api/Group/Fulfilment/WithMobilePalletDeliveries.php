@@ -165,8 +165,36 @@ trait WithMobilePalletDeliveries
             'services'                => $this->palletDeliveryTransactions($palletDelivery, FulfilmentTransactionTypeEnum::SERVICE),
             'physical_goods'          => $this->palletDeliveryTransactions($palletDelivery, FulfilmentTransactionTypeEnum::PRODUCT),
             'finish_booking_blocked'  => $canEditShop ? $blockedBy : null,
-            'available_actions'       => $canEditShop ? $this->palletDeliveryActions($palletDelivery, $isBookingIn && $blockedBy === null) : [],
+            'available_actions'       => [
+                ...($canEditShop ? $this->palletDeliveryActions($palletDelivery, $isBookingIn && $blockedBy === null) : []),
+                ...($canBookIn ? $this->notReceivedDeliveryActions($palletDelivery, $pallets) : []),
+            ],
         ];
+    }
+
+    /**
+     * @param EloquentCollection<int, Pallet> $pallets
+     * @return array<int, array{key: string, label: string}>
+     */
+    protected function notReceivedDeliveryActions(PalletDelivery $palletDelivery, EloquentCollection $pallets): array
+    {
+        $count = $pallets->filter(fn (Pallet $pallet) => $this->palletCanBeSetAsNotReceived($palletDelivery, $pallet))->count();
+
+        return $count > 0
+            ? [$this->actionOption('not_received_remaining', trans_choice('Not received (:count pallet)|Not received (:count pallets)', $count, ['count' => $count]))]
+            : [];
+    }
+
+    /**
+     * @return EloquentCollection<int, Pallet>
+     */
+    protected function palletsThatCanBeSetAsNotReceived(PalletDelivery $palletDelivery): EloquentCollection
+    {
+        return Pallet::query()
+            ->where('pallet_delivery_id', $palletDelivery->id)
+            ->get()
+            ->filter(fn (Pallet $pallet) => $this->palletCanBeSetAsNotReceived($palletDelivery, $pallet))
+            ->values();
     }
 
     protected function palletDeliveryDate(mixed $value): ?string

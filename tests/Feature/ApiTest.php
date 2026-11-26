@@ -69,6 +69,8 @@ use Laravel\Sanctum\Sanctum;
 use PragmaRX\Google2FAQRCode\Google2FA;
 use App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock;
 use RuntimeException;
+use App\Models\Helpers\Ticket;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\get;
@@ -1445,6 +1447,40 @@ test('the app profile shows the Aiku account language and the app can change it'
     patchJson(route('grp.api.mobile.profile.language'), ['language' => 'zh-Hans'], ['X-Aiku-App-Key' => 'mobile-test-key'])
         ->assertOk()
         ->assertJsonPath('data.language.code', 'zh-Hans');
+});
+
+test('report a problem from the app raises a HELP ticket for the user with what the app adds', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Queue::fake();
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key', 'X-Aiku-App-Version' => '0.1.0 (12)', 'X-Aiku-Platform' => 'android'];
+
+    $reference = postJson(route('grp.api.mobile.tickets.store'), [
+        'category'          => 'app_error',
+        'details'           => "The pallets list stays empty\nafter pulling down",
+        'screen'            => 'Stored pallets',
+        'error_code'        => 'AIKU-APP-002',
+        'support_reference' => '0a1b2c3d4e5f60718293a4b5c6d7e8f9',
+    ], $headers)
+        ->assertCreated()
+        ->json('data.reference');
+
+    $ticket = Ticket::where('reference', $reference)->firstOrFail();
+
+    expect($reference)->toStartWith('HELP-')
+        ->and($ticket->reporter_type)->toBe('User')
+        ->and($ticket->reporter_id)->toBe($user->id)
+        ->and($ticket->kind?->value)->toBe('bug')
+        ->and($ticket->subject)->toBe('App error: The pallets list stays empty after pulling down')
+        ->and($ticket->description)->toContain("The pallets list stays empty\nafter pulling down\n\n---\nSent from the staff app (android · 0.1.0 (12))")
+        ->and($ticket->description)->toContain('Screen: Stored pallets')
+        ->and($ticket->description)->toContain('Error code: AIKU-APP-002')
+        ->and($ticket->description)->toContain('Support reference: 0a1b2c3d4e5f60718293a4b5c6d7e8f9');
+
+    postJson(route('grp.api.mobile.tickets.store'), ['category' => 'nope', 'details' => '', 'error_code' => 'E-42'], $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['category', 'details', 'error_code']);
 });
 
 test('the app cannot set a language the web does not offer', function () {

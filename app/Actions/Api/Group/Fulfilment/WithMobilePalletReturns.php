@@ -13,6 +13,7 @@ use App\Actions\Api\Group\GoodsOut\WithMobilePrinters;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnAttachmentScopeEnum;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Fulfilment\PalletReturn;
+use App\Models\Helpers\Address;
 use App\Models\Fulfilment\PalletReturnItem;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
@@ -213,6 +214,7 @@ trait WithMobilePalletReturns
             'customer'                => $this->customerReference($palletReturn->fulfilmentCustomer),
             'is_collection'           => (bool) $palletReturn->is_collection,
             'collection_notes'        => $palletReturn->collection_notes,
+            'leaving'                 => $this->leaving($palletReturn, $user),
             'customer_notes'          => $palletReturn->customer_notes,
             'public_notes'            => $palletReturn->public_notes,
             'internal_notes'          => $palletReturn->internal_notes,
@@ -232,6 +234,42 @@ trait WithMobilePalletReturns
             'can_scan'                => $this->canScanToPick($warehouse, $palletReturn, $user, $inPickingSession),
             'available_actions'       => $this->palletReturnActions($warehouse, $palletReturn, $user, $lines, $inserts, $dispatchBlocked, $inPickingSession),
         ];
+    }
+
+    /**
+     * @return array{delivery_address: array<int, string>|null, can_set_collection: bool, can_set_shipment: bool}
+     */
+    protected function leaving(PalletReturn $palletReturn, User $user): array
+    {
+        $isCollection = (bool) $palletReturn->is_collection;
+
+        return [
+            'delivery_address'   => $isCollection ? null : $this->addressLines($palletReturn->deliveryAddress),
+            'can_set_collection' => !$isCollection && self::canSetPalletReturnAsCollection($user, $palletReturn),
+            'can_set_shipment'   => self::canSetPalletReturnDeliveryAddress($user, $palletReturn),
+        ];
+    }
+
+    public static function canSetPalletReturnAsCollection(User $user, PalletReturn $palletReturn): bool
+    {
+        return $user->authTo(["fulfilment-shop.$palletReturn->fulfilment_id.edit", "supervisor-fulfilment-shop.$palletReturn->fulfilment_id"]);
+    }
+
+    public static function canSetPalletReturnDeliveryAddress(User $user, PalletReturn $palletReturn): bool
+    {
+        return $user->authTo("fulfilment-shop.$palletReturn->fulfilment_id.edit");
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    protected function addressLines(?Address $address): ?array
+    {
+        if (!$address) {
+            return null;
+        }
+
+        return collect(explode("\n", (string) $address->formatted_address))->map(fn (string $line) => trim($line))->filter()->values()->all();
     }
 
     /**

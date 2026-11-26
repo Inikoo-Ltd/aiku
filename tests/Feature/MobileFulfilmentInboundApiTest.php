@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use App\Models\Fulfilment\PalletDelivery;
 
 require_once __DIR__.'/../Support/MobileFulfilmentInboundHelpers.php';
 
@@ -187,7 +188,7 @@ test('mobile pallet delivery detail sends no money, orders pallets to book in fi
             [['key' => 'book_in', 'label' => 'Change location']],
             [],
         ])
-        ->and($clerkView['available_actions'])->toBe([])
+        ->and($clerkView['available_actions'])->toBe([['key' => 'not_received_remaining', 'label' => 'Not received (1 pallet)']])
         ->and($clerkView['finish_booking_blocked'])->toBeNull();
 
     mobileFulInboundShopClerk($this);
@@ -214,7 +215,7 @@ test('mobile pallet delivery detail sends no money, orders pallets to book in fi
 
     expect($actionsOf($confirmed)['available_actions'])->toBe([['key' => 'receive', 'label' => 'Mark as received']])
         ->and($actionsOf($confirmed)['pallets'][0]['available_actions'])->toBe([])
-        ->and($actionsOf($received)['available_actions'])->toBe([['key' => 'start_booking', 'label' => 'Start booking in']])
+        ->and($actionsOf($received)['available_actions'])->toBe([['key' => 'start_booking', 'label' => 'Start booking in'], ['key' => 'not_received_remaining', 'label' => 'Not received (2 pallets)']])
         ->and($actionsOf($received)['pallets'][0]['available_actions'])->toBe([['key' => 'not_received', 'label' => 'Not received']]);
 
     SetPalletAsNotReceived::make()->action(mobileFulInboundPallets($received)[0]);
@@ -516,7 +517,7 @@ test('mobile pallet page lists stored items with items storage and actions by st
         ->and(collect($plain['available_actions'])->pluck('key')->all())->toBe(['move', 'damaged', 'lost']);
 
     SetPalletAsDamaged::make()->action($noItemsStorage, ['message' => null]);
-    expect($show($noItemsStorage)->json('data.available_actions'))->toBe([]);
+    expect($show($noItemsStorage)->json('data.available_actions'))->toBe([['key' => 'back_to_storing', 'label' => 'Set back to storing']]);
 
     $show(mobileFulInboundStoredPallet(mobileFulInboundCustomer($this->fulfilment), mobileFulInboundOtherWarehouse($this->organisation)))->assertNotFound();
 
@@ -554,6 +555,52 @@ test('mobile move needs a stored pallet and a pallet location, and locations edi
     $move(['location_id' => $from->id], $incident)->assertUnprocessable()->assertJsonPath('errors.state.0', 'Only a stored pallet can be moved.');
 });
 
+test('mobile not received for a whole delivery sets every pallet still to book in, and the delivery follows the web rule', function () {
+    $delivery = mobileFulInboundReceived(mobileFulInboundDelivery(mobileFulInboundCustomer($this->fulfilment), $this->warehouse, [[], []]));
+    $post     = fn (PalletDelivery $target) => mobileFulInboundPost('pallet_deliveries.not_received', ['warehouse' => $this->warehouse->id, 'palletDelivery' => $target->id]);
+    $show     = fn (PalletDelivery $target) => mobileFulInboundGet('pallet_deliveries.show', ['warehouse' => $this->warehouse->id, 'palletDelivery' => $target->id]);
+
+    mobileFulInboundShopClerk($this);
+    expect(collect($show($delivery)->json('data.available_actions'))->pluck('key'))->not->toContain('not_received_remaining');
+    $post($delivery)->assertForbidden();
+
+    mobileFulInboundUser($this);
+    expect(collect($show($delivery)->json('data.available_actions'))->last())->toBe(['key' => 'not_received_remaining', 'label' => 'Not received (2 pallets)']);
+
+    $post($delivery)->assertOk()->assertJsonPath('result', ['status' => 'done', 'message' => '2 pallets set as not received.']);
+    expect(collect(mobileFulInboundPallets($delivery))->map(fn (Pallet $pallet) => $pallet->refresh()->state)->unique()->all())->toBe([PalletStateEnum::NOT_RECEIVED])
+        ->and($delivery->refresh()->state)->toBe(PalletDeliveryStateEnum::NOT_RECEIVED);
+    $post($delivery)->assertUnprocessable()->assertJsonPath('errors.state.0', 'No pallet of this delivery can be set as not received now.');
+
+    $bookingIn = mobileFulInboundBookingIn(mobileFulInboundDelivery(mobileFulInboundCustomer($this->fulfilment), $this->warehouse, [[], []]));
+    [$booked, $missing] = mobileFulInboundPallets($bookingIn);
+    BookInPallet::make()->action($booked, ['location_id' => mobileFulInboundLocation($this->warehouse)->id]);
+
+    $post($bookingIn)->assertOk()->assertJsonPath('result.message', '1 pallet set as not received.');
+    expect($missing->refresh()->state)->toBe(PalletStateEnum::NOT_RECEIVED)
+        ->and($booked->refresh()->state)->toBe(PalletStateEnum::BOOKED_IN)
+        ->and($bookingIn->refresh()->state)->toBe(PalletDeliveryStateEnum::BOOKING_IN);
+});
+
+test('mobile set back to storing is offered on an incident pallet to the warehouse right only', function () {
+    $pallet = mobileFulInboundStoredPallet(mobileFulInboundCustomer($this->fulfilment), $this->warehouse, mobileFulInboundLocation($this->warehouse));
+    $post   = fn () => mobileFulInboundPost('pallets.back_to_storing', ['warehouse' => $this->warehouse->id, 'pallet' => $pallet->id]);
+
+    mobileFulInboundUser($this);
+    $post()->assertUnprocessable()->assertJsonPath('errors.state.0', 'Only a pallet with an incident can be set back to storing.');
+
+    SetPalletAsDamaged::make()->action($pallet, ['message' => 'Forklift']);
+
+    mobileFulInboundShopClerk($this);
+    $post()->assertForbidden();
+
+    mobileFulInboundUser($this);
+    $post()->assertOk()
+        ->assertJsonPath('result', ['status' => 'done', 'message' => 'Pallet set back to storing.'])
+        ->assertJsonPath('data.status', 'storing');
+    expect($pallet->refresh()->status)->toBe(PalletStatusEnum::STORING);
+});
+
 test('mobile incident sets a stored pallet damaged or lost with the user as reporter', function () {
     $location = mobileFulInboundLocation($this->warehouse);
     $customer = mobileFulInboundCustomer($this->fulfilment);
@@ -572,7 +619,7 @@ test('mobile incident sets a stored pallet damaged or lost with the user as repo
     expect($damaged->json('result'))->toBe(['status' => 'done', 'message' => 'Pallet set as damaged.'])
         ->and($damaged->json('data.status'))->toBe('incident')
         ->and($damaged->json('data.location'))->toBeNull()
-        ->and($damaged->json('data.available_actions'))->toBe([])
+        ->and($damaged->json('data.available_actions'))->toBe([['key' => 'back_to_storing', 'label' => 'Set back to storing']])
         ->and($damaged->json('data.incident'))->toMatchArray(['state' => 'damaged', 'message' => 'Forklift', 'reporter' => ['id' => $user->id, 'name' => $user->contact_name ?? $user->username]])
         ->and($pallet->refresh()->incident_report->reporter_id)->toBe($user->id)
         ->and(mobileFulInboundLocationPallets($location))->toBe(1);

@@ -312,6 +312,10 @@ trait WithMobileStoredPallets
      */
     protected function palletActions(Warehouse $warehouse, Pallet $pallet, User $user, bool $itemsStorage, bool $hasOpenAudit): array
     {
+        if ($pallet->status === PalletStatusEnum::INCIDENT) {
+            return static::canEditFulfilmentWarehouse($user, $warehouse) ? [$this->actionOption('back_to_storing', __('Set back to storing'))] : [];
+        }
+
         if ($pallet->status !== PalletStatusEnum::STORING) {
             return [];
         }
