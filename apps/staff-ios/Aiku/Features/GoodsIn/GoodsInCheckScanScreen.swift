@@ -246,7 +246,7 @@ private struct GoodsInCheckScanContent: View {
                     .accessibilityIdentifier("goodsIn.checkScan.setQuantity")
                 }
             }
-            AikuButton("Done · back to items", icon: .check) { router.back() }
+            AikuButton("Done · back to items", icon: .check, kind: .tertiary) { router.back() }
                 .accessibilityIdentifier("goodsIn.checkScan.done")
         }
         .padding(.horizontal, 16)

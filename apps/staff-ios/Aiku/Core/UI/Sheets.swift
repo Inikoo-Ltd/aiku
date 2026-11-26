@@ -95,9 +95,10 @@ private struct FittedSheet<SheetContent: View>: View {
 extension View {
     func aikuSheet<SheetContent: View>(
         isPresented: Binding<Bool>,
+        onDismiss: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> SheetContent
     ) -> some View {
-        sheet(isPresented: isPresented) {
+        sheet(isPresented: isPresented, onDismiss: onDismiss) {
             FittedSheet { content() }
         }
     }

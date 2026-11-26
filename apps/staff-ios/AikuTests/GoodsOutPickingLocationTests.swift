@@ -240,6 +240,33 @@ struct GoodsOutPickingLocationTests {
         #expect(await calls.noteLoads == [501])
     }
 
+    @Test func theSharedSheetSendsOnlyTheChangedDefaultsOutsideAnyDeliveryNote() async throws {
+        let locations = try mapped()
+        var sent: [GoodsOutPickingLocationUpdate] = []
+
+        let unchanged = await locations.send(GoodsOutPickingDefaults(wholesale: 91)) { sent.append(GoodsOutPickingLocationUpdate(linkID: $0, body: $1)) }
+        let saved = await locations.send(GoodsOutPickingDefaults(wholesale: 90)) { sent.append(GoodsOutPickingLocationUpdate(linkID: $0, body: $1)) }
+
+        #expect(unchanged.outcome == .unchanged)
+        #expect(unchanged.hasChangedAny == false)
+        #expect(saved.outcome == .saved)
+        #expect(saved.hasChangedAny)
+        #expect(sent == [GoodsOutPickingLocationUpdate(linkID: 90, body: MobileLocationOrgStockPickingDefaults(setAsPriorityWholesale: true))])
+    }
+
+    @Test func aRefusalAfterAnEarlierSaveTellsTheCallerToReload() async throws {
+        let locations = try mapped()
+        var attempts = 0
+
+        let result = await locations.send(GoodsOutPickingDefaults(wholesale: 90, dropshipping: 91)) { _, _ in
+            attempts += 1
+            if attempts == 2 { throw APIError.rejected(message: "No rights") }
+        }
+
+        #expect(result.outcome == .failed(message: "No rights"))
+        #expect(result.hasChangedAny)
+    }
+
     @Test func sampleNotesStillChangeTheLocationLocally() throws {
         let store = GoodsOutStore()
         let note = try #require(store.notes.first { $0.state == .todo && !$0.lines.isEmpty })

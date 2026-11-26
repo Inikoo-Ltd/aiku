@@ -489,7 +489,7 @@ private struct PalletDeliveryScreen: View {
             .disabled(live.isWorking)
             .accessibilityIdentifier("fulfilment.delivery.startBookingIn")
         case .finish(let action):
-            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key), isLoading: live.isWorking(on: "finish_booking")) {
+            AikuButton(action.label.isEmpty ? "Set as booked in" : action.label, look: FulfilmentInboundActionLooks.look(for: action.key).inFooter(isFirst: live.openPallet == nil), isLoading: live.isWorking(on: "finish_booking")) {
                 confirm = .finish
             }
             .disabled(live.isWorking)

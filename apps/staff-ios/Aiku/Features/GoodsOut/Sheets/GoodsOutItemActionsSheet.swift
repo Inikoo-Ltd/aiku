@@ -10,6 +10,7 @@ struct GoodsOutItemActionsSheet: View {
     private let store = GoodsOutStore.shared
     @State private var reason: GoodsOutNotPickedReason = .outOfStock
     @State private var amount = 1
+    @State private var isChoosingNotPicked = false
 
     private var canEdit: Bool { note.canWorkLines }
     private var settings: GoodsOutPickingSettings? { note.remote?.settings }
@@ -87,13 +88,25 @@ struct GoodsOutItemActionsSheet: View {
 
     @ViewBuilder
     private var notPickedSection: some View {
+        if isChoosingNotPicked {
+            notPickedReasons
+        } else {
+            AikuButton("Not picked", kind: .danger) {
+                isChoosingNotPicked = true
+            }
+            .accessibilityIdentifier("goodsOut.notPicked")
+        }
+    }
+
+    @ViewBuilder
+    private var notPickedReasons: some View {
         SheetSectionLabel("Not picked · reason")
         ForEach(GoodsOutNotPickedReason.allCases, id: \.self) { option in
             RadioCard(option.title, isSelected: reason == option) {
                 reason = option
             }
         }
-        AikuButton(L10n.format("Mark %lld as not picked", line.remaining), kind: .danger, isLoading: isWorking) {
+        AikuButton(L10n.format("Mark %lld as not picked", line.remaining), look: AikuButtonLook(.dangerStrong, icon: .xCircle), isLoading: isWorking) {
             if let lineID = line.apiID {
                 let action = GoodsOutNoteAction.notPicked(line: lineID, quantity: nil, reason: GoodsOutMapper.reasonKey(reason), note: nil)
                 GoodsOutRun.action(action, on: note.reference, fallback: notPickedMessage, toasts: toasts) { close() }

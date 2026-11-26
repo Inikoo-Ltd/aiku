@@ -315,7 +315,7 @@ private struct GoodsInReturnItemCard: View {
                     .frame(minHeight: 44)
                 }
                 if canPutBack {
-                    AikuButton("Back to stock", look: GoodsInActionKey.look(for: GoodsInActionKey.putBack), size: .regular) {
+                    AikuButton("Back to stock", look: GoodsInActionKey.look(for: GoodsInActionKey.putBack).inFooter(isFirst: false), size: .regular) {
                         onAction(.backToStock)
                     }
                     .accessibilityIdentifier("goodsIn.return.backToStock.\(item.id)")

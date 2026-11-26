@@ -392,6 +392,33 @@ struct InventoryLiveTests {
         #expect(InventoryLive.reasonChoices(reasons, change: 0).isEmpty)
     }
 
+    @Test func reasonsLoadedOnOneSkoStillWorkOfflineOnAnotherAsOnAndroid() async throws {
+        let reasons = MobileStockMovementReasons(
+            increase: [MobileStockMovementReasonOption(value: "count_gain", label: "Count Gain")],
+            decrease: [MobileStockMovementReasonOption(value: "count_short", label: "Count Shortage")]
+        )
+        let memory = StockMovementReasonsMemory()
+        let online = InventorySkoFeed(warehouseID: 4, target: .id(1), canEditStocks: true, service: InventoryService(reasons: { reasons }), reasonsMemory: memory)
+        let offline = InventorySkoFeed(warehouseID: 4, target: .id(2), canEditStocks: true, service: InventoryService(reasons: { throw APIError.offline }), reasonsMemory: memory)
+
+        await online.loadReasons()
+        await offline.loadReasons()
+
+        #expect(memory.reasons == reasons)
+        #expect(offline.reasons == reasons)
+        #expect(offline.reasonsError == nil)
+        #expect(offline.reasonChoices(change: 1).map(\.title) == ["Count Gain"])
+    }
+
+    @Test func withoutReasonsLoadedOnceAnOfflineAuditStillAsksForAConnection() async throws {
+        let feed = InventorySkoFeed(warehouseID: 4, target: .id(2), canEditStocks: true, service: InventoryService(reasons: { throw APIError.offline }), reasonsMemory: StockMovementReasonsMemory())
+
+        await feed.loadReasons()
+
+        #expect(feed.reasons == nil)
+        #expect(feed.reasonsError != nil)
+    }
+
     @Test func movementsFilterByFlowAndReadAsRows() async throws {
         let page = try decode(MobileOrgStockMovementsPage.self, #"{"data":[{"id":9,"date":"2026-11-16T10:22:00+00:00","type":"audit","type_label":"Audit","flow":"audit","quantity":-2,"quantity_label":"-2","running_quantity_org_stock":98,"location":{"id":1,"code":"8v5"},"reason":"damaged","reason_label":"Damaged","note":null,"parent_reference":null,"user":{"id":3,"name":"Jo K."}}],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":1}}"#)
         let calls = Calls()

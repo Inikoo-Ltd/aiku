@@ -97,7 +97,7 @@ struct GoodsOutScanToPickView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            AikuButton(L10n.format("Pick all %lld", line.remaining), icon: .check, isLoading: store.isWorking(on: note.reference)) {
+            AikuButton(L10n.format("Pick all %lld", line.remaining), icon: .checkDouble, kind: .secondary, isLoading: store.isWorking(on: note.reference)) {
                 amount = 1
                 if let lineID = line.apiID {
                     GoodsOutRun.action(.pickAll(line: lineID, locationOrgStockID: line.defaultStockLocation?.locationOrgStockID), on: note.reference, fallback: L10n.format("%@ picked ×%lld", line.sko, line.remaining), toasts: toasts)
@@ -116,7 +116,7 @@ struct GoodsOutScanToPickView: View {
                     .frame(maxWidth: .infinity)
                     .accessibilityLabel("Amount \(pickAmount)")
                 stepButton("+", label: "More", isEnabled: pickAmount < line.remaining) { amount = pickAmount + 1 }
-                AikuButton(L10n.format("Pick %lld", pickAmount), kind: .tertiary, size: .regular) {
+                AikuButton(L10n.format("Pick %lld", pickAmount), kind: .primary, size: .regular) {
                     amount = 1
                     if let lineID = line.apiID {
                         guard let location = line.defaultStockLocation?.locationOrgStockID else {
@@ -142,7 +142,7 @@ struct GoodsOutScanToPickView: View {
                 title: note.state == .picking ? "Every line handled" : "Nothing to pick",
                 detail: "Go back to the delivery note to carry on."
             )
-            AikuButton("Back to delivery note", kind: .secondary) {
+            AikuButton("Back to delivery note", kind: .tertiary) {
                 router.back()
             }
         }

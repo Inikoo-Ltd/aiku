@@ -88,13 +88,9 @@ struct SystemConflictResolveView: View {
         } footer: {
             if entry.isOpen, !entry.allowedResolutions.isEmpty {
                 VStack(spacing: 8) {
-                    ForEach(entry.allowedResolutions, id: \.self) { resolution in
-                        AikuButton(
-                            resolution.label,
-                            icon: resolution == entry.allowedResolutions.first ? .check : nil,
-                            kind: resolution == entry.allowedResolutions.first ? .primary : .tertiary,
-                            isLoading: store.workingOn == id
-                        ) {
+                    ForEach(OfflineResolution.footerButtons(entry.allowedResolutions), id: \.resolution) { button in
+                        let resolution = button.resolution
+                        AikuButton(resolution.label, look: button.look, isLoading: store.workingOn == id) {
                             Task { await resolve(id, with: resolution) }
                         }
                         .accessibilityIdentifier("system.resolve.\(resolution.rawValue)")
@@ -290,4 +286,26 @@ struct SystemConflictResolveView: View {
 
     private static let differenceColumnWidth: CGFloat = 70
     private static let noValue = "–"
+}
+
+extension OfflineResolution {
+    static let footerOrder: [OfflineResolution] = [.retry, .recount, .putBack, .done, .keepCount, .discard]
+
+    var look: AikuButtonLook {
+        switch self {
+        case .retry: AikuButtonLook(.primary, icon: .retry)
+        case .recount, .putBack: AikuButtonLook(.primary)
+        case .done: AikuButtonLook(.finish)
+        case .keepCount: AikuButtonLook(.caution)
+        case .discard: AikuButtonLook(.danger)
+        }
+    }
+
+    static func footerButtons(_ allowed: [OfflineResolution]) -> [(resolution: OfflineResolution, look: AikuButtonLook)] {
+        let ordered = allowed.sorted { (footerOrder.firstIndex(of: $0) ?? 0) < (footerOrder.firstIndex(of: $1) ?? 0) }
+        let mainIndex = ordered.firstIndex { $0.look.kind == .primary || $0.look.kind == .finish }
+        return ordered.enumerated().map { index, resolution in
+            (resolution, resolution.look.inFooter(isFirst: index == mainIndex))
+        }
+    }
 }
