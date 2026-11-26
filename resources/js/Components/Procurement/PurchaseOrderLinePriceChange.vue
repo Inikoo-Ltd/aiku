@@ -364,6 +364,15 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<div v-else class="space-y-3 text-sm">
+				<div class="flex items-center gap-3">
+					<div class="h-24 w-24 flex-none overflow-hidden rounded border border-gray-100">
+						<Image :src="item.image_preview ?? item.image_thumbnail" imageCover class="h-24 w-24" />
+					</div>
+					<div class="min-w-0">
+						<div class="whitespace-nowrap font-semibold">{{ item.code }}</div>
+						<div v-if="item.name" class="text-xs text-gray-600">{{ item.name }}</div>
+					</div>
+				</div>
 				<p class="text-gray-600">
 					{{ ctrans("Current price: :price", { price: money(item.unit_cost) }) }} <span class="text-gray-500">({{ costLabel }})</span>
 				</p>
@@ -372,7 +381,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				</p>
 				<label class="block space-y-1">
 					<span class="text-xs text-gray-500">{{ dialog === "ask" && !appliesAtOnce ? ctrans("Price the supplier asks") : ctrans("Price for this line") }} ({{ costLabel }}<template v-if="item.net_currency">, {{ item.net_currency }}</template>)</span>
-					<InputNumber v-model="form.price" @input="(event: InputNumberInputEvent) => (form.price = typeof event.value === 'number' ? event.value : null)" :min="0" :maxFractionDigits="4" :class="fieldFocusClass" fluid />
+					<InputNumber v-model="form.price" @input="(event: InputNumberInputEvent) => (form.price = typeof event.value === 'number' ? event.value : null)" :min="0" v-bind="locale.unitCostInputOptions(item.net_currency)" :class="fieldFocusClass" fluid />
 				</label>
 				<label v-if="dialog === 'ask' && appliesAtOnce && item.can_update_supplier_cost" class="flex cursor-pointer select-none items-center gap-2 text-xs text-gray-600">
 					<Checkbox v-model="alsoUpdateSupplierCost" binary size="small" />
