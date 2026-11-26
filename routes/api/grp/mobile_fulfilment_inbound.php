@@ -18,6 +18,8 @@ use App\Actions\Api\Group\Fulfilment\SetMobilePalletAsNotReceived;
 use App\Actions\Api\Group\Fulfilment\ShowMobilePallet;
 use App\Actions\Api\Group\Fulfilment\ShowMobilePalletDelivery;
 use App\Actions\Api\Group\Fulfilment\StartBookingMobilePalletDelivery;
+use App\Actions\Api\Group\Fulfilment\SetMobilePalletBackToStoring;
+use App\Actions\Api\Group\Fulfilment\SetMobilePalletDeliveryAsNotReceived;
 use App\Actions\Api\Group\Fulfilment\StoreMobilePalletIncident;
 use App\Actions\Api\Group\Fulfilment\UndoMobilePalletNotReceived;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,7 @@ Route::prefix('pallet-deliveries/{palletDelivery:id}')->name('pallet_deliveries.
     Route::post('/receive', ReceiveMobilePalletDelivery::class)->name('receive');
     Route::post('/start-booking', StartBookingMobilePalletDelivery::class)->name('start_booking');
     Route::post('/finish-booking', FinishBookingMobilePalletDelivery::class)->name('finish_booking');
+    Route::post('/not-received', SetMobilePalletDeliveryAsNotReceived::class)->name('not_received');
 });
 
 Route::get('/pallets', IndexMobilePallets::class)->name('pallets.index');
@@ -38,6 +41,7 @@ Route::prefix('pallets/{pallet:id}')->name('pallets.')->group(function () {
     Route::post('/undo-not-received', UndoMobilePalletNotReceived::class)->name('undo_not_received');
     Route::post('/move', MoveMobilePallet::class)->name('move');
     Route::post('/incident', StoreMobilePalletIncident::class)->name('incident');
+    Route::post('/back-to-storing', SetMobilePalletBackToStoring::class)->name('back_to_storing');
 });
 
 Route::get('/fulfilment-locations', IndexMobileFulfilmentLocations::class)->name('fulfilment_locations.index');

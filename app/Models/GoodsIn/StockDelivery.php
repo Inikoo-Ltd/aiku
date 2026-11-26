@@ -65,6 +65,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $checked_at
  * @property \Illuminate\Support\Carbon|null $placed_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property int|null $cancelled_by_user_id
  * @property \Illuminate\Support\Carbon|null $not_received_at
  * @property int|null $agent_id
  * @property int|null $supplier_id
