@@ -6,6 +6,7 @@ use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNoteControll
 use App\Actions\GoodsIn\ReturnDeliveryNote\Traits\WithReturnDeliveryNoteTransition;
 use App\Actions\GoodsIn\ReturnDeliveryNoteItem\SetReturnDeliveryNoteItemAsReturned;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithActionUpdate;
 use App\Enums\GoodsIn\ReturnDeliveryNote\ReturnDeliveryNoteStateEnum;
 use App\Http\Resources\Procurement\ReturnDeliveryNoteItemsResource;
 use App\Models\GoodsIn\ReturnDeliveryNote;
@@ -13,6 +14,7 @@ use App\Models\Inventory\LocationOrgStock;
 
 class SetAllItemsReturnedReturnDeliveryNote extends OrgAction
 {
+    use WithActionUpdate;
     use WithReturnDeliveryNoteController;
     use WithReturnDeliveryNoteTransition;
 

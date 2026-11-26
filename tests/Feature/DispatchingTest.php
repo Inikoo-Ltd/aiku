@@ -10276,7 +10276,7 @@ test('return all puts every item still to do back into its default location (HEL
     expect($returnItem->sowings()->count())->toBe(0);
 
     $returnDeliveryNote->update(['state' => ReturnDeliveryNoteStateEnum::RETURNING]);
-    $this->patchJson($route)->assertSessionHasNoErrors();
+    $this->patch($route, [], ['X-Inertia' => 'true'])->assertRedirect()->assertSessionHasNoErrors();
 
     $returnItem->refresh();
     expect((float) $returnItem->total_item_returned)->toBe(2.0)
