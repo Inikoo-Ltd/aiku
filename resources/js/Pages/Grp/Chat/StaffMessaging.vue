@@ -173,6 +173,9 @@ const onSlackConnectionState = ({ previous, current }: { previous: string; curre
 }
 
 const isSelectedChannel = (channelId: number) => showSlackChannel.value && props.slack_channel?.id === channelId
+const showLegacy = computed(() => isCollapsed("legacy-open") || legacyConversations.value.some((conversation) => conversation.ulid === selectedUlid.value))
+const legacyUnread = computed(() => legacyConversations.value.reduce((sum, conversation) => sum + (conversation.unread_count || 0), 0))
+const shownLegacyConversations = computed(() => legacyConversations.value.filter((conversation) => (filterText.value ? matchesFilter(conversationTitle(conversation)) : showLegacy.value)))
 const showArchived = computed(() => !isCollapsed("archived") || (showSlackChannel.value && !!props.slack_channel?.is_archived))
 
 const store = useStaffMessaging()
@@ -192,10 +195,12 @@ const conversationAvatar = (conversation: any) =>
 
 const isTaskThread = (conversation: { context_type?: string | null }) => conversation.context_type === "StaffTask"
 
-const messagingConversations = computed(() => store.conversations.filter((c) => !isTaskThread(c)))
+const isRecordChat = (conversation: { context_type?: string | null }) => !!conversation.context_type && !isTaskThread(conversation)
+const messagingConversations = computed(() => store.conversations.filter((c) => !isTaskThread(c) && !isRecordChat(c)))
+const legacyConversations = computed(() => store.conversations.filter(isRecordChat))
 const isVerbration = (conversation: { type?: string; context_type?: string | null; name?: string | null } | null | undefined) => !!conversation && conversation.type === "group" && !conversation.context_type && !!conversation.name
 const conversationRoute = (ulid: string) => (isVerbration(store.conversationByUlid(ulid)) ? "grp.chat.staff.groups.show" : "grp.chat.staff.show")
-const taskThreadCount = computed(() => store.conversations.length - messagingConversations.value.length)
+const taskThreadCount = computed(() => store.conversations.filter(isTaskThread).length)
 const showSlackChannel = computed(() => !!props.slack_channel && openSlackChannelId.value === props.slack_channel.id && !selectedUlid.value)
 
 const openSlackChannel = (channelId: number) => {
@@ -589,6 +594,26 @@ onUnmounted(() => {
                         </button>
                     </section>
     
+                    <section v-if="!isDesks && !isGroups && (filterText ? shownLegacyConversations.length : legacyConversations.length)" class="mt-3">
+                        <button v-if="!filterText" type="button" class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-1 rounded px-2 text-left hover:bg-[var(--desk-hover)]" :aria-expanded="showLegacy" @click="toggleSection('legacy-open')">
+                            <FontAwesomeIcon icon="fal fa-caret-down" class="text-xs transition-transform" :class="!showLegacy && '-rotate-90'" fixed-width aria-hidden="true" />
+                            <span class="flex-1 truncate">{{ ctrans("Legacy chats (:count)", { count: String(legacyConversations.length) }) }}</span>
+                            <span v-if="!showLegacy && legacyUnread" class="text-xs opacity-70">{{ legacyUnread }}</span>
+                        </button>
+                        <DeskSidebarRow
+                            v-for="conversation in shownLegacyConversations"
+                            :key="conversation.ulid"
+                            :label="conversationTitle(conversation)"
+                            :avatar="conversationAvatar(conversation)"
+                            :group-size="conversation.participants.length - 1"
+                            :unread="conversation.unread_count"
+                            :is-active="selectedUlid === conversation.ulid"
+                            is-muted
+                            :is-starred="false"
+                            @select="selectConversation(conversation.ulid)"
+                            @toggle-star="toggleStar('dm-' + conversation.ulid)" />
+                    </section>
+
                     <Link
                         v-if="!isDesks && !isGroups && taskThreadCount && !filterText"
                         :href="route('grp.tasks.index')"

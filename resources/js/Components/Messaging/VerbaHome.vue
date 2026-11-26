@@ -196,6 +196,9 @@ onMounted(async () => {
                         <img v-if="typeof story.image === 'string'" :src="story.image" :alt="story.headline" class="w-full h-auto group-hover:scale-[1.02] transition-transform" />
                         <Image v-else :src="story.image" :alt="story.headline" class="w-full h-auto" />
                     </div>
+                    <div v-else-if="story.category === 'celebration' || story.importance >= 4" class="flex h-28 items-center justify-center text-5xl opacity-80">
+                        <FontAwesomeIcon :icon="categoryIcon[story.category] ?? categoryIcon.other" fixed-width aria-hidden="true" class="group-hover:scale-110 transition-transform" />
+                    </div>
                     <div class="p-4">
                         <div class="flex items-center gap-x-1.5 text-[11px] uppercase tracking-wide opacity-70">
                             <FontAwesomeIcon :icon="categoryIcon[story.category] ?? categoryIcon.other" fixed-width aria-hidden="true" />

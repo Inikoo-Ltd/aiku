@@ -106,7 +106,7 @@ const allBottomLinks = computed(() => [
     isEngineer.value ? devopsLink.value : tasksLink.value,
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring", problems: 0 },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt", problems: 0 },
-    { route: "grp.chat.staff.index", parameters: {}, root: "grp.chat.staff.", label: "V·X", tooltip: ctrans("V·X: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
+    { route: "grp.chat.staff.feed", parameters: {}, root: "grp.chat.staff.", label: "V·X", tooltip: ctrans("V·X: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
 ])
 
 const loadingRoute = ref<string | null>(null)
