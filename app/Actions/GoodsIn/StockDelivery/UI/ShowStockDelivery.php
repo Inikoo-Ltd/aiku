@@ -327,8 +327,8 @@ class ShowStockDelivery extends OrgAction
                     : Inertia::optional(fn () => $this->getItems($stockDelivery)),
 
                 StockDeliveryTabsEnum::PENDING_ITEMS->value => $this->tab == StockDeliveryTabsEnum::PENDING_ITEMS->value ?
-                    fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: $this->pendingItemStates()))
-                    : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: $this->pendingItemStates()))),
+                    fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: IndexStockDeliveryItems::pendingItemStates()))
+                    : Inertia::optional(fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::PENDING_ITEMS->value, stateFilter: IndexStockDeliveryItems::pendingItemStates()))),
 
                 StockDeliveryTabsEnum::DONE_ITEMS->value => $this->tab == StockDeliveryTabsEnum::DONE_ITEMS->value ?
                     fn () => StockDeliveryItemResource::collection(IndexStockDeliveryItems::run($stockDelivery, StockDeliveryTabsEnum::DONE_ITEMS->value, stateFilter: $this->doneItemStates()))
@@ -1237,14 +1237,6 @@ class ShowStockDelivery extends OrgAction
                 ],
             ],
         ]] : [];
-    }
-
-    private function pendingItemStates(): array
-    {
-        return StockDeliveryItemStateEnum::valuesExcept([
-            StockDeliveryItemStateEnum::PLACED->value,
-            StockDeliveryItemStateEnum::CANCELLED->value,
-        ]);
     }
 
     private function doneItemStates(): array
