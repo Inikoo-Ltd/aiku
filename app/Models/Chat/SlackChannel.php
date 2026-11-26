@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_member
  * @property bool $is_public
  * @property bool $is_ignored
+ * @property bool $is_private
  * @property \Illuminate\Support\Carbon|null $deleted_in_slack_at
  * @property array|null $data
  * @property string|null $history_backfilled_to
@@ -37,6 +38,7 @@ class SlackChannel extends Model
     protected $attributes = [
         'is_public' => true,
         'is_ignored' => false,
+        'is_private' => false,
     ];
 
     protected function casts(): array
@@ -46,6 +48,7 @@ class SlackChannel extends Model
             'is_member'         => 'boolean',
             'is_public'         => 'boolean',
             'is_ignored'        => 'boolean',
+            'is_private'        => 'boolean',
             'deleted_in_slack_at' => 'datetime',
             'data'              => 'array',
             'history_synced_at' => 'datetime',
@@ -73,6 +76,15 @@ class SlackChannel extends Model
     }
 
     /**
+     * Private channels brought in through the aiku bot (INI-431). Never part of kept(), so every public path stays closed to them;
+     * they are read by their members only, through their own members-only path.
+     */
+    public function scopeKeptPrivate(Builder $query): Builder
+    {
+        return $query->where('is_private', true)->where('is_public', false)->where('is_ignored', false)->whereNull('deleted_in_slack_at');
+    }
+
+    /**
      * The only answer to "may this aiku user see this Slack channel": every screen, search, file download and API
      * asks it through this scope or isVisibleTo, never by hand.
      */
@@ -89,6 +101,43 @@ class SlackChannel extends Model
     public function isVisibleTo(User $user): bool
     {
         return self::visibleTo($user)->whereKey($this->getKey())->exists();
+    }
+
+    /**
+     * The only answer to "may this aiku user read this private Slack channel" (INI-435): an active aiku user linked to a
+     * Slack person who is in slack_channel_members. No role bypasses it, engineers and group admins included.
+     */
+    public function scopePrivateVisibleTo(Builder $query, User $user): Builder
+    {
+        $query->keptPrivate()->where('group_id', $user->group_id);
+        $slackPerson = $user->status && !$user->worksOnlyForAgents() && \App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::privateOptInOpen() ? self::linkedSlackPerson($user) : null;
+        if (!$slackPerson) {
+            return $query->whereRaw('false');
+        }
+
+        return $query->whereIn('id', SlackChannelMember::where('slack_user_id', $slackPerson->slack_id)->select('slack_channel_id'));
+    }
+
+    public function isPrivateVisibleTo(User $user): bool
+    {
+        return self::privateVisibleTo($user)->whereKey($this->getKey())->exists();
+    }
+
+    /**
+     * Public channels by visibleTo, or private ones by privateVisibleTo. Only the paths that open one channel for reading
+     * (stream, thread, versions, pins, files and links, read position) use it; lists, search, mentions, broadcasts and
+     * writes stay on visibleTo, so a private channel never reaches them.
+     */
+    public function scopeReadableBy(Builder $query, User $user): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->whereIn('id', self::visibleTo($user)->select('id'))
+            ->orWhereIn('id', self::privateVisibleTo($user)->select('id')));
+    }
+
+    public function isReadableBy(User $user): bool
+    {
+        return self::readableBy($user)->whereKey($this->getKey())->exists();
     }
 
     /**

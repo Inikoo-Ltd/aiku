@@ -25,7 +25,7 @@ class GetSlackChannelUnreadCounts
     public const int CAP = 100;
 
     /**
-     * $slackChannelIds must come from SlackChannel::visibleTo: a read position outlives a channel turned private.
+     * $slackChannelIds must come from SlackChannel::visibleTo or privateVisibleTo: a read position outlives a channel turned private.
      *
      * @param  list<int>  $slackChannelIds
      * @return array<int, array{count: int, last_read_ts: string}>

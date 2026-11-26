@@ -113,7 +113,7 @@ class GetSlackChannelMessages
         $nodes         = $formatter->handle($live->values(), $reactionNames);
 
         $threads = $this->threadStats($slackChannel, $messages);
-        $files   = GetSlackMessageFiles::make()->handle($live);
+        $files   = GetSlackMessageFiles::make()->handle($live, $slackChannel->is_private);
 
         $editedIds  = $live->whereNotNull('edited_at')->pluck('id')->all();
         $withVersions = $editedIds === [] ? [] : array_flip(SlackMessageVersion::whereIn('slack_message_id', $editedIds)->distinct()->pluck('slack_message_id')->all());

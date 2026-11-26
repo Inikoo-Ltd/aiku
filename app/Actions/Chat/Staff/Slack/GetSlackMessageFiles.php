@@ -29,14 +29,21 @@ class GetSlackMessageFiles
     public const string ID_PATTERN = '[A-Za-z0-9]+';
 
     /**
+     * Files of a private channel are not copied yet (INI-441): they show as not available, never as a copy found by
+     * the same Slack file id in a public channel.
+     *
      * @param  Collection<int, SlackMessage>  $messages
      * @return array<int, list<array<string, mixed>>>
      */
-    public function handle(Collection $messages): array
+    public function handle(Collection $messages, bool $isPrivateChannel = false): array
     {
         $entries = $messages->mapWithKeys(fn (SlackMessage $message) => [
             $message->id => array_values(array_filter(is_array($message->data['files'] ?? null) ? $message->data['files'] : [], 'is_array')),
         ])->filter();
+
+        if ($isPrivateChannel) {
+            return $entries->map(fn (array $files) => array_map(fn (array $file) => $this->privateRow($file), $files))->all();
+        }
 
         $ids = $entries->flatten(1)->pluck('id')->filter(fn ($id) => is_string($id) && $id !== '')->unique()->values()->all();
         $copies = $ids === [] ? collect() : SlackFile::whereIn('slack_id', $ids)
@@ -76,6 +83,29 @@ class GetSlackMessageFiles
             'url'           => $url,
             'thumbnail_url' => $shown ? $url.'?variant=thumbnail' : null,
             'external_url'  => $state === 'external' ? $this->externalUrl($file, $copy) : null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $file
+     * @return array<string, mixed>
+     */
+    private function privateRow(array $file): array
+    {
+        $name = $this->stringOrNull($file['name'] ?? null) ?? $this->stringOrNull($file['title'] ?? null) ?? __('file');
+
+        return [
+            'id'            => null,
+            'name'          => $name,
+            'type'          => $this->type($name, $file),
+            'size'          => is_numeric($file['size'] ?? null) ? (int) $file['size'] : null,
+            'state'         => 'pending',
+            'note'          => __('File not available yet'),
+            'is_image'      => false,
+            'opens_in_tab'  => false,
+            'url'           => null,
+            'thumbnail_url' => null,
+            'external_url'  => null,
         ];
     }
 

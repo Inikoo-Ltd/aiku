@@ -13,7 +13,6 @@ use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackSyncRun;
 use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
-use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -29,6 +28,7 @@ class SyncSlackPublicChannels
 {
     use AsAction;
     use WithSlack;
+    use WithSlackChannelHistory;
 
     public string $commandSignature = 'slack:sync-public-channels
         {--join : Join the public channels the aiku app is not in yet; Slack shows a notice in each of them}
@@ -36,8 +36,6 @@ class SyncSlackPublicChannels
         {--catch-up : With --history, only re-read the channels whose past messages are already complete}';
 
     public string $commandDescription = 'List the public Slack channels and keep their messages in aiku';
-
-    private int $added = 0;
 
     /**
      * @return array{channels: int, joined: int, messages: int, added: int}
@@ -82,65 +80,7 @@ class SyncSlackPublicChannels
         return $totals + ['added' => $this->added];
     }
 
-    /**
-     * The first run walks back from the newest message to the first one and can be stopped and run again; later runs
-     * re-read the day before the last run, for messages missed while aiku was not listening.
-     */
-    private function syncHistory(PendingRequest $client, SlackChannel $channel): int
-    {
-        $startedAt = now();
-        $window    = $channel->history_synced_at
-            ? ['oldest' => (string) $channel->history_synced_at->subDay()->timestamp]
-            : ['latest' => $channel->history_backfilled_to];
-        $stored = 0;
-        $cursor = null;
-
-        do {
-            $page = $this->slackCall($client, 'conversations.history', array_filter(['channel' => $channel->slack_id, 'limit' => 200, 'cursor' => $cursor] + $window));
-            if (!$this->isStillPublic($channel)) {
-                return $stored;
-            }
-            foreach (Arr::get($page, 'messages', []) as $message) {
-                $this->added += (int) StoreSlackMessage::make()->store($channel, $message)?->wasRecentlyCreated;
-                $stored++;
-                if (Arr::get($message, 'reply_count')) {
-                    $stored += $this->syncReplies($client, $channel, $message['ts']);
-                }
-                if (!$channel->history_synced_at) {
-                    $channel->update(['history_backfilled_to' => $message['ts']]);
-                }
-            }
-            $cursor = Arr::get($page, 'response_metadata.next_cursor');
-        } while ($cursor);
-
-        $channel->update(['history_synced_at' => $startedAt]);
-
-        return $stored;
-    }
-
-    private function syncReplies(PendingRequest $client, SlackChannel $channel, string $threadTs): int
-    {
-        $stored = 0;
-        $cursor = null;
-
-        do {
-            $page = $this->slackCall($client, 'conversations.replies', array_filter(['channel' => $channel->slack_id, 'ts' => $threadTs, 'limit' => 200, 'cursor' => $cursor]));
-            if (!$this->isStillPublic($channel)) {
-                return $stored;
-            }
-            foreach (Arr::get($page, 'messages', []) as $reply) {
-                if ($reply['ts'] !== $threadTs) {
-                    $this->added += (int) StoreSlackMessage::make()->store($channel, $reply)?->wasRecentlyCreated;
-                    $stored++;
-                }
-            }
-            $cursor = Arr::get($page, 'response_metadata.next_cursor');
-        } while ($cursor);
-
-        return $stored;
-    }
-
-    private function isStillPublic(SlackChannel $channel): bool
+    protected function isStillKept(SlackChannel $channel): bool
     {
         return SlackChannel::whereKey($channel->id)->where('is_public', true)->exists();
     }

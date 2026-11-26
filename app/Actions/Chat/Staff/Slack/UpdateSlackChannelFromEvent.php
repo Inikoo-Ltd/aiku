@@ -16,8 +16,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
 /**
- * Keeps slack_channels as Slack says it changes. Only channel_created makes a row; no other event makes one or changes
- * a private channel, and a channel that turned private stays marked so nothing more of it is kept.
+ * Keeps slack_channels as Slack says it changes. Only channel_created makes a row; a channel that turned private stays marked
+ * so nothing more of it is kept on the public path. The aiku bot added to a private channel brings it in through
+ * SyncSlackPrivateChannels (INI-431); removed, it gets nothing new.
  */
 class UpdateSlackChannelFromEvent
 {
@@ -47,7 +48,11 @@ class UpdateSlackChannelFromEvent
         }
         $isBot = $botUserId && Arr::get($event, 'user') === $botUserId;
         if (Arr::get($event, 'channel_type') === 'G') {
-            return $this->markPrivate($slackId);
+            return match (true) {
+                $isBot && Arr::get($event, 'type') === 'member_joined_channel' => tap($this->markPrivate($slackId), fn () => $this->slackClient() && SyncSlackPrivateChannels::dispatch(Group::firstOrFail(), true, $slackId)),
+                $isBot && Arr::get($event, 'type') === 'member_left_channel'   => $this->knownChannel($slackId, ['is_public' => false, 'is_member' => false]),
+                default                                                         => $this->markPrivate($slackId),
+            };
         }
 
         return match (Arr::get($event, 'type')) {

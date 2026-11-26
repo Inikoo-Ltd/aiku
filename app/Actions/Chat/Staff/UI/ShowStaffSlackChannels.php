@@ -22,6 +22,7 @@ use App\Models\Chat\SlackMessage;
 use App\Models\Chat\SlackUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +55,23 @@ class ShowStaffSlackChannels extends OrgAction
 
     public function inSlackChannel(SlackChannel $slackChannel, ActionRequest $request): Group
     {
+        if ($slackChannel->is_private && $slackChannel->isPrivateVisibleTo($request->user())) {
+            throw new HttpResponseException(redirect()->route('grp.chat.staff.groups.slack.show', [...$request->query(), 'slackChannel' => $slackChannel->id]));
+        }
         abort_unless($slackChannel->isVisibleTo($request->user()), 403);
+
+        $this->slackChannel = $slackChannel;
+        $this->initialisationFromGroup(app('group'), $request);
+
+        return $this->handle($this->group);
+    }
+
+    /**
+     * A private channel opens on the Verbrations tab, for its members only (SlackChannel::privateVisibleTo).
+     */
+    public function inPrivateSlackChannel(SlackChannel $slackChannel, ActionRequest $request): Group
+    {
+        abort_unless($slackChannel->isPrivateVisibleTo($request->user()), 403);
 
         $this->slackChannel = $slackChannel;
         $this->initialisationFromGroup(app('group'), $request);
@@ -67,9 +84,9 @@ class ShowStaffSlackChannels extends OrgAction
      *
      * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, last_message_at: string|null, unread_count: int, last_read_ts: string|null}>
      */
-    public function channels(User $user): array
+    public function channels(User $user, bool $private = false): array
     {
-        $channels = SlackChannel::visibleTo($user)
+        $channels = ($private ? SlackChannel::privateVisibleTo($user) : SlackChannel::visibleTo($user))
             ->select(['id', 'slack_id', 'name', 'is_archived', 'data'])
             ->addSelect(['last_message_at' => SlackMessage::select('sent_at')
                 ->whereColumn('slack_messages.slack_channel_id', 'slack_channels.id')
@@ -108,14 +125,17 @@ class ShowStaffSlackChannels extends OrgAction
      * The channel list and its live channel, computed once and only when a response asks for them. Deferred, they
      * come as one group after the page has opened; a person who is not active cannot read Slack, so they get none.
      *
-     * @return array{slack_channels: mixed, slack_live_channel: mixed, desk_starred: array<int, string>}
+     * Private channels come in their own list, never in slack_channels, and have no live channel yet: grp.slack.{group}
+     * carries public channels only.
+     *
+     * @return array{slack_channels: mixed, slack_private_channels: mixed, slack_live_channel: mixed, desk_starred: array<int, string>}
      */
     public function listProps(Group $group, User $user, bool $deferred = false): array
     {
         $starred = Arr::get($user->settings, 'desk_starred') ?? [];
 
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
+            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
         }
 
         $memo        = null;
@@ -123,10 +143,11 @@ class ShowStaffSlackChannels extends OrgAction
             return $memo ??= $this->channels($user);
         };
         $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
+        $private     = fn (): array => $this->channels($user, private: true);
 
         return $deferred
-            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_channels' => $channels, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
+            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
     }
 
     private function tsParameter(ActionRequest $request, string $key): ?string
@@ -168,8 +189,8 @@ class ShowStaffSlackChannels extends OrgAction
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'route' => ['name' => 'grp.chat.staff.slack.show', 'parameters' => ['slackChannel' => $slackChannel->id]],
-                    'label' => '#'.$slackChannel->name,
+                    'route' => ['name' => $slackChannel->is_private ? 'grp.chat.staff.groups.slack.show' : 'grp.chat.staff.slack.show', 'parameters' => ['slackChannel' => $slackChannel->id]],
+                    'label' => ($slackChannel->is_private ? '' : '#').$slackChannel->name,
                 ],
             ];
         }
@@ -178,7 +199,7 @@ class ShowStaffSlackChannels extends OrgAction
             'Chat/StaffMessaging',
             [
                 'breadcrumbs'    => $breadcrumbs,
-                'title'          => $slackChannel ? '#'.$slackChannel->name : $title,
+                'title'          => $slackChannel ? ($slackChannel->is_private ? '' : '#').$slackChannel->name : $title,
                 'pageHead'       => [
                     'title' => $title,
                     'icon'  => [
@@ -194,11 +215,12 @@ class ShowStaffSlackChannels extends OrgAction
                     'topic'        => ($slackChannel->data['topic']['value'] ?? null) ?: null,
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
                     'is_archived'  => $slackChannel->is_archived,
+                    'is_private'   => $slackChannel->is_private,
                     'member_count' => $slackChannel->members()->count(),
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
-                    'write'        => $this->writeState($request->user(), $slackChannel),
+                    'write'        => $slackChannel->is_private ? null : $this->writeState($request->user(), $slackChannel),
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,

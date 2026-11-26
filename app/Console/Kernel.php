@@ -1972,6 +1972,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:sync-private-channels --history')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->sentryMonitor(
+                    monitorSlug: 'SyncSlackPrivateChannels',
+                ),
+                name: 'SyncSlackPrivateChannels',
+                type: 'command',
+                scheduledAt: '04:00'
+            );
+
+            $this->logSchedule(
                 $schedule->command('slack:refresh-message-search')->dailyAt('04:05')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
                     monitorSlug: 'RefreshSlackMessageSearch',
                 ),

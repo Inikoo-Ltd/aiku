@@ -14,7 +14,8 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * member_joined_channel and member_left_channel for anyone, the aiku bot included, on a kept public channel only;
+ * member_joined_channel and member_left_channel for anyone, the aiku bot included, on a kept public channel or a private
+ * channel the bot brought in (INI-431, whose readers are these members);
  * an unknown channel is never created here.
  */
 class UpdateSlackChannelMember
@@ -28,10 +29,12 @@ class UpdateSlackChannelMember
     {
         $slackUserId = Arr::get($event, 'user');
         $slackId     = Arr::get($event, 'channel');
-        if (!is_string($slackUserId) || !is_string($slackId) || Arr::get($event, 'channel_type') === 'G') {
+        if (!is_string($slackUserId) || !is_string($slackId)) {
             return null;
         }
-        $channel = SlackChannel::kept()->where('slack_id', $slackId)->first();
+        $channel = Arr::get($event, 'channel_type') === 'G'
+            ? SlackChannel::keptPrivate()->where('slack_id', $slackId)->first()
+            : SlackChannel::kept()->where('slack_id', $slackId)->first();
         if (!$channel) {
             return null;
         }

@@ -3,9 +3,12 @@ import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { ctrans } from '@/Composables/useTrans'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import ToggleSwitch from 'primevue/toggleswitch'
+import Dialog from 'primevue/dialog'
+import SlackPrivateConsentDialog from '@/Components/Forms/Fields/SlackPrivateConsentDialog.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faPlug, faExclamationTriangle } from '@fal'
+import { faPlug, faExclamationTriangle, faTimes } from '@fal'
 
 defineOptions({ inheritAttrs: false })
 
@@ -18,6 +21,37 @@ const props = defineProps<{
 const connection = computed(() => props.fieldData?.connection ?? {})
 const isDisconnecting = ref(false)
 const isLeaving = ref(false)
+const privateSettings = computed(() => connection.value.private ?? null)
+const isConsentOpen = ref(false)
+const isWithdrawOpen = ref(false)
+const isWithdrawing = ref(false)
+const withdrawError = ref<string | null>(null)
+
+const stateLabel = computed(() => {
+    if (privateSettings.value?.on) {
+        return ctrans('Connected for public channels and private conversations')
+    }
+
+    return connection.value.state === 'connected' ? ctrans('Connected for public channels') : ctrans('Not connected')
+})
+
+const togglePrivate = (switchOn: boolean) => {
+    if (switchOn) {
+        isConsentOpen.value = true
+    } else {
+        withdrawError.value = null
+        isWithdrawOpen.value = true
+    }
+}
+
+const withdraw = () => {
+    router.delete(route(privateSettings.value.withdraw_route.name), {
+        preserveScroll: true,
+        onStart: () => isWithdrawing.value = true,
+        onError: (errors) => withdrawError.value = Object.values(errors)[0] as string,
+        onFinish: () => isWithdrawing.value = false,
+    })
+}
 
 const connect = () => {
     isLeaving.value = true
@@ -37,6 +71,8 @@ const disconnect = () => {
     <div class="space-y-3 text-sm">
         <p v-if="connection.error" class="text-red-600" role="alert">{{ connection.error }}</p>
         <p v-else-if="connection.notice" class="text-green-700" role="status">{{ connection.notice }}</p>
+
+        <p class="font-medium text-gray-700">{{ stateLabel }}</p>
 
         <div v-if="connection.state === 'connected'" class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -66,8 +102,9 @@ const disconnect = () => {
                 <li>{{ ctrans('create, join, leave and archive public channels') }}</li>
                 <li>{{ ctrans('pin messages and add channel bookmarks') }}</li>
                 <li>{{ ctrans('schedule messages and set reminders') }}</li>
+                <li>{{ ctrans('set your status, presence and do not disturb') }}</li>
             </ul>
-            <p>{{ ctrans('aiku uses this only in public channels. It does not get permission to read your direct messages or private channels. When a new feature needs more, you will be asked to connect again. You can disconnect at any time.') }}</p>
+            <p v-if="!privateSettings?.on">{{ ctrans('aiku uses this only in public channels. It does not get permission to read your direct messages or private channels. When a new feature needs more, you will be asked to connect again. You can disconnect at any time.') }}</p>
         </div>
 
         <template v-if="connection.state !== 'connected'">
@@ -78,5 +115,51 @@ const disconnect = () => {
                 </template>
             </Button>
         </template>
+
+        <div v-if="privateSettings" class="border-t border-gray-200 pt-3 space-y-2">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <p class="font-medium text-gray-700">{{ ctrans('Private conversations') }}</p>
+                    <p class="text-gray-500">
+                        <template v-if="privateSettings.on">
+                            {{ ctrans('Your direct messages, group chats and private channels come to Verba') }}<span v-if="privateSettings.consented_at">&nbsp;{{ ctrans('since') }} {{ useFormatTime(privateSettings.consented_at) }}</span>
+                        </template>
+                        <template v-else>{{ ctrans('Off. Bring your direct messages, group chats and private channels to Verba') }}</template>
+                    </p>
+                </div>
+                <ToggleSwitch :model-value="!!privateSettings.on" :disabled="isWithdrawing" :aria-label="ctrans('Private conversations')" @update:model-value="togglePrivate" />
+            </div>
+        </div>
+
+        <SlackPrivateConsentDialog
+            v-if="privateSettings"
+            v-model:visible="isConsentOpen"
+            :consent-version="privateSettings.consent_version"
+            :terms-version="privateSettings.terms_version"
+            :start-route="privateSettings.start_route"
+            :unavailable-reason="connection.unavailable_reason"
+        />
+
+        <Dialog v-model:visible="isWithdrawOpen" modal :header="ctrans('Switch off private conversations')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
+            <div class="space-y-2 text-sm text-gray-700">
+                <p>{{ ctrans('Your direct messages Verba brought from Slack are deleted. Private channels stay, as they belong to all their members. Your messages in Slack are not touched.') }}</p>
+                <p>{{ ctrans('Slack will then ask you to confirm your connection for public channels again.') }}</p>
+                <p v-if="withdrawError" class="text-xs text-red-600" role="alert">{{ withdrawError }}</p>
+            </div>
+            <template #footer>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isWithdrawOpen = false">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                    <Button type="tertiary" full :label="ctrans('Switch off')" :loading="isWithdrawing" :disabled="isWithdrawing" @click="withdraw">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>

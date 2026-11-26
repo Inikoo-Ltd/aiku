@@ -27,7 +27,7 @@ class GetSlackMessageVersions
 
     public function authorize(ActionRequest $request): bool
     {
-        abort_unless($request->route('slackChannel')->isVisibleTo($request->user()), 404);
+        abort_unless($request->route('slackChannel')->isReadableBy($request->user()), 404);
 
         return true;
     }

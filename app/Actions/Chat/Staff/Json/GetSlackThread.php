@@ -26,7 +26,7 @@ class GetSlackThread
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->route('slackChannel')->isVisibleTo($request->user());
+        return $request->route('slackChannel')->isReadableBy($request->user());
     }
 
     public function rules(): array

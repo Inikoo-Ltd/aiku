@@ -33,12 +33,12 @@ class StoreSlackConnection
 
         return StartSlackConnection::backToSettings(
             $error ? StartSlackConnection::ERROR_KEY : StartSlackConnection::NOTICE_KEY,
-            $error ?? __('Your Slack account is connected')
+            $error ?? $state['notice'] ?? (isset($state['private']) ? __('Your private conversations will now come to Verba') : __('Your Slack account is connected'))
         );
     }
 
     /**
-     * @param  array{value: string, user_id: int, expires_at: int}|null  $state
+     * @param  array{value: string, user_id: int, expires_at: int, private?: array{consent_version: string, terms_version: string}|null, notice?: string|null}|null  $state
      */
     public function handle(User $user, ?array $state, mixed $returnedState, mixed $code, mixed $slackError): ?string
     {
@@ -46,9 +46,16 @@ class StoreSlackConnection
             || ($state['user_id'] ?? null) !== $user->id || ($state['expires_at'] ?? 0) < now()->timestamp) {
             return __('The connection request was not valid or had expired. Nothing was connected; please try again');
         }
+        $private = $state['private'] ?? null;
         if ($slackError || !is_string($code) || $code === '') {
-            return __('You did not give permission in Slack, so nothing was connected');
+            return $private
+                ? __('You did not give permission in Slack, so nothing changed: your private conversations stay where they are')
+                : __('You did not give permission in Slack, so nothing was connected');
         }
+        if ($private && (!SlackWriteAccess::privateOptInOpen() || $private['consent_version'] !== SlackWriteAccess::PRIVATE_CONSENT_VERSION || $private['terms_version'] !== SlackWriteAccess::PRIVATE_TERMS_VERSION)) {
+            return __('The texts you agreed to have changed. Nothing changed; please read them again and try once more');
+        }
+        $required = $private ? [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES] : SlackWriteAccess::USER_SCOPES;
         $slackPerson = SlackChannel::linkedSlackPerson($user);
         if ($reason = StartSlackConnection::unavailableReason($user)) {
             return $reason;
@@ -72,7 +79,7 @@ class StoreSlackConnection
             data_get($answer, 'team.id') !== config('services.slack.team_id')                                       => __('That Slack account belongs to another workspace, so nothing was connected'),
             data_get($answer, 'authed_user.id') !== $slackPerson->slack_id                                          => __('That Slack account is not the one linked to your aiku user, so nothing was connected. Sign in to Slack as yourself and try again'),
             data_get($answer, 'authed_user.refresh_token') !== null || data_get($answer, 'authed_user.expires_in') !== null => __('Slack returned a kind of permission aiku cannot keep, so nothing was connected'),
-            array_diff(SlackWriteAccess::USER_SCOPES, $granted) !== [] => __('Slack did not give every permission aiku needs, so nothing was connected. Please try again and allow them all'),
+            array_diff($required, $granted) !== []                       => __('Slack did not give every permission aiku needs, so nothing was connected. Please try again and allow them all'),
             default                                                                                                 => null,
         };
         if ($refusal) {
@@ -83,7 +90,7 @@ class StoreSlackConnection
             return $refusal;
         }
 
-        SlackConnection::updateOrCreate(['user_id' => $user->id], [
+        $connection = SlackConnection::updateOrCreate(['user_id' => $user->id], [
             'slack_user_id'   => $slackPerson->slack_id,
             'team_id'         => data_get($answer, 'team.id'),
             'token'           => $token,
@@ -92,6 +99,11 @@ class StoreSlackConnection
             'revoked_at'      => null,
             'needs_reconnect' => false,
         ]);
+        if ($private) {
+            $connection->grantPrivateConsent($private['consent_version'], $private['terms_version']);
+        } elseif (array_diff(SlackWriteAccess::PRIVATE_SCOPES, $granted) !== []) {
+            $connection->endPrivateConsent('lapsed');
+        }
 
         return null;
     }

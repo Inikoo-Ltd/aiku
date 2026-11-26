@@ -14,6 +14,7 @@ use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteClient;
 use App\Actions\Chat\Staff\Slack\Write\SlackWriteException;
 use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
+use App\Actions\Chat\Staff\Slack\Write\StartSlackPrivateConnection;
 use App\Actions\SysAdmin\User\UpdateUser;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
+use Lorisleiva\Actions\ActionRequest;
 
 use function Pest\Laravel\actingAs;
 
@@ -466,4 +468,106 @@ test('slack:link-users writes nothing without --confirm, refuses ambiguous pairs
         ->and($slack->fresh()->link_confirmed_at)->toBeNull()
         ->and($user->fresh()->slack_user_id)->toBeNull()
         ->and(SlackChannel::linkedSlackPerson($user))->toBeNull();
+});
+
+test('private conversations need a second yes: the opt-in asks Slack for the private scopes on top, records the consent with both text versions, and the public flow never asks for them, INI-429', function () {
+    $user = ($this->makeUser)();
+    ($this->connect)($user);
+    $versions = ['consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION, 'terms_version' => SlackWriteAccess::PRIVATE_TERMS_VERSION];
+
+    actingAs($user)->post(route('grp.chat.staff.slack.connect.private.start'), $versions)->assertSessionHasErrors('understood');
+    actingAs($user)->post(route('grp.chat.staff.slack.connect.private.start'), ['understood' => true, 'consent_version' => 'v0', 'terms_version' => 'old'])->assertSessionHasErrors(['consent_version', 'terms_version']);
+
+    $response = actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post(route('grp.chat.staff.slack.connect.private.start'), ['understood' => true] + $versions);
+    $response->assertStatus(409);
+    test()->flushHeaders();
+    parse_str((string) parse_url($response->headers->get('X-Inertia-Location'), PHP_URL_QUERY), $query);
+    expect(explode(',', $query['user_scope']))->toBe([...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES])
+        ->and(session(StartSlackConnection::STATE_KEY)['private'])->toBe($versions);
+
+    $granted = [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES];
+    Http::fake(['slack.com/api/oauth.v2.access' => function () use (&$granted, $user) {
+        return Http::response(['ok' => true, 'team' => ['id' => 'TOURTEAM'], 'authed_user' => ['id' => ($this->slackIdOf)($user), 'scope' => implode(',', $granted), 'access_token' => $this->token, 'token_type' => 'user']]);
+    }]);
+    actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-p', 'state' => $query['state']]))
+        ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']));
+
+    $connection = SlackConnection::where('user_id', $user->id)->firstOrFail();
+    expect($connection->hasPrivateConsent())->toBeTrue()
+        ->and($connection->private_consent_version)->toBe(SlackWriteAccess::PRIVATE_CONSENT_VERSION)
+        ->and($connection->private_terms_version)->toBe(SlackWriteAccess::PRIVATE_TERMS_VERSION)
+        ->and(DB::table('slack_private_consents')->where('user_id', $user->id)->pluck('event')->all())->toBe(['granted']);
+    actingAs($user)->get(route('grp.profile.edit'))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('formData.blueprint', fn ($blueprint) => collect($blueprint)->pluck('fields')->contains(fn ($fields) => ($fields['slack_connection']['connection']['private']['on'] ?? null) === true)));
+
+    $state = ($this->startAndGetState)($user);
+    expect(session(StartSlackConnection::STATE_KEY)['private'])->toBeNull();
+    $granted = SlackWriteAccess::USER_SCOPES;
+    actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-q', 'state' => $state]))->assertSessionHas(StartSlackConnection::NOTICE_KEY);
+    expect($connection->refresh()->private_consented_at)->toBeNull()
+        ->and(DB::table('slack_private_consents')->where('user_id', $user->id)->orderBy('id')->pluck('event')->all())->toBe(['granted', 'lapsed']);
+});
+
+test('declining the private opt-in in Slack changes nothing and says so', function () {
+    $user       = ($this->makeUser)();
+    $connection = ($this->connect)($user);
+    actingAs($user)->withHeaders(['X-Inertia' => 'true'])->post(route('grp.chat.staff.slack.connect.private.start'), ['understood' => true, 'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION, 'terms_version' => SlackWriteAccess::PRIVATE_TERMS_VERSION]);
+    test()->flushHeaders();
+    $state = session(StartSlackConnection::STATE_KEY)['value'];
+    Http::fake();
+
+    actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['error' => 'access_denied', 'state' => $state]))
+        ->assertSessionHas(StartSlackConnection::ERROR_KEY, fn ($message) => str_contains($message, 'nothing changed'));
+
+    expect($connection->refresh()->private_consented_at)->toBeNull()
+        ->and($connection->token)->toBe($this->token)
+        ->and($connection->isLive())->toBeTrue()
+        ->and(DB::table('slack_private_consents')->where('user_id', $user->id)->exists())->toBeFalse();
+    Http::assertNothingSent();
+});
+
+test('switching private conversations off revokes the token that holds them and reconnects public channels only; another person cannot touch it', function () {
+    $user       = ($this->makeUser)();
+    $other      = ($this->makeUser)();
+    $connection = ($this->connect)($user, ['scopes' => implode(',', [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES])]);
+    $connection->grantPrivateConsent(SlackWriteAccess::PRIVATE_CONSENT_VERSION, SlackWriteAccess::PRIVATE_TERMS_VERSION);
+    ($this->connect)($other);
+    ($this->fakeSlack)($user);
+
+    actingAs($other)->delete(route('grp.chat.staff.slack.connect.private.delete'))->assertRedirect();
+    expect($connection->refresh()->hasPrivateConsent())->toBeTrue();
+    Http::assertNothingSent();
+
+    $response = actingAs($user)->withHeaders(['X-Inertia' => 'true'])->delete(route('grp.chat.staff.slack.connect.private.delete'));
+    $response->assertStatus(409);
+    test()->flushHeaders();
+    parse_str((string) parse_url($response->headers->get('X-Inertia-Location'), PHP_URL_QUERY), $query);
+    expect($query['user_scope'])->toBe(implode(',', SlackWriteAccess::USER_SCOPES))
+        ->and($connection->refresh()->private_consented_at)->toBeNull()
+        ->and(DB::table('slack_connections')->where('id', $connection->id)->value('token'))->toBeNull()
+        ->and(DB::table('slack_private_consents')->where('user_id', $user->id)->pluck('event')->all())->toBe(['granted', 'withdrawn']);
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'auth.revoke'));
+
+    $savedState = session(StartSlackConnection::STATE_KEY);
+    actingAs($other)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-x', 'state' => $query['state']]))
+        ->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    expect(SlackConnection::where('user_id', $other->id)->value('scopes'))->toBe(implode(',', SlackWriteAccess::USER_SCOPES));
+    session()->put(StartSlackConnection::STATE_KEY, $savedState);
+
+    actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-r', 'state' => $query['state']]))
+        ->assertSessionHas(StartSlackConnection::NOTICE_KEY, fn ($message) => str_contains($message, 'public channels only'));
+    expect($connection->refresh()->isLive())->toBeTrue()
+        ->and($connection->missingScopes())->toBe([])
+        ->and($connection->hasPrivateConsent())->toBeFalse();
+});
+
+test('the private opt-in stays closed in production until the launch, and is not offered there', function () {
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        expect(SlackWriteAccess::privateOptInOpen())->toBe(SlackWriteAccess::PRIVATE_OPT_IN_LAUNCHED)
+            ->and(StartSlackPrivateConnection::make()->authorize(ActionRequest::createFrom(request())->setUserResolver(fn () => ($this->makeUser)())))->toBe(SlackWriteAccess::PRIVATE_OPT_IN_LAUNCHED);
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+    expect(SlackWriteAccess::privateOptInOpen())->toBeTrue();
 });

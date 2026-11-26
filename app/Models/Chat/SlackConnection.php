@@ -13,6 +13,7 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A person's own permission to write in Slack from aiku, one per aiku user. The token never leaves the server.
@@ -26,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $connected_at
  * @property \Illuminate\Support\Carbon|null $revoked_at
  * @property bool $needs_reconnect
+ * @property \Illuminate\Support\Carbon|null $private_consented_at
+ * @property string|null $private_consent_version
+ * @property string|null $private_terms_version
  */
 class SlackConnection extends Model
 {
@@ -39,7 +43,8 @@ class SlackConnection extends Model
             'token'           => 'encrypted',
             'connected_at'    => 'datetime',
             'revoked_at'      => 'datetime',
-            'needs_reconnect' => 'boolean',
+            'needs_reconnect'      => 'boolean',
+            'private_consented_at' => 'datetime',
         ];
     }
 
@@ -69,5 +74,55 @@ class SlackConnection extends Model
     public function isLive(): bool
     {
         return $this->getRawOriginal('token') !== null && $this->revoked_at === null && !$this->needs_reconnect;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function grantedScopes(): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', (string) $this->scopes))));
+    }
+
+    /**
+     * Private conversations are on only with the person's recorded yes and a live token that still holds every private scope.
+     * Slack adds scopes up and never drops them, so the scopes alone never mean yes.
+     */
+    public function hasPrivateConsent(): bool
+    {
+        return $this->private_consented_at !== null && $this->isLive()
+            && array_diff(SlackWriteAccess::PRIVATE_SCOPES, $this->grantedScopes()) === [];
+    }
+
+    public function grantPrivateConsent(string $consentVersion, string $termsVersion): void
+    {
+        $this->forceFill([
+            'private_consented_at'    => now(),
+            'private_consent_version' => $consentVersion,
+            'private_terms_version'   => $termsVersion,
+        ])->save();
+        $this->logPrivateConsent('granted');
+    }
+
+    public function endPrivateConsent(string $event): void
+    {
+        if ($this->private_consented_at === null) {
+            return;
+        }
+        $this->logPrivateConsent($event);
+        $this->forceFill(['private_consented_at' => null, 'private_consent_version' => null, 'private_terms_version' => null])->save();
+    }
+
+    private function logPrivateConsent(string $event): void
+    {
+        DB::table('slack_private_consents')->insert([
+            'user_id'         => $this->user_id,
+            'slack_user_id'   => $this->slack_user_id,
+            'event'           => $event,
+            'consent_version' => $this->private_consent_version,
+            'terms_version'   => $this->private_terms_version,
+            'scopes'          => $this->scopes,
+            'created_at'      => now(),
+        ]);
     }
 }

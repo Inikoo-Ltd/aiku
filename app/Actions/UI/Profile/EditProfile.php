@@ -188,6 +188,14 @@ class EditProfile
             'notice'             => session()->pull(StartSlackConnection::NOTICE_KEY),
             'connect_url'        => route('grp.chat.staff.slack.connect.start'),
             'disconnect_route'   => ['name' => 'grp.chat.staff.slack.connect.delete'],
+            'private'            => SlackWriteAccess::privateOptInOpen() ? [
+                'on'              => (bool) $connection?->hasPrivateConsent(),
+                'consented_at'    => $connection?->hasPrivateConsent() ? $connection->private_consented_at : null,
+                'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION,
+                'terms_version'   => SlackWriteAccess::PRIVATE_TERMS_VERSION,
+                'start_route'     => ['name' => 'grp.chat.staff.slack.connect.private.start'],
+                'withdraw_route'  => ['name' => 'grp.chat.staff.slack.connect.private.delete'],
+            ] : null,
         ];
     }
 

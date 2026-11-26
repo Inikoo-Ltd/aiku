@@ -122,6 +122,7 @@ test('a failed, unfinished or missing nightly run each raise a warning', functio
         'slack:sync-channel-members'    => 'stuck',
         'slack:sync-pins-and-bookmarks' => 'ok',
         'slack:sync-emojis'             => 'running',
+        'slack:sync-private-channels'   => 'ok',
     ]);
 
     $warnings = collect($action->warnings(['newest_message_at' => now()->toIso8601String(), 'files_failed' => 0], $action->nightlyRuns()));

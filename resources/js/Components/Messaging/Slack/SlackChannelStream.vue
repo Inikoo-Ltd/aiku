@@ -42,6 +42,7 @@ export interface SlackChannelHeader {
     topic: string | null
     purpose?: string | null
     is_archived: boolean
+    is_private?: boolean
     member_count?: number
     pinned_count?: number
     bookmarks?: SlackBookmark[]
@@ -336,7 +337,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                     </button>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-x-2">
-                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><span class="font-bold">#</span>{{ channel.name }}</h2>
+                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><FontAwesomeIcon v-if="channel.is_private" icon="fal fa-lock" class="mr-1 text-base" fixed-width :aria-label="ctrans('Private channel')" /><span v-else class="font-bold">#</span>{{ channel.name }}</h2>
                             <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-[#616061]">
                                 <FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" />{{ ctrans("Archived") }}
                             </span>
@@ -463,6 +464,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
+            <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
 

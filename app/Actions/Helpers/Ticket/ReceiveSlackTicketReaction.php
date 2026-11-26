@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Ticket;
 
 use App\Actions\Chat\Staff\Slack\StoreSlackMessage;
+use App\Actions\Chat\Staff\Slack\StoreSlackPrivateMessage;
 use App\Actions\Chat\Staff\Slack\StoreSlackEmoji;
 use App\Actions\Chat\Staff\Slack\StoreSlackMessageReaction;
 use App\Actions\Chat\Staff\Slack\StoreSlackPin;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class ReceiveSlackTicketReaction
 {
@@ -96,12 +98,17 @@ class ReceiveSlackTicketReaction
 
             return response()->json(['ok' => true]);
         }
+        if (Arr::get($event, 'type') === 'message' && in_array(Arr::get($event, 'channel_type'), ['im', 'mpim'], true)) {
+            return response()->json(['ok' => true]);
+        }
         if (Arr::get($event, 'type') === 'message') {
             if (Arr::get($event, 'subtype') === 'channel_convert_to_private' || Arr::get($event, 'channel_type') === 'group') {
                 UpdateSlackChannelFromEvent::make()->markPrivate((string) Arr::get($event, 'channel'));
             }
             dispatch(fn () => StoreTicketCommentFromSlackThread::run($event));
-            if (Arr::get($event, 'subtype') !== 'channel_convert_to_private') {
+            if (Arr::get($event, 'channel_type') === 'group') {
+                rescue(fn () => StoreSlackPrivateMessage::run($event), fn (Throwable $exception) => Log::warning('Slack private message not stored', ['channel' => Arr::get($event, 'channel'), 'ts' => Arr::get($event, 'ts'), 'error' => $exception::class]), false);
+            } elseif (Arr::get($event, 'subtype') !== 'channel_convert_to_private') {
                 StoreSlackMessage::dispatch($event);
             }
 

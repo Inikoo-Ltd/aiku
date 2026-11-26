@@ -68,25 +68,39 @@ class StartSlackConnection
         return redirect()->route('grp.profile.edit', ['section' => 'slack']);
     }
 
+    /**
+     * Keeps a one-time state in the session and returns Slack's authorisation link for these user scopes.
+     * $private carries the consent and small print versions the person agreed to, only for the private opt-in.
+     *
+     * @param  list<string>  $scopes
+     * @param  array{consent_version: string, terms_version: string}|null  $private
+     */
+    public static function authorizeUrl(User $user, array $scopes, ?array $private = null, ?string $notice = null): string
+    {
+        $state = Str::random(48);
+        session()->put(self::STATE_KEY, [
+            'value'      => $state,
+            'user_id'    => $user->id,
+            'expires_at' => now()->addMinutes(self::STATE_MINUTES)->timestamp,
+            'private'    => $private,
+            'notice'     => $notice,
+        ]);
+
+        return 'https://slack.com/oauth/v2/authorize?'.http_build_query([
+            'client_id'    => config('services.slack.client_id'),
+            'user_scope'   => implode(',', $scopes),
+            'redirect_uri' => self::redirectUri(),
+            'state'        => $state,
+            'team'         => config('services.slack.team_id'),
+        ]);
+    }
+
     public function asController(ActionRequest $request): RedirectResponse
     {
         if ($reason = self::unavailableReason($request->user())) {
             return self::backToSettings(self::ERROR_KEY, $reason);
         }
 
-        $state = Str::random(48);
-        $request->session()->put(self::STATE_KEY, [
-            'value'      => $state,
-            'user_id'    => $request->user()->id,
-            'expires_at' => now()->addMinutes(self::STATE_MINUTES)->timestamp,
-        ]);
-
-        return redirect()->away('https://slack.com/oauth/v2/authorize?'.http_build_query([
-            'client_id'    => config('services.slack.client_id'),
-            'user_scope'   => implode(',', SlackWriteAccess::USER_SCOPES),
-            'redirect_uri' => self::redirectUri(),
-            'state'        => $state,
-            'team'         => config('services.slack.team_id'),
-        ]));
+        return redirect()->away(self::authorizeUrl($request->user(), SlackWriteAccess::USER_SCOPES));
     }
 }

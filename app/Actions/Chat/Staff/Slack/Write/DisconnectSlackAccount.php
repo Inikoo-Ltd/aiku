@@ -36,6 +36,7 @@ class DisconnectSlackAccount
         $revoked = $callSlack && $token !== null && $this->revokeAtSlack($token);
 
         $connection->forceFill(['token' => null, 'revoked_at' => now(), 'needs_reconnect' => false])->save();
+        $connection->endPrivateConsent('withdrawn');
 
         return $revoked;
     }

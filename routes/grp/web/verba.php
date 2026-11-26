@@ -14,6 +14,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/groups', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('groups.index');
     Route::get('/groups/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('groups.show');
+    Route::get('/groups/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inPrivateSlackChannel'])->name('groups.slack.show');
     Route::get('/home', \App\Actions\Chat\Staff\Home\GetStaffHome::class)->name('home');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
     Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');
@@ -49,6 +50,8 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
         Route::get('/slack-connect', \App\Actions\Chat\Staff\Slack\Write\StartSlackConnection::class)->name('slack.connect.start');
         Route::get('/slack-connect/callback', \App\Actions\Chat\Staff\Slack\Write\StoreSlackConnection::class)->name('slack.connect.callback');
         Route::delete('/slack-connect', \App\Actions\Chat\Staff\Slack\Write\DisconnectSlackAccount::class)->name('slack.connect.delete');
+        Route::post('/slack-connect/private', \App\Actions\Chat\Staff\Slack\Write\StartSlackPrivateConnection::class)->name('slack.connect.private.start');
+        Route::delete('/slack-connect/private', \App\Actions\Chat\Staff\Slack\Write\WithdrawSlackPrivateConsent::class)->name('slack.connect.private.delete');
     });
     Route::post('/slack/{slackChannel}/messages', \App\Actions\Chat\Staff\Slack\Write\SendSlackMessage::class)->middleware('throttle:20,1,slack-send')->name('slack.messages.store');
     Route::post('/slack/{slackChannel}/files', \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::class)->middleware('throttle:60,1,slack-upload')->name('slack.files.upload');
