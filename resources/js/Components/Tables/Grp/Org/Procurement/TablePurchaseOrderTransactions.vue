@@ -1452,6 +1452,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         v-if="keepAtAgentItem?.agent_warehouse?.keep_at_agent"
         v-model:visible="isKeepAtAgentDialogVisible"
         :code="keepAtAgentItem.code"
+        :name="keepAtAgentItem.name"
+        :image="keepAtAgentItem.image_thumbnail"
         :keepAtAgent="keepAtAgentItem.agent_warehouse.keep_at_agent"
     />
 

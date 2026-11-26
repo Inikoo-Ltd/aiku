@@ -12,12 +12,15 @@ import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes } from "@fal"
+import { faCheck, faTimes, faImage } from "@fal"
+import Image from "@common/Components/Image.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
 const props = defineProps<{
 	code: string
+	name?: string | null
+	image?: object | null
 	keepAtAgent: {
 		quantity: number
 		min_note_length: number
@@ -47,11 +50,14 @@ watch(
 	{ immediate: true }
 )
 
+const noteLength = computed(() => note.value.trim().length)
+const isNoteLongEnough = computed(() => noteLength.value >= props.keepAtAgent.min_note_length)
+
 const canSubmit = computed(
 	() => !isSaving.value
 		&& (quantity.value ?? 0) > 0
 		&& (quantity.value ?? 0) <= props.keepAtAgent.quantity
-		&& note.value.trim().length >= props.keepAtAgent.min_note_length
+		&& isNoteLongEnough.value
 )
 
 function submit() {
@@ -79,6 +85,17 @@ function submit() {
 <template>
 	<Dialog v-model:visible="visible" modal :header="ctrans('Keep rest of :code at agent', { code })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
 		<div class="space-y-4 text-sm">
+			<div class="flex items-center gap-3">
+				<div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50">
+					<Image v-if="image" :src="image" imageCover class="h-20 w-20" />
+					<FontAwesomeIcon v-else :icon="faImage" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
+				</div>
+				<div class="min-w-0">
+					<div class="font-medium text-gray-900">{{ code }}</div>
+					<div v-if="name" class="text-gray-600 line-clamp-2">{{ name }}</div>
+				</div>
+			</div>
+
 			<p class="text-gray-600">{{ ctrans("These units stay at the agent. The order can finish without them, and they can still go in a later shipment.") }}</p>
 
 			<label class="block space-y-1">
@@ -89,6 +106,10 @@ function submit() {
 			<label class="block space-y-1">
 				<span class="text-xs font-medium text-gray-700">{{ ctrans("Why?") }} <span class="text-red-500">*</span></span>
 				<Textarea v-model="note" rows="2" autoResize :class="fieldFocusClass" fluid />
+				<span class="flex justify-between text-xs" :class="isNoteLongEnough ? 'text-green-600' : 'text-gray-500'">
+					<span>{{ ctrans("At least :min characters", { min: keepAtAgent.min_note_length }) }}</span>
+					<span class="tabular-nums">{{ noteLength }}/{{ keepAtAgent.min_note_length }}</span>
+				</span>
 			</label>
 
 			<p v-if="error" class="text-xs text-red-500">{{ error }}</p>

@@ -372,19 +372,19 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'pageHead'    => [
                     'icon'    => ['title' => __('Warehouse'), 'icon' => 'fal fa-warehouse-alt'],
                     'title'   => __('Warehouse'),
-                    'actions' => ($keptAtAgent = IndexAgentKeptAtAgent::query($agent)->count()) ? [
+                    'actions' => [
                         [
                             'type'    => 'button',
                             'style'   => 'tertiary',
                             'icon'    => 'fal fa-warehouse',
-                            'label'   => __('Kept at agent').' · '.$keptAtAgent,
+                            'label'   => __('Kept at agent').' · '.IndexAgentKeptAtAgent::query($agent)->count(),
                             'tooltip' => __('Units the buyer agreed stay here, not in a shipment yet'),
                             'route'   => [
                                 'name'       => 'grp.org.agent.warehouse.kept_at_agent',
                                 'parameters' => [$this->organisation->slug],
                             ],
                         ],
-                    ] : [],
+                    ],
                 ],
                 'data'          => $this->handle($agent),
                 'filterOptions' => $this->filterOptions($agent),
