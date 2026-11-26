@@ -814,6 +814,21 @@ test('stock deliveries search matches a reference from the middle and the suppli
     }
 });
 
+test('stock deliveries list shows and searches the supplier company name', function () {
+    $stockDelivery = StoreStockDelivery::make()->action($this->orgSupplier, [
+        'reference' => 'CompanyName'.uniqid(),
+        'date'      => date('Y-m-d'),
+    ], strict: false);
+    $this->orgSupplier->supplier->update(['company_name' => 'Quillmore Trading Ltd']);
+
+    $this->get(route('grp.org.procurement.stock_deliveries.index', [
+        $this->organisation->slug,
+        'filter[global]' => 'Quillmore',
+    ]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('data.data', fn ($rows) => $rows->firstWhere('slug', $stockDelivery->slug)['parent_name'] === 'Quillmore Trading Ltd')
+        ->etc());
+});
+
 test('UI show purchase order', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $this->purchaseOrder->slug]));

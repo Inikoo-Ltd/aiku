@@ -56,6 +56,8 @@ class IndexStockDeliveries extends OrgAction
     use WithSupplierSubNavigation;
     use WithAgentOrganisation;
 
+    private const string SUPPLIER_COMPANY_NAME_SQL = "(select nullif(trim(suppliers.company_name), '') from org_suppliers join suppliers on suppliers.id = org_suppliers.supplier_id where stock_deliveries.parent_type = 'OrgSupplier' and org_suppliers.id = stock_deliveries.parent_id)";
+
     private Warehouse|Organisation|OrgAgent|OrgPartner|OrgSupplier|OrgSupplierProduct|Agent|Supplier $parent;
 
     private const array STAGED_STATES = [
@@ -364,7 +366,8 @@ class IndexStockDeliveries extends OrgAction
         $query->where(function ($query) use ($value) {
             $query->whereAnyWordStartWith('stock_deliveries.reference', $value)
                 ->orWhereAnyWordStartWith('stock_deliveries.agent_reference', $value)
-                ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value);
+                ->orWhereAnyWordStartWith('stock_deliveries.parent_name', $value)
+                ->orWhereAnyWordStartWith(self::SUPPLIER_COMPANY_NAME_SQL, $value);
         });
     }
 
@@ -400,11 +403,11 @@ class IndexStockDeliveries extends OrgAction
             'stock_deliveries.slug',
             'stock_deliveries.reference',
             'stock_deliveries.agent_reference',
-            'stock_deliveries.parent_name',
             'stock_deliveries.parent_type',
             'stock_deliveries.state',
             'stock_deliveries.date',
-        ])->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date")
+        ])->selectRaw('coalesce('.self::SUPPLIER_COMPANY_NAME_SQL.', stock_deliveries.parent_name) as parent_name')
+            ->selectRaw("stock_deliveries.data->>'estimated_receiving_date' as estimated_receiving_date")
             ->selectRaw("(select count(distinct stock_delivery_items.org_stock_id) from stock_delivery_items
                 join org_stocks on org_stocks.id = stock_delivery_items.org_stock_id
                 where stock_delivery_items.stock_delivery_id = stock_deliveries.id
