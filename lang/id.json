@@ -23735,5 +23735,15 @@
     "We will credit :amount to your balance.": "Kami akan mengkreditkan :amount ke saldo Anda.",
     "What happened?": "Apa yang terjadi?",
     "What would you like us to do?": "Apa yang Anda ingin kami lakukan?",
-    "Which items went wrong?": "Barang mana yang bermasalah?"
+    "Which items went wrong?": "Barang mana yang bermasalah?",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Koeksistensi",
+    "Connect WhatsApp Business app": "Hubungkan aplikasi WhatsApp Business",
+    "Could not connect this number.": "Nomor ini tidak dapat dihubungkan.",
+    "Facebook could not be reached to open the WhatsApp signup.": "Facebook tidak dapat dijangkau untuk membuka pendaftaran WhatsApp.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "Hanya aplikasi Meta lain yang berlangganan akun ini (:apps), jadi pesannya masuk ke sana, bukan ke Aiku.",
+    "The WhatsApp signup was not finished.": "Pendaftaran WhatsApp tidak diselesaikan.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Nomor tetap ada di aplikasi WhatsApp Business di ponsel toko, dan Aiku juga membaca dan menulis lewat nomor itu.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Panggilan WhatsApp ke nomor ini hanya berdering di ponsel toko, tidak di Aiku. Buka aplikasi WhatsApp Business di ponsel itu setidaknya setiap 13 hari, atau Meta akan memutus nomor ini dari Aiku.",
+    "Media shared on the WhatsApp Business app": "Media yang dibagikan di aplikasi WhatsApp Business"
 }

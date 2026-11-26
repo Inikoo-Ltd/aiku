@@ -25949,5 +25949,15 @@
     "Which items went wrong?": "Que artigos chegaram com problemas?",
     "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "As encomendas entregues em :place são faturadas sem IVA, porque o seu número de IVA é válido (autoliquidação).",
     "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "As encomendas entregues em :place são faturadas sem IVA, nos produtos e no envio. Eventuais impostos ou direitos de importação no destino não são cobrados por nós.",
-    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "As encomendas entregues em :place são faturadas com :tax, nos produtos e no envio."
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "As encomendas entregues em :place são faturadas com :tax, nos produtos e no envio.",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Coexistência",
+    "Connect WhatsApp Business app": "Ligar a app WhatsApp Business",
+    "Could not connect this number.": "Não foi possível ligar este número.",
+    "Facebook could not be reached to open the WhatsApp signup.": "Não foi possível contactar o Facebook para abrir o registo do WhatsApp.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "Apenas outra app da Meta está subscrita nesta conta (:apps), por isso as mensagens vão para lá em vez de para o Aiku.",
+    "The WhatsApp signup was not finished.": "O registo do WhatsApp não foi concluído.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "O número continua na app WhatsApp Business no telemóvel da loja e o Aiku também lê e escreve nele.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "As chamadas WhatsApp para este número tocam apenas no telemóvel da loja, não no Aiku. Abra a app WhatsApp Business nesse telemóvel pelo menos a cada 13 dias, ou a Meta desliga o número do Aiku.",
+    "Media shared on the WhatsApp Business app": "Multimédia partilhada na app WhatsApp Business"
 }

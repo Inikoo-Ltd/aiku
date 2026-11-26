@@ -9299,5 +9299,15 @@
     "of :count": "/ :count",
     "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "A(z) :place címre szállított rendeléseket áfa nélkül számlázzuk, mert az adószáma érvényes (fordított adózás).",
     "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "A(z) :place címre szállított rendeléseket áfa nélkül számlázzuk, a termékekre és a szállításra is. Az ott esetleg felmerülő importadókat vagy vámokat nem mi számítjuk fel.",
-    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "A(z) :place címre szállított rendeléseket :tax felszámításával számlázzuk, a termékekre és a szállításra is."
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "A(z) :place címre szállított rendeléseket :tax felszámításával számlázzuk, a termékekre és a szállításra is.",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Koegzisztencia",
+    "Connect WhatsApp Business app": "WhatsApp Business alkalmazás csatlakoztatása",
+    "Could not connect this number.": "Ezt a számot nem sikerült csatlakoztatni.",
+    "Facebook could not be reached to open the WhatsApp signup.": "A Facebook nem érhető el a WhatsApp-regisztráció megnyitásához.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "Ehhez a fiókhoz csak egy másik Meta-alkalmazás van feliratkozva (:apps), ezért az üzenetek oda mennek az Aiku helyett.",
+    "The WhatsApp signup was not finished.": "A WhatsApp-regisztráció nem fejeződött be.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "A szám a bolt telefonján lévő WhatsApp Business alkalmazásban marad, és az Aiku is olvassa és ír róla.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Az erre a számra érkező WhatsApp-hívások csak a bolt telefonján csörögnek, az Aikuban nem. Legalább 13 naponta nyisd meg a WhatsApp Business alkalmazást azon a telefonon, különben a Meta leválasztja a számot az Aikuról.",
+    "Media shared on the WhatsApp Business app": "A WhatsApp Business alkalmazásban megosztott média"
 }

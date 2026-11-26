@@ -10098,5 +10098,15 @@
     "of :count": "van :count",
     "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Bestellingen geleverd in :place worden zonder btw gefactureerd, omdat uw btw-nummer geldig is (btw verlegd).",
     "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Bestellingen geleverd in :place worden zonder btw gefactureerd, op de producten en op de verzending. Eventuele invoerbelastingen of douanerechten daar worden niet door ons in rekening gebracht.",
-    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Bestellingen geleverd in :place worden gefactureerd met :tax, op de producten en op de verzending."
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Bestellingen geleverd in :place worden gefactureerd met :tax, op de producten en op de verzending.",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Coëxistentie",
+    "Connect WhatsApp Business app": "WhatsApp Business-app koppelen",
+    "Could not connect this number.": "Dit nummer kon niet worden gekoppeld.",
+    "Facebook could not be reached to open the WhatsApp signup.": "Facebook was niet bereikbaar om de WhatsApp-aanmelding te openen.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "Alleen een andere Meta-app is op dit account geabonneerd (:apps), dus de berichten gaan daarheen in plaats van naar Aiku.",
+    "The WhatsApp signup was not finished.": "De WhatsApp-aanmelding is niet afgerond.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Het nummer blijft in de WhatsApp Business-app op de winkeltelefoon en Aiku leest en schrijft er ook mee.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "WhatsApp-oproepen naar dit nummer gaan alleen over op de winkeltelefoon, niet in Aiku. Open de WhatsApp Business-app op die telefoon minstens elke 13 dagen, anders koppelt Meta het nummer los van Aiku.",
+    "Media shared on the WhatsApp Business app": "Media gedeeld in de WhatsApp Business-app"
 }

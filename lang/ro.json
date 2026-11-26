@@ -26230,5 +26230,15 @@
     "Which items went wrong?": "Ce produse au probleme?",
     "Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).": "Comenzile livrate în :place sunt facturate fără TVA, deoarece codul dvs. de TVA este valid (taxare inversă).",
     "Orders delivered to :place are invoiced without VAT, on the products and on the shipping. Any import taxes or duties there are not charged by us.": "Comenzile livrate în :place sunt facturate fără TVA, la produse și la transport. Eventualele taxe sau taxe vamale de import de acolo nu sunt percepute de noi.",
-    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Comenzile livrate în :place sunt facturate cu :tax, la produse și la transport."
+    "Orders delivered to :place are invoiced with :tax, on the products and on the shipping.": "Comenzile livrate în :place sunt facturate cu :tax, la produse și la transport.",
+    "Cloud API": "Cloud API",
+    "Coexistence": "Coexistență",
+    "Connect WhatsApp Business app": "Conectează aplicația WhatsApp Business",
+    "Could not connect this number.": "Acest număr nu a putut fi conectat.",
+    "Facebook could not be reached to open the WhatsApp signup.": "Facebook nu a putut fi contactat pentru a deschide înregistrarea WhatsApp.",
+    "Only another Meta app is subscribed to this account (:apps), so its messages go there instead of Aiku.": "Doar o altă aplicație Meta este abonată la acest cont (:apps), așa că mesajele ajung acolo în loc de Aiku.",
+    "The WhatsApp signup was not finished.": "Înregistrarea WhatsApp nu a fost finalizată.",
+    "The number stays on the WhatsApp Business app on the shop phone and Aiku reads and writes it too.": "Numărul rămâne în aplicația WhatsApp Business de pe telefonul magazinului, iar Aiku citește și scrie și el pe el.",
+    "WhatsApp calls to this number ring on the shop phone only, not in Aiku. Open the WhatsApp Business app on that phone at least every 13 days, or Meta disconnects the number from Aiku.": "Apelurile WhatsApp către acest număr sună doar pe telefonul magazinului, nu în Aiku. Deschide aplicația WhatsApp Business pe acel telefon cel puțin o dată la 13 zile, altfel Meta deconectează numărul de la Aiku.",
+    "Media shared on the WhatsApp Business app": "Media partajată în aplicația WhatsApp Business"
 }
