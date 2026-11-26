@@ -720,6 +720,7 @@ use App\Actions\Production\ManufactureTaskSession\ReviewUnderTargetManufactureTa
 use App\Actions\Production\ManufactureTaskSession\AcknowledgeManufactureTaskSessionShiftEnd;
 use App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity;
 use App\Actions\Production\ManufactureTaskSession\EditManufactureTaskSessionTimes;
+use App\Actions\Production\ManufactureTaskSession\OverrideManufactureTaskSessionBand;
 use App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\UndoManufacturePreparationMove;
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
@@ -1956,6 +1957,7 @@ Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/void', VoidM
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/undo-preparation-move', UndoManufacturePreparationMove::class)->name('manufacture-task-session.undo_preparation_move')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/correct', CorrectManufactureTaskSessionQuantity::class)->name('manufacture-task-session.correct')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/times', EditManufactureTaskSessionTimes::class)->name('manufacture-task-session.times')->withoutScopedBindings();
+Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/band', OverrideManufactureTaskSessionBand::class)->name('manufacture-task-session.band')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/under-target-review', ReviewUnderTargetManufactureTaskSession::class)->name('manufacture-task-session.under_target_review')->withoutScopedBindings();
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/acknowledge-shift-end', AcknowledgeManufactureTaskSessionShiftEnd::class)->name('manufacture-task-session.acknowledge_shift_end')->withoutScopedBindings();
 Route::patch('/manufacture-artisan-day/{manufactureArtisanDay:id}/resolve', ResolveManufactureArtisanDay::class)->name('manufacture-artisan-day.resolve')->withoutScopedBindings();

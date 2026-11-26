@@ -9,6 +9,7 @@
 namespace App\Actions\Production\ManufactureTaskSession\UI;
 
 use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
+use App\Actions\Production\ManufactureTaskSession\OverrideManufactureTaskSessionBand;
 use App\Actions\OrgAction;
 use App\Actions\Production\Artisan\GetArtisanWorkAreas;
 use App\Actions\Production\Artisan\SetArtisanPayType;
@@ -19,6 +20,7 @@ use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionBandOverrideReasonEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionTimeEditReasonEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum;
 use App\Models\HumanResources\Employee;
@@ -46,6 +48,7 @@ class IndexArtisans extends OrgAction
     private bool $canChangeLockedWeek = false;
     private Carbon $lockedBefore;
     private bool $canSeePay = false;
+    private bool $isProductionManager = false;
 
     public function authorize(ActionRequest $request): bool
     {
@@ -56,6 +59,7 @@ class IndexArtisans extends OrgAction
         $this->canChangeLockedWeek  = ManufacturePayrollAdjustment::canChangeLockedWeek($request->user(), $this->production);
         $this->lockedBefore         = ManufacturePayrollAdjustment::lockedBefore($this->production);
         $this->canSeePay            = ShowArtisansDashboard::canSeeArtisanEarnings($request->user(), $this->production);
+        $this->isProductionManager  = $request->user()->authTo('org-supervisor.'.$this->organisation->id);
 
         return ShowArtisansDashboard::canSeeArtisans($request->user(), $this->production);
     }
@@ -81,6 +85,7 @@ class IndexArtisans extends OrgAction
             'under_target'        => ['sometimes', 'boolean'],
             'artisan_pay_type'    => ['sometimes', 'nullable', Rule::enum(ArtisanPayTypeEnum::class)],
             'time_edited'         => ['sometimes', 'boolean'],
+            'band_overridden'     => ['sometimes', 'boolean'],
             'activity'            => ['sometimes', 'nullable', Rule::in(['production', ...array_map(fn (ManufactureTaskSessionActivityTypeEnum $activity) => $activity->value, ManufactureTaskSessionActivityTypeEnum::floorActivities())])],
             'preparation_reason'  => ['sometimes', 'nullable', 'string', 'regex:/^(none|\d+)$/'],
             'break_overrun'       => ['sometimes', 'boolean'],
@@ -96,6 +101,7 @@ class IndexArtisans extends OrgAction
         $underTargetOnly   = (bool) Arr::get($this->validatedData, 'under_target', false);
         $payType           = Arr::get($this->validatedData, 'artisan_pay_type');
         $timeEditedOnly    = (bool) Arr::get($this->validatedData, 'time_edited', false);
+        $bandOverriddenOnly = (bool) Arr::get($this->validatedData, 'band_overridden', false);
         $activity          = Arr::get($this->validatedData, 'activity');
         $preparationReason = $activity == ManufactureTaskSessionActivityTypeEnum::PREPARATION->value ? Arr::get($this->validatedData, 'preparation_reason') : null;
         $breakOverrunOnly  = (bool) Arr::get($this->validatedData, 'break_overrun', false);
@@ -113,12 +119,13 @@ class IndexArtisans extends OrgAction
             ->when($underTargetOnly, fn ($query) => $query->where('is_under_target', true))
             ->when($payType, fn ($query) => $query->where('artisan_pay_type', $payType))
             ->when($timeEditedOnly, fn ($query) => $query->whereNotNull('time_edited_at'))
+            ->when($bandOverriddenOnly, fn ($query) => $query->whereNotNull('band_override_code'))
             ->when($activity == 'production', fn ($query) => $query->whereNotNull('job_order_item_task_id'))
             ->when($activity && $activity != 'production', fn ($query) => $query->whereNull('job_order_item_task_id')->where('activity_type', $activity))
             ->when($preparationReason == 'none', fn ($query) => $query->whereNull('preparation_reason_id'))
             ->when($preparationReason && $preparationReason != 'none', fn ($query) => $query->where('preparation_reason_id', (int) $preparationReason))
             ->when($workAreaId, fn ($query) => $query->whereIn('employee_id', GetArtisanWorkAreas::make()->employeeIds($production, (int) $workAreaId)))
-            ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
+            ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'bandOverrider', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
             ->orderByDesc('ended_at')
             ->get();
 
@@ -236,6 +243,18 @@ class IndexArtisans extends OrgAction
             'band_targets'        => $bandTargets($session),
             'paid_units_per_hour' => $session->units_per_hour === null ? null : (int) $session->units_per_hour,
             'band_code'           => $session->state == ManufactureTaskSessionStateEnum::CLOSED ? $session->band_code : null,
+            'band_override'       => $session->band_override_code !== null ? [
+                'calculated_band' => $session->calculated_band_code,
+                'band'            => $session->band_override_code,
+                'reason'          => ManufactureTaskSessionBandOverrideReasonEnum::labels()[$session->band_override_reason?->value] ?? null,
+                'note'            => $session->band_override_note,
+                'overridden_by'   => $session->bandOverrider?->contact_name ?: $session->bandOverrider?->username,
+                'overridden_at'   => $session->band_overridden_at,
+            ] : null,
+            'band_route'          => $this->isProductionManager && $this->canChangeAt($session->ended_at) && $session->user_id != $userId && $session->state == ManufactureTaskSessionStateEnum::CLOSED && (OverrideManufactureTaskSessionBand::canBeOverridden($session) || $session->band_override_code !== null) ? [
+                'name'       => 'grp.models.manufacture-task-session.band',
+                'parameters' => ['manufactureTaskSession' => $session->id],
+            ] : null,
             'is_under_target'     => $session->is_under_target && $session->state == ManufactureTaskSessionStateEnum::CLOSED,
             'is_impossible_rate'  => $session->state == ManufactureTaskSessionStateEnum::CLOSED && $session->paidHours() > 0 && CloseManufactureTaskSession::make()->isImpossibleRate($session),
             'is_hourly'           => $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY,
@@ -343,6 +362,12 @@ class IndexArtisans extends OrgAction
                 'manufacture_task_id' => $manufactureTaskId ? (int)$manufactureTaskId : null,
                 'under_target'        => $underTargetOnly,
                 'time_edited'         => $timeEditedOnly,
+                'band_overridden'     => $bandOverriddenOnly,
+                'band_override_reasons' => array_map(fn (ManufactureTaskSessionBandOverrideReasonEnum $reason) => [
+                    'value' => $reason->value,
+                    'label' => ManufactureTaskSessionBandOverrideReasonEnum::labels()[$reason->value],
+                ], ManufactureTaskSessionBandOverrideReasonEnum::cases()),
+                'override_bands'      => $measuredBands->pluck('code')->unique()->sortBy(fn (string $code) => array_search($code, $bandOrder, true))->values()->all(),
                 'time_edit_reasons'   => array_map(fn (ManufactureTaskSessionTimeEditReasonEnum $reason) => [
                     'value' => $reason->value,
                     'label' => ManufactureTaskSessionTimeEditReasonEnum::labels()[$reason->value],

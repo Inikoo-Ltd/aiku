@@ -180,6 +180,7 @@ class ManufacturePayrollAdjustment extends Model implements Auditable
     {
         return match ($this->change) {
             'times'               => __('Edit times'),
+            'band'                => __('Change band'),
             'quantity'            => __('Correct'),
             'void'                => __('Void'),
             'under_target_reason' => __('Log reason'),

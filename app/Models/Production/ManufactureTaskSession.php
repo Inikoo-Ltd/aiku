@@ -13,6 +13,7 @@ use App\Actions\Production\ManufactureTaskSession\StopManufactureTaskSessionsAft
 use App\Events\BroadcastManufactureFloorChanged;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionBandOverrideReasonEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionTimeEditReasonEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionUnderTargetReasonEnum;
 use App\Models\HumanResources\Employee;
@@ -58,6 +59,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property numeric|null $units_per_hour
  * @property int|null $pay_band_id
  * @property string|null $band_code
+ * @property string|null $calculated_band_code
+ * @property string|null $band_override_code
+ * @property ManufactureTaskSessionBandOverrideReasonEnum|null $band_override_reason
+ * @property string|null $band_override_note
+ * @property int|null $band_overridden_by
+ * @property \Illuminate\Support\Carbon|null $band_overridden_at
  * @property numeric|null $hourly_rate
  * @property numeric|null $pay
  * @property numeric|null $bonus
@@ -100,6 +107,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read User|null $user
  * @property-read User|null $underTargetReviewer
  * @property-read User|null $timeEditor
+ * @property-read User|null $bandOverrider
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSessionShare> $shares
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTaskSession newQuery()
@@ -133,6 +141,9 @@ class ManufactureTaskSession extends Model implements Auditable
         'time_edit_note',
         'band_code',
         'pay',
+        'band_override_code',
+        'band_override_reason',
+        'band_override_note',
     ];
 
     protected static function booted(): void
@@ -156,6 +167,8 @@ class ManufactureTaskSession extends Model implements Auditable
         'original_ended_at'        => 'datetime',
         'time_edit_reason'         => ManufactureTaskSessionTimeEditReasonEnum::class,
         'time_edited_at'           => 'datetime',
+        'band_override_reason'     => ManufactureTaskSessionBandOverrideReasonEnum::class,
+        'band_overridden_at'       => 'datetime',
         'left_open_after_shift_at' => 'datetime',
         'shift_end_resolved_at'    => 'datetime',
         'shift_end_acknowledged_at' => 'datetime',
@@ -179,6 +192,17 @@ class ManufactureTaskSession extends Model implements Auditable
             ->with(['manufactureTask', 'jobOrder'])
             ->orderBy('started_at')
             ->first();
+    }
+
+    /**
+     * Paid at the band its speed earns: a production step by an artisan not paid by the hour. Payroll pays hourly
+     * artisans, maintenance and development at their own rate, so only these sessions can have their band overridden (HELP-4967).
+     */
+    public function isPaidBySpeedBand(): bool
+    {
+        return $this->job_order_item_task_id !== null
+            && $this->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION
+            && $this->artisan_pay_type != ArtisanPayTypeEnum::HOURLY;
     }
 
     public function isNonProductive(): bool
@@ -429,6 +453,11 @@ class ManufactureTaskSession extends Model implements Auditable
     public function timeEditor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'time_edited_by');
+    }
+
+    public function bandOverrider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'band_overridden_by');
     }
 
     public function employee(): BelongsTo

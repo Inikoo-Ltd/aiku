@@ -87,6 +87,8 @@ interface ArtisanSession extends TimeEditFields {
     band_targets: { band: string, units_per_hour: number }[]
     paid_units_per_hour: number | null
     band_code: string | null
+    band_override: null | { calculated_band: string | null, band: string, reason: string | null, note: string | null, overridden_by: string | null, overridden_at: string }
+    band_route: null | { name: string, parameters: object }
     is_under_target: boolean
     is_impossible_rate?: boolean
     is_hourly: boolean
@@ -171,6 +173,9 @@ type Props = {
     under_target: boolean
     time_edited: boolean
     time_edit_reasons: { value: string, label: string }[]
+    band_overridden: boolean
+    band_override_reasons: { value: string, label: string }[]
+    override_bands: string[]
     left_open: { id: number, worker: string, task_name: string, job_order_reference: string | null, started_at: string, left_open_after_shift_at: string, paused_at: string | null, ended_at: string | null, acknowledge_route: null | { name: string, parameters: object }, status: 'paused' | 'running' | 'closed' }[]
     daily_hours_warnings: { count: number, route: { name: string, parameters: Record<string, string | number> } }
     payroll_lock: { locked_before: string, period_locked: boolean, can_change: boolean, reminder: string | null }
@@ -317,6 +322,7 @@ function saveReasons() {
 }
 const underTargetOnly = ref(props.under_target)
 const timeEditedOnly = ref(props.time_edited)
+const bandOverriddenOnly = ref(props.band_overridden)
 const breakOverrunOnly = ref(props.break_overrun)
 const reviewing = ref<number | null>(null)
 const reviewReason = ref<string | null>(null)
@@ -474,7 +480,7 @@ function undoPreparationMove(session: { undo_move_route: null | { name: string, 
 function applyPeriod() {
     router.get(
         window.location.pathname,
-        { from: from.value, to: to.value, manufacture_task_id: manufactureTaskId.value || undefined, under_target: underTargetOnly.value ? 1 : undefined, time_edited: timeEditedOnly.value ? 1 : undefined, break_overrun: breakOverrunOnly.value ? 1 : undefined, artisan_pay_type: payTypeFilter.value || undefined, work_area_id: workAreaFilter.value || undefined, activity: activityFilter.value || undefined, preparation_reason: activityFilter.value === 'preparation' ? preparationReasonFilter.value || undefined : undefined },
+        { from: from.value, to: to.value, manufacture_task_id: manufactureTaskId.value || undefined, under_target: underTargetOnly.value ? 1 : undefined, time_edited: timeEditedOnly.value ? 1 : undefined, band_overridden: bandOverriddenOnly.value ? 1 : undefined, break_overrun: breakOverrunOnly.value ? 1 : undefined, artisan_pay_type: payTypeFilter.value || undefined, work_area_id: workAreaFilter.value || undefined, activity: activityFilter.value || undefined, preparation_reason: activityFilter.value === 'preparation' ? preparationReasonFilter.value || undefined : undefined },
         { preserveState: false }
     )
 }
@@ -807,6 +813,38 @@ function sendTimes(session: EditableSession, data: Record<string, unknown>) {
     )
 }
 
+const editingBand = ref<ArtisanSession | null>(null)
+const bandWorker = ref("")
+const bandChoice = ref<string | null>(null)
+const bandReason = ref<string | null>(null)
+const bandNote = ref("")
+const bandError = ref<string | null>(null)
+const canSaveBand = computed(() => !!bandChoice.value && !!bandReason.value && (bandReason.value !== "other" || bandNote.value.trim() !== ""))
+
+function openBand(session: ArtisanSession, worker: string) {
+    editingBand.value = session
+    bandWorker.value = worker
+    bandChoice.value = session.band_override?.band ?? null
+    bandReason.value = null
+    bandNote.value = ""
+    bandError.value = null
+}
+
+function saveBand(reset = false) {
+    const session = editingBand.value
+    if (!session?.band_route || (!reset && !canSaveBand.value)) return
+    const data = reset ? { band_code: null } : { band_code: bandChoice.value, reason: bandReason.value, note: bandNote.value || null }
+    withLockReason(session, (lock) => {
+        processing.value = true
+        router.patch(route(session.band_route!.name, session.band_route!.parameters), { ...data, ...lock }, {
+            preserveScroll: true,
+            onSuccess: () => editingBand.value = null,
+            onError: (errors) => bandError.value = Object.values(errors)[0] as string,
+            onFinish: () => processing.value = false,
+        })
+    })
+}
+
 const hourMinute = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) : "…"
 
 function clockTime(iso: string | null) {
@@ -884,6 +922,10 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
             <label class="flex items-center gap-2 pb-2 text-sm text-gray-600 whitespace-nowrap">
                 <Checkbox v-model="timeEditedOnly" binary />
                 {{ ctrans('Edited times only') }}
+            </label>
+            <label v-if="pays_by_speed" class="flex items-center gap-2 pb-2 text-sm text-gray-600 whitespace-nowrap">
+                <Checkbox v-model="bandOverriddenOnly" binary />
+                {{ ctrans('Changed bands only') }}
             </label>
             <label class="flex items-center gap-2 pb-2 text-sm text-gray-600 whitespace-nowrap">
                 <Checkbox v-model="breakOverrunOnly" binary />
@@ -1202,6 +1244,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                         v-tooltip="session.band_targets.map(target => ctrans('Band :band :rate', { band: target.band, rate: target.units_per_hour })).join(' · ')">
                                         <template v-if="session.standard_rate !== null">{{ (session.band_targets.length ? session.paid_units_per_hour : session.units_per_hour) ?? 0 }} / {{ session.band_targets.find(target => target.band === session.band_code)?.units_per_hour ?? session.standard_rate }}</template>
                                         <span v-if="session.band_code" class="ml-2 rounded px-1.5 py-0.5 text-xs font-medium" :class="bandClass(session.band_code)">{{ ctrans('Band') }} {{ session.band_code }}</span>
+                                        <span v-if="session.band_override" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">{{ ctrans('Changed') }}</span>
                                     </td>
                                     <td></td>
                                     <td class="py-1.5 px-3 text-right">
@@ -1219,6 +1262,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                     <td class="py-1.5 pl-3 text-right whitespace-nowrap">
                                         <button v-if="session.review_route && reviewing !== session.id" type="button" class="text-xs font-medium text-gray-700 hover:underline" @click="openReview(session)">{{ session.under_target_review ? ctrans('Change reason') : ctrans('Log reason') }}</button>
                                         <button v-if="session.times_route" type="button" class="ml-3 text-xs font-medium text-gray-700 hover:underline" @click="openTimes(session, artisan.worker)">{{ ctrans('Edit times') }}</button>
+                                        <button v-if="session.band_route" type="button" class="ml-3 text-xs font-medium text-gray-700 hover:underline" @click="openBand(session, artisan.worker)">{{ ctrans('Change band') }}</button>
                                         <button v-if="session.correct_route && correcting !== session.id" type="button" v-tooltip="ctrans('Correct quantity, or move to another step or line')" class="ml-3 text-xs font-medium text-gray-700 hover:underline" @click="openCorrect(session)">{{ ctrans('Correct') }}</button>
                                         <button v-if="session.void_route" type="button" class="ml-3 text-xs text-red-600 hover:underline disabled:opacity-40" :disabled="processing" @click="voidSession(session)">{{ ctrans('Void') }}</button>
                                     </td>
@@ -1229,6 +1273,13 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                         {{ ctrans('first recorded :from to :to', { from: clockTime(session.time_edit.original_started_at), to: clockTime(session.time_edit.original_ended_at) }) }}
                                         <template v-if="session.time_edit.note"> · {{ session.time_edit.note }}</template>
                                         — {{ session.time_edit.edited_by ?? ctrans('automatic') }}, {{ clockTime(session.time_edit.edited_at) }}
+                                    </td>
+                                </tr>
+                                <tr v-if="session.band_override">
+                                    <td colspan="10" class="pl-12 pb-1 text-xs text-gray-500">
+                                        {{ ctrans('Band changed from :from to :to (:reason)', { from: session.band_override.calculated_band ?? '—', to: session.band_override.band, reason: session.band_override.reason ?? '' }) }}
+                                        <template v-if="session.band_override.note"> · {{ session.band_override.note }}</template>
+                                        — {{ session.band_override.overridden_by }}, {{ clockTime(session.band_override.overridden_at) }}
                                     </td>
                                 </tr>
                                 <tr v-if="session.under_target_review?.note && reviewing !== session.id">
@@ -1571,6 +1622,40 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     </Button>
                     <Button type="tertiary" :label="warningConfirmed ? ctrans('Save anyway') : ctrans('Save times')" :loading="processing" :disabled="!canSaveTimes" @click="saveTimes">
                         <template #icon><FontAwesomeIcon :icon="['fal', warningConfirmed ? 'exclamation-triangle' : 'check']" :class="warningConfirmed ? 'text-amber-600' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </div>
+            </div>
+        </Dialog>
+
+        <Dialog :visible="!!editingBand" modal :header="ctrans('Change band')" :style="{ width: '28rem' }" @update:visible="(visible: boolean) => { if (!visible) editingBand = null }">
+            <div v-if="editingBand" class="space-y-3 text-sm">
+                <div class="text-gray-600">
+                    <span class="font-medium text-gray-800">{{ bandWorker }}</span> · {{ editingBand.task_name }} · {{ hourMinute(editingBand.started_at) }} – {{ hourMinute(editingBand.ended_at) }}
+                </div>
+                <div class="text-xs text-gray-500">
+                    {{ ctrans('Its speed earns band :band', { band: editingBand.band_override?.calculated_band ?? editingBand.band_code ?? '—' }) }}
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Pay at band') }} <span class="text-red-500">*</span></label>
+                    <Select v-model="bandChoice" :options="override_bands.map(code => ({ value: code, label: ctrans('Band') + ' ' + code }))" optionLabel="label" optionValue="value" :placeholder="ctrans('Choose a band')" fluid :class="fieldFocusClass" />
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Reason') }} <span class="text-red-500">*</span></label>
+                    <Select v-model="bandReason" :options="band_override_reasons" optionLabel="label" optionValue="value" :placeholder="ctrans('Choose a reason')" fluid :class="fieldFocusClass" />
+                </div>
+                <div v-if="bandReason">
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Note') }} <span v-if="bandReason === 'other'" class="text-red-500">*</span></label>
+                    <InputText v-model="bandNote" maxlength="1000" fluid />
+                </div>
+                <div class="text-xs text-gray-500">{{ ctrans('Payroll pays this session at the band chosen. Who changed it, when and why is kept on the session.') }}</div>
+                <div v-if="bandError" class="rounded border border-red-200 bg-red-50 px-2 py-1 text-red-700">{{ bandError }}</div>
+                <button v-if="editingBand.band_override" type="button" class="text-xs font-medium text-gray-700 hover:underline disabled:opacity-40" :disabled="processing" @click="saveBand(true)">{{ ctrans('Back to the band its speed earns') }}</button>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="editingBand = null">
+                        <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="primary" full :label="ctrans('Save band')" :loading="processing" :disabled="!canSaveBand" @click="saveBand()">
+                        <template #icon><FontAwesomeIcon :icon="['fal', 'check']" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>
             </div>

@@ -52,20 +52,25 @@ class CalculateManufactureTaskSessionPay
         if (!$band) {
             return $session;
         }
+        $calculatedBandCode = $band->code;
+        if ($session->band_override_code !== null && $session->isPaidBySpeedBand()) {
+            $band = $bands->firstWhere('code', $session->band_override_code) ?? $band;
+        }
 
         $hourlyRate = (float) $band->hourly_rate;
         $pay        = round($hours * $hourlyRate, 2);
         $bonus      = $band0 ? max(0, round($pay - (float) $band0->hourly_rate * $hours, 2)) : 0;
 
         $session->update([
-            'hours'           => $hours,
-            'units_per_hour'  => $unitsPerHour,
-            'pay_band_id'     => $band->id,
-            'band_code'       => $band->code,
-            'hourly_rate'     => $hourlyRate,
-            'pay'             => $pay,
-            'bonus'           => $bonus,
-            'tier_thresholds' => $editedTiers,
+            'hours'                => $hours,
+            'units_per_hour'       => $unitsPerHour,
+            'pay_band_id'          => $band->id,
+            'band_code'            => $band->code,
+            'calculated_band_code' => $calculatedBandCode,
+            'hourly_rate'          => $hourlyRate,
+            'pay'                  => $pay,
+            'bonus'                => $bonus,
+            'tier_thresholds'      => $editedTiers,
         ]);
 
         return $session;

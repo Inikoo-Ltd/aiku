@@ -1419,6 +1419,88 @@ describe('production reward pay bands', function () {
             ->and($session->time_edit_note)->toBe('Stayed to clean the line');
     });
 
+    test('the production manager pays a session at another band with a reason, kept through later recalculations and undone on request', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(18, 0));
+        $this->payBandJobOrderItemTask->manufactureTask->update(['standard_rate' => 152, 'is_piece_rate' => true]);
+        $organisationId = $this->production->organisation_id;
+        $operator       = stepTestSecondOperator($this->group);
+        $manager        = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $manager->givePermissionTo(["org-supervisor.$organisationId", "accounting.$organisationId.view", "accounting.$organisationId.edit"]);
+        $floorSupervisor = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $floorSupervisor->givePermissionTo(["productions_operations.{$this->production->id}.orchestrate"]);
+        $override = fn (ManufactureTaskSession $session, array $data, $editor) => \App\Actions\Production\ManufactureTaskSession\OverrideManufactureTaskSessionBand::make()->action($session->refresh(), $data, $editor)->refresh();
+
+        $session = timeEditSession($this->payBandJobOrderItemTask, $operator, now()->subHours(6), now()->subHours(6)->addSeconds(17760), 900);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session);
+        expect($session->band_code)->toBe('3')
+            ->and((float) $session->pay)->toBe(74.0);
+
+        expect(fn () => $override($session, ['band_code' => '0', 'reason' => 'artisan_error_rework'], $floorSupervisor))->toThrow(ValidationException::class, 'Only the production manager')
+            ->and(fn () => $override($session, ['band_code' => '0', 'reason' => 'artisan_error_rework'], $operator))->toThrow(ValidationException::class)
+            ->and(fn () => $override($session, ['band_code' => '0', 'reason' => 'other'], $manager))->toThrow(ValidationException::class)
+            ->and(fn () => $override($session, ['band_code' => '9', 'reason' => 'quality_reject'], $manager))->toThrow(ValidationException::class, 'cannot be chosen')
+            ->and(fn () => $override($session, ['band_code' => 'D', 'reason' => 'quality_reject'], $manager))->toThrow(ValidationException::class, 'cannot be chosen');
+
+        $session = $override($session, ['band_code' => '0', 'reason' => 'wrong_materials_not_reported', 'note' => 'Used the HHGR-04 packaging for HHGR-06'], $manager);
+        expect($session->band_code)->toBe('0')
+            ->and($session->calculated_band_code)->toBe('3')
+            ->and((float) $session->pay)->toBe(62.70)
+            ->and((float) $session->bonus)->toBe(0.0)
+            ->and($session->band_override_reason->value)->toBe('wrong_materials_not_reported')
+            ->and($session->band_overridden_by)->toBe($manager->id)
+            ->and($session->band_overridden_at)->not->toBeNull();
+
+        $props = get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => now()->subDay()->toDateString(), 'to' => now()->toDateString(), 'band_overridden' => 1]))
+            ->assertOk()->original->getData()['page']['props'];
+        $shown = collect($props['artisans'])->pluck('jobs')->flatten(1)->pluck('steps')->flatten(1)->pluck('sessions')->flatten(1)->keyBy('id');
+        expect($shown->keys()->all())->toBe([$session->id])
+            ->and($shown[$session->id]['band_override']['calculated_band'])->toBe('3')
+            ->and($shown[$session->id]['band_override']['band'])->toBe('0')
+            ->and($shown[$session->id]['band_override']['reason'])->toBe('Wrong materials used, not reported')
+            ->and($props['override_bands'])->toContain('0', '3');
+
+        $session = \App\Actions\Production\ManufactureTaskSession\EditManufactureTaskSessionTimes::make()->action($session, [
+            'started_at' => $session->started_at->toIso8601String(),
+            'ended_at'   => $session->started_at->copy()->addHours(5)->addMinutes(30)->toIso8601String(),
+            'reason'     => 'forgot_to_stop',
+        ], $manager)->refresh();
+        expect($session->band_code)->toBe('0')
+            ->and($session->calculated_band_code)->toBe('1');
+
+        $session->update(['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::HOURLY]);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->refresh();
+        expect($session->band_code)->toBe('0')
+            ->and($session->band_override_code)->toBe('0');
+        $session->update(['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::PIECE_RATE, 'band_override_code' => '3']);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->refresh();
+        expect($session->band_code)->toBe('3');
+        $session->update(['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::HOURLY]);
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->refresh();
+        expect($session->band_code)->toBe('0');
+        $session = $override($session, ['band_code' => null], $manager);
+        expect($session->band_override_code)->toBeNull();
+        $session->update(['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::PIECE_RATE]);
+
+        $session = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($session)->refresh();
+        expect($session->band_code)->toBe('1')
+            ->and($session->band_override_code)->toBeNull()
+            ->and((float) $session->pay)->toBe(71.5);
+
+        $hourly = timeEditSession($this->payBandJobOrderItemTask, $operator, now()->subHours(3), now()->subHours(2), 100, ['artisan_pay_type' => \App\Enums\Production\Artisan\ArtisanPayTypeEnum::HOURLY]);
+        $hourly = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($hourly);
+        expect(fn () => $override($hourly, ['band_code' => '3', 'reason' => 'other', 'note' => 'x'], $manager))->toThrow(ValidationException::class, 'paid by speed');
+
+        $lastWeek = timeEditSession($this->payBandJobOrderItemTask, $operator, now()->subWeek()->subHours(6), now()->subWeek()->subHours(6)->addSeconds(17760), 900);
+        \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($lastWeek);
+        expect(fn () => $override($lastWeek, ['band_code' => '0', 'reason' => 'quality_reject'], $manager))->toThrow(ValidationException::class, 'Give the reason');
+        $lastWeek = $override($lastWeek, ['band_code' => '0', 'reason' => 'quality_reject', 'lock_reason' => 'Oils to be redone'], $manager);
+        $adjustment = \App\Models\Production\ManufacturePayrollAdjustment::where('model_type', 'ManufactureTaskSession')->where('model_id', $lastWeek->id)->latest('id')->first();
+        expect($lastWeek->band_code)->toBe('0')
+            ->and($adjustment->change)->toBe('band')
+            ->and($adjustment->before['band_code'])->toBe('3')
+            ->and($adjustment->after['band_code'])->toBe('0');
+    });
+
     test('times are refused when wrong, overlapping, own, in a closed pay week or with no note for other', function () {
         $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(18, 0));
         $operator   = stepTestSecondOperator($this->group);
