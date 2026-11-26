@@ -8,7 +8,7 @@
 import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
-import InputNumber from "primevue/inputnumber"
+import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faBoxes, faExclamationTriangle } from "@fal"
@@ -29,6 +29,7 @@ type QuantityQuery = {
 	note: string | null
 	asked_by: string | null
 	asked_at: string | null
+	applied_at_once?: boolean
 }
 
 const props = defineProps<{
@@ -39,6 +40,7 @@ const props = defineProps<{
 		askQuantityRoute: routeType | null
 		answerQuantityRoute: routeType | null
 		quantity_changed_by_buyer?: boolean
+		quantity_change_applies_at_once?: boolean
 		units_per_carton?: number | string | null
 		units_per_pack?: number | string | null
 	}
@@ -60,6 +62,9 @@ const quantity = (units: number | string | null, level: OrderingLevel = props.le
 const query = computed(() => props.item.quantity_query)
 const isPending = computed(() => query.value?.state === "pending")
 const isChangedByBuyer = computed(() => !!props.item.quantity_changed_by_buyer)
+const appliesAtOnce = computed(() => isChangedByBuyer.value || !!props.item.quantity_change_applies_at_once)
+const isDirectChange = computed(() => isChangedByBuyer.value || !!query.value?.applied_at_once)
+const directChangeLabel = computed(() => (isChangedByBuyer.value ? ctrans("Changed after agreed") : ctrans("Quantity changed")))
 
 const stateStyles: Record<QuantityQuery["state"], { icon: typeof faBoxes; iconClass: string; boxClass: string }> = {
 	pending: { icon: faBoxes, iconClass: "text-amber-600", boxClass: "border-amber-300 bg-amber-50 text-amber-800" },
@@ -171,21 +176,21 @@ function answer(answerValue: "accepted" | "rejected") {
 				/>
 				<div class="flex items-center gap-1.5 font-medium">
 					<FontAwesomeIcon :icon="stateStyle.icon" :class="stateStyle.iconClass" fixed-width aria-hidden="true" />
-					{{ isChangedByBuyer ? ctrans("Changed after agreed") : query.label }}
+					{{ isDirectChange ? directChangeLabel : query.label }}
 				</div>
 				<div class="tabular-nums">
-					{{ isChangedByBuyer
+					{{ isDirectChange
 						? ctrans("Now :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) })
 						: ctrans("The agent asks for :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) }) }}
 				</div>
 				<div v-if="query.note" class="italic opacity-60">{{ query.note }}</div>
 				<div v-if="query.asked_by || query.asked_at" class="text-gray-500">
-					<span v-if="query.asked_by">{{ isChangedByBuyer ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}</span>
+					<span v-if="query.asked_by">{{ isDirectChange ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}</span>
 					{{ " " }}
 					<span v-if="query.asked_at" v-tooltip="useFormatTime(query.asked_at, { formatTime: 'hm' })">{{
 						query.asked_by
 							? ctrans("on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
-							: isChangedByBuyer
+							: isDirectChange
 								? ctrans("Changed on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
 								: ctrans("Asked on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
 					}}</span>
@@ -224,9 +229,11 @@ function answer(answerValue: "accepted" | "rejected") {
 				v-if="item.askQuantityRoute"
 				type="tertiary"
 				size="xs"
-				:label="isChangedByBuyer ? ctrans('Change quantity') : isPending ? ctrans('Change the asked quantity') : ctrans('Ask for another quantity')"
+				:label="appliesAtOnce ? ctrans('Change quantity') : isPending ? ctrans('Change the asked quantity') : ctrans('Ask for another quantity')"
 				:tooltip="isChangedByBuyer
 					? ctrans('Set the quantity the supplier confirmed, possible until the line is shipped')
+					: appliesAtOnce
+					? ctrans('You also edit purchasing for the buying organisation, so the new quantity applies at once, possible until the line is shipped')
 					: ctrans('Ask the organisation to accept or reject a new quantity for this line, possible until it is shipped')"
 				@click="openDialog"
 			>
@@ -249,7 +256,7 @@ function answer(answerValue: "accepted" | "rejected") {
 				<p class="text-gray-600">{{ ctrans("Ordered now: :quantity", { quantity: quantity(item.quantity_ordered, dialogLevel) }) }}</p>
 				<label class="block space-y-1">
 					<span class="text-xs text-gray-500">{{ ctrans("Quantity to order") }} ({{ quantityLabelOf(dialogLevel) }})</span>
-					<InputNumber v-model="form.quantity" :min="0" :maxFractionDigits="3" :class="fieldFocusClass" fluid />
+					<InputNumber v-model="form.quantity" @input="(event: InputNumberInputEvent) => (form.quantity = typeof event.value === 'number' ? event.value : null)" :min="0" :maxFractionDigits="3" :class="fieldFocusClass" fluid />
 				</label>
 				<div class="rounded border border-gray-200 text-xs">
 					<table class="w-full tabular-nums">
@@ -257,7 +264,7 @@ function answer(answerValue: "accepted" | "rejected") {
 							<tr>
 								<th class="px-2 py-1 text-left font-medium">{{ ctrans("Preview") }}</th>
 								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Ordered now") }}</th>
-								<th class="px-2 py-1 text-right font-medium">{{ isChangedByBuyer ? ctrans("New") : ctrans("Asked") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ appliesAtOnce ? ctrans("New") : ctrans("Asked") }}</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100">
@@ -285,7 +292,7 @@ function answer(answerValue: "accepted" | "rejected") {
 					</p>
 				</div>
 				<label class="block space-y-1">
-					<span class="text-xs text-gray-500">{{ isChangedByBuyer ? ctrans("Note (optional)") : ctrans("Note for the organisation (optional)") }}</span>
+					<span class="text-xs text-gray-500">{{ appliesAtOnce ? ctrans("Note (optional)") : ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
 				</label>
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
@@ -300,7 +307,7 @@ function answer(answerValue: "accepted" | "rejected") {
 					<Button
 						type="primary"
 						full
-						:label="isChangedByBuyer ? ctrans('Change quantity') : ctrans('Ask the organisation')"
+						:label="appliesAtOnce ? ctrans('Change quantity') : ctrans('Ask the organisation')"
 						:loading="form.processing"
 						:disabled="!form.quantity"
 						@click="ask"

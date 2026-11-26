@@ -191,10 +191,15 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
 
     private function notifyAgent(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, User $user): void
     {
-        $agentUser         = $purchaseOrderTransaction->priceQueriedBy;
+        self::notifyAgentUser($purchaseOrder, $purchaseOrderTransaction, $purchaseOrderTransaction->priceQueriedBy, $user);
+    }
+
+    public static function notifyAgentUser(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, ?User $agentUser, User $user): void
+    {
         $agentOrganisation = $purchaseOrder->agent?->organisation;
 
-        if (!$agentUser || !$agentUser->status || !$agentOrganisation || $agentUser->id === $user->id) {
+        if (!$agentUser || !$agentUser->status || !$agentOrganisation || $agentUser->id === $user->id
+            || !$agentUser->authTo("procurement.$agentOrganisation->id.view")) {
             return;
         }
 

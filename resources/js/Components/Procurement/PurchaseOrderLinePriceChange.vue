@@ -8,7 +8,7 @@
 import { computed, ref } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
-import InputNumber from "primevue/inputnumber"
+import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
 import Image from "@common/Components/Image.vue"
@@ -29,6 +29,7 @@ type PriceQuery = {
 	note: string | null
 	asked_by: string | null
 	asked_at: string | null
+	applied_at_once?: boolean
 }
 
 type PriceQuerySibling = {
@@ -55,6 +56,8 @@ const props = defineProps<{
 		supplier_unit_cost_currency?: string | null
 		price_query: PriceQuery | null
 		askPriceRoute: routeType | null
+		price_change_applies_at_once?: boolean
+		can_update_supplier_cost?: boolean
 		answerPriceRoute: routeType | null
 		price_query_siblings?: PriceQuerySibling[]
 	}
@@ -75,6 +78,9 @@ const alsoAcceptIds = ref<number[]>([])
 
 const query = computed(() => props.item.price_query)
 const isPending = computed(() => query.value?.state === "pending")
+const appliesAtOnce = computed(() => !!props.item.price_change_applies_at_once)
+const isDirectChange = computed(() => !!query.value?.applied_at_once)
+const alsoUpdateSupplierCost = ref(false)
 
 const stateStyles: Record<PriceQuery["state"], { icon: typeof faTags; iconClass: string; boxClass: string }> = {
 	pending: { icon: faTags, iconClass: "text-amber-600", boxClass: "border-amber-300 bg-amber-50 text-amber-800" },
@@ -87,7 +93,7 @@ const stateStyle = computed(() => (query.value ? stateStyles[query.value.state] 
 
 const confirmLabel = computed(() => {
 	if (dialog.value === "ask") {
-		return ctrans("Ask the organisation")
+		return appliesAtOnce.value ? ctrans("Change price") : ctrans("Ask the organisation")
 	}
 	if (dialog.value === "accept") {
 		return alsoAcceptIds.value.length
@@ -110,7 +116,9 @@ function confirmDialog() {
 
 const dialogHeader = computed(() => {
 	if (dialog.value === "ask") {
-		return ctrans("New supplier price for :code", { code: props.item.code })
+		return appliesAtOnce.value
+			? ctrans("New price for :code", { code: props.item.code })
+			: ctrans("New supplier price for :code", { code: props.item.code })
 	}
 	if (dialog.value === "accept") {
 		return ctrans("Accept the new price for :code", { code: props.item.code })
@@ -168,6 +176,7 @@ function openDialog(kind: "ask" | "adjust") {
 	const startCost = kind === "ask" ? askStartCost() : props.item.unit_cost
 	form.price = Math.round(Number(startCost ?? 0) * props.unitsPerLevel * 10000) / 10000
 	form.note = kind === "ask" && isPending.value ? query.value?.note ?? null : null
+	alsoUpdateSupplierCost.value = false
 	dialog.value = kind
 }
 
@@ -180,7 +189,11 @@ function ask() {
 	}
 
 	form
-		.transform(() => ({ unit_cost: unitCost(), note: form.note || null }))
+		.transform(() => ({
+			unit_cost: unitCost(),
+			note: form.note || null,
+			...(appliesAtOnce.value && props.item.can_update_supplier_cost ? { update_supplier_cost: alsoUpdateSupplierCost.value } : {}),
+		}))
 		.post(route(askRoute.name, askRoute.parameters), {
 			preserveScroll: true,
 			onSuccess: () => (dialog.value = null),
@@ -221,10 +234,12 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				/>
 				<div class="flex items-center gap-1.5 font-medium">
 					<FontAwesomeIcon :icon="stateStyle.icon" :class="stateStyle.iconClass" fixed-width aria-hidden="true" />
-					{{ query.label }}
+					{{ isDirectChange ? ctrans("Price changed") : query.label }}
 				</div>
 				<div class="tabular-nums">
-					{{ ctrans("The supplier asks :new, was :old", { new: money(query.unit_cost), old: money(query.previous_unit_cost) }) }}
+					{{ isDirectChange
+						? ctrans("Now :new, was :old", { new: money(query.unit_cost), old: money(query.previous_unit_cost) })
+						: ctrans("The supplier asks :new, was :old", { new: money(query.unit_cost), old: money(query.previous_unit_cost) }) }}
 					<span class="text-gray-500">({{ costLabel }})</span>
 				</div>
 				<div v-if="query.state === 'adjusted'" class="font-semibold tabular-nums">
@@ -233,12 +248,14 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				</div>
 				<div v-if="query.note" class="italic opacity-60">{{ query.note }}</div>
 				<div v-if="query.asked_by || query.asked_at" class="text-gray-500">
-					<span v-if="query.asked_by">{{ ctrans("Asked by :name", { name: query.asked_by }) }}</span>
+					<span v-if="query.asked_by">{{ isDirectChange ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}</span>
 					{{ " " }}
 					<span v-if="query.asked_at" v-tooltip="useFormatTime(query.asked_at, { formatTime: 'hm' })">{{
 						query.asked_by
 							? ctrans("on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
-							: ctrans("Asked on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+							: isDirectChange
+								? ctrans("Changed on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
+								: ctrans("Asked on :date", { date: useFormatTime(query.asked_at, { formatTime: "aiku" }) })
 					}}</span>
 				</div>
 			</div>
@@ -280,8 +297,10 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				v-if="item.askPriceRoute"
 				type="tertiary"
 				size="xs"
-				:label="isPending ? ctrans('Change the asked price') : ctrans('Supplier changed the price')"
-				:tooltip="ctrans('Ask the organisation to accept, reject or adjust a new price from the supplier, until the goods are shipped')"
+				:label="appliesAtOnce ? ctrans('Change price') : isPending ? ctrans('Change the asked price') : ctrans('Supplier changed the price')"
+				:tooltip="appliesAtOnce
+					? ctrans('You also edit purchasing for the buying organisation, so the new price applies at once, until the goods are shipped')
+					: ctrans('Ask the organisation to accept, reject or adjust a new price from the supplier, until the goods are shipped')"
 				@click="openDialog('ask')"
 			>
 				<template #icon>
@@ -352,11 +371,15 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 					{{ ctrans("Filled in with the supplier product's current price: :price", { price: money(currentSupplierUnitCost) }) }}
 				</p>
 				<label class="block space-y-1">
-					<span class="text-xs text-gray-500">{{ dialog === "ask" ? ctrans("Price the supplier asks") : ctrans("Price for this line") }} ({{ costLabel }}<template v-if="item.net_currency">, {{ item.net_currency }}</template>)</span>
-					<InputNumber v-model="form.price" :min="0" :maxFractionDigits="4" :class="fieldFocusClass" fluid />
+					<span class="text-xs text-gray-500">{{ dialog === "ask" && !appliesAtOnce ? ctrans("Price the supplier asks") : ctrans("Price for this line") }} ({{ costLabel }}<template v-if="item.net_currency">, {{ item.net_currency }}</template>)</span>
+					<InputNumber v-model="form.price" @input="(event: InputNumberInputEvent) => (form.price = typeof event.value === 'number' ? event.value : null)" :min="0" :maxFractionDigits="4" :class="fieldFocusClass" fluid />
+				</label>
+				<label v-if="dialog === 'ask' && appliesAtOnce && item.can_update_supplier_cost" class="flex cursor-pointer select-none items-center gap-2 text-xs text-gray-600">
+					<Checkbox v-model="alsoUpdateSupplierCost" binary size="small" />
+					{{ ctrans("Also update supplier price") }}
 				</label>
 				<label v-if="dialog === 'ask'" class="block space-y-1">
-					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
+					<span class="text-xs text-gray-500">{{ appliesAtOnce ? ctrans("Note (optional)") : ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
 				</label>
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>

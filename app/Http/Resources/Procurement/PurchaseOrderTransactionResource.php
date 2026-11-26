@@ -27,6 +27,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuant
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -121,6 +122,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'asked_by'           => $transaction->priceQueriedBy?->contact_name ?: $transaction->priceQueriedBy?->username,
                 'asked_at'           => $transaction->price_queried_at,
                 'answered_at'        => $transaction->price_query_answered_at,
+                'applied_at_once'    => $this->isAppliedAtOnce($transaction->price_queried_at, $transaction->price_query_answered_at),
             ] : null,
             'askPriceRoute'        => ($canAgentAsk = $this->canAgentAsk($transaction, $request)) ? [
                 'name'       => 'grp.models.purchase-order.transaction.price_change.ask',
@@ -138,6 +140,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'patch',
             ] : null,
+            'price_change_applies_at_once' => $canAgentAsk && AskPurchaseOrderTransactionQuantityChange::isBuyerEditing($transaction->purchaseOrder, $request->user()),
             'price_query_siblings' => $canAnswerPrice ? $this->priceQuerySiblings($transaction) : [],
             'quantity_query'       => $transaction->quantity_query_state ? [
                 'state'             => $transaction->quantity_query_state->value,
@@ -148,9 +151,11 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'asked_by'          => $transaction->quantityQueriedBy?->contact_name ?: $transaction->quantityQueriedBy?->username,
                 'asked_at'          => $transaction->quantity_queried_at,
                 'answered_at'       => $transaction->quantity_query_answered_at,
+                'applied_at_once'   => $this->isAppliedAtOnce($transaction->quantity_queried_at, $transaction->quantity_query_answered_at),
             ] : null,
             'quantity_changed_by_buyer' => $transaction->purchaseOrder !== null && AskPurchaseOrderTransactionQuantityChange::isChangedByBuyer($transaction->purchaseOrder),
-            'askQuantityRoute'     => $this->canAgentAskQuantity($transaction, $request) || $this->canBuyerChangeQuantity($transaction, $request) ? [
+            'quantity_change_applies_at_once' => ($canAgentAskQuantity = $this->canAgentAskQuantity($transaction, $request)) && AskPurchaseOrderTransactionQuantityChange::isBuyerEditing($transaction->purchaseOrder, $request->user()),
+            'askQuantityRoute'     => $canAgentAskQuantity || $this->canBuyerChangeQuantity($transaction, $request) ? [
                 'name'       => 'grp.models.purchase-order.transaction.quantity_change.ask',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -208,6 +213,14 @@ class PurchaseOrderTransactionResource extends JsonResource
         return $agentOrganisationId !== null
             && $this->viewingOrganisationId($request) === $agentOrganisationId
             && $request->user()?->authTo("procurement.$agentOrganisationId.edit");
+    }
+
+    /**
+     * A change applied at once is asked and answered in the same moment; an answer to someone's request always comes later.
+     */
+    private function isAppliedAtOnce(?CarbonInterface $askedAt, ?CarbonInterface $answeredAt): bool
+    {
+        return $askedAt !== null && $answeredAt !== null && $askedAt->equalTo($answeredAt);
     }
 
     private function canAgentAsk(PurchaseOrderTransaction $transaction, $request): bool
