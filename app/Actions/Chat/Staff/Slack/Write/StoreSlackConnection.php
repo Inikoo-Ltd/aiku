@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Actions\Chat\Staff\Slack\SyncSlackPrivateChannels;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
 use App\Models\SysAdmin\User;
@@ -101,6 +102,7 @@ class StoreSlackConnection
         ]);
         if ($private) {
             $connection->grantPrivateConsent($private['consent_version'], $private['terms_version']);
+            SyncSlackPrivateChannels::dispatch($user->group, true, null, $user->id);
         } elseif (array_diff(SlackWriteAccess::PRIVATE_SCOPES, $granted) !== []) {
             $connection->endPrivateConsent('lapsed');
         }

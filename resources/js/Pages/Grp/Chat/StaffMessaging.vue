@@ -620,7 +620,7 @@ onUnmounted(() => {
                             @toggle-star="toggleStar('dm-' + conversation.ulid)" />
                         <p v-if="isGroups && !tabConversations.length && !privateChannels.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("Your Slack private channels will show here once they sync.") }}</p>
                         <button
-                            v-if="!filterText && !isGroups"
+                            v-if="!filterText"
                             type="button"
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                             @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
@@ -800,7 +800,7 @@ onUnmounted(() => {
         </div>
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />
-        <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="selectConversation" />
+        <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="(url) => router.visit(url)" />
 
         <Dialog v-model:visible="isShortcutsOpen" modal dismissable-mask :header="ctrans('Keyboard shortcuts')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '92vw' }">
             <ul class="divide-y divide-gray-100 font-desk text-sm">

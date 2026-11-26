@@ -216,6 +216,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
                     'is_archived'  => $slackChannel->is_archived,
                     'is_private'   => $slackChannel->is_private,
+                    'brought_by'   => $slackChannel->is_private && $slackChannel->brought_by_user_id ? User::whereKey($slackChannel->brought_by_user_id)->first()?->chatName() : null,
                     'member_count' => $slackChannel->members()->count(),
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),
                     'bookmarks'    => $this->bookmarks($slackChannel),

@@ -43,6 +43,7 @@ export interface SlackChannelHeader {
     purpose?: string | null
     is_archived: boolean
     is_private?: boolean
+    brought_by?: string | null
     member_count?: number
     pinned_count?: number
     bookmarks?: SlackBookmark[]
@@ -464,6 +465,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 shadow"
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
+            <p v-if="channel.brought_by && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">{{ ctrans("This channel is now in Verba, brought by :name", { name: channel.brought_by }) }}</p>
             <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>

@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array|null $data
  * @property string|null $history_backfilled_to
  * @property \Illuminate\Support\Carbon|null $history_synced_at
+ * @property int|null $brought_by_user_id
  */
 class SlackChannel extends Model
 {

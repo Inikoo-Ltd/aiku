@@ -16,6 +16,7 @@ use App\Actions\Chat\Staff\Slack\SyncSlackPrivateChannels;
 use App\Actions\Chat\Staff\Slack\SyncSlackPublicChannels;
 use App\Actions\Chat\Staff\Slack\UpdateSlackChannelFromEvent;
 use App\Actions\Chat\Staff\Slack\UpdateSlackChannelMember;
+use App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess;
 use App\Models\SysAdmin\User;
 use App\Events\SlackChannelMessageChanged;
 use App\Models\Chat\SlackChannel;
@@ -409,4 +410,142 @@ test('a private channel is read by its members only, on every path, and never by
     $member->update(['status' => false]);
     $channel->members()->create(['slack_user_id' => "UMEMB{$this->s}"]);
     expect($channel->isReadableBy($member->refresh()))->toBeFalse();
+});
+
+test('a private channel enters through the bot and through an opted-in member token, once, read with the token of someone in it, INI-564', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-test');
+    Queue::fake();
+    $group = $this->organisation->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    $languageId = \App\Models\Helpers\Language::value('id');
+    $person     = function (string $key, bool $optedIn) use ($group, $languageId): User {
+        $user = User::factory()->create(['group_id' => $group->id, 'language_id' => $languageId, 'contact_name' => "Person {$key}"]);
+        \App\Models\Chat\SlackUser::create(['slack_id' => "U{$key}{$this->s}", 'user_id' => $user->id, 'email' => $user->email, 'real_name' => $key]);
+        \App\Models\Chat\SlackConnection::create([
+            'user_id' => $user->id, 'slack_user_id' => "U{$key}{$this->s}", 'team_id' => 'T1', 'token' => "xoxp-{$key}-{$this->s}", 'connected_at' => now(),
+            'scopes'  => implode(',', $optedIn ? [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES] : SlackWriteAccess::USER_SCOPES),
+            'private_consented_at' => $optedIn ? now() : null,
+        ]);
+
+        return $user->refresh();
+    };
+    $ann = $person('ANN', true);
+    $ben = $person('BEN', true);
+    $person('CAT', false);
+
+    $bot     = "GBOTH{$this->s}";
+    $shared  = "GSHARED{$this->s}";
+    $bensOwn = "GBEN{$this->s}";
+    $lists   = [
+        'Bearer xoxb-test'            => [$bot],
+        "Bearer xoxp-ANN-{$this->s}" => [$bot, $shared],
+        "Bearer xoxp-BEN-{$this->s}" => [$shared, $bensOwn],
+    ];
+    Http::fake(function (HttpRequest $request) use ($lists, $shared) {
+        $token = $request->header('Authorization')[0] ?? '';
+        if (str_contains($request->url(), 'conversations.list')) {
+            return Http::response(['ok' => true, 'channels' => array_map(fn (string $id) => ['id' => $id, 'name' => strtolower($id), 'is_private' => true], $lists[$token] ?? [])]);
+        }
+        if (str_contains($request->url(), 'conversations.members')) {
+            return Http::response(['ok' => true, 'members' => $request['channel'] === $shared ? ["UANN{$this->s}", "UBEN{$this->s}"] : ["UANN{$this->s}", "UBEN{$this->s}", 'UAIKUBOT']]);
+        }
+
+        return Http::response(['ok' => true, 'messages' => [['user' => "UANN{$this->s}", 'text' => 'hello from '.$request['channel'], 'ts' => '1789700000.000100']]]);
+    });
+
+    SyncSlackPrivateChannels::run($group, true);
+    SyncSlackPrivateChannels::run($group, true);
+
+    $rows = SlackChannel::whereIn('slack_id', [$bot, $shared, $bensOwn])->get()->keyBy('slack_id');
+    expect($rows)->toHaveCount(3)
+        ->and($rows[$bot]->is_member)->toBeTrue()
+        ->and($rows[$bot]->brought_by_user_id)->toBeNull()
+        ->and($rows[$shared]->is_member)->toBeFalse()
+        ->and($rows[$shared]->brought_by_user_id)->toBe($ann->id)
+        ->and($rows[$bensOwn]->brought_by_user_id)->toBe($ben->id)
+        ->and($rows->every(fn (SlackChannel $channel) => $channel->messages()->count() === 1))->toBeTrue()
+        ->and(SlackChannel::kept()->whereIn('slack_id', [$bot, $shared, $bensOwn])->exists())->toBeFalse();
+    $historyBy = fn (string $slackId) => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]->url(), 'conversations.history') && $pair[0]['channel'] === $slackId)
+        ->map(fn ($pair) => $pair[0]->header('Authorization')[0])->unique()->values()->all();
+    expect($historyBy($bot))->toBe(['Bearer xoxb-test'])
+        ->and($historyBy($shared))->toBe(["Bearer xoxp-ANN-{$this->s}"])
+        ->and($historyBy($bensOwn))->toBe(["Bearer xoxp-BEN-{$this->s}"]);
+    Http::assertNotSent(fn (HttpRequest $request) => ($request->header('Authorization')[0] ?? '') === "Bearer xoxp-CAT-{$this->s}");
+    $announcements = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat.postMessage'))
+        ->map(fn ($pair) => [$pair[0]['channel'], $pair[0]->header('Authorization')[0], $pair[0]['text']])->values()->all();
+    expect($announcements())->toBe([
+        [$shared, "Bearer xoxp-ANN-{$this->s}", 'This channel is now in Verba, brought by '.$ann->chatName()],
+        [$bensOwn, "Bearer xoxp-BEN-{$this->s}", 'This channel is now in Verba, brought by '.$ben->chatName()],
+    ]);
+
+    actingAs($ben)->get(route('grp.chat.staff.groups.slack.show', $rows[$shared]->id))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.brought_by', $ann->chatName()));
+    actingAs($ben)->get(route('grp.chat.staff.groups.slack.show', $rows[$bot]->id))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('slack_channel.brought_by', null));
+
+    SyncSlackPrivateChannels::run($group, true, null, $ben->id);
+    expect(SlackChannel::whereIn('slack_id', [$bot, $shared, $bensOwn])->count())->toBe(3)
+        ->and($announcements())->toHaveCount(2)
+        ->and($rows[$shared]->refresh()->brought_by_user_id)->toBe($ann->id);
+
+    $annCalls = collect(Http::recorded())->filter(fn ($pair) => ($pair[0]->header('Authorization')[0] ?? '') === "Bearer xoxp-ANN-{$this->s}")->count();
+    $event    = fn (string $ts) => ['type' => 'message', 'channel' => $shared, 'channel_type' => 'group', 'user' => "UBEN{$this->s}", 'text' => 'live', 'ts' => $ts];
+    \App\Models\Chat\SlackConnection::where('user_id', $ann->id)->first()->endPrivateConsent('withdrawn');
+    SyncSlackPrivateChannels::run($group, true);
+    expect($rows[$shared]->refresh()->brought_by_user_id)->toBe($ben->id)
+        ->and($announcements())->toHaveCount(3)
+        ->and($announcements()[2])->toBe([$shared, "Bearer xoxp-BEN-{$this->s}", 'This channel is now in Verba, brought by '.$ben->chatName()])
+        ->and(collect(Http::recorded())->filter(fn ($pair) => ($pair[0]->header('Authorization')[0] ?? '') === "Bearer xoxp-ANN-{$this->s}")->count())->toBe($annCalls);
+    expect(StoreSlackPrivateMessage::run($event('1789700100.000100')))->not->toBeNull();
+    \App\Models\Chat\SlackConnection::where('user_id', $ben->id)->first()->endPrivateConsent('withdrawn');
+    expect(StoreSlackPrivateMessage::run($event('1789700200.000100')))->toBeNull();
+});
+
+test('New Verbration creates a Slack private channel as the person, invites the people and keeps it private, and is refused inline without the opt-in, INI-564', function () {
+    $group = $this->organisation->group;
+    $languageId = \App\Models\Helpers\Language::value('id');
+    $person     = function (string $key, ?bool $optedIn) use ($group, $languageId): User {
+        $user = User::factory()->create(['group_id' => $group->id, 'language_id' => $languageId]);
+        if ($optedIn !== null) {
+            \App\Models\Chat\SlackUser::create(['slack_id' => "U{$key}{$this->s}", 'user_id' => $user->id, 'email' => $user->email, 'real_name' => $key]);
+            \App\Models\Chat\SlackConnection::create([
+                'user_id' => $user->id, 'slack_user_id' => "U{$key}{$this->s}", 'team_id' => 'T1', 'token' => "xoxp-{$key}-{$this->s}", 'connected_at' => now(),
+                'scopes'  => implode(',', $optedIn ? [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES] : SlackWriteAccess::USER_SCOPES),
+                'private_consented_at' => $optedIn ? now() : null,
+            ]);
+        }
+
+        return $user->refresh();
+    };
+    $creator  = $person('MAKR', true);
+    $invitee  = $person('JOIN', false);
+    $notOptIn = $person('NOPT', false);
+    $noSlack  = $person('NONE', null);
+    $slackId  = "GNEWV{$this->s}";
+    Http::fake([
+        'slack.com/api/conversations.create' => Http::response(['ok' => true, 'channel' => ['id' => $slackId, 'name' => "buying-team-{$this->s}", 'is_private' => true]]),
+        'slack.com/api/conversations.invite' => Http::response(['ok' => true, 'channel' => ['id' => $slackId]]),
+    ]);
+    $store = fn (User $user, array $userIds) => actingAs($user)->postJson(route('grp.chat.staff.groups.slack.store'), ['name' => "Buying Team {$this->s}", 'user_ids' => $userIds]);
+
+    $store($notOptIn, [$invitee->id])->assertUnprocessable()->assertJsonValidationErrors('name');
+    $store($creator, [$invitee->id, $noSlack->id])->assertUnprocessable()->assertJsonValidationErrors('user_ids');
+    Http::assertNothingSent();
+
+    $response = $store($creator, [$invitee->id])->assertOk();
+    $channel  = SlackChannel::where('slack_id', $slackId)->firstOrFail();
+    expect($response->json('url'))->toBe(route('grp.chat.staff.groups.slack.show', $channel->id))
+        ->and($channel->is_private)->toBeTrue()
+        ->and($channel->is_public)->toBeFalse()
+        ->and($channel->brought_by_user_id)->toBe($creator->id)
+        ->and($channel->members()->pluck('slack_user_id')->sort()->values()->all())->toBe(["UJOIN{$this->s}", "UMAKR{$this->s}"])
+        ->and(SlackChannel::kept()->whereKey($channel->id)->exists())->toBeFalse()
+        ->and($channel->isPrivateVisibleTo($invitee))->toBeTrue()
+        ->and($channel->isPrivateVisibleTo($notOptIn))->toBeFalse()
+        ->and($channel->isVisibleTo($creator))->toBeFalse();
+    Http::assertSent(fn (HttpRequest $request) => str_ends_with($request->url(), 'conversations.create') && $request['is_private'] === 'true'
+        && $request['name'] === strtolower("buying-team-{$this->s}") && $request->header('Authorization')[0] === "Bearer xoxp-MAKR-{$this->s}");
+    Http::assertSent(fn (HttpRequest $request) => str_ends_with($request->url(), 'conversations.invite') && $request['channel'] === $slackId && $request['users'] === "UJOIN{$this->s}");
 });

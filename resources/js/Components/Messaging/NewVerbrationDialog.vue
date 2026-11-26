@@ -12,14 +12,13 @@ import InputText from "primevue/inputtext"
 import AutoComplete from "primevue/autocomplete"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
+import type { StaffCoworker } from "@/Stores/staff-messaging"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes, faCheck } from "@fal"
 
 const visible = defineModel<boolean>("visible", { default: false })
-const emit = defineEmits<{ created: [ulid: string] }>()
+const emit = defineEmits<{ created: [url: string] }>()
 
-const store = useStaffMessaging()
 const name = ref("")
 const people = ref<StaffCoworker[]>([])
 const suggestions = ref<StaffCoworker[]>([])
@@ -47,11 +46,12 @@ const submit = async () => {
     isSaving.value = true
     error.value = null
     try {
-        const conversation = await store.createGroup(name.value.trim(), people.value.map((person) => person.id))
+        const { data } = await axios.post(route("grp.chat.staff.groups.slack.store"), { name: name.value.trim(), user_ids: people.value.map((person) => person.id) })
         visible.value = false
-        emit("created", conversation.ulid)
+        emit("created", data.url)
     } catch (exception: any) {
-        error.value = exception?.response?.data?.message ?? ctrans("The Verbration could not be created. Try again.")
+        const errors = exception?.response?.data?.errors
+        error.value = (errors && (errors.name?.[0] ?? errors.user_ids?.[0])) ?? exception?.response?.data?.message ?? ctrans("The Verbration could not be created. Try again.")
     } finally {
         isSaving.value = false
     }
@@ -61,10 +61,10 @@ const submit = async () => {
 <template>
     <Dialog v-model:visible="visible" modal :header="ctrans('New Verbration')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <div class="space-y-4 text-sm">
-            <p class="text-gray-500">{{ ctrans("A private group: only the people you invite can see it.") }}</p>
+            <p class="text-gray-500">{{ ctrans("A Slack private channel, created as you: only the people you invite can see it, in Slack and in Verba.") }}</p>
             <label class="block space-y-1">
                 <span class="font-medium text-gray-700">{{ ctrans("Name") }} <span class="text-red-500">*</span></span>
-                <InputText v-model="name" class="w-full" maxlength="255" :placeholder="ctrans('e.g. Buying team')" autofocus @keydown.enter="submit" />
+                <InputText v-model="name" class="w-full" maxlength="80" :placeholder="ctrans('e.g. buying-team')" autofocus @keydown.enter="submit" />
             </label>
             <label class="block space-y-1">
                 <span class="font-medium text-gray-700">{{ ctrans("People") }} <span class="text-red-500">*</span></span>
