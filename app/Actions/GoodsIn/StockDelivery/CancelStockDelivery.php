@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\SysAdmin\User;
 
 class CancelStockDelivery extends OrgAction
 {
@@ -30,6 +31,8 @@ class CancelStockDelivery extends OrgAction
     public int $hydratorsDelay = 0;
 
     private StockDelivery $stockDelivery;
+
+    private ?User $cancelledBy = null;
 
     private const CANCELLABLE_STATES = [
         StockDeliveryStateEnum::RECEIVED,
@@ -80,8 +83,9 @@ class CancelStockDelivery extends OrgAction
             ->each(fn (StockDeliveryItem $stockDeliveryItem) => $this->cancelItem($stockDeliveryItem));
 
         $stockDelivery->update([
-            'state'        => StockDeliveryStateEnum::CANCELLED,
-            'cancelled_at' => now(),
+            'state'                => StockDeliveryStateEnum::CANCELLED,
+            'cancelled_at'         => now(),
+            'cancelled_by_user_id' => $this->cancelledBy?->id,
         ]);
 
         UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
@@ -121,15 +125,17 @@ class CancelStockDelivery extends OrgAction
     public function asController(StockDelivery $stockDelivery, ActionRequest $request): StockDelivery
     {
         $this->stockDelivery = $stockDelivery;
+        $this->cancelledBy   = $request->user();
         $this->initialisation($stockDelivery->organisation, $request);
 
         return $this->handle($stockDelivery);
     }
 
-    public function action(StockDelivery $stockDelivery): StockDelivery
+    public function action(StockDelivery $stockDelivery, ?User $cancelledBy = null): StockDelivery
     {
         $this->asAction      = true;
         $this->stockDelivery = $stockDelivery;
+        $this->cancelledBy   = $cancelledBy;
         $this->initialisation($stockDelivery->organisation, []);
 
         return $this->handle($stockDelivery);

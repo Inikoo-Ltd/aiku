@@ -19,6 +19,7 @@ class GoodsInActionLooksTest {
             GoodsInActionKey.CHECK to ButtonLook(ButtonStyle.Soft, R.drawable.ic_ui_check_double),
             GoodsInActionKey.SET_AS_RETURNED to ButtonLook(ButtonStyle.Finish, R.drawable.ic_ui_check),
             GoodsInActionKey.UNRECEIVE to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
+            GoodsInActionKey.CANCEL to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
             GoodsInActionKey.UNDO to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
         )
 

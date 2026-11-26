@@ -300,4 +300,8 @@
     <string name="goodsin_returns_sort_newest">Newest received</string>
     <string name="goodsin_returns_sort_oldest">Oldest received</string>
     <string name="goodsin_next_stock_delivery">Next stock delivery</string>
+    <string name="goodsin_cancel_delivery">Cancel stock delivery</string>
+    <string name="goodsin_cancel_delivery_title">Cancel %1$s?</string>
+    <string name="goodsin_cancel_delivery_body">The delivery and all its items are cancelled. Only possible while nothing is placed. Aiku records that you cancelled it.</string>
+    <string name="goodsin_toast_cancelled">%1$s cancelled</string>
 </resources>

@@ -155,7 +155,7 @@ struct SystemNotFoundView: View {
                     .foregroundStyle(AikuColor.text3)
             }
         } actions: {
-            AikuButton("Scan again", icon: .scan) { router.select(.scan) }
+            AikuButton("Scan again", icon: .scan, kind: .scan) { router.select(.scan) }
                 .accessibilityIdentifier("system.notFound.scan")
             AikuButton("Type the code", icon: .keyboard, kind: .tertiary) { router.open(ShellRoute.search) }
             LinkButton("Report unknown barcode") {

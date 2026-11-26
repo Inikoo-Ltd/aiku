@@ -43,7 +43,7 @@ final class ShellInboxStore {
     }
 
     var hasLoaded: Bool { page > 0 }
-    var isEmpty: Bool { hasLoaded && notifications.isEmpty && loadError == nil }
+    var isEmpty: Bool { hasLoaded && notifications.isEmpty }
     var canLoadMore: Bool { hasLoaded && page < lastPage && loadingPage == nil && loadMoreError == nil }
     var isLoadingMore: Bool { (loadingPage ?? 0) > 1 }
     var unreadCount: Int { max(unread ?? notifications.filter(\.isUnread).count, 0) }

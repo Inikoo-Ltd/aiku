@@ -11,19 +11,20 @@ import io.aiku.droid.data.api.PalletReturnActionKey
 import io.aiku.droid.data.api.PalletReturnScanRequest
 import io.aiku.droid.data.api.PalletReturnWrite
 import io.aiku.droid.data.api.ParcelWrite
+import io.aiku.droid.data.api.ReturnAddress
 import io.aiku.droid.data.api.Shipper
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.ui.goodsout.Choices
 import io.aiku.droid.ui.goodsout.GoodsOutProblem
 import io.aiku.droid.ui.goodsout.problem
+import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import java.util.UUID
 
 private const val SCANNED_QUANTITY = 1
 
@@ -79,6 +80,7 @@ data class PalletReturnUiState(
     val unsure: ReturnTask? = null,
     val selectedPalletId: Long? = null,
     val shippers: Choices<Shipper> = Choices(),
+    val addresses: Choices<ReturnAddress> = Choices(),
 ) {
     val isWorking: Boolean get() = working != null || scanning != null
 
@@ -210,6 +212,23 @@ class PalletReturnViewModel(
             }
         }
     }
+
+    fun loadAddresses() {
+        val token = token() ?: return
+        if (mutableState.value.addresses.isLoading) {
+            return
+        }
+        mutableState.update { it.copy(addresses = it.addresses.copy(isLoading = true, problem = null)) }
+        viewModelScope.launch {
+            when (val result = api.palletReturnAddresses(token, warehouseId, returnId)) {
+                is GoodsOutResult.Loaded -> mutableState.update { it.copy(addresses = Choices(items = result.value)) }
+                GoodsOutResult.SessionExpired -> mutableState.update { it.copy(addresses = it.addresses.copy(isLoading = false), isSessionExpired = true) }
+                else -> mutableState.update { it.copy(addresses = it.addresses.copy(isLoading = false, problem = result.problem())) }
+            }
+        }
+    }
+
+    fun setLeaving(collection: Boolean, addressId: Long?) = act(PalletReturnWrite.SetLeaving(collection = collection, addressId = addressId))
 
     suspend fun downloadLabel(shipmentId: Long, target: File): AttachmentDownload {
         val token = token() ?: return AttachmentDownload.SessionExpired

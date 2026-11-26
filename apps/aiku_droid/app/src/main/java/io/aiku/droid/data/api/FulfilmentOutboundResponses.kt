@@ -102,6 +102,10 @@ object FulfilmentOutboundResponses {
         }
         is PalletReturnWrite.DeleteShipment -> WriteRequest(WriteMethod.Delete, "shipments/${write.shipmentId}", body = null)
         is PalletReturnWrite.PrintLabel -> post("shipments/${write.shipmentId}/print-label")
+        is PalletReturnWrite.SetLeaving -> post("leaving") {
+            put("collection", write.collection)
+            write.addressId?.let { put("address_id", it) }
+        }
     }
 
     fun scanBody(request: PalletReturnScanRequest): JsonObject = buildJsonObject {
@@ -152,6 +156,8 @@ object FulfilmentOutboundResponses {
     }
 
     fun parseShippers(statusCode: Int, body: String): GoodsOutResult<List<Shipper>> = parseData(statusCode, body)
+
+    fun parseAddresses(statusCode: Int, body: String): GoodsOutResult<List<ReturnAddress>> = parseData(statusCode, body)
 
     fun parseStoredItems(statusCode: Int, body: String): GoodsOutResult<StoredItemPage> = when (statusCode) {
         HTTP_OK -> decode<StoredItemListResponse>(body)

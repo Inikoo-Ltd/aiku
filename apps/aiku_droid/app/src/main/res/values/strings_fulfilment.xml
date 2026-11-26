@@ -137,4 +137,24 @@
     </plurals>
     <string name="fulfilment_return_dispatched_footnote">For dropshipping returns from Shopify or TikTok, dispatching also sends the fulfilment back to the customer’s shop.</string>
     <string name="fulfilment_return_next">Next return</string>
+    <string name="fulfilment_not_received_remaining_title">Pallets of %1$s not received?</string>
+    <string name="fulfilment_not_received_remaining_body">Every pallet of this delivery that is not booked in yet is set as not received. When no pallet arrived at all, the delivery becomes Not received.</string>
+    <string name="fulfilment_back_to_storing">Set back to storing</string>
+    <string name="fulfilment_back_to_storing_title">Set %1$s back to storing?</string>
+    <string name="fulfilment_back_to_storing_body">The incident is cleared and the pallet is stored again.</string>
+    <string name="fulfilment_back_to_storing_return_body">The incident is cleared and the pallet is stored again. It is taken off return %1$s, and that return is cancelled if nothing else is left on it.</string>
+    <string name="fulfilment_back_to_storing_toast">%1$s is back in storage</string>
+    <string name="fulfilment_leaving_title">How it leaves</string>
+    <string name="fulfilment_leaving_question">How does it leave?</string>
+    <string name="fulfilment_leaving_collects">Customer collects</string>
+    <string name="fulfilment_leaving_collects_hint">No shipment is needed.</string>
+    <string name="fulfilment_leaving_ship_to">Ship to</string>
+    <string name="fulfilment_leaving_no_address">To be shipped, no address yet</string>
+    <string name="fulfilment_leaving_change">Change</string>
+    <string name="fulfilment_leaving_save">Save</string>
+    <string name="fulfilment_leaving_default_address">Default delivery address</string>
+    <string name="fulfilment_leaving_no_addresses">The customer has no address yet. Add one on the web.</string>
+    <string name="fulfilment_leaving_addresses_failed">Couldn’t load the customer’s addresses</string>
+    <string name="fulfilment_leaving_toast_collects">%1$s: the customer collects it</string>
+    <string name="fulfilment_leaving_toast_shipped">%1$s will be shipped</string>
 </resources>

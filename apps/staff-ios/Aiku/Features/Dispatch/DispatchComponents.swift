@@ -73,11 +73,11 @@ struct DispatchScanPanel: View {
                     IconButton(.close, label: "Close", action: onClose)
                 }
             }
-            AikuButton(allTitle, icon: .check, isLoading: isWorking, action: onAll)
+            AikuButton(allTitle, icon: .checkDouble, kind: .secondary, isLoading: isWorking, action: onAll)
                 .accessibilityIdentifier("dispatch.scanPanel.all")
             HStack(spacing: 8) {
                 QuantityStepper(value: $amount, range: 1...max(1, maximum))
-                AikuButton(amountTitle(amount), kind: .tertiary, fullWidth: false) {
+                AikuButton(amountTitle(amount), kind: .primary, fullWidth: false) {
                     onAmount(amount)
                     amount = 1
                 }

@@ -193,10 +193,10 @@ struct DispatchPickingSessionView: View {
             } else {
                 AikuButton(
                     L10n.format("Remove %lld delivery notes", chosen.count),
-                    look: PickingSessionActionKey.look(for: PickingSessionActionKey.removeDeliveryNotes).forConfirm,
+                    look: PickingSessionActionKey.look(for: PickingSessionActionKey.removeDeliveryNotes),
                     isLoading: store.working == .removeDeliveryNotes(Array(chosen))
                 ) {
-                    Task { await run(.removeDeliveryNotes(item.deliveryNotes.map(\.id).filter(chosen.contains))) }
+                    open(.removeDeliveryNotes(item.deliveryNotes.map(\.id).filter(chosen.contains)))
                 }
             }
             AikuButton("Cancel", kind: .tertiary) { removing = nil }
@@ -275,9 +275,24 @@ struct DispatchPickingSessionView: View {
                 HelperText("The trolley becomes free for another delivery note or session.")
                 if let sheetProblem { FieldError(sheetProblem) }
             } footer: {
-                AikuButton("Remove the trolley", look: AikuButtonLook(.danger, icon: .trash).forConfirm, isLoading: store.isWorking) {
+                AikuButton("Remove the trolley", look: AikuButtonLook(.caution), isLoading: store.isWorking) {
                     Task { await run(.detachTrolley(trolley.id)) }
                 }
+                AikuButton("Cancel", kind: .tertiary) { sheet = nil }
+            }
+        case .removeDeliveryNotes(let ids):
+            SheetScaffold(title: L10n.format("Remove %lld delivery notes", ids.count), subtitle: L10n.format("Picking session %@", item.reference)) {
+                HelperText("Removed delivery notes leave the session and go back to To do.")
+                if let sheetProblem { FieldError(sheetProblem) }
+            } footer: {
+                AikuButton(
+                    L10n.format("Remove %lld delivery notes", ids.count),
+                    look: PickingSessionActionKey.look(for: PickingSessionActionKey.removeDeliveryNotes).forConfirm,
+                    isLoading: store.working == .removeDeliveryNotes(ids)
+                ) {
+                    Task { await run(.removeDeliveryNotes(ids)) }
+                }
+                .accessibilityIdentifier("dispatch.session.confirmRemoveNotes")
                 AikuButton("Cancel", kind: .tertiary) { sheet = nil }
             }
         case .addDeliveryNotes:
@@ -298,12 +313,14 @@ enum DispatchChat {
 enum DispatchSessionSheet: Identifiable {
     case attachTrolley
     case detachTrolley(MobileSessionRef)
+    case removeDeliveryNotes([Int])
     case addDeliveryNotes
 
     var id: String {
         switch self {
         case .attachTrolley: "attach"
         case .detachTrolley(let trolley): "detach.\(trolley.id)"
+        case .removeDeliveryNotes(let ids): "remove.\(ids.map(String.init).joined(separator: ","))"
         case .addDeliveryNotes: "add"
         }
     }

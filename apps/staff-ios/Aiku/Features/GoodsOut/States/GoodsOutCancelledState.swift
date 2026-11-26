@@ -34,7 +34,7 @@ struct GoodsOutCancelledStateView: View {
         } else {
             HelperText("If the order is replaced, these picks can be reused on the new delivery note. Cancelling needs a dispatching supervisor, an org admin, or order/CRM edit rights.")
         }
-        AikuButton("Back to delivery notes") {
+        AikuButton("Back to delivery notes", icon: .next, kind: .tertiary) {
             router.back()
         }
         .accessibilityIdentifier("goodsOut.backToList")

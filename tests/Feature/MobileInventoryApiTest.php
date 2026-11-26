@@ -39,6 +39,7 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStockMovements;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -439,6 +440,21 @@ test('mobile SKO stock movements are the web stock history of this warehouse, fi
         ]);
 
     getJson($url(['flow' => 'sideways']), mobileInventoryHeaders())->assertUnprocessable()->assertJsonValidationErrors('flow');
+});
+
+test('mobile stock movements give an Aurora note with links as plain text', function () {
+    [$user, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [$orgStock, $picking] = mobileInventorySko($warehouse);
+    postJson(route('grp.api.mobile.location_org_stocks.consume', $picking->id), ['quantity' => 1, 'note' => 'Office'], mobileInventoryHeaders())->assertOk();
+    OrgStockMovement::where('org_stock_id', $orgStock->id)->latest('id')->firstOrFail()->update([
+        'note' => '1000 SKO <span class="link" onClick="change_view(\'part/65751\')">Alabel-21</span> received in <span class="link" onClick="change_view(\'location/1/12\')">Affinity-Park</span> &amp; checked',
+    ]);
+    $plain = '1000 SKO Alabel-21 received in Affinity-Park & checked';
+
+    expect(getJson(route('grp.api.mobile.warehouses.org_stocks.stock_movements', [$warehouse->id, $orgStock->id]), mobileInventoryHeaders())->assertOk()->json('data.0.note'))->toBe($plain)
+        ->and(getJson(route('grp.api.mobile.locations.stock_movements', $picking->location_id), mobileInventoryHeaders())->assertOk()->json('data.0.note'))->toBe($plain)
+        ->and(IndexMobileOrgStockMovements::plainNote('<span></span>'))->toBeNull()
+        ->and(IndexMobileOrgStockMovements::plainNote(null))->toBeNull();
 });
 
 test('mobile SKO audit confirms an unchanged count as a recount and records the user on every count', function () {

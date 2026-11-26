@@ -36,6 +36,8 @@ object FulfilmentInboundActionKey {
     const val BOOK_IN = "book_in"
     const val NOT_RECEIVED = "not_received"
     const val UNDO_NOT_RECEIVED = "undo_not_received"
+    const val NOT_RECEIVED_REMAINING = "not_received_remaining"
+    const val BACK_TO_STORING = "back_to_storing"
     const val MOVE = "move"
     const val DAMAGED = "damaged"
     const val LOST = "lost"
@@ -279,11 +281,13 @@ sealed interface PalletDeliveryWrite {
     data class BookIn(val palletId: Long, val target: PalletLocationTarget) : PalletDeliveryWrite
     data class NotReceived(val palletId: Long) : PalletDeliveryWrite
     data class UndoNotReceived(val palletId: Long) : PalletDeliveryWrite
+    data object NotReceivedRemaining : PalletDeliveryWrite
 }
 
 sealed interface PalletWrite {
     data class Move(val target: PalletLocationTarget) : PalletWrite
     data class Incident(val state: PalletIncidentState, val message: String?) : PalletWrite
+    data object BackToStoring : PalletWrite
 }
 
 data class PalletDeliveryOutcome(val delivery: PalletDelivery, val status: String, val message: String?)

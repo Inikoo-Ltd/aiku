@@ -468,13 +468,21 @@ final class InventorySkoFeed {
     private(set) var reasons: MobileStockMovementReasons?
     private(set) var reasonsError: String?
     @ObservationIgnored private let service: InventoryService
+    @ObservationIgnored private let reasonsMemory: StockMovementReasonsMemory
     @ObservationIgnored private var isFollowingOfflineWork = false
 
-    init(warehouseID: Int, target: Target, canEditStocks: Bool, service: InventoryService = .live(.shared)) {
+    init(
+        warehouseID: Int,
+        target: Target,
+        canEditStocks: Bool,
+        service: InventoryService = .live(.shared),
+        reasonsMemory: StockMovementReasonsMemory = .shared
+    ) {
         self.warehouseID = warehouseID
         self.target = target
         self.canEditStocksFallback = canEditStocks
         self.service = service
+        self.reasonsMemory = reasonsMemory
         if case .id(let id) = target {
             orgStockID = id
         }
@@ -528,8 +536,15 @@ final class InventorySkoFeed {
 
     func loadReasons() async {
         guard reasons == nil else { return }
+        if let remembered = reasonsMemory.reasons {
+            reasons = remembered
+            reasonsError = nil
+            return
+        }
         do {
-            reasons = try await service.reasons()
+            let loaded = try await service.reasons()
+            reasonsMemory.reasons = loaded
+            reasons = loaded
             reasonsError = nil
         } catch where error.isCancellation {
             return
@@ -760,4 +775,10 @@ final class InventoryMovementsFeed {
         currentPage = meta.currentPage
         lastPage = meta.lastPage
     }
+}
+
+@MainActor
+final class StockMovementReasonsMemory {
+    static let shared = StockMovementReasonsMemory()
+    var reasons: MobileStockMovementReasons?
 }

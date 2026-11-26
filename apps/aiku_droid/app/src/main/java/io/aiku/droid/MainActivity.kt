@@ -152,7 +152,8 @@ private fun AikuDroidApp(container: AppContainer) {
             },
         )
         val state by loginViewModel.state.collectAsStateWithLifecycle()
-        LoginScreen(state = state, actions = loginViewModel)
+        val language by container.language.current.collectAsStateWithLifecycle()
+        LoginScreen(state = state, actions = loginViewModel, language = language, onChooseLanguage = container.accountLanguage::choose)
     } else {
         SignedInApp(container = container, session = signedInSession)
     }

@@ -65,6 +65,7 @@ private sealed interface DeliveryConfirm {
     data object Receive : DeliveryConfirm
     data class NotReceived(val palletId: Long, val reference: String) : DeliveryConfirm
     data class UndoNotReceived(val palletId: Long, val reference: String) : DeliveryConfirm
+    data class NotReceivedRemaining(val label: String) : DeliveryConfirm
 }
 
 @Composable
@@ -119,6 +120,7 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
             onReceive = { confirm = DeliveryConfirm.Receive },
             onStartBooking = viewModel::startBooking,
             onBookIn = { navigator.switchSection(FulfilmentBookInRoute(id = delivery.id, reference = delivery.reference)) },
+            onNotReceivedRemaining = { confirm = DeliveryConfirm.NotReceivedRemaining(it) },
         ),
         refresh = PullRefresh(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh, isEnabled = !state.isWorking),
     ) {
@@ -192,11 +194,46 @@ private fun PalletDeliveryContent(viewModel: PalletDeliveryViewModel, state: Pal
             onDismiss = { confirm = null },
             confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.UNDO_NOT_RECEIVED).forConfirm(),
         )
+        is DeliveryConfirm.NotReceivedRemaining -> ConfirmDialog(
+            title = stringResource(R.string.fulfilment_not_received_remaining_title, delivery.reference),
+            body = stringResource(R.string.fulfilment_not_received_remaining_body),
+            confirmLabel = current.label,
+            onConfirm = {
+                confirm = null
+                viewModel.notReceivedRemaining()
+            },
+            onDismiss = { confirm = null },
+            confirmLook = fulfilmentInboundActionLook(FulfilmentInboundActionKey.NOT_RECEIVED_REMAINING).forConfirm(),
+        )
         null -> Unit
     }
 }
 
 private fun deliveryFooter(
+    delivery: PalletDelivery,
+    working: PalletDeliveryWrite?,
+    onReceive: () -> Unit,
+    onStartBooking: () -> Unit,
+    onBookIn: () -> Unit,
+    onNotReceivedRemaining: (String) -> Unit,
+): (@Composable ColumnScope.() -> Unit)? {
+    val main = mainDeliveryFooter(delivery, working, onReceive, onStartBooking, onBookIn)
+    val notReceived = delivery.action(FulfilmentInboundActionKey.NOT_RECEIVED_REMAINING) ?: return main
+    val label = notReceived.label.ifBlank { null }
+    return {
+        main?.invoke(this)
+        AikuButton(
+            text = label ?: stringResource(R.string.fulfilment_not_received),
+            onClick = { onNotReceivedRemaining(label.orEmpty()) },
+            style = fulfilmentInboundActionLook(notReceived.key).style,
+            icon = fulfilmentInboundActionLook(notReceived.key).icon,
+            isLoading = working == PalletDeliveryWrite.NotReceivedRemaining,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+private fun mainDeliveryFooter(
     delivery: PalletDelivery,
     working: PalletDeliveryWrite?,
     onReceive: () -> Unit,

@@ -40,6 +40,7 @@ private class FakeOperationsApi : OfflineOperationsApi {
     val asked = mutableListOf<OfflineOperationsState>()
     val resolutions = mutableListOf<Pair<Long, OfflineResolution>>()
     var resolveResult: (OfflineResolution) -> GoodsOutResult<OfflineResolveOutcome> = { GoodsOutResult.Unreachable }
+    val resolveById = mutableMapOf<Long, GoodsOutResult<OfflineResolveOutcome>>()
     val rollbacks = mutableListOf<Long>()
     var rollbackResult: GoodsOutResult<OfflineOperationEntry> = GoodsOutResult.Unreachable
 
@@ -50,7 +51,7 @@ private class FakeOperationsApi : OfflineOperationsApi {
 
     override suspend fun resolve(token: String, operationId: Long, resolution: OfflineResolution): GoodsOutResult<OfflineResolveOutcome> {
         resolutions += operationId to resolution
-        return resolveResult(resolution)
+        return resolveById[operationId] ?: resolveResult(resolution)
     }
 
     override suspend fun rollback(token: String, operationId: Long, reason: String?): GoodsOutResult<OfflineOperationEntry> {
@@ -246,5 +247,48 @@ class SyncViewModelsTest {
         assertEquals(ConflictEvent.RolledBack, viewModel.state.value.event)
         assertEquals("rolled_back", viewModel.state.value.operation?.currentState)
         assertTrue(viewModel.state.value.isClosed)
+    }
+
+    @Test
+    fun `conflicts are grouped per record, offering only the resolutions every line allows`() {
+        val note = OfflineOperationRecord(type = "delivery_note", id = 7)
+        val first = entry(81, resolutions = listOf("put_back", "done")).copy(record = note)
+        val second = entry(82, resolutions = listOf("put_back", "discard")).copy(record = note)
+        val alone = entry(83).copy(record = OfflineOperationRecord(type = "location", id = 4), labels = OfflineOperationLabels(title = "P-01", locationCode = "P-01"))
+        val unknown = entry(84)
+
+        val groups = groupConflicts(listOf(first, alone, second, unknown))
+
+        assertEquals(listOf(listOf(81L, 82L), listOf(83L), listOf(84L)), groups.map { group -> group.lines.map { it.key } })
+        assertEquals(OfflineRecordKey(OfflineRecordType.DELIVERY_NOTE, 7), groups[0].recordKey)
+        assertEquals(listOf(OfflineResolution.PutBack), groups[0].bulkResolutions)
+        assertEquals("P-01", groups[1].reference)
+        assertTrue(groups[1].bulkResolutions.isEmpty())
+        assertNull(groups[2].record)
+    }
+
+    @Test
+    fun `resolving a whole record runs every line and shows what happened to each`() {
+        val note = OfflineOperationRecord(type = "delivery_note", id = 7)
+        val lines = listOf(entry(81).copy(record = note), entry(82).copy(record = note))
+        api.lists[OfflineOperationsState.Open] = GoodsOutResult.Loaded(lines + entry(90).copy(record = OfflineOperationRecord(type = "delivery_note", id = 8)))
+        api.resolveById[81] = GoodsOutResult.Loaded(OfflineResolveOutcome(entry(81, status = "resolved", resolutions = emptyList()), emptyList()))
+        api.resolveById[82] = GoodsOutResult.Invalid("Already resolved by B")
+        val viewModel = ConflictRecordViewModel(api, FakeSessions(), offline, note)
+        viewModel.onStart()
+
+        assertEquals(listOf(81L, 82L), viewModel.state.value.lines.map { it.key })
+
+        viewModel.resolveAll(OfflineResolution.Discard)
+        assertTrue(api.resolutions.isEmpty())
+
+        viewModel.resolveAll(OfflineResolution.PutBack)
+
+        val state = viewModel.state.value
+        assertEquals(listOf(81L to OfflineResolution.PutBack, 82L to OfflineResolution.PutBack), api.resolutions)
+        assertEquals(listOf(true, false), state.results.map { it.isResolved })
+        assertEquals("Already resolved by B", state.results[1].message)
+        assertEquals(ConflictRecordEvent(resolved = 1, total = 2), state.event)
+        assertEquals(listOf(SyncReason.MANUAL), offline.syncs)
     }
 }

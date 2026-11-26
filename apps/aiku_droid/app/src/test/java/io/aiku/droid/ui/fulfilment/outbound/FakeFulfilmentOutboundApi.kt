@@ -17,6 +17,7 @@ import io.aiku.droid.data.api.PalletReturnScanRequest
 import io.aiku.droid.data.api.PalletReturnTypeGroup
 import io.aiku.droid.data.api.PalletReturnWrite
 import io.aiku.droid.data.api.PlaceRef
+import io.aiku.droid.data.api.ReturnAddress
 import io.aiku.droid.data.api.ReturnItemLine
 import io.aiku.droid.data.api.ReturnOtherPallet
 import io.aiku.droid.data.api.ReturnPalletLine
@@ -70,6 +71,10 @@ class FakeFulfilmentOutboundApi : FulfilmentOutboundApi {
     }
 
     override suspend fun palletReturnShippers(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<Shipper>> = shippers
+
+    var addresses: GoodsOutResult<List<ReturnAddress>> = GoodsOutResult.Loaded(emptyList())
+
+    override suspend fun palletReturnAddresses(token: String, warehouseId: Long, returnId: Long): GoodsOutResult<List<ReturnAddress>> = addresses
 
     override suspend fun downloadShipmentLabel(token: String, warehouseId: Long, returnId: Long, shipmentId: Long, target: File): AttachmentDownload = AttachmentDownload.Unreachable
 

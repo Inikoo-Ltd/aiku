@@ -9,6 +9,7 @@
 
 namespace App\Actions\Api\Group\GoodsIn;
 
+use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryGoodsInChecklist;
 use App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery;
@@ -154,7 +155,23 @@ trait WithMobileStockDeliveries
             $actions[] = $this->actionOption('checklist', __('Checklist'));
         }
 
+        if (self::canCancelStockDeliveries($user, $stockDelivery) && $this->canBeCancelledFromTheApp($stockDelivery)) {
+            $actions[] = $this->actionOption('cancel', __('Cancel stock delivery'));
+        }
+
         return $actions;
+    }
+
+    public static function canCancelStockDeliveries(User $user, StockDelivery $stockDelivery): bool
+    {
+        return $user->authTo("procurement.$stockDelivery->organisation_id.edit");
+    }
+
+    protected function canBeCancelledFromTheApp(StockDelivery $stockDelivery): bool
+    {
+        return !$stockDelivery->isManagedByPartner()
+            && CancelStockDelivery::canBeCancelled($stockDelivery)
+            && !$stockDelivery->items()->where('unit_quantity_placed', '>', 0)->exists();
     }
 
     /**

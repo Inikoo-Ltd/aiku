@@ -20,6 +20,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
@@ -65,12 +66,23 @@ class IndexMobileOrgStockMovements
                 'location'                   => $locationId ? ['id' => $locationId, 'code' => $movement->getAttribute('location_code')] : null,
                 'reason'                     => $movement->reason?->value,
                 'reason_label'               => $resource['reason_label'],
-                'note'                       => $movement->note,
+                'note'                       => self::plainNote($movement->note),
                 'parent_type'                => $movement->parent_type,
                 'parent_reference'           => $movement->getAttribute('parent_reference'),
                 'user'                       => $this->userReference($movement->user),
             ];
         })->values()->all();
+    }
+
+    public static function plainNote(?string $note): ?string
+    {
+        if ($note === null) {
+            return null;
+        }
+
+        $text = Str::squish(html_entity_decode(strip_tags($note), ENT_QUOTES | ENT_HTML5));
+
+        return $text === '' ? null : $text;
     }
 
     public function asController(Warehouse $warehouse, OrgStock $orgStock, ActionRequest $request): JsonResponse

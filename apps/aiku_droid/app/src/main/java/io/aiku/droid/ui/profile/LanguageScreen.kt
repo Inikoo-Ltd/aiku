@@ -71,18 +71,23 @@ private fun LanguageList(current: AppLanguage, onChoose: (AppLanguage) -> Unit) 
                 color = colors.textTertiary,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
-            ListGroup(modifier = Modifier.selectableGroup()) {
-                AppLanguage.entries.forEachIndexed { index, language ->
-                    if (index > 0) {
-                        RowDivider()
-                    }
-                    LanguageRow(
-                        language = language,
-                        isSelected = language == current,
-                        onSelect = { onChoose(language) },
-                    )
-                }
+            LanguageOptions(current = current, onChoose = onChoose)
+        }
+    }
+}
+
+@Composable
+fun LanguageOptions(current: AppLanguage, onChoose: (AppLanguage) -> Unit) {
+    ListGroup(modifier = Modifier.selectableGroup()) {
+        AppLanguage.entries.forEachIndexed { index, language ->
+            if (index > 0) {
+                RowDivider()
             }
+            LanguageRow(
+                language = language,
+                isSelected = language == current,
+                onSelect = { onChoose(language) },
+            )
         }
     }
 }

@@ -74,6 +74,7 @@ object FulfilmentInboundResponses {
         is PalletDeliveryWrite.BookIn -> post("pallets/${write.palletId}/book-in") { putTarget(write.target) }
         is PalletDeliveryWrite.NotReceived -> post("pallets/${write.palletId}/not-received")
         is PalletDeliveryWrite.UndoNotReceived -> post("pallets/${write.palletId}/undo-not-received")
+        PalletDeliveryWrite.NotReceivedRemaining -> post("pallet-deliveries/$deliveryId/not-received")
     }
 
     fun palletWriteRequest(write: PalletWrite): WriteRequest = when (write) {
@@ -82,6 +83,7 @@ object FulfilmentInboundResponses {
             put("state", write.state.key)
             put("message", write.message.trimmedOrNull())
         }
+        PalletWrite.BackToStoring -> post("back-to-storing")
     }
 
     fun auditStartRequest(): WriteRequest = post("audit")

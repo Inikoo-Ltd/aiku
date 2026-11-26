@@ -120,7 +120,7 @@ struct SystemTests {
             record == note ? DownloadedRecord(body: body, seenAt: .now, downloadedAt: .now) : nil
         }
 
-        #expect(groups.map(\.title) == ["Delivery note AR24811", "Location #7"])
+        #expect(groups.map(\.title) == ["Delivery note AR24811", "Location"])
         #expect(groups.first?.entries.map(\.localID) == [1, 3])
     }
 

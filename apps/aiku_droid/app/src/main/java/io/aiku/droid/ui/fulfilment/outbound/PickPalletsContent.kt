@@ -93,6 +93,13 @@ internal fun PickPalletsContent(viewModel: PalletReturnViewModel, state: PalletR
         ReturnUnsureAlert(state = state, onRetry = viewModel::retryUnsure)
         ReturnStateBlock(palletReturn = palletReturn)
         ReturnNotices(palletReturn = palletReturn)
+        ReturnLeaving(
+            palletReturn = palletReturn,
+            addresses = state.addresses,
+            working = state.working,
+            onLoadAddresses = viewModel::loadAddresses,
+            onSave = viewModel::setLeaving,
+        )
         if (listensForScans && nextLine != null) {
             FulfilmentScanPrompt(
                 title = stringResource(R.string.fulfilment_return_scan_title),

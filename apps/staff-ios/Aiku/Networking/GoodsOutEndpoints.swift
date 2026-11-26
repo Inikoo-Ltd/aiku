@@ -561,6 +561,26 @@ enum GoodsOutDispatchRole: String, Sendable {
     case packers
 }
 
+struct GoodsOutCountsRequest: Equatable, Sendable {
+    var picker: String?
+    var search: String?
+    var from: String?
+    var to: String?
+    var overdue = false
+
+    var queryItems: [URLQueryItem] {
+        var items: [URLQueryItem] = []
+        if let picker { items.append(URLQueryItem(name: "picker", value: picker)) }
+        if let search = search?.trimmingCharacters(in: .whitespacesAndNewlines), !search.isEmpty {
+            items.append(URLQueryItem(name: "search", value: search))
+        }
+        if let from { items.append(URLQueryItem(name: "from", value: from)) }
+        if let to { items.append(URLQueryItem(name: "to", value: to)) }
+        if overdue { items.append(URLQueryItem(name: "overdue", value: "1")) }
+        return items
+    }
+}
+
 struct GoodsOutListRequest: Equatable, Sendable {
     var bucket = "unassigned"
     var channel = "all"
@@ -568,9 +588,14 @@ struct GoodsOutListRequest: Equatable, Sendable {
     var from: String?
     var to: String?
     var picker: String?
+    var overdue = false
     var sort: String?
     var page = 1
     var perPage = 50
+
+    var countsRequest: GoodsOutCountsRequest {
+        GoodsOutCountsRequest(picker: picker, search: search, from: from, to: to, overdue: overdue)
+    }
 
     var queryItems: [URLQueryItem] {
         var items = [URLQueryItem(name: "bucket", value: bucket), URLQueryItem(name: "channel", value: channel)]
@@ -580,6 +605,7 @@ struct GoodsOutListRequest: Equatable, Sendable {
         if let from { items.append(URLQueryItem(name: "from", value: from)) }
         if let to { items.append(URLQueryItem(name: "to", value: to)) }
         if let picker { items.append(URLQueryItem(name: "picker", value: picker)) }
+        if overdue { items.append(URLQueryItem(name: "overdue", value: "1")) }
         if let sort { items.append(URLQueryItem(name: "sort", value: sort)) }
         items.append(URLQueryItem(name: "page", value: String(page)))
         items.append(URLQueryItem(name: "per_page", value: String(perPage)))
@@ -695,8 +721,8 @@ extension Endpoint {
         Endpoint(path: "mobile/warehouses/\(warehouseID)/delivery-notes", queryItems: request.queryItems)
     }
 
-    static func goodsOutCounts(warehouseID: Int, picker: String?) -> Endpoint {
-        Endpoint(path: "mobile/warehouses/\(warehouseID)/delivery-notes/counts", queryItems: picker.map { [URLQueryItem(name: "picker", value: $0)] } ?? [])
+    static func goodsOutCounts(warehouseID: Int, request: GoodsOutCountsRequest) -> Endpoint {
+        Endpoint(path: "mobile/warehouses/\(warehouseID)/delivery-notes/counts", queryItems: request.queryItems)
     }
 
     static func goodsOutDeliveryNote(id: Int) -> Endpoint {
@@ -737,8 +763,8 @@ extension APIClient {
         try await send(.goodsOutDeliveryNotes(warehouseID: warehouseID, request: request), as: GoodsOutDeliveryNotesPageDTO.self)
     }
 
-    func goodsOutCounts(warehouseID: Int, picker: String?) async throws -> GoodsOutCountsDTO {
-        try await send(.goodsOutCounts(warehouseID: warehouseID, picker: picker), as: DataEnvelope<GoodsOutCountsDTO>.self).value
+    func goodsOutCounts(warehouseID: Int, request: GoodsOutCountsRequest) async throws -> GoodsOutCountsDTO {
+        try await send(.goodsOutCounts(warehouseID: warehouseID, request: request), as: DataEnvelope<GoodsOutCountsDTO>.self).value
     }
 
     func goodsOutDeliveryNote(id: Int) async throws -> GoodsOutDeliveryNoteDTO {

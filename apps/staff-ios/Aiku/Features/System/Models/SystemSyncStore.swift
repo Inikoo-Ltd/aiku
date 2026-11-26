@@ -119,7 +119,7 @@ final class SystemSyncStore {
             titles[record] = reference
             return record.type.title(reference)
         }
-        return record.type.title("#\(record.id)")
+        return record.type.title("")
     }
 
     func reset() {

@@ -59,6 +59,8 @@ internal val fulfilmentInboundActionLooks: Map<String, ButtonLook> = mapOf(
     FulfilmentInboundActionKey.NOT_RECEIVED to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
     FulfilmentInboundActionKey.DAMAGED to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_warning),
     FulfilmentInboundActionKey.LOST to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_warning),
+    FulfilmentInboundActionKey.NOT_RECEIVED_REMAINING to ButtonLook(ButtonStyle.Danger, R.drawable.ic_ui_x_circle),
+    FulfilmentInboundActionKey.BACK_TO_STORING to ButtonLook(ButtonStyle.Caution, R.drawable.ic_ui_undo),
 )
 
 internal fun fulfilmentInboundActionLook(key: String): ButtonLook = fulfilmentInboundActionLooks[key] ?: ButtonLook(ButtonStyle.Outline)

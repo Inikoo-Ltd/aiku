@@ -8,91 +8,179 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.ProblemCategory
+import io.aiku.droid.data.api.ProblemReport
+import io.aiku.droid.data.api.ProblemReportResult
+import io.aiku.droid.data.api.SupportApi
+import io.aiku.droid.data.api.SupportReferences
+import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.ui.clocking.HrAttachmentPicker
+import io.aiku.droid.ui.clocking.HrFieldError
+import io.aiku.droid.ui.clocking.PickedAttachment
+import io.aiku.droid.ui.clocking.toUploadFiles
 import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.animateFocusProgress
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.focusHalo
-import io.aiku.droid.ui.theme.AikuDroidTheme
+import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
+import kotlinx.coroutines.launch
 
-enum class ReportProblemCategory(@StringRes val label: Int) {
-    UnknownBarcode(R.string.states_report_unknown_barcode_category),
-    WrongStock(R.string.states_report_wrong_stock),
-    DataProblem(R.string.states_report_data_problem),
-    AppError(R.string.states_report_app_error),
-    Other(R.string.states_report_other),
+enum class ReportProblemCategory(@StringRes val label: Int, val category: ProblemCategory) {
+    UnknownBarcode(R.string.states_report_unknown_barcode_category, ProblemCategory.UnknownBarcode),
+    WrongStock(R.string.states_report_wrong_stock, ProblemCategory.WrongStock),
+    DataProblem(R.string.states_report_data_problem, ProblemCategory.DataProblem),
+    AppError(R.string.states_report_app_error, ProblemCategory.AppError),
+    Other(R.string.states_report_other, ProblemCategory.Other),
 }
 
-@Composable
-fun ReportProblemSheet(onDismiss: () -> Unit) {
-    ReportProblemSheet(onDismiss = onDismiss, initialCategory = ReportProblemCategory.UnknownBarcode)
-}
+class SupportServices(val api: SupportApi, val sessions: SessionRepository)
+
+val LocalSupportServices = staticCompositionLocalOf<SupportServices?> { null }
 
 @Composable
-fun ReportProblemSheet(onDismiss: () -> Unit, initialCategory: ReportProblemCategory) {
+fun ReportProblemSheet(
+    onDismiss: () -> Unit,
+    initialCategory: ReportProblemCategory = ReportProblemCategory.Other,
+    errorCode: ErrorCode? = null,
+    screen: String? = null,
+    lastScan: String? = null,
+) {
     val toasts = LocalToasts.current
-    val sentMessage = stringResource(R.string.states_report_sent)
+    val context = LocalContext.current
+    val services = LocalSupportServices.current
+    val warehouseId = LocalWarehouse.current.id.takeIf { it > 0 }
+    val scope = rememberCoroutineScope()
+    val supportReference = remember(errorCode) { SupportReferences.recent()?.reference?.takeIf { errorCode?.isServerSide == true } }
+    var category by rememberSaveable { mutableStateOf(initialCategory) }
+    var details by rememberSaveable { mutableStateOf("") }
+    var files by remember { mutableStateOf(emptyList<PickedAttachment>()) }
+    var isSending by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    val missingDetails = stringResource(R.string.states_report_details_required)
+    val offlineMessage = stringResource(R.string.states_report_offline)
+    val tooManyMessage = stringResource(R.string.states_report_too_many)
+    val signedOutMessage = stringResource(R.string.states_report_signed_out)
+    val failedMessage = stringResource(R.string.states_report_failed)
+    val sentMessage = stringResource(R.string.states_report_sent_as)
+
+    val send: () -> Unit = send@{
+        if (details.isBlank()) {
+            problem = missingDetails
+            return@send
+        }
+        val token = services?.sessions?.session?.value?.token
+        if (services == null || token == null) {
+            problem = signedOutMessage
+            return@send
+        }
+        isSending = true
+        problem = null
+        scope.launch {
+            val report = ProblemReport(
+                category = category.category,
+                details = details,
+                screen = screen,
+                errorCode = errorCode?.code,
+                supportReference = supportReference,
+                lastScan = lastScan,
+                warehouseId = warehouseId,
+                images = files.toUploadFiles(context.contentResolver),
+            )
+            when (val result = services.api.reportProblem(token, report)) {
+                is ProblemReportResult.Sent -> {
+                    onDismiss()
+                    toasts.show(sentMessage.format(result.reference))
+                }
+                is ProblemReportResult.Invalid -> problem = result.message.ifBlank { failedMessage }
+                ProblemReportResult.TooMany -> problem = tooManyMessage
+                ProblemReportResult.Unreachable -> problem = offlineMessage
+                ProblemReportResult.SessionExpired -> problem = signedOutMessage
+                is ProblemReportResult.ServerError -> problem = failedMessage
+            }
+            isSending = false
+        }
+    }
 
     AikuBottomSheet(
         title = stringResource(R.string.states_report_title),
-        subtitle = stringResource(R.string.states_report_subtitle),
+        subtitle = stringResource(R.string.states_report_subtitle_ticket),
         onDismiss = onDismiss,
     ) {
         ReportProblemContent(
-            initialCategory = initialCategory,
-            onSend = {
-                onDismiss()
-                toasts.show(sentMessage)
+            category = category,
+            onCategoryChange = { category = it },
+            details = details,
+            onDetailsChange = {
+                details = it
+                problem = null
             },
+            files = files,
+            onFilesChange = { files = it },
+            added = listOfNotNull(errorCode?.code, supportReference).joinToString(" · ").takeIf { it.isNotEmpty() },
+            problem = problem,
+            isSending = isSending,
+            onSend = send,
             onCancel = onDismiss,
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ReportProblemContent(initialCategory: ReportProblemCategory, onSend: () -> Unit, onCancel: () -> Unit) {
+private fun ReportProblemContent(
+    category: ReportProblemCategory,
+    onCategoryChange: (ReportProblemCategory) -> Unit,
+    details: String,
+    onDetailsChange: (String) -> Unit,
+    files: List<PickedAttachment>,
+    onFilesChange: (List<PickedAttachment>) -> Unit,
+    added: String?,
+    problem: String?,
+    isSending: Boolean,
+    onSend: () -> Unit,
+    onCancel: () -> Unit,
+) {
     val colors = LocalAikuColors.current
-    var category by remember { mutableStateOf(initialCategory) }
-    var details by remember { mutableStateOf(STATES_REPORT_DETAILS_SAMPLE) }
 
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -103,7 +191,7 @@ private fun ReportProblemContent(initialCategory: ReportProblemCategory, onSend:
             ReportCategoryChip(
                 label = stringResource(option.label),
                 isSelected = option == category,
-                onClick = { category = option },
+                onClick = { onCategoryChange(option) },
             )
         }
     }
@@ -114,8 +202,14 @@ private fun ReportProblemContent(initialCategory: ReportProblemCategory, onSend:
             fontWeight = FontWeight.Medium,
             color = colors.textSecondary,
         )
-        ReportDetailsField(value = details, onValueChange = { details = it })
+        ReportDetailsField(value = details, onValueChange = onDetailsChange)
     }
+    HrAttachmentPicker(
+        label = stringResource(R.string.states_report_photos),
+        addLabel = stringResource(R.string.states_report_add_photo),
+        files = files,
+        onFilesChange = onFilesChange,
+    )
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
@@ -132,36 +226,20 @@ private fun ReportProblemContent(initialCategory: ReportProblemCategory, onSend:
             color = colors.textSecondary,
         )
         Text(
-            text = stringResource(R.string.states_report_added_details),
+            text = stringResource(R.string.states_report_added_details_ticket),
             fontSize = 12.sp,
             fontWeight = FontWeight.Normal,
             color = colors.textTertiary,
         )
+        if (added != null) {
+            Text(text = added, fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = colors.textTertiary)
+        }
     }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .statesDashedBorder(color = colors.borderStrong, cornerRadius = 8.dp)
-            .padding(12.dp),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_scan_camera),
-            contentDescription = null,
-            tint = colors.textTertiary,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = stringResource(R.string.states_report_add_photo),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Normal,
-            color = colors.textTertiary,
-        )
-    }
+    problem?.let { HrFieldError(message = it) }
     AikuButton(
         text = stringResource(R.string.states_report_send),
         onClick = onSend,
+        isLoading = isSending,
         modifier = Modifier.fillMaxWidth(),
         icon = R.drawable.ic_ui_next,
         height = 52.dp,
@@ -219,23 +297,12 @@ private fun ReportDetailsField(value: String, onValueChange: (String) -> Unit) {
         maxLines = 5,
         interactionSource = detailsInteraction,
         modifier = Modifier
-            .fakeData(6.dp)
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 96.dp)
             .focusHalo(progress = detailsFocusProgress, color = colors.focus, cornerRadius = 6.dp)
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, lerp(colors.borderStrong, colors.focus, detailsFocusProgress), shape)
             .padding(horizontal = 12.dp, vertical = 13.dp),
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ReportProblemSheetPreview() {
-    AikuDroidTheme {
-        StatesPreviewSurface {
-            ReportProblemContent(initialCategory = ReportProblemCategory.UnknownBarcode, onSend = {}, onCancel = {})
-        }
-    }
 }

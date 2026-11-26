@@ -13,6 +13,7 @@ enum AikuButtonKind: Sendable {
     var defaultIcon: AppIcon? {
         switch self {
         case .finish: .check
+        case .caution: .undo
         case .danger: .xCircle
         default: nil
         }

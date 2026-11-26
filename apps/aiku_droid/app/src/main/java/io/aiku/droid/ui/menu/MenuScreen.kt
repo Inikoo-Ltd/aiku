@@ -170,12 +170,9 @@ fun MenuScreen() {
                 Icon(painter = painterResource(R.drawable.ic_fa_warehouse_alt), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(text = stringResource(R.string.home_module_warehouse), fontSize = 12.sp, color = colors.textTertiary)
-                    Text(
-                        text = listOf(warehouse.organisation.name, warehouseKicker()).filter { it.isNotBlank() }.joinToString(" · "),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.text,
-                    )
+                    listOf(warehouse.organisation.name, warehouseKicker()).filter { it.isNotBlank() }.forEach { line ->
+                        Text(text = line, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+                    }
                 }
                 Text(text = stringResource(R.string.menu_change), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.link)
             }
@@ -224,6 +221,13 @@ fun MenuScreen() {
                 title = stringResource(R.string.menu_appearance),
                 subtitle = stringResource(R.string.menu_appearance_subtitle),
                 onClick = { navigator.open(AppearanceRoute) },
+            )
+            RowDivider()
+            MenuRow(
+                icon = R.drawable.ic_ui_warning,
+                title = stringResource(R.string.states_report_title),
+                subtitle = stringResource(R.string.menu_report_problem_subtitle),
+                onClick = navigator::showReportProblem,
             )
         }
         Row(

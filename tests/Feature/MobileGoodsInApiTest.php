@@ -477,6 +477,36 @@ test('mobile unreceive is for goods in supervisors and only while the delivery i
         ->assertJsonValidationErrors(['state' => 'You can not unmark this stock delivery as received with state checked']);
 });
 
+test('mobile cancel is for procurement, refuses a partner delivery and records who cancelled', function () {
+    $stockDelivery = mobileGoodsInReceived(mobileGoodsInDelivery($this->organisation, [[mobileGoodsInSko($this->organisation), 10]]));
+
+    mobileGoodsInClerk($this);
+    expect(collect(mobileGoodsInShow($this->warehouse, $stockDelivery)->json('data.available_actions'))->pluck('key'))->not->toContain('cancel');
+    mobileGoodsInPost('cancel', $this->warehouse, $stockDelivery)->assertForbidden();
+
+    $buyer = mobileGoodsInClerk($this, [RolesEnum::GOODS_IN_CLERK], ["procurement.{$this->organisation->id}.edit"]);
+    expect(collect(mobileGoodsInShow($this->warehouse, $stockDelivery)->json('data.available_actions'))->last())->toBe(['key' => 'cancel', 'label' => 'Cancel stock delivery']);
+
+    mobileGoodsInPost('cancel', $this->warehouse, $stockDelivery)
+        ->assertOk()
+        ->assertJsonPath('data.state', 'cancelled')
+        ->assertJsonPath('result.message', 'Stock delivery cancelled.');
+
+    expect($stockDelivery->refresh()->cancelled_by_user_id)->toBe($buyer->id)
+        ->and($stockDelivery->cancelled_at)->not->toBeNull();
+
+    [, , $shop]   = createShop();
+    $deliveryNote = goodsOutDeliveryNote(createOrder(createCustomer($shop), createProduct($shop)[1]), $this->warehouse);
+    $partner      = mobileGoodsInDelivery($this->organisation, [[mobileGoodsInSko($this->organisation), 10]]);
+    DB::table('stock_deliveries')->where('id', $partner->id)->update(['delivery_note_id' => $deliveryNote->id]);
+
+    expect(collect(mobileGoodsInShow($this->warehouse, $partner)->json('data.available_actions'))->pluck('key'))->not->toContain('cancel');
+    mobileGoodsInPost('cancel', $this->warehouse, $partner)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['state' => 'This delivery is managed by the partner until you receive it']);
+    expect($partner->refresh()->state)->toBe(StockDeliveryStateEnum::IN_PROCESS);
+});
+
 test('mobile check counts in decimal SKOs, 0 is not received and a value below what is placed is raised and said', function () {
     $orgStock      = mobileGoodsInSko($this->organisation, 6);
     $stockDelivery = mobileGoodsInReceived(mobileGoodsInDelivery($this->organisation, [[$orgStock, 12], [mobileGoodsInSko($this->organisation), 4]]));

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.PersistableBundle
 import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -51,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,13 +97,16 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import io.aiku.droid.R
 import io.aiku.droid.data.api.TwoFactorSetup
+import io.aiku.droid.data.settings.AppLanguage
 import io.aiku.droid.ui.UiMessage
 import io.aiku.droid.ui.asText
+import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuFocusIndication
 import io.aiku.droid.ui.components.QrCode
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.components.qrMatrixOf
+import io.aiku.droid.ui.profile.LanguageOptions
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.Bitter
 import io.aiku.droid.ui.theme.Caveat
@@ -116,6 +122,8 @@ private val LinkHeight = 44.dp
 private val CodeTextStyle = TextStyle(fontFamily = Inter, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.em)
 
 private const val AIKU_EMAIL_LINK = "mailto:hello@aiku.io"
+private const val AIKU_GITHUB_LINK = "https://github.com/Inikoo-Ltd/aiku"
+private const val AIKU_DOCS_LINK = "https://aiku.io/docs"
 private const val SETUP_KEY_GROUP = 4
 private const val SECONDS_PER_MINUTE = 60
 private const val DISABLED_ALPHA = 0.8f
@@ -125,8 +133,11 @@ fun LoginScreen(
     state: LoginUiState,
     actions: LoginActions,
     modifier: Modifier = Modifier,
+    language: AppLanguage = AppLanguage.English,
+    onChooseLanguage: (AppLanguage) -> Unit = {},
 ) {
     val colors = LocalAikuColors.current
+    var isChoosingLanguage by rememberSaveable { mutableStateOf(false) }
 
     BackHandler(enabled = state.step != LoginStep.Credentials, onBack = actions::backToCredentials)
 
@@ -145,7 +156,13 @@ fun LoginScreen(
                     .heightIn(min = maxHeight),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                BrandHeader(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp))
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, top = 16.dp),
+                ) {
+                    BrandHeader(modifier = Modifier.weight(1f))
+                    LanguageChip(language = language, onClick = { isChoosingLanguage = true })
+                }
                 LoginCard(
                     state = state,
                     actions = actions,
@@ -157,6 +174,42 @@ fun LoginScreen(
                 Footer(modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 20.dp))
             }
         }
+    }
+
+    if (isChoosingLanguage) {
+        AikuBottomSheet(
+            title = stringResource(R.string.profile_language),
+            subtitle = stringResource(R.string.login_language_intro),
+            icon = R.drawable.ic_fa_globe,
+            onDismiss = { isChoosingLanguage = false },
+        ) {
+            LanguageOptions(
+                current = language,
+                onChoose = { chosen ->
+                    isChoosingLanguage = false
+                    onChooseLanguage(chosen)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageChip(language: AppLanguage, onClick: () -> Unit) {
+    val colors = LocalAikuColors.current
+    val description = stringResource(R.string.profile_language)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .heightIn(min = LinkHeight)
+            .clip(ControlShape)
+            .clickable(role = Role.Button, onClickLabel = description, onClick = onClick)
+            .padding(horizontal = 8.dp),
+    ) {
+        Icon(painter = painterResource(R.drawable.ic_fa_globe), contentDescription = description, tint = colors.textSecondary, modifier = Modifier.size(16.dp))
+        Text(text = stringResource(language.nativeName), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
     }
 }
 
@@ -1073,21 +1126,31 @@ private fun Footer(modifier: Modifier = Modifier) {
             )
             Text(text = stringResource(R.string.footer_open_source), fontSize = 12.sp, color = colors.textTertiary)
         }
-        FooterLink(text = stringResource(R.string.footer_email)) { uriHandler.openUri(AIKU_EMAIL_LINK) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)) {
+            FooterLink(text = stringResource(R.string.footer_github), icon = R.drawable.ic_fa_brand_github) { uriHandler.openUri(AIKU_GITHUB_LINK) }
+            FooterLink(text = stringResource(R.string.footer_documentation)) { uriHandler.openUri(AIKU_DOCS_LINK) }
+            FooterLink(text = stringResource(R.string.footer_email)) { uriHandler.openUri(AIKU_EMAIL_LINK) }
+        }
     }
 }
 
 @Composable
-private fun FooterLink(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        fontSize = 12.sp,
-        color = LocalAikuColors.current.textTertiary,
+private fun FooterLink(text: String, @DrawableRes icon: Int? = null, onClick: () -> Unit) {
+    val colors = LocalAikuColors.current
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .clip(ControlShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 8.dp),
-    )
+    ) {
+        if (icon != null) {
+            Icon(painter = painterResource(icon), contentDescription = null, tint = colors.textTertiary, modifier = Modifier.size(12.dp))
+        }
+        Text(text = text, fontSize = 12.sp, color = colors.textTertiary)
+    }
 }
 
 private object PreviewLoginActions : LoginActions {

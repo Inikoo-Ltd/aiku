@@ -294692,6 +294692,142 @@
         }
       }
     },
+    "Removed delivery notes leave the session and go back to To do." : {
+      "localizations" : {
+        "bg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Премахнатите стокови разписки напускат сесията и се връщат в „За вършене“."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odebrané dodací listy opustí relaci a vrátí se do stavu K vyřízení."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entfernte Lieferscheine verlassen die Sitzung und gehen zurück zu „Zu tun“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los albaranes quitados salen de la sesión y vuelven a Por hacer."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les bons de livraison retirés quittent la session et reviennent à À faire."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हटाए गए डिलीवरी नोट्स सत्र छोड़कर करना है में वापस चले जाते हैं।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uklonjene otpremnice napuštaju sesiju i vraćaju se na Za napraviti."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az eltávolított szállítólevelek kikerülnek a munkamenetből, és visszakerülnek a Tennivalókhoz."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Surat jalan yang dihapus keluar dari sesi dan kembali ke Yang harus dilakukan."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le bolle di consegna rimosse lasciano la sessione e tornano a Da fare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外した出荷伝票はセッションから外れ、「未着手」に戻ります。"
+          }
+        },
+        "lv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noņemtās piegādes pavadzīmes atstāj sesiju un atgriežas statusā Jāizdara."
+          }
+        },
+        "ne" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हटाइएका डेलिभरी नोटहरू सत्र छोडेर “गर्नुपर्ने” मा फर्कन्छन्।"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verwijderde leveringsbonnen verlaten de sessie en gaan terug naar Te doen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usunięte dowody dostawy opuszczają sesję i wracają do statusu Do zrobienia."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As guias de remessa removidas saem da sessão e voltam a Por fazer."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notele de livrare eliminate părăsesc sesiunea și revin la De făcut."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odstránené dodacie listy opustia reláciu a vrátia sa do stavu Na vybavenie."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borttagna följesedlar lämnar sessionen och går tillbaka till Att göra."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çıkarılan irsaliyeler oturumdan ayrılır ve Yapılacak durumuna geri döner."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видалені накладні виходять із сесії та повертаються до «Зробити»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除的发货单将离开批次并返回待办。"
+          }
+        }
+      }
+    },
     "Removed, last 7 days": {
       "extractionState": "manual",
       "localizations": {

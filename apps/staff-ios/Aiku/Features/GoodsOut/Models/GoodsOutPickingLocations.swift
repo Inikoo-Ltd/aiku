@@ -125,6 +125,24 @@ struct GoodsOutPickingLocations: Hashable, Sendable {
     }
 }
 
+extension GoodsOutPickingLocations {
+    @MainActor
+    func send(_ chosen: GoodsOutPickingDefaults, through send: (Int, MobileLocationOrgStockPickingDefaults) async throws -> Void) async -> (outcome: GoodsOutPickingLocationsOutcome, hasChangedAny: Bool) {
+        let pending = updates(to: chosen)
+        guard !pending.isEmpty else { return (.unchanged, false) }
+        var hasSaved = false
+        for update in pending {
+            do {
+                try await send(update.linkID, update.body)
+                hasSaved = true
+            } catch {
+                return (.failed(message: error.isCancellation ? "" : GoodsOutMapper.message(for: error)), hasSaved)
+            }
+        }
+        return (.saved, true)
+    }
+}
+
 extension GoodsOutStore {
     func pickingLocations(for line: GoodsOutLine) async -> Result<GoodsOutPickingLocations, GoodsOutProblem> {
         guard isRemote, let warehouseID else { return .failure(GoodsOutProblem(message: "Sign in and choose a warehouse to change picking locations.")) }
@@ -143,22 +161,11 @@ extension GoodsOutStore {
     func savePickingLocations(_ locations: GoodsOutPickingLocations, chosen: GoodsOutPickingDefaults, on reference: String) async -> GoodsOutPickingLocationsOutcome {
         guard isRemote else { return .failed(message: "Sign in and choose a warehouse to change picking locations.") }
         guard locations.canEdit else { return .failed(message: "You can’t edit stock in this warehouse.") }
-        let updates = locations.updates(to: chosen)
-        guard !updates.isEmpty else { return .unchanged }
         guard let send = service.setPickingDefaults else { return .failed(message: "Picking locations can’t be changed here.") }
-        var hasSaved = false
-        for update in updates {
-            do {
-                try await send(update.linkID, update.body)
-                hasSaved = true
-            } catch {
-                if hasSaved {
-                    await loadNote(reference: reference)
-                }
-                return .failed(message: error.isCancellation ? "" : GoodsOutMapper.message(for: error))
-            }
+        let result = await locations.send(chosen, through: send)
+        if result.hasChangedAny {
+            await loadNote(reference: reference)
         }
-        await loadNote(reference: reference)
-        return .saved
+        return result.outcome
     }
 }

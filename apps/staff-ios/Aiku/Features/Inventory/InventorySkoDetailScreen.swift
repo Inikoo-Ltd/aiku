@@ -317,7 +317,7 @@ private struct InventorySkoDetailView: View {
     private var stockActions: [InventorySkoStockAction] {
         guard canEditStocks else { return [] }
         return [
-            InventorySkoStockAction(id: "consume", title: "Internal consumption", icon: .sko, isEnabled: sko.canConsume) {
+            InventorySkoStockAction(id: "consume", title: "Internal consumption", icon: .sko, isEnabled: sko.canConsume, kind: .caution) {
                 activeSheet = .consume
             },
             InventorySkoStockAction(id: "move", title: "Move stock", icon: .transfer, isEnabled: sko.canMoveStock) {
@@ -525,6 +525,7 @@ private struct InventorySkoStockAction: Identifiable {
     let title: String
     let icon: AppIcon
     let isEnabled: Bool
+    var kind: AikuButtonKind = .tertiary
     let action: () -> Void
 }
 
@@ -589,7 +590,7 @@ private struct InventorySkoStockCard: View {
 
     private var actionButtons: some View {
         ForEach(actions) { action in
-            AikuButton(action.title, look: AikuButtonLook(.tertiary, icon: action.icon), size: .small, action: action.action)
+            AikuButton(action.title, look: AikuButtonLook(action.kind, icon: action.icon), size: .small, action: action.action)
                 .disabled(!action.isEnabled)
                 .accessibilityIdentifier("inventory.action.\(action.id)")
         }

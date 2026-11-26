@@ -69,6 +69,7 @@ object GoodsInResponses {
     fun stockDeliveryWriteRequest(write: StockDeliveryWrite): WriteRequest = when (write) {
         StockDeliveryWrite.Receive -> post("receive")
         StockDeliveryWrite.Unreceive -> post("unreceive")
+        StockDeliveryWrite.Cancel -> post("cancel")
         StockDeliveryWrite.CheckAll -> post("check-all")
         is StockDeliveryWrite.Check -> post("items/${write.itemId}/check") { put("sko_quantity", GoodsOutResponses.quantityValue(write.skoQuantity)) }
         is StockDeliveryWrite.Place -> post("items/${write.itemId}/place") {

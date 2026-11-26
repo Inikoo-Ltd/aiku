@@ -6,6 +6,7 @@
     <string name="home_profile_description">Your profile and settings</string>
     <string name="home_clocking">Clocking</string>
     <string name="home_shortcuts">Shortcuts</string>
+    <string name="home_continue_title">Continue where you left off</string>
     <string name="home_your_modules">Your modules</string>
     <string name="home_module_warehouse">Warehouse</string>
     <string name="home_module_warehouse_dashboard">Warehouse dashboard</string>
@@ -62,6 +63,21 @@
     <string name="sync_title">Offline &amp; sync</string>
     <string name="sync_kicker">Profile</string>
     <string name="sync_conflicts_title">Resolve conflicts</string>
+    <plurals name="sync_conflicts_record_lines">
+        <item quantity="one">%d line needs you</item>
+        <item quantity="other">%d lines need you</item>
+    </plurals>
+    <plurals name="sync_conflicts_resolve_all">
+        <item quantity="one">%1$s (%2$d line)</item>
+        <item quantity="other">%1$s (all %2$d lines)</item>
+    </plurals>
+    <plurals name="sync_conflicts_resolved_count">
+        <item quantity="one">%1$d of %2$d line resolved</item>
+        <item quantity="other">%1$d of %2$d lines resolved</item>
+    </plurals>
+    <string name="sync_conflicts_results">What happened to each line</string>
+    <string name="sync_conflicts_line_not_done">Not done</string>
+    <string name="sync_conflicts_bulk_note">The buttons below apply to every line of this record. To handle one line on its own, open it.</string>
     <string name="sync_yours">Yours</string>
     <string name="sync_now_in_aiku">Now in Aiku</string>
     <string name="conflict_whats_different">What\'s different</string>
@@ -70,4 +86,5 @@
     <string name="conflict_line">Line %1$d</string>
     <string name="conflict_done_offline">Done offline</string>
     <string name="conflict_changed_by">Changed in Aiku by</string>
+    <string name="menu_report_problem_subtitle">Something wrong in the app or in Aiku? Tell the Aiku team</string>
 </resources>

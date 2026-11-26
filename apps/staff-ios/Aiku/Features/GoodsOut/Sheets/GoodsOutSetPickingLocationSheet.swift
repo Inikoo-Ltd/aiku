@@ -28,11 +28,31 @@ private struct GoodsOutPickingLocationIntro: View {
 }
 
 private struct GoodsOutRemotePickingLocationSheet: View {
-    @Environment(ToastCenter.self) private var toasts
     let note: GoodsOutDeliveryNote
     let line: GoodsOutLine
     let present: (GoodsOutNoteSheet) -> Void
     private let store = GoodsOutStore.shared
+
+    var body: some View {
+        SkoPickingLocationSheet(
+            code: line.sko,
+            name: line.name,
+            identifierPrefix: "goodsOut",
+            loadLocations: { await store.pickingLocations(for: line) },
+            saveLocations: { locations, chosen in await store.savePickingLocations(locations, chosen: chosen, on: note.reference) },
+            onClose: { present(.pickLocation(line: line.id)) }
+        )
+    }
+}
+
+struct SkoPickingLocationSheet: View {
+    @Environment(ToastCenter.self) private var toasts
+    let code: String
+    let name: String
+    let identifierPrefix: String
+    let loadLocations: () async -> Result<GoodsOutPickingLocations, GoodsOutProblem>
+    let saveLocations: (GoodsOutPickingLocations, GoodsOutPickingDefaults) async -> GoodsOutPickingLocationsOutcome
+    let onClose: () -> Void
     @State private var locations: GoodsOutPickingLocations?
     @State private var loadProblem: String?
     @State private var saveProblem: String?
@@ -40,8 +60,8 @@ private struct GoodsOutRemotePickingLocationSheet: View {
     @State private var isSaving = false
 
     var body: some View {
-        SheetScaffold(title: L10n.format("Picking location · %@", locations?.code ?? line.sko), subtitle: L10n.format("%@ · one per channel", locations?.name ?? line.name)) {
-            GoodsOutPickingLocationIntro(sko: locations?.code ?? line.sko)
+        SheetScaffold(title: L10n.format("Picking location · %@", locations?.code ?? code), subtitle: L10n.format("%@ · one per channel", locations?.name ?? name)) {
+            GoodsOutPickingLocationIntro(sko: locations?.code ?? code)
             if let saveProblem {
                 InlineAlert(tone: .danger, title: "Picking locations not saved", message: saveProblem)
             }
@@ -52,14 +72,12 @@ private struct GoodsOutRemotePickingLocationSheet: View {
                 AikuButton("Save picking locations", icon: .check, isLoading: isSaving) {
                     save(locations)
                 }
-                .accessibilityIdentifier("goodsOut.savePickingLocations")
+                .accessibilityIdentifier("\(identifierPrefix).savePickingLocations")
             }
-            AikuButton("Cancel", kind: .tertiary) {
-                present(.pickLocation(line: line.id))
-            }
-            .disabled(isSaving)
+            AikuButton("Cancel", kind: .tertiary, action: onClose)
+                .disabled(isSaving)
         }
-        .task { await load() }
+        .task { await reload() }
     }
 
     @ViewBuilder
@@ -74,7 +92,7 @@ private struct GoodsOutRemotePickingLocationSheet: View {
             }
         } else if let loadProblem {
             GoodsOutLoadProblem(title: "Couldn’t load the SKO’s locations", message: loadProblem) {
-                Task { await load() }
+                Task { await reload() }
             }
         } else {
             GoodsOutSkeletonCard(rows: 2)
@@ -91,13 +109,13 @@ private struct GoodsOutRemotePickingLocationSheet: View {
                     chosen[channel] = option.linkID
                 }
             }
-            .accessibilityIdentifier("goodsOut.pickingLocation.\(channel.rawValue).\(option.code)")
+            .accessibilityIdentifier("\(identifierPrefix).pickingLocation.\(channel.rawValue).\(option.code)")
         }
     }
 
-    private func load() async {
+    private func reload() async {
         loadProblem = nil
-        switch await store.pickingLocations(for: line) {
+        switch await loadLocations() {
         case .success(let loaded):
             locations = loaded
         case .failure(let problem):
@@ -110,21 +128,21 @@ private struct GoodsOutRemotePickingLocationSheet: View {
     private func save(_ locations: GoodsOutPickingLocations) {
         guard !isSaving else { return }
         guard !chosen.isEmpty else {
-            present(.pickLocation(line: line.id))
+            onClose()
             return
         }
         isSaving = true
         saveProblem = nil
         let choice = chosen
         Task {
-            let outcome = await store.savePickingLocations(locations, chosen: choice, on: note.reference)
+            let outcome = await saveLocations(locations, choice)
             isSaving = false
             switch outcome {
             case .unchanged:
-                present(.pickLocation(line: line.id))
+                onClose()
             case .saved:
                 toasts.show(L10n.format("Picking locations saved for %@", locations.code))
-                present(.pickLocation(line: line.id))
+                onClose()
             case .failed(let message):
                 if !message.isEmpty {
                     saveProblem = message

@@ -176,6 +176,7 @@ private struct GoodsInDeliveryContent: View {
         case receive(MobileGoodsInAction)
         case checkAll(MobileGoodsInAction)
         case place(MobileGoodsInAction, next: MobileStockDeliveryItem)
+        case nextDelivery
     }
 
     private var footerKind: FooterKind? {
@@ -189,6 +190,8 @@ private struct GoodsInDeliveryContent: View {
         case .place:
             guard let place = delivery.availableActions.action(GoodsInActionKey.place), let next = delivery.nextToPlace else { return nil }
             return place.isDisabled ? .disabled(place, fallback: "Place") : .place(place, next: next)
+        case .done:
+            return .nextDelivery
         default:
             return nil
         }
@@ -218,6 +221,11 @@ private struct GoodsInDeliveryContent: View {
                 openPlace(next)
             }
             .accessibilityIdentifier("goodsIn.placeNext")
+        case .nextDelivery:
+            AikuButton("Next stock delivery", icon: .next) {
+                router.replace(with: GoodsInRoute.stockDeliveries)
+            }
+            .accessibilityIdentifier("goodsIn.nextStockDelivery")
         }
     }
 

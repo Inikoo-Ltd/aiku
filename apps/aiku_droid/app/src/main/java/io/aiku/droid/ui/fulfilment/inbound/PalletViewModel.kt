@@ -93,6 +93,8 @@ class PalletViewModel(
 
     fun move(target: PalletLocationTarget) = act(PalletWrite.Move(target))
 
+    fun setBackToStoring() = act(PalletWrite.BackToStoring)
+
     fun reportIncident(state: PalletIncidentState, message: String?) =
         act(PalletWrite.Incident(state = state, message = message?.trim()?.takeIf { it.isNotEmpty() }))
 

@@ -102,7 +102,7 @@ struct GoodsOutPersonActivity: Identifiable, Hashable, Sendable {
 
 struct GoodsOutService: Sendable {
     var deliveryNotes: @Sendable (Int, GoodsOutListRequest) async throws -> GoodsOutDeliveryNotesPageDTO
-    var counts: @Sendable (Int, String?) async throws -> GoodsOutCountsDTO
+    var counts: @Sendable (Int, GoodsOutCountsRequest) async throws -> GoodsOutCountsDTO
     var deliveryNote: @Sendable (Int) async throws -> GoodsOutDeliveryNoteDTO
     var perform: @Sendable (Int, GoodsOutNoteAction) async throws -> GoodsOutActionResponseDTO
     var trolleys: @Sendable (Int) async throws -> [GoodsOutTrolleyDTO]
@@ -124,7 +124,7 @@ struct GoodsOutService: Sendable {
     static func live(_ client: @escaping @Sendable () -> APIClient) -> GoodsOutService {
         GoodsOutService(
             deliveryNotes: { try await client().goodsOutDeliveryNotes(warehouseID: $0, request: $1) },
-            counts: { try await client().goodsOutCounts(warehouseID: $0, picker: $1) },
+            counts: { try await client().goodsOutCounts(warehouseID: $0, request: $1) },
             deliveryNote: { try await client().goodsOutDeliveryNote(id: $0) },
             perform: { try await client().goodsOutPerform(noteID: $0, $1) },
             trolleys: { try await client().goodsOutTrolleys(warehouseID: $0) },
@@ -153,9 +153,12 @@ enum GoodsOutMapper {
         if query.filter.range.isSet {
             request.from = query.filter.range.from.map { ListDates.apiDay($0) }
             request.to = query.filter.range.to.map { ListDates.apiDay($0) }
-        } else if query.filter.dates.count == 1, let date = query.filter.dates.first, let range = dateRange(date, today: today, timeZone: timeZone) {
-            request.from = range.from
-            request.to = range.to
+        } else if query.filter.dates.count == 1, let date = query.filter.dates.first {
+            if let range = dateRange(date, today: today, timeZone: timeZone) {
+                request.from = range.from
+                request.to = range.to
+            }
+            request.overdue = date == .overdue
         }
         request.sort = query.filter.sort?.apiKey
         let search = query.search.trimmingCharacters(in: .whitespacesAndNewlines)

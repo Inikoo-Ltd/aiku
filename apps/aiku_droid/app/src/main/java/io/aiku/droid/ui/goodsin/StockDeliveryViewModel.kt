@@ -191,6 +191,8 @@ class StockDeliveryViewModel(
 
     fun unreceive() = act(StockDeliveryWrite.Unreceive)
 
+    fun cancel() = act(StockDeliveryWrite.Cancel)
+
     fun checkAll() = act(StockDeliveryWrite.CheckAll)
 
     fun check(itemId: Long, skoQuantity: Double) = act(StockDeliveryWrite.Check(itemId = itemId, skoQuantity = skoQuantity.coerceAtLeast(0.0)))

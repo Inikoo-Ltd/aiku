@@ -106,7 +106,7 @@ export const boxTextToDoc = (text: string, people: { id: string; label: string }
     people.forEach((person) => (labels[person.id.startsWith("!") ? person.id : `@${person.id}`] = person.label))
     channels.forEach((channel) => (labels[`#${channel.id}`] = channel.label))
 
-    return text.split("\n").map((line) => ({
+    const paragraph = (line: string): DeskNode => ({
         type: "paragraph",
         content: line
             .split(new RegExp(`${SEPARATOR}([^${SEPARATOR}]*)${SEPARATOR}`))
@@ -116,5 +116,72 @@ export const boxTextToDoc = (text: string, people: { id: string; label: string }
                 const id = part.startsWith("!") ? part : part.slice(1)
                 return [{ type: "mention", attrs: { id, label: labels[part] ?? id, mentionSuggestionChar: part[0] === "#" ? "#" : "@" } }]
             }),
-    }))
+    })
+
+    const lines = text.split("\n")
+    return styled ? styledBlocks(lines, paragraph) : lines.map(paragraph)
+}
+
+const LIST_ITEM = /^(• |(\d+)\. )/
+const INDENT = "    "
+
+const styledBlocks = (lines: string[], paragraph: (line: string) => DeskNode): DeskNode[] => {
+    const blocks: DeskNode[] = []
+    let at = 0
+    while (at < lines.length) {
+        const line = lines[at]
+        if (line === "```") {
+            const end = lines.indexOf("```", at + 1)
+            if (end !== -1) {
+                const code = lines.slice(at + 1, end).join("\n")
+                blocks.push({ type: "codeBlock", content: code ? [{ type: "text", text: code }] : [] })
+                at = end + 1
+                continue
+            }
+        }
+        if (line.startsWith("> ") || line === ">") {
+            const quoted: string[] = []
+            while (at < lines.length && (lines[at].startsWith("> ") || lines[at] === ">")) quoted.push(lines[at++].replace(/^> ?/, ""))
+            blocks.push({ type: "blockquote", content: styledBlocks(quoted, paragraph) })
+            continue
+        }
+        if (LIST_ITEM.test(line)) {
+            const [node, next] = styledList(lines, at, 0, paragraph)
+            blocks.push(node)
+            at = next
+            continue
+        }
+        blocks.push(paragraph(line))
+        at++
+    }
+    return blocks
+}
+
+const styledList = (lines: string[], from: number, depth: number, paragraph: (line: string) => DeskNode): [DeskNode, number] => {
+    const own = INDENT.repeat(depth)
+    const first = lines[from].slice(own.length).match(LIST_ITEM)!
+    const ordered = first[2] !== undefined
+    const items: DeskNode[] = []
+    let at = from
+    while (at < lines.length) {
+        const line = lines[at]
+        if (!line.startsWith(own)) break
+        const marker = line.slice(own.length).match(LIST_ITEM)
+        if (!marker || (marker[2] !== undefined) !== ordered) break
+        const item: DeskNode = { type: "listItem", content: [paragraph(line.slice(own.length + marker[0].length))] }
+        at++
+        const inner = own + INDENT
+        while (at < lines.length && lines[at].startsWith(inner)) {
+            if (LIST_ITEM.test(lines[at].slice(inner.length))) {
+                const [nested, next] = styledList(lines, at, depth + 1, paragraph)
+                item.content!.push(nested)
+                at = next
+            } else {
+                item.content!.push(paragraph(lines[at].slice(inner.length)))
+                at++
+            }
+        }
+        items.push(item)
+    }
+    return [ordered ? { type: "orderedList", attrs: { start: Number(first[2]) }, content: items } : { type: "bulletList", content: items }, at]
 }

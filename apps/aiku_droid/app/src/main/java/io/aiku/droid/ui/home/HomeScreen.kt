@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +69,7 @@ import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
 import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalStartScreen
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.MainTab
@@ -85,6 +88,10 @@ private const val MORNING_ENDS_AT = 12
 private const val AFTERNOON_ENDS_AT = 18
 private const val SHORTCUT_COLUMNS = 4
 
+private val BUTTON_BESIDE_GAP = 14.dp
+private val BUTTON_BELOW_GAP = 14.dp
+private val MIN_TEXT_BESIDE_BUTTON = 150.dp
+
 private data class Shortcut(@StringRes val label: Int, @DrawableRes val icon: Int, val route: Any, val badge: Int? = null)
 
 @Composable
@@ -99,6 +106,7 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
     val weekTotal = clockingWeekTotal(clockingState, now)
     val workBadges = LocalWorkBadges.current
     val needYou by LocalOfflineIndicator.current.needsYouCount.collectAsStateWithLifecycle()
+    val resumeTarget = LocalStartScreen.current.resumeTarget
     val badges by workBadges.badges.collectAsStateWithLifecycle()
     val shortcuts = listOfNotNull(
         Shortcut(R.string.module_goods_out, R.drawable.ic_fa_arrow_from_left, GoodsOutBacklogRoute, badges.goodsOutUnassignedBadge).takeIf { can.viewGoodsOut },
@@ -134,7 +142,17 @@ fun HomeScreen(update: AppUpdate.Available? = null, onDismissUpdate: () -> Unit 
             lastUpdated = clockingState.lastUpdated,
             onOpen = { navigator.open(ClockingRoute) },
         )
-        ConflictsRow(needYou = needYou, onOpen = { navigator.open(ResolveConflictsRoute) })
+        if (needYou > 0) {
+            ConflictsRow(needYou = needYou, onOpen = { navigator.open(ResolveConflictsRoute) })
+        }
+        if (hasWarehouse && resumeTarget != null) {
+            ModuleRow(
+                icon = R.drawable.ic_fa_history,
+                name = stringResource(R.string.home_continue_title),
+                subtitle = stringResource(resumeTarget.label),
+                onClick = { navigator.open(resumeTarget.route) },
+            )
+        }
         if (hasWarehouse && shortcuts.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 GroupLabel(text = stringResource(R.string.home_shortcuts))
@@ -224,35 +242,66 @@ private fun ClockingCard(summary: ClockingSummaryLines?, weekTotal: String?, las
     val isClockedIn = summary?.isClockedIn == true
     val (iconBackground, iconTint) = if (isClockedIn) colors.successSoft to colors.success else colors.background to colors.textTertiary
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ButtonBesideOrBelow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardShape)
             .background(colors.surface)
             .border(1.dp, colors.border, CardShape)
             .padding(16.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(iconBackground)) {
-            Icon(painter = painterResource(R.drawable.ic_fa_user_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (summary == null) 8.dp else 2.dp)) {
-            if (summary == null) {
-                SkeletonBlock(modifier = Modifier.fillMaxWidth(0.6f).height(14.dp))
-                SkeletonBlock(modifier = Modifier.fillMaxWidth(0.45f).height(11.dp))
-            } else {
-                Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
-                Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
-                if (weekTotal != null) {
-                    Text(text = weekTotal, fontSize = 13.sp, color = colors.textTertiary)
+        main = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(iconBackground)) {
+                    Icon(painter = painterResource(R.drawable.ic_fa_user_clock), contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
                 }
-                if (lastUpdated != null) {
-                    Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (summary == null) 8.dp else 2.dp)) {
+                    if (summary == null) {
+                        SkeletonBlock(modifier = Modifier.fillMaxWidth(0.6f).height(14.dp))
+                        SkeletonBlock(modifier = Modifier.fillMaxWidth(0.45f).height(11.dp))
+                    } else {
+                        Text(text = summary.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                        Text(text = summary.subtitle, fontSize = 13.sp, color = colors.textTertiary)
+                        if (weekTotal != null) {
+                            Text(text = weekTotal, fontSize = 13.sp, color = colors.textTertiary)
+                        }
+                        if (lastUpdated != null) {
+                            Text(text = lastUpdatedLabel(lastUpdated), fontSize = 12.sp, color = colors.textTertiary)
+                        }
+                    }
                 }
             }
+        },
+        button = { AikuButton(text = stringResource(R.string.home_clocking), onClick = onOpen, height = 44.dp) },
+    )
+}
+
+@Composable
+private fun ButtonBesideOrBelow(main: @Composable () -> Unit, button: @Composable () -> Unit, modifier: Modifier = Modifier) {
+    Layout(contents = listOf(main, button), modifier = modifier) { (mainMeasurables, buttonMeasurables), constraints ->
+        val width = constraints.maxWidth
+        val besideGap = BUTTON_BESIDE_GAP.roundToPx()
+        val buttonMeasurable = buttonMeasurables.single()
+        val mainMeasurable = mainMeasurables.single()
+        val besideWidth = width - buttonMeasurable.maxIntrinsicWidth(constraints.maxHeight) - besideGap
+        val fitsBeside = besideWidth >= MIN_TEXT_BESIDE_BUTTON.roundToPx() && besideWidth >= mainMeasurable.minIntrinsicWidth(constraints.maxHeight)
+
+        if (fitsBeside) {
+            val mainPlaceable = mainMeasurable.measure(Constraints.fixedWidth(besideWidth))
+            val buttonPlaceable = buttonMeasurable.measure(Constraints(maxWidth = width - besideWidth - besideGap))
+            val height = maxOf(mainPlaceable.height, buttonPlaceable.height)
+            layout(width, height) {
+                mainPlaceable.place(0, (height - mainPlaceable.height) / 2)
+                buttonPlaceable.place(width - buttonPlaceable.width, (height - buttonPlaceable.height) / 2)
+            }
+        } else {
+            val belowGap = BUTTON_BELOW_GAP.roundToPx()
+            val mainPlaceable = mainMeasurable.measure(Constraints.fixedWidth(width))
+            val buttonPlaceable = buttonMeasurable.measure(Constraints.fixedWidth(width))
+            layout(width, mainPlaceable.height + belowGap + buttonPlaceable.height) {
+                mainPlaceable.place(0, 0)
+                buttonPlaceable.place(0, mainPlaceable.height + belowGap)
+            }
         }
-        AikuButton(text = stringResource(R.string.home_clocking), onClick = onOpen, height = 44.dp)
     }
 }
 
@@ -300,7 +349,6 @@ private fun ShortcutTile(shortcut: Shortcut, onClick: () -> Unit, modifier: Modi
 @Composable
 private fun ConflictsRow(needYou: Int, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
-    val needsAttention = needYou > 0
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -308,36 +356,32 @@ private fun ConflictsRow(needYou: Int, onOpen: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardShape)
-            .background(if (needsAttention) colors.warnSoft else colors.surface)
-            .border(1.dp, if (needsAttention) colors.warnInk.copy(alpha = ATTENTION_BORDER_ALPHA) else colors.border, CardShape)
+            .background(colors.warnSoft)
+            .border(1.dp, colors.warnInk.copy(alpha = ATTENTION_BORDER_ALPHA), CardShape)
             .clickable(role = Role.Button, onClick = onOpen)
             .padding(14.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(if (needsAttention) colors.surface else colors.soft),
+            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(colors.surface),
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_fa_exclamation_triangle),
                 contentDescription = null,
-                tint = if (needsAttention) colors.warnInk else colors.link,
+                tint = colors.warnInk,
                 modifier = Modifier.size(22.dp),
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = stringResource(R.string.sync_conflicts_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (needsAttention) colors.warnInk else colors.text)
+            Text(text = stringResource(R.string.sync_conflicts_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.warnInk)
             Text(
-                text = if (needsAttention) {
-                    pluralStringResource(R.plurals.offline_indicator_need_you, needYou, needYou)
-                } else {
-                    stringResource(R.string.offline_stock_conflicts_empty_title)
-                },
+                text = pluralStringResource(R.plurals.offline_indicator_need_you, needYou, needYou),
                 fontSize = 13.sp,
-                fontWeight = if (needsAttention) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (needsAttention) colors.warnInk else colors.textTertiary,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.warnInk,
             )
         }
-        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = if (needsAttention) colors.warnInk else colors.faint, modifier = Modifier.size(20.dp))
+        Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = colors.warnInk, modifier = Modifier.size(20.dp))
     }
 }
 

@@ -50,6 +50,9 @@ private struct GoodsInPlaceItemContent: View {
     @State private var quantity: Double
     @State private var setAsPicking: Bool
     @State private var isLocationMissing = false
+    @State private var isChangingPickingLocation = false
+    @State private var warehouseStore = WarehouseStore.shared
+    @Environment(\.apiClient) private var apiClient
 
     init(feed: GoodsInDeliveryFeed, finder: GoodsInLocationFinder, delivery: MobileStockDelivery, item: MobileStockDeliveryItem) {
         self.feed = feed
@@ -97,6 +100,40 @@ private struct GoodsInPlaceItemContent: View {
                 doneText: placedText,
                 onDone: afterDone
             )
+            .aikuSheet(isPresented: $isChangingPickingLocation, onDismiss: { Task { await feed.load() } }) {
+                if let sko = item.sko {
+                    pickingLocationSheet(sko)
+                }
+            }
+    }
+
+    private var canChangePickingLocation: Bool {
+        item.sko != nil && warehouseStore.selected?.can.moveStock == true
+    }
+
+    private func pickingLocationSheet(_ sko: MobileGoodsInSko) -> some View {
+        let warehouseID = feed.warehouseID
+        let canEditStock = canChangePickingLocation
+        let client = apiClient
+        return SkoPickingLocationSheet(
+            code: sko.code,
+            name: sko.name,
+            identifierPrefix: "goodsIn.place",
+            loadLocations: {
+                do {
+                    let detail = try await client.fetchOrgStock(warehouseID: warehouseID, id: sko.id)
+                    return .success(GoodsOutPickingLocations(detail: detail, warehouseCanEditStock: canEditStock))
+                } catch where error.isCancellation {
+                    return .failure(GoodsOutProblem(message: ""))
+                } catch {
+                    return .failure(GoodsOutProblem(message: GoodsInText.problem(error)))
+                }
+            },
+            saveLocations: { locations, chosen in
+                await locations.send(chosen) { try await client.setPickingDefaults(linkID: $0, defaults: $1) }.outcome
+            },
+            onClose: { isChangingPickingLocation = false }
+        )
     }
 
     @ViewBuilder
@@ -284,7 +321,14 @@ private struct GoodsInPlaceItemContent: View {
         ].compactMap { $0 }
         if !lines.isEmpty {
             Card {
-                GoodsInActionLinkRow(icon: .pin, title: "Picking location", subtitle: lines.joined(separator: GoodsInText.separator), tone: .primary)
+                GoodsInActionLinkRow(
+                    icon: .pin,
+                    title: "Picking location",
+                    subtitle: lines.joined(separator: GoodsInText.separator),
+                    tone: .primary,
+                    identifier: "goodsIn.place.pickingLocation",
+                    action: canChangePickingLocation ? { isChangingPickingLocation = true } : nil
+                )
             }
         }
     }

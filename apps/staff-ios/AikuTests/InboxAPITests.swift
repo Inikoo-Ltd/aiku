@@ -320,6 +320,27 @@ struct InboxAPITests {
         #expect(empty.unreadCount == 0)
     }
 
+    @Test func anEmptyInboxStaysEmptyWhenARefreshFailsOfflineAsOnAndroid() async throws {
+        let calls = CallRecorder()
+        let store = ShellInboxStore(service: InboxService(
+            page: { _ in
+                calls.record("page")
+                if calls.calls.count > 1 { throw APIError.offline }
+                return MobileInboxPage(notifications: [], unread: 0)
+            },
+            unreadCount: { 0 },
+            markRead: { _ in throw APIError.offline },
+            markUnread: { _ in throw APIError.offline },
+            markAllRead: { 0 }
+        ))
+
+        await store.load()
+        await store.load()
+
+        #expect(store.loadError != nil)
+        #expect(store.isEmpty)
+    }
+
     @Test func signOutClearsTheInbox() async throws {
         let page = try decode(MobileInboxPage.self, Self.inbox)
         let store = ShellInboxStore(service: service(pages: [1: page]))

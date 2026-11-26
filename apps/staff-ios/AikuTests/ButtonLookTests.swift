@@ -54,6 +54,27 @@ struct ButtonLookTests {
         }
     }
 
+    @Test func aCautionButtonWithoutItsOwnIconShowsUndoAsOnAndroid() {
+        #expect(AikuButtonKind.caution.defaultIcon == .undo)
+        #expect(AikuButtonKind.danger.defaultIcon == .xCircle)
+        #expect(AikuButtonKind.finish.defaultIcon == .check)
+        #expect(AikuButtonKind.primary.defaultIcon == nil)
+    }
+
+    @Test func conflictChoicesAreOrderedAndStyledByWhatTheyDo() {
+        let buttons = OfflineResolution.footerButtons([.discard, .keepCount, .recount])
+
+        #expect(buttons.map(\.resolution) == [.recount, .keepCount, .discard])
+        #expect(buttons.map(\.look) == [AikuButtonLook(.primary), AikuButtonLook(.caution), AikuButtonLook(.danger)])
+    }
+
+    @Test func onlyTheFirstMainConflictChoiceIsFilled() {
+        let buttons = OfflineResolution.footerButtons([.done, .putBack, .retry])
+
+        #expect(buttons.map(\.resolution) == [.retry, .putBack, .done])
+        #expect(buttons.map(\.look) == [AikuButtonLook(.primary, icon: .retry), AikuButtonLook(.secondary), AikuButtonLook(.secondary)])
+    }
+
     @Test func aRedActionConfirmsWithTheFilledRedAndKeepsItsIcon() {
         #expect(AikuButtonLook(.danger, icon: .trash).forConfirm == AikuButtonLook(.dangerStrong, icon: .trash))
         #expect(AikuButtonLook(.danger).forConfirm == AikuButtonLook(.dangerStrong, icon: .xCircle))

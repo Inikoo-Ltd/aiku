@@ -127,6 +127,41 @@ test('mobile pallet returns sort by customer name like the web and refuse an unk
         ->assertJsonValidationErrors(['sort']);
 });
 
+test('mobile how a return leaves is changed by the fulfilment shop only, between collection and one of the customer\'s addresses', function () {
+    $palletReturn = mfoPalletReturn($this->customer, $this->warehouse, [mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse))]);
+    $customer     = $this->customer->customer;
+    $route        = mfoReturnRoute($this->warehouse, $palletReturn);
+    $foreign      = mfoCustomer($this->fulfilment)->customer;
+
+    mfoWorker($this);
+    mfoGet('pallet_returns.show', $route)->assertOk()->assertJsonPath('data.leaving.can_set_collection', false)->assertJsonPath('data.leaving.can_set_shipment', false);
+    mfoGet('pallet_returns.addresses', $route)->assertForbidden();
+    mfoPost('pallet_returns.leaving', $route, ['collection' => true])->assertForbidden();
+
+    mfoShopClerk($this);
+    $addresses = mfoGet('pallet_returns.addresses', $route)->assertOk()->json('data');
+    expect(collect($addresses)->pluck('id'))->toContain($customer->delivery_address_id)
+        ->and(collect($addresses)->firstWhere('id', $customer->delivery_address_id)['is_default_delivery'])->toBeTrue()
+        ->and(collect($addresses)->pluck('id'))->not->toContain($foreign->delivery_address_id);
+
+    mfoPost('pallet_returns.leaving', $route, ['collection' => true])->assertOk()
+        ->assertJsonPath('result.message', 'The customer collects this return.')
+        ->assertJsonPath('data.is_collection', true)
+        ->assertJsonPath('data.leaving', ['delivery_address' => null, 'can_set_collection' => false, 'can_set_shipment' => true]);
+    expect($palletReturn->refresh()->is_collection)->toBeTrue()
+        ->and($palletReturn->delivery_address_id)->toBeNull();
+
+    mfoPost('pallet_returns.leaving', $route, ['collection' => false, 'address_id' => $foreign->delivery_address_id])->assertUnprocessable()->assertJsonValidationErrors(['address_id']);
+    mfoPost('pallet_returns.leaving', $route, ['collection' => false])->assertUnprocessable()->assertJsonValidationErrors(['address_id']);
+
+    mfoPost('pallet_returns.leaving', $route, ['collection' => false, 'address_id' => $customer->delivery_address_id])->assertOk()
+        ->assertJsonPath('result.message', 'This return will be shipped.')
+        ->assertJsonPath('data.is_collection', false)
+        ->assertJsonPath('data.leaving.can_set_collection', true);
+    expect($palletReturn->refresh()->is_collection)->toBeFalse()
+        ->and($palletReturn->delivery_address_id)->toBe($customer->delivery_address_id);
+});
+
 test('mobile pallet return detail lists pallets in walk order with their items, sends no money and offers each action to the right person', function () {
     $later      = mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse, 'MFB'));
     $sooner     = mfoPallet($this->customer, $this->warehouse, mfoLocation($this->warehouse, 'MFA'));
@@ -141,7 +176,7 @@ test('mobile pallet return detail lists pallets in walk order with their items, 
     $detail = mfoGet('pallet_returns.show', $route)->assertOk();
     expect(array_keys($detail->json('data')))->toBe([
         'id', 'reference', 'customer_reference', 'type', 'type_group', 'type_label', 'platform', 'state', 'state_label', 'customer',
-        'is_collection', 'collection_notes', 'customer_notes', 'public_notes', 'internal_notes', 'picker', 'packer', 'estimated_delivery_date',
+        'is_collection', 'collection_notes', 'leaving', 'customer_notes', 'public_notes', 'internal_notes', 'picker', 'packer', 'estimated_delivery_date',
         'in_picking_session', 'timeline', 'counts', 'pallets', 'stored_items', 'inserts', 'shipments', 'parcels', 'shipment_required',
         'dispatch_blocked', 'can_scan', 'available_actions',
     ])

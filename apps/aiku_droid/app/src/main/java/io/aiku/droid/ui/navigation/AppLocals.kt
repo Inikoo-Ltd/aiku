@@ -21,7 +21,15 @@ enum class MainTab { Home, MyWork, Scan, Inbox, Menu }
 
 interface AppearanceController {
     val appearance: Appearance
+    val isThemePerOrganisation: Boolean
     fun update(appearance: Appearance)
+    fun updateThemePerOrganisation(isOn: Boolean)
+}
+
+interface StartScreenController {
+    val isOpeningOnLastScreen: Boolean
+    val resumeTarget: ResumeTarget?
+    fun updateOpenOnLastScreen(isOn: Boolean)
 }
 
 object PreviewNavigator : AppNavigator {
@@ -78,6 +86,15 @@ val LocalStaff = staticCompositionLocalOf { PreviewStaff }
 val LocalAppearanceController = staticCompositionLocalOf<AppearanceController> {
     object : AppearanceController {
         override val appearance = Appearance()
+        override val isThemePerOrganisation = false
         override fun update(appearance: Appearance) = Unit
+        override fun updateThemePerOrganisation(isOn: Boolean) = Unit
+    }
+}
+val LocalStartScreen = staticCompositionLocalOf<StartScreenController> {
+    object : StartScreenController {
+        override val isOpeningOnLastScreen = false
+        override val resumeTarget: ResumeTarget? = null
+        override fun updateOpenOnLastScreen(isOn: Boolean) = Unit
     }
 }

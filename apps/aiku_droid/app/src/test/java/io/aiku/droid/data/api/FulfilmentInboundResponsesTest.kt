@@ -276,6 +276,8 @@ class FulfilmentInboundResponsesTest {
         assertEquals(JsonPrimitive("Not at D-04-06"), incident.body?.get("message"))
         assertEquals(JsonNull, silent.body?.get("message"))
         assertEquals("audit", FulfilmentInboundResponses.auditStartRequest().path)
+        assertEquals("pallet-deliveries/4/not-received", FulfilmentInboundResponses.palletDeliveryWriteRequest(4, PalletDeliveryWrite.NotReceivedRemaining).path)
+        assertEquals("back-to-storing", FulfilmentInboundResponses.palletWriteRequest(PalletWrite.BackToStoring).path)
     }
 
     @Test
