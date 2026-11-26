@@ -563,9 +563,9 @@ onUnmounted(() => {
                         :is-starred="false"
                         @select="selectConversation(conversation.ulid)"
                         @toggle-star="toggleStar('dm-' + conversation.ulid)" />
-                    <p v-if="isGroups && !tabConversations.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("No Verbrations yet. Start one for a team or a topic: only the people you invite see it.") }}</p>
+                    <p v-if="isGroups && !tabConversations.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("Your Slack private channels will show here once they sync.") }}</p>
                     <button
-                        v-if="!filterText"
+                        v-if="!filterText && !isGroups"
                         type="button"
                         class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                         @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
