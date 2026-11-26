@@ -79,10 +79,10 @@ extension GoodsOutStore {
 
     func loadCounts() async {
         guard isRemote, let warehouseID else { return }
-        let picker = listQuery.filter.pickers.count == 1 ? listQuery.filter.pickers.first.map(GoodsOutMapper.pickerKey) : nil
+        let request = GoodsOutMapper.listRequest(for: listQuery, page: 1, today: now()).countsRequest
         setCountsLoading(true)
         do {
-            let loaded = try await service.counts(warehouseID, picker)
+            let loaded = try await service.counts(warehouseID, request)
             setCounts(loaded, error: nil)
         } catch where error.isCancellation {
             setCountsLoading(false)
@@ -95,7 +95,7 @@ extension GoodsOutStore {
         guard isRemote, let warehouseID else { return }
         setCountsLoading(true)
         do {
-            setCounts(try await service.counts(warehouseID, nil), error: nil)
+            setCounts(try await service.counts(warehouseID, GoodsOutCountsRequest()), error: nil)
         } catch where error.isCancellation {
             setCountsLoading(false)
         } catch {

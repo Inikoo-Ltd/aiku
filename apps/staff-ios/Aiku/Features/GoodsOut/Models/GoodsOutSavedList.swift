@@ -48,10 +48,30 @@ enum GoodsOutSavedList {
         if filter.range.isSet {
             return SavedListFilter.within(row.date, range: filter.range)
         }
-        guard filter.dates.count == 1, let preset = filter.dates.first,
-              let days = GoodsOutMapper.dateRange(preset, today: today, timeZone: timeZone) else { return true }
+        guard filter.dates.count == 1, let preset = filter.dates.first else { return true }
+        if preset == .overdue {
+            return isOverdue(row, now: today, timeZone: timeZone)
+        }
+        guard let days = GoodsOutMapper.dateRange(preset, today: today, timeZone: timeZone) else { return true }
         let presetRange = ListDateRange(from: ListDates.day(days.from, in: timeZone), to: ListDates.day(days.to, in: timeZone))
         return SavedListFilter.within(row.date, range: presetRange, in: timeZone)
+    }
+
+    static let overdueStates: Set<String> = ["unassigned", "queued", "handling", "handling_blocked", "picked", "packing", "packed", "finalised"]
+
+    static func overdueCutoff(now: Date, timeZone: TimeZone) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        var cutoff = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        while calendar.isDateInWeekend(cutoff) {
+            cutoff = calendar.date(byAdding: .day, value: -1, to: cutoff) ?? cutoff
+        }
+        return cutoff
+    }
+
+    static func isOverdue(_ row: GoodsOutDeliveryNoteRowDTO, now: Date, timeZone: TimeZone) -> Bool {
+        guard overdueStates.contains(row.state), let date = instant(row.date) else { return false }
+        return date < overdueCutoff(now: now, timeZone: timeZone)
     }
 
     private static func sorted(_ rows: [GoodsOutDeliveryNoteRowDTO], by sort: GoodsOutSort) -> [GoodsOutDeliveryNoteRowDTO] {

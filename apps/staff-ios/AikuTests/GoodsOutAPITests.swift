@@ -286,7 +286,8 @@ struct GoodsOutAPITests {
         #expect(undo.body == nil)
 
         #expect(Endpoint.goodsOutDeliveryNotes(warehouseID: 4, request: GoodsOutListRequest()).path == "mobile/warehouses/4/delivery-notes")
-        #expect(Endpoint.goodsOutCounts(warehouseID: 4, picker: "me").queryItems == [URLQueryItem(name: "picker", value: "me")])
+        #expect(Endpoint.goodsOutCounts(warehouseID: 4, request: GoodsOutCountsRequest(picker: "me")).queryItems == [URLQueryItem(name: "picker", value: "me")])
+        #expect(Endpoint.goodsOutCounts(warehouseID: 4, request: GoodsOutCountsRequest()).queryItems.isEmpty)
     }
 
     @Test func waitingForTheWarehouseAddsWhatIsAlreadyWaiting() throws {

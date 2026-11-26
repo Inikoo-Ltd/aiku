@@ -364,4 +364,57 @@ struct GoodsOutListFilterTests {
         #expect(store.listError == GoodsOutMapper.message(for: APIError.offline))
         #expect(store.listResults.isEmpty)
     }
+
+    @Test("The state chips are counted with the list's search, dates, picker and Overdue, as on Android")
+    func countsFollowTheListFilters() throws {
+        var query = GoodsOutListQuery()
+        query.search = "  AR27  "
+        query.apply(GoodsOutDeliveryNoteFilter(pickers: [.me], dates: [.today]))
+
+        let counts = GoodsOutMapper.listRequest(for: query, page: 1, today: today).countsRequest
+
+        #expect(counts == GoodsOutCountsRequest(picker: "me", search: "AR27", from: "2026-11-11", to: "2026-11-11", overdue: false))
+        #expect(counts.queryItems.map(\.name) == ["picker", "search", "from", "to"])
+    }
+
+    @Test("Overdue is sent to the list and the counts online, without a date range")
+    func overdueGoesToTheServer() {
+        var query = GoodsOutListQuery()
+        query.apply(GoodsOutDeliveryNoteFilter(dates: [.overdue]))
+
+        let request = GoodsOutMapper.listRequest(for: query, page: 1, today: today)
+
+        #expect(request.overdue)
+        #expect(request.from == nil && request.to == nil)
+        #expect(request.queryItems.first { $0.name == "overdue" }?.value == "1")
+        #expect(request.countsRequest.queryItems == [URLQueryItem(name: "overdue", value: "1")])
+
+        var range = GoodsOutDeliveryNoteFilter(dates: [.overdue])
+        range.range = ListDateRange(from: today, to: today)
+        query.apply(range)
+        #expect(GoodsOutMapper.listRequest(for: query, page: 1, today: today).overdue == false)
+    }
+
+    @Test("Offline, Overdue uses the warehouse page's late rule: before the last working day, still in the warehouse")
+    func overdueOnTheSavedCopy() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        func row(_ id: Int, state: String, date: String) throws -> GoodsOutDeliveryNoteRowDTO {
+            try decoder.decode(GoodsOutDeliveryNoteRowDTO.self, from: Data(savedRowJSON(id: id, reference: "AR\(id)", state: state, date: date).utf8))
+        }
+        let rows = [
+            try row(1, state: "unassigned", date: "2026-11-09T08:00:00Z"),
+            try row(2, state: "unassigned", date: "2026-11-11T08:00:00Z"),
+            try row(3, state: "dispatched", date: "2026-11-02T08:00:00Z"),
+            try row(4, state: "packed", date: "2026-11-05T08:00:00Z"),
+        ]
+        var query = GoodsOutListQuery()
+        query.apply(GoodsOutDeliveryNoteFilter(states: Set(GoodsOutDeliveryNoteState.allCases), dates: [.overdue]))
+
+        #expect(GoodsOutSavedList.rows(rows, query: query, userID: 7, today: today).map(\.id).sorted() == [1, 4])
+
+        let monday = GoodsOutDateFormat.date(day: 16, hour: 10, minute: 0)
+        let friday = GoodsOutDateFormat.date(day: 13, hour: 10, minute: 0)
+        #expect(GoodsOutSavedList.overdueCutoff(now: monday, timeZone: GoodsOutDateFormat.timeZone) == friday)
+    }
 }

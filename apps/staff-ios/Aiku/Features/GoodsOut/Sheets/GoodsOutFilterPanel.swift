@@ -51,7 +51,7 @@ struct GoodsOutFilterPanel: View {
     }
 
     private var datePresets: [GoodsOutDateFilter] {
-        GoodsOutDateFilter.allCases.filter { !store.isRemote || $0 != .overdue }
+        GoodsOutDateFilter.allCases
     }
 
     private var draftQuery: GoodsOutListQuery {
