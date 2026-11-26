@@ -198,6 +198,7 @@ const props = defineProps<{
 			tax: number | string | null
 			total: number | string
 			org_items: number | string
+			costs_include_agent_charges: boolean
 			remove_unbacked_costs_route: routeType | null
 		}
 		invoice_entry: { route: routeType; is_agent: boolean } | null
@@ -416,13 +417,13 @@ const costBlocks = computed(() => {
 		return []
 	}
 
-	const { currency, org_currency, items, org_items } = props.box_stats.third_block
+	const { currency, org_currency, items, org_items, org_exchange, costs_include_agent_charges } = props.box_stats.third_block
 
 	const money = (code: string | null, amount: number) => locale.currencyFormat(code ?? "", amount)
 
 	const sameCurrency = !org_currency || org_currency === currency
 	const orgCurrency = org_currency || currency
-	const rate = sameCurrency ? 1 : (orgPerOrder.value ?? 1)
+	const rate = sameCurrency ? 1 : (Number(org_exchange) || orgPerOrder.value || 1)
 
 	const agentInvoice = props.box_stats.invoice
 	const agentInvoiceRate = agentInvoice?.org_exchange ?? null
@@ -467,7 +468,7 @@ const costBlocks = computed(() => {
 		}
 
 	const deliveryAmount = (key: string) => Number(props.box_stats.third_block[key as "extra"]) || 0
-	const agentInvoiceInDelivery = agentInvoice?.currency === currency && agentInvoice.source !== "estimated"
+	const agentInvoiceInDelivery = costs_include_agent_charges && agentInvoice?.currency === currency && agentInvoice.source !== "estimated"
 		? Math.min(agentInvoice.charges, deliveryAmount("shipping") + deliveryAmount("extra"))
 		: 0
 	const localCosts = [

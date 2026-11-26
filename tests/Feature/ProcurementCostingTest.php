@@ -2717,7 +2717,7 @@ test('costs on a stock delivery that no checklist row stands behind can be remov
     $remove        = fn () => $this->delete(route('grp.models.stock-delivery.unbacked-costs.remove', [$stockDelivery->id]));
 
     $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.third_block.remove_unbacked_costs_route.name', 'grp.models.stock-delivery.unbacked-costs.remove'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.third_block.remove_unbacked_costs_route.name', 'grp.models.stock-delivery.unbacked-costs.remove')->where('box_stats.third_block.costs_include_agent_charges', false));
 
     $remove()->assertSessionHasNoErrors();
 

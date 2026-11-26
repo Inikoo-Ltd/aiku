@@ -916,6 +916,7 @@ class ShowStockDelivery extends OrgAction
                 'tax'          => $this->viewedByAgent ? null : $stockDelivery->cost_tax,
                 'total'        => $this->viewedByAgent ? null : $stockDelivery->cost_total,
                 'org_items'    => $stockDelivery->items()->sum('org_net_amount'),
+                'costs_include_agent_charges' => $stockDelivery->source_id || Arr::get($stockDelivery->data ?? [], ApplyAgentInvoiceCosting::APPLIED_AT),
                 'remove_unbacked_costs_route' => $this->canEdit && !$this->viewedByAgent && RemoveStockDeliveryUnbackedCosts::hasUnbackedCosts($stockDelivery) ? [
                     'name'       => 'grp.models.stock-delivery.unbacked-costs.remove',
                     'parameters' => [$stockDelivery->id],
