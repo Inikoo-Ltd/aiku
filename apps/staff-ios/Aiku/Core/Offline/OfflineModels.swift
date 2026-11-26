@@ -56,6 +56,11 @@ enum OfflineRecordType: String, Codable, Sendable {
 
     @MainActor
     func title(_ reference: String) -> String {
+        titleTemplate(reference).trimmingCharacters(in: .whitespaces)
+    }
+
+    @MainActor
+    private func titleTemplate(_ reference: String) -> String {
         switch self {
         case .deliveryNote: L10n.format("Delivery note %@", reference)
         case .customerReturn: L10n.format("Return %@", reference)

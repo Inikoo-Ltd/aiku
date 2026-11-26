@@ -262,7 +262,7 @@ struct SystemConflictResolveView: View {
         if let reference = ConflictDetails.recordReference(entry) { return reference }
         let title = entry.labels.title.components(separatedBy: " · ").first?.trimmingCharacters(in: .whitespaces) ?? ""
         if !title.isEmpty { return title }
-        return OfflineWork.shared.downloaded(record).flatMap { SystemSyncStore.reference(in: $0.body) } ?? "#\(record.id)"
+        return OfflineWork.shared.downloaded(record).flatMap { SystemSyncStore.reference(in: $0.body) } ?? ""
     }
 
     private func open(_ record: OfflineRecordKey, reference: String) {
@@ -276,7 +276,7 @@ struct SystemConflictResolveView: View {
         case .orgStock:
             router.open(InventoryRoute.skoID(id: record.id))
         case .location:
-            if reference.hasPrefix("#") {
+            if reference.isEmpty {
                 router.open(SystemRoute.syncQueue)
             } else {
                 router.open(LocationsRoute.location(code: reference))
