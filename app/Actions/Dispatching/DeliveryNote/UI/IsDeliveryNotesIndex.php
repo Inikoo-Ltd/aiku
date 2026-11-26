@@ -475,7 +475,7 @@ trait IsDeliveryNotesIndex
                 $table->column(key: 'sort_trolleys', label: __('Trolleys'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if ($bucket == 'picked' || $bucket == 'packing') {
+            if ($bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing') {
                 $table->column(key: 'sort_picked_bays', label: __('Picked bays'), canBeHidden: false, sortable: true, searchable: true);
             }
 

@@ -10283,3 +10283,15 @@ test('return all puts every item still to do back into its default location (HEL
         ->and($returnItem->is_handled)->toBeTrue()
         ->and($returnItem->sowings()->first()->location_id)->toBe($locationOrgStock->location_id);
 });
+
+test('handling blocked delivery notes list shows the picked bays column', function () {
+    request()->setRouteResolver(fn () => new Route('GET', 'test', []));
+    request()->setUserResolver(fn () => $this->user);
+
+    $table = new InertiaTable(request());
+    \App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes::make()->tableStructure($this->warehouse, bucket: 'handling_blocked')($table);
+
+    $columns = (new \ReflectionProperty(InertiaTable::class, 'columns'))->getValue($table);
+
+    expect($columns->pluck('key'))->toContain('sort_picked_bays');
+});
