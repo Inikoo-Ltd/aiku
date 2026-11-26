@@ -32,7 +32,7 @@ class GetMasterAssetMaterialCost
     use AsObject;
 
     /**
-     * @return array{source: string, organisation_code: string, currency_code: string, effective_cost: float|null, materials_total: float, rest: float, materials: list<MaterialLine>}|null
+     * @return array{source: string, organisation_code: string, currency_code: string, effective_cost: float|null, materials_total: float, rest: float, overhead: float, materials: list<MaterialLine>}|null
      */
     public function handle(MasterAsset $masterAsset): ?array
     {
@@ -117,6 +117,7 @@ class GetMasterAssetMaterialCost
             'effective_cost'    => $effectiveCost,
             'materials_total'   => round($materialsTotal, 4),
             'rest'              => round(max(0, ($effectiveCost ?? 0) - $materialsTotal), 4),
+            'overhead'          => GetMasterAssetsPartnerPricing::estimatedOverhead($masterAsset),
             'materials'         => $materials->map(fn (array $material) => [
                 ...$material,
                 'share' => $barTotal > 0 ? round($material['cost'] / $barTotal * 100, 2) : 0,
