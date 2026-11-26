@@ -1076,7 +1076,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
                 <label
-                    v-if="item.can_update_supplier_cost && (canEditPrice(item) || item.answerPriceRoute)"
+                    v-if="item.can_update_supplier_cost && (canEditPrice(item) || (isInProcess && item.answerPriceRoute))"
                     class="flex items-center gap-1 select-none text-xs text-gray-500"
                     :class="isPriceQueryAnswered(item) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
                     v-tooltip="isPriceQueryAnswered(item) ? ctrans('The supplier price change was already answered') : undefined"
@@ -1090,7 +1090,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     />
                     {{ ctrans('Also update supplier price') }}
                 </label>
-                <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="isAlsoUpdatingSupplierPrice(item)" />
+                <PurchaseOrderLinePriceChange v-if="!isPartner && isInProcess" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="isAlsoUpdatingSupplierPrice(item)" />
                 <PurchaseOrderLineAgentUnitExpense v-if="!isPartner" :item="item" :tab="tab" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
@@ -1369,6 +1369,22 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                     {{ ctrans('Supplier price') }}: {{ supplierUnitCostLabel(item) }}
                 </span>
+                <label
+                    v-if="item.can_update_supplier_cost && item.answerPriceRoute && !canEditPrice(item)"
+                    class="flex items-center gap-1 select-none text-xs text-gray-500"
+                    :class="isPriceQueryAnswered(item) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
+                    v-tooltip="isPriceQueryAnswered(item) ? ctrans('The supplier price change was already answered') : undefined"
+                >
+                    <Checkbox
+                        :modelValue="isAlsoUpdatingSupplierPrice(item)"
+                        binary
+                        size="small"
+                        :disabled="isPriceQueryAnswered(item)"
+                        @update:modelValue="(isChecked: boolean) => (alsoUpdateSupplierPrice[item.id] = isChecked)"
+                    />
+                    {{ ctrans('Also update supplier price') }}
+                </label>
+                <PurchaseOrderLinePriceChange v-if="!isPartner" class="mt-1 text-left" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="isAlsoUpdatingSupplierPrice(item)" />
             </div>
         </template>
 
