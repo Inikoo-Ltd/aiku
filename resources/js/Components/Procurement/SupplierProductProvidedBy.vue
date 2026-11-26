@@ -41,6 +41,7 @@ const props = defineProps<{
         is_available: boolean
         can_be_preferred?: boolean
         preferred_in?: string[]
+        other_agent?: { name: string | null; country_code: string | null } | null
         supplier_route: routeType
         route: routeType | null
     }[]
@@ -120,6 +121,17 @@ const openImageViewer = (image: object, alt: string | null) => {
     isImageViewerVisible.value = true
 }
 
+const otherAgentTooltip = (otherAgent: { name: string | null; country_code: string | null }) =>
+    otherAgent.name
+        ? ctrans(":country, through agent :agent", { country: otherAgent.country_code ?? "", agent: otherAgent.name })
+        : ctrans(":country, free supplier", { country: otherAgent.country_code ?? "" })
+
+const openOtherProduct =(productRoute: routeType | null) => {
+    if (productRoute) {
+        router.visit(route(productRoute.name, productRoute.parameters))
+    }
+}
+
 const supplierParties = computed(() => props.parties.filter((party) => party.type !== "agent"))
 const agentParties = computed(() => props.parties.filter((party) => party.type === "agent"))
 
@@ -188,23 +200,32 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
             </div>
             <div :class="gridClass">
                 <div v-for="other in otherSuppliers" :key="other.supplier_code + other.code"
-                    class="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-2 py-1.5">
+                    class="flex items-center gap-2 rounded-md border border-dashed border-gray-200 px-2 py-1.5 transition"
+                    :class="{ 'cursor-pointer hover:border-gray-300 hover:bg-gray-50': other.route }"
+                    v-tooltip="other.route ? ctrans('Open supplier product') : undefined"
+                    @click="openOtherProduct(other.route)">
                     <button v-if="other.image" type="button" class="h-8 w-8 shrink-0 cursor-zoom-in overflow-hidden rounded" v-tooltip="ctrans('View image')"
-                        @click="openImageViewer(other.image, other.supplier_name)">
+                        @click.stop="openImageViewer(other.image, other.supplier_name)">
                         <Image :src="other.image" imageCover class="h-full w-full" />
                     </button>
                     <Link v-else :href="route(other.supplier_route.name, other.supplier_route.parameters)" class="shrink-0"
-                        v-tooltip="ctrans('Open supplier')">
+                        v-tooltip="ctrans('Open supplier')" @click.stop>
                         <Icon :data="{ icon: 'fal fa-person-dolly' }" class="w-8 text-center text-lg text-gray-400" />
                     </Link>
                     <div class="min-w-0">
-                        <Link :href="route(other.supplier_route.name, other.supplier_route.parameters)"
-                            class="block truncate text-xs font-medium text-gray-600 hover:text-gray-900 hover:underline">
-                            {{ other.supplier_name }}
-                        </Link>
+                        <div class="flex min-w-0 items-center gap-1">
+                            <img v-if="other.other_agent?.country_code" :src="`/flags/${other.other_agent.country_code.toLowerCase()}.png`"
+                                :alt="other.other_agent.country_code" class="h-3 w-4 shrink-0 rounded-sm object-cover"
+                                v-tooltip="otherAgentTooltip(other.other_agent)" />
+                            <Link :href="route(other.supplier_route.name, other.supplier_route.parameters)"
+                                class="block truncate text-xs font-medium text-gray-600 hover:text-gray-900 hover:underline"
+                                v-tooltip="ctrans('Open supplier')" @click.stop>
+                                {{ other.supplier_name }}
+                            </Link>
+                        </div>
                         <div class="whitespace-nowrap text-xxs text-gray-400">
                             <Link v-if="other.route" :href="route(other.route.name, other.route.parameters)"
-                                class="hover:text-gray-700 hover:underline" v-tooltip="ctrans('Open supplier product')">
+                                class="hover:text-gray-700 hover:underline" @click.stop>
                                 {{ other.code }}
                             </Link>
                             <span v-else>{{ other.code }}</span>
@@ -218,7 +239,7 @@ const gridClass = props.compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2 lg:g
                             <div class="mt-1">
                                 <Button type="tertiary" size="xxs" :label="ctrans('Set as preferred')" :loading="savingId === other.id"
                                     aria-haspopup="true" aria-controls="provided-by-preferred-menu"
-                                    @click="(event: Event) => openPreferredMenu(event, other.id, other.preferred_in ?? [])">
+                                    @click.stop="(event: Event) => openPreferredMenu(event, other.id, other.preferred_in ?? [])">
                                     <template #icon>
                                         <Icon :data="{ icon: 'fal fa-check' }" class="text-green-600" />
                                     </template>
