@@ -43,6 +43,7 @@ use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
 use App\Actions\CRM\TrafficSource\UI\IndexTrafficSources;
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsOrders;
+use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\RepairGoogleAdsGhostCampaigns;
 use App\Actions\CRM\TrafficSourceCampaign\UI\ShowGoogleAdsCampaign;
 use App\Actions\CRM\TrafficSource\UI\TrafficSourceTabsEnum;
 use App\Actions\Catalogue\Shop\StoreShop;
@@ -6009,5 +6010,87 @@ describe('google ads profit', function () {
             ->and($orderA->campaign)->toBe('Spring Sale')
             ->and((float) $orderA->profit)->toEqualWithDelta(googleAdsOrderProfit($this->springOrderA, 4), 0.01)
             ->and((bool) $orderA->is_estimated)->toBeTrue();
+    });
+});
+
+describe('merging Google Ads ghost campaigns', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+        Illuminate\Support\Facades\Queue::fake();
+
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+        ) = createOwnShop('ghost campaign merge');
+
+        $this->googleAds = createTrafficSource($this->shop, 'google-ads', 'Google Ads');
+
+        $campaign = fn (string $name, array $data = []) => TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->googleAds->id,
+            'reference'         => (string) random_int(10000000000, 99999999999),
+            'name'              => $name,
+            'type'              => 'google-ads',
+            'data'              => $data,
+        ]);
+
+        $this->pmax   = $campaign('PMax | Best Selling Product', ['status' => 'ENABLED']);
+        $this->ghostA = $campaign('ghost a');
+        $this->ghostB = $campaign('ghost b');
+
+        $this->attribute = function (string $type, int $id, TrafficSourceCampaign $campaign, float $share, string $first, string $last): void {
+            DB::table('model_has_traffic_sources')->insert([
+                'model_type'                 => $type,
+                'model_id'                   => $id,
+                'traffic_source_id'          => $this->googleAds->id,
+                'traffic_source_campaign_id' => $campaign->id,
+                'share'                      => $share,
+                'first_touch_at'             => $first,
+                'last_touch_at'              => $last,
+                'created_at'                 => now(),
+                'updated_at'                 => now(),
+            ]);
+        };
+    });
+
+    it('folds attribution the target already has instead of failing on the unique key', function () {
+        ($this->attribute)('Order', 9000001, $this->ghostA, 0.5, '2026-11-10 10:00:00', '2026-11-12 10:00:00');
+        ($this->attribute)('Order', 9000001, $this->pmax, 0.5, '2026-11-11 10:00:00', '2026-11-11 10:00:00');
+        ($this->attribute)('Order', 9000002, $this->ghostA, 1, '2026-11-15 10:00:00', '2026-11-15 10:00:00');
+
+        $folded = RepairGoogleAdsGhostCampaigns::make()->merge($this->ghostA, $this->pmax);
+
+        $rows = DB::table('model_has_traffic_sources')->where('model_type', 'Order')->orderBy('model_id')->get();
+
+        expect($folded)->toBe(1)
+            ->and($rows)->toHaveCount(2)
+            ->and($rows->pluck('traffic_source_campaign_id')->unique()->all())->toBe([$this->pmax->id])
+            ->and((float) $rows[0]->share)->toBe(1.0)
+            ->and(Carbon\Carbon::parse($rows[0]->first_touch_at)->toDateTimeString())->toBe('2026-11-10 10:00:00')
+            ->and(Carbon\Carbon::parse($rows[0]->last_touch_at)->toDateTimeString())->toBe('2026-11-12 10:00:00')
+            ->and($this->ghostA->fresh()->merged_into_id)->toBe($this->pmax->id);
+    });
+
+    it('merges a second ghost into a campaign an earlier ghost already filled', function () {
+        ($this->attribute)('Order', 9000003, $this->ghostA, 0.5, '2026-11-10 10:00:00', '2026-11-10 10:00:00');
+        ($this->attribute)('Order', 9000003, $this->ghostB, 0.5, '2026-11-11 10:00:00', '2026-11-11 10:00:00');
+
+        RepairGoogleAdsGhostCampaigns::make()->merge($this->ghostA, $this->pmax);
+        RepairGoogleAdsGhostCampaigns::make()->merge($this->ghostB, $this->pmax);
+
+        $rows = DB::table('model_has_traffic_sources')->where('model_id', 9000003)->get();
+
+        expect($rows)->toHaveCount(1)
+            ->and($rows[0]->traffic_source_campaign_id)->toBe($this->pmax->id)
+            ->and((float) $rows[0]->share)->toBe(1.0)
+            ->and($this->ghostB->fresh()->merged_into_id)->toBe($this->pmax->id);
+    });
+
+    it('points ghosts merged into a ghost at the final campaign', function () {
+        $this->ghostB->update(['merged_into_id' => $this->ghostA->id]);
+
+        RepairGoogleAdsGhostCampaigns::make()->merge($this->ghostA, $this->pmax);
+
+        expect($this->ghostB->fresh()->merged_into_id)->toBe($this->pmax->id);
     });
 });

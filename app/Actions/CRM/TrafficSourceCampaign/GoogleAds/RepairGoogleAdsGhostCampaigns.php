@@ -113,11 +113,19 @@ class RepairGoogleAdsGhostCampaigns
                 continue;
             }
 
-            if (!$dryRun) {
-                $this->merge($ghost, $target);
+            if ($dryRun) {
+                $rows[] = [...$row, 'result' => 'would merge'];
+
+                continue;
             }
 
-            $rows[] = [...$row, 'result' => $dryRun ? 'would merge' : 'merged'];
+            try {
+                $folded = $this->merge($ghost, $target);
+                $rows[] = [...$row, 'result' => $folded > 0 ? "merged ($folded already on the campaign, folded in)" : 'merged'];
+            } catch (Throwable $e) {
+                report($e);
+                $rows[] = [...$row, 'result' => 'failed: '.$e->getMessage()];
+            }
         }
 
         return $rows;
@@ -165,18 +173,52 @@ class RepairGoogleAdsGhostCampaigns
             ->all();
     }
 
-    private function merge(TrafficSourceCampaign $ghost, TrafficSourceCampaign $target): void
+    public function merge(TrafficSourceCampaign $ghost, TrafficSourceCampaign $target): int
     {
-        DB::transaction(function () use ($ghost, $target) {
+        $folded = DB::transaction(function () use ($ghost, $target) {
             $ghost->update(['merged_into_id' => $target->id]);
+
+            DB::statement(
+                'UPDATE model_has_traffic_sources AS t
+                SET share = t.share + g.share,
+                    first_touch_at = LEAST(t.first_touch_at, g.first_touch_at),
+                    last_touch_at = GREATEST(t.last_touch_at, g.last_touch_at),
+                    updated_at = NOW()
+                FROM model_has_traffic_sources AS g
+                WHERE g.traffic_source_campaign_id = ?
+                  AND t.traffic_source_campaign_id = ?
+                  AND t.model_type = g.model_type
+                  AND t.model_id = g.model_id
+                  AND t.traffic_source_id = g.traffic_source_id',
+                [$ghost->id, $target->id]
+            );
+
+            $folded = DB::delete(
+                'DELETE FROM model_has_traffic_sources AS g
+                WHERE g.traffic_source_campaign_id = ?
+                  AND EXISTS (
+                      SELECT 1 FROM model_has_traffic_sources AS t
+                      WHERE t.traffic_source_campaign_id = ?
+                        AND t.model_type = g.model_type
+                        AND t.model_id = g.model_id
+                        AND t.traffic_source_id = g.traffic_source_id
+                  )',
+                [$ghost->id, $target->id]
+            );
 
             DB::table('model_has_traffic_sources')
                 ->where('traffic_source_campaign_id', $ghost->id)
                 ->update(['traffic_source_campaign_id' => $target->id]);
+
+            TrafficSourceCampaign::where('merged_into_id', $ghost->id)->update(['merged_into_id' => $target->id]);
+
+            return $folded;
         });
 
         TrafficSourceCampaignHydrateStats::dispatch($ghost);
         TrafficSourceCampaignHydrateStats::dispatch($target);
+
+        return $folded;
     }
 
     public function getCommandSignature(): string
