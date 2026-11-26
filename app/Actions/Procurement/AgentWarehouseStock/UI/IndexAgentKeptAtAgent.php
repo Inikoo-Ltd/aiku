@@ -26,6 +26,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -69,6 +70,8 @@ class IndexAgentKeptAtAgent extends OrgAction
             ->addSelect([
                 'supplier_products.code as code',
                 'supplier_products.name as name',
+                DB::raw('(select slug from org_supplier_products where supplier_product_id = purchase_order_transactions.supplier_product_id and organisation_id = purchase_order_transactions.organisation_id order by id limit 1) as org_supplier_product_slug'),
+                DB::raw('(select slug from org_suppliers where supplier_id = supplier_products.supplier_id and organisation_id = purchase_order_transactions.organisation_id order by id limit 1) as org_supplier_slug'),
                 'organisations.code as organisation_code',
                 'purchase_orders.reference as purchase_order_reference',
                 'purchase_orders.slug as purchase_order_slug',
@@ -94,8 +97,10 @@ class IndexAgentKeptAtAgent extends OrgAction
                 'id'                       => $transaction->id,
                 'code'                     => $transaction->code,
                 'name'                     => $transaction->name,
+                'org_supplier_product_slug' => $transaction->org_supplier_product_slug,
                 'organisation_code'        => $transaction->organisation_code,
                 'supplier_name'            => $transaction->supplier_name,
+                'org_supplier_slug'        => $transaction->org_supplier_slug,
                 'purchase_order_reference' => $transaction->purchase_order_reference,
                 'purchase_order_slug'      => $transaction->purchase_order_slug,
                 'quantity'                 => $agentWarehouse['kept_at_agent']['quantity'] ?? 0,

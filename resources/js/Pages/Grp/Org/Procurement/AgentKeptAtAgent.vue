@@ -27,6 +27,8 @@ defineProps<{
 
 const locale = useLocaleStore()
 const organisation = route().params["organisation"]
+const productRoute = (slug: string) => route("grp.org.agent.org_supplier_products.show", [organisation, slug])
+const supplierRoute = (slug: string) => route("grp.org.agent.org_suppliers.show", [organisation, slug])
 const purchaseOrderRoute = (slug: string) => route("grp.org.agent.purchase_orders.show", [organisation, slug])
 
 const containerDialogItems = ref<any[]>([])
@@ -43,8 +45,13 @@ function openContainerDialog(item: any) {
 	<PageHeading :data="pageHead" />
 	<Table :resource="data">
 		<template #cell(code)="{ item }">
-			<span class="whitespace-nowrap font-medium">{{ item.code }}</span>
+			<Link v-if="item.org_supplier_product_slug" :href="productRoute(item.org_supplier_product_slug)" class="primaryLink whitespace-nowrap">{{ item.code }}</Link>
+			<span v-else class="whitespace-nowrap font-medium">{{ item.code }}</span>
 			<span v-if="item.name" class="block text-xs text-gray-500">{{ item.name }}</span>
+		</template>
+		<template #cell(supplier_name)="{ item }">
+			<Link v-if="item.org_supplier_slug" :href="supplierRoute(item.org_supplier_slug)" class="secondaryLink">{{ item.supplier_name }}</Link>
+			<span v-else>{{ item.supplier_name }}</span>
 		</template>
 		<template #cell(purchase_order_reference)="{ item }">
 			<Link :href="purchaseOrderRoute(item.purchase_order_slug)" class="secondaryLink whitespace-nowrap">{{ item.purchase_order_reference }}</Link>
