@@ -694,7 +694,7 @@ test('a project keeps files its team adds, anyone in the group opens them and on
     $uploadId = (string) Str::ulid();
     Illuminate\Support\Facades\Storage::disk(config('media-library.disk_name'))->put(App\Actions\Helpers\Ticket\StoreTicketUpload::path($owner->id, $uploadId).'/Minutes.pdf', "%PDF-1.4\n%%EOF");
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_file', 'project' => $project->slug, 'uploads' => [$uploadId]])->assertHasErrors();
-    AikuServer::actingAs($owner)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_file', 'project' => $project->slug, 'uploads' => [$uploadId]])->assertOk()->assertSee('Minutes.pdf');
+    AikuServer::actingAs($owner)->tool(\App\Mcp\Tools\ProjectWriteTool::class, ['action' => 'add_file', 'project' => $project->slug, 'uploads' => json_encode([$uploadId])])->assertOk()->assertSee('Minutes.pdf');
     expect(App\Actions\Helpers\Ticket\StoreTicketUpload::find($owner->id, $uploadId))->toBeNull();
     AikuServer::actingAs($outsider)->tool(\App\Mcp\Tools\ProjectsTool::class, ['project' => $project->slug])->assertOk()->assertSee('Minutes.pdf')->assertSee('Assessment.pdf');
 

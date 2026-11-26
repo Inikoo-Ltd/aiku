@@ -273,7 +273,8 @@ class ProjectWriteTool extends Tool
 
     private function addFile(Request $request, User $user, TicketProject $project): Response
     {
-        $uploadIds = array_values(array_filter((array) $request->get('uploads', []), 'is_string'));
+        preg_match_all('/[0-9A-HJKMNP-TV-Z]{26}/i', (string) json_encode($request->get('uploads', [])), $matches);
+        $uploadIds = array_values(array_unique(array_map('strtoupper', $matches[0])));
         if ($uploadIds === [] || count($uploadIds) > 5) {
             return Response::error('Give 1 to 5 upload_ids in uploads, from ticket-upload-link-tool.');
         }
