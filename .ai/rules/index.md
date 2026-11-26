@@ -31,6 +31,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/Comms/Mailshot/** | .ai/rules/mailshot.md |
 | app/Actions/Production/ManufactureArtisanDay/**, app/Actions/Production/ManufactureTaskSession/GetManufacturePayroll.php | .ai/rules/manufacture-artisan-day.md |
 | app/Actions/Production/ManufactureOvertime/** | .ai/rules/manufacture-overtime.md |
+| app/Mcp/** | .ai/rules/mcp.md |
 | app/Http/Middleware/Handle*InertiaRequests.php | .ai/rules/middleware.md |
 | app/Notifications/**, app/Actions/**/Notifications/**, app/Actions/Api/Group/**, apps/** | .ai/rules/notifications.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
