@@ -9,6 +9,7 @@
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -27,11 +28,15 @@ type Packing = {
 
 const props = withDefaults(defineProps<{
 	code: string | null
+	name?: string | null
+	image?: object | null
 	packing: Packing
 	unitsPerSko?: number | null
 	canPack?: boolean
 }>(), {
 	unitsPerSko: null,
+	name: null,
+	image: null,
 	canPack: true,
 })
 
@@ -124,6 +129,7 @@ function submitUnpack() {
 
 		<Dialog v-model:visible="isPackDialogVisible" modal :header="ctrans('Mark :code packed', { code })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
 			<div class="space-y-3 text-sm">
+				<ProductDialogHeader :code="code" :name="name" :image="image" />
 				<label class="block space-y-1">
 					<span class="text-gray-700">{{ ctrans("Units to pack") }} <span class="text-red-500">*</span></span>
 					<InputNumber
@@ -184,6 +190,7 @@ function submitUnpack() {
 
 		<Dialog v-model:visible="isUnpackDialogVisible" modal :header="ctrans('Undo packing :code', { code })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
 			<div class="space-y-3 text-sm">
+				<ProductDialogHeader :code="code" :name="name" :image="image" />
 				<p class="text-gray-700">
 					{{ ctrans("The :units packed units go back to received, waiting to be packed again. Units already in a shipment stay packed.", { units: locale.number(packed) }) }}
 				</p>

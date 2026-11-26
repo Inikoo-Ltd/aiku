@@ -12,8 +12,8 @@ import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faImage } from "@fal"
-import Image from "@common/Components/Image.vue"
+import { faCheck, faTimes } from "@fal"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
@@ -85,16 +85,7 @@ function submit() {
 <template>
 	<Dialog v-model:visible="visible" modal :header="ctrans('Keep rest of :code at agent', { code })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
 		<div class="space-y-4 text-sm">
-			<div class="flex items-center gap-3">
-				<div class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50">
-					<Image v-if="image" :src="image" imageCover class="h-20 w-20" />
-					<FontAwesomeIcon v-else :icon="faImage" class="text-2xl text-gray-300" fixed-width aria-hidden="true" />
-				</div>
-				<div class="min-w-0">
-					<div class="font-medium text-gray-900">{{ code }}</div>
-					<div v-if="name" class="text-gray-600 line-clamp-2">{{ name }}</div>
-				</div>
-			</div>
+			<ProductDialogHeader :code="code" :name="name" :image="image" />
 
 			<p class="text-gray-600">{{ ctrans("These units stay at the agent. The order can finish without them, and they can still go in a later shipment.") }}</p>
 

@@ -1217,6 +1217,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 <PurchaseOrderLinePackButtons
                     v-if="item.agent_warehouse?.pack_route || item.agent_warehouse?.unpack_route"
                     :code="item.code"
+                    :name="item.name"
+                    :image="item.image_thumbnail"
                     :packing="item.agent_warehouse"
                     :canPack="!isAllInContainers(item)"
                 />

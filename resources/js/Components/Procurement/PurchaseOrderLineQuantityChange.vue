@@ -8,6 +8,7 @@
 import { computed, ref, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -35,6 +36,9 @@ type QuantityQuery = {
 const props = defineProps<{
 	item: {
 		code: string
+		name?: string | null
+		image_thumbnail?: object | null
+		image_preview?: object | null
 		quantity_ordered: number | string
 		quantity_query: QuantityQuery | null
 		askQuantityRoute: routeType | null
@@ -252,6 +256,7 @@ function answer(answerValue: "accepted" | "rejected") {
 			@update:visible="(visible) => !visible && (isDialogOpen = false)"
 		>
 			<div class="space-y-3 text-sm">
+				<ProductDialogHeader :code="item.code" :name="item.name" :image="item.image_preview ?? item.image_thumbnail" />
 				<SegmentedToggle v-model="dialogLevel" :options="levelOptions" :ariaLabel="ctrans('Ask in cartons, SKOs or units')" />
 				<p class="text-gray-600">{{ ctrans("Ordered now: :quantity", { quantity: quantity(item.quantity_ordered, dialogLevel) }) }}</p>
 				<label class="block space-y-1">

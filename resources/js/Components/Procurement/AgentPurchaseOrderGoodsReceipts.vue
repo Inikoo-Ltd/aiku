@@ -262,6 +262,8 @@ function itemStatus(item: ReceiptItem) {
 									<PurchaseOrderLinePackButtons
 										v-if="line.packing.pack_route || line.packing.unpack_route"
 										:code="line.code"
+										:name="line.name"
+										:image="line.image_thumbnail"
 										:packing="line.packing"
 										:unitsPerSko="line.units_per_pack"
 									/>

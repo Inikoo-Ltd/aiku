@@ -9,6 +9,7 @@ import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import Dialog from "primevue/dialog"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import Select from "primevue/select"
 import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
@@ -51,6 +52,8 @@ type MoveItem = {
 	id: number
 	code: string
 	name?: string | null
+	image_thumbnail?: object | null
+	image_preview?: object | null
 	quantity_ordered: number | string
 	unit_cost: number | string | null
 	net_currency: string | null
@@ -271,6 +274,7 @@ function submit() {
 		:draggable="false"
 	>
 		<div class="space-y-4 text-sm">
+			<ProductDialogHeader v-if="!isMany && items[0]" :code="items[0].code" :name="items[0].name" :image="items[0].image_preview ?? items[0].image_thumbnail" />
 			<div class="space-y-1">
 				<span class="block text-xs text-gray-500">{{ ctrans("Move to") }}</span>
 				<div class="flex flex-wrap gap-x-5 gap-y-2">

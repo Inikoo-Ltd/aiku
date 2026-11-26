@@ -11,7 +11,7 @@ import Dialog from "primevue/dialog"
 import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Checkbox from "primevue/checkbox"
-import Image from "@common/Components/Image.vue"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faTags, faPen } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -318,15 +318,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 			@update:visible="(visible) => !visible && (dialog = null)"
 		>
 			<div v-if="dialog === 'accept' && query" class="space-y-3 text-sm">
-				<div class="flex items-center gap-3">
-					<div class="h-24 w-24 flex-none overflow-hidden rounded border border-gray-100">
-						<Image :src="item.image_preview ?? item.image_thumbnail" imageCover class="h-24 w-24" />
-					</div>
-					<div class="min-w-0">
-						<div class="whitespace-nowrap font-semibold">{{ item.code }}</div>
-						<div v-if="item.name" class="text-xs text-gray-600">{{ item.name }}</div>
-					</div>
-				</div>
+				<ProductDialogHeader :code="item.code" :name="item.name" :image="item.image_preview ?? item.image_thumbnail" />
 				<div class="rounded border border-green-200 bg-green-50 px-3 py-2">
 					<div class="text-xs font-medium text-gray-500">{{ ctrans("This order") }}</div>
 					<div class="tabular-nums">
@@ -364,15 +356,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<div v-else class="space-y-3 text-sm">
-				<div class="flex items-center gap-3">
-					<div class="h-24 w-24 flex-none overflow-hidden rounded border border-gray-100">
-						<Image :src="item.image_preview ?? item.image_thumbnail" imageCover class="h-24 w-24" />
-					</div>
-					<div class="min-w-0">
-						<div class="whitespace-nowrap font-semibold">{{ item.code }}</div>
-						<div v-if="item.name" class="text-xs text-gray-600">{{ item.name }}</div>
-					</div>
-				</div>
+				<ProductDialogHeader :code="item.code" :name="item.name" :image="item.image_preview ?? item.image_thumbnail" />
 				<p class="text-gray-600">
 					{{ ctrans("Current price: :price", { price: money(item.unit_cost) }) }} <span class="text-gray-500">({{ costLabel }})</span>
 				</p>
