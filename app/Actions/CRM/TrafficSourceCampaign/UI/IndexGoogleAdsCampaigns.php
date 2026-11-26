@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Http\Resources\CRM\GoogleAdsCampaignsResource;
 use App\InertiaTable\InertiaTable;
@@ -57,9 +58,20 @@ class IndexGoogleAdsCampaigns extends OrgAction
             ->where('traffic_sources.shop_id', $shop->id)
             ->where('traffic_sources.type', TrafficSourcesTypeEnum::GOOGLE_ADS->value)
             ->whereNull('traffic_source_campaigns.merged_into_id')
+            ->where(fn ($query) => self::whereNotGhost($query))
             ->leftJoinSub($this->periodMetrics(), 'metrics', 'metrics.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
             ->leftJoinSub($this->periodCosts(), 'costs', 'costs.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id')
             ->leftJoinSub($this->periodConversions(), 'conversions', 'conversions.traffic_source_campaign_id', '=', 'traffic_source_campaigns.id');
+
+        foreach ($this->elementGroups($shop) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix,
+                default: $elementGroup['default'],
+            );
+        }
 
         $selectFields = [
             'traffic_source_campaigns.id',
@@ -143,6 +155,98 @@ class IndexGoogleAdsCampaigns extends OrgAction
     }
 
     public const string PREVIOUS_SUFFIX = '_previous';
+
+    public const string STATUS_ACTIVE = 'active';
+
+    public const string STATUS_PAUSED = 'paused';
+
+    public const string STATUS_ENDED = 'ended';
+
+    public const string STATUS_IN_PROCESS = 'in_process';
+
+    /**
+     * @var array<string, array{label: string, default: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>|null
+     */
+    private ?array $elementGroups = null;
+
+    /**
+     * Active is everything that may be spending: switched on at Google, or never read from it. A
+     * campaign Google reports as ended is still ENABLED, so its primary status is checked first.
+     */
+    public static function statusGroupSql(): string
+    {
+        $state      = 'traffic_source_campaigns.state';
+        $status     = "traffic_source_campaigns.data->>'status'";
+        $primary    = "traffic_source_campaigns.data->>'primary_status'";
+        $inProcess  = GoogleAdsCampaignStateEnum::IN_PROCESS->value;
+        $paused     = GoogleAdsCampaignStateEnum::PUBLISHED_PAUSED->value;
+
+        return "CASE
+            WHEN {$state} = '{$inProcess}' THEN '".self::STATUS_IN_PROCESS."'
+            WHEN {$status} = 'REMOVED' OR {$primary} IN ('ENDED', 'REMOVED') THEN '".self::STATUS_ENDED."'
+            WHEN {$status} = 'PAUSED' OR {$primary} = 'PAUSED' OR ({$status} IS NULL AND {$state} = '{$paused}') THEN '".self::STATUS_PAUSED."'
+            ELSE '".self::STATUS_ACTIVE."'
+        END";
+    }
+
+    /**
+     * Leaves out the campaigns Aiku minted from a click URL's gad_campaignid that Google has never
+     * described: no status, no name beyond the id, and never a cost. One with spend is kept, because
+     * on a shop not connected to the API it is a real campaign whose name was simply never read.
+     */
+    public static function whereNotGhost($query): void
+    {
+        $query->whereNot(function ($ghost) {
+            $ghost->where('traffic_source_campaigns.state', GoogleAdsCampaignStateEnum::NOT_SYNCED->value)
+                ->whereRaw("traffic_source_campaigns.data->>'status' IS NULL")
+                ->whereColumn('traffic_source_campaigns.name', 'traffic_source_campaigns.reference')
+                ->whereNotExists(fn ($costs) => $costs->select(DB::raw(1))
+                    ->from('traffic_source_costs')
+                    ->whereColumn('traffic_source_costs.traffic_source_campaign_id', 'traffic_source_campaigns.id'));
+        });
+    }
+
+    /**
+     * @return array<string, array{label: string, default: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>
+     */
+    private function elementGroups(Shop $shop): array
+    {
+        return $this->elementGroups ??= $this->getElementGroups($shop);
+    }
+
+    /**
+     * @return array<string, array{label: string, default: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>
+     */
+    private function getElementGroups(Shop $shop): array
+    {
+        $counts = DB::table('traffic_source_campaigns')
+            ->join('traffic_sources', 'traffic_sources.id', '=', 'traffic_source_campaigns.traffic_source_id')
+            ->where('traffic_sources.shop_id', $shop->id)
+            ->where('traffic_sources.type', TrafficSourcesTypeEnum::GOOGLE_ADS->value)
+            ->whereNull('traffic_source_campaigns.merged_into_id')
+            ->where(fn ($query) => self::whereNotGhost($query))
+            ->groupBy('status_group')
+            ->select(DB::raw(self::statusGroupSql().' as status_group'), DB::raw('COUNT(*) as number'))
+            ->pluck('number', 'status_group');
+
+        $labels = [
+            self::STATUS_ACTIVE     => __('Active'),
+            self::STATUS_PAUSED     => __('Paused'),
+            self::STATUS_ENDED      => __('Ended or removed'),
+            self::STATUS_IN_PROCESS => __('In process'),
+        ];
+
+        return [
+            'status' => [
+                'label'    => __('Status'),
+                'default'  => self::STATUS_ACTIVE,
+                'elements' => collect($labels)->map(fn (string $label, string $key) => [$label, (int) ($counts[$key] ?? 0)])->all(),
+                'engine'   => function ($query, array $elements) {
+                    $query->whereIn(DB::raw(self::statusGroupSql()), $elements);
+                },
+            ],
+        ];
+    }
 
     /**
      * Every figure the table can show, in the order the resource emits them.
@@ -362,6 +466,15 @@ class IndexGoogleAdsCampaigns extends OrgAction
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
+            }
+
+            foreach ($this->elementGroups($this->shop) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements'],
+                    default: $elementGroup['default'],
+                );
             }
 
             $table

@@ -42,6 +42,7 @@ use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\CRM\TrafficSource\StoreTrafficSourceCost;
 use App\Actions\CRM\TrafficSource\UI\IndexTrafficSources;
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsCampaigns;
+use App\Enums\CRM\TrafficSource\GoogleAdsCampaignStateEnum;
 use App\Actions\CRM\TrafficSourceCampaign\UI\IndexGoogleAdsOrders;
 use App\Actions\CRM\TrafficSourceCampaign\GoogleAds\RepairGoogleAdsGhostCampaigns;
 use App\Actions\CRM\TrafficSourceCampaign\UI\ShowGoogleAdsCampaign;
@@ -2115,6 +2116,75 @@ describe('traffic source costs', function () {
         expect($row->name)->toBe('Spring Sale');
         expect($row->status)->toBe('ENABLED');
         expect((float) $row->spend)->toBe(10.0);
+    });
+
+    it('lists only active Google Ads campaigns unless asked for other statuses', function () {
+        $campaigns = collect([
+            'serving'   => ['status' => 'ENABLED', 'primary_status' => 'ELIGIBLE'],
+            'limited'   => ['status' => 'ENABLED', 'primary_status' => 'LIMITED'],
+            'paused'    => ['status' => 'PAUSED', 'primary_status' => 'PAUSED'],
+            'ended'     => ['status' => 'ENABLED', 'primary_status' => 'ENDED'],
+            'removed'   => ['status' => 'REMOVED'],
+            'unread'    => [],
+        ])->map(fn (array $data, string $name) => TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Status '.$name,
+            'type'              => 'google-ads',
+            'data'              => $data,
+        ]));
+
+        $ghostReference = (string) random_int(10000000000, 99999999999);
+        $campaigns['ghost'] = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => $ghostReference,
+            'name'              => $ghostReference,
+            'type'              => 'google-ads',
+        ]);
+
+        $spendingReference = (string) random_int(10000000000, 99999999999);
+        $campaigns['unnamed'] = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => $spendingReference,
+            'name'              => $spendingReference,
+            'type'              => 'google-ads',
+        ]);
+
+        StoreTrafficSourceCost::run($this->trafficSource, [
+            'date'                       => now()->subDays(1)->toDateString(),
+            'source_amount'              => 5.00,
+            'source_currency_id'         => $this->currency->id,
+            'traffic_source_campaign_id' => $campaigns['unnamed']->id,
+        ]);
+
+        $campaigns['draft'] = TrafficSourceCampaign::create([
+            'traffic_source_id' => $this->trafficSource->id,
+            'reference'         => 'ref-'.uniqid(),
+            'name'              => 'Status draft',
+            'type'              => 'google-ads',
+            'state'             => GoogleAdsCampaignStateEnum::IN_PROCESS,
+            'data'              => [],
+        ]);
+
+        fakeCurrentRoute();
+
+        $listed = fn () => IndexGoogleAdsCampaigns::make()->handle($this->shop)->pluck('id')
+            ->intersect($campaigns->pluck('id'))
+            ->map(fn (int $id) => $campaigns->search(fn ($campaign) => $campaign->id === $id))
+            ->sort()->values()->all();
+
+        expect($listed())->toBe(['limited', 'serving', 'unnamed', 'unread']);
+
+        request()->merge(['elements' => ['status' => 'paused,ended']]);
+        expect($listed())->toBe(['ended', 'paused', 'removed']);
+
+        request()->merge(['elements' => ['status' => 'in_process']]);
+        expect($listed())->toBe(['draft']);
+
+        request()->merge(['elements' => ['status' => 'active,paused,ended,in_process']]);
+        expect($listed())->toHaveCount(8)->not->toContain('ghost');
+
+        request()->offsetUnset('elements');
     });
 
     it('shows a Google Ads campaign with its spend', function () {
