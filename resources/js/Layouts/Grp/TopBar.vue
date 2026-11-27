@@ -199,7 +199,7 @@ const label = {
                         </Transition>
                     </div>
 
-                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block shrink-0 self-stretch bg-[#3f0e40] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'" aria-hidden="true" />
+                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block shrink-0 self-stretch bg-[var(--vx-sidebar,#3f0e40)] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'" aria-hidden="true" />
 
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="!isVerbaRoute && (layoutStore.group || (layoutStore.organisations.data?.length > 1))" as="div" class="ml-2 relative text-left" v-slot="{ open: isOrgMenuOpen, close: closeOrgMenu }">

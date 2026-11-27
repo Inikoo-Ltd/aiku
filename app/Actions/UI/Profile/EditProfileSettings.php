@@ -121,7 +121,7 @@ class EditProfileSettings
                             "chat_theme" => [
                                 "type"  => "chat_theme",
                                 "label" => __("Chat panel color"),
-                                "value" => Arr::get($user->settings, 'chat_theme'),
+                                "value" => Arr::get($user->settings, 'chat_theme', 'classic'),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",

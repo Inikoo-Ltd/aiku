@@ -32,6 +32,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');
     Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');
     Route::get('/coworkers', \App\Actions\Chat\Staff\Json\GetStaffCoworkers::class)->name('coworkers.index');
+    Route::get('/people/{user:id}', \App\Actions\Chat\Staff\Json\GetStaffProfileCard::class)->name('people.show');
     Route::get('/gifs', \App\Actions\Chat\Staff\Json\SearchGifs::class)->name('gifs.search');
     Route::post('/conversations/{staffConversation}/calls', \App\Actions\Chat\Staff\Call\StartStaffCall::class)->middleware('throttle:6,1,staff-call-start')->name('conversations.calls.store');
     Route::get('/calls/live', \App\Actions\Chat\Staff\Call\GetLiveStaffCalls::class)->name('calls.live');

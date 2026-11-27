@@ -42,16 +42,16 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
         :is="href ? Link : 'button'"
         v-bind="href ? { href, preserveState: true, preserveScroll: true } : { type: 'button' }"
         class="relative mx-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
-        :class="isActive ? 'ring-2 ring-white' : 'hover:ring-2 hover:ring-white/40'"
+        :class="isActive ? 'ring-2 ring-[var(--desk-strong)]' : 'hover:ring-2 hover:ring-[var(--desk-chip-strong)]'"
         :aria-label="label"
         v-tooltip.right="label"
         @click="!href && emit('select')">
-        <span v-if="groupSize" class="flex h-full w-full items-center justify-center rounded-md bg-white/20 text-xs font-bold text-white">{{ groupSize }}</span>
-        <span v-else-if="icon === undefined" class="h-full w-full overflow-hidden rounded-md bg-white/20">
+        <span v-if="groupSize" class="flex h-full w-full items-center justify-center rounded-md bg-[var(--desk-chip-strong)] text-xs font-bold text-[var(--desk-strong)]">{{ groupSize }}</span>
+        <span v-else-if="icon === undefined" class="h-full w-full overflow-hidden rounded-md bg-[var(--desk-chip-strong)]">
             <Image v-if="avatar" :src="avatar" :alt="label" image-cover />
             <FontAwesomeIcon v-else icon="fal fa-user" class="flex h-full items-center justify-center text-sm" fixed-width aria-hidden="true" />
         </span>
-        <span v-else class="flex h-full w-full items-center justify-center rounded-md bg-white/10 text-xs font-bold text-white" :class="isMuted && 'opacity-70'">{{ initials() }}</span>
+        <span v-else class="flex h-full w-full items-center justify-center rounded-md bg-[var(--desk-chip)] text-xs font-bold text-[var(--desk-strong)]" :class="isMuted && 'opacity-70'">{{ initials() }}</span>
         <span
             v-if="unread && !isActive"
             class="absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full border-2 border-[var(--desk-sidebar)] bg-[var(--desk-badge)] px-1 text-center text-[10px] font-bold leading-[14px] text-white"
@@ -62,10 +62,10 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
             :is="href ? Link : 'button'"
             v-bind="href ? { href, preserveState: true, preserveScroll: true } : { type: 'button' }"
             class="flex h-7 w-full items-center gap-x-2 rounded-md pl-4 pr-8 text-left"
-            :class="isActive ? 'bg-[var(--desk-active)] text-[var(--desk-active-text)]' : unread ? 'font-bold text-white hover:bg-[var(--desk-hover)]' : [isMuted && 'opacity-70', 'hover:bg-[var(--desk-hover)]']"
+            :class="isActive ? 'bg-[var(--desk-active)] text-[var(--desk-active-text)]' : unread ? 'font-bold text-[var(--desk-strong)] hover:bg-[var(--desk-hover)]' : [isMuted && 'opacity-70', 'hover:bg-[var(--desk-hover)]']"
             @click="!href && emit('select')">
-            <span v-if="groupSize" class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/20 text-[11px] font-bold text-white">{{ groupSize }}</span>
-            <span v-else-if="icon === undefined" class="h-5 w-5 shrink-0 overflow-hidden rounded bg-white/20">
+            <span v-if="groupSize" class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip-strong)] text-[11px] font-bold text-[var(--desk-strong)]">{{ groupSize }}</span>
+            <span v-else-if="icon === undefined" class="h-5 w-5 shrink-0 overflow-hidden rounded bg-[var(--desk-chip-strong)]">
                 <Image v-if="avatar" :src="avatar" :alt="label" image-cover />
                 <FontAwesomeIcon v-else icon="fal fa-user" class="flex h-full items-center justify-center text-xs" fixed-width aria-hidden="true" />
             </span>
@@ -80,7 +80,7 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
         <button
             v-if="!noStar"
             type="button"
-            class="absolute right-1 top-1 flex h-5 w-6 items-center justify-center rounded opacity-0 hover:bg-white/20 focus:opacity-100 group-hover/row:opacity-100"
+            class="absolute right-1 top-1 flex h-5 w-6 items-center justify-center rounded opacity-0 hover:bg-[var(--desk-chip-strong)] focus:opacity-100 group-hover/row:opacity-100"
             :aria-label="isStarred ? ctrans('Remove from Starred') : ctrans('Add to Starred')"
             v-tooltip="isStarred ? ctrans('Remove from Starred') : ctrans('Add to Starred')"
             @click="emit('toggleStar')">

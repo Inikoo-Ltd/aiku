@@ -19,6 +19,7 @@ import { faStar as faStarSolid } from "@fas"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
+import StaffProfileCard from "@/Components/Messaging/StaffProfileCard.vue"
 import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
 import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
@@ -495,17 +496,17 @@ onUnmounted(() => {
                 :inert="(isSidebarCollapsed && !isMobile) || undefined"
                 :aria-label="ctrans('Verba')">
                 <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                    <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-white/10 px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-white/20 focus-within:ring-1 focus-within:ring-white/60 hover:bg-white/20">
+                    <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-[var(--desk-chip)] px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-[var(--desk-chip-strong)] focus-within:ring-1 focus-within:ring-[var(--desk-text)] hover:bg-[var(--desk-chip-strong)]">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                         <InputText
                             ref="filterInput"
                             v-model="sidebarFilter"
                             unstyled
-                            class="min-w-0 flex-1 border-0 bg-transparent p-0 text-white shadow-none outline-none ring-0 placeholder:text-[var(--desk-text)] focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
+                            class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[var(--desk-strong)] shadow-none outline-none ring-0 placeholder:text-[var(--desk-text)] focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
                             :placeholder="filterLabel"
                             :aria-label="filterLabel"
                             @keydown.esc.stop="sidebarFilter = ''" />
-                        <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
+                        <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--desk-strong)] text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
                             <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                         </button>
                         <button
@@ -528,13 +529,13 @@ onUnmounted(() => {
                     <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
     
                     <div v-if="isDesks && isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
-                        <div class="h-3 w-20 rounded bg-white/10" />
-                        <div class="h-5 rounded bg-white/10" />
-                        <div class="h-5 rounded bg-white/10" />
+                        <div class="h-3 w-20 rounded bg-[var(--desk-chip)]" />
+                        <div class="h-5 rounded bg-[var(--desk-chip)]" />
+                        <div class="h-5 rounded bg-[var(--desk-chip)]" />
                     </div>
                     <div v-else-if="isSlackIndexWithoutAccess" class="space-y-1 px-4 py-6 text-center text-[13px]">
                         <FontAwesomeIcon icon="fal fa-hashtag" class="text-2xl opacity-50" fixed-width aria-hidden="true" />
-                        <p class="font-bold text-white">{{ ctrans("No Slack channels to show") }}</p>
+                        <p class="font-bold text-[var(--desk-strong)]">{{ ctrans("No Slack channels to show") }}</p>
                         <p>{{ ctrans("Public Slack channels show here once your aiku account is linked to your Slack account by the same email address.") }}</p>
                     </div>
     
@@ -654,7 +655,7 @@ onUnmounted(() => {
                             type="button"
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                             @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
-                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-sm">+</span>
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip)] text-sm">+</span>
                             <span class="truncate">{{ isGroups ? ctrans("New Verbration") : ctrans("Add coworkers") }}</span>
                         </button>
                     </section>
@@ -706,7 +707,7 @@ onUnmounted(() => {
                 <div class="flex h-[50px] w-full shrink-0 items-center justify-center border-b border-[var(--desk-border)]">
                     <button
                         type="button"
-                        class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[var(--desk-sidebar)] transition hover:opacity-90"
+                        class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--desk-strong)] text-[var(--desk-sidebar)] transition hover:opacity-90"
                         :aria-label="ctrans('New message')"
                         v-tooltip.right="ctrans('New message')"
                         @click="isJumpOpen = true">
@@ -790,7 +791,7 @@ onUnmounted(() => {
 
         <button
             type="button"
-            class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
+            class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-[var(--desk-strong)] md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
             :aria-label="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
             v-tooltip="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
@@ -839,6 +840,7 @@ onUnmounted(() => {
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />
         <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="(url) => router.visit(url)" />
+        <StaffProfileCard />
 
         <Dialog v-model:visible="isShortcutsOpen" modal dismissable-mask :header="ctrans('Keyboard shortcuts')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '92vw' }">
             <ul class="divide-y divide-gray-100 font-desk text-sm">
@@ -855,18 +857,21 @@ onUnmounted(() => {
 
 <style scoped>
 .desk-palette {
-    --desk-sidebar: #3f0e40;
-    --desk-hover: #350d36;
-    --desk-active: rgba(255, 255, 255, 0.92);
-    --desk-active-text: #39063a;
-    --desk-border: #522653;
-    --desk-badge: #cd2553;
-    --desk-text: rgba(255, 255, 255, 0.7);
+    --desk-sidebar: var(--vx-sidebar, #3f0e40);
+    --desk-hover: var(--vx-sidebar-hover, #350d36);
+    --desk-active: var(--vx-sidebar-active, rgba(255, 255, 255, 0.92));
+    --desk-active-text: var(--vx-sidebar-active-text, #39063a);
+    --desk-border: var(--vx-sidebar-border, #522653);
+    --desk-badge: var(--vx-sidebar-badge, #cd2553);
+    --desk-text: var(--vx-sidebar-text, rgba(255, 255, 255, 0.7));
+    --desk-strong: var(--vx-sidebar-strong, #ffffff);
+    --desk-chip: var(--vx-sidebar-chip, rgba(255, 255, 255, 0.1));
+    --desk-chip-strong: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.2));
 }
 
 .desk-palette nav :deep(*) {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) var(--desk-sidebar);
+    scrollbar-color: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.25)) var(--desk-sidebar);
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar) {
@@ -878,11 +883,11 @@ onUnmounted(() => {
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar-thumb) {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.25));
     border-radius: 4px;
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar-thumb:hover) {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--vx-sidebar-text, rgba(255, 255, 255, 0.4));
 }
 </style>
