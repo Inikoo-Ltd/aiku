@@ -44,7 +44,7 @@ class GetDispatchBacklogHistory
     }
 
     /**
-     * @return array{forecast: array<string, list<array{date: string, backlog: int, low: int, high: int}>>, interval: string, channels: array<int, array{value: string, label: string}>, daily: array<int, array{date: string, channels: array<string, array{backlog: int, created: int, dispatched: int, cancelled: int}>}>}
+     * @return array{forecast: array<string, list<array{date: string, backlog: int, low: int, high: int, created: int}>>, interval: string, channels: array<int, array{value: string, label: string}>, daily: array<int, array{date: string, channels: array<string, array{backlog: int, created: int, dispatched: int, cancelled: int}>}>}
      */
     public function handle(Warehouse $warehouse, string $interval): array
     {

@@ -26,7 +26,7 @@ const props = defineProps<{
         options: Record<string, string>
         channels: { value: string; label: string }[]
         daily: { date: string; channels: Record<string, Day> }[]
-        forecast?: Record<string, { date: string; backlog: number; low: number; high: number }[]>
+        forecast?: Record<string, { date: string; backlog: number; low: number; high: number; created: number }[]>
     }
 }>()
 
@@ -59,6 +59,7 @@ const chartData = computed(() => {
     const ahead = forecast.value.slice(1).map(() => null)
     const past = days.value.slice(0, -2).map(() => null)
     const yesterday = days.value.at(-2)?.backlog ?? 0
+    const createdYesterday = days.value.at(-2)?.created ?? 0
     const datasets: Record<string, unknown>[] = [
         { label: ctrans("Backlog"), data: [...days.value.map((day) => day.backlog), ...ahead], borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 2.5, pointRadius },
         { label: ctrans("New"), data: [...days.value.map((day) => day.created), ...ahead], borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
@@ -67,6 +68,7 @@ const chartData = computed(() => {
     if (forecast.value.length) {
         datasets.push(
             { label: ctrans("Forecast"), data: [...past, yesterday, ...forecast.value.map((day) => day.backlog)], borderColor: "#f59e0b", backgroundColor: "#f59e0b", borderDash: [6, 4], tension: 0, borderWidth: 2, pointRadius: 0 },
+            { label: ctrans("New forecast"), data: [...past, createdYesterday, ...forecast.value.map((day) => day.created)], borderColor: "#c0399f", backgroundColor: "#c0399f", borderDash: [6, 4], tension: 0, borderWidth: 1.5, pointRadius: 0 },
             { label: ctrans("Likely low"), data: [...past, yesterday, ...forecast.value.map((day) => day.low)], borderColor: "transparent", backgroundColor: "transparent", pointRadius: 0, fill: false, band: true },
             { label: ctrans("Likely high"), data: [...past, yesterday, ...forecast.value.map((day) => day.high)], borderColor: "transparent", backgroundColor: "rgba(245, 158, 11, 0.15)", pointRadius: 0, fill: "-1", band: true },
         )

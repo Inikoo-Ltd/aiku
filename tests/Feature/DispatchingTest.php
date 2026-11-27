@@ -10313,7 +10313,8 @@ test('backlog forecast follows last year scaled by the last four weeks, with a b
     $grown            = $forecast->projection($doubled, $closed, 500);
     expect($grown[27]['backlog'])->toBe(500 + 100 * $workingDaysAhead)
         ->and($grown[27]['low'])->toBeLessThanOrEqual($grown[27]['backlog'])
-        ->and($grown[27]['high'])->toBeGreaterThanOrEqual($grown[27]['backlog']);
+        ->and($grown[27]['high'])->toBeGreaterThanOrEqual($grown[27]['backlog'])
+        ->and(array_column($grown, 'created'))->toBe(array_map(fn (int $day) => $doubled[$day], $lastYearAhead));
 
     expect($forecast->projection(array_slice($created, 0, 300), array_slice($closed, 0, 300), 500))->toBe([])
         ->and($forecast->projection($created, array_map(fn (int $count) => $count * 3, $closed), 50)[27]['backlog'])->toBe(0);

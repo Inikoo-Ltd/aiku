@@ -44,7 +44,7 @@ class ForecastDispatchBacklog
     /**
      * @param  array<string, int>  $backlogYesterday  channel => backlog at the end of yesterday
      *
-     * @return array<string, list<array{date: string, backlog: int, low: int, high: int}>> "all" and each channel => today first, none without last year's history
+     * @return array<string, list<array{date: string, backlog: int, low: int, high: int, created: int}>> "all" and each channel => today first, none without last year's history
      */
     public function handle(Warehouse $warehouse, array $backlogYesterday): array
     {
@@ -77,7 +77,7 @@ class ForecastDispatchBacklog
      * @param  list<int>  $created  new delivery notes per day up to yesterday, oldest first
      * @param  list<int>  $closed  dispatched and cancelled delivery notes per day, same days
      *
-     * @return list<array{backlog: int, low: int, high: int}> today first
+     * @return list<array{backlog: int, low: int, high: int, created: int}> today first
      */
     public function projection(array $created, array $closed, int $backlogYesterday): array
     {
@@ -95,8 +95,8 @@ class ForecastDispatchBacklog
                 continue;
             }
             $projected = $actual = 0.0;
-            foreach ($past as $day => $change) {
-                $projected      += $change;
+            foreach ($past as $day => [$newDeliveryNotes, $closedDeliveryNotes]) {
+                $projected      += $newDeliveryNotes - $closedDeliveryNotes;
                 $actual         += $created[$origin + $day] - $closed[$origin + $day];
                 $misses[$day][] = abs($projected - $actual);
             }
@@ -104,19 +104,19 @@ class ForecastDispatchBacklog
 
         $backlog = (float) $backlogYesterday;
         $days    = [];
-        foreach ($ahead as $day => $change) {
-            $backlog = max(0.0, $backlog + $change);
+        foreach ($ahead as $day => [$newDeliveryNotes, $closedDeliveryNotes]) {
+            $backlog = max(0.0, $backlog + $newDeliveryNotes - $closedDeliveryNotes);
             $spread  = $this->share($misses[$day]);
-            $days[]  = ['backlog' => (int) round($backlog), 'low' => (int) round(max(0.0, $backlog - $spread)), 'high' => (int) round($backlog + $spread)];
+            $days[]  = ['backlog' => (int) round($backlog), 'low' => (int) round(max(0.0, $backlog - $spread)), 'high' => (int) round($backlog + $spread), 'created' => (int) round($newDeliveryNotes)];
         }
 
         return $days;
     }
 
     /**
-     * The backlog change of each day from $origin on, or null without four weeks of last year behind it.
+     * The new and closed delivery notes of each day from $origin on, or null without four weeks of last year behind it.
      *
-     * @return list<float>|null
+     * @return list<array{float, float}>|null
      */
     private function changesFrom(array $created, array $closed, int $origin): ?array
     {
@@ -135,7 +135,7 @@ class ForecastDispatchBacklog
 
         $changes = [];
         for ($day = 0; $day < self::DAYS_AHEAD; $day++) {
-            $changes[] = $created[$origin + $day - 364] * $trend['created'] - $closed[$origin + $day - 364] * $trend['closed'];
+            $changes[] = [$created[$origin + $day - 364] * $trend['created'], $closed[$origin + $day - 364] * $trend['closed']];
         }
 
         return $changes;
