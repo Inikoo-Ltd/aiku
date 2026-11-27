@@ -15,7 +15,7 @@ import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
     DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
-    createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
+    createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, rowHasUnsubscribeBlock, setModuleText,
     socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource, setBackgroundImage, buttonBorder, setButtonBorder,
 } from './emailWorkshopBlocks'
 import { isLinkUnderlined, moduleMobileStyle, withoutLinkUnderlineChoices } from './renderEmailHtml'
@@ -766,8 +766,8 @@ const contentSectionTitle = computed(() => ({
 
             <EmailWorkshopSection :title="ctrans('Responsive design')">
                 <EmailWorkshopField v-if="hasMobileFontSizeOption" v-model="mobileFontSize" type="px" :label="ctrans('Font size on mobile')" />
-                <EmailWorkshopField v-model="moduleComputedStyle.hideContentOnMobile" type="toggle" :label="ctrans('Hide on mobile')" />
-                <EmailWorkshopField v-model="moduleComputedStyle.hideContentOnDesktop" type="toggle" :label="ctrans('Hide on desktop')" />
+                <EmailWorkshopField v-if="!isUnsubscribeModule(module) || moduleComputedStyle.hideContentOnMobile" v-model="moduleComputedStyle.hideContentOnMobile" type="toggle" :label="ctrans('Hide on mobile')" />
+                <EmailWorkshopField v-if="!isUnsubscribeModule(module) || moduleComputedStyle.hideContentOnDesktop" v-model="moduleComputedStyle.hideContentOnDesktop" type="toggle" :label="ctrans('Hide on desktop')" />
             </EmailWorkshopSection>
         </template>
 
@@ -787,8 +787,8 @@ const contentSectionTitle = computed(() => ({
 
             <EmailWorkshopSection :title="ctrans('Responsive design')">
                 <EmailWorkshopField v-model="rowContentComputedStyle.rowColStackOnMobile" type="toggle" :label="ctrans('Stack on mobile')" />
-                <EmailWorkshopField v-model="rowContentComputedStyle.hideContentOnMobile" type="toggle" :label="ctrans('Hide on mobile')" />
-                <EmailWorkshopField v-model="rowContentComputedStyle.hideContentOnDesktop" type="toggle" :label="ctrans('Hide on desktop')" />
+                <EmailWorkshopField v-if="!rowHasUnsubscribeBlock(row) || rowContentComputedStyle.hideContentOnMobile" v-model="rowContentComputedStyle.hideContentOnMobile" type="toggle" :label="ctrans('Hide on mobile')" />
+                <EmailWorkshopField v-if="!rowHasUnsubscribeBlock(row) || rowContentComputedStyle.hideContentOnDesktop" v-model="rowContentComputedStyle.hideContentOnDesktop" type="toggle" :label="ctrans('Hide on desktop')" />
             </EmailWorkshopSection>
         </template>
 

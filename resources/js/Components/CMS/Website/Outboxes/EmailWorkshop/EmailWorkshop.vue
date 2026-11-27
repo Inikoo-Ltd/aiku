@@ -282,8 +282,25 @@ const rowContentStyle = (row: EmailRow): string => {
     return `${styleToString(row.content?.style, ['width'])};width:${canvasWidth.value}px;max-width:100%;align-items:${alignItems}`
 }
 
-const isHiddenOnCurrentDevice = (computedStyle: Record<string, any> | undefined): boolean =>
-    device.value === 'mobile' ? !!computedStyle?.hideContentOnMobile : !!computedStyle?.hideContentOnDesktop
+const deviceVisibilityClass = (computedStyle: Record<string, any> | undefined, isSelected: boolean): string => {
+    const isHiddenOnMobile = !!computedStyle?.hideContentOnMobile
+    const isHiddenOnDesktop = !!computedStyle?.hideContentOnDesktop
+    if (!(device.value === 'mobile' ? isHiddenOnMobile : isHiddenOnDesktop)) {
+        return ''
+    }
+    return isSelected || (isHiddenOnMobile && isHiddenOnDesktop) ? 'opacity-40' : 'hidden'
+}
+
+const isRowOutOfView = (row: EmailRow): boolean => deviceVisibilityClass(row.content?.computedStyle, false) === 'hidden'
+const isModuleOutOfView = (module: EmailModule): boolean => deviceVisibilityClass(module.descriptor?.computedStyle, false) === 'hidden'
+
+const nextInViewIndex = <T>(items: T[], index: number, direction: -1 | 1, isOutOfView: (item: T) => boolean): number => {
+    let target = index + direction
+    while (target >= 0 && target < items.length && isOutOfView(items[target])) {
+        target += direction
+    }
+    return target >= 0 && target < items.length ? target : -1
+}
 
 const bodyLinkColor = computed(() => email.value.page.body.content?.computedStyle?.linkColor ?? '#0068A5')
 const isBodyLinkUnderlined = computed(() => email.value.page.body.content?.computedStyle?.linkUnderline !== false)
@@ -357,7 +374,7 @@ const insertModule = (module: EmailModule) => {
         return
     }
 
-    const targetRow = selectedRow.value ?? email.value.page.rows.find((row) => row.columns.some((column) => column.modules.length === 0))
+    const targetRow = selectedRow.value ?? email.value.page.rows.find((row) => !isRowOutOfView(row) && row.columns.some((column) => column.modules.length === 0))
     const targetColumn = targetRow?.columns.find((column) => column.modules.length === 0) ?? targetRow?.columns[0]
     if (targetRow && targetColumn) {
         targetColumn.modules.push(module)
@@ -921,21 +938,21 @@ const moveSelectedModule = (direction: -1 | 1) => {
     if (!location) {
         return
     }
-    const target = location.index + direction
-    if (target < 0 || target >= location.column.modules.length) {
+    const target = nextInViewIndex(location.column.modules, location.index, direction, isModuleOutOfView)
+    if (target === -1) {
         return
     }
     location.column.modules.splice(target, 0, location.column.modules.splice(location.index, 1)[0])
 }
 
-const isFirstRow = (row: EmailRow) => email.value.page.rows[0] === row
-const isLastRow = (row: EmailRow) => email.value.page.rows[email.value.page.rows.length - 1] === row
+const isFirstRow = (row: EmailRow) => nextInViewIndex(email.value.page.rows, email.value.page.rows.indexOf(row), -1, isRowOutOfView) === -1
+const isLastRow = (row: EmailRow) => nextInViewIndex(email.value.page.rows, email.value.page.rows.indexOf(row), 1, isRowOutOfView) === -1
 
 const moveRow = (row: EmailRow, direction: -1 | 1) => {
     const rows = email.value.page.rows
     const index = rows.indexOf(row)
-    const target = index + direction
-    if (index === -1 || target < 0 || target >= rows.length) {
+    const target = index === -1 ? -1 : nextInViewIndex(rows, index, direction, isRowOutOfView)
+    if (target === -1) {
         return
     }
     rows.splice(target, 0, rows.splice(index, 1)[0])
@@ -1233,13 +1250,13 @@ defineExpose({
                         </template>
                     </div>
                     <div :style="emailFrameStyle">
-                        <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" ghost-class="email-row-ghost" class="min-h-[200px]"
+                        <draggable v-model="email.page.rows" item-key="uuid" group="email-rows" handle=".row-handle" direction="vertical" ghost-class="email-row-ghost" class="min-h-[200px]"
                             v-bind="ROW_DRAG_MODE"
                             :scroll="true" :scroll-sensitivity="120" :scroll-speed="20" :bubble-scroll="true"
                             @start="onRowDragStart" @end="onRowDragEnd">
                             <template #item="{ element: row }">
                                 <div class="email-row group/row relative" :data-row-uuid="row.uuid"
-                                    :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', isHiddenOnCurrentDevice(row.content?.computedStyle) ? 'opacity-40' : '']"
+                                    :class="[isRowSelected(row) ? 'z-[1] outline outline-2 -outline-offset-2 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-2 hover:-outline-offset-2 hover:outline-[color-mix(in_srgb,var(--theme-color-4)_45%,white)]', deviceVisibilityClass(row.content?.computedStyle, selectedRowUuid === row.uuid)]"
                                     :style="styleToString(row.container?.style)"
                                     @click.self="selectRow(row)">
                                     <div class="row-handle absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 cursor-grab items-center gap-x-1 rounded-l bg-[var(--theme-color-4)] px-2 py-1 text-[11px] font-medium text-[var(--theme-color-5)] group-hover/row:flex"
@@ -1268,12 +1285,12 @@ defineExpose({
 
                                     <div class="mx-auto flex transition-[width]" :class="isStackedOnMobile(row) ? 'flex-col' : ''" :style="rowContentStyle(row)" @click.self="selectRow(row)">
                                         <div v-for="column in row.columns" :key="column.uuid" :style="columnStyle(row, column)" class="email-column relative min-w-0">
-                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" ghost-class="email-module-ghost" class="min-h-[40px]"
+                                            <draggable v-model="column.modules" item-key="uuid" group="email-modules" direction="vertical" ghost-class="email-module-ghost" class="min-h-[40px]"
                                                 filter=".email-inline-editor" :prevent-on-filter="false"
                                                 @add="(event: any) => onModuleAdded(column.modules[event.newIndex], row)">
                                                 <template #item="{ element: module }">
                                                     <div class="email-module group/module relative cursor-pointer" :data-module-uuid="module.uuid"
-                                                        :class="[selectedModuleUuid === module.uuid ? 'z-[2] outline outline-2 -outline-offset-1 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-1 hover:-outline-offset-1 hover:outline-[var(--theme-color-4)]', isHiddenOnCurrentDevice(module.descriptor?.computedStyle) ? 'opacity-40' : '']"
+                                                        :class="[selectedModuleUuid === module.uuid ? 'z-[2] outline outline-2 -outline-offset-1 outline-[var(--theme-color-4)]' : 'hover:outline hover:outline-1 hover:-outline-offset-1 hover:outline-[var(--theme-color-4)]', deviceVisibilityClass(module.descriptor?.computedStyle, selectedModuleUuid === module.uuid)]"
                                                         @click.stop="selectModule(module, row)">
                                                         <div v-if="module.type === MODULE_TYPES.empty" class="p-4 text-center text-xs text-gray-400">
                                                             {{ ctrans('Empty block') }}
