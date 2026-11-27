@@ -1199,7 +1199,7 @@ test('a direct order owes no deposit, an order without deliveries follows its ow
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('stages.stages.0.current', true)
             ->where('stages.stages.1.reached', false)
-            ->where('stages.stages.1.not_required', true)
+            ->where('stages.stages.1.not_required', false)
             ->where('stages.stages.1.unpaid', false)
             ->where('stages.deposit.agrees', true));
     UpdatePurchaseOrder::make()->action($purchaseOrder->refresh(), ['deposit_amount' => 0]);

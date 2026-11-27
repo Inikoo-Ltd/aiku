@@ -242,6 +242,17 @@ class GetPurchaseOrderStages
     }
 
     /**
+     * A submitted order straight to a supplier with no deposit set still waits for the terms to be agreed, so its
+     * deposit stage is not shown as not required until someone marks No deposit needed.
+     */
+    private function depositChoicePending(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED
+            && $purchaseOrder->deposit_amount === null
+            && $purchaseOrder->deposit_paid_at === null;
+    }
+
+    /**
      * The stage the order is at: the one after the furthest stage reached or skipped. A submitted order is at
      * Agreement until the terms are agreed, whatever was recorded after it.
      */
@@ -376,7 +387,7 @@ class GetPurchaseOrderStages
                 default => null,
             },
             'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
-            'not_required' => $stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder),
+            'not_required' => $stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder) && !$this->depositChoicePending($purchaseOrder),
             'unpaid'       => $stage === Stage::DEPOSIT_PAID && $stages[$stage->value]['reached'] && $purchaseOrder->deposit_paid_at === null && !$this->depositNotRequired($purchaseOrder),
             'steps'       => collect($steps[$stage->value] ?? [])->map(fn (array $step) => [
                 'key'   => $step['key'],
