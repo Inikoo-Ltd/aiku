@@ -6,6 +6,7 @@ use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\GoodsIn\StockDeliveryItem\Traits\WithStockDeliveryItemStatePropagation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
+use App\Actions\SysAdmin\User\NotifyUserOnChosenChannels;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -13,7 +14,11 @@ use App\Enums\SupplyChain\StockDeliveryInvoice\StockDeliveryInvoiceSourceEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
+use App\Enums\SysAdmin\User\UserNotificationEnum;
+use App\Notifications\StockDeliveryDispatchedByAgentNotification;
+use Illuminate\Support\Collection;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
 use Illuminate\Support\Arr;
@@ -172,11 +177,26 @@ class DispatchStockDelivery extends OrgAction
 
         $stockDelivery = $this->handle($stockDelivery, trim((string) ($this->validatedData['reason'] ?? '')) ?: null);
 
-        foreach ($stockDelivery->purchaseOrders()->get() as $purchaseOrder) {
-            NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('shipped in :delivery', ['delivery' => $stockDelivery->reference]));
-        }
+        $this->notifyBuyers($stockDelivery, $request->user());
 
         return $stockDelivery;
+    }
+
+    /**
+     * One email per buyer for the whole container, listing their orders in it, not one per order (HELP-4977).
+     */
+    public function notifyBuyers(StockDelivery $stockDelivery, User $user): void
+    {
+        $stockDelivery->purchaseOrders()->with('buyer')->orderBy('reference')->get()
+            ->filter(fn (PurchaseOrder $purchaseOrder) => NotifyBuyerOfAgentStageChange::tellsBuyer($purchaseOrder, $user))
+            ->groupBy('buyer_id')
+            ->each(function (Collection $purchaseOrders) use ($stockDelivery, $user) {
+                $buyer = $purchaseOrders->first()->buyer;
+                NotifyBuyerOfAgentStageChange::inLanguageOf($buyer, function () use ($stockDelivery, $purchaseOrders, $user, $buyer) {
+                    $notification = new StockDeliveryDispatchedByAgentNotification($stockDelivery, $purchaseOrders->values(), $user->contact_name ?: $user->username);
+                    NotifyUserOnChosenChannels::run($buyer, UserNotificationEnum::PURCHASE_ORDER_STAGE_BY_AGENT, $notification, $notification->title(), $notification->body(), $notification->url());
+                });
+            });
     }
 
     public function action(StockDelivery $stockDelivery): StockDelivery

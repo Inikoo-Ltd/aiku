@@ -1569,6 +1569,41 @@ test('stages carry expected dates, late orders reach the weekly summary and agen
     $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'created_at' => now(), 'submitted_at' => null, 'buyer_id' => null, 'deposit_paid_at' => null]);
 })->depends('create purchase order through an agent');
 
+test('an agent shipping a container tells each buyer once, listing their orders in it (HELP-4977)', function (PurchaseOrder $purchaseOrder) {
+    \Illuminate\Support\Facades\Notification::fake();
+    $agentUser  = User::where('username', 'agent-clerk')->firstOrFail();
+    $admin      = $this->adminGuest->getUser();
+    $otherBuyer = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $copy       = fn (string $suffix, User $buyer) => tap($purchaseOrder->replicate(['source_id'])->fill([
+        'reference' => $purchaseOrder->reference.'-'.$suffix,
+        'slug'      => $purchaseOrder->slug.'-'.Str::lower($suffix).'-'.Str::lower(Str::random(4)),
+        'buyer_id'  => $buyer->id,
+    ]))->saveQuietly();
+
+    $orders        = [$copy('B', $admin), $copy('A', $admin), $copy('C', $otherBuyer)];
+    $stockDelivery = createStockDeliveryWithItems($this, 'H4977-'.Str::random(6), [1]);
+    $stockDelivery->purchaseOrders()->attach(collect($orders)->pluck('id'));
+
+    DispatchStockDelivery::make()->notifyBuyers($stockDelivery, $agentUser);
+
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($admin, \App\Notifications\StockDeliveryDispatchedByAgentNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $admin,
+        \App\Notifications\StockDeliveryDispatchedByAgentNotification::class,
+        fn ($notification) => $notification->purchaseOrders->pluck('reference')->all() === [$orders[1]->reference, $orders[0]->reference]
+            && str_contains($notification->title(), $stockDelivery->reference)
+            && str_contains($notification->toMail($admin)->render(), $orders[1]->reference)
+    );
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($otherBuyer, \App\Notifications\StockDeliveryDispatchedByAgentNotification::class, 1);
+    \Illuminate\Support\Facades\Notification::assertNotSentTo($admin, \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class);
+
+    DispatchStockDelivery::make()->notifyBuyers($stockDelivery, $admin);
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($otherBuyer, \App\Notifications\StockDeliveryDispatchedByAgentNotification::class, 1);
+
+    $stockDelivery->purchaseOrders()->detach();
+    collect($orders)->each->forceDelete();
+})->depends('create purchase order through an agent');
+
 test('a purchase order lists the compliance documents of its products, due by the arrival estimate less a buffer', function (PurchaseOrder $purchaseOrder) {
     \Illuminate\Support\Facades\Notification::fake();
     $agentUser = User::where('username', 'agent-clerk')->firstOrFail();

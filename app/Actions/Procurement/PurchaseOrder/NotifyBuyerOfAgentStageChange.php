@@ -29,17 +29,12 @@ class NotifyBuyerOfAgentStageChange
      */
     public function handle(PurchaseOrder $purchaseOrder, ?User $user, Closure $change): bool
     {
-        $buyer = $purchaseOrder->buyer;
-
-        if (!$user || !$buyer || !$buyer->status || $buyer->id === $user->id
-            || !$purchaseOrder->isAgentOrder() || $user->authTo("procurement.$purchaseOrder->organisation_id.edit")) {
+        if (!self::tellsBuyer($purchaseOrder, $user)) {
             return false;
         }
 
-        $previousLocale = app()->getLocale();
-        app()->setLocale($buyer->language?->code ?: 'en');
-
-        try {
+        $buyer = $purchaseOrder->buyer;
+        self::inLanguageOf($buyer, function () use ($purchaseOrder, $user, $change, $buyer) {
             $notification = new PurchaseOrderStageChangedByAgentNotification($purchaseOrder, $user->contact_name ?: $user->username, $change());
             NotifyUserOnChosenChannels::run(
                 $buyer,
@@ -49,10 +44,28 @@ class NotifyBuyerOfAgentStageChange
                 __(':user, from the agent, recorded it on the order.', ['user' => $notification->agentUserName]),
                 route('grp.org.procurement.purchase_orders.show', [$purchaseOrder->organisation->slug, $purchaseOrder->slug])
             );
+        });
+
+        return true;
+    }
+
+    public static function tellsBuyer(PurchaseOrder $purchaseOrder, ?User $user): bool
+    {
+        $buyer = $purchaseOrder->buyer;
+
+        return $user && $buyer && $buyer->status && $buyer->id !== $user->id
+            && $purchaseOrder->isAgentOrder() && !$user->authTo("procurement.$purchaseOrder->organisation_id.edit");
+    }
+
+    public static function inLanguageOf(User $buyer, Closure $send): void
+    {
+        $previousLocale = app()->getLocale();
+        app()->setLocale($buyer->language?->code ?: 'en');
+
+        try {
+            $send();
         } finally {
             app()->setLocale($previousLocale);
         }
-
-        return true;
     }
 }
