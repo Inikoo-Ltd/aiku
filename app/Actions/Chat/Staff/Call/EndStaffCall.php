@@ -11,6 +11,7 @@ namespace App\Actions\Chat\Staff\Call;
 use App\Events\StaffCallUpdated;
 use App\Events\StaffMessageSent;
 use App\Models\Chat\StaffCall;
+use App\Models\Chat\StaffMeetingGuest;
 use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -47,9 +48,19 @@ class EndStaffCall
         }
 
         $call->users()->newPivotStatement()->where('staff_call_id', $call->id)->whereNull('left_at')->update(['left_at' => $now, 'updated_at' => $now]);
+        $call->guests()->where('status', StaffMeetingGuest::STATUS_ADMITTED)->update(['status' => StaffMeetingGuest::STATUS_LEFT, 'left_at' => $now, 'updated_at' => $now]);
         $call->refresh()->unsetRelation('users');
 
-        $this->writeEntry($call);
+        if ($call->meeting) {
+            $call->meeting->update(['last_used_at' => $now] + ($call->meeting->for_one_call ? ['ended_at' => $now] : ['locked_at' => null]));
+            if ($call->meeting->for_one_call) {
+                $call->meeting->guests()->where('status', StaffMeetingGuest::STATUS_WAITING)->update(['status' => StaffMeetingGuest::STATUS_LEFT, 'left_at' => $now, 'updated_at' => $now]);
+            }
+        }
+
+        if ($call->conversation) {
+            $this->writeEntry($call);
+        }
         StaffCallUpdated::dispatch($call);
         RemoveFromLiveKitRoom::dispatch($call);
 

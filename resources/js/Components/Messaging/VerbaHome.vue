@@ -10,7 +10,7 @@ import { Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { formatDistanceToNow } from "date-fns"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag } from "@fal"
+import { faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import Image from "@/Common/Components/Image.vue"
@@ -22,7 +22,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useStaffCalls, type StaffCallKind } from "@/Stores/staff-calls"
 import { readCachedHome, writeCachedHome } from "@/Composables/useStaffChatCache"
 
-library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag)
+library.add(faBirthdayCake, faBox, faBullhorn, faChartLine, faEdit, faNewspaper, faPhone, faUsers, faVideo, faWarehouse, faUserFriends, faCircle, faArrowRight, faGift, faHashtag, faLink, faCheck)
 
 interface Story {
     id: number
@@ -188,6 +188,19 @@ onMounted(async () => {
         isLoading.value = false
     }
 })
+
+const meetingLink = ref<{ state: "idle" | "creating" | "copied"; url: string | null; error: string | null }>({ state: "idle", url: null, error: null })
+const createMeetingLink = async () => {
+    meetingLink.value = { state: "creating", url: null, error: null }
+    try {
+        const { data } = await axios.post(route("grp.chat.staff.meetings.store"))
+        meetingLink.value.url = data.url
+        await navigator.clipboard.writeText(data.url).catch(() => { })
+        meetingLink.value.state = "copied"
+    } catch (error: any) {
+        meetingLink.value = { state: "idle", url: null, error: error?.response?.data?.errors?.title?.[0] ?? ctrans("Could not make a meeting link. Try again.") }
+    }
+}
 </script>
 
 <template>
@@ -212,6 +225,14 @@ onMounted(async () => {
                 <Button type="tertiary" :label="ctrans('Video call')" class="verba-call-button bg-white" @click="openPicker('video', $event)">
                     <template #icon><FontAwesomeIcon icon="fal fa-video" class="text-green-600" fixed-width aria-hidden="true" /></template>
                 </Button>
+                <Button type="tertiary" :label="meetingLink.state === 'copied' ? ctrans('Link copied') : ctrans('New meeting link')" class="bg-white" :loading="meetingLink.state === 'creating'" @click="createMeetingLink">
+                    <template #icon><FontAwesomeIcon :icon="meetingLink.state === 'copied' ? 'fal fa-check' : 'fal fa-link'" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <p v-if="meetingLink.url" class="basis-full text-xs text-gray-500">
+                    {{ ctrans("Send this link to anyone. Colleagues go straight in; people outside the company ask to join and someone in the meeting lets them in.") }}
+                    <a :href="meetingLink.url" class="ml-1 font-medium text-gray-700 underline">{{ ctrans("Open the meeting") }}</a>
+                </p>
+                <p v-if="meetingLink.error" class="basis-full text-xs text-red-600">{{ meetingLink.error }}</p>
                 <div v-if="pickKind" ref="picker" class="absolute top-full z-20 mt-2 w-80 rounded-lg border border-gray-200 bg-white p-3 shadow-lg" :style="{ left: pickerLeft + 'px' }">
                     <InputText v-model="query" autofocus class="w-full" :placeholder="ctrans('Type a name')" @input="onSearch" />
                     <ul class="mt-2 divide-y divide-gray-100">

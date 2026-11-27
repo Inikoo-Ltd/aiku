@@ -25,7 +25,7 @@ let ringSoundTimer: ReturnType<typeof setInterval> | null = null
 let titleTimer: ReturnType<typeof setInterval> | null = null
 let originalTitle: string | null = null
 
-const isRingTimeLeft = (call: StaffCall) => call.conversation_type === "group" || now.value - (call.local_started_at ?? now.value) < store.ringSeconds * 1000
+const isRingTimeLeft = (call: StaffCall) => call.conversation_type !== "dm" || now.value - (call.local_started_at ?? now.value) < store.ringSeconds * 1000
 
 const incoming = computed(() => Object.values(store.calls).filter((call) => store.isRingingMe(call) && isRingTimeLeft(call) && store.active?.call.ulid !== call.ulid))
 const ringing = computed(() => incoming.value.filter((call) => call.conversation_type === "dm" && !store.active))
@@ -88,11 +88,11 @@ onBeforeUnmount(() => {
                     <p class="font-medium">
                         {{ call.conversation_type === "dm" ? (call.kind === "screen" ? ctrans(":name wants to share their screen", { name: call.started_by_name }) : ctrans(":name is calling you", { name: call.started_by_name })) : ctrans(":name started a call", { name: call.started_by_name }) }}
                     </p>
-                    <p v-if="call.conversation_type === 'group' && call.conversation_name" class="truncate text-xs text-gray-500">{{ call.conversation_name }}</p>
+                    <p v-if="call.conversation_type !== 'dm' && call.conversation_name" class="truncate text-xs text-gray-500">{{ call.conversation_name }}</p>
                     <p v-if="store.active" class="text-xs text-gray-500">{{ ctrans("Answering leaves your current call.") }}</p>
                     <p v-else-if="soundBlocked && call.conversation_type === 'dm'" class="text-xs text-gray-500">{{ ctrans("Click anywhere in aiku once to hear the ring.") }}</p>
                 </div>
-                <button v-if="call.conversation_type === 'group'" type="button" :aria-label="ctrans('Dismiss')" class="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100" @click="store.decline(call)">
+                <button v-if="call.conversation_type !== 'dm'" type="button" :aria-label="ctrans('Dismiss')" class="flex h-7 w-7 items-center justify-center rounded text-gray-400 hover:bg-gray-100" @click="store.decline(call)">
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
             </div>

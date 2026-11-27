@@ -10,10 +10,20 @@ import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import type { StaffCallQualitySample } from "@/Components/Messaging/Call/staffCallQuality"
 
+export interface StaffMeetingGuest {
+    ulid: string
+    name: string
+}
+
 export interface StaffCall {
     ulid: string
-    conversation_ulid: string
-    conversation_type: "dm" | "group"
+    conversation_ulid: string | null
+    conversation_type: "dm" | "group" | "meeting"
+    is_direct: boolean
+    meeting_url?: string | null
+    meeting_locked?: boolean
+    guests_waiting: StaffMeetingGuest[]
+    guests_in: StaffMeetingGuest[]
     kind: StaffCallKind
     conversation_name: string | null
     started_by_user_id: number
@@ -29,6 +39,12 @@ export interface StaffCall {
 }
 
 export type StaffCallKind = "voice" | "video" | "screen"
+
+export interface StaffCallGuestSession {
+    pollUrl: string
+    leaveUrl: string
+    secret: string
+}
 
 export interface StaffCallJoin {
     call: StaffCall
@@ -93,13 +109,15 @@ export const useStaffCalls = defineStore("staff-calls", {
         joining: null as string | null,
         active: null as StaffCallJoin | null,
         error: null as { conversationUlid: string | null; text: string } | null,
+        guest: null as StaffCallGuestSession | null,
+        meetingError: null as string | null,
         pingSeconds: 20,
         ringSeconds: 30,
     }),
     getters: {
         myId: () => usePage().props?.auth?.user?.id as number | undefined,
         liveCallIn: (state) => (conversationUlid: string): StaffCall | null =>
-            Object.values(state.calls).find((call) => call.conversation_ulid === conversationUlid && !call.ended_at && !(call.conversation_type === "dm" && state.left[call.ulid])) ?? null,
+            Object.values(state.calls).find((call) => call.conversation_ulid === conversationUlid && !call.ended_at && !(call.is_direct && state.left[call.ulid])) ?? null,
     },
     actions: {
         async init() {
@@ -127,7 +145,51 @@ export const useStaffCalls = defineStore("staff-calls", {
                 && call.started_by_user_id !== this.myId
                 && !call.present_user_ids.includes(this.myId as number)
                 && !this.dismissed[call.ulid]
-                && (call.conversation_type === "group" || !call.answered_at)
+                && !(call.conversation_type !== "dm" && this.left[call.ulid])
+                && (call.conversation_type !== "dm" || !call.answered_at)
+        },
+
+        async joinMeeting(joinUrl: string, withCamera: boolean) {
+            if (this.active) return
+            this.meetingError = null
+            this.joining = joinUrl
+            warmCallCode()
+            try {
+                const { data } = await axios.post(joinUrl)
+                this.handleBroadcast(data.call)
+                this.active = { ...data, withCamera }
+            } catch (error) {
+                this.meetingError = errorText(error)
+            } finally {
+                this.joining = null
+            }
+        },
+
+        joinAsGuest(join: StaffCallJoin, session: StaffCallGuestSession) {
+            this.enabled = true
+            this.guest = session
+            this.handleBroadcast(join.call)
+            this.active = join
+        },
+
+        async shareLink(call: StaffCall): Promise<string | null> {
+            if (call.meeting_url) return call.meeting_url
+            const { data } = await axios.post(route("grp.chat.staff.calls.link", call.ulid))
+            return data.url
+        },
+
+        async decideGuest(call: StaffCall, guestUlid: string, decision: "admit" | "deny" | "remove") {
+            try {
+                const { data } = await axios.post(route("grp.chat.staff.calls.guests.decide", [call.ulid, guestUlid]), { decision })
+                this.handleBroadcast(data.call)
+            } catch { }
+        },
+
+        async lockMeeting(call: StaffCall, locked: boolean) {
+            try {
+                const { data } = await axios.post(route("grp.chat.staff.calls.lock", call.ulid), { locked })
+                this.handleBroadcast(data.call)
+            } catch { }
         },
 
         async start(conversationUlid: string, kind: StaffCallKind, screen: MediaStream | null = null) {
@@ -182,6 +244,10 @@ export const useStaffCalls = defineStore("staff-calls", {
             if (!active) return
             this.active = null
             this.left[active.call.ulid] = true
+            if (this.guest) {
+                await axios.post(this.guest.leaveUrl, { secret: this.guest.secret }).catch(() => { })
+                return
+            }
             for (let attempt = 0; attempt < 3; attempt++) {
                 try {
                     const response = await postLeave(active.call.ulid, attempt === 0 ? reason : null, false)
@@ -199,12 +265,31 @@ export const useStaffCalls = defineStore("staff-calls", {
             const active = this.active
             if (!active) return
             this.active = null
+            if (this.guest) {
+                fetch(this.guest.leaveUrl, {
+                    method: "POST",
+                    keepalive: true,
+                    credentials: "same-origin",
+                    headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "X-XSRF-TOKEN": xsrfToken() },
+                    body: JSON.stringify({ secret: this.guest.secret }),
+                }).catch(() => { })
+                return
+            }
             postLeave(active.call.ulid, null, true).catch(() => { })
         },
 
         async ping(quality: StaffCallQualitySample | null = null) {
             const active = this.active
             if (!active) return
+            if (this.guest) {
+                try {
+                    const { data } = await axios.post(this.guest.pollUrl, { secret: this.guest.secret }, { headers: { "X-Background-Request": "1" } })
+                    if (data.call) this.handleBroadcast(data.call)
+                } catch (error: any) {
+                    if (error?.response?.status === 404) this.active = null
+                }
+                return
+            }
             try {
                 const { data } = await axios.post(route("grp.chat.staff.calls.ping", active.call.ulid), quality ? { quality } : {}, { headers: { "X-Background-Request": "1" } })
                 this.handleBroadcast(data.call)

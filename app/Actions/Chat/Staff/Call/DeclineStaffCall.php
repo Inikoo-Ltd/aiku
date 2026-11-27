@@ -23,7 +23,7 @@ class DeclineStaffCall
      */
     public function handle(StaffCall $call, User $user): StaffCall
     {
-        if ($call->conversation->type === 'dm' && $call->answered_at === null && $user->id !== $call->started_by_user_id) {
+        if ($call->isDirect() && $call->answered_at === null && $user->id !== $call->started_by_user_id) {
             EndStaffCall::run($call, StaffCall::OUTCOME_DECLINED, $user);
         }
 
@@ -34,7 +34,9 @@ class DeclineStaffCall
     {
         abort_unless(StaffCall::isEnabled(), 404);
 
-        return StaffCall::userMayCallIn($request->route('staffCall')->conversation, $request->user());
+        $conversation = $request->route('staffCall')->conversation;
+
+        return $conversation !== null && StaffCall::userMayCallIn($conversation, $request->user());
     }
 
     /**

@@ -34,8 +34,8 @@ class LeaveStaffCall
 
         $call->refresh();
         if ($call->ended_at === null) {
-            $isAnsweredDirectCall = $call->answered_at !== null && $call->conversation->type === 'dm';
-            if ($isAnsweredDirectCall || !$call->presentUsers()->exists()) {
+            $isAnsweredDirectCall = $call->answered_at !== null && $call->isDirect();
+            if ($isAnsweredDirectCall || !$call->presentUsers()->exists() || $call->shouldEndWhenSomeoneLeaves()) {
                 $rangOut = $ringTimedOut
                     && $call->answered_at === null
                     && $user->id === $call->started_by_user_id

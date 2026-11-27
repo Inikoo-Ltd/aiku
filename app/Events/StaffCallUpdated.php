@@ -26,15 +26,14 @@ class StaffCallUpdated implements ShouldBroadcastNow
     }
 
     /**
-     * Each person still in the conversation, on their own private channel: the ring and the call state reach no one else.
+     * Each person still in the conversation, everyone who has been in the call and whoever made its meeting link, on
+     * their own private channel: the ring and the call state reach no one else, and never a guest.
      *
      * @return array<int, PrivateChannel>
      */
     public function broadcastOn(): array
     {
-        return $this->call->conversation->activeParticipants()->where('users.status', true)->pluck('users.id')
-            ->map(fn (int $userId) => new PrivateChannel('grp.personal.'.$userId))
-            ->all();
+        return array_map(fn (int $userId) => new PrivateChannel('grp.personal.'.$userId), $this->call->watcherIds());
     }
 
     public function broadcastAs(): string

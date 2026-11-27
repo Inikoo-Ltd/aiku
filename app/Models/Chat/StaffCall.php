@@ -12,17 +12,20 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * A voice, video and screen call in a staff conversation, carried by LiveKit. Only one call per conversation is live
- * (ended_at null), enforced by the partial unique index staff_calls_one_live_per_conversation.
+ * A voice, video and screen call in a staff conversation or a meeting, carried by LiveKit. Only one call per conversation
+ * and one per meeting is live (ended_at null), enforced by the partial unique indexes staff_calls_one_live_per_conversation
+ * and staff_calls_one_live_per_meeting. A meeting call may have no conversation at all.
  *
  * @property int $id
  * @property string $ulid
  * @property int $group_id
- * @property int $staff_conversation_id
+ * @property int|null $staff_conversation_id
+ * @property int|null $staff_meeting_id
  * @property int $started_by_user_id
  * @property string $room
  * @property Carbon $started_at
@@ -30,7 +33,8 @@ use Illuminate\Support\Str;
  * @property Carbon|null $ended_at
  * @property string|null $outcome
  * @property int|null $declined_by_user_id
- * @property-read StaffConversation $conversation
+ * @property-read StaffConversation|null $conversation
+ * @property-read StaffMeeting|null $meeting
  * @property-read User $startedBy
  */
 class StaffCall extends Model
@@ -54,6 +58,9 @@ class StaffCall extends Model
     public const int STALE_SECONDS = 60;
 
     public const int TOKEN_TTL_SECONDS = 120;
+
+    /** A call nobody is seated in yet is left alone this long, so a sweep never ends it between creating it and seating its starter. */
+    public const int SEAT_GRACE_SECONDS = 15;
 
     public const int RING_TIMEOUT_GRACE_SECONDS = 5;
 
@@ -159,14 +166,82 @@ class StaffCall extends Model
             && $conversation->isActiveParticipant($user);
     }
 
+    /**
+     * In the call's conversation, or any active colleague of the group once the call has a meeting link: sharing the
+     * link is the invitation.
+     */
     public function mayBeJoinedBy(User $user): bool
     {
-        return $this->ended_at === null && self::userMayCallIn($this->conversation, $user);
+        if ($this->ended_at !== null) {
+            return false;
+        }
+
+        if ($this->conversation && self::userMayCallIn($this->conversation, $user)) {
+            return true;
+        }
+
+        return self::isEnabled()
+            && $this->staff_meeting_id !== null
+            && $this->meeting?->ended_at === null
+            && $user->status
+            && $user->group_id === $this->group_id;
+    }
+
+    /** A one-to-one call with no meeting link: it ends as soon as either person leaves. */
+    public function isDirect(): bool
+    {
+        return $this->conversation?->type === 'dm' && $this->staff_meeting_id === null;
+    }
+
+    /**
+     * An answered call held in a conversation ends once nobody to talk to is left: one person alone with no guest, or
+     * nobody of the conversation itself (a linked DM call never outlives the two people it belongs to).
+     */
+    public function shouldEndWhenSomeoneLeaves(): bool
+    {
+        if (!$this->conversation || $this->answered_at === null) {
+            return false;
+        }
+
+        $present = $this->presentUsers()->pluck('users.id');
+        $guests  = $this->guests()->where('status', StaffMeetingGuest::STATUS_ADMITTED)->exists();
+
+        if ($present->count() + ($guests ? 1 : 0) < 2) {
+            return true;
+        }
+
+        return !$this->conversation->activeParticipants()->whereIn('users.id', $present)->exists();
+    }
+
+    /** Staff told about this call: the conversation's people, everyone who has been in it, and whoever made its link. */
+    public function watcherIds(): array
+    {
+        $ids = $this->conversation
+            ? $this->conversation->activeParticipants()->where('users.status', true)->pluck('users.id')->all()
+            : [];
+
+        $ids = array_merge($ids, $this->users()->where('users.status', true)->pluck('users.id')->all());
+
+        if ($this->meeting) {
+            $ids[] = $this->meeting->created_by_user_id;
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(StaffConversation::class, 'staff_conversation_id');
+    }
+
+    public function meeting(): BelongsTo
+    {
+        return $this->belongsTo(StaffMeeting::class, 'staff_meeting_id');
+    }
+
+    public function guests(): HasMany
+    {
+        return $this->hasMany(StaffMeetingGuest::class);
     }
 
     public function startedBy(): BelongsTo
@@ -193,14 +268,24 @@ class StaffCall extends Model
      */
     public function toBroadcast(): array
     {
-        $this->loadMissing(['conversation', 'startedBy', 'users']);
+        $this->loadMissing(['conversation', 'meeting', 'startedBy', 'users']);
+
+        $waitingGuests = $this->meeting
+            ? $this->meeting->guests()->where('status', StaffMeetingGuest::STATUS_WAITING)->orderBy('id')->get(['ulid', 'name'])
+            : collect();
+        $guestsIn = $this->guests()->where('status', StaffMeetingGuest::STATUS_ADMITTED)->orderBy('id')->get(['ulid', 'name']);
 
         return [
             'ulid'               => $this->ulid,
-            'conversation_ulid'  => $this->conversation->ulid,
-            'conversation_type'  => $this->conversation->type,
+            'conversation_ulid'  => $this->conversation?->ulid,
+            'conversation_type'  => $this->conversation?->type ?? 'meeting',
             'kind'               => $this->kind ?? self::KIND_VOICE,
-            'conversation_name'  => $this->conversation->name,
+            'conversation_name'  => $this->conversation ? $this->conversation->name : $this->meeting?->title,
+            'is_direct'          => $this->isDirect(),
+            'meeting_url'        => $this->meeting?->url(),
+            'meeting_locked'     => $this->meeting?->locked_at !== null,
+            'guests_waiting'     => $waitingGuests->map(fn (StaffMeetingGuest $guest) => ['ulid' => $guest->ulid, 'name' => $guest->name])->values()->all(),
+            'guests_in'          => $guestsIn->map(fn (StaffMeetingGuest $guest) => ['ulid' => $guest->ulid, 'name' => $guest->name])->values()->all(),
             'started_by_user_id' => $this->started_by_user_id,
             'started_by_name'    => $this->startedBy->chatName(),
             'started_at'         => $this->started_at?->toIso8601ZuluString(),

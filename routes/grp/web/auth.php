@@ -54,6 +54,18 @@ use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::post('redirect-unsubscribe/{encryptedDispatchedEmailID}', UnsubscribeMailshot::class)->name('one_click_unsubscribe');
 
+Route::prefix('meet/{staffMeeting}')->as('meet.')->where(['staffMeeting' => '[A-Za-z0-9]{24}'])
+    ->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
+        Route::get('', \App\Actions\Chat\Staff\Meeting\ShowStaffMeeting::class)->middleware('throttle:staff-meeting')->name('show');
+        Route::post('join', \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::class)->middleware(['auth', 'two_fa', 'throttle:staff-meeting'])->name('join');
+        Route::post('knock', \App\Actions\Chat\Staff\Meeting\KnockOnStaffMeeting::class)->middleware(['throttle:staff-meeting', 'throttle:staff-meeting-knock'])->name('knock');
+        Route::prefix('guests/{guest}')->as('guests.')->where(['guest' => '[0-9A-HJKMNP-TV-Z]{26}'])->middleware('throttle:staff-meeting-guest')->group(function () {
+            Route::post('poll', \App\Actions\Chat\Staff\Meeting\PollStaffMeetingGuest::class)->name('poll');
+            Route::post('token', \App\Actions\Chat\Staff\Meeting\IssueStaffMeetingGuestToken::class)->middleware('throttle:staff-meeting-token')->name('token');
+            Route::post('leave', \App\Actions\Chat\Staff\Meeting\LeaveStaffMeetingAsGuest::class)->name('leave');
+        });
+    });
+
 Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' => '[A-Za-z0-9]{48}'])
     ->middleware(['throttle:supplier-share', 'supplier-portal-locale'])->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
         Route::get('', ShowSupplierShare::class)->name('show');

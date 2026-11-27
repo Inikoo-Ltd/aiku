@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Call;
 
 use App\Models\Chat\StaffCall;
+use App\Models\Chat\StaffMeetingGuest;
 use App\Models\SysAdmin\User;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Str;
@@ -25,12 +26,23 @@ class IssueStaffCallToken
      */
     public function handle(StaffCall $call, User $user): string
     {
+        return $this->sign($call, (string) $user->id, $user->chatName());
+    }
+
+    /** The same room grants for a guest someone let in, under an identity that can never be a user id. */
+    public function forGuest(StaffCall $call, StaffMeetingGuest $guest): string
+    {
+        return $this->sign($call, $guest->identity(), $guest->name);
+    }
+
+    private function sign(StaffCall $call, string $identity, string $name): string
+    {
         $now = time();
 
         return JWT::encode([
             'iss'   => config('services.livekit.api_key'),
-            'sub'   => (string) $user->id,
-            'name'  => $user->chatName(),
+            'sub'   => $identity,
+            'name'  => $name,
             'jti'   => (string) Str::uuid(),
             'nbf'   => $now - 5,
             'exp'   => $now + StaffCall::TOKEN_TTL_SECONDS,

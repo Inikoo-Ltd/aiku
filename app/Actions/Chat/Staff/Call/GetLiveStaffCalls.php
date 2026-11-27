@@ -26,8 +26,11 @@ class GetLiveStaffCalls
     public function handle(User $user): array
     {
         $calls = StaffCall::whereNull('ended_at')
-            ->whereHas('conversation.activeParticipants', fn ($query) => $query->where('users.id', $user->id))
-            ->with('conversation')
+            ->where(fn ($query) => $query
+                ->whereHas('conversation.activeParticipants', fn ($query) => $query->where('users.id', $user->id))
+                ->orWhereHas('presentUsers', fn ($query) => $query->where('users.id', $user->id))
+                ->orWhereHas('meeting', fn ($query) => $query->where('created_by_user_id', $user->id)))
+            ->with(['conversation', 'meeting'])
             ->get();
 
         return $calls

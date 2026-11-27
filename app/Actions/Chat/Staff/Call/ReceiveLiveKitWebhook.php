@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Call;
 
 use App\Models\Chat\StaffCall;
+use App\Models\Chat\StaffMeetingGuest;
 use App\Models\SysAdmin\User;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -53,6 +54,19 @@ class ReceiveLiveKitWebhook
 
         $identity = (string) ($payload['participant']['identity'] ?? '');
         if ($event !== 'participant_joined' || $identity === '') {
+            return;
+        }
+
+        $guestUlid = StaffMeetingGuest::ulidFromIdentity($identity);
+        if ($guestUlid !== null) {
+            $guest = StaffMeetingGuest::where('ulid', $guestUlid)->first();
+            if (!$guest || !$guest->isInCall($call)) {
+                RemoveFromLiveKitRoom::dispatch($call, $identity);
+
+                return;
+            }
+            $guest->update(['last_seen_at' => now(), 'joined_at' => $guest->joined_at ?? now()]);
+
             return;
         }
 

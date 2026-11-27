@@ -132,6 +132,13 @@ class RouteServiceProvider extends ServiceProvider
             ->group(base_path('routes/iris/root.php'));
     }
 
+    private static function meetingCode(Request $request): string
+    {
+        $meeting = $request->route('staffMeeting');
+
+        return is_object($meeting) ? (string) $meeting->code : (string) $meeting;
+    }
+
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('retina-api', function (Request $request) {
@@ -142,6 +149,31 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('chat-ai-account-usage', function (Request $request) {
             return Limit::perMinute(30)->by('chat-ai-account-usage:'.$request->user()?->id);
+        });
+
+        RateLimiter::for('staff-meeting', function (Request $request) {
+            return [
+                Limit::perMinute(60)->by('staff-meeting-ip:'.$request->ip()),
+                Limit::perMinute(240)->by('staff-meeting-code:'.self::meetingCode($request)),
+            ];
+        });
+
+        RateLimiter::for('staff-meeting-knock', function (Request $request) {
+            return [
+                Limit::perMinutes(10, 5)->by('staff-meeting-knock-ip:'.$request->ip()),
+                Limit::perMinutes(10, 30)->by('staff-meeting-knock-code:'.self::meetingCode($request)),
+            ];
+        });
+
+        RateLimiter::for('staff-meeting-guest', function (Request $request) {
+            return [
+                Limit::perMinute(60)->by('staff-meeting-guest:'.$request->route('guest')),
+                Limit::perMinute(600)->by('staff-meeting-guest-ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('staff-meeting-token', function (Request $request) {
+            return Limit::perMinute(10)->by('staff-meeting-token:'.$request->ip().':'.$request->route('guest'));
         });
 
         RateLimiter::for('supplier-share', function (Request $request) {

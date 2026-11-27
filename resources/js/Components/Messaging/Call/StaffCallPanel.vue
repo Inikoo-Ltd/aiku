@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch 
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow } from "@fal"
+import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus } from "@fal"
 import Popover from "primevue/popover"
 import Select from "primevue/select"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -19,10 +19,11 @@ import { useStaffCalls, type StaffCallJoin } from "@/Stores/staff-calls"
 import { rememberDataMode, rememberedDataMode, staffCallQuality, staffCallQualitySampler, type StaffCallDataMode } from "@/Components/Messaging/Call/staffCallQuality"
 import type { LocalTrack, Participant, Room, Track } from "livekit-client"
 
-library.add(faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow)
+library.add(faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus)
 
 const props = defineProps<{
     join: StaffCallJoin
+    startExpanded?: boolean
 }>()
 
 const store = useStaffCalls()
@@ -46,7 +47,7 @@ const connection = ref<"connecting" | "connected" | "reconnecting" | "failed">("
 const connectError = ref<string | null>(null)
 const mediaError = ref<string | null>(null)
 const audioBlocked = ref(false)
-const isExpanded = ref(false)
+const isExpanded = ref(!!props.startExpanded)
 const audioSink = ref<HTMLElement | null>(null)
 const screenBox = ref<HTMLElement | null>(null)
 const devicesPopover = ref()
@@ -58,7 +59,23 @@ const canChooseSpeaker = typeof HTMLMediaElement !== "undefined" && "setSinkId" 
 
 const call = computed(() => props.join.call)
 const isDm = computed(() => call.value.conversation_type === "dm")
-const isWaitingForAnswer = computed(() => isDm.value && !call.value.answered_at && call.value.started_by_user_id === store.myId)
+const isDirect = computed(() => !!call.value.is_direct)
+const isGuest = computed(() => !!store.guest)
+const isWaitingForAnswer = computed(() => isDm.value && !isGuest.value && !call.value.answered_at && call.value.started_by_user_id === store.myId)
+
+const linkState = ref<"idle" | "copying" | "copied" | "failed">("idle")
+const copyMeetingLink = async () => {
+    linkState.value = "copying"
+    try {
+        const url = await store.shareLink(call.value)
+        if (!url) throw new Error()
+        await navigator.clipboard.writeText(url)
+        linkState.value = "copied"
+        setTimeout(() => (linkState.value = "idle"), 2500)
+    } catch {
+        linkState.value = "failed"
+    }
+}
 
 const participants = computed<Participant[]>(() => {
     version.value
@@ -94,7 +111,8 @@ const tiles = computed(() => {
     if (!livekit) return []
     return participants.value.map((participant) => ({
         key: participant.identity,
-        name: participant.isLocal ? ctrans("You") : participant.name || participant.identity,
+        name: participant.isLocal ? ctrans("You") : participant.name || ctrans("Guest"),
+        isGuest: participant.identity.startsWith("guest-"),
         initial: (participant.name || participant.identity || "?").charAt(0).toUpperCase(),
         camera: trackOf(participant, livekit!.Track.Source.Camera),
         isLocal: participant.isLocal,
@@ -234,7 +252,7 @@ let aloneTimer: ReturnType<typeof setTimeout> | null = null
 const endWhenLeftAlone = () => {
     if (aloneTimer) clearTimeout(aloneTimer)
     aloneTimer = setTimeout(() => {
-        if (isDm.value && call.value.answered_at && room.value && room.value.remoteParticipants.size === 0) hangUp()
+        if (isDirect.value && call.value.answered_at && room.value && room.value.remoteParticipants.size === 0) hangUp()
     }, 3000)
 }
 
@@ -337,8 +355,8 @@ const connect = async () => {
 watch(() => [call.value.ended_at, call.value.present_user_ids.join(","), call.value.answered_at], () => {
     const others = call.value.present_user_ids.filter((id) => id !== store.myId)
     const otherJoinedBefore = call.value.joined_user_ids.some((id) => id !== store.myId)
-    const droppedByServer = connection.value === "connected" && !call.value.present_user_ids.includes(store.myId as number)
-    if (call.value.ended_at || droppedByServer || (isDm.value && call.value.answered_at && otherJoinedBefore && !others.length)) {
+    const droppedByServer = !isGuest.value && connection.value === "connected" && !call.value.present_user_ids.includes(store.myId as number)
+    if (call.value.ended_at || droppedByServer || (isDirect.value && call.value.answered_at && otherJoinedBefore && !others.length)) {
         hangUp()
     }
 })
@@ -383,7 +401,7 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
             <span class="h-2 w-2 shrink-0 rounded-full" :class="connection === 'connected' ? 'bg-green-500' : 'bg-amber-400'" />
             <span class="min-w-0 flex-1 truncate font-medium">
                 <template v-if="isWaitingForAnswer">{{ ctrans("Calling…") }}</template>
-                <template v-else>{{ call.conversation_name || (call.started_by_user_id === store.myId ? ctrans("Call") : ctrans("Call with :name", { name: call.started_by_name })) }}</template>
+                <template v-else>{{ call.conversation_name || (isGuest || call.conversation_type === "meeting" ? ctrans("Meeting") : call.started_by_user_id === store.myId ? ctrans("Call") : ctrans("Call with :name", { name: call.started_by_name })) }}</template>
             </span>
             <span v-if="connection === 'reconnecting'" class="flex items-center gap-1 whitespace-nowrap text-xs text-amber-300">
                 <LoadingIcon />
@@ -392,6 +410,43 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
             <button type="button" v-tooltip="isExpanded ? ctrans('Smaller') : ctrans('Bigger')" :aria-label="isExpanded ? ctrans('Smaller') : ctrans('Bigger')" class="flex h-7 w-7 items-center justify-center rounded text-gray-300 hover:bg-white/10" @click="isExpanded = !isExpanded">
                 <FontAwesomeIcon :icon="isExpanded ? 'fal fa-compress' : 'fal fa-expand'" fixed-width aria-hidden="true" />
             </button>
+        </div>
+
+        <div v-if="!isGuest" class="flex flex-col gap-1 border-b border-white/10 px-3 py-1.5 text-xs">
+            <div class="flex items-center gap-2">
+                <button type="button" class="flex items-center gap-1.5 rounded px-1.5 py-1 text-gray-200 hover:bg-white/10" :disabled="linkState === 'copying'" @click="copyMeetingLink">
+                    <FontAwesomeIcon :icon="linkState === 'copied' ? 'fal fa-check' : 'fal fa-link'" :class="linkState === 'copied' && 'text-green-400'" fixed-width aria-hidden="true" />
+                    {{ linkState === "copied" ? ctrans("Copied") : ctrans("Copy meeting link") }}
+                </button>
+                <span v-if="linkState === 'failed'" class="text-red-300">{{ ctrans("Could not copy the link.") }}</span>
+                <button
+                    v-if="call.meeting_url"
+                    type="button"
+                    class="ml-auto flex items-center gap-1.5 rounded px-1.5 py-1 text-gray-200 hover:bg-white/10"
+                    v-tooltip="call.meeting_locked ? ctrans('Locked: nobody new can ask to join. Colleagues can still join.') : ctrans('Lock the meeting so nobody new can ask to join')"
+                    @click="store.lockMeeting(call, !call.meeting_locked)">
+                    <FontAwesomeIcon :icon="call.meeting_locked ? 'fal fa-lock' : 'fal fa-lock-open'" :class="call.meeting_locked && 'text-amber-300'" fixed-width aria-hidden="true" />
+                    {{ call.meeting_locked ? ctrans("Locked") : ctrans("Lock") }}
+                </button>
+            </div>
+            <div v-for="guest in call.guests_waiting" :key="guest.ulid" class="flex items-center gap-2 rounded bg-white/10 px-2 py-1.5" role="alert">
+                <span class="min-w-0 flex-1 truncate">{{ ctrans(":name wants to join", { name: guest.name }) }}</span>
+                <button type="button" class="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-white/10" @click="store.decideGuest(call, guest.ulid, 'deny')">
+                    <FontAwesomeIcon icon="fal fa-times" class="text-red-400" fixed-width aria-hidden="true" />
+                    {{ ctrans("Deny") }}
+                </button>
+                <button type="button" class="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-white/10" @click="store.decideGuest(call, guest.ulid, 'admit')">
+                    <FontAwesomeIcon icon="fal fa-check" class="text-green-400" fixed-width aria-hidden="true" />
+                    {{ ctrans("Admit") }}
+                </button>
+            </div>
+            <div v-for="guest in call.guests_in" :key="guest.ulid" class="flex items-center gap-2 px-2 text-gray-300">
+                <span class="min-w-0 flex-1 truncate">{{ ctrans(":name (guest)", { name: guest.name }) }}</span>
+                <button type="button" class="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-white/10" @click="store.decideGuest(call, guest.ulid, 'remove')">
+                    <FontAwesomeIcon icon="fal fa-user-minus" class="text-red-400" fixed-width aria-hidden="true" />
+                    {{ ctrans("Remove") }}
+                </button>
+            </div>
         </div>
 
         <div v-if="local.screen" class="flex items-center gap-2 bg-[var(--app-accent)] px-3 py-1 text-xs text-[var(--app-accent-text)]">
@@ -433,6 +488,7 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
                         <span class="absolute bottom-1 left-1 flex max-w-[90%] items-center gap-1 truncate rounded bg-black/60 px-1.5 py-0.5 text-xs">
                             <FontAwesomeIcon v-if="tile.isMuted" icon="fal fa-microphone-slash" class="text-gray-300" fixed-width :aria-label="ctrans('Muted')" />
                             {{ tile.name }}
+                            <span v-if="tile.isGuest" class="rounded bg-white/20 px-1 text-[10px] uppercase">{{ ctrans("Guest") }}</span>
                         </span>
                     </div>
                 </div>
@@ -464,7 +520,7 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
             </button>
             <button type="button" class="flex h-10 items-center gap-1.5 rounded-full bg-red-600 px-4 text-sm font-medium text-white transition duration-200 hover:bg-red-700" @click="hangUp()">
                 <FontAwesomeIcon icon="fal fa-phone-slash" fixed-width aria-hidden="true" />
-                {{ isDm ? ctrans("Hang up") : ctrans("Leave") }}
+                {{ isDirect ? ctrans("Hang up") : ctrans("Leave") }}
             </button>
         </div>
 

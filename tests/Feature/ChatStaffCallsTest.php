@@ -553,3 +553,228 @@ test('the quick call list offers the people called last, then starred colleagues
         ->and($people->pluck('id')->duplicates())->toBeEmpty()
         ->and($people->firstWhere('id', $this->outsider->id)['starred'])->toBeTrue();
 });
+
+function meetingGuest(\App\Models\Chat\StaffMeeting $meeting, string $name = 'Ana from the supplier'): array
+{
+    $response = test()->postJson(route('grp.meet.knock', $meeting->code), ['name' => $name])->assertOk();
+
+    return [\App\Models\Chat\StaffMeetingGuest::where('ulid', $response->json('guest'))->firstOrFail(), $response->json('secret')];
+}
+
+test('a link copied from a live call lets any active colleague in, and the call no longer ends when one of the two leaves', function () {
+    $call = StartStaffCall::run($this->dm, $this->user)['call'];
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.join', $call->ulid))->assertOk();
+
+    actingAs($this->outsider)->postJson(route('grp.chat.staff.calls.link', $call->ulid))->assertForbidden();
+    $url  = actingAs($this->user)->postJson(route('grp.chat.staff.calls.link', $call->ulid))->assertOk()->json('url');
+    $code = basename($url);
+
+    expect(actingAs($this->callee)->postJson(route('grp.chat.staff.calls.link', $call->ulid))->json('url'))->toBe($url)
+        ->and($code)->toHaveLength(24)
+        ->and($url)->not->toContain($call->ulid);
+
+    $joined = actingAs($this->outsider)->postJson(route('grp.meet.join', $code))->assertOk();
+    expect($joined->json('call.ulid'))->toBe($call->ulid)
+        ->and(decodeCallToken($joined->json('token'))->sub)->toBe((string) $this->outsider->id);
+
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.leave', $call->ulid))->assertOk();
+    expect($call->refresh()->ended_at)->toBeNull();
+
+    EndStaffCall::run($call);
+    expect($call->meeting->refresh()->ended_at)->not->toBeNull();
+    actingAs($this->outsider)->postJson(route('grp.meet.join', $code))->assertForbidden();
+});
+
+test('a meeting link made ahead of time starts a call with no conversation when the first colleague arrives, and lapses after 30 idle days', function () {
+    $code = actingAs($this->user)->postJson(route('grp.chat.staff.meetings.store'), ['title' => 'Supplier catch-up'])->assertOk()->json('code');
+    $meeting = \App\Models\Chat\StaffMeeting::where('code', $code)->firstOrFail();
+
+    $first = actingAs($this->outsider)->postJson(route('grp.meet.join', $code))->assertOk();
+    $call  = StaffCall::where('ulid', $first->json('call.ulid'))->firstOrFail();
+    expect($call->staff_conversation_id)->toBeNull()
+        ->and($call->staff_meeting_id)->toBe($meeting->id)
+        ->and($first->json('call.conversation_type'))->toBe('meeting')
+        ->and($first->json('call.conversation_name'))->toBe('Supplier catch-up');
+
+    expect(actingAs($this->callee)->postJson(route('grp.meet.join', $code))->json('call.ulid'))->toBe($call->ulid);
+
+    actingAs($this->outsider)->postJson(route('grp.chat.staff.calls.leave', $call->ulid))->assertOk();
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.leave', $call->ulid))->assertOk();
+    expect($call->refresh()->ended_at)->not->toBeNull()
+        ->and($meeting->refresh()->ended_at)->toBeNull();
+
+    $meeting->update(['last_used_at' => now()->subDays(\App\Models\Chat\StaffMeeting::IDLE_DAYS + 1)]);
+    actingAs($this->callee)->postJson(route('grp.meet.join', $code))->assertForbidden();
+    $this->get(route('grp.meet.show', $code))->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffMeeting', false)->where('meeting.is_open', false));
+});
+
+test('the meeting page tells a visitor only the title, never who is in it', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user, 'Weekly');
+    \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user);
+
+    $page = $this->get(route('grp.meet.show', $meeting->code))->assertOk();
+    $page->assertInertia(fn (AssertableInertia $inertia) => $inertia->component('Chat/StaffMeeting', false)
+        ->where('meeting.title', 'Weekly')
+        ->where('meeting.is_open', true)
+        ->where('is_colleague', false));
+    expect($page->getContent())->not->toContain($this->user->chatName());
+
+    actingAs($this->callee)->get(route('grp.meet.show', $meeting->code))
+        ->assertInertia(fn (AssertableInertia $inertia) => $inertia->where('is_colleague', true));
+    $this->get('/meet/'.str_repeat('a', 24))->assertNotFound();
+});
+
+test('a guest knocks, waits, is let in by someone in the call and gets a token for that room only, under a guest identity', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+
+    [$guest, $secret] = meetingGuest($meeting, "  <b>Ana</b>\u{202E} Lopez ");
+    expect($guest->name)->toBe('bAna/b Lopez')
+        ->and($guest->secret_hash)->not->toBe($secret)
+        ->and($call->refresh()->toBroadcast()['guests_waiting'])->toBe([['ulid' => $guest->ulid, 'name' => 'bAna/b Lopez']]);
+
+    $this->postJson(route('grp.meet.guests.poll', [$meeting->code, $guest->ulid]), ['secret' => 'wrong'])->assertNotFound();
+    $this->postJson(route('grp.meet.guests.poll', [$meeting->code, $guest->ulid]), ['secret' => $secret])->assertOk()->assertJson(['status' => 'waiting', 'call' => null]);
+    $this->postJson(route('grp.meet.guests.token', [$meeting->code, $guest->ulid]), ['secret' => $secret])->assertForbidden();
+
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.guests.decide', [$call->ulid, $guest->ulid]), ['decision' => 'admit'])->assertForbidden();
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.guests.decide', [$call->ulid, $guest->ulid]), ['decision' => 'admit'])->assertOk();
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.guests.decide', [$call->ulid, $guest->ulid]), ['decision' => 'deny'])->assertOk();
+    expect($guest->refresh()->status)->toBe('admitted');
+
+    auth()->logout();
+    $token  = $this->postJson(route('grp.meet.guests.token', [$meeting->code, $guest->ulid]), ['secret' => $secret])->assertOk();
+    $claims = decodeCallToken($token->json('token'));
+    expect($claims->sub)->toBe('guest-'.$guest->ulid)
+        ->and($claims->name)->toBe('bAna/b Lopez')
+        ->and($claims->video->room)->toBe($call->room)
+        ->and((array) $claims->video)->not->toHaveKeys(['roomAdmin', 'roomCreate', 'roomList', 'roomRecord'])
+        ->and(json_encode($token->json('call')))->not->toContain($this->user->chatName())
+        ->and(json_encode($token->json('call')))->not->toContain($call->room);
+
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.guests.decide', [$call->ulid, $guest->ulid]), ['decision' => 'remove'])->assertOk();
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/RemoveParticipant') && $request['identity'] === 'guest-'.$guest->ulid);
+    auth()->logout();
+    $this->postJson(route('grp.meet.guests.token', [$meeting->code, $guest->ulid]), ['secret' => $secret])->assertForbidden();
+    expect($this->postJson(route('grp.meet.guests.poll', [$meeting->code, $guest->ulid]), ['secret' => $secret])->json('call.ended_at'))->not->toBeNull();
+});
+
+test('a denied guest never gets a token, and a locked meeting turns away the waiting and takes no new knocks', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+
+    [$denied, $deniedSecret] = meetingGuest($meeting, 'First');
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.guests.decide', [$call->ulid, $denied->ulid]), ['decision' => 'deny'])->assertOk();
+    auth()->logout();
+    $this->postJson(route('grp.meet.guests.token', [$meeting->code, $denied->ulid]), ['secret' => $deniedSecret])->assertForbidden();
+
+    [$waiting] = meetingGuest($meeting, 'Second');
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.lock', $call->ulid), ['locked' => true])->assertOk()->assertJsonPath('call.meeting_locked', true);
+    auth()->logout();
+
+    expect($waiting->refresh()->status)->toBe('denied');
+    $this->postJson(route('grp.meet.knock', $meeting->code), ['name' => 'Third'])->assertUnprocessable();
+});
+
+test('the media server drops a guest identity nobody let in, and every guest when the call ends', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+    [$guest] = meetingGuest($meeting);
+
+    ReceiveLiveKitWebhook::run(['event' => 'participant_joined', 'room' => ['name' => $call->room], 'participant' => ['identity' => 'guest-'.$guest->ulid]]);
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/RemoveParticipant') && $request['identity'] === 'guest-'.$guest->ulid);
+
+    \App\Actions\Chat\Staff\Meeting\DecideStaffMeetingGuest::run($call, $guest, $this->user, 'admit');
+    ReceiveLiveKitWebhook::run(['event' => 'participant_joined', 'room' => ['name' => $call->room], 'participant' => ['identity' => 'guest-'.$guest->ulid]]);
+    expect($guest->refresh()->joined_at)->not->toBeNull();
+
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.leave', $call->ulid))->assertOk();
+    expect($call->refresh()->ended_at)->not->toBeNull()
+        ->and($guest->refresh()->status)->toBe('left');
+});
+
+test('a guest whose browser goes quiet leaves the lobby, and knocking is throttled per address', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    [$guest] = meetingGuest($meeting, 'Quiet');
+    $guest->update(['last_seen_at' => now()->subMinutes(5)]);
+
+    CloseStaleStaffCalls::make()->handle();
+    expect($guest->refresh()->status)->toBe('left');
+
+    $statuses = collect(range(1, 6))->map(fn ($i) => $this->withServerVariables(['REMOTE_ADDR' => '10.9.8.7'])
+        ->postJson(route('grp.meet.knock', $meeting->code), ['name' => 'Knock '.$i])->status());
+    expect($statuses->last())->toBe(429);
+});
+
+test('a ringing direct call cannot be shared, a meeting call cannot be declined, and a reusable meeting unlocks when its call ends', function () {
+    $ringing = StartStaffCall::run($this->dm, $this->user)['call'];
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.link', $ringing->ulid))->assertStatus(409);
+    EndStaffCall::run($ringing);
+
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.decline', $call->ulid))->assertForbidden();
+
+    \App\Actions\Chat\Staff\Meeting\LockStaffMeeting::run($call, true);
+    EndStaffCall::run($call);
+    expect($meeting->refresh()->locked_at)->toBeNull()
+        ->and($meeting->ended_at)->toBeNull();
+});
+
+test('a guest still marked in a call that ended is told so and leaves, and the ping of a meeting call sweeps only that call', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+    [$guest, $secret] = meetingGuest($meeting);
+    \App\Actions\Chat\Staff\Meeting\DecideStaffMeetingGuest::run($call, $guest, $this->user, 'admit');
+
+    $call->update(['ended_at' => now(), 'outcome' => 'answered']);
+    auth()->logout();
+    $this->postJson(route('grp.meet.guests.poll', [$meeting->code, $guest->ulid]), ['secret' => $secret])->assertJson(['status' => 'left', 'call_live' => false]);
+
+    $other = StartStaffCall::run($this->dm, $this->user)['call'];
+    $other->users()->newPivotStatement()->where('staff_call_id', $other->id)->update(['last_seen_at' => now()->subMinutes(5)]);
+    $live = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->callee)['call'];
+    \App\Actions\Chat\Staff\Call\PingStaffCall::run($live, $this->callee);
+    expect($other->refresh()->ended_at)->toBeNull();
+    EndStaffCall::run($other);
+});
+
+test('a linked direct call ends when its two people have gone, or when one is left alone, never outliving them', function () {
+    $call = StartStaffCall::run($this->dm, $this->user)['call'];
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.join', $call->ulid))->assertOk();
+    $code = basename(actingAs($this->user)->postJson(route('grp.chat.staff.calls.link', $call->ulid))->json('url'));
+
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.leave', $call->ulid))->assertOk();
+    expect($call->refresh()->ended_at)->not->toBeNull();
+
+    $second = StartStaffCall::run($this->dm, $this->user)['call'];
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.join', $second->ulid))->assertOk();
+    $code = basename(actingAs($this->user)->postJson(route('grp.chat.staff.calls.link', $second->ulid))->json('url'));
+    actingAs($this->outsider)->postJson(route('grp.meet.join', $code))->assertOk();
+
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.leave', $second->ulid))->assertOk();
+    expect($second->refresh()->ended_at)->toBeNull();
+    actingAs($this->callee)->postJson(route('grp.chat.staff.calls.leave', $second->ulid))->assertOk();
+    expect($second->refresh()->ended_at)->not->toBeNull();
+});
+
+test('only whoever made a meeting link can end it, which ends its call and shows the ended page', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->callee)['call'];
+
+    actingAs($this->callee)->deleteJson(route('grp.chat.staff.meetings.destroy', $meeting->code))->assertForbidden();
+    actingAs($this->user)->deleteJson(route('grp.chat.staff.meetings.destroy', $meeting->code))->assertOk();
+
+    expect($call->refresh()->ended_at)->not->toBeNull();
+    actingAs($this->callee)->postJson(route('grp.meet.join', $meeting->code))->assertForbidden();
+});
+
+test('a removal the call server did not confirm fails the job so it is tried again', function () {
+    $call = StartStaffCall::run($this->dm, $this->user)['call'];
+    Http::fake(['localhost:7880/*' => Http::response([], 503)]);
+
+    expect(fn () => RemoveFromLiveKitRoom::make()->asJob($call, 'guest-x'))->toThrow(RuntimeException::class)
+        ->and(RemoveFromLiveKitRoom::make()->jobTries)->toBe(5);
+    Http::fake(['localhost:7880/*' => Http::response([], 200)]);
+    EndStaffCall::run($call);
+});
