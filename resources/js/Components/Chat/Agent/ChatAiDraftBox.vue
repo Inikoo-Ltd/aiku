@@ -316,6 +316,8 @@ const translateForMe = () => {
 
 const draftText = computed(() => showTranslation.value && staffTranslation.value?.text ? staffTranslation.value.text : draft.value?.text)
 const staffNote = computed(() => showTranslation.value && staffTranslation.value ? staffTranslation.value.staff_note : draft.value?.staff_note)
+const checkedPoints = computed(() => (showTranslation.value && staffTranslation.value?.checked?.length ? staffTranslation.value.checked : draft.value?.checked) ?? [])
+const checkedOpen = ref(false)
 const sinceLine = computed(() => {
     const since = draft.value?.since_last_reply
     if (!since || since.count < 2) return null
@@ -328,7 +330,7 @@ const isQuestion = (action: DraftAction) => action.type === "spam" || action.typ
 const actionIcon = (action: DraftAction) => ({ link: faLink, claim: faBoxFragile }[action.type as string] ?? faClipboardCheck)
 const questionActions = computed(() => draft.value?.actions?.filter(isQuestion) ?? [])
 const staffActions = computed(() => draft.value?.actions?.filter((action) => !isQuestion(action)) ?? [])
-const hasNotes = computed(() => !!draft.value && !!(questionActions.value.length || staffNote.value || staffActions.value.length || draft.value.premonitions?.length
+const hasNotes = computed(() => !!draft.value && !!(questionActions.value.length || staffNote.value || checkedPoints.value.length ||staffActions.value.length || draft.value.premonitions?.length
     || sinceLine.value || draft.value.other_chats?.length || (showTranslation.value && staffTranslation.value?.text) || (editsInMyLanguage.value && staffTranslation.value?.editable) || draft.value.text?.includes("[[")))
 const hasStaffText = computed(() => !!(draft.value?.staff_note || draft.value?.actions?.some((action) => action.type === "task")))
 
@@ -421,6 +423,16 @@ defineExpose({ hasNotes, take, draft, busy, offerToEditor, replaceText, discard:
                         </Button>
                         <span v-if="!action.done && !action.available && action.why" class="text-gray-500">{{ action.why }}</span>
                     </template>
+                </div>
+                <div v-if="checkedPoints.length" class="mt-1 text-[11px] text-green-800">
+                    <button type="button" class="inline-flex items-center gap-1 hover:text-green-950" :aria-expanded="checkedOpen" @click="checkedOpen = !checkedOpen">
+                        <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                        <span class="whitespace-nowrap font-medium">{{ ctrans("Aura checked :count things", { count: checkedPoints.length }) }}</span>
+                        <FontAwesomeIcon :icon="faChevronRight" class="h-2 transition-transform" :class="checkedOpen ? 'rotate-90' : ''" fixed-width aria-hidden="true" />
+                    </button>
+                    <ul v-if="checkedOpen" class="ml-5 mt-0.5 list-disc space-y-0.5 text-gray-700">
+                        <li v-for="(point, index) in checkedPoints" :key="index">{{ point }}</li>
+                    </ul>
                 </div>
                 <p v-if="sinceLine" class="mt-1 text-[11px] text-gray-500">{{ sinceLine }}</p>
                 <div v-if="draft.other_chats?.length" class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-500">
