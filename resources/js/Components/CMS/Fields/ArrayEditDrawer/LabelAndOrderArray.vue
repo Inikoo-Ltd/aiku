@@ -5,7 +5,7 @@ import { inject, ref, toRaw, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrash, faPen } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { debounce } from "lodash-es";
+import { cloneDeep, debounce } from "lodash-es";
 import draggable from "vuedraggable";
 import Drawer from "primevue/drawer";
 import { routeType } from "@/types/route";
@@ -41,7 +41,7 @@ const activeIndex = ref<number | null>(null);
 
 // Add, remove, and update functions
 const addValue = () => {
-  modelValue.value = [...toRaw(modelValue.value), props.new_value_data];
+  modelValue.value = [...toRaw(modelValue.value), cloneDeep(props.new_value_data)];
 };
 
 const removeValue = (index: number) => {

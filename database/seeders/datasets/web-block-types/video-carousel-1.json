@@ -1,0 +1,161 @@
+{
+	"slug": "video-carousel-1",
+	"code": "video-carousel-1",
+	"name": "Video carousel",
+	"scope": "webpage",
+	"category": "element",
+	"icon": [
+		"fal",
+		"video"
+	],
+	"website_type": [
+		"b2b",
+		"b2c",
+		"dropshipping",
+		"fulfilment"
+	],
+	"is_in_test": false,
+	"data": {
+		"fieldValue": {
+			"text": "<h2 style=\"text-align: center\">In your world</h2>",
+			"settings": {
+				"slidesPerView": {
+					"desktop": 4,
+					"tablet": 3,
+					"mobile": 2
+				},
+				"spaceBetween": 16,
+				"autoplay": true,
+				"loop": true,
+				"arrows": true
+			},
+			"tile": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 12
+							},
+							"topright": {
+								"value": 12
+							},
+							"bottomleft": {
+								"value": 12
+							},
+							"bottomright": {
+								"value": 12
+							}
+						}
+					}
+				}
+			},
+			"videos": [],
+			"button": {
+				"text": "Shop now",
+				"show": false,
+				"link": null,
+				"container": {
+					"properties": null
+				}
+			},
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"padding": {
+						"top": {
+							"value": 10
+						},
+						"left": {
+							"value": 10
+						},
+						"unit": "px",
+						"right": {
+							"value": 10
+						},
+						"bottom": {
+							"value": 10
+						}
+					},
+					"dimension": {
+						"width": {
+							"unit": "%",
+							"value": null
+						},
+						"height": {
+							"unit": "%",
+							"value": 100
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#FFFFFF",
+						"image": {
+							"original": null
+						}
+					},
+					"justifyContent": "center"
+				}
+			}
+		}
+	}
+}

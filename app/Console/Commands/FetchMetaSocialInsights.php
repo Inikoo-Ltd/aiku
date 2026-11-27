@@ -796,7 +796,7 @@ class FetchMetaSocialInsights extends Command
         return (string) preg_replace('/access_token=[^&\s"\']+/', 'access_token=***', $message);
     }
 
-    private function token(Shop $shop): string
+    public static function token(Shop $shop): string
     {
         return (string) (data_get($shop->settings, 'meta_social.access_token')
             ?: data_get($shop->settings, 'meta_ads.access_token')

@@ -1696,3 +1696,150 @@ test('a collection only under departments gets its canonical url under the depar
 
     expect($canonicalUrl)->toEndWith('/'.strtolower($firstDepartmentWebpage->url.'/'.$collectionWebpage->url));
 });
+
+function fakeWebVideoStorage(): void
+{
+    config(['filesystems.disks.catalogue-iris-r2.url' => 'storage.aiku.test']);
+    Illuminate\Support\Facades\Storage::fake('catalogue-iris-r2');
+}
+
+function instagramReelPost(App\Models\Catalogue\Shop $shop, string $shortcode, string $mediaId): App\Models\CRM\SocialMediaPost
+{
+    $account = App\Models\CRM\SocialMediaAccount::firstOrCreate(
+        ['shop_id' => $shop->id, 'platform' => App\Enums\CRM\SocialMedia\SocialMediaPlatformEnum::INSTAGRAM, 'external_id' => 'ig-'.$shop->id],
+        ['group_id' => $shop->group_id, 'organisation_id' => $shop->organisation_id, 'name' => $shop->name]
+    );
+
+    return $account->posts()->create([
+        'external_id'  => $mediaId,
+        'type'         => App\Enums\CRM\SocialMedia\SocialMediaPostTypeEnum::REEL,
+        'permalink'    => 'https://www.instagram.com/reel/'.$shortcode.'/',
+        'published_at' => now(),
+    ]);
+}
+
+test('video carousel copies a pasted instagram reel of a synced shop account to the public bucket', function () {
+    fakeWebVideoStorage();
+    $shortcode = 'Reel'.Illuminate\Support\Str::random(8);
+    $mediaId   = (string) random_int(10 ** 15, 10 ** 16);
+    instagramReelPost($this->shop, $shortcode, $mediaId);
+
+    Illuminate\Support\Facades\Http::fake([
+        'graph.facebook.com/*/'.$mediaId.'*' => Illuminate\Support\Facades\Http::response([
+            'id'            => $mediaId,
+            'media_type'    => 'VIDEO',
+            'permalink'     => 'https://www.instagram.com/reel/'.$shortcode.'/',
+            'media_url'     => 'https://scontent.cdninstagram.com/reel.mp4',
+            'thumbnail_url' => 'https://scontent.cdninstagram.com/reel.jpg',
+        ]),
+        'scontent.cdninstagram.com/reel.mp4' => Illuminate\Support\Facades\Http::response('mp4-bytes-'.$shortcode),
+        'scontent.cdninstagram.com/reel.jpg' => Illuminate\Support\Facades\Http::response('jpg-bytes-'.$shortcode),
+    ]);
+
+    $source = App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()
+        ->handle($this->shop, 'https://www.instagram.com/reel/'.$shortcode.'/?igsh=abc');
+
+    $videoKey = 'web-videos/'.md5('mp4-bytes-'.$shortcode).'.mp4';
+    expect($source['platform'])->toBe('instagram')
+        ->and($source['video_url'])->toBe('https://storage.aiku.test/'.$videoKey)
+        ->and($source['poster_url'])->toBe('https://storage.aiku.test/web-videos/'.md5('jpg-bytes-'.$shortcode).'.jpg')
+        ->and($source['permalink'])->toBe('https://www.instagram.com/reel/'.$shortcode.'/');
+    Illuminate\Support\Facades\Storage::disk('catalogue-iris-r2')->assertExists($videoKey);
+    Illuminate\Support\Facades\Http::assertSent(fn ($request) => !str_contains($request->url(), 'graph.facebook.com') || (!str_contains($request->url(), 'access_token') && $request->hasHeader('Authorization')));
+});
+
+test('video carousel asks for an upload when instagram withholds the reel video', function () {
+    fakeWebVideoStorage();
+    $shortcode = 'Music'.Illuminate\Support\Str::random(8);
+    $mediaId   = (string) random_int(10 ** 15, 10 ** 16);
+    instagramReelPost($this->shop, $shortcode, $mediaId);
+
+    Illuminate\Support\Facades\Http::fake([
+        'graph.facebook.com/*' => Illuminate\Support\Facades\Http::response(['id' => $mediaId, 'media_type' => 'VIDEO', 'thumbnail_url' => 'https://x/y.jpg']),
+    ]);
+
+    expect(fn () => App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()
+        ->handle($this->shop, 'https://www.instagram.com/reel/'.$shortcode.'/'))
+        ->toThrow(Illuminate\Validation\ValidationException::class, 'Upload the video file instead');
+});
+
+test('video carousel refuses a reel that is on none of our instagram accounts without asking meta for it', function () {
+    Illuminate\Support\Facades\Http::fake();
+    $shop = $this->shop;
+    $shop->update(['settings' => array_merge($shop->settings ?? [], ['meta_social' => null])]);
+
+    expect(fn () => App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()
+        ->handle($shop, 'https://www.instagram.com/reel/NotOurs'.Illuminate\Support\Str::random(6).'/'))
+        ->toThrow(Illuminate\Validation\ValidationException::class, 'not on an Instagram account');
+    Illuminate\Support\Facades\Http::assertNothingSent();
+});
+
+test('video carousel keeps a tiktok video id for the tiktok player and copies its cover', function () {
+    fakeWebVideoStorage();
+    Illuminate\Support\Facades\Http::fake([
+        'www.tiktok.com/oembed*'      => Illuminate\Support\Facades\Http::response(['thumbnail_url' => 'https://p16.tiktokcdn.com/cover.jpeg']),
+        'p16.tiktokcdn.com/cover.jpeg' => Illuminate\Support\Facades\Http::response('tiktok-cover'),
+    ]);
+
+    $source = App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()
+        ->handle($this->shop, 'https://www.tiktok.com/@hophare/video/7301234567890123456?lang=en');
+
+    expect($source)->toMatchArray([
+        'platform'   => 'tiktok',
+        'tiktok_id'  => '7301234567890123456',
+        'video_url'  => null,
+        'poster_url' => 'https://storage.aiku.test/web-videos/'.md5('tiktok-cover').'.jpg',
+    ]);
+});
+
+test('video carousel turns down links that are not an instagram reel or a tiktok video', function () {
+    Illuminate\Support\Facades\Http::fake();
+
+    foreach (['https://vm.tiktok.com/ZMabc/', 'https://www.youtube.com/watch?v=x', 'https://evil.test/instagram.com/reel/abc/'] as $url) {
+        expect(fn () => App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()->handle($this->shop, $url))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+    }
+    Illuminate\Support\Facades\Http::assertNothingSent();
+});
+
+test('video carousel stores an uploaded mp4 once on the public bucket', function () {
+    fakeWebVideoStorage();
+    $file = UploadedFile::fake()->createWithContent('reel.mp4', 'uploaded-'.Illuminate\Support\Str::random(8));
+
+    $first  = App\Actions\Web\ModelHasWebBlocks\UploadVideoToModelHasWebBlocks::make()->handle($file);
+    $second = App\Actions\Web\ModelHasWebBlocks\UploadVideoToModelHasWebBlocks::make()->handle($file);
+
+    expect($first['platform'])->toBe('upload')
+        ->and($first['video_url'])->toStartWith('https://storage.aiku.test/web-videos/')
+        ->and($first['video_url'])->toEndWith('.mp4')
+        ->and($second['video_url'])->toBe($first['video_url'])
+        ->and(Illuminate\Support\Facades\Storage::disk('catalogue-iris-r2')->allFiles('web-videos'))->toHaveCount(1);
+});
+
+test('video carousel never matches a pasted instagram link to another post through a wildcard or partial shortcode', function () {
+    Illuminate\Support\Facades\Http::fake();
+    instagramReelPost($this->shop, 'Wild'.Illuminate\Support\Str::random(8), (string) random_int(10 ** 15, 10 ** 16));
+    $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['meta_social' => null])]);
+
+    foreach (['https://www.instagram.com/reel/________/', 'https://www.instagram.com/reel/%%%%%%%%/', 'https://www.instagram.com/reel/p/', 'https://www.instagram.com/reel/Wild/'] as $url) {
+        expect(fn () => App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()->handle($this->shop, $url))
+            ->toThrow(Illuminate\Validation\ValidationException::class);
+    }
+    Illuminate\Support\Facades\Http::assertNothingSent();
+});
+
+test('video carousel refuses an instagram post that is not a video', function () {
+    fakeWebVideoStorage();
+    $shortcode = 'Image'.Illuminate\Support\Str::random(8);
+    $mediaId   = (string) random_int(10 ** 15, 10 ** 16);
+    instagramReelPost($this->shop, $shortcode, $mediaId);
+
+    Illuminate\Support\Facades\Http::fake([
+        'graph.facebook.com/*' => Illuminate\Support\Facades\Http::response(['id' => $mediaId, 'media_type' => 'IMAGE', 'media_url' => 'https://scontent.cdninstagram.com/photo.jpg']),
+    ]);
+
+    expect(fn () => App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks::make()
+        ->handle($this->shop, 'https://www.instagram.com/p/'.$shortcode.'/'))
+        ->toThrow(Illuminate\Validation\ValidationException::class, 'not a video');
+    expect(Illuminate\Support\Facades\Storage::disk('catalogue-iris-r2')->allFiles('web-videos'))->toBeEmpty();
+});

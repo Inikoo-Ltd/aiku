@@ -895,6 +895,8 @@ use App\Actions\Web\ModelHasWebBlocks\ReplaceModelHasWebBlockContent;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\DeleteRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
+use App\Actions\Web\ModelHasWebBlocks\UploadVideoToModelHasWebBlocks;
+use App\Actions\Web\ModelHasWebBlocks\ImportSocialVideoToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\WebLayoutTemplate\ApplyWebLayoutTemplate;
@@ -1846,6 +1848,8 @@ Route::name('model_has_web_block.')->prefix('model-has-web-block')->middleware(E
         Route::post('images', UploadImagesToModelHasWebBlocks::class)->name('images.store');
         Route::post('replace-content/{source:id}', ReplaceModelHasWebBlockContent::class)->name('replace_content')->withoutScopedBindings();
     });
+        Route::post('videos', UploadVideoToModelHasWebBlocks::class)->name('videos.store');
+        Route::post('social-videos', ImportSocialVideoToModelHasWebBlocks::class)->name('social_videos.store');
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');

@@ -41,6 +41,7 @@ import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import ToggleSwitch from '@/Components/Pure/Toggle.vue';
 import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
+import SocialVideoSource from '@/Components/Workshop/Properties/SocialVideoSource.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
 import Countdown from '@/Components/CMS/Fields/Countdown.vue'
@@ -95,6 +96,7 @@ export const getComponent = (componentName: string) => {
         'fontFamily' : fontFamily,
         'min_max_price' : MinMaxPrice, 
         'video-settings' : VideoSettings,
+        'social-video' : SocialVideoSource,
         'selectquery' : PureMultiselectInfiniteScroll,
         'select_product' : SelectProducts,
         'countdown': Countdown,

@@ -103,6 +103,7 @@ const CarouselCtaIris = async(() => import("@/Iris/Components/IrisBlocks/Carouse
 const CarouselImageBackgroundIris = async(() => import("@/Iris/Components/IrisBlocks/CarouselImageBackgroundIris.vue"))
 const CtaVideo1Iris = async(() => import("@/Iris/Components/IrisBlocks/CtaVideo1Iris.vue"))
 const Video1Iris = async(() => import("@/Iris/Components/IrisBlocks/Video1Iris.vue"))
+const VideoCarousel1Iris = async(() => import("@/Iris/Components/IrisBlocks/VideoCarousel1Iris.vue"))
 const UserSubscribeIris = async(() => import("@/Iris/Components/IrisBlocks/UserSubscribeIris.vue"))
 const Appointment1Iris = async(() => import("@/Iris/Components/IrisBlocks/Appointment1Iris.vue"))
 const LoginIris = async(() => import("@/Iris/Components/IrisBlocks/LoginIris.vue"))
@@ -241,6 +242,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 		blog: BlogIris,
 		"step-2": Step2Iris,
 		'video-1': Video1Iris,
+		'video-carousel-1': VideoCarousel1Iris,
 		'slider-1' : Slider1Iris,
 		'recommendation-from-master' : RecommendationFromMasterIris,
 	    'relatedProductCategory' : RealatedProductCategoryIris,

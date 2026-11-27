@@ -43,6 +43,7 @@ import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint
 import ProductsList2Blueprint from '@/Components/CMS/Webpage/Products2/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
+import VideoCarousel1Blueprint from '@/Components/CMS/Webpage/VideoCarousel1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import { blueprint as Appointment1Blueprint } from "@/Components/CMS/Webpage/Appointment1/Blueprint"
 import LoginBlueprint from "@/Components/CMS/Webpage/Login/Blueprint"
@@ -186,6 +187,7 @@ export const getBlueprint = (componentName: string, data?: object, id? : number)
 		"carousel-1": Carousel1Blueprint.blueprint,
 		"cta-video-1": CTAVideo1Blueprint.blueprint,
 		"video-1": VideoBlueprint.blueprint,
+		"video-carousel-1": VideoCarousel1Blueprint.blueprint,
 		"user-subscribe": UserSubscribe.blueprint,
 		"appointment-1": () => Appointment1Blueprint(data, id).blueprint,
 		"login": LoginBlueprint.blueprint,
