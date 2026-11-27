@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
+use App\Actions\Chat\Staff\StaffChatWallpaper;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
@@ -122,6 +123,14 @@ class EditProfileSettings
                                 "type"  => "chat_theme",
                                 "label" => __("Chat panel color"),
                                 "value" => Arr::get($user->settings, 'chat_theme', 'classic'),
+                            ],
+                            "chat_wallpaper" => [
+                                "type"        => "chat_wallpaper",
+                                "label"       => __("Chat wallpaper"),
+                                "information" => __("The background behind your messages in the staff chat. Only you see it. You can also set a different one for a single chat from its header"),
+                                "full"        => true,
+                                "options"     => StaffChatWallpaper::catalogue($user, withUsage: true),
+                                "value"       => Arr::only(StaffChatWallpaper::stored($user), ['pattern', 'colour', 'mode', 'style']),
                             ],
                             "hide_logo" => [
                                 "type"    => "toggle",

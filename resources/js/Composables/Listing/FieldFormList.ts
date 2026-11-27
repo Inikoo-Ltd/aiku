@@ -24,6 +24,7 @@ import ColorMode from '@/Components/Forms/Fields/ColorMode.vue'
 import Checkbox from '@/Components/Forms/Fields/Checkbox.vue'
 import AppTheme from '@/Components/Forms/Fields/AppTheme.vue'
 import ChatTheme from '@/Components/Forms/Fields/ChatTheme.vue'
+import ChatWallpaper from '@/Components/Forms/Fields/ChatWallpaper.vue'
 import AlertSounds from '@/Components/Forms/Fields/AlertSounds.vue'
 import AlertEvents from '@/Components/Forms/Fields/AlertEvents.vue'
 import OrgThemes from '@/Components/Forms/Fields/OrgThemes.vue'
@@ -193,6 +194,7 @@ export const componentsList: { [key: string]: Component } = {
     'app_login': AppLogin,
     'app_theme': AppTheme,
     'chat_theme': ChatTheme,
+    'chat_wallpaper': ChatWallpaper,
     'alert_sounds': AlertSounds,
     'alert_events': AlertEvents,
     'org_themes': OrgThemes,

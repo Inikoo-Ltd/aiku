@@ -23,6 +23,8 @@ import SlackThreadPanel from "@/Components/Messaging/Slack/SlackThreadPanel.vue"
 import FilesAndLinksPanel, { type SharedItem } from "@/Components/Messaging/FilesAndLinksPanel.vue"
 import SlackMessageComposer, { type SlackSentMessage, type SlackWriteState } from "@/Components/Messaging/Slack/SlackMessageComposer.vue"
 import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
+import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
+import { hasWallpaper, useBubbles, wallpaperStyle, type ChatWallpaper } from "@/Components/Messaging/chatWallpaper"
 
 export type { SlackStreamMessage }
 
@@ -51,6 +53,8 @@ export interface SlackChannelHeader {
     bookmarks?: SlackBookmark[]
     last_read_ts?: string | null
     write?: SlackWriteState | null
+    wallpaper?: ChatWallpaper | null
+    wallpaper_is_set?: boolean
 }
 
 const props = defineProps<{
@@ -64,6 +68,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ (e: "back"): void; (e: "read", ts: string): void }>()
+
+const isWallpapered = computed(() => hasWallpaper(props.channel.wallpaper))
+const bubbles = useBubbles()
+
+const onWallpaperSaved = (wallpaper: ChatWallpaper, isSet: boolean) => Object.assign(props.channel, { wallpaper, wallpaper_is_set: isSet })
 
 const myId = computed<number | null>(() => (usePage().props as any)?.auth?.user?.id ?? null)
 const live = ref<Record<string, SlackStreamMessage | null>>({})
@@ -343,8 +352,8 @@ const updateListing = (isListed: boolean) => {
 
 <template>
     <div class="relative flex h-full w-full min-w-0 bg-white text-gray-900">
-        <div class="relative flex h-full min-w-0 flex-1 flex-col">
-            <div class="shrink-0 border-b border-[var(--vx-head-line,#dddddd)] bg-[var(--vx-head-bg,#ffffff)]">
+        <div class="relative flex h-full min-w-0 flex-1 flex-col" :style="wallpaperStyle(channel.wallpaper)">
+            <div class="shrink-0 bg-[var(--vx-head-bg,#ffffff)]" :class="isWallpapered ? 'm-2 mb-0 overflow-hidden rounded-xl border border-[var(--vx-head-line,#dddddd)] shadow-sm' : 'border-b border-[var(--vx-head-line,#dddddd)]'">
                 <div class="flex min-h-[64px] items-center gap-x-2 px-5 py-2.5">
                     <button type="button" :aria-label="ctrans('Back')" class="-ml-3 p-2 text-[var(--vx-head-muted,#4b5563)] md:hidden" @click="emit('back')">
                         <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
@@ -372,6 +381,7 @@ const updateListing = (isListed: boolean) => {
                             </template>
                         </div>
                     </div>
+                    <ChatWallpaperButton :slack-channel-id="channel.id" :wallpaper="channel.wallpaper" :is-set="!!channel.wallpaper_is_set" @saved="onWallpaperSaved" />
                     <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[var(--vx-head-muted,#616061)] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
                 <div v-if="bookmarks.length || write?.allowed" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">
@@ -464,7 +474,7 @@ const updateListing = (isListed: boolean) => {
                                 <span class="h-px flex-1 bg-[#e01e5a]" />
                                 <span class="absolute right-0 rounded-r bg-white pl-1.5 pr-1 text-xs font-bold text-[#e01e5a]">{{ ctrans("New") }}</span>
                             </div>
-                            <SlackMessageRow :message="message" :continues="continues" :channel-links="channelLinks" @open-thread="openThread($event)" />
+                            <SlackMessageRow :message="message" :continues="continues" :channel-links="channelLinks" :bubble="bubbles && !message.is_system ? (message.author.user_id === myId ? 'mine' : 'theirs') : null" :on-wallpaper="isWallpapered" @open-thread="openThread($event)" />
                         </div>
                     </InfiniteScroll>
                 </Deferred>

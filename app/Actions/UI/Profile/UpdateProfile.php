@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Profile;
 
 use App\Rules\StaffPassword;
+use App\Actions\Chat\Staff\StaffChatWallpaper;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\User\GetUserOrderAlerts;
@@ -224,6 +225,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['chat_theme'] = $chatTheme;
         }
 
+        if (Arr::exists($modelData, 'chat_wallpaper')) {
+            $modelData['settings']['chat_wallpaper'] = $this->chatWallpaperSettings($user, (array) Arr::pull($modelData, 'chat_wallpaper'));
+        }
+
         if (Arr::exists($modelData, 'chat_auto_translate')) {
             $modelData['settings']['chat_auto_translate'] = (bool) Arr::pull($modelData, 'chat_auto_translate');
         }
@@ -306,6 +311,11 @@ class UpdateProfile extends OrgAction
             'chat_signature'    => ['sometimes', 'nullable', 'string', 'max:2000'],
             'hide_logo'         => ['sometimes', 'boolean'],
             'chat_auto_translate' => ['sometimes', 'boolean'],
+            'chat_wallpaper'         => ['sometimes', 'array'],
+            'chat_wallpaper.pattern' => ['sometimes', 'string', Rule::in([StaffChatWallpaper::NONE, ...array_filter(array_keys(StaffChatWallpaper::PATTERNS), fn (string $pattern) => StaffChatWallpaper::isOffered($pattern))])],
+            'chat_wallpaper.colour'  => ['sometimes', 'string', Rule::in([StaffChatWallpaper::NONE, ...array_keys(StaffChatWallpaper::COLOURS)])],
+            'chat_wallpaper.mode'    => ['sometimes', 'string', Rule::in(StaffChatWallpaper::MODES)],
+            'chat_wallpaper.style'   => ['sometimes', 'string', Rule::in(StaffChatWallpaper::STYLES)],
             'chat_languages'    => ['sometimes', 'nullable', 'array', 'max:20'],
             'chat_languages.*'  => ['string', 'exists:languages,code'],
             'focus_minutes'     => ['sometimes', 'integer', Rule::in([0, 30, 60, 240, 480])],
@@ -406,4 +416,30 @@ class UpdateProfile extends OrgAction
         return $this->handle($user, $this->validatedData);
     }
 
+    /**
+     * A seasonal pattern remembers the pattern it replaced, so the person goes back to it when the season ends.
+     *
+     * @param  array{pattern?: string, colour?: string, mode?: string, style?: string}  $submitted
+     */
+    private function chatWallpaperSettings(User $user, array $submitted): array
+    {
+        $stored  = StaffChatWallpaper::stored($user);
+        $pattern = $submitted['pattern'] ?? $stored['pattern'];
+
+        $previousPattern = $stored['previous_pattern'];
+        if (StaffChatWallpaper::isSeasonal($pattern) && !StaffChatWallpaper::isSeasonal($stored['pattern'])) {
+            $previousPattern = $stored['pattern'];
+        } elseif (!StaffChatWallpaper::isSeasonal($pattern)) {
+            $previousPattern = null;
+        }
+
+        return [
+            'pattern'          => $pattern,
+            'colour'           => $submitted['colour'] ?? $stored['colour'],
+            'mode'             => $submitted['mode'] ?? $stored['mode'],
+            'style'            => $submitted['style'] ?? $stored['style'],
+            'previous_pattern' => $previousPattern,
+            'seen'             => $stored['seen'],
+        ];
+    }
 }

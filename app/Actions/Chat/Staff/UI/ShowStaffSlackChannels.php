@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\UI;
 
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
+use App\Actions\Chat\Staff\StaffChatWallpaper;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelUnreadCounts;
 use App\Actions\Chat\Staff\Slack\MarkSlackChannelRead;
@@ -278,6 +279,8 @@ class ShowStaffSlackChannels extends OrgAction
                     'bookmarks'    => $this->bookmarks($slackChannel),
                     'last_read_ts' => DB::table('slack_channel_reads')->where('user_id', $request->user()->id)->where('slack_channel_id', $slackChannel->id)->value('last_read_ts'),
                     'write'        => $slackChannel->is_private ? null : $this->writeState($request->user(), $slackChannel),
+                    'wallpaper'        => StaffChatWallpaper::forSlackChannel($request->user(), $slackChannel->id),
+                    'wallpaper_is_set' => (bool) Arr::get($request->user()->settings, "chat_wallpaper_channels.$slackChannel->id"),
                 ] : null,
                 'slack_thread_ts' => $slackChannel ? $this->tsParameter($request, 'thread') : null,
                 'slack_around_ts' => $slackChannel ? $this->tsParameter($request, 'around') : null,

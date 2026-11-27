@@ -52,7 +52,7 @@ class StaffConversation extends Model
     public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'staff_conversation_participants')
-            ->withPivot('last_read_at', 'last_delivered_at', 'left_at', 'is_watching')
+            ->withPivot('last_read_at', 'last_delivered_at', 'left_at', 'is_watching', 'wallpaper')
             ->withTimestamps();
     }
 

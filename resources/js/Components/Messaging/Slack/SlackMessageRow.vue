@@ -55,7 +55,9 @@ const props = withDefaults(defineProps<{
     channelLinks: Record<string, number>
     continues?: boolean
     inThread?: boolean
-}>(), { continues: false, inThread: false })
+    bubble?: "mine" | "theirs" | null
+    onWallpaper?: boolean
+}>(), { continues: false, inThread: false, bubble: null, onWallpaper: false })
 
 const emit = defineEmits<{ (e: "openThread", ts: string): void }>()
 
@@ -280,7 +282,7 @@ const confirmDelete = async () => {
         <span class="shrink-0 text-xs text-[#616061]">{{ time(shown.sent_at) }}</span>
     </div>
 
-    <div v-else class="group relative flex gap-x-2 px-1 text-[#1d1c1d]" :class="[continues ? 'py-0.5' : 'mt-2 pt-1 pb-0.5', shown.is_pinned ? 'bg-[#fef9ed]' : 'hover:bg-[#f8f8f8]']">
+    <div v-else class="group relative flex gap-x-2 px-1 text-[#1d1c1d]" :class="[continues ? 'py-0.5' : 'mt-2 pt-1 pb-0.5', shown.is_pinned ? 'bg-[#fef9ed]' : bubble ? '' : 'hover:bg-black/[0.03]']">
         <div class="w-9 shrink-0">
             <span v-if="shown.is_deleted && !continues" class="flex h-9 w-9 items-center justify-center rounded-[22%] bg-[#f8f8f8] text-[#616061]">
                 <FontAwesomeIcon icon="fal fa-comment-dots" fixed-width aria-hidden="true" />
@@ -290,7 +292,7 @@ const confirmDelete = async () => {
             </StaffProfileTrigger>
             <span v-else class="block pt-0.5 text-right text-xs leading-5 text-[#616061] opacity-0 group-hover:opacity-100">{{ time(shown.sent_at) }}</span>
         </div>
-        <div class="min-w-0 flex-1 text-[15px] leading-[1.46668]">
+        <div class="min-w-0 text-[15px] leading-[1.46668]" :class="bubble ? ['max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm', bubble === 'mine' ? 'bg-[var(--app-accent-soft)]' : onWallpaper ? 'bg-white' : 'bg-gray-100'] : 'flex-1'">
             <template v-if="shown.is_deleted">
                 <div class="flex flex-wrap items-baseline gap-x-1.5">
                     <span class="italic text-[#616061]">{{ ctrans("This message was deleted.") }}</span>
