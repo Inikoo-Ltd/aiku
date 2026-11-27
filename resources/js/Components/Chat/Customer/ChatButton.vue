@@ -361,7 +361,7 @@ const getMessages = async (loadMore = false) => {
         let url = `${baseUrl}/app/api/chats/sessions/${chatSession.value.ulid}/messages?request_from=${requestFrom}`
 
         if (loadMore && messagesLocal.value.length) {
-            url += `?cursor=${messagesLocal.value[0].created_at}&limit=100`
+            url += `&cursor=${messagesLocal.value[0].created_at}&limit=100`
         }
 
         const res = await axios.get(url)
