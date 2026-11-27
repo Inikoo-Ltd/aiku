@@ -3617,7 +3617,7 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="flex min-h-0 flex-1">
-                <Teleport defer to="#chat-channels">
+                <Teleport v-if="!isEmbedded" defer to="#chat-channels">
                 <nav :aria-label="ctrans('Channels')" class="relative flex items-stretch divide-x divide-gray-200 rounded-md border border-gray-200 bg-white" :class="showMovedHint ? 'ring-2 ring-[var(--app-accent)] ring-offset-2' : ''" @click="closeMovedHint">
                     <div v-if="showMovedHint" role="note"
                         class="absolute left-0 top-full z-40 mt-3 flex w-72 items-start gap-2 rounded-xl bg-[var(--app-accent)] p-3 text-sm font-semibold text-[var(--app-accent-text)] shadow-2xl ring-4 ring-[var(--app-accent-soft)]">

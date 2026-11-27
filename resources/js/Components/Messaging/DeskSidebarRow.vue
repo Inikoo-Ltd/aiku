@@ -12,6 +12,7 @@ import { faPencil, faStar } from "@fal"
 import { faStar as faStarSolid } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Common/Components/Image.vue"
+import type { Image as ImageProxy } from "@/types/Image"
 
 library.add(faPencil, faStar, faStarSolid)
 
@@ -19,7 +20,7 @@ const props = defineProps<{
     label: string
     href?: string
     icon?: string
-    avatar?: string | null
+    avatar?: ImageProxy | null
     groupSize?: number
     unread?: number
     isActive?: boolean
