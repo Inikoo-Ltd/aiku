@@ -16,9 +16,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faImage, faPen, faTag } from "@fal"
+import { faImage, faPen, faQuestionCircle, faTag } from "@fal"
 
-library.add(faImage, faPen, faTag)
+library.add(faImage, faPen, faQuestionCircle, faTag)
 
 interface PriceChange extends EditedSubmission {
 	state_label: string
@@ -130,9 +130,16 @@ const stateClass: Record<string, string> = {
 								</dd>
 							</dl>
 							<dl v-if="suggestionFor(row)" class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
-								<dt class="text-gray-400">{{ ctrans("AI Suggested Price") }}</dt>
-								<dd class="whitespace-nowrap text-right tabular-nums text-[var(--app-accent)]">
-									{{ price(suggestionFor(row)!.price) }} <span class="text-xs text-gray-500">{{ suggestionFor(row)!.change_percent }}%</span>
+								<dt class="text-gray-400">
+									{{ ctrans("AI Suggested Price") }}
+									<button type="button" class="ml-0.5 text-gray-300 hover:text-gray-500 focus:text-gray-500 focus:outline-none" :aria-label="ctrans('What is this?')" v-tooltip.focus="ctrans('A lower price our AI suggests from your recent sales and prices at other wholesalers. Click a price to see why')">
+										<FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
+									</button>
+								</dt>
+								<dd class="text-right">
+									<button type="button" class="whitespace-nowrap tabular-nums text-[var(--app-accent)] underline decoration-dotted underline-offset-2" @click="selected = row">
+										{{ price(suggestionFor(row)!.price) }} <span class="text-xs text-gray-500">{{ suggestionFor(row)!.change_percent }}%</span>
+									</button>
 								</dd>
 							</dl>
 							<template v-if="row.price_change">
