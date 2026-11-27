@@ -160,6 +160,29 @@ struct StaffChatTests {
         #expect(await calls.queries == [.latest, .after(messageID: 1)])
     }
 
+    @Test func whileLiveUpdatesAreConnectedTheChatWaitsForAMessageInsteadOfPolling() async {
+        let calls = StaffChatCalls(pages: [
+            StaffChatMessagePage(data: [message(1)]),
+            StaffChatMessagePage(data: [message(2)]),
+        ])
+        let ticks = TickCounter()
+        let connection = LiveConnectionFlag()
+        let store = StaffChatStore(kind: .deliveryNote, contextID: 7, service: service(calls), sleep: { _ in
+            if await ticks.tick() > 3 { throw CancellationError() }
+        }, isLive: { connection.isConnected })
+
+        await store.run()
+        #expect(await calls.queries == [.latest])
+
+        await store.liveMessageArrived()
+        #expect(await calls.queries == [.latest, .after(messageID: 1)])
+        #expect(store.messages.map(\.id) == [1, 2])
+
+        let unopened = StaffChatStore(kind: .deliveryNote, contextID: 8, service: service(calls), isLive: { connection.isConnected })
+        await unopened.liveMessageArrived()
+        #expect(await calls.queries.count == 2)
+    }
+
     @Test func metaShowsSenderAndTime() {
         let now = StaffChatFormat.parse("2026-11-16T12:00:00+00:00")!
         let utc = TimeZone(identifier: "UTC")!
@@ -167,6 +190,11 @@ struct StaffChatTests {
         let older = StaffChatMessage(id: 1, user: nil, body: "x", createdAt: "2026-11-12T08:30:00.000000Z")
         #expect(StaffChatFormat.meta(older, now: now, timeZone: utc) == "12 Nov 08:30")
     }
+}
+
+@MainActor
+private final class LiveConnectionFlag {
+    var isConnected = true
 }
 
 private actor TickCounter {

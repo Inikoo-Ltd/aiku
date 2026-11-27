@@ -32,6 +32,9 @@ struct DispatchPickingSessionView: View {
             }
         }
         .task { await store.load() }
+        .liveReload(on: LiveChannelName.record(.pickingSession, loadedID: store.session?.id), events: LiveEventName.record) {
+            await store.load()
+        }
     }
 
     private func screen(_ item: MobilePickingSession) -> some View {

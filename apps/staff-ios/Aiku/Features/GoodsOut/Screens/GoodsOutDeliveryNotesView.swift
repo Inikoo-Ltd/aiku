@@ -45,6 +45,11 @@ struct GoodsOutDeliveryNotesView: View {
             await store.loadList()
             await counts
         }
+        .liveReload(on: store.isRemote ? LiveChannelName.dispatchingBacklog(selectedOrganisationID: WarehouseStore.shared.selected?.organisation.id) : nil, events: LiveEventName.backlog) {
+            async let counts: Void = store.loadCounts()
+            await store.loadList()
+            await counts
+        }
         .sidePanel(isPresented: $isFiltering) {
             GoodsOutFilterPanel(store: store, query: store.listQuery) { filter in
                 store.listQuery.apply(filter)

@@ -51,6 +51,7 @@ Line-level work is saved on the phone while offline and synced to Aiku later (de
 - `Core/Models`: Foundation-only shared types (`Tone`, `Chip`, `AppIcon`, `Session`).
 - `Features/<Area>`: `Login`, `Shell` (Home, My work, Scan, Inbox, Menu, Profile, Appearance), `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Dispatch`, `Fulfilment`, `Clocking`, `System` (Offline & sync queue, Resolve conflicts, error and empty states; Debug builds open the states from Profile › Design states).
 - `Core/Offline`: device id, server clock, offline queue, downloads, sync engine and API, `OfflineWork`, `OfflineRecordQueue`, background sync and notifications.
+- `Core/Live`: the websocket, its frames, channel names and `.liveReload`.
 - `Networking`: `APIClient`, `Endpoint`, `APIError`, auth endpoints.
 
 ## Languages
@@ -65,6 +66,10 @@ Line-level work is saved on the phone while offline and synced to Aiku later (de
 - Dates follow the app language: formatters use `L10n.formatLocale` (en_GB for English, the app language's locale otherwise, always with Latin digits) and pass their pattern through `L10n.datePattern`, so English keeps its fixed patterns ("21 Nov 2026") and every other language gets its own order ("2026年11月21日", "2026. nov. 21."); ranges use `L10n.dateRange`. Clocking keeps `ClockingDay.weekday` as the English matching key and shows `weekdayTitle`. Weights use the language's decimal mark and unit (`GoodsOutWeight`); other quantities and money keep en_GB. Durations ("5h 41m") are catalogue templates.
 - One English word that needs different translations by context gets a context key with an `en` value, e.g. "From (date)" shown as "From"; `L10n.text` reads English from the source catalogue so the `en` value is used.
 - Long labels in tight places (Home shortcuts, tab bar, segmented controls) wrap to two lines and long words get soft hyphens from `Hyphenation`.
+
+## Live updates
+
+As on aiku_droid, `Core/Live/LiveUpdates` keeps a Pusher protocol 7 websocket (`URLSessionWebSocketTask`) open while the app is in the foreground and a user is signed in. `GET mobile/realtime` gives the server (`data: null` means live updates are off and nothing connects); the socket URL leaves out the default port, because a `Host` header with `:443` is redirected by Cloudflare. A channel is subscribed while a screen listens to it (counted per channel, unsubscribed with the last listener), private channels are signed by `POST mobile/broadcasting/auth`, `pusher:ping` is answered, the app pings after the server's `activity_timeout`, and a dropped connection comes back after 1, 2, 4 … 60 seconds. An event is only a hint: `.liveReload(on:events:)` runs the screen's normal reload once a burst has settled for 600 ms. The open delivery note, picking session, return, fulfilment return and stock delivery follow `private-grp.mobile.{type}.{id}`, the delivery note list and the backlog follow `private-grp.org.{org}.dispatching-backlog`, and the personal channel refreshes the badges and the open Inbox, refetches permissions (`LivePermissionUpdates`) and warehouses on `permissions-changed`, and fetches new Ask CRM messages at once; the chat polls every 10 seconds only while disconnected.
 
 ## Scanning
 

@@ -40,6 +40,9 @@ struct GoodsInDeliveryScreen: View {
         .onAppear {
             Task { await feed.load() }
         }
+        .liveReload(on: LiveChannelName.record(.stockDelivery, loadedID: feed.delivery?.id), events: LiveEventName.record) {
+            await feed.load()
+        }
     }
 }
 

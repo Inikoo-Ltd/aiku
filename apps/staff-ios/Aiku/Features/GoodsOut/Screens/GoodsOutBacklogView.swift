@@ -48,6 +48,9 @@ struct GoodsOutBacklogView: View {
         .screenRefreshable {
             await refresh()
         }
+        .liveReload(on: store.isRemote ? LiveChannelName.dispatchingBacklog(selectedOrganisationID: WarehouseStore.shared.selected?.organisation.id) : nil, events: LiveEventName.backlog) {
+            await refresh()
+        }
     }
 
     private func refresh() async {

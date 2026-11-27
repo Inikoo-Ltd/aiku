@@ -4,11 +4,12 @@ struct StaffChatView: View {
     let title: String
     @State private var store: StaffChatStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(AuthStore.self) private var authStore
     @FocusState private var isMessageFocused: Bool
 
     init(kind: StaffChatContextKind, contextID: Int, title: String, service: StaffChatService = .live(.shared)) {
         self.title = title
-        _store = State(initialValue: StaffChatStore(kind: kind, contextID: contextID, service: service))
+        _store = State(initialValue: StaffChatStore(kind: kind, contextID: contextID, service: service, isLive: { LiveUpdates.shared.isConnected }))
     }
 
     var body: some View {
@@ -22,6 +23,9 @@ struct StaffChatView: View {
         .task(id: scenePhase == .active) {
             guard scenePhase == .active else { return }
             await store.run()
+        }
+        .liveReload(on: LiveChannelName.personal(signedInUserID: authStore.userID), events: LiveEventName.chat) {
+            await store.liveMessageArrived()
         }
     }
 
