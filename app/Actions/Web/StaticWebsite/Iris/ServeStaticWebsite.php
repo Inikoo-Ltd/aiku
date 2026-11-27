@@ -27,6 +27,12 @@ class ServeStaticWebsite
 
     public const string RUNTIME_PATH = '/static-websites/static-site';
 
+    public const string ELFSIGHT_PLATFORM_URL = 'https://elfsightcdn.com/platform.js';
+
+    public const string ELFSIGHT_WIDGET_CLASS_PATTERN = 'elfsight-app-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+
+    public const string ELFSIGHT_SCRIPT_PATTERN = '#<script\s+src=(["\'])https://(?:elfsightcdn\.com/platform\.js|static\.elfsight\.com/platform/platform\.js)\1(?:\s+(?:async|defer|data-use-service-core)(?:=(["\'])[^"\']*\2)?)*\s*>\s*</script>#i';
+
     public function handle(StaticWebsite $staticWebsite, Request $request): Response
     {
         if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
@@ -136,6 +142,10 @@ class ServeStaticWebsite
         $script     = '<script src="'.self::RUNTIME_PATH.'.js?v='.$version.'" data-root="'.e($siteRoot).'" defer></script>';
 
         $html = preg_replace('/<\/head>/i', $stylesheet.'</head>', $html, 1) ?? $html;
+
+        if (preg_match('/class=(["\'])[^"\']*\b'.self::ELFSIGHT_WIDGET_CLASS_PATTERN.'\b/', $html)) {
+            $script = '<script src="'.self::ELFSIGHT_PLATFORM_URL.'" async></script>'.$script;
+        }
 
         $bodyEnd = strripos($html, '</body>');
 

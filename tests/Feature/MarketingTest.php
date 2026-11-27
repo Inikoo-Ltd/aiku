@@ -5249,6 +5249,17 @@ describe('serving an info website on its own domain', function () {
             ->and($response->headers->has('Set-Cookie'))->toBeFalse();
     });
 
+    it('loads the Elfsight platform script once, only on pages with an Elfsight widget', function () {
+        $this->staticWebsite->webpages()->where('path', '/our-story')->update(['html' => '<!DOCTYPE html><html><head><title>Our story</title></head><body><h1>How it started</h1>'
+            .'<div class="elfsight-app-38e4796d-6f09-4e6c-9a6f-89ca8c59d9ef" data-elfsight-app-lazy></div><div class="elfsight-app-11111111-2222-3333-4444-555555555555"></div></body></html>']);
+
+        $story = Pest\Laravel\get($this->www.'/our-story')->assertOk()->getContent();
+        $home  = Pest\Laravel\get($this->www.'/')->assertOk()->getContent();
+
+        expect(substr_count($story, '<script src="https://elfsightcdn.com/platform.js" async></script>'))->toBe(1)
+            ->and($home)->not->toContain('elfsightcdn.com');
+    });
+
     it('sends the bare domain to the www address, keeping the path and query', function () {
         Pest\Laravel\get('https://'.$this->staticWebsite->domain.'/our-story?ref=old')
             ->assertStatus(301)

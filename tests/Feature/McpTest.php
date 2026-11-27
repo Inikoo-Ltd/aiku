@@ -4756,6 +4756,25 @@ describe('changing info websites through the assistant', function () {
         $preview(['operation' => 'delete_page', 'page' => '/'])->assertHasErrors();
     });
 
+    it('embeds an Elfsight widget, storing its container without the platform script', function () {
+        $widget = '<div class="elfsight-app-38e4796d-6f09-4e6c-9a6f-89ca8c59d9ef" data-elfsight-app-lazy></div>';
+        $preview = fn (array $edit) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website' => $this->staticWebsite->domain, 'operation' => 'update_page', 'page' => '/', 'edits' => [array_merge(['action' => 'insert_after', 'find' => '<p>We ship from Sheffield.</p>'], $edit)],
+        ]);
+
+        $preview(['html' => '<script src="https://elfsightcdn.com/platform.js" async>alert(1)</script>'.$widget])->assertHasErrors();
+        $preview(['html' => '<script src="https://elfsightcdn.com/platform.js" onload="steal()"></script>'.$widget])->assertHasErrors();
+        $preview(['html' => '<script src="https://evil.test/platform.js" async></script>'.$widget])->assertHasErrors();
+        $preview(['html' => '<div class="elfsight-app-anything"></div>'])->assertHasErrors();
+
+        $staged = infoWebsiteToolJson($preview(['html' => '<script src="https://elfsightcdn.com/platform.js" async></script>'."\n".$widget]));
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $staged['change_id'], 'request_text' => 'yes'])->assertOk();
+
+        $home = $this->staticWebsite->webpages()->where('path', '/')->value('html');
+        expect($home)->toContain($widget)
+            ->and($home)->not->toContain('<script');
+    });
+
     it('creates a page from a template and a shared part shown on every page, then removes them', function () {
         $write = fn (array $preview) => infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $preview['change_id'], 'request_text' => 'yes']));
         $preview = fn (array $arguments) => infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, array_merge(['website' => $this->staticWebsite->domain], $arguments)));
