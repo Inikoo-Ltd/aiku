@@ -36,14 +36,13 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * order more, so it may set its own. The lead becomes a high priority task of that organisation's customer services
  * team, linked to the customer, so every member is told in aiku; the organisation's sales leads
  * managers (organisation settings) are on the task and are told on the channels they chose for
- * sales leads, which default to all of them; the organisation's sales leads Slack channel gets a
- * post. A second request while the customer's lead is still open is added to that task.
+ * sales leads, which default to all of them. A second request while the customer's lead is still open is added to that task.
  *
  * Who is told: the sales leads managers set on the organisation, else its customer services
  * supervisors (job positions ending in -m), else its org admins (Raul, 12 Nov 2026: on 12 Nov only
  * AW had supervisors, so SK, ES and Aroma leads reach their 18-21 org admins until a manager is
  * set). Calls are offered in every organisation with at least one of them; with nobody at all the
- * assistant neither offers a call nor saves a lead. The alert is queued (AlertShoppingAssistantSalesLead), so a mail or Slack
+ * assistant neither offers a call nor saves a lead. The alert is queued (AlertShoppingAssistantSalesLead), so a mail
  * failure never touches the customer's answer. RemindShoppingAssistantSalesLeads repeats it while
  * nobody takes the task.
  */

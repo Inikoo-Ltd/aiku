@@ -2049,9 +2049,7 @@ test('a planned big order becomes one high priority customer services task for t
     Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => !$notification->isReminder);
 
     $mail  = (string) (new App\Notifications\ShoppingAssistantSalesLeadNotification($task))->toMail($manager)->render();
-    $slack = json_encode(App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantSalesLead::make()->slackMessage($task, true)->toArray());
-    expect($mail)->toContain($task->reference)->toContain('Christmas stock for two shops')
-        ->and($slack)->toContain($task->reference)->toContain('Nobody has called');
+    expect($mail)->toContain($task->reference)->toContain('Christmas stock for two shops');
 });
 
 test('a big order lead nobody has taken is raised again to the manager in working hours, once a day, and not once someone takes it', function () {
@@ -2087,7 +2085,7 @@ test('a big order lead nobody has taken is raised again to the manager in workin
     Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => $notification->isReminder);
 });
 
-test('the sales leads manager, threshold and Slack channel are organisation settings, and the AI assistant report lists the leads', function () {
+test('the sales leads manager and threshold are organisation settings, and the AI assistant report lists the leads', function () {
     GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
     Illuminate\Support\Facades\Notification::fake();
     $manager = createAdminGuest($this->organisation->group)->getUser();
@@ -2095,7 +2093,6 @@ test('the sales leads manager, threshold and Slack channel are organisation sett
     App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, [
         'sales_leads_manager_user_ids' => [$manager->id],
         'sales_leads_threshold_eur'    => '2500',
-        'sales_leads_slack_channel'    => ' #sales-leads ',
     ]);
     $settings = $this->organisation->fresh()->settings['sales_leads'];
 
@@ -2111,8 +2108,7 @@ test('the sales leads manager, threshold and Slack channel are organisation sett
             ->where('sales_leads', fn ($leads) => collect($leads)->contains(fn ($lead) => $lead['reference'] === $task->reference && $lead['agreed_to_call'] === false && $lead['assignee'] === null)));
 
     expect($settings['manager_user_ids'])->toBe([$manager->id])
-        ->and((float) $settings['threshold_eur'])->toBe(2500.0)
-        ->and($settings['slack_channel'])->toBe('#sales-leads');
+        ->and((float) $settings['threshold_eur'])->toBe(2500.0);
 });
 
 test('a follow-up with a number nobody gave is dropped alone, and the prompt asks for the form of address the storefront uses', function () {

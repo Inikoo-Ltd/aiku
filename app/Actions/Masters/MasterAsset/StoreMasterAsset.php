@@ -21,7 +21,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Helpers\SendSlackNotification;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -132,8 +131,6 @@ class StoreMasterAsset extends OrgAction
         if ($masterAsset->masterFamily) {
             MasterFamilyHydrateMasterAssets::dispatch($masterAsset->masterFamily)->delay($this->hydratorsDelay);
         }
-
-        //SendSlackNotification::dispatch($masterAsset);
 
         return $masterAsset;
     }
