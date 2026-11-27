@@ -11,6 +11,8 @@ namespace App\Actions\Comms\Email;
 use App\Actions\Comms\DispatchedEmail\StoreDispatchedEmail;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaimSlip;
 use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Comms\Outbox\OutboxStateEnum;
@@ -105,10 +107,13 @@ class SendCustomerClaimEmail
                 __('Your claim :reference for order :order is approved.', $replace),
                 match ($claim->resolution) {
                     'refund_to_balance' => __(':amount has been added to your balance.', ['amount' => Number::currency((float) $claim->amount, (string) $claim->currency_code, app()->getLocale())]),
-                    'replacement'       => __('We are sending you a replacement.'),
+                    'replacement'       => __('We are sending you a replacement. You will get the tracking number by email when it leaves our warehouse.'),
                     'next_order'        => __('The items will be added free to your next order.'),
                     default             => null,
                 },
+                data_get($claim->result, 'return_requested')
+                    ? __('Please send the items back to us. Print the claim slip, put it in the parcel and send it to the address on the slip: :link', ['link' => '<a href="'.e(ShowCustomerClaimSlip::url($claim)).'" style="color: #3498DB; text-decoration: underline;">'.__('Print the claim slip').'</a>'])
+                    : null,
             ],
             CustomerClaimStateEnum::REJECTED => [
                 __('We could not accept your claim :reference for order :order.', $replace),
@@ -118,7 +123,7 @@ class SendCustomerClaimEmail
             ],
             default => [
                 __('We have received your claim :reference for order :order.', $replace),
-                __('Our team will check it and reply to you by email.'),
+                __('Our team will check it and reply to you by email within :hours working hours.', ['hours' => GetCustomerClaimSettings::for($claim->shop)['reply_hours']]),
             ],
         };
 

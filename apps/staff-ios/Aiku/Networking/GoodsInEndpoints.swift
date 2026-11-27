@@ -1062,10 +1062,85 @@ enum GoodsInChecklistResult: String, Hashable, Sendable {
     case failed
 }
 
+struct MobileAddableItem: Decodable, Sendable, Equatable, Identifiable {
+    struct Sko: Decodable, Sendable, Equatable {
+        let id: Int
+        var code = ""
+        var name: String? = nil
+        var packedIn: Double? = nil
+
+        private enum CodingKeys: String, CodingKey {
+            case id, code, name, packedIn
+        }
+
+        init(id: Int, code: String = "", name: String? = nil, packedIn: Double? = nil) {
+            self.id = id
+            self.code = code
+            self.name = name
+            self.packedIn = packedIn
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(Int.self, forKey: .id)
+            code = (try? container.decodeIfPresent(String.self, forKey: .code)) ?? ""
+            name = try? container.decodeIfPresent(String.self, forKey: .name)
+            packedIn = (try? container.decodeIfPresent(OptionalFlexibleDouble.self, forKey: .packedIn))?.value
+        }
+    }
+
+    let id: Int
+    var field = ""
+    var code: String? = nil
+    var name: String? = nil
+    var sko: Sko? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case id, field, code, name, sko
+    }
+
+    init(id: Int, field: String = "", code: String? = nil, name: String? = nil, sko: Sko? = nil) {
+        self.id = id
+        self.field = field
+        self.code = code
+        self.name = name
+        self.sko = sko
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        field = (try? container.decodeIfPresent(String.self, forKey: .field)) ?? ""
+        code = try? container.decodeIfPresent(String.self, forKey: .code)
+        name = try? container.decodeIfPresent(String.self, forKey: .name)
+        sko = try? container.decodeIfPresent(Sko.self, forKey: .sko)
+    }
+
+    var codes: [String] {
+        let supplierCode = code?.trimmingCharacters(in: .whitespaces) ?? ""
+        let ownCode = sko?.code.trimmingCharacters(in: .whitespaces) ?? ""
+        return [supplierCode, ownCode == supplierCode ? "" : ownCode].filter { !$0.isEmpty }
+    }
+
+    var displayName: String? {
+        [name, sko?.name].compactMap { $0?.trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty }
+    }
+
+    var skoCode: String {
+        let skoCode = sko?.code.trimmingCharacters(in: .whitespaces) ?? ""
+        return skoCode.isEmpty ? (code ?? "") : skoCode
+    }
+}
+
+struct MobileAddableItems: Decodable, Sendable {
+    let data: [MobileAddableItem]
+}
+
 enum GoodsInDeliveryWrite: Hashable, Sendable {
     case receive
     case unreceive
     case checkAll
+    case addItem(itemID: Int, skoQuantity: Double)
     case check(itemID: Int, skoQuantity: Double)
     case place(itemID: Int, quantity: Double, target: GoodsInPlaceTarget, setAsPickingLocation: Bool, clientRequestID: String)
     case placeAll(itemID: Int, target: GoodsInPlaceTarget, setAsPickingLocation: Bool, clientRequestID: String)
@@ -1078,11 +1153,17 @@ enum GoodsInDeliveryWrite: Hashable, Sendable {
         }
     }
 
+    var isAddItem: Bool {
+        if case .addItem = self { return true }
+        return false
+    }
+
     var path: String {
         switch self {
         case .receive: "receive"
         case .unreceive: "unreceive"
         case .checkAll: "check-all"
+        case .addItem: "items"
         case .check(let itemID, _): "items/\(itemID)/check"
         case .place(let itemID, _, _, _, _): "items/\(itemID)/place"
         case .placeAll(let itemID, _, _, _): "items/\(itemID)/place-all"
@@ -1094,6 +1175,8 @@ enum GoodsInDeliveryWrite: Hashable, Sendable {
         switch self {
         case .receive, .unreceive, .checkAll:
             return [:]
+        case let .addItem(itemID, skoQuantity):
+            return ["item_id": .int(itemID), "sko_quantity": .number(skoQuantity)]
         case .check(_, let skoQuantity):
             return ["sko_quantity": .number(skoQuantity)]
         case let .place(_, quantity, target, setAsPickingLocation, clientRequestID):
@@ -1210,6 +1293,17 @@ extension Endpoint {
         goodsInJSON("mobile/warehouses/\(warehouseID)/stock-deliveries/\(id)/\(write.path)", method: .post, body: write.body)
     }
 
+    static func mobileStockDeliveryAddableItems(warehouseID: Int, id: Int, search: String?, orgStockID: Int?) -> Endpoint {
+        var items: [URLQueryItem] = []
+        if let search = search?.trimmingCharacters(in: .whitespacesAndNewlines), !search.isEmpty {
+            items.append(URLQueryItem(name: "q", value: search))
+        }
+        if let orgStockID {
+            items.append(URLQueryItem(name: "org_stock_id", value: "\(orgStockID)"))
+        }
+        return Endpoint(path: "mobile/warehouses/\(warehouseID)/stock-deliveries/\(id)/addable-items", queryItems: items)
+    }
+
     static func mobileReturns(warehouseID: Int, query: MobileReturnsQuery) -> Endpoint {
         Endpoint(path: "mobile/warehouses/\(warehouseID)/returns", queryItems: query.queryItems)
     }
@@ -1246,6 +1340,10 @@ extension APIClient {
 
     func writeStockDelivery(warehouseID: Int, id: Int, write: GoodsInDeliveryWrite) async throws -> MobileStockDeliveryWriteResult {
         try GoodsInDecoding.decode(MobileStockDeliveryWriteResult.self, from: try await sendForm(.mobileStockDeliveryWrite(warehouseID: warehouseID, id: id, write: write)))
+    }
+
+    func fetchAddableItems(warehouseID: Int, deliveryID: Int, search: String?, orgStockID: Int?) async throws -> [MobileAddableItem] {
+        try await send(.mobileStockDeliveryAddableItems(warehouseID: warehouseID, id: deliveryID, search: search, orgStockID: orgStockID), as: MobileAddableItems.self).data
     }
 
     func fetchReturns(warehouseID: Int, query: MobileReturnsQuery) async throws -> MobileReturnsPage {

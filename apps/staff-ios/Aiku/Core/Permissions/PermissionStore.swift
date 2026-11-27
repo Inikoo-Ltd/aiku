@@ -25,8 +25,8 @@ final class PermissionStore {
         current = cache.load()
     }
 
-    convenience init(apiClient: APIClient) {
-        self.init(fetch: { try await apiClient.fetchPermissions() })
+    convenience init(apiClient: APIClient, live: LiveUpdates) {
+        self.init(fetch: { try await apiClient.fetchPermissions() }, updateSource: LivePermissionUpdates(live: live))
     }
 
     func allows(_ permission: String) -> Bool {

@@ -24,6 +24,7 @@ import { useLiveStaffTasks } from "@/Composables/useLiveStaffTasks"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { Drawer, Popover } from "primevue"
+import StaffProfileTrigger from "@/Components/Messaging/StaffProfileTrigger.vue"
 import StaffTaskSubtaskProgress from "@/Components/Tasks/StaffTaskSubtaskProgress.vue"
 import StaffTaskChatMembers from "@/Components/Tasks/StaffTaskChatMembers.vue"
 import { canShareScreen, pickScreen, useStaffCalls } from "@/Stores/staff-calls"
@@ -642,8 +643,8 @@ const onReactionPick = (emoji: string) => {
 <template>
     <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full font-desk" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
         <!-- Header -->
-        <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? 'shrink-0 border-gray-200 bg-gray-50' : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
-            <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2 text-gray-600" @click="emit('back')">
+        <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? (isDesk ? 'shrink-0 border-[var(--vx-head-line,#e5e7eb)] bg-[var(--vx-head-bg,#f9fafb)]' : 'shrink-0 border-gray-200 bg-gray-50') : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
+            <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2" :class="isDesk ? 'text-[var(--vx-head-muted,#4b5563)]' : 'text-gray-600'" @click="emit('back')">
                 <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
             </button>
             <div class="relative h-7 w-7 shrink-0">
@@ -654,12 +655,12 @@ const onReactionPick = (emoji: string) => {
                 <span class="absolute bottom-0 right-0 z-[1] h-2 w-2 rounded-full ring-1" :class="[fullScreen ? 'ring-white' : 'ring-[var(--chat-bg)]', !isOnline ? (fullScreen ? 'bg-gray-400' : 'bg-[var(--chat-muted)]') : isIdle ? (fullScreen ? 'bg-yellow-400' : 'bg-[var(--chat-yellow)]') : (fullScreen ? 'bg-green-500' : 'bg-[var(--chat-green)]')]" />
             </div>
             <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate" :class="fullScreen ? '' : 'text-[var(--chat-text)]'">{{ displayName }}</div>
-                <div class="text-xs h-4" :class="fullScreen ? 'text-gray-500' : 'text-[var(--chat-muted)]'">
+                <div class="text-sm font-medium truncate" :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-text,#111827)]' : '') : 'text-[var(--chat-text)]'">{{ displayName }}</div>
+                <div class="text-xs h-4" :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#6b7280)]' : 'text-gray-500') : 'text-[var(--chat-muted)]'">
                     <span v-if="lastSeenAt && !isOnline">{{ ctrans('Last seen') }} {{ formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }) }}</span>
                     <span v-else-if="conversation.type === 'dm' && isOnline">{{ isIdle ? ctrans('Idle') : ctrans('Active') }}</span>
                     <span v-else-if="conversation.context_url" class="flex min-w-0 items-center gap-1.5">
-                        <a :href="conversation.context_url" class="truncate" :class="fullScreen ? 'text-[--app-accent-strong] hover:underline' : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
+                        <a :href="conversation.context_url" class="truncate" :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-accent,var(--app-accent-strong))] hover:underline' : 'text-[--app-accent-strong] hover:underline') : 'text-[var(--chat-accent)] hover:underline'">{{ conversation.context_label }}</a>
                         <span v-if="taskInfo?.status_label" class="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap">
                             <FontAwesomeIcon v-if="taskInfo.status_icon" :icon="taskInfo.status_icon.icon" :class="taskInfo.status_icon.class" fixed-width aria-hidden="true" />
                             {{ taskInfo.status_label }}
@@ -693,7 +694,7 @@ const onReactionPick = (emoji: string) => {
                     v-tooltip="ctrans('Call')"
                     :aria-label="ctrans('Call')"
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
-                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#4b5563)] hover:bg-black/5' : 'text-gray-600 hover:bg-gray-100') : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
                     :disabled="!canStartCall"
                     @click="calls.start(conversation.ulid, 'voice')">
                     <FontAwesomeIcon icon="fal fa-phone" fixed-width aria-hidden="true" />
@@ -703,7 +704,7 @@ const onReactionPick = (emoji: string) => {
                     v-tooltip="ctrans('Video call')"
                     :aria-label="ctrans('Video call')"
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
-                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#4b5563)] hover:bg-black/5' : 'text-gray-600 hover:bg-gray-100') : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
                     :disabled="!canStartCall"
                     @click="calls.start(conversation.ulid, 'video')">
                     <FontAwesomeIcon icon="fal fa-video" fixed-width aria-hidden="true" />
@@ -714,7 +715,7 @@ const onReactionPick = (emoji: string) => {
                     v-tooltip="ctrans('Call and share your screen')"
                     :aria-label="ctrans('Call and share your screen')"
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition duration-200 disabled:opacity-40"
-                    :class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                    :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#4b5563)] hover:bg-black/5' : 'text-gray-600 hover:bg-gray-100') : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
                     :disabled="!canStartCall"
                     @click="startScreenCall">
                     <FontAwesomeIcon icon="fal fa-desktop" fixed-width aria-hidden="true" />
@@ -737,7 +738,7 @@ const onReactionPick = (emoji: string) => {
             <button v-if="!fullScreen" v-tooltip="ctrans('Minimize')" class="p-2 text-[var(--chat-muted)] hover:text-[var(--chat-text)]" @click="emit('minimise')">
                 <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true" />
             </button>
-            <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? 'text-gray-500 hover:text-gray-800' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
+            <button v-if="!embedded" v-tooltip="conversation.type === 'dm' ? ctrans('Done talking to :name', { name: displayName }) : ctrans('Leave this conversation for now')" class="p-2" :class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#6b7280)] hover:text-[var(--vx-head-text,#1f2937)]' : 'text-gray-500 hover:text-gray-800') : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" @click="emit('close')">
                 <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </div>
@@ -813,7 +814,7 @@ const onReactionPick = (emoji: string) => {
 
         <StaffTaskSubtaskProgress v-if="taskInfo?.subtasks.length && !embedded" :subtasks="taskInfo.subtasks" @opened="refreshTaskInfo" />
 
-        <div v-if="showsTabs" class="flex shrink-0 items-center gap-x-1 border-b border-gray-200 px-3" role="tablist" :aria-label="ctrans('Conversation views')">
+        <div v-if="showsTabs" class="flex shrink-0 items-center gap-x-1 border-b px-3" :class="isDesk ? 'border-[var(--vx-head-line,#e5e7eb)] bg-[var(--vx-head-bg,#ffffff)]' : 'border-gray-200'" role="tablist" :aria-label="ctrans('Conversation views')">
             <button
                 v-for="tab in [{ key: 'messages', label: ctrans('Messages'), icon: 'fal fa-comment-dots' }, { key: 'files', label: ctrans('Files & links'), icon: 'fal fa-folder' }]"
                 :key="tab.key"
@@ -821,7 +822,9 @@ const onReactionPick = (emoji: string) => {
                 role="tab"
                 :aria-selected="activeTab === tab.key"
                 class="-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-[13px] font-semibold transition-colors"
-                :class="activeTab === tab.key ? 'border-[var(--app-accent)] text-[#1d1c1d]' : 'border-transparent text-[#616061] hover:text-[#1d1c1d]'"
+                :class="isDesk
+                    ? (activeTab === tab.key ? 'border-[var(--vx-head-accent,var(--app-accent))] text-[var(--vx-head-text,#1d1c1d)]' : 'border-transparent text-[var(--vx-head-muted,#616061)] hover:text-[var(--vx-head-text,#1d1c1d)]')
+                    : (activeTab === tab.key ? 'border-[var(--app-accent)] text-[#1d1c1d]' : 'border-transparent text-[#616061] hover:text-[#1d1c1d]')"
                 @click="activeTab = tab.key as 'messages' | 'files'">
                 <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />{{ tab.label }}
             </button>
@@ -867,7 +870,9 @@ const onReactionPick = (emoji: string) => {
                 <span class="text-gray-400">· {{ useFormatTime(message.created_at, { formatTime: 'hm' }) }}</span>
             </div>
             <div v-else-if="isDesk" class="mr-2 w-9 shrink-0">
-                <TicketUserAvatar v-if="startsRun(messageIndex)" :name="message.user_name" :avatar="senderAvatar(message)" size="lg" square />
+                <StaffProfileTrigger v-if="startsRun(messageIndex)" :user-id="message.user_id">
+                    <TicketUserAvatar :name="message.user_name" :avatar="senderAvatar(message)" size="lg" square />
+                </StaffProfileTrigger>
                 <span v-else class="block pt-0.5 text-right text-xs leading-5 text-[#616061] opacity-0 group-hover:opacity-100">{{ useFormatTime(message.created_at, { formatTime: 'HH:mm' }) }}</span>
             </div>
             <div v-else-if="isGroupChat && message.user_id !== myId" class="mr-1.5 w-7 shrink-0">
@@ -884,7 +889,9 @@ const onReactionPick = (emoji: string) => {
                 :class="isDesk ? 'items-start' : ['group', message.user_id === myId ? 'items-end' : 'items-start']"
             >
                 <div v-if="isDesk && startsRun(messageIndex)" class="flex flex-wrap items-baseline gap-x-2">
-                    <span class="font-black text-[#1d1c1d]">{{ message.user_name }}</span>
+                    <StaffProfileTrigger :user-id="message.user_id">
+                        <span class="font-black text-[#1d1c1d] hover:underline">{{ message.user_name }}</span>
+                    </StaffProfileTrigger>
                     <span class="text-xs text-[#616061] hover:underline" v-tooltip="useFormatTime(message.created_at, { formatTime: 'hm' })">{{ useFormatTime(message.created_at, { formatTime: 'HH:mm' }) }}</span>
                 </div>
                 <div v-if="parentById(message.parent_id)" class="mb-0.5 border-l-4 px-2 py-0.5" :class="isDesk ? 'max-w-full border-[#dddddd] text-[13px] text-[#616061]' : 'max-w-[80%] rounded border-l-2 border-gray-300 bg-gray-100 text-xxs text-gray-500'">

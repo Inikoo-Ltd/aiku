@@ -24,4 +24,6 @@ const toggleSidebar = () => {
     localStorage.setItem(SIDEBAR_KEY, isSidebarCollapsed.value ? "1" : "0")
 }
 
-export const useDeskSidebar = () => ({ isSidebarCollapsed, toggleSidebar })
+const isJumpOpen = ref(false)
+
+export const useDeskSidebar = () => ({ isSidebarCollapsed, toggleSidebar, isJumpOpen })

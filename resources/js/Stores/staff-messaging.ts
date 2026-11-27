@@ -486,7 +486,7 @@ export const useStaffMessaging = defineStore("staff-messaging", {
                 id: -Date.now(),
                 conversation_ulid: ulid,
                 user_id: me?.id,
-                user_name: me?.username ?? "",
+                user_name: me?.nickname || me?.contact_name || me?.username || "",
                 parent_id: parentId,
                 body,
                 mentions: [],

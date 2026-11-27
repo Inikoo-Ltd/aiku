@@ -9,6 +9,7 @@ import { computed, nextTick, ref, watch } from "vue"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
 import { Dialog, Popover } from "primevue"
+import StaffProfileTrigger from "@/Components/Messaging/StaffProfileTrigger.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faCommentDots, faFile, faLink, faPencil, faReply, faRobot, faSmilePlus, faThumbtack, faTimes, faTrashAlt } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -284,7 +285,9 @@ const confirmDelete = async () => {
             <span v-if="shown.is_deleted && !continues" class="flex h-9 w-9 items-center justify-center rounded-[22%] bg-[#f8f8f8] text-[#616061]">
                 <FontAwesomeIcon icon="fal fa-comment-dots" fixed-width aria-hidden="true" />
             </span>
-            <TicketUserAvatar v-else-if="!continues" :name="shown.author.name" :avatar="shown.author.avatar" size="lg" square />
+            <StaffProfileTrigger v-else-if="!continues" :user-id="shown.author.is_bot ? null : shown.author.user_id">
+                <TicketUserAvatar :name="shown.author.name" :avatar="shown.author.avatar" size="lg" square />
+            </StaffProfileTrigger>
             <span v-else class="block pt-0.5 text-right text-xs leading-5 text-[#616061] opacity-0 group-hover:opacity-100">{{ time(shown.sent_at) }}</span>
         </div>
         <div class="min-w-0 flex-1 text-[15px] leading-[1.46668]">
@@ -303,7 +306,9 @@ const confirmDelete = async () => {
                     <FontAwesomeIcon icon="fal fa-reply" fixed-width aria-hidden="true" />{{ ctrans("Replied to a thread") }}
                 </button>
                 <div v-if="!continues" class="flex flex-wrap items-baseline gap-x-1.5">
-                    <span class="font-black" :class="shown.author.name ? 'text-[#1d1c1d]' : 'italic text-[#616061]'">{{ authorName(shown) }}</span>
+                    <StaffProfileTrigger :user-id="shown.author.is_bot ? null : shown.author.user_id">
+                        <span class="font-black" :class="[shown.author.name ? 'text-[#1d1c1d]' : 'italic text-[#616061]', shown.author.user_id && !shown.author.is_bot && 'hover:underline']">{{ authorName(shown) }}</span>
+                    </StaffProfileTrigger>
                     <span v-if="shown.author.is_bot" class="inline-flex items-center gap-0.5 rounded bg-gray-200 px-1 text-xxs font-medium uppercase text-gray-600">
                         <FontAwesomeIcon icon="fal fa-robot" fixed-width aria-hidden="true" />{{ ctrans("Bot") }}
                     </span>

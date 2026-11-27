@@ -5,6 +5,7 @@ enum GoodsInDeliverySheet: Identifiable, Hashable {
     case chooseLine(code: String, itemIDs: [Int])
     case checklistResult(key: String)
     case more
+    case addExtra(scanned: GoodsInScannedExtra?)
 
     var id: String {
         switch self {
@@ -12,6 +13,7 @@ enum GoodsInDeliverySheet: Identifiable, Hashable {
         case .chooseLine(let code, _): "choose-\(code)"
         case .checklistResult(let key): "checklist-\(key)"
         case .more: "more"
+        case .addExtra(let scanned): "add-extra-\(scanned?.code ?? "")"
         }
     }
 }
@@ -38,6 +40,9 @@ struct GoodsInDeliveryScreen: View {
         .onAppear {
             Task { await feed.load() }
         }
+        .liveReload(on: LiveChannelName.record(.stockDelivery, loadedID: feed.delivery?.id), events: LiveEventName.record) {
+            await feed.load()
+        }
     }
 }
 
@@ -53,6 +58,7 @@ private struct GoodsInDeliveryContent: View {
 
     private var view: GoodsInDeliveryView? { feed.view }
     private var unreceive: MobileGoodsInAction? { delivery.availableActions.action(GoodsInActionKey.unreceive) }
+    private var addItem: MobileGoodsInAction? { delivery.availableActions.action(GoodsInActionKey.addItem) }
 
     var body: some View {
         screen
@@ -98,7 +104,7 @@ private struct GoodsInDeliveryContent: View {
     }
 
     private var headerActions: [HeaderAction] {
-        guard unreceive != nil else { return [] }
+        guard unreceive != nil || addItem != nil else { return [] }
         return [HeaderAction(.more, label: "More actions") { open(.more) }]
     }
 
@@ -266,8 +272,26 @@ private struct GoodsInDeliveryContent: View {
                 )
             }
         case .more:
-            if let unreceive {
-                SheetScaffold(title: L10n.format("%@ · more", delivery.reference)) {
+            SheetScaffold(title: L10n.format("%@ · more", delivery.reference)) {
+                if let addItem {
+                    Card {
+                        GoodsInActionLinkRow(
+                            icon: .plus,
+                            title: addItem.label.isEmpty ? "Add extra item" : addItem.label,
+                            subtitle: addItem.disabledReason ?? "A product that came but is on none of the purchase orders of this delivery",
+                            tone: .primary,
+                            identifier: "goodsIn.addExtra",
+                            action: addItem.isDisabled ? nil : {
+                                sheet = nil
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .milliseconds(350))
+                                    open(.addExtra(scanned: nil))
+                                }
+                            }
+                        )
+                    }
+                }
+                if let unreceive {
                     Card {
                         GoodsInActionLinkRow(
                             icon: .undo,
@@ -286,6 +310,17 @@ private struct GoodsInDeliveryContent: View {
                     }
                 }
             }
+        case .addExtra(let scanned):
+            GoodsInAddExtraItemSheet(
+                delivery: delivery,
+                scanned: scanned,
+                addable: feed.addable,
+                isWorking: feed.working.map(\.isAddItem) ?? false,
+                problem: sheetProblem ?? feed.writeErrors.values.first,
+                onSearch: { search, orgStockID in await feed.loadAddable(search: search, orgStockID: orgStockID) },
+                onAdd: { itemID, quantity in Task { await feed.addItem(itemID: itemID, skoQuantity: quantity) } },
+                onDismiss: closeSheet
+            )
         }
     }
 
@@ -320,9 +355,13 @@ private struct GoodsInDeliveryContent: View {
             openLine(itemID)
         case let .choose(code, itemIDs):
             open(.chooseLine(code: code, itemIDs: itemIDs))
-        case .notOnDelivery(let code):
+        case let .notOnDelivery(code, skoID):
             ScanFeedback.shared.rejected()
-            toasts.show(L10n.format("%@ is not on %@", code, delivery.reference), tone: .info)
+            if let skoID, delivery.canAddItems {
+                open(.addExtra(scanned: GoodsInScannedExtra(code: code, skoID: skoID)))
+            } else {
+                toasts.show(L10n.format("%@ is not on %@", code, delivery.reference), tone: .info)
+            }
         case .failed(_, let message):
             toasts.show(message, tone: .danger)
         }
@@ -348,7 +387,7 @@ private struct GoodsInDeliveryContent: View {
             return sent == 0 ? L10n.format("%@ set as not received", code) : L10n.format("%@ · %@ checked", code, GoodsInText.number(sent))
         case .recordCheck(_, let result, _, _, _):
             return result == .passed ? "Check passed" : "Check recorded as failed"
-        case .place, .placeAll:
+        case .place, .placeAll, .addItem:
             return nil
         }
     }

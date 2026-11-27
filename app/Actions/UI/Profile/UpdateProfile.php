@@ -297,7 +297,7 @@ class UpdateProfile extends OrgAction
             'nickname'          => ['sometimes', 'nullable', 'string', 'min:2', 'max:24', 'regex:/^[\pL\pN ._-]+$/u', Rule::unique('users', 'nickname')->ignore(request()->user()->id)],
             'language_id'       => ['sometimes', 'required', 'exists:languages,id'],
             'app_theme'         => ['sometimes', 'required'],
-            'chat_theme'        => ['sometimes', 'nullable', Rule::in(['light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
+            'chat_theme'        => ['sometimes', 'nullable', Rule::in(['classic', 'light', 'sky', 'blush', 'sand', 'mint', 'dracula', 'nord', 'gruvbox', 'monokai', 'onedark', 'solarized'])],
             'org_themes'                          => ['sometimes', 'array'],
             'org_themes.enabled'                  => ['sometimes', 'boolean'],
             'org_themes.themes'                   => ['sometimes', 'array'],

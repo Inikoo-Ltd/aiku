@@ -105,6 +105,7 @@ class GetDropshippingOrderActions
                 ],
                 OrderStateEnum::SUBMITTED => [
                     ...$sendWithoutAnAddress,
+                    GetEcomOrderActions::doNotPickAction($order),
                     $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',

@@ -1,8 +1,8 @@
 ---
 title: Reklamácie - poškodené, chýbajúce a nesprávne položky, vrátenie peňazí a náhrady
 summary: Každé vrátenie peňazí, náhrada a položka zadarmo, ktorú zákazník dostane späť, je reklamácia (claim) - zákazníci si ju podávajú sami v Merlinovi, zamestnanci cez + Claim a stránky Claims ich zobrazujú všetky.
-date: 2026-11-22
-source_date: 2026-11-22
+date: 2026-11-27
+source_date: 2026-11-27
 tags: crm, claims, ordering, refunds
 category: help-desk
 help_routes: grp.org.shops.show.claims
@@ -17,7 +17,7 @@ order: 1
 
 Otvorte <b>Claims</b> (reklamácie) v menu svojho obchodu. Má tri záložky:
 
-- <b>Dashboard</b> (prehľad) - reklamácie čakajúce, podané, vybavené a zamietnuté za posledných 7, 30 alebo 90 dní, hodnota vybavených, ako rýchlo sa reklamácie posudzujú, prečo zákazníci reklamujú, ktoré produkty sa reklamujú najviac a koľko reklamácií zákazníci podali sami.
+- <b>Dashboard</b> (prehľad) - reklamácie čakajúce, podané, vybavené a zamietnuté za posledných 7, 30 alebo 90 dní, hodnota vybavených, ako rýchlo sa reklamácie posudzujú, prečo zákazníci reklamujú, ktoré produkty sa reklamujú najviac, koľko reklamácií zákazníci podali sami a koľko z nich Merlin vybavil bez človeka, a reklamácie podľa <b>dopravcu</b>, <b>skladu</b> a <b>baliča</b> balíka, z ktorého pochádzajú.
 - <b>Pending</b> (čaká) - reklamácie čakajúce na človeka, od najstarších. Toto je front, ktorý treba spracúvať každý deň.
 - <b>Done</b> (hotové) - vybavené a zamietnuté reklamácie, od najnovších, s filtrom pre každú skupinu.
 
@@ -25,18 +25,40 @@ Kliknutím na reklamáciu ju otvoríte: položky, množstvá a dôvody, fotograf
 
 ## Reklamácie, ktoré podávajú zákazníci sami
 
-Keď zákazník povie Merlinovi, že mu niečo prišlo poškodené, rozbité, chýba alebo je nesprávne, Merlin otvorí v chate formulár reklamácie. Zákazník zaškrtne položky, vyberie dôvod, pridá fotografie (potrebné pri poškodených, nesprávnych a chybných položkách, plus jedna fotografia škatule) a vyberie, čo chce: kredit na zostatok, náhradu hneď alebo položky zadarmo v ďalšej objednávke.
+Zákazníci otvárajú ten istý formulár reklamácie na štyroch miestach:
+
+- <b>Merlin</b> - keď zákazník povie Merlinovi, že mu niečo prišlo poškodené, rozbité, chýba alebo je nesprávne, Merlin otvorí formulár v chate.
+- <b>Ich účet</b> - každá odoslaná objednávka má tlačidlo <b>Nahlásiť problém</b>.
+- <b>E-mail o odoslaní</b> - riadok "Something broken, missing or wrong? Report a problem" otvorí objednávku v ich účte s otvoreným formulárom.
+- <b>Chat na webe</b> - prihlásení zákazníci majú tlačidlo <b>Problém s objednávkou</b>.
+
+Vo formulári zákazník zaškrtne položky, vyberie dôvod, pridá fotografie (potrebné pri poškodených, nesprávnych a chybných položkách, plus jedna fotografia škatule) a vyberie, čo chce: kredit na zostatok, náhradu hneď alebo položky zadarmo v ďalšej objednávke.
 
 Čo sa stane potom, závisí od nastavení obchodu:
 
 - Ak je reklamácia dosť malá a v rámci limitu zákazníka, vybaví sa okamžite a zákazník uvidí výsledok v chate.
 - Inak čaká v <b>Pending</b> a zákaznícky servis dostane úlohu s odkazom na ňu.
 
+Zákazníci môžu reklamovať počas toľkých dní po odoslaní, koľko je nastavené v nastaveniach obchodu (60, ak sa nezmení). Dostanú e-mail, keď reklamáciu prijmeme, s uvedením, kedy odpovieme, a ďalší, keď je schválená alebo zamietnutá. Neskôr sa môžu Merlina opýtať, čo sa s ich reklamáciou stalo: Merlin to prečíta z reklamácie, vrátane toho, či náhrada už opustila sklad, a jej sledovania.
+
+### Balíky, ktoré nikdy neprišli
+
+Zákazník vyberie <b>Celý balík nikdy neprišiel</b>. Ak nám dopravca posiela späť sledovanie (dnes GLS Španielsko), formulár ho najprv skontroluje:
+
+- Ak dopravca balík ešte stále doručuje, reklamácia sa nevytvorí: zákazník sa požiada, aby počkal a nahlásil to znova, ak balík nepríde 7 dní po odoslaní.
+- Ak dopravca uvádza, že balík bol doručený, vracia sa k nám alebo sa jeho sledovanie prestalo hýbať, reklamácia sa vytvorí a čaká na človeka, pričom na stránke reklamácie je to, čo hovorí dopravca.
+
+Pri dopravcoch, ktorí nám sledovanie neposielajú späť, sa reklamácia vytvorí a čaká na človeka: overte to u dopravcu. Stratený balík sa nikdy neschvaľuje automaticky.
+
+### Položky, ktoré v balíku chýbajú
+
+Pri každej chýbajúcej položke stránka reklamácie ukazuje, koľko kusov naši baliči zabalili, kto ich zabalil a kedy. "Zabalené celé" neznamená, že sa zákazník mýli, ale pred schválením sa to oplatí skontrolovať. Balíky sa pri balení nevážia, takže nie je s čím porovnať hmotnosť.
+
 ## Posúdenie reklamácie
 
 Otvorte reklamáciu z <b>Pending</b> alebo z úlohy. Skontrolujte fotografie a predchádzajúce reklamácie zákazníka a potom:
 
-- <b>Approve</b> (schváliť) - vybaví ju tak, ako zákazník chcel: kredit ide na jeho zostatok, náhrada ide do skladu alebo položky čakajú na jeho ďalšiu objednávku. Okno pred potvrdením presne povie, čo sa stane.
+- <b>Approve</b> (schváliť) - vybaví ju tak, ako zákazník chcel: kredit ide na jeho zostatok, náhrada ide do skladu alebo položky čakajú na jeho ďalšiu objednávku. Okno pred potvrdením presne povie, čo sa stane. Zaškrtnite <b>Požiadať zákazníka o vrátenie tovaru</b>, keď chcete, aby sa vrátil, napríklad pri nesprávnej položke: e-mail o schválení potom obsahuje odkaz na <b>reklamačný lístok</b> s číslom reklamácie ako čiarovým kódom, položkami a našou adresou na vrátenie, ktorý si zákazník vytlačí a vloží do balíka. Nevytvára sa žiadny štítok dopravcu, takže zákazníkovi povedzte, ako to má poslať, ak na tom záleží.
 - <b>Reject</b> (zamietnuť) - vyberte dôvod; poznámka je potrebná, ak je dôvodom <b>Other</b> (iné).
 
 Na schválenie kreditu alebo reklamácie na ďalšiu objednávku musíte mať právo upravovať zákazníkov obchodu a na schválenie náhrady právo upravovať jeho objednávky.
@@ -61,6 +83,8 @@ V obchodoch, ktoré ešte nepracujú len cez reklamácie, zostávajú obvyklé t
 
 Správcovia organizácie vidia <b>Settings</b> (nastavenia) na prehľade Claims:
 
-- <b>Customers can claim themselves</b> - zapína alebo vypína formulár reklamácie v Merlinovi.
+- <b>Customers can claim themselves</b> - zapína alebo vypína formulár reklamácie v Merlinovi, v účte, v e-maile o odoslaní a v chate na webe.
+- <b>Reklamácie prijímame</b> - koľko dní po odoslaní môžu zákazníci ešte reklamovať objednávku.
+- <b>Na reklamácie odpovedáme do</b> - pracovné hodiny sľúbené v e-maile, ktorý zákazník dostane, keď jeho reklamácia čaká na zákaznícky servis.
 - <b>Approve small claims automatically</b> - keď je vypnuté, každá reklamácia zákazníka čaká na človeka. Keď je zapnuté, reklamácia sa vybaví bez človeka, len ak nie je väčšia ako <b>largest claim approved automatically</b>, zákazník podal menej reklamácií ako <b>most claims</b> za <b>days counted</b> a všetko, čo sa mu v tých dňoch schválilo automaticky, vrátane tejto reklamácie, zostáva v rámci jeho limitu: väčšia z hodnôt <b>allowance at least</b> a <b>% of what they bought</b>. Reklamácie, ktoré schváli človek, sa nepočítajú, a stratené balíky vždy idú k človeku.
 - <b>Work through claims only</b> - prepne obchod na + Claim. Po zapnutí sa už nedá vypnúť, preto o tom pred zapnutím informujte svoj zákaznícky servis.

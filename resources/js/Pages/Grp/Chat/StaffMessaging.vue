@@ -11,7 +11,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks } from "@fal"
+import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks } from "@fal"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import { faChevronLeft } from "@far"
@@ -19,6 +19,7 @@ import { faStar as faStarSolid } from "@fas"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import MessagingConversation from "@/Components/Messaging/MessagingConversation.vue"
+import StaffProfileCard from "@/Components/Messaging/StaffProfileCard.vue"
 import DeskSidebarRow from "@/Components/Messaging/DeskSidebarRow.vue"
 import { draftChannelIds } from "@/Components/Messaging/deskDrafts"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
@@ -31,7 +32,7 @@ import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } 
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
+library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
 
 interface SlackChannelListItem {
     id: number
@@ -44,11 +45,19 @@ interface SlackChannelListItem {
     last_read_ts?: string | null
 }
 
+interface SlackListedChannel {
+    id: number
+    name: string | null
+    member_count: number
+    requested: boolean
+}
+
 const props = defineProps<{
     title: string
     selected_ulid: string | null
     slack_channels?: SlackChannelListItem[]
     slack_private_channels?: SlackChannelListItem[]
+    slack_listed_channels?: SlackListedChannel[]
     slack_direct_channels?: SlackChannelListItem[]
     slack_live_channel?: string | null
     slack_channel?: SlackChannelHeader | null
@@ -68,6 +77,23 @@ const knownPrivateChannels = ref<SlackChannelListItem[]>(props.slack_private_cha
 watch(() => props.slack_private_channels, (channels) => {
     if (channels !== undefined) knownPrivateChannels.value = channels
 })
+const knownListedChannels = ref<SlackListedChannel[]>(props.slack_listed_channels ?? [])
+watch(() => props.slack_listed_channels, (channels) => {
+    if (channels !== undefined) knownListedChannels.value = channels
+})
+const askingToJoin = ref<number | null>(null)
+const joinError = ref<string | null>(null)
+const askToJoin = (channel: SlackListedChannel) => {
+    router.post(route("grp.chat.staff.groups.slack.join_request.store", channel.id), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["slack_listed_channels"],
+        onStart: () => { askingToJoin.value = channel.id; joinError.value = null },
+        onSuccess: () => { channel.requested = true },
+        onError: () => { joinError.value = ctrans("Could not send the request. Try again.") },
+        onFinish: () => { askingToJoin.value = null },
+    })
+}
 const privateChannels = computed(() => [...knownPrivateChannels.value].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")))
 const isPrivateChannel = (channelId: number) => knownPrivateChannels.value.some((channel) => channel.id === channelId)
 const knownDirectChannels = ref<SlackChannelListItem[]>(props.slack_direct_channels ?? [])
@@ -92,7 +118,7 @@ const readCollapsed = (): string[] => {
     }
 }
 const collapsedSections = ref<string[]>(readCollapsed())
-const { isSidebarCollapsed, toggleSidebar } = useDeskSidebar()
+const { isSidebarCollapsed, toggleSidebar, isJumpOpen } = useDeskSidebar()
 const filterInput = ref<{ $el: HTMLInputElement } | null>(null)
 const openFilter = async () => {
     if (isSidebarCollapsed.value) toggleSidebar()
@@ -297,6 +323,13 @@ const closeConversation = () => {
     })
 }
 
+const goHome = () => {
+    store.fullViewUlid = null
+    selectedUlid.value = null
+    openSlackChannelId.value = null
+    router.visit(homeRoute.value, { preserveState: true, preserveScroll: true })
+}
+
 const selectedConversation = computed(() => selectedUlid.value ? store.conversationByUlid(selectedUlid.value) : null)
 
 watch(() => store.fullViewUlid, (ulid) => {
@@ -318,7 +351,6 @@ watch(() => store.fullViewUlid, (ulid) => {
     showConversationUrl(ulid)
 })
 
-const isJumpOpen = ref(false)
 const isShortcutsOpen = ref(false)
 
 const visitSlackChannel = (channelId: number) => {
@@ -357,8 +389,9 @@ const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().incl
 
 const layoutStore = useLayoutStore()
 const isDesks = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.slack."))
-const isFeed = computed(() => usePage().url.split("?")[0].endsWith("/vx/feed"))
 const isGroups = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.groups."))
+const isNothingSelected = computed(() => !selectedUlid.value && !showSlackChannel.value)
+const homeRoute = computed(() => route(isDesks.value ? "grp.chat.staff.slack.index" : isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"))
 const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
 const isNewVerbrationOpen = ref(false)
 const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbrations") : ctrans("Filter V·Ds")))
@@ -479,7 +512,6 @@ onUnmounted(() => {
 
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
-            v-if="!isFeed"
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
             :class="[selectedUlid || showSlackChannel ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
@@ -487,18 +519,18 @@ onUnmounted(() => {
                 :class="isSidebarCollapsed && 'md:pointer-events-none md:opacity-0'"
                 :inert="(isSidebarCollapsed && !isMobile) || undefined"
                 :aria-label="ctrans('Verba')">
-                <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                    <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-white/10 px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-white/20 focus-within:ring-1 focus-within:ring-white/60 hover:bg-white/20">
+                <div class="shrink-0 space-y-4 border-b border-[var(--desk-border)] py-2">
+                    <label class="mx-2 flex h-7 items-center gap-x-2 rounded-md bg-[var(--desk-chip)] px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-[var(--desk-chip-strong)] focus-within:ring-1 focus-within:ring-[var(--desk-text)] hover:bg-[var(--desk-chip-strong)]">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                         <InputText
                             ref="filterInput"
                             v-model="sidebarFilter"
                             unstyled
-                            class="min-w-0 flex-1 border-0 bg-transparent p-0 text-white shadow-none outline-none ring-0 placeholder:text-[var(--desk-text)] focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
+                            class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[var(--desk-strong)] shadow-none outline-none ring-0 placeholder:text-[var(--desk-text)] focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
                             :placeholder="filterLabel"
                             :aria-label="filterLabel"
                             @keydown.esc.stop="sidebarFilter = ''" />
-                        <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
+                        <button v-if="sidebarFilter" type="button" class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--desk-strong)] text-[10px] text-[var(--desk-sidebar)]" :aria-label="ctrans('Clear filter')" @click="sidebarFilter = ''">
                             <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                         </button>
                         <button
@@ -511,19 +543,23 @@ onUnmounted(() => {
                             <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
                         </button>
                     </label>
-    
+
+                    <DeskSidebarRow v-if="!sidebarFilter" :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-y-auto py-2">
                     <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbrations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
     
                     <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
     
                     <div v-if="isDesks && isSlackLoading" class="space-y-2 px-4 pt-3" aria-hidden="true">
-                        <div class="h-3 w-20 rounded bg-white/10" />
-                        <div class="h-5 rounded bg-white/10" />
-                        <div class="h-5 rounded bg-white/10" />
+                        <div class="h-3 w-20 rounded bg-[var(--desk-chip)]" />
+                        <div class="h-5 rounded bg-[var(--desk-chip)]" />
+                        <div class="h-5 rounded bg-[var(--desk-chip)]" />
                     </div>
                     <div v-else-if="isSlackIndexWithoutAccess" class="space-y-1 px-4 py-6 text-center text-[13px]">
                         <FontAwesomeIcon icon="fal fa-hashtag" class="text-2xl opacity-50" fixed-width aria-hidden="true" />
-                        <p class="font-bold text-white">{{ ctrans("No Slack channels to show") }}</p>
+                        <p class="font-bold text-[var(--desk-strong)]">{{ ctrans("No Slack channels to show") }}</p>
                         <p>{{ ctrans("Public Slack channels show here once your aiku account is linked to your Slack account by the same email address.") }}</p>
                     </div>
     
@@ -637,13 +673,23 @@ onUnmounted(() => {
                             :is-starred="false"
                             @select="selectConversation(conversation.ulid)"
                             @toggle-star="toggleStar('dm-' + conversation.ulid)" />
+                        <template v-if="isGroups && knownListedChannels.length && !filterText">
+                            <p class="px-4 pb-1 pt-3 text-xs opacity-70">{{ ctrans("Other private channels") }}</p>
+                            <div v-for="channel in knownListedChannels" :key="'listed-' + channel.id" class="mx-2 flex h-7 items-center gap-x-2 rounded-md px-4 text-[13px] opacity-80">
+                                <FontAwesomeIcon icon="fal fa-lock" class="shrink-0 text-[13px]" fixed-width aria-hidden="true" />
+                                <span class="min-w-0 flex-1 truncate" v-tooltip="ctrans(':count members', { count: String(channel.member_count) })">{{ channel.name }}</span>
+                                <span v-if="channel.requested" class="shrink-0 text-xs opacity-70">{{ ctrans("Asked") }}</span>
+                                <button v-else type="button" class="shrink-0 rounded px-1.5 text-xs underline hover:bg-[var(--desk-hover)] disabled:opacity-50" :disabled="askingToJoin === channel.id" @click="askToJoin(channel)">{{ ctrans("Ask to join") }}</button>
+                            </div>
+                            <p v-if="joinError" class="px-4 py-1 text-xs text-red-300" role="alert">{{ joinError }}</p>
+                        </template>
                         <p v-if="isGroups && !tabConversations.length && !privateChannels.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("Your Slack private channels will show here once they sync.") }}</p>
                         <button
                             v-if="!filterText"
                             type="button"
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                             @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
-                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-sm">+</span>
+                            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip)] text-sm">+</span>
                             <span class="truncate">{{ isGroups ? ctrans("New Verbration") : ctrans("Add coworkers") }}</span>
                         </button>
                     </section>
@@ -692,20 +738,13 @@ onUnmounted(() => {
                 :class="!isSidebarCollapsed && 'pointer-events-none opacity-0'"
                 :inert="!isSidebarCollapsed || undefined"
                 :aria-label="ctrans('Verba')">
-                <div class="flex h-[50px] w-full shrink-0 items-center justify-center border-b border-[var(--desk-border)]">
-                    <button
-                        type="button"
-                        class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[var(--desk-sidebar)] transition hover:opacity-90"
-                        :aria-label="ctrans('New message')"
-                        v-tooltip.right="ctrans('New message')"
-                        @click="isJumpOpen = true">
-                        <FontAwesomeIcon icon="fal fa-edit" fixed-width aria-hidden="true" />
-                    </button>
-                </div>
-                <div class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto py-2">
-                    <button type="button" class="mx-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-[var(--desk-hover)]" :aria-label="ctrans('Find a conversation…')" v-tooltip.right="ctrans('Find a conversation…')" @click="openFilter">
+                <div class="flex w-full shrink-0 flex-col items-center gap-y-3 border-b border-[var(--desk-border)] py-2">
+                    <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-[var(--desk-hover)]" :aria-label="ctrans('Find a conversation…')" v-tooltip.right="ctrans('Find a conversation…')" @click="openFilter">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                     </button>
+                    <DeskSidebarRow compact icon-only :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                </div>
+                <div class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto py-2 [scrollbar-gutter:stable_both-edges]">
                     <template v-if="compactStarredChannels.length || compactStarredConversations.length">
                         <FontAwesomeIcon icon="fas fa-star" class="mx-auto text-[10px] opacity-60" fixed-width :aria-label="ctrans('Starred')" />
                         <DeskSidebarRow
@@ -777,9 +816,8 @@ onUnmounted(() => {
         </div>
 
         <button
-            v-if="!isFeed"
             type="button"
-            class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
+            class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-[var(--desk-strong)] md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
             :aria-label="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
             v-tooltip="isSidebarCollapsed ? ctrans('Show the Verba sidebar') : ctrans('Hide the Verba sidebar')"
@@ -788,10 +826,9 @@ onUnmounted(() => {
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
         </button>
 
-        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
-            <VerbaHome v-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
+        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
             <MessagingConversation
-                v-else-if="selectedConversation"
+                v-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
                 desk
@@ -829,6 +866,7 @@ onUnmounted(() => {
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />
         <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="(url) => router.visit(url)" />
+        <StaffProfileCard />
 
         <Dialog v-model:visible="isShortcutsOpen" modal dismissable-mask :header="ctrans('Keyboard shortcuts')" :style="{ width: '28rem' }" :breakpoints="{ '640px': '92vw' }">
             <ul class="divide-y divide-gray-100 font-desk text-sm">
@@ -845,18 +883,21 @@ onUnmounted(() => {
 
 <style scoped>
 .desk-palette {
-    --desk-sidebar: #3f0e40;
-    --desk-hover: #350d36;
-    --desk-active: rgba(255, 255, 255, 0.92);
-    --desk-active-text: #39063a;
-    --desk-border: #522653;
-    --desk-badge: #cd2553;
-    --desk-text: rgba(255, 255, 255, 0.7);
+    --desk-sidebar: var(--vx-sidebar, #3f0e40);
+    --desk-hover: var(--vx-sidebar-hover, #350d36);
+    --desk-active: var(--vx-sidebar-active, rgba(255, 255, 255, 0.92));
+    --desk-active-text: var(--vx-sidebar-active-text, #39063a);
+    --desk-border: var(--vx-sidebar-border, #522653);
+    --desk-badge: var(--vx-sidebar-badge, #cd2553);
+    --desk-text: var(--vx-sidebar-text, rgba(255, 255, 255, 0.7));
+    --desk-strong: var(--vx-sidebar-strong, #ffffff);
+    --desk-chip: var(--vx-sidebar-chip, rgba(255, 255, 255, 0.1));
+    --desk-chip-strong: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.2));
 }
 
 .desk-palette nav :deep(*) {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) var(--desk-sidebar);
+    scrollbar-color: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.25)) var(--desk-sidebar);
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar) {
@@ -868,11 +909,11 @@ onUnmounted(() => {
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar-thumb) {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--vx-sidebar-chip-strong, rgba(255, 255, 255, 0.25));
     border-radius: 4px;
 }
 
 .desk-palette nav :deep(*::-webkit-scrollbar-thumb:hover) {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--vx-sidebar-text, rgba(255, 255, 255, 0.4));
 }
 </style>

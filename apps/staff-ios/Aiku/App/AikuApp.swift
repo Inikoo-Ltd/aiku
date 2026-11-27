@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct AikuApp: App {
     private let apiClient = APIClient.shared
-    @State private var permissionStore = PermissionStore(apiClient: .shared)
+    @State private var permissionStore = PermissionStore(apiClient: .shared, live: .shared)
     @State private var session = Session()
     @State private var authStore = AikuApp.makeAuthStore()
 

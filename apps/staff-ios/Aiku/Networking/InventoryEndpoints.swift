@@ -181,10 +181,75 @@ struct MobileOrgStocksPage: Decodable, Sendable, Equatable {
         var negative: Int?
     }
 
+    struct FilterChoice: Decodable, Sendable, Hashable, Identifiable {
+        let key: String
+        var label: String = ""
+
+        var id: String { key }
+        var title: String { label.isEmpty ? key : label }
+
+        init(key: String, label: String = "") {
+            self.key = key
+            self.label = label
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case key, label
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            key = try container.decode(String.self, forKey: .key)
+            label = (try? container.decodeIfPresent(String.self, forKey: .label)) ?? ""
+        }
+    }
+
+    struct FilterOptions: Decodable, Sendable, Equatable {
+        var stockStatus: [FilterChoice] = []
+        var locationType: [FilterChoice] = []
+
+        init(stockStatus: [FilterChoice] = [], locationType: [FilterChoice] = []) {
+            self.stockStatus = stockStatus
+            self.locationType = locationType
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case stockStatus, locationType
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            stockStatus = (try? container.decodeIfPresent([FilterChoice].self, forKey: .stockStatus)) ?? []
+            locationType = (try? container.decodeIfPresent([FilterChoice].self, forKey: .locationType)) ?? []
+        }
+    }
+
     let data: [MobileOrgStockRow]
     let meta: MobileLocationsPage.Meta
     var counts: Counts? = nil
     var currencyCode: String? = nil
+    var filters: FilterOptions? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case data, meta, counts, currencyCode, filters
+    }
+
+    init(data: [MobileOrgStockRow], meta: MobileLocationsPage.Meta, counts: Counts? = nil, currencyCode: String? = nil, filters: FilterOptions? = nil) {
+        self.data = data
+        self.meta = meta
+        self.counts = counts
+        self.currencyCode = currencyCode
+        self.filters = filters
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        data = try container.decode([MobileOrgStockRow].self, forKey: .data)
+        meta = try container.decode(MobileLocationsPage.Meta.self, forKey: .meta)
+        counts = try container.decodeIfPresent(Counts.self, forKey: .counts)
+        currencyCode = try container.decodeIfPresent(String.self, forKey: .currencyCode)
+        filters = try? container.decodeIfPresent(FilterOptions.self, forKey: .filters)
+    }
 }
 
 struct MobileOrgStocksQuery: Hashable, Sendable {
@@ -192,6 +257,8 @@ struct MobileOrgStocksQuery: Hashable, Sendable {
     var familyID: Int?
     var search = ""
     var sort: String?
+    var stockStatus: String?
+    var locationType: String?
     var page = 1
     var perPage = 50
 
@@ -210,6 +277,12 @@ struct MobileOrgStocksQuery: Hashable, Sendable {
         }
         if let sort {
             items.append(URLQueryItem(name: "sort", value: sort))
+        }
+        if let stockStatus {
+            items.append(URLQueryItem(name: "stock_status", value: stockStatus))
+        }
+        if let locationType {
+            items.append(URLQueryItem(name: "location_type", value: locationType))
         }
         return items
     }

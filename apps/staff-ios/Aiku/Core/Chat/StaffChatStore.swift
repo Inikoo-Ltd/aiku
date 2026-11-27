@@ -32,16 +32,19 @@ final class StaffChatStore {
 
     @ObservationIgnored private let service: StaffChatService
     @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    @ObservationIgnored private let isLive: @MainActor () -> Bool
 
     init(
         kind: StaffChatContextKind,
         contextID: Int,
         service: StaffChatService,
-        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+        sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        isLive: @escaping @MainActor () -> Bool = { false }
     ) {
         self.kind = kind
         self.contextID = contextID
         self.service = service
+        self.isLive = isLive
         self.sleep = sleep
     }
 
@@ -63,8 +66,15 @@ final class StaffChatStore {
             } catch {
                 return
             }
-            await fetchNewer()
+            if !isLive() {
+                await fetchNewer()
+            }
         }
+    }
+
+    func liveMessageArrived() async {
+        guard conversation != nil, !isSessionExpired else { return }
+        await fetchNewer()
     }
 
     func refresh() async {

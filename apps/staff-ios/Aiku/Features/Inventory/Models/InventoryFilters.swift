@@ -123,9 +123,13 @@ enum InventorySkoSort: String, CaseIterable, Hashable, Sendable {
 struct InventoryLiveSkoFilter: Hashable, Sendable {
     var familyID: Int?
     var familyCode: String?
+    var stockStatus: String?
+    var locationType: String?
     var sort: InventorySkoSort = .reference
 
-    var activeCount: Int { familyID == nil ? 0 : 1 }
+    var activeCount: Int {
+        [familyID != nil, stockStatus != nil, locationType != nil].filter { $0 }.count
+    }
 
     @MainActor
     var summary: String {
@@ -138,6 +142,8 @@ struct InventoryLiveSkoFilter: Hashable, Sendable {
             familyID: familyID,
             search: search.trimmingCharacters(in: .whitespacesAndNewlines),
             sort: sort.remoteValue,
+            stockStatus: stockStatus,
+            locationType: locationType,
             page: page,
             perPage: perPage
         )

@@ -28,6 +28,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -170,19 +171,20 @@ class SendOrderToWarehouse extends OrgAction
     }
 
     /**
-     * HELP-4961. Export orders that fail the office checks used to be picked and then cancelled. Orders to the
-     * countries in the organisation settings wait in submitted; the office releases them with "Send to warehouse".
+     * HELP-4961. Export orders from new customers that fail the office checks used to be picked and then cancelled.
+     * A first order of a customer to the countries in the organisation settings, or any order staff marked
+     * "Do not pick", waits in submitted; the office releases it with "Send to warehouse".
      */
     private function awaitingOfficeApproval(Order $order): bool
     {
-        $countryCode = $this->officeApprovalCountry($order);
-        if (!$countryCode || Arr::get($order->data, 'office_released_country') === $countryCode) {
+        $reason = $this->officeHoldReason($order);
+        if (!$reason) {
             return false;
         }
 
         $note = collect([
             self::withoutHeldNote($order->private_warehouse_note),
-            self::HELD_MARKER.' '.__('export to :country, the office must check it and send it to the warehouse', ['country' => $countryCode]),
+            self::HELD_MARKER.' '.$reason,
         ])->filter()->implode(' — ');
 
         if ($note !== $order->private_warehouse_note) {
@@ -192,10 +194,27 @@ class SendOrderToWarehouse extends OrgAction
         return true;
     }
 
-    /** The delivery country when the organisation makes orders to it wait for the office, otherwise null */
+    /** Why the order waits for the office before the warehouse, also read live by the order page; null when it does not */
+    public function officeHoldReason(Order $order): ?string
+    {
+        if (!$this->dispatcher && Arr::get($order->data, 'do_not_pick')) {
+            return __('do not pick, the office must check it and send it to the warehouse');
+        }
+
+        $countryCode = $this->officeApprovalCountry($order);
+        if (!$countryCode || Arr::get($order->data, 'office_released_country') === $countryCode) {
+            return null;
+        }
+
+        return Arr::get($order->organisation->settings, 'order_release.new_customers_only', true)
+            ? __('new customer, export to :country, the office must check it and send it to the warehouse', ['country' => $countryCode])
+            : __('export to :country, the office must check it and send it to the warehouse', ['country' => $countryCode]);
+    }
+
+    /** The delivery country when the organisation makes new customers' orders to it wait for the office, otherwise null */
     private function officeApprovalCountry(Order $order): ?string
     {
-        if ($this->dispatcher || $this->releaseFromGate) {
+        if ($this->dispatcher || $this->releaseFromGate || $order->collection_address_id) {
             return null;
         }
 
@@ -205,12 +224,28 @@ class SendOrderToWarehouse extends OrgAction
             return null;
         }
 
-        return $countryCode;
+        $newCustomersOnly = (bool)Arr::get($order->organisation->settings, 'order_release.new_customers_only', true);
+
+        return !$newCustomersOnly || $this->isNewCustomer($order) ? $countryCode : null;
+    }
+
+    /** No earlier order of the customer was invoiced or dispatched: regular customers and partners go straight to the warehouse */
+    private function isNewCustomer(Order $order): bool
+    {
+        return $order->customer->invoices()->where('type', InvoiceTypeEnum::INVOICE)->whereNull('deleted_at')->doesntExist()
+            && $order->customer->orders()
+                ->whereKeyNot($order->id)
+                ->whereIn('state', [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
+                ->doesntExist();
     }
 
     /** Recorded before any other hold, so an order the office released is not held for it again once filling or an address clears; a new delivery country needs a new release */
     private function recordOfficeRelease(Order $order): void
     {
+        if ($this->officeRelease && Arr::get($order->data, 'do_not_pick')) {
+            $this->update($order, ['data' => array_merge($order->data ?? [], ['do_not_pick' => false])]);
+        }
+
         $countryCode = $this->officeApprovalCountry($order);
         if (!$this->officeRelease || !$countryCode || Arr::get($order->data, 'office_released_country') === $countryCode) {
             return;

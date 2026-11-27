@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\User\UI\ShowSetNewPassword;
 use App\Actions\SysAdmin\User\UpdateUserPassword;
 use App\Actions\SysAdmin\User\UpdateUserPasswordViaEmail;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaimSlip;
 use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalFeedbackPhoto;
@@ -86,6 +87,9 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
 
 Route::get('purchase-order-labels/{purchaseOrder:id}', PdfPurchaseOrderLabels::class)->middleware(['signed:relative', 'throttle:supplier-share'])
     ->withoutMiddleware(LogUserRequestMiddleware::class)->name('purchase_order_labels');
+
+Route::get('claim-slip/{customerClaim:ulid}', ShowCustomerClaimSlip::class)->middleware(['signed:relative', 'throttle:supplier-share'])
+    ->withoutMiddleware(LogUserRequestMiddleware::class)->name('customer_claim_slip');
 
 Route::prefix('supplier-login')->as('supplier_portal.')->middleware(['throttle:supplier-share', 'supplier-portal-locale'])->withoutMiddleware(LogUserRequestMiddleware::class)->group(function () {
     Route::get('', ShowSupplierPortalLogin::class)->name('login');

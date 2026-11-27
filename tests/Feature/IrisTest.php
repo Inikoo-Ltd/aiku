@@ -1714,6 +1714,30 @@ test('preview languages work in the website address and for staff customers, nev
     enableShopLanguages($this->shop, null);
 });
 
+test('a preview language leaves the preview list once it is enabled for customers, and can not be added to it while enabled', function () {
+    Http::fake();
+    [$firstCode, $secondCode] = otherLanguageCodes($this->shop);
+    $firstId  = Language::where('code', $firstCode)->value('id');
+    $secondId = Language::where('code', $secondCode)->value('id');
+    enableShopLanguages($this->shop, [$this->shop->language->code]);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['preview_languages' => [$firstId, $secondId]]);
+    expect($shop->settings['preview_languages'])->toBe([$firstId, $secondId]);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop->fresh(), ['enabled_languages' => [$firstId]]);
+    expect($shop->settings['preview_languages'])->toBe([$secondId])
+        ->and($shop->websiteLanguageCodes())->toContain($firstCode, $secondCode);
+
+    $shop = \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop->fresh(), ['preview_languages' => [$firstId, $secondId]]);
+    expect($shop->settings['preview_languages'])->toBe([$secondId]);
+
+    $settings = $shop->fresh()->settings;
+    unset($settings['preview_languages']);
+    $shop->settings = $settings;
+    $shop->saveQuietly();
+    enableShopLanguages($this->shop, null);
+});
+
 test('a signed-in customer opening the customer area with ?locale keeps that language for the session when the shop offers it to them', function () {
     Http::fake();
     [$previewCode] = otherLanguageCodes($this->shop);

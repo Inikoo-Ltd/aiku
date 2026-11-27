@@ -93,7 +93,7 @@ const CHANNEL_STATUS: Record<string, { label: () => string; class: string }> = {
     not_joined: { label: () => ctrans("Not joined"), class: "bg-amber-50 text-amber-700 ring-amber-200" },
     archived: { label: () => ctrans("Archived"), class: "bg-gray-50 text-gray-500 ring-gray-200" },
     ignored: { label: () => ctrans("Ignored"), class: "bg-gray-50 text-gray-500 ring-gray-200" },
-    private: { label: () => ctrans("Turned private"), class: "bg-gray-50 text-gray-500 ring-gray-200" },
+    private: { label: () => ctrans("Private"), class: "bg-gray-50 text-gray-500 ring-gray-200" },
     deleted: { label: () => ctrans("Deleted in Slack"), class: "bg-gray-50 text-gray-500 ring-gray-200" },
 }
 

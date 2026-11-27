@@ -61,6 +61,9 @@ struct GoodsOutDeliveryNoteScreen: View {
             guard store.isRemote else { return }
             await store.loadNote(reference: reference)
         }
+        .liveReload(on: store.isRemote ? LiveChannelName.record(.deliveryNote, loadedID: store.noteID(for: reference)) : nil, events: LiveEventName.record) {
+            await store.loadNote(reference: reference)
+        }
     }
 
     private func present(_ sheet: GoodsOutNoteSheet) {

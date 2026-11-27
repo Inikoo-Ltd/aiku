@@ -474,6 +474,35 @@ final class LocationsStore {
         return .saved(Double(differences))
     }
 
+    func findSkoForAudit(_ code: String, in locationCode: String, apiClient: APIClient) async -> LocationsFoundSko {
+        let scanned = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let location = warehouse.location(code: locationCode), let locationID = location.remote?.id, let warehouseID = remoteWarehouse?.id else {
+            return .refused(message: LocationsActionError.notLoaded.localizedDescription)
+        }
+        do {
+            let result = try await apiClient.scan(warehouseID: warehouseID, code: scanned)
+            guard result.scanType == .sko, let sko = result.sko else { return .notSko(code: scanned) }
+            if let slot = location.slots.first(where: { $0.remoteOrgStockID == sko.id }) {
+                return .here(skoReference: slot.skoReference)
+            }
+            try await waitForOfflineWork(locationID: locationID)
+            _ = try await apiClient.addOrgStockLocation(
+                warehouseID: warehouseID,
+                id: sko.id,
+                body: MobileOrgStockAddLocationBody(locationId: locationID, type: LocationsSlotType.storing.rawValue)
+            )
+            applyDetail(try await apiClient.fetchLocation(id: locationID))
+            guard let added = warehouse.location(code: locationCode)?.slots.first(where: { $0.remoteOrgStockID == sko.id }) else {
+                return .refused(message: InventoryLive.message(for: APIError.unexpectedBody))
+            }
+            return .here(skoReference: added.skoReference)
+        } catch APIError.http(404) {
+            return .notSko(code: scanned)
+        } catch {
+            return .refused(message: InventoryLive.message(for: error))
+        }
+    }
+
     @discardableResult
     func moveRemotely(from sourceCode: String, to targetCode: String, quantities: [String: Double], removeFromSource: Bool, movesEverything: Bool, apiClient: APIClient) async throws -> LocationsWriteOutcome {
         guard let source = warehouse.location(code: sourceCode), let sourceID = source.remote?.id, let queue = offlineQueue(locationID: sourceID) else {
@@ -708,6 +737,12 @@ enum LocationsActionError: LocalizedError, Equatable {
 enum LocationsWriteOutcome: Equatable, Sendable {
     case saved(Double)
     case queued
+}
+
+enum LocationsFoundSko: Equatable, Sendable {
+    case here(skoReference: String)
+    case notSko(code: String)
+    case refused(message: String)
 }
 
 struct OfflineQueuedStockWrite: Sendable {

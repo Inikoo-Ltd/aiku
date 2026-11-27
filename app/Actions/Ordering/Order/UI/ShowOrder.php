@@ -501,6 +501,7 @@ class ShowOrder extends OrgAction
                 ] : null,
                 'aurora_notice' => $lockedInAurora ? __('This order was submitted in Aurora. Process it in Aurora, not here: it will update here once Aurora dispatches or cancels it.') : null,
                 'staff_task'  => ['model_type' => 'Order', 'model_id' => $order->id],
+                'office_hold' => $order->state == OrderStateEnum::SUBMITTED ? SendOrderToWarehouse::make()->officeHoldReason($order) : null,
                 'send_to_warehouse_hold' => $sendToWarehouseBlockedReason ? [
                     'reason' => $sendToWarehouseBlockedReason,
                     'route'  => [

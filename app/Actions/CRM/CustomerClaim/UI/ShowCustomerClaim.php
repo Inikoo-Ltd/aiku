@@ -95,6 +95,7 @@ class ShowCustomerClaim extends OrgAction
                 'rejection_reason' => $claim->rejection_reason,
                 'rejection_note'   => $claim->rejection_note,
                 'result'           => $claim->result,
+                'slip_url'         => data_get($claim->result, 'return_requested') ? ShowCustomerClaimSlip::url($claim) : null,
                 'box_photos'       => $photoUrls('box'),
                 'lines'            => $claim->lines->map(fn (CustomerClaimLine $line) => [
                     'code'     => $line->code,

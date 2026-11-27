@@ -351,7 +351,7 @@ class EditOrganisationSettings extends OrgAction
                                     'type' => 'order_release',
                                     'noSaveButton' => true,
                                     'label' => __('Orders that wait for the office'),
-                                    'information' => __('A waiting order stays submitted instead of going to the warehouse, until someone in the office opens it and presses "Send to warehouse". No countries chosen: nothing waits.'),
+                                    'information' => __('With "Apply only for new customers" on, only customers with no earlier order invoiced or dispatched wait; regular customers and partners go to the warehouse as before. A waiting order stays submitted until someone in the office opens it and presses "Send to warehouse". Any order can also be held with "Do not pick" on the order. No countries chosen: nothing waits.'),
                                     'current' => $this->orderReleaseSummary($organisation),
                                     'saveConfirmation' => [
                                         'title' => __('Change which orders wait for the office?'),
@@ -361,6 +361,7 @@ class EditOrganisationSettings extends OrgAction
                                     'value' => [
                                         'except_countries' => (bool)Arr::get($organisation->settings, 'order_release.except_countries', false),
                                         'countries' => Arr::get($organisation->settings, 'order_release.hold_countries') ?: [],
+                                        'new_customers_only' => (bool)Arr::get($organisation->settings, 'order_release.new_customers_only', true),
                                     ],
                                 ],
                             ],
@@ -652,18 +653,23 @@ class EditOrganisationSettings extends OrgAction
     {
         $countryCodes = Arr::get($organisation->settings, 'order_release.hold_countries') ?: [];
         $names        = Country::whereIn('code', $countryCodes)->orderBy('name')->pluck('name');
-        $countries    = $names->count() <= 10
-            ? $names->implode(', ')
-            : __(':countries + :count other countries', ['countries' => $names->take(10)->implode(', '), 'count' => $names->count() - 10]);
-
-        if (Arr::get($organisation->settings, 'order_release.except_countries', false)) {
-            return $countries
-                ? __('EVERY order waits for the office, except orders to :countries.', ['countries' => $countries])
-                : __('No order waits, every order goes to the warehouse.');
+        if ($names->isEmpty()) {
+            return __('No order waits, every order goes to the warehouse.');
         }
 
-        return $countries
-            ? __('Orders to :countries wait for the office, every other order goes to the warehouse.', ['countries' => $countries])
-            : __('No order waits, every order goes to the warehouse.');
+        $countries = ['countries' => $names->count() <= 10
+            ? $names->implode(', ')
+            : __(':countries + :count other countries', ['countries' => $names->take(10)->implode(', '), 'count' => $names->count() - 10])];
+        $except    = (bool)Arr::get($organisation->settings, 'order_release.except_countries', false);
+
+        if (Arr::get($organisation->settings, 'order_release.new_customers_only', true)) {
+            return $except
+                ? __('EVERY new customer\'s order waits for the office, except orders to :countries.', $countries)
+                : __('New customers\' orders to :countries wait for the office, every other order goes to the warehouse.', $countries);
+        }
+
+        return $except
+            ? __('EVERY order waits for the office, except orders to :countries.', $countries)
+            : __('Orders to :countries wait for the office, every other order goes to the warehouse.', $countries);
     }
 }

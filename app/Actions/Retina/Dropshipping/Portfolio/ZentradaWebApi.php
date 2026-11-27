@@ -41,6 +41,10 @@ class ZentradaWebApi extends RetinaAction
 
     public const string EXCLUDED_CODE_SUFFIX = 'EXP';
 
+    public const int GPSR_SUBJECT_TO_INSTRUCTIONS = 1;
+
+    public const int GPSR_NO_SPECIAL_INSTRUCTIONS = 2;
+
     private const array COLUMNS = [
         'market_place_allocation',
         'item_number',
@@ -214,6 +218,10 @@ class ZentradaWebApi extends RetinaAction
      * Products missing from a later feed are not reliably taken off Zentrada, so every offer expires
      * OFFER_VALID_DAYS after the feed last listed it.
      *
+     * Zentrada rejects a row whose GPSRIsRequired is not 0, 1 or 2, and 0 deletes the producer and
+     * contact it stores, so a product with no operating instructions or warnings is declared as
+     * needing none (2) while still carrying the EU responsible person.
+     *
      * @param array{currency: ?string, vat: string, domain: ?string, activeUntil: string, promotion: float, volumeTiers: array<int, array{quantity: int, discount: float}>, responsibleParty: array<string, mixed>} $context
      * @param array<string, array<int, string>> $documents
      */
@@ -295,7 +303,7 @@ class ZentradaWebApi extends RetinaAction
             'material'                                => $this->plainText($row->marketing_ingredients),
             'charge'                                  => '',
             'mhd'                                     => '',
-            'GPSRIsRequired'                          => filled($row->gpsr_warnings) || filled($row->gpsr_manual) ? 1 : '',
+            'GPSRIsRequired'                          => filled($row->gpsr_warnings) || filled($row->gpsr_manual) ? self::GPSR_SUBJECT_TO_INSTRUCTIONS : self::GPSR_NO_SPECIAL_INSTRUCTIONS,
             'certificate_CE'                          => $documents['certificate_CE'][0] ?? '',
             'certificate_additional'                  => $documents['certificate_additional'][0] ?? '',
             'availableLanguages'                      => mb_substr((string) ($row->gpsr_class_languages ?: $mainTradeUnit?->gpsr_class_languages), 0, 200),

@@ -9,7 +9,7 @@
 namespace App\Actions\Iris\CustomerClaim;
 
 use App\Actions\IrisAction;
-use App\Actions\Ordering\Order\CheckClaimCompensation;
+use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -31,7 +31,7 @@ class IndexIrisCustomerClaimOrders extends IrisAction
     {
         return $customer->orders()
             ->whereIn('state', [OrderStateEnum::DISPATCHED, OrderStateEnum::FINALISED])
-            ->where('dispatched_at', '>=', now()->subDays(CheckClaimCompensation::MAX_AGE_DAYS))
+            ->where('dispatched_at', '>=', now()->subDays(GetCustomerClaimSettings::for($customer->shop)['claim_days']))
             ->latest('dispatched_at')
             ->limit(10)
             ->get(['id', 'reference', 'dispatched_at'])

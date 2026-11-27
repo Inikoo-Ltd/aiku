@@ -87,6 +87,8 @@ interface PurchaseOrderDetail {
 	deposit: {
 		choosable: boolean
 		not_needed: boolean
+		none_set: boolean
+		confirms_order: boolean
 		not_needed_by: "supplier" | "buyer" | null
 		request: { percentage: number; amount: number; requested_at: string } | null
 		request_percentage: number
@@ -659,7 +661,7 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									</div>
 								</li>
 							</ul>
-							<p v-else class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
+							<p v-else-if="!detail.deposit.none_set" class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
 
 							<div v-if="detail.deposit.request" class="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-800">
 								<div class="font-semibold">{{ ctrans("Deposit requested: :percentage%", { percentage: String(detail.deposit.request.percentage) }) }}</div>
@@ -668,13 +670,13 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 									<span class="whitespace-nowrap font-medium tabular-nums">{{ money(detail.deposit.request.amount) }}</span>
 								</div>
 							</div>
-							<div v-else-if="detail.deposit.not_needed" class="mt-2 flex items-center gap-1 text-green-700" v-tooltip="detail.deposit.not_needed_by === 'supplier' ? ctrans('Set by supplier') : detail.deposit.not_needed_by === 'buyer' ? ctrans('Set by buyer') : undefined">
+							<div v-else-if="detail.deposit.not_needed || detail.deposit.none_set" class="mt-2 flex items-center gap-1 text-green-700" v-tooltip="detail.deposit.not_needed_by === 'supplier' ? ctrans('Set by supplier') : detail.deposit.not_needed_by === 'buyer' ? ctrans('Set by buyer') : undefined">
 								<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
 								{{ ctrans("No deposit needed") }}
 							</div>
 
 							<div v-if="depositRoute && detail.deposit.choosable" class="mt-2 space-y-1.5">
-								<Button type="tertiary" size="xs" full :label="ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
+								<Button type="tertiary" size="xs" full :label="detail.deposit.confirms_order ? ctrans('Confirm order') : ctrans('No deposit needed')" @click="chooseDeposit('not_needed')">
 									<template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
 								</Button>
 								<Button type="tertiary" size="xs" full :label="ctrans('Request deposit :percentage%', { percentage: String(detail.deposit.request_percentage) })" :disabled="detail.deposit.agreement_missing" @click="chooseDeposit('request')">
@@ -708,10 +710,11 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								</li>
 							</ul>
 							<div v-if="productionRoute && (detail.production.editable || detail.production.blocked)" class="mt-2">
-								<span v-if="!detail.production.editable" class="block" v-tooltip="detail.production.blocked">
+								<span v-if="!detail.production.editable" class="block">
 									<Button type="tertiary" size="xs" full disabled :label="ctrans('Start production')">
 										<template #icon><FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" /></template>
 									</Button>
+									<span v-if="detail.production.blocked" class="mt-1 block text-gray-500">{{ detail.production.blocked }}</span>
 								</span>
 								<span v-else class="relative block">
 									<Button type="tertiary" size="xs" full :label="detail.production.started_at ? ctrans('Change production dates') : ctrans('Start production')" @click="openProductionEditor">

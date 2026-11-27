@@ -598,7 +598,7 @@ class Order extends Model implements HasMedia, Auditable
             return __('billing address');
         }
 
-        if (!$this->collection_address_id && !$this->deliveryAddress?->hasAnyLine()) {
+        if (!$this->collection_address_id && (!$this->deliveryAddress?->hasAnyLine() || !$this->deliveryAddress->country_code)) {
             return __('delivery address');
         }
 

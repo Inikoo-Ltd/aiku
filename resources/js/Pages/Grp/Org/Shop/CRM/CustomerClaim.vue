@@ -5,6 +5,7 @@ import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import Image from "primevue/image"
+import Checkbox from "primevue/checkbox"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBoxFragile, faCheck, faTimes, faHatWizard, faBan, faUser, faTasks, faBolt, faHandHoldingUsd, faTruck, faShippingFast, faWarehouse, faGift, faShoppingCart, faHourglassHalf } from "@fal"
@@ -39,6 +40,7 @@ type Claim = {
     rejection_reason: string | null
     rejection_note: string | null
     result: Record<string, any> | null
+    slip_url: string | null
     box_photos: string[]
     lines: { code: string, name: string | null, quantity: number, reason: string, photos: string[] }[]
     customer: { name: string, reference: string, route: RouteRef }
@@ -67,7 +69,15 @@ const money = (amount: number) => props.claim.currency_code ? locale.currencyFor
 
 const approving = ref(false)
 const showApprove = ref(false)
+const returnItems = ref(false)
 const approveError = ref("")
+const trackingLabel = (state: string) => ({
+    delivered: ctrans("The carrier says the parcel was delivered"),
+    partly_delivered: ctrans("The carrier says part of the delivery was delivered"),
+    returning: ctrans("The carrier says the parcel is coming back to us"),
+    overdue: ctrans("The carrier's tracking has not moved for too long"),
+    in_transit: ctrans("The carrier still has the parcel on its way"),
+}[state] ?? ctrans("No carrier tracking for this parcel: check with the carrier"))
 const showReject = ref(false)
 const rejecting = ref(false)
 const rejectReason = ref<string | null>(null)
@@ -86,7 +96,7 @@ const outcomeText = computed(() => {
 
 const approve = () => {
     approveError.value = ""
-    router.post(route(props.approve_route.name, props.approve_route.parameters), {}, {
+    router.post(route(props.approve_route.name, props.approve_route.parameters), { return_items: returnItems.value }, {
         preserveScroll: true,
         onStart: () => { approving.value = true },
         onFinish: () => { approving.value = false },
@@ -159,6 +169,34 @@ const stateClass: Record<string, string> = {
                 <ul class="mt-1 list-disc pl-5">
                     <li v-for="problem in claim.result.photo_check.problems" :key="problem">{{ problem }}</li>
                 </ul>
+            </div>
+            <div v-if="claim.result?.delivery_check?.tracking" class="rounded border p-3 text-sm" :class="claim.result.delivery_check.tracking.state === 'delivered' || claim.result.delivery_check.tracking.state === 'returning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-gray-200 bg-gray-50 text-gray-700'">
+                <p class="font-semibold">{{ trackingLabel(claim.result.delivery_check.tracking.state) }}</p>
+                <ul class="mt-1 space-y-0.5 text-xs">
+                    <li v-for="(shipment, index) in claim.result.delivery_check.tracking.shipments" :key="index">
+                        <span class="whitespace-nowrap">{{ shipment.carrier }}</span>
+                        <a v-if="shipment.url" :href="shipment.url" target="_blank" rel="noopener" class="secondaryLink ml-1 whitespace-nowrap">{{ shipment.tracking }}</a>
+                        <span v-else class="ml-1 whitespace-nowrap">{{ shipment.tracking }}</span>
+                        <span v-if="shipment.status"> · {{ shipment.status }}</span>
+                        <span v-if="shipment.delivered_at"> · {{ ctrans("delivered :date", { date: String(useFormatTime(shipment.delivered_at)) }) }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div v-if="claim.result?.delivery_check?.packing?.length" class="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                <p class="font-semibold">{{ ctrans("Packing record of the missing items") }}</p>
+                <ul class="mt-1 space-y-0.5 text-xs">
+                    <li v-for="packing in claim.result.delivery_check.packing" :key="packing.code">
+                        <span class="whitespace-nowrap font-semibold">{{ packing.code }}</span>:
+                        <span v-if="packing.is_packed" class="text-amber-700">{{ ctrans("packed in full (:packed)", { packed: String(packing.packed) }) }}</span>
+                        <span v-else>{{ ctrans("packed :packed of :dispatched", { packed: String(packing.packed), dispatched: String(packing.dispatched) }) }}</span>
+                        <span v-if="packing.packers.length"> · {{ packing.packers.join(", ") }}</span>
+                        <span v-if="packing.packed_at"> · {{ useFormatTime(packing.packed_at) }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div v-if="claim.result?.return_requested" class="flex items-center justify-between gap-3 rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                <span>{{ ctrans("The customer was asked to send the items back with the claim slip.") }}</span>
+                <a v-if="claim.slip_url" :href="claim.slip_url" target="_blank" rel="noopener" class="secondaryLink whitespace-nowrap">{{ ctrans("Claim slip") }}</a>
             </div>
             <div v-if="claim.state === 'settled'" class="rounded border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                 <span v-if="claim.result?.refund">{{ ctrans("Refund :reference", { reference: claim.result.refund }) }} · {{ money(claim.amount) }}</span>
@@ -248,6 +286,13 @@ const stateClass: Record<string, string> = {
 
     <Dialog v-model:visible="showApprove" modal :header="ctrans('Approve :reference', { reference: claim.reference })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <p class="text-sm text-gray-700">{{ outcomeText }}</p>
+        <label class="mt-3 flex items-start gap-2 text-sm text-gray-700">
+            <Checkbox v-model="returnItems" binary input-id="claim-return-items" />
+            <span>
+                <span class="block">{{ ctrans("Ask the customer to send the items back") }}</span>
+                <span class="block text-xs text-gray-500">{{ ctrans("The approved email gets a claim slip to print and put in the parcel, with our return address. No carrier label is made.") }}</span>
+            </span>
+        </label>
         <p v-if="approveError" class="mt-2 text-xs text-red-500">{{ approveError }}</p>
         <template #footer>
             <div class="flex w-full gap-2">

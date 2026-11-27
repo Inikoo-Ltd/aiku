@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
-    Route::get('/feed', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('feed');
     Route::get('/reports', \App\Actions\Chat\Staff\UI\ShowStaffChatReports::class)->name('reports');
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/groups', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('groups.index');
@@ -17,6 +16,8 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/groups/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inPrivateSlackChannel'])->name('groups.slack.show');
     Route::get('/d/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inDirectSlackChannel'])->name('direct.slack.show');
     Route::post('/groups/slack', \App\Actions\Chat\Staff\Slack\Write\StoreSlackPrivateChannel::class)->middleware('throttle:10,1,slack-verbration')->name('groups.slack.store');
+    Route::patch('/groups/slack/{slackChannel}/listing', \App\Actions\Chat\Staff\Slack\Write\UpdateSlackPrivateChannelListing::class)->name('groups.slack.listing.update');
+    Route::post('/groups/slack/{slackChannel}/join-request', \App\Actions\Chat\Staff\Slack\Write\RequestToJoinSlackPrivateChannel::class)->middleware('throttle:10,1,slack-join-request')->name('groups.slack.join_request.store');
     Route::get('/home', \App\Actions\Chat\Staff\Home\GetStaffHome::class)->name('home');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
     Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');
@@ -33,6 +34,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');
     Route::post('/team/toggle', \App\Actions\Chat\Staff\ToggleStaffTeamMember::class)->name('team.toggle');
     Route::get('/coworkers', \App\Actions\Chat\Staff\Json\GetStaffCoworkers::class)->name('coworkers.index');
+    Route::get('/people/{user:id}', \App\Actions\Chat\Staff\Json\GetStaffProfileCard::class)->name('people.show');
     Route::get('/gifs', \App\Actions\Chat\Staff\Json\SearchGifs::class)->name('gifs.search');
     Route::post('/conversations/{staffConversation}/calls', \App\Actions\Chat\Staff\Call\StartStaffCall::class)->middleware('throttle:6,1,staff-call-start')->name('conversations.calls.store');
     Route::get('/calls/live', \App\Actions\Chat\Staff\Call\GetLiveStaffCalls::class)->name('calls.live');

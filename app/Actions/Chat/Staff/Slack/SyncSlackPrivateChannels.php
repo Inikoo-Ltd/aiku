@@ -134,10 +134,21 @@ class SyncSlackPrivateChannels
      */
     public static function isBroughtLive(SlackChannel $channel): bool
     {
-        return $channel->is_member || self::optedInConnectionsQuery()
-            ->whereIn('slack_user_id', $channel->members()->select('slack_user_id'))
+        return $channel->is_member || self::usableConnectionAmong($channel->members()->select('slack_user_id')) !== null;
+    }
+
+    /**
+     * The first opted-in connection of these Slack people whose token may be used now, read fresh on every call.
+     *
+     * @param  \Illuminate\Database\Eloquent\Relations\Relation<\App\Models\Chat\SlackChannelMember, SlackChannel, mixed>|array<int, string>  $slackUserIds
+     */
+    public static function usableConnectionAmong(\Illuminate\Database\Eloquent\Relations\Relation|array $slackUserIds): ?SlackConnection
+    {
+        return self::optedInConnectionsQuery()
+            ->whereIn('slack_user_id', $slackUserIds)
+            ->orderBy('id')
             ->get()
-            ->contains(fn (SlackConnection $connection) => self::isUsable($connection));
+            ->first(fn (SlackConnection $connection) => self::isUsable($connection));
     }
 
     /**

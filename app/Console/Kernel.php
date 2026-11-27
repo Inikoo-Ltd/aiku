@@ -1981,6 +1981,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:erase-direct-words --due')->dailyAt('04:30')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
+                    monitorSlug: 'EraseSlackDirectWords',
+                ),
+                name: 'EraseSlackDirectWords',
+                type: 'command',
+                scheduledAt: '04:30'
+            );
+
+            $this->logSchedule(
                 $schedule->command('slack:refresh-message-search')->dailyAt('04:05')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
                     monitorSlug: 'RefreshSlackMessageSearch',
                 ),

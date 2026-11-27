@@ -694,6 +694,41 @@ describe('staff messaging nickname', function () {
     });
 });
 
+describe('staff profile card', function () {
+    test('shows a colleague with their organisation and marks yourself', function () {
+        $colleague = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'nickname' => 'CardNick'.uniqid()]);
+
+        $card = actingAs($this->user)
+            ->getJson(route('grp.chat.staff.people.show', $colleague->id))
+            ->assertOk()
+            ->json('data');
+
+        expect($card['name'])->toBe($colleague->nickname)
+            ->and($card['is_me'])->toBeFalse()
+            ->and($card['organisations'])->toBe([]);
+
+        $colleague->update(['employed_in_organisation_id' => $this->organisation->id]);
+
+        actingAs($this->user)
+            ->getJson(route('grp.chat.staff.people.show', $colleague->id))
+            ->assertOk()
+            ->assertJsonPath('data.organisations.0.slug', $this->organisation->slug);
+
+        actingAs($this->user)
+            ->getJson(route('grp.chat.staff.people.show', $this->user->id))
+            ->assertOk()
+            ->assertJsonPath('data.is_me', true);
+    });
+
+    test('hides people who are inactive', function () {
+        $inactive = User::factory()->create(['group_id' => $this->user->group_id, 'status' => false]);
+
+        actingAs($this->user)
+            ->getJson(route('grp.chat.staff.people.show', $inactive->id))
+            ->assertNotFound();
+    });
+});
+
 describe('staff messaging chat theme', function () {
     test('user can set chat theme', function () {
         actingAs($this->user)
@@ -701,6 +736,18 @@ describe('staff messaging chat theme', function () {
             ->assertOk();
 
         expect(Arr::get($this->user->fresh()->settings, 'chat_theme'))->toBe('nord');
+    });
+
+    test('users without a chat theme get classic and can pick it', function () {
+        $this->user->update(['settings' => Arr::except($this->user->settings ?? [], 'chat_theme')]);
+
+        expect(Arr::get(App\Actions\UI\Grp\Layout\GetLayout::run($this->user->fresh()), 'chat_theme'))->toBe('classic');
+
+        actingAs($this->user)
+            ->patchJson(route('grp.models.profile.update'), ['chat_theme' => 'classic'])
+            ->assertOk();
+
+        expect(Arr::get($this->user->fresh()->settings, 'chat_theme'))->toBe('classic');
     });
 
     test('changing chat theme busts the cached layout props', function () {
@@ -2086,7 +2133,7 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
     $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
     $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
 
-    expect($verba)->toBe([__('Home'), 'V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
+    expect($verba)->toBe(['V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
         ->and($chat)->not->toContain(__('Verba'));
 });
 

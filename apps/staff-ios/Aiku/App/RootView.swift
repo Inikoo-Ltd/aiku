@@ -11,6 +11,7 @@ struct RootView: View {
     private let warehouseStore = WarehouseStore.shared
     private let languages = LanguageStore.shared
     private let appVersions = AppVersionStore.shared
+    private let live = LiveUpdates.shared
 
     var body: some View {
         Group {
@@ -98,6 +99,22 @@ struct RootView: View {
                 session.modules = modules
             }
         }
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active {
+                live.setForeground(true)
+            } else if phase == .background {
+                live.setForeground(false)
+            }
+        }
+        .onChange(of: authStore.isSignedIn, initial: true) { _, isSignedIn in
+            live.setSignedIn(isSignedIn)
+        }
+        .liveReload(on: personalChannel, events: LiveEventName.permissions) {
+            await refreshWarehousesIfSignedIn()
+        }
+        .liveReload(on: personalChannel, events: LiveEventName.badges) {
+            await refreshBadges()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background {
                 OfflineBackgroundSync.scheduleIfWaiting()
@@ -110,11 +127,19 @@ struct RootView: View {
                 await sendPendingLanguage()
                 await refreshPermissionsIfSignedIn()
                 await refreshWarehousesIfSignedIn()
-                await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
-                if warehouseStore.selectedID == nil {
-                    await ShellInboxStore.shared.refreshUnread()
-                }
+                await refreshBadges()
             }
+        }
+    }
+
+    private var personalChannel: String? {
+        authStore.isSignedIn ? LiveChannelName.personal(signedInUserID: authStore.userID) : nil
+    }
+
+    private func refreshBadges() async {
+        await WorkBadgesStore.shared.refresh(warehouseID: warehouseStore.selectedID, apiClient: apiClient)
+        if warehouseStore.selectedID == nil {
+            await ShellInboxStore.shared.refreshUnread()
         }
     }
 

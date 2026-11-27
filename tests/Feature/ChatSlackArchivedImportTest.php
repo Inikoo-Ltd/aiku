@@ -549,3 +549,71 @@ test('New Verbration creates a Slack private channel as the person, invites the 
         && $request['name'] === strtolower("buying-team-{$this->s}") && $request->header('Authorization')[0] === "Bearer xoxp-MAKR-{$this->s}");
     Http::assertSent(fn (HttpRequest $request) => str_ends_with($request->url(), 'conversations.invite') && $request['channel'] === $slackId && $request['users'] === "UJOIN{$this->s}");
 });
+
+test('a member may list a private channel by name so others ask to join; the messages stay for members only', function () {
+    $group = $this->organisation->group;
+    app()->instance('group', $group);
+    setPermissionsTeamId($group->id);
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    Notification::fake();
+    $languageId = \App\Models\Helpers\Language::value('id');
+    $person     = function (string $key, bool $linked = true) use ($group, $languageId): User {
+        $user = User::factory()->create(['group_id' => $group->id, 'language_id' => $languageId]);
+        if ($linked) {
+            \App\Models\Chat\SlackUser::create(['slack_id' => "U{$key}{$this->s}", 'user_id' => $user->id, 'email' => $user->email, 'real_name' => $key]);
+        }
+
+        return $user->refresh();
+    };
+    $member   = $person('LMEM');
+    $outsider = $person('LOUT');
+    $unlinked = $person('LUNL', false);
+
+    $channel = SlackChannel::create(['group_id' => $group->id, 'slack_id' => "GLST{$this->s}", 'name' => "listed-{$this->s}", 'is_public' => false, 'is_private' => true, 'is_member' => true, 'is_archived' => false]);
+    $channel->members()->create(['slack_user_id' => "ULMEM{$this->s}"]);
+    SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => '1789700000.000100', 'slack_user_id' => "ULMEM{$this->s}", 'text' => "inside {$this->s}", 'sent_at' => now()->subHour()]);
+
+    $listed = function (User $user) {
+        $props = null;
+        actingAs($user)->get(route('grp.chat.staff.groups.index'))->assertOk()
+            ->assertInertia(function (AssertableInertia $page) use (&$props) {
+                $page->loadDeferredProps(function (AssertableInertia $reload) use (&$props) {
+                    $props = $reload->toArray()['props'];
+                });
+            });
+
+        return [collect($props['slack_listed_channels'] ?? [])->keyBy('id')->all(), collect($props['slack_private_channels'] ?? [])->pluck('id')->all()];
+    };
+
+    expect($listed($outsider)[0])->not->toHaveKey($channel->id);
+    actingAs($outsider)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertForbidden();
+    actingAs($outsider)->patch(route('grp.chat.staff.groups.slack.listing.update', $channel->id), ['is_listed' => true])->assertForbidden();
+    expect($channel->refresh()->is_listed)->toBeFalse();
+
+    actingAs($member)->patch(route('grp.chat.staff.groups.slack.listing.update', $channel->id), ['is_listed' => true])->assertRedirect();
+    expect($channel->refresh()->is_listed)->toBeTrue()
+        ->and($listed($member)[0])->not->toHaveKey($channel->id)
+        ->and($listed($unlinked)[0])->not->toHaveKey($channel->id);
+
+    [$outsiderListed, $outsiderPrivate] = $listed($outsider);
+    expect($outsiderListed[$channel->id])->toBe(['id' => $channel->id, 'name' => "listed-{$this->s}", 'member_count' => 1, 'requested' => false])
+        ->and($outsiderPrivate)->not->toContain($channel->id);
+    actingAs($outsider)->get(route('grp.chat.staff.groups.slack.show', $channel->id))->assertForbidden();
+    expect(SlackChannel::visibleTo($outsider)->whereKey($channel->id)->exists())->toBeFalse();
+    actingAs($unlinked)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertForbidden();
+
+    actingAs($outsider)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertRedirect();
+    actingAs($outsider)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertRedirect();
+    Notification::assertSentToTimes($member, \App\Notifications\SlackJoinRequestNotification::class, 1);
+    Notification::assertNotSentTo([$outsider, $unlinked], \App\Notifications\SlackJoinRequestNotification::class);
+    expect($listed($outsider)[0][$channel->id]['requested'])->toBeTrue();
+
+    $this->travel(\App\Actions\Chat\Staff\Slack\Write\RequestToJoinSlackPrivateChannel::REMIND_AFTER_DAYS + 1)->days();
+    actingAs($outsider)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertRedirect();
+    Notification::assertSentToTimes($member, \App\Notifications\SlackJoinRequestNotification::class, 2);
+    $this->travelBack();
+
+    actingAs($member)->patch(route('grp.chat.staff.groups.slack.listing.update', $channel->id), ['is_listed' => false])->assertRedirect();
+    expect($listed($outsider)[0])->not->toHaveKey($channel->id);
+    actingAs($outsider)->post(route('grp.chat.staff.groups.slack.join_request.store', $channel->id))->assertForbidden();
+});

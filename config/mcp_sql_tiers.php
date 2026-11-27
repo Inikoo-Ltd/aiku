@@ -67,8 +67,8 @@ return [
 
     /*
      * Columns the full read only login of unrestricted users (mcp_sql_unrestricted) cannot read either:
-     * what staff wrote to each other. Ids, times, authors and counts stay readable for fixing things
-     * (Raul, 26 Nov 2026, INI-427).
+     * what staff wrote to each other. Ids, times, authors, members, channel names (private ones too) and counts stay readable for fixing things
+     * (Raul, 26 Nov 2026, INI-427; names and members confirmed 27 Nov, INI-435).
      */
     'unrestricted_hidden_columns' => [
         'staff_messages'             => ['body'],
@@ -153,7 +153,7 @@ return [
         'procurement' => [
             'suppliers', 'supplier_*', 'packing_spec_lines', 'historic_supplier_product*', 'org_suppliers', 'org_supplier_*',
             'agents', 'agent_*', 'org_agents', 'org_partners', 'partner_shopping_list_items',
-            'purchase_order*', 'stock_deliver*', 'aspo_deposits', 'deposit_request*', 'competitor*',
+            'purchase_order*', 'stock_deliver*', 'deposit_request*', 'competitor*',
             'org_stock_discontinue_suggestions', 'procurement_notes',
         ],
 

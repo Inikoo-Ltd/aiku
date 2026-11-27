@@ -90,6 +90,13 @@ struct GoodsInTests {
         #expect(item(1, checked: 0).checkLook.chip == Chip("Not received", .danger))
     }
 
+    @Test func extraItemsCanBeAddedOnlyWhenAikuOffersIt() {
+        #expect(delivery("booking_in", items: [item(1)], actions: ["add_item"]).canAddItems)
+        #expect(!delivery("booking_in", items: [item(1)], actions: ["check"]).canAddItems)
+        #expect(GoodsInDeliveryWrite.addItem(itemID: 7, skoQuantity: 2).path == "items")
+        #expect(GoodsInDeliveryWrite.addItem(itemID: 7, skoQuantity: 2).body == ["item_id": .int(7), "sko_quantity": .number(2)])
+    }
+
     @Test func actionsComeFromTheServer() {
         let disabled = MobileGoodsInAction(key: "place", label: "Place", disabledReason: "Check it first")
         let sample = MobileStockDelivery(id: 1, reference: "SD-1", state: "received", availableActions: [MobileGoodsInAction(key: "check"), disabled])

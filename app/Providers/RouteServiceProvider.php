@@ -262,6 +262,10 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->ip());
         });
 
+        RateLimiter::for('cookie-consent', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
         /*
          * A catalogue feed reads every image of a category and zips it, so one request is worth
          * thousands of ordinary ones. An unauthenticated scraper walked 84 categories on a loop and

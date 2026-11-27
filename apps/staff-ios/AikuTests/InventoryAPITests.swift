@@ -30,6 +30,51 @@ struct InventoryAPITests {
         )
     }
 
+    @Test func skoListSendsStockStatusAndLocationTypeFilters() {
+        var filter = InventoryLiveSkoFilter()
+        #expect(filter.activeCount == 0)
+        filter.stockStatus = "low"
+        filter.locationType = "picking"
+        filter.familyID = 27
+        #expect(filter.activeCount == 3)
+
+        let items = filter.query(scope: .current, search: "").queryItems
+
+        #expect(items.contains(URLQueryItem(name: "stock_status", value: "low")))
+        #expect(items.contains(URLQueryItem(name: "location_type", value: "picking")))
+        #expect(items.contains(URLQueryItem(name: "family_id", value: "27")))
+        #expect(!InventoryLiveSkoFilter().query(scope: .current, search: "").queryItems.contains { $0.name == "stock_status" || $0.name == "location_type" })
+    }
+
+    @Test func skoListReadsTheFilterChoicesAikuSends() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let page = try decoder.decode(MobileOrgStocksPage.self, from: Data(#"{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":0},"filters":{"stock_status":[{"key":"low","label":"Low"},{"key":"out_of_stock"}],"location_type":[{"key":"picking","label":"Picking"},{"key":"storing","label":"Storing"}]}}"#.utf8))
+
+        #expect(page.filters?.stockStatus.map(\.key) == ["low", "out_of_stock"])
+        #expect(page.filters?.stockStatus.map(\.title) == ["Low", "out_of_stock"])
+        #expect(page.filters?.locationType.map(\.title) == ["Picking", "Storing"])
+    }
+
+    @Test func skoListStillLoadsWhenTheFilterChoicesAreMissingOrUnreadable() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let missing = try decoder.decode(MobileOrgStocksPage.self, from: Data(#"{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":0}}"#.utf8))
+        let unreadable = try decoder.decode(MobileOrgStocksPage.self, from: Data(#"{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":0},"filters":{"stock_status":"low","location_type":[{"label":"No key"}]}}"#.utf8))
+
+        #expect(missing.filters == nil)
+        #expect(unreadable.filters?.stockStatus == [])
+        #expect(unreadable.filters?.locationType == [])
+    }
+
+    @Test func searchableSelectFindsOptionsByAnyPartOfTheirTitle() {
+        let options = (1...150).map { SearchableSelectOption(id: $0, title: "EO-\($0) · Essential Oils") } + [SearchableSelectOption(id: 999, title: "RDEO · Reed Diffusers")]
+
+        #expect(SearchableSelectOption.matches(options, query: "reed", limit: 100).map(\.id) == [999])
+        #expect(SearchableSelectOption.matches(options, query: "  ", limit: 100).count == 100)
+        #expect(SearchableSelectOption.matches(options, query: "eo-14", limit: 100).map(\.id) == [14, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149])
+    }
+
     @Test func familiesRequestSendsTheWebStateBucket() {
         let request = client().makeRequest(for: .mobileOrgStockFamilies(warehouseID: 1, state: InventoryFamilyState.inProcess.remoteValue, search: " eo ", page: 2, perPage: 50))
         let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []

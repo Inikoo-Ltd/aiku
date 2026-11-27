@@ -4,6 +4,7 @@ struct InboxView: View {
     @Environment(AppRouter.self) private var router
     @Environment(Session.self) private var session
     @Environment(ToastCenter.self) private var toasts
+    @Environment(AuthStore.self) private var authStore
     @State private var warehouseStore = WarehouseStore.shared
     private let inbox = ShellInboxStore.shared
 
@@ -56,6 +57,9 @@ struct InboxView: View {
         }
         .screenRefreshable { await inbox.load() }
         .task { await inbox.load() }
+        .liveReload(on: LiveChannelName.personal(signedInUserID: authStore.userID), events: LiveEventName.inbox) {
+            await inbox.load()
+        }
     }
 
     private var markAllReadLink: some View {

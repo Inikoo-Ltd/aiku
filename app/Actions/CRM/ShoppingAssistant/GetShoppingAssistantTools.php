@@ -20,6 +20,9 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
+use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
+use App\Enums\CRM\CustomerClaim\CustomerClaimKindEnum;
+use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -56,6 +59,7 @@ use App\Models\Comms\Outbox;
 use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
+use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Web\Website;
@@ -263,6 +267,7 @@ class GetShoppingAssistantTools
         }
         if (!$claimsEnabled) {
             $excluded[] = 'report_order_problem';
+            $excluded[] = 'claim_status';
         }
 
         return array_values(array_map(
@@ -407,6 +412,11 @@ class GetShoppingAssistantTools
                 'report_order_problem',
                 'Opens our claim form in the chat for one of the customer\'s own orders that arrived with items damaged, broken, leaking, missing, wrong or faulty, or a parcel that never arrived. The customer fills it in themselves: items, quantities, photos and whether they want credit, a replacement or the items in their next order. Pass the order or invoice number they wrote as reference; without one you get their last dispatched order. Never ask for photos or details in the chat when the form opens: the form asks. Returns no products.',
                 ['reference' => ['type' => 'string', 'description' => 'The order or invoice number the customer wrote, exactly as written. Leave it out when they gave none.']]
+            ),
+            $this->tool(
+                'claim_status',
+                'What happened to the customer\'s own claims for damaged, missing or wrong items: received and waiting for our team, approved with what was done (credit to their balance, the replacement and whether it left our warehouse with its tracking, or the items free in their next order), or not accepted with the reason. Use it when they ask about a claim, a replacement, a credit for a problem or a return. Pass the claim or order number they wrote as reference; without one you get their latest claims. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The claim or order number the customer wrote, exactly as written. Leave it out when they gave none.']]
             ),
             $this->tool(
                 'coming_soon',
@@ -623,6 +633,7 @@ class GetShoppingAssistantTools
                 'coming_soon'                    => GetComingSoon::make()->handle($customer, $conversation->language_code, $this->sendsBackInStockEmails($customer)),
                 'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code, $conversation),
                 'report_order_problem'           => GetCustomerClaimForm::enabledFor($customer->shop) ? $this->reportOrderProblem($customer, $arguments) : $this->error('report_order_problem is not available on this shop.'),
+                'claim_status'                   => GetCustomerClaimForm::enabledFor($customer->shop) ? $this->claimStatus($customer, $arguments, $conversation->language_code) : $this->error('claim_status is not available on this shop.'),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -1489,6 +1500,106 @@ class GetShoppingAssistantTools
             'other_recent_orders' => $otherOrders,
             'note'               => 'The claim form for this order is shown under your reply. Say which order it is for. If what they described is not among items_on_order, say so plainly, never repeat their words as if the item were on this order, and ask whether the problem is with another order (they can give its number; other_recent_orders are theirs). Mention only the outcomes listed (refund_to_balance is credit to their balance, replacement is a replacement sent now, next_order is the items free in their next order).',
         ], 'products' => [], 'error' => null, 'claim_order_id' => $order->id];
+    }
+
+    /**
+     * The signed-in customer's own claims (HELP-4869), found by claim or order number, else their
+     * latest: where each is and what was done, read from the claim, its replacement note and that
+     * note's shipment. Never another customer's.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function claimStatus(Customer $customer, array $arguments, string $locale): array
+    {
+        $reference  = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $comparable = str_replace([' ', '-'], '', mb_strtoupper($reference));
+        $claims     = CustomerClaim::where('customer_id', $customer->id)->where('kind', CustomerClaimKindEnum::ITEMS)->with(['order:id,reference', 'lines']);
+
+        if ($reference !== '') {
+            $claims->where(fn ($query) => $query->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])
+                ->orWhereHas('order', fn ($orders) => $orders->whereRaw("translate(upper(reference), ' -', '') = ?", [$comparable])->orWhereRaw("translate(upper(customer_reference), ' -', '') = ?", [$comparable])));
+        }
+
+        $found = $claims->latest('id')->limit(3)->get();
+        if ($found->isEmpty()) {
+            return ['content' => ['found' => false, 'note' => $reference !== ''
+                ? 'No claim with that claim or order number in their account. Say so and ask them to check the number; if something arrived wrong, report_order_problem opens the claim form.'
+                : 'They have made no claim. If something arrived damaged, missing or wrong, report_order_problem opens the claim form.'], 'products' => [], 'error' => null];
+        }
+
+        $claims = $found->map(fn (CustomerClaim $claim) => $this->claimStatusOf($claim, $locale))->all();
+
+        return ['content' => [
+            'found'  => true,
+            'claims' => array_map(fn (array $claim) => [
+                'state'                => $claim['state'],
+                'asked_for'            => $claim['asked_for'],
+                'credited'             => $claim['credited'] !== null,
+                'replacement_sent'     => (bool) ($claim['replacement']['dispatched'] ?? false),
+                'in_next_order'        => !empty($claim['in_next_order']),
+                'not_accepted_because' => $claim['not_accepted_because'],
+                'return_requested'     => $claim['return_requested'],
+            ], $claims),
+            'note'   => 'The system writes a line for each claim under your reply, with its number, amounts, dates and tracking. Say where each claim stands in plain words, without numbers. in_review means our team will reply by email; never promise an outcome or a date for it.',
+        ], 'products' => [], 'error' => null, 'fact' => implode("\n", array_map(fn (array $claim) => $this->claimStatusLine($claim, $locale), $claims))];
+    }
+
+    /**
+     * One claim in the customer's words, written by code so its figures pass the number rule.
+     *
+     * @param  array<string, mixed>  $claim  from claimStatusOf
+     */
+    private function claimStatusLine(array $claim, string $locale): string
+    {
+        $replace     = ['reference' => $claim['claim'], 'order' => (string) $claim['order']];
+        $replacement = $claim['replacement'];
+
+        $line = match (true) {
+            $claim['state'] === 'in_review'                     => __('Claim :reference (order :order): received, our team will reply by email.', $replace, $locale),
+            $claim['state'] === 'rejected'                      => __('Claim :reference (order :order): not accepted: :reason', $replace + ['reason' => (string) $claim['not_accepted_because']], $locale),
+            $claim['credited'] !== null                         => __('Claim :reference (order :order): approved, :amount added to your balance.', $replace + ['amount' => $claim['credited']], $locale),
+            $replacement && $replacement['dispatched']          => trim(__('Claim :reference (order :order): approved, the replacement left our warehouse on :date.', $replace + ['date' => Carbon::parse($replacement['dispatched_on'])->locale($locale)->isoFormat('LL')], $locale).($replacement['tracking'] ? ' '.__('Tracking: :tracking', ['tracking' => trim($replacement['carrier'].' '.$replacement['tracking'])], $locale) : '')),
+            (bool) $replacement                                 => __('Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.', $replace, $locale),
+            !empty($claim['in_next_order'])                     => __('Claim :reference (order :order): approved, the items will be added free to your next order.', $replace, $locale),
+            default                                             => __('Claim :reference (order :order): approved.', $replace, $locale),
+        };
+
+        return $claim['return_requested'] ? $line.' '.__('Please send the items back with the claim slip from the approved email.', [], $locale) : $line;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function claimStatusOf(CustomerClaim $claim, string $locale): array
+    {
+        $replacement = null;
+        if ($noteReference = data_get($claim->result, 'replacement')) {
+            $note = $claim->order?->deliveryNotes()->where('delivery_notes.reference', $noteReference)->with('shipments.shipper:id,name,trade_as')->first();
+            $shipment = $note?->shipments->first();
+            $replacement = [
+                'reference'  => $noteReference,
+                'dispatched' => (bool) $note?->dispatched_at,
+                'dispatched_on' => $note?->dispatched_at?->toDateString(),
+                'carrier'    => $shipment ? ($shipment->shipper?->trade_as ?: $shipment->shipper?->name) : null,
+                'tracking'   => $shipment?->tracking,
+            ];
+        }
+
+        return [
+            'claim'            => $claim->reference,
+            'order'            => $claim->order?->reference,
+            'made_on'          => $claim->created_at->toDateString(),
+            'state'            => $claim->state->value,
+            'asked_for'        => $claim->resolution,
+            'items'            => $claim->lines->map(fn ($line) => ($line->name ?: $line->code).' x'.(float) $line->quantity)->all(),
+            'credited'         => $claim->state === CustomerClaimStateEnum::SETTLED && $claim->resolution === 'refund_to_balance' ? Number::currency((float) $claim->amount, (string) $claim->currency_code, $locale) : null,
+            'replacement'      => $replacement,
+            'in_next_order'    => data_get($claim->result, 'in_next_order'),
+            'not_accepted_because' => $claim->state === CustomerClaimStateEnum::REJECTED ? trim(RejectCustomerClaim::reasonLabel((string) $claim->rejection_reason).($claim->rejection_note ? ': '.$claim->rejection_note : '')) : null,
+            'return_requested' => (bool) data_get($claim->result, 'return_requested'),
+        ];
     }
 
     private function orderStatus(Customer $customer, array $arguments, string $locale, ?ShoppingAssistantConversation $conversation = null): array

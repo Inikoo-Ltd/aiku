@@ -40,7 +40,7 @@ class GetLayout
             ],
             'app_theme'      => $user->settings['app_theme'] ?? null,
             'org_themes'     => $this->getOrganisationThemes($user),
-            'chat_theme'     => $user->settings['chat_theme'] ?? 'dracula',
+            'chat_theme'     => $user->settings['chat_theme'] ?? 'classic',
             'staff_chat'     => [
                 'quick_replies' => Arr::get($user->group->settings, 'staff_chat.quick_replies') ?: null,
             ],

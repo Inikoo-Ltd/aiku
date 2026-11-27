@@ -58,7 +58,7 @@ const props = defineProps<{
 	logoFull?: { original_url: string; download_url: string } | null
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
-	owner?: { name: string | null; email: string | null } | null
+	owner?: { name: string | null; email: string | null; is_main?: boolean } | null
 	buyers?: { organisations: string[]; country_code: string | null; name: string | null; email: string | null; is_main?: boolean }[]
 	contactsLoading?: boolean
 	summary?: PortalSummary
@@ -370,10 +370,18 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 						<h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Your contacts at :group", { group }) }}</h2>
 					</header>
 					<ul class="divide-y divide-gray-100" :aria-busy="contactsLoading">
-						<li v-if="owner" class="flex items-center gap-3 px-4 py-3">
-							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">{{ initials(owner.name ?? group) }}</span>
+						<li
+							v-if="owner"
+							class="flex items-center gap-3 border-l-4 px-4 py-3"
+							:class="owner.is_main ? '' : 'border-transparent'"
+							:style="owner.is_main ? { borderLeftColor: accent.colour, backgroundColor: accent.tint } : undefined"
+						>
+							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" :class="owner.is_main ? 'ring-2' : ''" :style="{ backgroundColor: theme.background, color: theme.text, ...(owner.is_main ? { '--tw-ring-color': accent.colour } : {}) }">{{ initials(owner.name ?? group) }}</span>
 							<div class="min-w-0 text-sm">
-								<p class="truncate font-semibold text-gray-900">{{ owner.name }}</p>
+								<p class="flex min-w-0 items-center gap-1.5">
+									<span class="truncate font-semibold text-gray-900">{{ owner.name }}</span>
+									<span v-if="owner.is_main" :title="ctrans('Your main contact at :group', { group })" class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold shadow-sm" :style="{ backgroundColor: theme.background, color: theme.text }"><FontAwesomeIcon icon="fal fa-star" fixed-width aria-hidden="true" />{{ ctrans("Main contact") }}</span>
+								</p>
 								<p class="truncate text-xs text-gray-500">{{ ctrans("Owner, :group", { group }) }}</p>
 								<a v-if="owner.email" :href="`mailto:${owner.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ owner.email }}</span></a>
 							</div>

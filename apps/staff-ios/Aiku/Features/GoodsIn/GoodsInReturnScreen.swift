@@ -40,6 +40,9 @@ struct GoodsInReturnScreen: View {
         .onAppear {
             Task { await feed.load() }
         }
+        .liveReload(on: LiveChannelName.record(.customerReturn, loadedID: feed.goodsReturn?.id), events: LiveEventName.record) {
+            await feed.load()
+        }
     }
 }
 

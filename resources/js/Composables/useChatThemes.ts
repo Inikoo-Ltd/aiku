@@ -11,7 +11,24 @@ export const useChatThemes: Record<string, {
     cyan: string
     red: string
     yellow: string
+    dark?: boolean
+    rail?: string
 }> = {
+    classic: {
+        name: 'Classic',
+        bg: '#3f0e40',
+        bgAlt: '#350d36',
+        line: '#522653',
+        muted: '#c9b8ca',
+        label: '#d8c8d9',
+        text: '#ffffff',
+        accent: '#ffffff',
+        green: '#50fa7b',
+        cyan: '#8be9fd',
+        red: '#ff5555',
+        yellow: '#f1fa8c',
+        rail: 'dracula',
+    },
     light: {
         name: 'Light',
         bg: '#ffffff',
@@ -83,6 +100,7 @@ export const useChatThemes: Record<string, {
         yellow: '#a16207',
     },
     dracula: {
+        dark: true,
         name: 'Dracula',
         bg: '#282a36',
         bgAlt: '#21222c',
@@ -97,6 +115,7 @@ export const useChatThemes: Record<string, {
         yellow: '#f1fa8c',
     },
     nord: {
+        dark: true,
         name: 'Nord',
         bg: '#2e3440',
         bgAlt: '#3b4252',
@@ -111,6 +130,7 @@ export const useChatThemes: Record<string, {
         yellow: '#ebcb8b',
     },
     gruvbox: {
+        dark: true,
         name: 'Gruvbox',
         bg: '#282828',
         bgAlt: '#1d2021',
@@ -125,6 +145,7 @@ export const useChatThemes: Record<string, {
         yellow: '#fabd2f',
     },
     monokai: {
+        dark: true,
         name: 'Monokai',
         bg: '#272822',
         bgAlt: '#1e1f1c',
@@ -139,6 +160,7 @@ export const useChatThemes: Record<string, {
         yellow: '#e6db74',
     },
     onedark: {
+        dark: true,
         name: 'One Dark',
         bg: '#282c34',
         bgAlt: '#21252b',
@@ -153,6 +175,7 @@ export const useChatThemes: Record<string, {
         yellow: '#e5c07b',
     },
     solarized: {
+        dark: true,
         name: 'Solarized',
         bg: '#002b36',
         bgAlt: '#00212b',
@@ -168,18 +191,65 @@ export const useChatThemes: Record<string, {
     },
 }
 
+const mixColours = (from: string, to: string, amount: number) => {
+    const channels = (hex: string) => [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16))
+    const [fromChannels, toChannels] = [channels(from), channels(to)]
+
+    return '#' + fromChannels.map((value, index) => Math.round(value + (toChannels[index] - value) * amount).toString(16).padStart(2, '0')).join('')
+}
+
+const verbaVariables = (theme: typeof useChatThemes[string]): Record<string, string> => {
+    const sidebar = theme.dark ? theme.bgAlt : mixColours(theme.bgAlt, theme.text, 0.04)
+    const header = theme.dark
+        ? {
+            bg: mixColours(mixColours('#ffffff', theme.bg, 0.06), theme.accent, 0.06),
+            text: mixColours(theme.bg, '#000000', 0.25),
+            muted: mixColours(theme.muted, '#000000', 0.2),
+            line: mixColours(mixColours('#ffffff', theme.bg, 0.12), theme.accent, 0.1),
+            accent: mixColours(theme.accent, '#000000', 0.25),
+        }
+        : { bg: theme.bg, text: theme.text, muted: theme.muted, line: theme.line, accent: theme.accent }
+
+    return {
+        '--vx-sidebar': sidebar,
+        '--vx-soft': mixColours('#ffffff', sidebar, theme.dark ? 0.05 : 0.4),
+        '--vx-sidebar-hover': mixColours(sidebar, theme.text, theme.dark ? 0.08 : 0.06),
+        '--vx-sidebar-chip': mixColours(sidebar, theme.text, 0.08),
+        '--vx-sidebar-chip-strong': mixColours(sidebar, theme.text, 0.16),
+        '--vx-sidebar-text': theme.dark ? theme.label : theme.muted,
+        '--vx-sidebar-strong': theme.text,
+        '--vx-sidebar-active': theme.accent,
+        '--vx-sidebar-active-text': theme.dark ? theme.bgAlt : '#ffffff',
+        '--vx-sidebar-border': theme.line,
+        '--vx-sidebar-badge': theme.red,
+        '--vx-head-bg': header.bg,
+        '--vx-head-text': header.text,
+        '--vx-head-muted': header.muted,
+        '--vx-head-line': header.line,
+        '--vx-head-accent': header.accent,
+    }
+}
+
+const verbaVariableNames = Object.keys(verbaVariables(useChatThemes.light))
+
 export const applyChatTheme = (key?: string) => {
-    const theme = useChatThemes[key ?? ''] ?? useChatThemes.dracula
+    const theme = useChatThemes[key ?? ''] ?? useChatThemes.classic
+    const railTheme = theme.rail ? useChatThemes[theme.rail] : theme
     const root = document.documentElement
-    root.style.setProperty('--chat-bg', theme.bg)
-    root.style.setProperty('--chat-bg-alt', theme.bgAlt)
-    root.style.setProperty('--chat-line', theme.line)
-    root.style.setProperty('--chat-muted', theme.muted)
-    root.style.setProperty('--chat-label', theme.label)
-    root.style.setProperty('--chat-text', theme.text)
-    root.style.setProperty('--chat-accent', theme.accent)
-    root.style.setProperty('--chat-green', theme.green)
-    root.style.setProperty('--chat-cyan', theme.cyan)
-    root.style.setProperty('--chat-red', theme.red)
-    root.style.setProperty('--chat-yellow', theme.yellow)
+    root.style.setProperty('--chat-bg', railTheme.bg)
+    root.style.setProperty('--chat-bg-alt', railTheme.bgAlt)
+    root.style.setProperty('--chat-line', railTheme.line)
+    root.style.setProperty('--chat-muted', railTheme.muted)
+    root.style.setProperty('--chat-label', railTheme.label)
+    root.style.setProperty('--chat-text', railTheme.text)
+    root.style.setProperty('--chat-accent', railTheme.accent)
+    root.style.setProperty('--chat-green', railTheme.green)
+    root.style.setProperty('--chat-cyan', railTheme.cyan)
+    root.style.setProperty('--chat-red', railTheme.red)
+    root.style.setProperty('--chat-yellow', railTheme.yellow)
+
+    verbaVariableNames.forEach((name) => root.style.removeProperty(name))
+    if (!theme.rail) {
+        Object.entries(verbaVariables(theme)).forEach(([name, value]) => root.style.setProperty(name, value))
+    }
 }

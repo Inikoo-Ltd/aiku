@@ -918,6 +918,9 @@ test('fill translations does not mark a copied description when the cleaning cal
     $check = fn (string $answer) => (new FillShopProductTranslations())->invalidReason(['description' => ['clean' => $long]], ['description' => $answer]);
     expect($check($kept))->toBeNull()
         ->and($check('<p>Diese Seife duftet nach Lavendel und pflegt die Haut.</p>'))->toContain('too much removed');
+
+    $czech = '<p>Velkoobchod.</p><p>'.str_repeat('Na&scaron;&iacute;m luxusn&iacute;m pol&scaron;t&aacute;řem v d&aacute;rkov&eacute;m balen&iacute;. ', 6).'</p>';
+    expect((new FillShopProductTranslations())->invalidReason(['description' => ['clean' => $czech]], ['description' => '<p>'.str_repeat('Naším luxusním polštářem v dárkovém balení. ', 6).'</p>']))->toBeNull();
 });
 
 function plainOtherShopProducts(object $test): void

@@ -8,9 +8,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import axios from "axios"
 import { Deferred, InfiniteScroll, router, usePage } from "@inertiajs/vue3"
-import { Dialog, InputText, Popover } from "primevue"
+import { Dialog, InputText, Popover, ToggleSwitch } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
+import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faLock, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isToday, isYesterday } from "date-fns"
 import { ctrans } from "@/Composables/useTrans"
@@ -26,7 +26,7 @@ import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiv
 
 export type { SlackStreamMessage }
 
-library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
+library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faLock, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
 
 export interface SlackBookmark {
     id: number
@@ -45,6 +45,7 @@ export interface SlackChannelHeader {
     is_private?: boolean
     is_direct?: boolean
     brought_by?: string | null
+    is_listed?: boolean | null
     member_count?: number
     pinned_count?: number
     bookmarks?: SlackBookmark[]
@@ -327,40 +328,51 @@ const onThreadSent = (sent: SlackSentMessage) => {
 }
 
 const showPurpose = computed(() => props.channel.purpose && props.channel.purpose !== props.channel.topic)
+
+const isSavingListing = ref(false)
+const updateListing = (isListed: boolean) => {
+    router.patch(route("grp.chat.staff.groups.slack.listing.update", props.channel.id), { is_listed: isListed }, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["slack_channel"],
+        onStart: () => { isSavingListing.value = true },
+        onFinish: () => { isSavingListing.value = false },
+    })
+}
 </script>
 
 <template>
     <div class="relative flex h-full w-full min-w-0 bg-white text-gray-900">
         <div class="relative flex h-full min-w-0 flex-1 flex-col">
-            <div class="shrink-0 border-b border-[#dddddd] bg-white">
+            <div class="shrink-0 border-b border-[var(--vx-head-line,#dddddd)] bg-[var(--vx-head-bg,#ffffff)]">
                 <div class="flex min-h-[64px] items-center gap-x-2 px-5 py-2.5">
-                    <button type="button" :aria-label="ctrans('Back')" class="-ml-3 p-2 text-gray-600 md:hidden" @click="emit('back')">
+                    <button type="button" :aria-label="ctrans('Back')" class="-ml-3 p-2 text-[var(--vx-head-muted,#4b5563)] md:hidden" @click="emit('back')">
                         <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" />
                     </button>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-x-2">
-                            <h2 class="truncate text-[18px] font-black leading-6 text-[#1d1c1d]"><FontAwesomeIcon v-if="channel.is_private" icon="fal fa-lock" class="mr-1 text-base" fixed-width :aria-label="channel.is_direct ? ctrans('Direct message') : ctrans('Private channel')" /><span v-else class="font-bold">#</span>{{ channel.name }}</h2>
-                            <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-[#616061]">
+                            <h2 class="truncate text-[18px] font-black leading-6 text-[var(--vx-head-text,#1d1c1d)]"><FontAwesomeIcon v-if="channel.is_private" icon="fal fa-lock" class="mr-1 text-base" fixed-width :aria-label="channel.is_direct ? ctrans('Direct message') : ctrans('Private channel')" /><span v-else class="font-bold">#</span>{{ channel.name }}</h2>
+                            <span v-if="channel.is_archived" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-[var(--vx-head-muted,#616061)]">
                                 <FontAwesomeIcon icon="fal fa-archive" fixed-width aria-hidden="true" />{{ ctrans("Archived") }}
                             </span>
                         </div>
-                        <div class="flex min-w-0 items-center text-[13px] leading-5 text-[#616061]">
+                        <div class="flex min-w-0 items-center text-[13px] leading-5 text-[var(--vx-head-muted,#616061)]">
                             <span v-if="channel.member_count" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap" v-tooltip="ctrans('Members in Slack')">
                                 <FontAwesomeIcon icon="fal fa-users" fixed-width aria-hidden="true" />{{ channel.member_count }}
                             </span>
                             <template v-if="channel.pinned_count">
-                                <span v-if="channel.member_count" class="mx-2 h-3 w-px shrink-0 bg-[#dddddd]" />
-                                <button type="button" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap hover:text-[#1d1c1d]" :aria-label="ctrans('Pinned (:count)', { count: String(channel.pinned_count) })" v-tooltip="ctrans('Pinned messages')" @click="togglePins">
+                                <span v-if="channel.member_count" class="mx-2 h-3 w-px shrink-0 bg-[var(--vx-head-line,#dddddd)]" />
+                                <button type="button" class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap hover:text-[var(--vx-head-text,#1d1c1d)]" :aria-label="ctrans('Pinned (:count)', { count: String(channel.pinned_count) })" v-tooltip="ctrans('Pinned messages')" @click="togglePins">
                                     <FontAwesomeIcon icon="fal fa-thumbtack" fixed-width aria-hidden="true" />{{ channel.pinned_count }}
                                 </button>
                             </template>
                             <template v-if="channel.topic || showPurpose">
-                                <span v-if="channel.member_count || channel.pinned_count" class="mx-2 h-3 w-px shrink-0 bg-[#dddddd]" />
+                                <span v-if="channel.member_count || channel.pinned_count" class="mx-2 h-3 w-px shrink-0 bg-[var(--vx-head-line,#dddddd)]" />
                                 <span class="truncate" v-tooltip="showPurpose ? channel.purpose : undefined">{{ channel.topic || channel.purpose }}</span>
                             </template>
                         </div>
                     </div>
-                    <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[#616061] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
+                    <span v-if="!canWriteNow" class="hidden shrink-0 whitespace-nowrap text-xs text-[var(--vx-head-muted,#616061)] sm:inline">{{ ctrans("Read only, from Slack") }}</span>
                 </div>
                 <div v-if="bookmarks.length || write?.allowed" class="flex items-center gap-x-1.5 overflow-x-auto px-3 pb-2">
                     <span v-for="bookmark in bookmarks" :key="bookmark.id" class="group/bookmark inline-flex shrink-0 items-center gap-x-0.5">
@@ -402,7 +414,7 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                         role="tab"
                         :aria-selected="activeTab === tab.key"
                         class="-mb-px inline-flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-[13px] font-semibold transition-colors"
-                        :class="activeTab === tab.key ? 'border-[var(--app-accent)] text-[#1d1c1d]' : 'border-transparent text-[#616061] hover:text-[#1d1c1d]'"
+                        :class="activeTab === tab.key ? 'border-[var(--vx-head-accent,var(--app-accent))] text-[var(--vx-head-text,#1d1c1d)]' : 'border-transparent text-[var(--vx-head-muted,#616061)] hover:text-[var(--vx-head-text,#1d1c1d)]'"
                         @click="activeTab = tab.key as 'messages' | 'files'">
                         <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />{{ tab.label }}
                     </button>
@@ -467,6 +479,10 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
             <p v-if="channel.brought_by && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">{{ ctrans("This channel is now in Verba, brought by :name", { name: channel.brought_by }) }}</p>
+            <div v-if="channel.is_private && !channel.is_direct && channel.is_listed !== null && channel.is_listed !== undefined && activeTab === 'messages'" class="flex shrink-0 items-center gap-x-3 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">
+                <ToggleSwitch :model-value="!!channel.is_listed" input-id="slack-channel-listed" :disabled="isSavingListing" @update:model-value="updateListing" />
+                <label for="slack-channel-listed" class="cursor-pointer">{{ channel.is_listed ? ctrans("Shown in Verbrations: everyone can see this channel's name and ask to join. Its messages stay for members only.") : ctrans("Show this channel's name in Verbrations, so others can ask to join. Its messages stay for members only.") }}</label>
+            </div>
             <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ channel.is_direct ? ctrans("Slack direct message, read only. Only the people in it can see it. Reply in Slack for now.") : ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>
