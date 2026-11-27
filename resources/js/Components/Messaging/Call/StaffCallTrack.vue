@@ -28,6 +28,8 @@ watch([() => props.track, element], ([track, el], [previousTrack]) => {
 onBeforeUnmount(() => {
     if (element.value) props.track.detach(element.value)
 })
+
+defineExpose({ element })
 </script>
 
 <template>

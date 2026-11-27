@@ -9,17 +9,19 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch 
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus } from "@fal"
+import { faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus, faPencil, faEraser, faBan, faWindowMaximize } from "@fal"
 import Popover from "primevue/popover"
 import Select from "primevue/select"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import StaffCallTrack from "@/Components/Messaging/Call/StaffCallTrack.vue"
+import StaffCallMarksCanvas from "@/Components/Messaging/Call/StaffCallMarksCanvas.vue"
+import { MarkBoard, MARKS_TOPIC, PAGE_MARKS_CHANNEL, encodeMark, markRateLimiter, pointsIn, readMark, type MarkMessage, type PageMarkEvent, type SharedSurface } from "@/Components/Messaging/Call/staffCallMarks"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { useStaffCalls, type StaffCallJoin } from "@/Stores/staff-calls"
 import { rememberDataMode, rememberedDataMode, staffCallQuality, staffCallQualitySampler, type StaffCallDataMode } from "@/Components/Messaging/Call/staffCallQuality"
 import type { LocalTrack, Participant, Room, Track } from "livekit-client"
 
-library.add(faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus)
+library.add(faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow, faLink, faLock, faLockOpen, faCheck, faTimes, faUserMinus, faPencil, faEraser, faBan, faWindowMaximize)
 
 const props = defineProps<{
     join: StaffCallJoin
@@ -129,10 +131,149 @@ const local = computed(() => {
 
 const sharedScreen = computed(() => {
     version.value
-    if (!livekit) return null
+    if (!livekit || !room.value) return null
+    const me = room.value.localParticipant
+    const myScreen = trackOf(me, livekit.Track.Source.ScreenShare)
+    if (myScreen) return { identity: me.identity, name: ctrans("You"), track: myScreen, isMine: true }
     const sharers = participants.value.filter((participant) => !participant.isLocal && trackOf(participant, livekit!.Track.Source.ScreenShare))
     const sharer = sharers[sharers.length - 1]
-    return sharer ? { name: sharer.name || sharer.identity, track: trackOf(sharer, livekit.Track.Source.ScreenShare)! } : null
+    return sharer ? { identity: sharer.identity, name: sharer.name || ctrans("Guest"), track: trackOf(sharer, livekit.Track.Source.ScreenShare)!, isMine: false } : null
+})
+
+const PAGE_MARKS_KEY = "staff-call-marks-on-page"
+const marks = new MarkBoard()
+const allowMarks = markRateLimiter()
+const screenView = ref<{ element: HTMLVideoElement | null } | null>(null)
+const pencil = ref(false)
+const othersDrawingOff = ref(false)
+const marksOnMyPage = ref((() => {
+    try {
+        return localStorage.getItem(PAGE_MARKS_KEY) !== "off"
+    } catch {
+        return true
+    }
+})())
+const canDraw = computed(() => !!sharedScreen.value && (sharedScreen.value.isMine || !othersDrawingOff.value))
+const isDrawing = computed(() => pencil.value && canDraw.value)
+const pageChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(PAGE_MARKS_CHANNEL) : null
+const postToPage = (event: PageMarkEvent) => pageChannel?.postMessage(event)
+
+const relayToPage = (identity: string, name: string, mark: MarkMessage) => {
+    const screen = sharedScreen.value
+    if (!screen?.isMine || !marksOnMyPage.value) return
+    const track = screen.track.mediaStreamTrack
+    const settings = track.getSettings() as MediaTrackSettings & { displaySurface?: string }
+    if (!settings.width || !settings.height || !["browser", "window", "monitor"].includes(settings.displaySurface ?? "")) return
+    postToPage({
+        type: "mark",
+        identity,
+        name,
+        mark,
+        surface: settings.displaySurface as SharedSurface,
+        width: settings.width,
+        height: settings.height,
+        handle: (track as MediaStreamTrack & { getCaptureHandle?: () => { handle?: string } | null }).getCaptureHandle?.()?.handle ?? null,
+    })
+}
+
+const showMark = (identity: string, name: string, mark: MarkMessage) => {
+    marks.apply(identity, name, mark)
+    relayToPage(identity, name, mark)
+}
+
+const sendMark = (mark: MarkMessage, reliable = true) => {
+    room.value?.localParticipant.publishData(encodeMark(mark), { reliable, topic: MARKS_TOPIC }).catch(() => null)
+}
+
+const showAndSendMine = (mark: MarkMessage, reliable = true) => {
+    const me = room.value!.localParticipant
+    showMark(me.identity, me.name || ctrans("You"), mark)
+    sendMark(mark, reliable)
+}
+
+const receiveMark = (payload: Uint8Array, participant?: Participant, topic?: string) => {
+    if (topic !== MARKS_TOPIC || !participant) return
+    const mark = readMark(payload)
+    const screen = sharedScreen.value
+    if (!mark || !screen || mark.s !== screen.identity) return
+    if (mark.t === "o") {
+        if (participant.identity === screen.identity) othersDrawingOff.value = mark.off
+        return
+    }
+    if (othersDrawingOff.value && participant.identity !== screen.identity) return
+    if (!allowMarks(participant.identity, pointsIn(mark))) return
+    showMark(participant.identity, participant.name || ctrans("Guest"), mark)
+}
+
+let lastPointerAt = 0
+let strokeKey = 0
+let strokeBatch: number[] = []
+let strokeTimer: ReturnType<typeof setInterval> | null = null
+let lastStrokePoint: [number, number] | null = null
+
+const pointAt = (x: number, y: number) => {
+    const now = performance.now()
+    if (now - lastPointerAt < 50) return
+    lastPointerAt = now
+    showAndSendMine({ t: "p", s: sharedScreen.value!.identity, x, y }, false)
+}
+
+const pointerGone = () => showAndSendMine({ t: "h", s: sharedScreen.value!.identity }, false)
+
+const sendStrokeBatch = (isLast = false) => {
+    if (!strokeBatch.length && !isLast) return
+    sendMark({ t: "d", s: sharedScreen.value!.identity, k: strokeKey, p: strokeBatch, ...(isLast ? { e: 1 as const } : {}) })
+    strokeBatch = []
+}
+
+const strokePoint = (x: number, y: number) => {
+    if (lastStrokePoint && Math.hypot(x - lastStrokePoint[0], y - lastStrokePoint[1]) < 0.002) return
+    lastStrokePoint = [x, y]
+    const me = room.value!.localParticipant
+    showMark(me.identity, me.name || ctrans("You"), { t: "d", s: sharedScreen.value!.identity, k: strokeKey, p: [x, y] })
+    strokeBatch.push(x, y)
+    if (strokeBatch.length >= 120) sendStrokeBatch()
+    strokeTimer ??= setInterval(sendStrokeBatch, 50)
+}
+
+const strokeEnd = () => {
+    if (strokeTimer) clearInterval(strokeTimer)
+    strokeTimer = null
+    if (sharedScreen.value) {
+        sendStrokeBatch(true)
+        const me = room.value!.localParticipant
+        showMark(me.identity, me.name || ctrans("You"), { t: "d", s: sharedScreen.value.identity, k: strokeKey, p: [], e: 1 })
+    }
+    strokeKey++
+    lastStrokePoint = null
+}
+
+const clearMarks = () => showAndSendMine({ t: "c", s: sharedScreen.value!.identity })
+
+const switchOthersDrawing = () => {
+    othersDrawingOff.value = !othersDrawingOff.value
+    sendMark({ t: "o", s: room.value!.localParticipant.identity, off: othersDrawingOff.value })
+}
+
+const switchMarksOnMyPage = () => {
+    marksOnMyPage.value = !marksOnMyPage.value
+    try {
+        localStorage.setItem(PAGE_MARKS_KEY, marksOnMyPage.value ? "on" : "off")
+    } catch { }
+    if (!marksOnMyPage.value) postToPage({ type: "end" })
+}
+
+const tellNewcomerDrawingIsOff = () => {
+    if (sharedScreen.value?.isMine && othersDrawingOff.value) {
+        setTimeout(() => sendMark({ t: "o", s: room.value!.localParticipant.identity, off: true }), 1000)
+    }
+}
+
+watch(() => sharedScreen.value?.identity ?? null, () => {
+    marks.clear()
+    othersDrawingOff.value = false
+    pencil.value = false
+    postToPage({ type: "end" })
 })
 
 const tiles = computed(() => {
@@ -309,7 +450,11 @@ const connect = async () => {
             track.detach().forEach((element) => element.remove())
             bump()
         })
-        .on(RoomEvent.ParticipantConnected, bump)
+        .on(RoomEvent.ParticipantConnected, () => {
+            bump()
+            tellNewcomerDrawingIsOff()
+        })
+        .on(RoomEvent.DataReceived, (payload, participant, _kind, topic) => receiveMark(payload, participant, topic))
         .on(RoomEvent.ParticipantDisconnected, () => {
             bump()
             endWhenLeftAlone()
@@ -414,11 +559,15 @@ onBeforeUnmount(() => {
     if (aloneTimer) clearTimeout(aloneTimer)
     if (pingTimer) clearInterval(pingTimer)
     if (ringTimer) clearTimeout(ringTimer)
+    if (strokeTimer) clearInterval(strokeTimer)
+    postToPage({ type: "end" })
+    pageChannel?.close()
     isLeaving = true
     props.join.screen?.getTracks().forEach((track) => track.stop())
     room.value?.disconnect()
 })
 
+const markButtonClass = "flex h-7 w-7 items-center justify-center rounded bg-black/60 text-white transition duration-200 hover:bg-black/80 disabled:opacity-40"
 const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition duration-200 hover:bg-white/20 active:!bg-white/30 disabled:opacity-40"
 </script>
 
@@ -529,12 +678,55 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
                 <div
                     v-if="sharedScreen"
                     ref="screenBox"
-                    v-tooltip="ctrans('Click to see full size')"
-                    class="relative min-h-0 flex-1 cursor-zoom-in overflow-hidden rounded bg-black"
-                    :class="isExpanded ? '' : 'aspect-video flex-none'"
-                    @click="showScreenFull">
-                    <StaffCallTrack :track="sharedScreen.track" fit="contain" />
-                    <span class="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs">{{ ctrans(":name's screen", { name: sharedScreen.name }) }}</span>
+                    v-tooltip="isDrawing ? null : ctrans('Click to see full size')"
+                    class="relative min-h-0 flex-1 overflow-hidden rounded bg-black"
+                    :class="[isExpanded ? '' : 'aspect-video flex-none', !isDrawing && 'cursor-zoom-in']"
+                    @click="!isDrawing && showScreenFull()">
+                    <StaffCallTrack ref="screenView" :track="sharedScreen.track" fit="contain" />
+                    <StaffCallMarksCanvas
+                        :board="marks"
+                        :video="screenView?.element ?? null"
+                        :drawing="isDrawing"
+                        @pointer="pointAt"
+                        @pointer-gone="pointerGone"
+                        @stroke-point="strokePoint"
+                        @stroke-end="strokeEnd" />
+                    <span class="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs">{{ sharedScreen.isMine ? ctrans("Your screen") : ctrans(":name's screen", { name: sharedScreen.name }) }}</span>
+                    <div class="absolute right-2 top-2 flex gap-1" @click.stop>
+                        <button
+                            type="button"
+                            :class="[markButtonClass, isDrawing && '!bg-[var(--app-accent)] !text-[var(--app-accent-text)]']"
+                            :disabled="!canDraw"
+                            :aria-pressed="isDrawing"
+                            :aria-label="ctrans('Draw and point')"
+                            v-tooltip="canDraw ? ctrans('Draw and point on the shared screen. Everyone in the call sees it. The person sharing sees it here in the call panel and on their aiku pages, never on other programs.') : ctrans(':name switched drawing off', { name: sharedScreen.name })"
+                            @click="pencil = !pencil">
+                            <FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+                        </button>
+                        <button v-if="isDrawing" type="button" :class="markButtonClass" :aria-label="ctrans('Clear drawings')" v-tooltip="ctrans('Clear all drawings for everyone')" @click="clearMarks">
+                            <FontAwesomeIcon icon="fal fa-eraser" fixed-width aria-hidden="true" />
+                        </button>
+                        <template v-if="sharedScreen.isMine">
+                            <button
+                                type="button"
+                                :class="[markButtonClass, othersDrawingOff && '!bg-amber-500 !text-black']"
+                                :aria-pressed="othersDrawingOff"
+                                :aria-label="ctrans('Drawing off for others')"
+                                v-tooltip="othersDrawingOff ? ctrans('Others cannot draw on your screen. Click to let them.') : ctrans('Stop others drawing on your screen')"
+                                @click="switchOthersDrawing">
+                                <FontAwesomeIcon icon="fal fa-ban" fixed-width aria-hidden="true" />
+                            </button>
+                            <button
+                                type="button"
+                                :class="[markButtonClass, marksOnMyPage && '!bg-white/30']"
+                                :aria-pressed="marksOnMyPage"
+                                :aria-label="ctrans('Marks on my aiku page')"
+                                v-tooltip="marksOnMyPage ? ctrans('Marks also show on your aiku page when it is what you share. Click to show them only here.') : ctrans('Also show marks on your aiku page when it is what you share')"
+                                @click="switchMarksOnMyPage">
+                                <FontAwesomeIcon icon="fal fa-window-maximize" fixed-width aria-hidden="true" />
+                            </button>
+                        </template>
+                    </div>
                 </div>
                 <div class="grid gap-2" :class="sharedScreen ? 'grid-flow-col auto-cols-[7rem] overflow-x-auto' : tiles.length > 2 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'">
                     <div

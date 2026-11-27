@@ -20,8 +20,9 @@ class IssueStaffCallToken
     use AsAction;
 
     /**
-     * A LiveKit access token for one person in one room: join, talk, show camera and screen, and hear the others.
-     * Nothing else (no room admin, create, list or recording grants). It only has to be valid when the browser connects;
+     * A LiveKit access token for one person in one room: join, talk, show camera and screen, hear the others, and send
+     * data messages to that room only (the pointer and drawings on a shared screen, INI-495). Nothing else: no room admin,
+     * create, list or recording grants, and no changing one's own name or metadata, since marks are labelled with the signed name. It only has to be valid when the browser connects;
      * LiveKit refreshes it for a connected participant.
      */
     public function handle(StaffCall $call, User $user): string
@@ -47,12 +48,13 @@ class IssueStaffCallToken
             'nbf'   => $now - 5,
             'exp'   => $now + StaffCall::TOKEN_TTL_SECONDS,
             'video' => [
-                'room'              => $call->room,
-                'roomJoin'          => true,
-                'canPublish'        => true,
-                'canSubscribe'      => true,
-                'canPublishData'    => false,
-                'canPublishSources' => ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
+                'room'                 => $call->room,
+                'roomJoin'             => true,
+                'canPublish'           => true,
+                'canSubscribe'         => true,
+                'canPublishData'       => true,
+                'canUpdateOwnMetadata' => false,
+                'canPublishSources'    => ['microphone', 'camera', 'screen_share', 'screen_share_audio'],
             ],
         ], config('services.livekit.api_secret'), 'HS256');
     }

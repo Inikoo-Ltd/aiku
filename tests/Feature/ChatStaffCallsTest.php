@@ -83,7 +83,9 @@ test('the starter gets a short-lived token for that room only, naming them, with
         ->and($claims->video->canPublish)->toBeTrue()
         ->and($claims->video->canSubscribe)->toBeTrue()
         ->and($claims->video->canPublishSources)->toBe(['microphone', 'camera', 'screen_share', 'screen_share_audio'])
-        ->and((array) $claims->video)->not->toHaveKeys(['roomAdmin', 'roomCreate', 'roomList', 'roomRecord'])
+        ->and($claims->video->canPublishData)->toBeTrue()
+        ->and($claims->video->canUpdateOwnMetadata)->toBeFalse()
+        ->and((array) $claims->video)->not->toHaveKeys(['roomAdmin', 'roomCreate', 'roomList', 'roomRecord', 'hidden', 'recorder', 'agent', 'ingressAdmin'])
         ->and($response->json('url'))->toBe('ws://localhost:7880')
         ->and(json_encode($response->json('call')))->not->toContain($call->room)
         ->and(strlen($call->room))->toBeGreaterThan(40);
@@ -650,7 +652,9 @@ test('a guest knocks, waits, is let in by someone in the call and gets a token f
     expect($claims->sub)->toBe('guest-'.$guest->ulid)
         ->and($claims->name)->toBe('bAna/b Lopez')
         ->and($claims->video->room)->toBe($call->room)
-        ->and((array) $claims->video)->not->toHaveKeys(['roomAdmin', 'roomCreate', 'roomList', 'roomRecord'])
+        ->and($claims->video->canPublishData)->toBeTrue()
+        ->and($claims->video->canUpdateOwnMetadata)->toBeFalse()
+        ->and((array) $claims->video)->not->toHaveKeys(['roomAdmin', 'roomCreate', 'roomList', 'roomRecord', 'hidden', 'recorder', 'agent', 'ingressAdmin'])
         ->and(json_encode($token->json('call')))->not->toContain($this->user->chatName())
         ->and(json_encode($token->json('call')))->not->toContain($call->room);
 

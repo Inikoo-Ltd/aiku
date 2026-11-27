@@ -17,6 +17,7 @@ import { isFocusOn } from "@/Composables/useFocusMode"
 library.add(faPhone, faPhoneSlash, faVideo, faTimes)
 
 const StaffCallPanel = defineAsyncComponent(() => import("@/Components/Messaging/Call/StaffCallPanel.vue"))
+const StaffCallPageMarks = defineAsyncComponent(() => import("@/Components/Messaging/Call/StaffCallPageMarks.vue"))
 
 const store = useStaffCalls()
 const now = ref(Date.now())
@@ -128,4 +129,5 @@ onBeforeUnmount(() => {
     </div>
 
     <StaffCallPanel v-if="store.active" :key="store.active.call.ulid" :join="store.active" />
+    <StaffCallPageMarks />
 </template>
