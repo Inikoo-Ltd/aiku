@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\SupplierSubmission;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrderTransaction\RepriceOpenPurchaseOrderTransactions;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
@@ -28,7 +29,8 @@ use Lorisleiva\Actions\ActionRequest;
  * supplier, pictures on the supplier product, a referral as a prospect of the shop chosen here, a compliance
  * document on the trade unit of its product, a price change as the product cost. A new product idea is never applied by itself. Not
  * proceeding with a price change lifts the hold it put on the product, at the cost it had. A compliance document is
- * also decided by the compliance team or a buyer of its product (canReviewComplianceDocument).
+ * also decided by the compliance team or a buyer of its product (canReviewComplianceDocument). An accepted price change
+ * can also reprice the lines of its product on draft and submitted orders (update_open_purchase_orders).
  */
 class DecideSupplierSubmission extends OrgAction
 {
@@ -37,7 +39,7 @@ class DecideSupplierSubmission extends OrgAction
     public const array FINAL_STATES = [SupplierSubmissionStateEnum::ACCEPTED, SupplierSubmissionStateEnum::NOT_PROCEEDING];
 
     /**
-     * @param  array{state: string, feedback?: string|null, shop_id?: int|null, fields?: array<int, string>|null, decided_by_user_id?: int|null, override_reason?: string|null}  $modelData
+     * @param  array{state: string, feedback?: string|null, shop_id?: int|null, fields?: array<int, string>|null, decided_by_user_id?: int|null, override_reason?: string|null, update_open_purchase_orders?: bool}  $modelData
      */
     public function handle(SupplierSubmission $supplierSubmission, array $modelData): SupplierSubmission
     {
@@ -56,6 +58,13 @@ class DecideSupplierSubmission extends OrgAction
             $applied = null;
             if ($state === SupplierSubmissionStateEnum::ACCEPTED && !$supplierSubmission->applied_at) {
                 $applied = ApplySupplierSubmission::run($supplierSubmission, Arr::only($modelData, ['shop_id', 'fields', 'decided_by_user_id']));
+
+                if ($supplierSubmission->type === SupplierSubmissionTypeEnum::PRICE_CHANGE && Arr::get($modelData, 'update_open_purchase_orders')) {
+                    $decidedBy = Arr::get($modelData, 'decided_by_user_id') ? User::find($modelData['decided_by_user_id']) : null;
+                    $repriced  = RepriceOpenPurchaseOrderTransactions::run($supplierSubmission->supplierProduct, (float) $applied['cost'], $decidedBy);
+
+                    $applied['repriced_purchase_order_transaction_ids'] = $repriced->pluck('id')->all();
+                }
             }
             if ($state === SupplierSubmissionStateEnum::NOT_PROCEEDING && $supplierSubmission->type === SupplierSubmissionTypeEnum::PRICE_CHANGE && $supplierSubmission->supplierProduct) {
                 ApplySupplierSubmission::make()->liftPriceChangeHold($supplierSubmission->supplierProduct);
@@ -151,6 +160,7 @@ class DecideSupplierSubmission extends OrgAction
             'fields'   => ['nullable', 'array'],
             'fields.*' => ['string', Rule::in(ApplySupplierSubmission::COMPANY_FIELDS)],
             'override_reason' => ['nullable', 'string', 'max:2000'],
+            'update_open_purchase_orders' => ['sometimes', 'boolean'],
         ];
     }
 

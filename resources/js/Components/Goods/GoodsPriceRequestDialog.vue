@@ -64,7 +64,18 @@ interface SupplierPriceChange {
     reason: string | null
     submitted_at: string | null
     url: string
+    open_purchase_order_lines: OpenPurchaseOrderLine[]
     decide_route: routeType | null
+}
+
+interface OpenPurchaseOrderLine {
+    id: number
+    organisation: string
+    reference: string
+    state: string
+    url: string
+    quantity_ordered: number
+    unit_cost: number
 }
 
 type SupplierDecision = "accepted" | "not_proceeding"
@@ -136,6 +147,7 @@ const rejectingSupplierChangeId = ref<number | null>(null)
 const supplierRejectFeedback = reactive<Record<number, string>>({})
 const decidingSupplierChange = ref<{ id: number; decision: SupplierDecision } | null>(null)
 const supplierChangeErrors = reactive<Record<number, string | null>>({})
+const updateOpenPurchaseOrders = reactive<Record<number, boolean>>({})
 
 const masterForms = reactive<Record<number, { prices: Record<string, number | null>; rrps: Record<string, number | null> }>>({})
 const savingMasterId = ref<number | null>(null)
@@ -164,6 +176,9 @@ async function fetchData(): Promise<void> {
         data.value = response.data
         for (const masterProduct of data.value?.master_products ?? []) {
             masterForms[masterProduct.id] = { prices: { ...masterProduct.prices }, rrps: rrpsPerUnit(masterProduct) }
+        }
+        for (const change of data.value?.supplier_price_changes ?? []) {
+            updateOpenPurchaseOrders[change.id] ??= change.open_purchase_order_lines.length > 0
         }
         for (const request of data.value?.requests ?? []) {
             updateSupplierCost[request.id] ??= request.can_update_supplier_cost
@@ -277,6 +292,7 @@ function decideSupplierChange(change: SupplierPriceChange, decision: SupplierDec
         route(change.decide_route.name, change.decide_route.parameters),
         {
             state: decision,
+            ...(decision === "accepted" ? { update_open_purchase_orders: change.open_purchase_order_lines.length > 0 && !!updateOpenPurchaseOrders[change.id] } : {}),
             ...(decision === "not_proceeding" ? { feedback: supplierRejectFeedback[change.id] } : {}),
         },
         {
@@ -614,7 +630,7 @@ function saveMaster(masterProduct: MasterProduct): void {
 
                     <div class="flex flex-wrap items-baseline gap-x-3 tabular-nums text-amber-900">
                         <span v-if="change.cost !== null">
-                            {{ ctrans("The supplier proposes :new per unit, now :old", { new: unitCost(change.currency, change.proposed_cost), old: unitCost(change.currency, change.cost) }) }}
+                            {{ ctrans("Current price :old per unit, the supplier proposes :new", { new: unitCost(change.currency, change.proposed_cost), old: unitCost(change.currency, change.cost) }) }}
                         </span>
                         <span v-else>{{ ctrans("The supplier proposes :new per unit", { new: unitCost(change.currency, change.proposed_cost) }) }}</span>
                         <span v-if="supplierChangePercent(change) !== null" class="font-semibold" :class="(supplierChangePercent(change) as number) > 0 ? 'text-red-600' : 'text-green-700'">
@@ -625,7 +641,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                         </span>
                     </div>
                     <p v-if="change.proposed_moq" class="text-xs text-amber-900">
-                        {{ change.minimum_carton_order && change.minimum_carton_order !== change.proposed_moq ? ctrans("MOQ :new cartons, now :old", { new: change.proposed_moq, old: change.minimum_carton_order }) : ctrans("MOQ :new cartons", { new: change.proposed_moq }) }}
+                        {{ change.minimum_carton_order && change.minimum_carton_order !== change.proposed_moq ? ctrans("Current MOQ :old cartons, the supplier proposes :new", { new: change.proposed_moq, old: change.minimum_carton_order }) : ctrans("MOQ :new cartons", { new: change.proposed_moq }) }}
                     </p>
                     <p v-if="change.effective_from || change.effective_until" class="text-xs text-gray-600">
                         <template v-if="change.effective_from">{{ ctrans("From :date", { date: useFormatTime(change.effective_from) }) }}</template>
@@ -635,6 +651,33 @@ function saveMaster(masterProduct: MasterProduct): void {
                     <p v-if="change.reason" class="text-xs italic text-gray-600">{{ change.reason }}</p>
 
                     <template v-if="change.decide_route">
+                        <div v-if="rejectingSupplierChangeId !== change.id && change.open_purchase_order_lines.length" class="space-y-1">
+                            <label class="flex w-fit cursor-pointer items-center gap-2 text-xs text-gray-700">
+                                <Checkbox v-model="updateOpenPurchaseOrders[change.id]" binary size="small" />
+                                {{ change.open_purchase_order_lines.length === 1 ? ctrans("Also use the new price on 1 open purchase order") : ctrans("Also use the new price on :count open purchase orders", { count: change.open_purchase_order_lines.length }) }}
+                                <FontAwesomeIcon
+                                    v-tooltip="ctrans('On accept, the unit cost of this product changes to the new price on draft and submitted purchase orders of every organisation you can edit procurement in. Agreed orders keep the price agreed with the supplier, and lines with a price request from the agent are answered on their own.')"
+                                    :icon="faInfoCircle"
+                                    class="cursor-help text-gray-400"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </label>
+                            <ul class="space-y-0.5 pl-6 text-xs text-gray-600">
+                                <li v-for="line in change.open_purchase_order_lines" :key="line.id" class="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                    <span class="rounded bg-white px-1.5 py-0.5 font-semibold text-gray-700">{{ line.organisation }}</span>
+                                    <a :href="line.url" target="_blank" class="flex items-center gap-1 whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline">
+                                        {{ line.reference }}
+                                        <FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" aria-hidden="true" />
+                                    </a>
+                                    <span>{{ ctrans(":quantity units", { quantity: line.quantity_ordered }) }}</span>
+                                    <span :class="updateOpenPurchaseOrders[change.id] ? 'text-amber-900' : 'text-gray-500'">
+                                        {{ unitCost(change.currency, line.unit_cost) }}<template v-if="updateOpenPurchaseOrders[change.id]"> → {{ unitCost(change.currency, change.proposed_cost) }}</template>
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+
                         <div v-if="rejectingSupplierChangeId !== change.id" class="flex flex-wrap items-center gap-1.5">
                             <Button type="tertiary" size="xs" :label="ctrans('Accept, save as supplier cost')" :loading="isDecidingSupplierChange(change, 'accepted')" :disabled="!!decidingSupplierChange" @click="decideSupplierChange(change, 'accepted')">
                                 <template #icon>

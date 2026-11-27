@@ -12,6 +12,7 @@ namespace App\Actions\Goods\UI;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrderTransaction\RepriceOpenPurchaseOrderTransactions;
 use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -23,6 +24,7 @@ use App\Models\Goods\Stock;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -252,6 +254,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'reason'               => $data['reason'] ?? null,
                     'submitted_at'         => $supplierSubmission->submitted_at,
                     'url'                  => route('grp.supply-chain.supplier_submissions.show', [$supplierSubmission->id]),
+                    'open_purchase_order_lines' => $canDecide ? $this->openPurchaseOrderLines($supplierProduct, $user, (float) ($data['proposed_price'] ?? 0)) : [],
                     'decide_route'         => $canDecide ? [
                         'name'       => 'grp.models.supplier_submission.decide',
                         'parameters' => ['supplierSubmission' => $supplierSubmission->id],
@@ -259,6 +262,25 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     ] : null,
                 ];
             })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{id: int, organisation: string, reference: string, state: string, url: string, quantity_ordered: float, unit_cost: float}>
+     */
+    private function openPurchaseOrderLines(SupplierProduct $supplierProduct, User $user, float $proposedCost): array
+    {
+        return RepriceOpenPurchaseOrderTransactions::repriceableLines($supplierProduct, $proposedCost, $user)
+            ->map(fn (PurchaseOrderTransaction $transaction) => [
+                'id'               => $transaction->id,
+                'organisation'     => $transaction->purchaseOrder->organisation->code,
+                'reference'        => $transaction->purchaseOrder->reference,
+                'state'            => $transaction->purchaseOrder->state->value,
+                'url'              => route('grp.org.procurement.purchase_orders.show', [$transaction->purchaseOrder->organisation->slug, $transaction->purchaseOrder->slug]),
+                'quantity_ordered' => (float) $transaction->quantity_ordered,
+                'unit_cost'        => (float) $transaction->unit_cost,
+            ])
             ->values()
             ->all();
     }
