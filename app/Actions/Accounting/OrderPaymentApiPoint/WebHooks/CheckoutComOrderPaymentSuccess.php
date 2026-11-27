@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
@@ -38,6 +39,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
     use AsAction;
     use WithCheckoutCom;
     use WithRetinaOrderPlacedRedirection;
+    use WithPayAndSubmitOrder;
 
 
     /**
@@ -170,7 +172,8 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
         /** Submit runs AFTER the payment transaction commits: a submit failure must never roll
          * back the payment record — that 422s the webhook, checkout.com retries for hours and
-         * the customer retries paying. Failed submit = paid order in basket + Sentry alert.
+         * the customer retries paying. Failed submit = paid order in basket, so staff are alerted
+         * on Discord: Sentry alone left GB581687 unseen for 35 hours (INI-590).
          * The order row lock serialises racing submitters (client callback vs webhook): the
          * loser re-reads the state as submitted and skips instead of failing on duplicates. */
         if ($order->state == OrderStateEnum::CREATING) {
@@ -186,9 +189,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
                 });
             } catch (\Throwable $e) {
                 Sentry::captureException($e);
-                Sentry::captureMessage(
-                    'Checkout.com payment recorded but order '.$order->id.' failed to submit — paid order left in basket, needs attention'
-                );
+                $this->alertPaidOrderNotSubmitted($order, $e);
             }
         } elseif ($order->state == OrderStateEnum::CANCELLED) {
             Sentry::captureMessage(

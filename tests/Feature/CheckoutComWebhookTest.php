@@ -181,6 +181,40 @@ test('webhook payment_captured pays and submits the order', function () {
     return [$order, $orderPaymentApiPoint, $paymentAccountShop];
 });
 
+test('a captured payment whose submit fails alerts staff on Discord and leaves the paid order in the basket', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    config(['services.discord.webhook_url' => 'https://discord.test/webhook']);
+    Illuminate\Support\Facades\Queue::fake();
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    ProcessCheckoutComPaymentGatewayLog::partialMock()
+        ->shouldReceive('getCheckOutPayment')
+        ->andReturn([
+            'id'     => 'pay_test_submit_fails',
+            'status' => 'Captured',
+            'amount' => 2500,
+            'source' => ['type' => 'card'],
+        ]);
+
+    App\Actions\Ordering\Order\UpdateState\SubmitOrder::shouldRun()->andThrow(new Exception('no delivery address'));
+
+    $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_test_submit_fails', 'pay_test_submit_fails', $orderPaymentApiPoint, 2500),
+        'gateway' => 'checkout-com',
+    ]);
+
+    PreProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
+
+    $order->refresh();
+
+    expect($order->state)->toBe(OrderStateEnum::CREATING)
+        ->and((float)$order->payment_amount)->toBe(25.0);
+
+    Illuminate\Support\Facades\Queue::assertPushed(Illuminate\Queue\CallQueuedClosure::class, 1);
+});
+
 test('duplicated webhook event is flagged and does not double pay', function (array $context) {
     list($order, $orderPaymentApiPoint) = $context;
 
