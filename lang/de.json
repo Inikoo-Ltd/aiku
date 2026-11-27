@@ -27125,5 +27125,6 @@
     "Order :reference is on hold and will not be sent out": "Bestellung :reference ist angehalten und wird nicht versendet",
     "Reminder: order :reference is still on hold, payment needed": "Erinnerung: Bestellung :reference ist weiterhin angehalten, Zahlung erforderlich",
     "Final reminder: order :reference will be cancelled if not paid": "Letzte Erinnerung: Bestellung :reference wird ohne Zahlung storniert",
-    "Order :reference is on hold, payment needed": "Bestellung :reference ist angehalten, Zahlung erforderlich"
+    "Order :reference is on hold, payment needed": "Bestellung :reference ist angehalten, Zahlung erforderlich",
+    "Login / Register to Start": "Anmelden / Registrieren, um zu starten"
 }
