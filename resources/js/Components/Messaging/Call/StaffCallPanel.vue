@@ -77,6 +77,35 @@ const copyMeetingLink = async () => {
     }
 }
 
+const recordingBy = ref<string | null>(null)
+const readRecordingMark = (metadata: string | undefined) => {
+    try {
+        recordingBy.value = metadata ? JSON.parse(metadata)?.recording?.by ?? null : null
+    } catch {
+        recordingBy.value = null
+    }
+}
+const recordPopover = ref()
+const keepAudioMonths = ref(0)
+const keepAudioOptions = [
+    { label: ctrans("Delete the audio once the summary is written"), value: 0 },
+    { label: ctrans("Keep the audio for 1 month"), value: 1 },
+    { label: ctrans("Keep the audio for 3 months"), value: 3 },
+    { label: ctrans("Keep the audio for 6 months"), value: 6 },
+    { label: ctrans("Keep the audio for 12 months"), value: 12 },
+]
+const recordingBusy = ref(false)
+const recordingError = ref<string | null>(null)
+const setRecording = async (record: boolean) => {
+    recordingBusy.value = true
+    recordingError.value = null
+    if (!(await store.setRecording(call.value, record, keepAudioMonths.value))) {
+        recordingError.value = record ? ctrans("Could not start recording. Try again.") : ctrans("Could not stop recording. Try again.")
+    }
+    recordingBusy.value = false
+    recordPopover.value?.hide()
+}
+
 const participants = computed<Participant[]>(() => {
     version.value
     if (!room.value) return []
@@ -290,6 +319,7 @@ const connect = async () => {
             bump()
         })
         .on(RoomEvent.ConnectionQualityChanged, bump)
+        .on(RoomEvent.RoomMetadataChanged, readRecordingMark)
         .on(RoomEvent.TrackUnpublished, bump)
         .on(RoomEvent.LocalTrackPublished, bump)
         .on(RoomEvent.LocalTrackUnpublished, bump)
@@ -332,6 +362,7 @@ const connect = async () => {
         return
     }
     connection.value = "connected"
+    readRecordingMark(lkRoom.metadata)
     audioBlocked.value = !lkRoom.canPlaybackAudio
     applyRemoteDataMode()
 
@@ -412,6 +443,15 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
             </button>
         </div>
 
+        <div v-if="recordingBy" class="flex items-center gap-2 bg-red-600 px-3 py-1 text-xs text-white" role="status">
+            <span class="h-2 w-2 shrink-0 animate-pulse rounded-full bg-white" aria-hidden="true" />
+            <span class="flex-1">
+                <template v-if="isGuest">{{ ctrans("This call is being recorded and transcribed.") }}</template>
+                <template v-else>{{ ctrans("Recording, started by :name. Everyone in the call gets the transcript and a summary.", { name: recordingBy }) }}</template>
+            </span>
+            <button v-if="!isGuest && call.can_record" type="button" class="font-semibold underline" :disabled="recordingBusy" @click="setRecording(false)">{{ ctrans("Stop") }}</button>
+        </div>
+
         <div v-if="!isGuest" class="flex flex-col gap-1 border-b border-white/10 px-3 py-1.5 text-xs">
             <div class="flex items-center gap-2">
                 <button type="button" class="flex items-center gap-1.5 rounded px-1.5 py-1 text-gray-200 hover:bg-white/10" :disabled="linkState === 'copying'" @click="copyMeetingLink">
@@ -419,6 +459,30 @@ const controlClass = "flex h-10 w-10 items-center justify-center rounded-full bg
                     {{ linkState === "copied" ? ctrans("Copied") : ctrans("Copy meeting link") }}
                 </button>
                 <span v-if="linkState === 'failed'" class="text-red-300">{{ ctrans("Could not copy the link.") }}</span>
+                <button
+                    v-if="call.can_record && !recordingBy"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded px-1.5 py-1 text-gray-200 hover:bg-white/10"
+                    v-tooltip="ctrans('Record the call for a transcript and a summary')"
+                    @click="recordPopover?.toggle($event)">
+                    <span class="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
+                    {{ ctrans("Record") }}
+                </button>
+                <span v-if="recordingError" class="text-red-300">{{ recordingError }}</span>
+                <Popover ref="recordPopover">
+                    <div class="flex w-72 flex-col gap-3 text-sm">
+                        <p class="text-gray-600">{{ ctrans("Everyone in the call sees that it is being recorded. The transcript and summary go to the people in the call.") }}</p>
+                        <Select v-model="keepAudioMonths" :options="keepAudioOptions" option-label="label" option-value="value" class="w-full" />
+                        <button
+                            type="button"
+                            class="flex items-center justify-center gap-2 rounded bg-red-600 px-3 py-1.5 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                            :disabled="recordingBusy"
+                            @click="setRecording(true)">
+                            <LoadingIcon v-if="recordingBusy" />
+                            {{ ctrans("Start recording") }}
+                        </button>
+                    </div>
+                </Popover>
                 <button
                     v-if="call.meeting_url"
                     type="button"

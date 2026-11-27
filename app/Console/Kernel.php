@@ -129,6 +129,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('staff-tasks:nudge')->hourly()->onOneServer();
         $schedule->command('static_website:check_live_domain')->hourlyAt(35)->onOneServer()->withoutOverlapping(30);
         $schedule->command('staff-calls:close-stale')->everyMinute()->onOneServer()->withoutOverlapping();
+        $schedule->command('staff-calls:sweep-recordings')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
         $schedule->command('webpages:break_new_in_pages_cache')->dailyAt('03:10')->timezone('Europe/London')->onOneServer()->withoutOverlapping();
         $schedule->command('accounting:refresh-payment-methods-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('accounting:refresh-invoice-countries-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();

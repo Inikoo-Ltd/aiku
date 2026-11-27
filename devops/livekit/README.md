@@ -729,9 +729,83 @@ Nothing new is added; it fits what aiku already has:
 What would raise it: rescaling to CX43 (16.49) or, if shared CPUs prove too jittery, CCX13
 (43.49); outgoing traffic above 20 TB (billed
 per TB beyond the allowance); a Singapore server for Indonesia-only calls (CPX22 26.99 with
-1 TB, and dearer extra traffic); recording, which would need LiveKit's Egress service on a
-CPU-heavy box (out of scope). Hetzner's overview page also mentions EUR 0.50/month for a primary
+1 TB, and dearer extra traffic); video recording, which would need Egress with a browser on a
+CPU-heavy box (audio recording runs on this box, step 11). Hetzner's overview page also mentions EUR 0.50/month for a primary
 IPv4 while the product page says "price incl. IPv4": check the console's price at checkout.
+
+## 11. Call recording (INI-586)
+
+Someone in a call presses Record; aiku asks Egress to write each speaker's audio track to its own
+Ogg file in the private R2 bucket, then transcribes each file with OpenAI (whisper-1), merges them
+by time and writes a summary. Audio only: track egress uses no browser, so the 2-vCPU box carries it
+(measured idle at about 5% CPU and 0.5 of 3.7 GB RAM on 27 Nov 2026). Audio is deleted once the
+summary is saved unless whoever pressed Record chose to keep it (1 to 12 months).
+
+Needs Redis on the box (Egress talks to LiveKit through it), which means **one LiveKit restart**
+(running calls drop for a few seconds): do it outside working hours.
+
+On the box, as root:
+
+1. Redis, listening on localhost only (Ubuntu's default):
+
+   ```bash
+   NEEDRESTART_SUSPEND=1 apt-get install -y redis-server docker.io && systemctl enable --now redis-server docker && redis-cli ping
+   ```
+
+   ```bash
+   ss -ltnp | grep 6379
+   ```
+
+   Must show `127.0.0.1:6379` (and `[::1]:6379`) only, never `0.0.0.0`.
+
+2. Copy `livekit.yaml`, `egress.yaml` and `livekit-egress.service` from this folder to `/root/livekit/`,
+   fill `livekit.yaml` again as in step 5 (it now has the `redis:` block), then fill `egress.yaml`.
+   The key and secret come from `/etc/livekit/keys.yaml` (`key: secret`); the R2 values are the
+   `CLOUDFLARE_STAFF_CHAT_R2_*` ones in `shared/.env` on boro (endpoint, bucket, access key, secret):
+
+   ```bash
+   install -m 600 /root/livekit/egress.yaml /etc/livekit/egress.yaml && nano /etc/livekit/egress.yaml
+   ```
+
+   LiveKit's docs show the storage block both as top-level `s3:` and under `storage:`, and do not list
+   `force_path_style`: check `egress.yaml` against the README of the release you pin before starting it.
+
+3. Restart LiveKit with Redis, then start Egress (pick the latest tag from
+   github.com/livekit/egress/releases for `{{EGRESS_VERSION}}` in the unit first):
+
+   ```bash
+   systemctl restart livekit && sleep 3 && curl -s http://127.0.0.1:7880/
+   ```
+
+   ```bash
+   install -m 644 /root/livekit/livekit-egress.service /etc/systemd/system/livekit-egress.service && systemctl daemon-reload && systemctl enable --now livekit-egress
+   ```
+
+   ```bash
+   sleep 20; curl -s http://127.0.0.1:7990/ ; journalctl -u livekit-egress -n 30 --no-pager
+   ```
+
+4. On boro and litio (the queue workers transcode each speaker's file before transcription):
+
+   ```bash
+   NEEDRESTART_SUSPEND=1 apt-get install -y ffmpeg
+   ```
+
+   and in `shared/.env`, then `php artisan config:cache` as in a deploy:
+
+   ```
+   LIVEKIT_RECORDING=true
+   ```
+
+   `CHATGPT_TRANSLATIONS_API_KEY` (already set) is the OpenAI key used for transcription. With
+   `LIVEKIT_RECORDING` unset or false the Record button does not show.
+
+**Check:** a two-person call, Record, talk for a minute, Stop. Within a few minutes both people get a
+Verba message from the Aiku assistant with the summary and a link to the transcript; the bucket's
+`call-recordings/` folder for it is empty again (unless the audio was kept).
+
+**Cost:** OpenAI whisper-1 is about $0.006 per minute of each speaker's audio (a 1-hour call with
+two people talking is about $0.72); the summary is a few cents. Nothing extra on Hetzner.
 
 ## Sources
 

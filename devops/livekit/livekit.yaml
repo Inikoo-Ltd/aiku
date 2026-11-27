@@ -67,4 +67,7 @@ webhook:
   urls:
     - https://aiku.io/webhooks/livekit
 
-# Single server: no redis (rooms live in memory). No Egress (no recording).
+# Single server. Redis on the box only so Egress (call recording, INI-586) can reach LiveKit;
+# rooms still live on this one node. Both must use the same address (egress.yaml).
+redis:
+  address: 127.0.0.1:6379

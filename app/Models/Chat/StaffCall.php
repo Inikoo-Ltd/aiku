@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -295,7 +296,14 @@ class StaffCall extends Model
             'outcome'            => $this->outcome,
             'present_user_ids'   => $this->users->filter(fn (User $user) => $user->pivot->left_at === null)->pluck('id')->values()->all(),
             'joined_user_ids'    => $this->users->pluck('id')->values()->all(),
+            'can_record'         => StaffCallRecording::isEnabled(),
+            'recording_by'       => $this->liveRecording?->startedBy->chatName(),
         ];
+    }
+
+    public function liveRecording(): HasOne
+    {
+        return $this->hasOne(StaffCallRecording::class)->where('status', StaffCallRecording::STATUS_RECORDING);
     }
 
     /**

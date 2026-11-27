@@ -50,6 +50,9 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/calls/{staffCall}/decline', \App\Actions\Chat\Staff\Call\DeclineStaffCall::class)->name('calls.decline');
     Route::post('/calls/{staffCall}/leave', \App\Actions\Chat\Staff\Call\LeaveStaffCall::class)->name('calls.leave');
     Route::post('/calls/{staffCall}/ping', \App\Actions\Chat\Staff\Call\PingStaffCall::class)->name('calls.ping');
+    Route::post('/calls/{staffCall}/recording', \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::class)->middleware('throttle:10,1,staff-call-recording')->name('calls.recording.start');
+    Route::delete('/calls/{staffCall}/recording', \App\Actions\Chat\Staff\Call\Recording\StopStaffCallRecording::class)->name('calls.recording.stop');
+    Route::get('/call-recordings/{staffCallRecording}', \App\Actions\Chat\Staff\Call\Recording\ShowStaffCallRecording::class)->name('calls.recordings.show');
     Route::get('/slack', \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class)->name('slack.index');
     Route::get('/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inSlackChannel'])->name('slack.show');
     Route::get('/slack/{slackChannel}/thread', \App\Actions\Chat\Staff\Json\GetSlackThread::class)->name('slack.thread');

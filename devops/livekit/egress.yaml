@@ -1,0 +1,29 @@
+# LiveKit Egress for call recording (INI-586): one Ogg file per speaker's audio track, written
+# straight to the private R2 bucket. Runs on the calls box next to livekit-server (README step 11).
+# Install: sed the {{...}} values into /etc/livekit/egress.yaml, mode 600 (it holds the R2 keys).
+# aiku sends only the file path; the storage keys stay on this box.
+
+log_level: info
+api_key: {{LIVEKIT_API_KEY}}
+api_secret: {{LIVEKIT_API_SECRET}}
+ws_url: ws://127.0.0.1:7880
+
+# Same Redis as livekit.yaml.
+redis:
+  address: 127.0.0.1:6379
+
+health_port: 7990
+
+# Audio track egress is light (no browser, Opus in Ogg). The default cost of 1 CPU per track would
+# refuse a third speaker on this 2-vCPU box, so count each track as a tenth of a CPU.
+cpu_cost:
+  track_cpu_cost: 0.1
+  max_cpu_utilization: 0.8
+
+s3:
+  access_key: {{R2_ACCESS_KEY}}
+  secret: {{R2_SECRET_KEY}}
+  region: auto
+  endpoint: {{R2_ENDPOINT}}
+  bucket: {{R2_BUCKET}}
+  force_path_style: true

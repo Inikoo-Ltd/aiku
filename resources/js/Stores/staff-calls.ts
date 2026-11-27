@@ -36,6 +36,8 @@ export interface StaffCall {
     outcome: "answered" | "declined" | "missed" | "cancelled" | null
     present_user_ids: number[]
     joined_user_ids: number[]
+    can_record?: boolean
+    recording_by?: string | null
 }
 
 export type StaffCallKind = "voice" | "video" | "screen"
@@ -183,6 +185,18 @@ export const useStaffCalls = defineStore("staff-calls", {
                 const { data } = await axios.post(route("grp.chat.staff.calls.guests.decide", [call.ulid, guestUlid]), { decision })
                 this.handleBroadcast(data.call)
             } catch { }
+        },
+
+        async setRecording(call: StaffCall, record: boolean, keepAudioMonths = 0): Promise<boolean> {
+            try {
+                const { data } = record
+                    ? await axios.post(route("grp.chat.staff.calls.recording.start", call.ulid), { keep_audio_months: keepAudioMonths })
+                    : await axios.delete(route("grp.chat.staff.calls.recording.stop", call.ulid))
+                this.handleBroadcast(data.call)
+                return true
+            } catch {
+                return false
+            }
         },
 
         async lockMeeting(call: StaffCall, locked: boolean) {

@@ -44,6 +44,7 @@ EMPTY_TABLES=(
   mailshot_has_dispatched_emails customer_has_dispatched_emails ses_notifications notifications
   manufacture_payroll_adjustments
   staff_messages slack_messages staff_message_stories slack_message_versions slack_files
+  staff_call_recordings staff_call_recording_tracks
 )
 EMPTY_PATTERNS=('crawl\_%' 'search\_console\_%' 'bank\_%')
 NULLED_COLUMNS=(shipments.label supplier_messages.dispatched_email_id agent_payments.bank_transaction_id)

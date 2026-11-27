@@ -1,0 +1,21 @@
+# LiveKit Egress (call recording, INI-586) in Docker, on the host network so it reaches
+# livekit-server and Redis on 127.0.0.1. Install (README step 11):
+#
+#     install -m 644 /root/livekit/livekit-egress.service /etc/systemd/system/livekit-egress.service
+#     systemctl daemon-reload && systemctl enable --now livekit-egress
+#
+# Pin the image to a release tag (github.com/livekit/egress/releases) and change it here to upgrade.
+[Unit]
+Description=LiveKit Egress (staff call recording)
+After=docker.service livekit.service redis-server.service
+Requires=docker.service
+
+[Service]
+ExecStartPre=-/usr/bin/docker rm -f livekit-egress
+ExecStart=/usr/bin/docker run --rm --name livekit-egress --network host -e EGRESS_CONFIG_FILE=/etc/livekit/egress.yaml -v /etc/livekit/egress.yaml:/etc/livekit/egress.yaml:ro livekit/egress:{{EGRESS_VERSION}}
+ExecStop=/usr/bin/docker stop -t 30 livekit-egress
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

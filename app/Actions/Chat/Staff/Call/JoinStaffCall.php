@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Call;
 
 use App\Events\StaffCallUpdated;
 use App\Models\Chat\StaffCall;
+use App\Models\Chat\StaffCallRecording;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,6 +49,7 @@ class JoinStaffCall
             }
         });
 
+        StaffCallRecording::noteJoined($call, $user);
         $call->refresh()->unsetRelation('users');
         StaffCallUpdated::dispatch($call);
 

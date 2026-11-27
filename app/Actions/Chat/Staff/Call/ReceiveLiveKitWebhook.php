@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\Staff\Call;
 
+use App\Actions\Chat\Staff\Call\Recording\ReceiveStaffCallEgressEvent;
+use App\Actions\Chat\Staff\Call\Recording\RecordStaffCallTrack;
 use App\Models\Chat\StaffCall;
 use App\Models\Chat\StaffMeetingGuest;
 use App\Models\SysAdmin\User;
@@ -33,8 +35,14 @@ class ReceiveLiveKitWebhook
      */
     public function handle(array $payload): void
     {
-        $call = StaffCall::where('room', $payload['room']['name'] ?? '')->first();
         $event = $payload['event'] ?? '';
+        if ($event === 'egress_ended') {
+            ReceiveStaffCallEgressEvent::run($payload['egressInfo'] ?? $payload['egress_info'] ?? []);
+
+            return;
+        }
+
+        $call = StaffCall::where('room', $payload['room']['name'] ?? '')->first();
         if (!$call) {
             return;
         }
@@ -52,8 +60,14 @@ class ReceiveLiveKitWebhook
             return;
         }
 
+        if ($event === 'track_published') {
+            RecordStaffCallTrack::make()->forPublishedTrack($call, $payload);
+
+            return;
+        }
+
         $identity = (string) ($payload['participant']['identity'] ?? '');
-        if ($event !== 'participant_joined' || $identity === '') {
+        if ($event !== 'participant_joined' || $identity === '' || self::isRecorder($payload['participant'])) {
             return;
         }
 
@@ -83,6 +97,17 @@ class ReceiveLiveKitWebhook
             ->where('staff_call_id', $call->id)
             ->where('user_id', $user->id)
             ->update(['last_seen_at' => now(), 'updated_at' => now()]);
+    }
+
+    /**
+     * Egress joins the room to record it (INI-586). Its kind is set by LiveKit itself, never by a token aiku issued, so a
+     * browser cannot pass as one.
+     *
+     * @param array{kind?: string|int} $participant
+     */
+    private static function isRecorder(array $participant): bool
+    {
+        return in_array($participant['kind'] ?? null, ['EGRESS', 2], true);
     }
 
     public static function isSigned(string $authorization, string $body): bool

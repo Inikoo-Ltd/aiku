@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Call;
 
+use App\Actions\Chat\Staff\Call\Recording\StopStaffCallRecording;
 use App\Events\StaffCallUpdated;
 use App\Events\StaffMessageSent;
 use App\Models\Chat\StaffCall;
@@ -63,6 +64,7 @@ class EndStaffCall
         }
         StaffCallUpdated::dispatch($call);
         RemoveFromLiveKitRoom::dispatch($call);
+        StopStaffCallRecording::run($call);
 
         return $call;
     }

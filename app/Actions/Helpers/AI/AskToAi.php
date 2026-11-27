@@ -21,9 +21,10 @@ class AskToAi extends OrgAction
      * @param string $prompt
      * @param string $model (Optional, default 'gpt-4o-mini')
      * @param array<string, mixed> $options extra request fields, such as OpenRouter's reasoning or provider
+     * @param int $timeoutSeconds raise it for long inputs, such as the transcript of an hour-long call
      * @return string|null
      */
-    public function handle(string $prompt, string $model = 'gpt-4o-mini', array $options = []): ?string
+    public function handle(string $prompt, string $model = 'gpt-4o-mini', array $options = [], int $timeoutSeconds = 30): ?string
     {
         if (empty($prompt)) {
             return null;
@@ -37,7 +38,7 @@ class AskToAi extends OrgAction
                 return null;
             }
 
-            return $this->sendRequest($apiKey, $model, $prompt, $options);
+            return $this->sendRequest($apiKey, $model, $prompt, $options, $timeoutSeconds);
         } catch (AICreditException $e) {
             throw $e;
         } catch (Throwable $e) {
@@ -53,11 +54,11 @@ class AskToAi extends OrgAction
         return $this->aiApiKey(config('askbot-laravel.openai_api_key'));
     }
 
-    private function sendRequest(string $apiKey, string $model, string $prompt, array $options = []): ?string
+    private function sendRequest(string $apiKey, string $model, string $prompt, array $options = [], int $timeoutSeconds = 30): ?string
     {
         $response = $this->aiRequest($apiKey)
             ->connectTimeout(10)
-            ->timeout(30)
+            ->timeout($timeoutSeconds)
             ->post('chat/completions', array_merge([
                 'model' => $this->aiModel($model),
                 'messages' => [

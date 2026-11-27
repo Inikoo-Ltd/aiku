@@ -22,6 +22,7 @@ return [
     'summary_writer_model' => env('CHAT_SUMMARY_WRITER_MODEL', 'deepseek/deepseek-v4.1-flash'),
     // On 71 real emails it put aside 25 of 34 staff-marked spam to gpt-4o's 20, and one real customer to gpt-4o's two.
     'noise_model' => env('CHAT_NOISE_MODEL', 'openai/gpt-5.6-luna'),
+    'call_summary_model' => env('CHAT_CALL_SUMMARY_MODEL', 'anthropic/claude-haiku-5.5'),
     'learning_model' => env('CHAT_LEARNING_MODEL', 'gpt-4o-mini'),
 
     // Hiding a real customer is worse than showing a junk mail, so the bar is low.

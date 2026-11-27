@@ -27,6 +27,7 @@ use Firebase\JWT\Key;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -776,5 +777,242 @@ test('a removal the call server did not confirm fails the job so it is tried aga
     expect(fn () => RemoveFromLiveKitRoom::make()->asJob($call, 'guest-x'))->toThrow(RuntimeException::class)
         ->and(RemoveFromLiveKitRoom::make()->jobTries)->toBe(5);
     Http::fake(['localhost:7880/*' => Http::response([], 200)]);
+    EndStaffCall::run($call);
+});
+
+/**
+ * A calls server with Egress: lists the given participants, starts one egress per track, and records every request.
+ *
+ * @param array<int, array{identity: string, name: string, tracks: array<int, array{sid: string, source: string}>}> $participants
+ */
+function fakeRecordingCallServer(array $participants = [], bool $metadataWorks = true, bool $stopWorks = true, bool $egressWorks = true): void
+{
+    Config::set('services.livekit.recording', true);
+    Config::set('services.openai.api_key', 'test-openai-key');
+    \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+    Http::fake(function (\Illuminate\Http\Client\Request $request) use ($participants, $metadataWorks, $stopWorks, $egressWorks) {
+        return match (true) {
+            str_ends_with($request->url(), 'RoomService/ListParticipants')   => Http::response(['participants' => $participants]),
+            str_ends_with($request->url(), 'RoomService/UpdateRoomMetadata') => $metadataWorks ? Http::response([]) : Http::response([], 503),
+            str_ends_with($request->url(), 'Egress/StartTrackEgress')        => $egressWorks ? Http::response(['egress_id' => 'EG_'.$request['track_id'].'_'.\Illuminate\Support\Str::random(8)]) : Http::response([], 503),
+            str_ends_with($request->url(), 'Egress/ListEgress')              => Http::response(['items' => $stopWorks ? [] : [['egress_id' => 'EG_running']]]),
+            str_ends_with($request->url(), 'Egress/StopEgress')               => $stopWorks ? Http::response([]) : Http::response([], 503),
+            str_contains($request->url(), 'api.openai.com')                   => Http::response(['segments' => [
+                ['start' => 3.2, 'text' => str_contains($request->body(), 'SECOND-PIECE') ? ' Later' : ' Hello', 'no_speech_prob' => 0.01, 'avg_logprob' => -0.2],
+                ['start' => 40.0, 'text' => ' Thank you for watching.', 'no_speech_prob' => 0.92, 'avg_logprob' => -1.4],
+            ]]),
+            default                                                           => Http::response([]),
+        };
+    });
+    Http::preventStrayRequests();
+}
+
+function recordingCallWithTwo(object $test): StaffCall
+{
+    $call = StartStaffCall::run($test->dm, $test->user)['call'];
+    JoinStaffCall::run($call, $test->callee);
+
+    return $call->refresh();
+}
+
+test('a colleague in the call starts recording: the room is marked first, then each speaker\'s audio is recorded on its own, path only', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer([
+        ['identity' => (string) $this->user->id, 'name' => 'Ana', 'tracks' => [['sid' => 'TR_mic1', 'source' => 'MICROPHONE'], ['sid' => 'TR_cam1', 'type' => 'VIDEO', 'source' => 'CAMERA']]],
+        ['identity' => (string) $this->callee->id, 'name' => 'Ben', 'tracks' => [['sid' => 'TR_mic2', 'source' => 'MICROPHONE']]],
+    ]);
+
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.recording.start', $call->ulid), ['keep_audio_months' => 3])
+        ->assertOk()->assertJsonPath('call.recording_by', $this->user->chatName());
+
+    $recording = \App\Models\Chat\StaffCallRecording::where('staff_call_id', $call->id)->sole();
+    $requests  = Http::recorded()->map(fn ($pair) => $pair[0]);
+    $mark      = $requests->first(fn ($request) => str_ends_with($request->url(), 'UpdateRoomMetadata'));
+    $egresses  = $requests->filter(fn ($request) => str_ends_with($request->url(), 'StartTrackEgress'))->values();
+
+    expect($recording->status)->toBe('recording')
+        ->and($recording->keep_audio_months)->toBe(3)
+        ->and(json_decode($mark['metadata'], true))->toBe(['recording' => ['by' => $this->user->chatName()]])
+        ->and($requests->search($mark))->toBeLessThan($requests->search($egresses->first()))
+        ->and($egresses->pluck('track_id')->all())->toBe(['TR_mic1', 'TR_mic2'])
+        ->and($egresses->every(fn ($request) => array_keys($request['file']) === ['filepath'] && str_starts_with($request['file']['filepath'], 'call-recordings/'.$recording->ulid.'/')))->toBeTrue()
+        ->and(decodeCallToken(str_replace('Bearer ', '', $egresses->first()->header('Authorization')[0]))->video->roomRecord)->toBeTrue()
+        ->and($recording->tracks()->pluck('speaker', 'track_sid')->all())->toBe(['TR_mic1' => $this->user->chatName(), 'TR_mic2' => $this->callee->chatName()])
+        ->and($recording->tracks()->where('status', 'active')->whereNotNull('egress_id')->count())->toBe(2);
+});
+
+test('nothing is recorded when the room cannot be marked, and only staff present in the call may record', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer([['identity' => (string) $this->user->id, 'name' => 'Ana', 'tracks' => [['sid' => 'TR_mic1', 'source' => 'MICROPHONE']]]], metadataWorks: false);
+
+    actingAs($this->outsider)->postJson(route('grp.chat.staff.calls.recording.start', $call->ulid))->assertForbidden();
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.recording.start', $call->ulid))->assertUnprocessable();
+
+    expect(\App\Models\Chat\StaffCallRecording::where('staff_call_id', $call->id)->count())->toBe(0)
+        ->and(Http::recorded(fn ($request) => str_ends_with($request->url(), 'StartTrackEgress')))->toHaveCount(0);
+
+    Config::set('services.livekit.recording', false);
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.recording.start', $call->ulid))->assertNotFound();
+});
+
+test('someone who starts talking or shares their screen\'s sound while recording is recorded too', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer();
+    $recording = \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::run($call, $this->user);
+
+    ReceiveLiveKitWebhook::run(['event' => 'track_published', 'room' => ['name' => $call->room], 'participant' => ['identity' => (string) $this->callee->id, 'name' => 'Ben'], 'track' => ['sid' => 'TR_screen', 'source' => 'SCREEN_SHARE_AUDIO']]);
+    ReceiveLiveKitWebhook::run(['event' => 'track_published', 'room' => ['name' => $call->room], 'participant' => ['identity' => (string) $this->callee->id, 'name' => 'Ben'], 'track' => ['sid' => 'TR_cam', 'type' => 'VIDEO', 'source' => 'CAMERA']]);
+    ReceiveLiveKitWebhook::run(['event' => 'track_published', 'room' => ['name' => $call->room], 'participant' => ['identity' => (string) $this->callee->id, 'name' => 'Ben'], 'track' => ['sid' => 'TR_screen', 'source' => 'SCREEN_SHARE_AUDIO']]);
+
+    expect($recording->tracks()->pluck('speaker')->all())->toBe([$this->callee->chatName().' (screen)'])
+        ->and(Http::recorded(fn ($request) => str_ends_with($request->url(), 'StartTrackEgress')))->toHaveCount(1);
+});
+
+test('after the call, each speaker is transcribed on their own and merged by time, the summary is sent to the people in the call, and the audio is deleted', function () {
+    Storage::fake('staff-chat-r2');
+    \Illuminate\Support\Facades\Process::fake(function (\Illuminate\Process\PendingProcess $process) {
+        file_put_contents($process->path.'/piece-000.ogg', 'FIRST-PIECE');
+        file_put_contents($process->path.'/piece-001.ogg', 'SECOND-PIECE');
+
+        return \Illuminate\Support\Facades\Process::result();
+    });
+    \App\Actions\Helpers\AI\AskToAi::shouldRun()->once()->andReturn('Sure: {"summary": "We agreed the samples ship Monday.", "decisions": ["Ship Monday"], "action_items": ["Ben: book the courier"]}');
+    $sentTo = [];
+    \App\Actions\Chat\Staff\SendStaffBotMessage::shouldRun()->twice()->andReturnUsing(function (User $user, string $title, string $body, string $url) use (&$sentTo) {
+        $sentTo[] = [$user->id, $body, $url];
+
+        return null;
+    });
+
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer([
+        ['identity' => (string) $this->user->id, 'name' => 'Ana', 'tracks' => [['sid' => 'TR_mic1', 'source' => 'MICROPHONE']]],
+        ['identity' => (string) $this->callee->id, 'name' => 'Ben', 'tracks' => [['sid' => 'TR_mic2', 'source' => 'MICROPHONE']]],
+    ]);
+    $recording = \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::run($call, $this->user);
+    foreach ($recording->tracks as $track) {
+        Storage::disk('staff-chat-r2')->put($track->path, 'ogg');
+    }
+
+    EndStaffCall::run($call);
+    expect($recording->refresh()->status)->toBe('stopped');
+
+    $startedNs = fn (int $seconds) => (string) ($recording->started_at->copy()->addSeconds($seconds)->getTimestampMs() * 1_000_000);
+    $egressOf = $recording->tracks()->pluck('egress_id', 'track_sid');
+    ReceiveLiveKitWebhook::run(['event' => 'egress_ended', 'egressInfo' => ['egressId' => $egressOf['TR_mic1'], 'status' => 'EGRESS_COMPLETE', 'fileResults' => [['startedAt' => $startedNs(0)]]]]);
+    expect($recording->refresh()->status)->toBe('stopped');
+    ReceiveLiveKitWebhook::run(['event' => 'egress_ended', 'egressInfo' => ['egressId' => $egressOf['TR_mic2'], 'status' => 'EGRESS_COMPLETE', 'fileResults' => [['startedAt' => $startedNs(10)]]]]);
+
+    $recording->refresh();
+    expect($recording->status)->toBe('done')
+        ->and($recording->transcript)->toEqual([
+            ['at' => 3, 'speaker' => $this->user->chatName(), 'text' => 'Hello'],
+            ['at' => 13, 'speaker' => $this->callee->chatName(), 'text' => 'Hello'],
+            ['at' => 1203, 'speaker' => $this->user->chatName(), 'text' => 'Later'],
+            ['at' => 1213, 'speaker' => $this->callee->chatName(), 'text' => 'Later'],
+        ])
+        ->and($recording->summary)->toEqual(['summary' => 'We agreed the samples ship Monday.', 'decisions' => ['Ship Monday'], 'action_items' => ['Ben: book the courier']])
+        ->and($recording->audio_deleted_at)->not->toBeNull()
+        ->and(Storage::disk('staff-chat-r2')->allFiles($recording->audioDirectory()))->toBe([])
+        ->and(collect($sentTo)->pluck(0)->sort()->values()->all())->toBe(collect([$this->user->id, $this->callee->id])->sort()->values()->all())
+        ->and($sentTo[0][1])->toBe('We agreed the samples ship Monday.')
+        ->and($sentTo[0][2])->toBe(route('grp.chat.staff.calls.recordings.show', $recording->ulid));
+});
+
+test('kept audio stays until its date and the sweep deletes it then; the transcript and summary stay', function () {
+    Storage::fake('staff-chat-r2');
+    $call      = recordingCallWithTwo($this);
+    $recording = \App\Models\Chat\StaffCallRecording::create(['group_id' => $call->group_id, 'staff_call_id' => $call->id, 'status' => 'done', 'started_by_user_id' => $this->user->id, 'keep_audio_months' => 1, 'transcript' => [['at' => 0, 'speaker' => 'Ana', 'text' => 'Hi']], 'summary' => ['summary' => 'Hi'], 'delete_audio_at' => now()->addMonth()]);
+    Storage::disk('staff-chat-r2')->put($recording->audioDirectory().'/a.ogg', 'ogg');
+
+    \App\Actions\Chat\Staff\Call\Recording\SweepStaffCallRecordings::run();
+    expect(Storage::disk('staff-chat-r2')->exists($recording->audioDirectory().'/a.ogg'))->toBeTrue();
+
+    $this->travel(32)->days();
+    \App\Actions\Chat\Staff\Call\Recording\SweepStaffCallRecordings::run();
+    expect(Storage::disk('staff-chat-r2')->exists($recording->audioDirectory().'/a.ogg'))->toBeFalse()
+        ->and($recording->refresh()->audio_deleted_at)->not->toBeNull()
+        ->and($recording->transcript)->toEqual([['at' => 0, 'speaker' => 'Ana', 'text' => 'Hi']]);
+});
+
+test('only the people in the call can open its summary and transcript', function () {
+    $call      = recordingCallWithTwo($this);
+    $recording = \App\Models\Chat\StaffCallRecording::create(['group_id' => $call->group_id, 'staff_call_id' => $call->id, 'status' => 'done', 'started_by_user_id' => $this->user->id, 'transcript' => [['at' => 0, 'speaker' => 'Ana', 'text' => 'Secret plan']], 'summary' => ['summary' => 'Secret plan']]);
+
+    actingAs($this->outsider)->get(route('grp.chat.staff.calls.recordings.show', $recording->ulid))->assertForbidden();
+    actingAs($this->callee)->get(route('grp.chat.staff.calls.recordings.show', $recording->ulid))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffCallRecording', false)->where('recording.transcript.0.text', 'Secret plan'));
+});
+
+test('the recorder joining the room is never taken for an intruder', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer();
+
+    ReceiveLiveKitWebhook::run(['event' => 'participant_joined', 'room' => ['name' => $call->room], 'participant' => ['identity' => 'EG_abc123', 'kind' => 'EGRESS']]);
+    ReceiveLiveKitWebhook::run(['event' => 'participant_joined', 'room' => ['name' => $call->room], 'participant' => ['identity' => 'EG_fake', 'kind' => 'STANDARD']]);
+
+    expect(Http::recorded(fn ($request) => str_ends_with($request->url(), 'RemoveParticipant'))->map(fn ($pair) => $pair[0]['identity'])->values()->all())->toBe(['EG_fake']);
+});
+
+test('the red mark stays on until every recorder has really stopped', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer([['identity' => (string) $this->user->id, 'name' => 'Ana', 'tracks' => [['sid' => 'TR_mic1', 'source' => 'MICROPHONE']]]], stopWorks: false);
+    $recording = \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::run($call, $this->user);
+    $cleared   = fn () => Http::recorded(fn ($request) => str_ends_with($request->url(), 'UpdateRoomMetadata') && $request['metadata'] === '')->count();
+
+    actingAs($this->user)->deleteJson(route('grp.chat.staff.calls.recording.stop', $call->ulid))->assertOk();
+    expect($recording->refresh()->status)->toBe('stopped')->and($cleared())->toBe(0);
+
+    fakeRecordingCallServer();
+    ReceiveLiveKitWebhook::run(['event' => 'egress_ended', 'egressInfo' => ['egressId' => $recording->tracks()->value('egress_id'), 'status' => 'EGRESS_COMPLETE']]);
+    expect($cleared())->toBe(1);
+});
+
+test('nothing looks recorded when the calls box cannot record anyone', function () {
+    $call = recordingCallWithTwo($this);
+    fakeRecordingCallServer([['identity' => (string) $this->user->id, 'name' => 'Ana', 'tracks' => [['sid' => 'TR_mic1', 'source' => 'MICROPHONE']]]], egressWorks: false);
+
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.recording.start', $call->ulid))->assertUnprocessable();
+
+    expect(\App\Models\Chat\StaffCallRecording::where('staff_call_id', $call->id)->count())->toBe(0)
+        ->and(Http::recorded(fn ($request) => str_ends_with($request->url(), 'UpdateRoomMetadata'))->map(fn ($pair) => $pair[0]['metadata'])->last())->toBe('');
+});
+
+test('a guest is named as a guest in the transcript, whatever name they typed', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+    [$guest] = meetingGuest($meeting);
+    \App\Actions\Chat\Staff\Meeting\DecideStaffMeetingGuest::run($call, $guest, $this->user, 'admit');
+    fakeRecordingCallServer([['identity' => $guest->identity(), 'name' => $this->callee->chatName(), 'tracks' => [['sid' => 'TR_guest', 'source' => 'MICROPHONE']]]]);
+
+    $recording = \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::run($call->refresh(), $this->user);
+
+    expect($recording->tracks()->value('speaker'))->toBe($guest->refresh()->name.' (guest)');
+    EndStaffCall::run($call);
+});
+
+test('the summary is for those in the call while it was recorded: not who left before Record and came back after Stop, nor who first came after Stop', function () {
+    $meeting = \App\Actions\Chat\Staff\Meeting\StoreStaffMeeting::run($this->user);
+    $call    = \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->user)['call'];
+    \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->outsider);
+    \App\Actions\Chat\Staff\Call\LeaveStaffCall::run($call, $this->outsider);
+    $this->travel(1)->minutes();
+    fakeRecordingCallServer();
+
+    $recording = \App\Actions\Chat\Staff\Call\Recording\StartStaffCallRecording::run($call->refresh(), $this->user);
+    \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->callee);
+    \App\Actions\Chat\Staff\Call\Recording\StopStaffCallRecording::run($call, $this->user);
+    $this->travel(1)->minutes();
+    \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $this->outsider);
+    $latecomer = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    \App\Actions\Chat\Staff\Meeting\JoinStaffMeeting::run($meeting, $latecomer);
+
+    $recording->refresh();
+    expect($recording->peopleRecorded()->pluck('users.id')->sort()->values()->all())->toBe(collect([$this->user->id, $this->callee->id])->sort()->values()->all())
+        ->and($recording->isVisibleTo($this->outsider))->toBeFalse()
+        ->and($recording->isVisibleTo($latecomer))->toBeFalse()
+        ->and($recording->isVisibleTo($this->callee))->toBeTrue()
+        ->and($recording->isVisibleTo($this->user))->toBeTrue();
     EndStaffCall::run($call);
 });
