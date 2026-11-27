@@ -1046,6 +1046,12 @@ const isReceiveGoodsNextStep = computed(() => {
 	return !!props.agent_receiving?.receive && !uncheckedReceiptItems.value.length && ["in_production", "in_warehouse"].includes(currentStage ?? "")
 })
 
+const depositPayments = ref<InstanceType<typeof PurchaseOrderDepositPayments> | null>(null)
+const setDepositPayments = (component: unknown) => {
+	if (component) depositPayments.value = component as InstanceType<typeof PurchaseOrderDepositPayments>
+}
+const acceptDepositRequest = (amount: number) => depositPayments.value?.openPayDialog(amount)
+
 const stageActionLoading: Record<string, () => boolean> = {
 	undo_confirm_purchase_order: () => undoConfirmLoading.value,
 	cancel_purchase_order: () => cancelLoading.value,
@@ -1368,12 +1374,12 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		/>
 	</div>
 
-	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :depositRequestRejectRoute="stages.deposit_request_reject_route" :sample="stages.sample" :cho="stages.cho" :closeOld="stages.close_old" :blockedChecks="blockedChecks" @blockedCheck="showReceiveGoods">
+	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :depositRequestRejectRoute="stages.deposit_request_reject_route" :canAcceptDepositRequest="!agent_money && !!payments?.can_confirm" @acceptDepositRequest="acceptDepositRequest" :sample="stages.sample" :cho="stages.cho" :closeOld="stages.close_old" :blockedChecks="blockedChecks" @blockedCheck="showReceiveGoods">
 		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
 		<template v-else-if="payments && !stageActions.deposit_paid" #stage-deposit_paid>
-			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+			<PurchaseOrderDepositPayments :ref="setDepositPayments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 		</template>
 		<template v-if="agent_money" #check-balance>
 			<AgentPurchaseOrderMoney :money="agent_money" />
@@ -1484,7 +1490,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				</template>
 				<template v-if="stageKey === 'deposit_paid'">
 					<AgentPurchaseOrderMoney v-if="agent_money" :money="agent_money" />
-					<PurchaseOrderDepositPayments v-else-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+					<PurchaseOrderDepositPayments v-else-if="payments" :ref="setDepositPayments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 				</template>
 			</div>
 		</template>

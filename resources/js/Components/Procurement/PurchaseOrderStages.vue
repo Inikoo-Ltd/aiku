@@ -118,6 +118,7 @@ const props = defineProps<{
     skipRoute?: routeType | null
     deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
     depositRequestRejectRoute?: routeType | null
+    canAcceptDepositRequest?: boolean
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
     cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
     closeOld?: CloseOld | null
@@ -126,6 +127,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (event: "blockedCheck", key: string): void
+    (event: "acceptDepositRequest", amount: number): void
 }>()
 
 const slots = useSlots()
@@ -186,7 +188,6 @@ const doneDateClass = (stage: Stage): string => {
     return difference > 0 ? "text-red-600" : "text-green-700"
 }
 
-const depositPaidMark = (stage: Stage): Mark | null => stage.marks.find((mark) => mark.field === "deposit_paid_at" && !mark.date && !mark.blocked) ?? null
 const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
 const checkMark = (stage: Stage, check: Check) => check.key === "compliance" ? stage.marks.find((mark) => mark.field === "compliance_complete_at") ?? null : null
@@ -629,11 +630,11 @@ function save() {
                 <div class="font-medium tabular-nums">
                     {{ ctrans("Deposit request pending: :amount (:percentage%)", { amount: locale.currencyFormat(stage.deposit_request.currency_code ?? "", stage.deposit_request.amount), percentage: stage.deposit_request.percentage }) }}
                 </div>
-                <div v-if="depositRequestRejectRoute || depositPaidMark(stage)" class="mt-1 flex gap-1">
+                <div v-if="depositRequestRejectRoute || canAcceptDepositRequest" class="mt-1 flex gap-1">
                     <Button v-if="depositRequestRejectRoute" type="negative" size="xs" full :label="ctrans('Reject')" :tooltip="ctrans('Reject the supplier\'s deposit request with a reason')" @click="openDepositReject">
                         <template #icon><FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" /></template>
                     </Button>
-                    <Button v-if="depositPaidMark(stage)" type="positive" size="xs" full :label="ctrans('Accept')" :tooltip="ctrans('Record the date the deposit was paid')" @click="openMark(depositPaidMark(stage) as Mark)">
+                    <Button v-if="canAcceptDepositRequest" type="positive" size="xs" full :label="ctrans('Accept')" :tooltip="ctrans('Record the deposit paid to the supplier, filled in with the amount it requested')" @click="emit('acceptDepositRequest', (stage.deposit_request as NonNullable<Stage['deposit_request']>).amount)">
                         <template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>

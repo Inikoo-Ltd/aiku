@@ -148,14 +148,17 @@ const sentCurrency = computed(() => currencies.value.find((currency) => currency
 const isSentInOtherCurrency = computed(() => !!sentCurrency.value && sentCurrency.value.id !== orderCurrencyId.value)
 const isCountedAmountTyped = ref(false)
 
-const openPayDialog = () => {
+const openPayDialog = (requestedAmount: number | null = null) => {
 	form.value = emptyForm()
 	isCountedAmountTyped.value = false
 	percent.value = null
 	payError.value = null
-	if (defaultDeposit.value) setAmount(Math.min(defaultDeposit.value.amount, props.payments.left))
+	const suggestedAmount = requestedAmount ?? defaultDeposit.value?.amount ?? null
+	if (suggestedAmount !== null) setAmount(Math.min(suggestedAmount, props.payments.left))
 	isPayDialogOpen.value = true
 }
+
+defineExpose({ openPayDialog })
 
 const roundTo2Decimals = (value: number) => Math.round(value * 100) / 100
 const canPayByPercent = computed(() => props.payments.total > 0)
@@ -321,7 +324,7 @@ const undoPayment = () => {
 			</li>
 		</ul>
 
-		<Button v-if="payments.can_confirm && !isFullyPaid" type="tertiary" size="xs" full :label="payButtonLabel" :tooltip="isNextPaymentBalance ? ctrans('Click to record a balance payment to the supplier') : ctrans('Click to record a deposit paid to the supplier')" @click="openPayDialog">
+		<Button v-if="payments.can_confirm && !isFullyPaid" type="tertiary" size="xs" full :label="payButtonLabel" :tooltip="isNextPaymentBalance ? ctrans('Click to record a balance payment to the supplier') : ctrans('Click to record a deposit paid to the supplier')" @click="openPayDialog()">
 			<template #icon>
 				<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
 			</template>
