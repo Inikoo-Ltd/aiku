@@ -116,8 +116,8 @@ test('the mobile api language is read from Accept-Language among the lang files 
     'no header'                  => [null, null],
 ]);
 
-test('the mobile api offers the 23 Aiku languages', function () {
+test('the mobile api offers the 24 Aiku languages', function () {
     expect(array_values(SetMobileApiLocale::supportedLocales()))->toEqualCanonicalizing([
-        'en', 'bg', 'cs', 'de', 'es', 'fr', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'lv', 'ne', 'nl', 'pl', 'pt', 'ro', 'sk', 'sv', 'tr', 'uk', 'zh-Hans',
+        'en', 'bg', 'cs', 'de', 'es', 'fr', 'hi', 'hr', 'hu', 'id', 'it', 'ja', 'lv', 'ne', 'nl', 'pl', 'pt', 'ro', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh-Hans',
     ]);
 });

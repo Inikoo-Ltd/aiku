@@ -178,11 +178,9 @@ class ShowStaffSlackChannels extends OrgAction
         $direct      = fn (): array => $this->channels($user, direct: true);
         $listed      = fn (): array => $this->listedChannels($user);
 
-        $optIn = ['slack_private_opt_in' => $this->privateOptIn($user)];
-
-        return $optIn + ($deferred
-            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred]);
+        return $deferred
+            ? ['slack_private_opt_in' => Inertia::defer(fn () => $this->privateOptIn($user), 'slack'), 'slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
+            : ['slack_private_opt_in' => $this->privateOptIn($user), 'slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
     }
 
     /**

@@ -1824,7 +1824,7 @@ test('the assistant prompt lists the families ordered in the last 12 months apar
     expect($prompt)->toContain('Product families they ordered most in the last 12 months: '.$this->product->family->name."\n")
         ->and($prompt)->toContain('Product families they used to order but not in the last 12 months: '.$oldFamily->name."\n")
         ->and($prompt)->toContain('Always finish with present_products')
-        ->and($prompt)->toContain('When in doubt, ask our team instead of answering')
+        ->and($prompt)->toContain('When in doubt, do not answer')
         ->and($prompt)->toContain('say you have noted the request for our buyers')
         ->and($prompt)->toContain('When the customer writes to you in another language, answer them in their language and keep to it')
         ->and($present['function']['description'])->toContain('also when you show no products')

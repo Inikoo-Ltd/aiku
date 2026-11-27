@@ -78,13 +78,13 @@ function orderWithAddresses(array $billing, array $delivery): App\Models\Orderin
 }
 
 test('an order whose street was typed into the town field is not missing an address', function () {
-    $address = ['locality' => 'Čopova ulica 23', 'postal_code' => '4248'];
+    $address = ['locality' => 'Čopova ulica 23', 'postal_code' => '4248', 'country_code' => 'SI'];
 
     expect(orderWithAddresses($address, $address)->isMissingARequiredAddress())->toBeFalse();
 });
 
 test('an order is missing an address when every line is blank or the Aurora zero', function () {
-    $real = ['address_line_1' => 'Ulica Pri Skali 20', 'postal_code' => '2360'];
+    $real = ['address_line_1' => 'Ulica Pri Skali 20', 'postal_code' => '2360', 'country_code' => 'SI'];
 
     expect(orderWithAddresses(['address_line_1' => '0', 'locality' => '0'], $real)->isMissingARequiredAddress())->toBeTrue()
         ->and(orderWithAddresses($real, [])->isMissingARequiredAddress())->toBeTrue()

@@ -82,7 +82,7 @@ test('one list: the conversations page opens with the same queries as before for
                 ->and(collect($queries)->filter(fn (string $query) => str_contains(strtolower($query), 'slack')))->toBeEmpty();
             $page->assertInertia(fn (AssertableInertia $inertia) => $inertia->component('Chat/StaffMessaging')
                 ->missing('slack_channels')->missing('slack_live_channel')->where('slack_channel', null));
-            expect($page->viewData('page')['deferredProps']['slack'] ?? [])->toEqualCanonicalizing(['slack_channels', 'slack_live_channel']);
+            expect($page->viewData('page')['deferredProps']['slack'] ?? [])->toEqualCanonicalizing(['slack_private_opt_in', 'slack_channels', 'slack_private_channels', 'slack_listed_channels', 'slack_direct_channels', 'slack_live_channel']);
         }
     }
 
@@ -139,7 +139,7 @@ test('one list: inactive, agent-only, Slack guest, other-email, bot and deleted 
     expect(queriesWhile(function () use ($inactive, &$props) {
         $props = \App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->listProps($this->group, $inactive, deferred: true);
     }))->toBe([])
-        ->and($props)->toBe(['slack_channels' => [], 'slack_live_channel' => null, 'desk_starred' => []]);
+        ->and($props)->toBe(['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => [], 'slack_private_opt_in' => null]);
 
     $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CLISTPRIV{$this->s}", 'name' => "private-{$this->s}", 'is_public' => false]);
     $deleted = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CLISTDEL{$this->s}", 'name' => "deleted-{$this->s}", 'deleted_in_slack_at' => now()]);

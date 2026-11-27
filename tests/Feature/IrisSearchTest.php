@@ -495,6 +495,7 @@ test('a family that is the strongest hit becomes the best match, superseding pro
     StoreProductCategoryWebpage::make()->action($family)->update(['state' => WebpageStateEnum::LIVE]);
     \App\Actions\Web\Webpage\Hydrators\HydrateIsInWebsite::run($family->refresh());
     expect((bool) $family->refresh()->is_in_website)->toBeTrue();
+    $family->update(['name' => 'Lavender Bath Bombs']);
 
     $searchResults = fn (int $familyScore, int $productScore) => [
         'scope'   => 'catalogue',
