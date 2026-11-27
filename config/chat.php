@@ -45,7 +45,7 @@ return [
         'salem-transitarios.pt', 'tnt.com', 'transaher.es', 'ups.com', 'correosexpress.com', 'packeta.sk', 'packeta.com',
     ],
 
-    'marketplace_notice_domains' => ['info.faire.com', 'orderchamp.com'],
+    'marketplace_notice_domains' => ['info.faire.com', 'orderchamp.com', 'tradesafe.eu'],
 
     'phone_call' => [
 

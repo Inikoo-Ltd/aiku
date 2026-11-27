@@ -946,6 +946,7 @@ test('marketplace notices wait unread under their own gmail label, their marketi
         'gmail.googleapis.com/gmail/v1/users/me/messages/mk1*' => $message('mk1', 'Faire <updates@info.faire.com>', 'Nuevo pedido al por mayor de mira belle (8BTZCY7KH4)'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/mk2*' => $message('mk2', 'Faire <sales+awartisan@brand.faire.com>', '15% OFF en nuestras marcas'),
         'gmail.googleapis.com/gmail/v1/users/me/messages/mk3*' => $message('mk3', 'Orderchamp <service@mg.orderchamp.com>', 'Has recibido un mensaje de Charlotte'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/mk4*' => $message('mk4', 'zentrada TradeSafe <service-eu@tradesafe.eu>', 'order notice EU-EU 959083 , buyer Cg group pc (RES)'),
         'gmail.googleapis.com/gmail/v1/users/me/labels'        => \Illuminate\Support\Facades\Http::response(['labels' => [
             ['id' => 'LM', 'name' => 'Marketplaces'],
             ['id' => 'LF', 'name' => 'aiku/filtered'],
@@ -956,13 +957,15 @@ test('marketplace notices wait unread under their own gmail label, their marketi
 
     expect(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk1'))->toBeNull()
         ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk2'))->toBeNull()
-        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk3'))->toBeInstanceOf(ChatMessage::class);
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk3'))->toBeInstanceOf(ChatMessage::class)
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'mk4'))->toBeNull();
 
     $filed = fn (string $id) => \Illuminate\Support\Facades\Http::recorded(fn ($request) => str_ends_with($request->url(), "messages/$id/modify"))
         ->map(fn ($pair) => $pair[0]->data())->first();
 
     expect($filed('mk1'))->toBe(['addLabelIds' => ['LM'], 'removeLabelIds' => ['INBOX']])
-        ->and($filed('mk2'))->toBe(['addLabelIds' => ['LF'], 'removeLabelIds' => ['INBOX', 'UNREAD']]);
+        ->and($filed('mk2'))->toBe(['addLabelIds' => ['LF'], 'removeLabelIds' => ['INBOX', 'UNREAD']])
+        ->and($filed('mk4'))->toBe(['addLabelIds' => ['LM'], 'removeLabelIds' => ['INBOX']]);
 });
 
 test('an email from a courier is filed in the Couriers folder and in no other list', function () {
