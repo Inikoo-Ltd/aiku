@@ -59,7 +59,7 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
         <span v-else class="flex h-full w-full items-center justify-center rounded-md bg-[var(--desk-chip)] text-xs font-bold text-[var(--desk-strong)]" :class="isMuted && 'opacity-70'">{{ initials() }}</span>
         <span
             v-if="unread && !isActive"
-            class="absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full border-2 border-[var(--desk-sidebar)] bg-[var(--desk-badge)] px-1 text-center text-[10px] font-bold leading-[14px] text-white"
+            class="absolute -top-1.5 right-0 z-[1] min-w-[18px] rounded-full border-2 border-[var(--desk-sidebar)] bg-[var(--desk-badge)] px-1 text-center text-[10px] font-bold leading-[14px] text-white"
             :aria-label="ctrans(':count unread', { count: unreadText() })">{{ unreadText() }}</span>
     </component>
     <div v-else class="group/row relative mx-2">
