@@ -767,11 +767,16 @@ On the box, as root:
    install -m 600 /root/livekit/egress.yaml /etc/livekit/egress.yaml && nano /etc/livekit/egress.yaml
    ```
 
-   LiveKit's docs show the storage block both as top-level `s3:` and under `storage:`, and do not list
-   `force_path_style`: check `egress.yaml` against the README of the release you pin before starting it.
+   The Egress container runs as uid 1001, so the file must be owned by it (still mode 600):
 
-3. Restart LiveKit with Redis, then start Egress (pick the latest tag from
-   github.com/livekit/egress/releases for `{{EGRESS_VERSION}}` in the unit first):
+   ```bash
+   chown 1001 /etc/livekit/egress.yaml
+   ```
+
+   Egress v1.15.0 (pinned in the unit) reads `logging.level` and `storage.s3` (`force_path_style`
+   included, from livekit/storage `config.S3Config`); check both again when you change the tag.
+
+3. Restart LiveKit with Redis, then start Egress:
 
    ```bash
    systemctl restart livekit && sleep 3 && curl -s http://127.0.0.1:7880/

@@ -12,7 +12,7 @@ Requires=docker.service
 
 [Service]
 ExecStartPre=-/usr/bin/docker rm -f livekit-egress
-ExecStart=/usr/bin/docker run --rm --name livekit-egress --network host -e EGRESS_CONFIG_FILE=/etc/livekit/egress.yaml -v /etc/livekit/egress.yaml:/etc/livekit/egress.yaml:ro livekit/egress:{{EGRESS_VERSION}}
+ExecStart=/usr/bin/docker run --rm --name livekit-egress --network host -e EGRESS_CONFIG_FILE=/etc/livekit/egress.yaml -v /etc/livekit/egress.yaml:/etc/livekit/egress.yaml:ro livekit/egress:v1.15.0
 ExecStop=/usr/bin/docker stop -t 30 livekit-egress
 Restart=always
 RestartSec=5
