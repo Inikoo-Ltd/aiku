@@ -244,6 +244,12 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.preview_languages', array_values(array_unique(array_map('intval', Arr::pull($modelData, 'preview_languages') ?? []))));
         }
 
+        if (Arr::has($modelData, 'settings.enabled_languages') || Arr::has($modelData, 'settings.preview_languages')) {
+            $enabledLanguages = Arr::get($modelData, 'settings.enabled_languages', Arr::get($shop->settings ?? [], 'enabled_languages', []));
+            $previewLanguages = Arr::get($modelData, 'settings.preview_languages', Arr::get($shop->settings ?? [], 'preview_languages', []));
+            data_set($modelData, 'settings.preview_languages', array_values(array_diff(array_map('intval', $previewLanguages ?? []), array_map('intval', $enabledLanguages ?? []))));
+        }
+
         if (Arr::has($modelData, 'display_currencies')) {
             data_set($modelData, 'settings.display_currencies', array_values(array_diff(array_unique(Arr::pull($modelData, 'display_currencies') ?? []), [$shop->currency->code])));
         }
