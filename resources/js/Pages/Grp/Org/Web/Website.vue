@@ -26,6 +26,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import TableExternalLinks from "@/Components/Tables/Grp/Org/Web/TableExternalLinks.vue"
 import TableWebsiteTextTranslations from "@/Components/Tables/Grp/Org/Web/TableWebsiteTextTranslations.vue"
+import TableWebsiteLanguages from "@/Components/Tables/Grp/Org/Web/TableWebsiteLanguages.vue"
 import TableCrawls from "@/Components/Tables/Grp/Org/Web/TableCrawls.vue"
 import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
@@ -42,7 +43,6 @@ import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { faLanguage } from "@fal"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(
     faChartLine,
@@ -78,6 +78,7 @@ const props = defineProps<{
     redirects?: {}
     external_links?: {},
     translations?: {},
+    languages?: {},
     crawls?: {},
     analytics?: object
     route_welcome :routeType
@@ -108,6 +109,7 @@ const component = computed(() => {
         redirects: TableRedirects,
         external_links: TableExternalLinks,
         translations: TableWebsiteTextTranslations,
+        languages: TableWebsiteLanguages,
         crawls: TableCrawls
     }
     return components[currentTab.value]
@@ -130,11 +132,6 @@ const submitForm = () => {
         onSuccess: () => {
             openModal.value = false
             form.reset()
-            notify({
-                title: ctrans("Success!"),
-                text: ctrans("New redirect created successfully."),
-                type: "success",
-            })
         }
     })
 }

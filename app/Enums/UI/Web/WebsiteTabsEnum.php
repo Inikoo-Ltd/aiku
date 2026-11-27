@@ -19,6 +19,7 @@ enum WebsiteTabsEnum: string
     case SHOWCASE = 'showcase';
     case EXTERNAL_LINKS = 'external_links';
     case TRANSLATIONS = 'translations';
+    case LANGUAGES = 'languages';
     case CRAWLS = 'crawls';
     case CHANGELOG = 'changelog';
 
@@ -36,6 +37,10 @@ enum WebsiteTabsEnum: string
             WebsiteTabsEnum::TRANSLATIONS => [
                 'title' => __('Translations'),
                 'icon'  => 'fal fa-language',
+            ],
+            WebsiteTabsEnum::LANGUAGES => [
+                'title' => __('Languages'),
+                'icon'  => 'fal fa-globe',
             ],
             WebsiteTabsEnum::CRAWLS => [
                 'title' => __('Crawls'),

@@ -176,6 +176,8 @@ onMounted(() => {
             :remaining-days="props.dashboard.super_blocks[0].month_target.remaining_days"
         />
 
+        <slot v-if="inSection('target')" name="languageReach" />
+
         <slot v-if="inSection('sales_analysis')" name="salesAnalysis" />
 
 

@@ -4529,3 +4529,64 @@ test('language reach counts open channels per platform in the shop language whil
         ->and($cell($after)['products'])->toBe(($cell($before)['products'] ?? 0) + 7)
         ->and(collect($after['by_language'])->firstWhere('code', $other->code))->toBeNull();
 });
+
+test('dropshipping customers list shows the language and open channels of each customer and filters by language', function () {
+    $original = DB::table('shops')->where('id', $this->shop->id)->value('type');
+    DB::table('shops')->where('id', $this->shop->id)->update(['type' => ShopTypeEnum::DROPSHIPPING->value]);
+
+    try {
+        $other   = \App\Models\Helpers\Language::whereIn('code', ['de', 'fr', 'es'])->where('id', '!=', $this->shop->language_id)->orderBy('code')->first();
+        $plain   = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+        $speaker = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+        StoreWebUser::make()->action($speaker, ['email' => 'lang-'.$speaker->id.'@mail.com', 'username' => 'lang-'.$speaker->id, 'password' => 'password'])
+            ->update(['language_id' => $other->id, 'is_root' => true]);
+        $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($speaker, \App\Models\Dropshipping\Platform::where('type', 'shopify')->first(), ['reference' => 'lang-'.$speaker->id]);
+        DB::table('customer_sales_channels')->where('id', $channel->id)->update(['status' => 'open', 'deleted_at' => null]);
+
+        $rows = function (array $query) {
+            $response = $this->get(route('grp.org.shops.show.crm.customers.index', array_merge([$this->organisation->slug, $this->shop->slug], $query)))->assertOk();
+
+            return collect($response->original->getData()['page']['props']['customers']['data'])->keyBy('id');
+        };
+
+        $filtered = $rows(['filter' => ['language' => $other->code]]);
+        $row      = $filtered[$speaker->id];
+
+        expect($filtered)->not->toHaveKey($plain->id)
+            ->and($row['language_code'])->toBe($other->code)
+            ->and($row['channel_platforms'][0]['type'])->toBe('shopify')
+            ->and($row['channel_platforms'][0]['languages'])->toBe([])
+            ->and($row['channel_platforms'][0]['logo'])->not->toBeNull()
+            ->and($rows(['filter' => ['language' => $this->shop->language->code]])[$plain->id]['language_code'])->toBe($this->shop->language->code);
+    } finally {
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => $original]);
+    }
+});
+
+test('dropshipping shop dashboard loads the language reach only when asked for, and other shops never offer it', function () {
+    $original = DB::table('shops')->where('id', $this->shop->id)->value('type');
+    $url      = route('grp.org.shops.show.dashboard.show', [$this->organisation->slug, $this->shop->slug]);
+
+    try {
+        $page = $this->get($url)->assertOk()->original->getData()['page'];
+        expect($page['props']['dashboard']['super_blocks'][0]['language_reach_enabled'] ?? false)->toBeFalse();
+
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => ShopTypeEnum::DROPSHIPPING->value]);
+
+        $page = $this->get($url)->assertOk()->original->getData()['page'];
+        expect($page['props']['dashboard']['super_blocks'][0]['language_reach_enabled'])->toBeTrue()
+            ->and($page['props'])->not->toHaveKey('language_reach');
+
+        $reach = $this->get($url, [
+            'X-Inertia'                   => 'true',
+            'X-Inertia-Version'           => $page['version'],
+            'X-Inertia-Partial-Component' => $page['component'],
+            'X-Inertia-Partial-Data'      => 'language_reach',
+        ])->assertOk()->json('props.language_reach');
+
+        expect(collect($reach['languages'])->firstWhere('is_main', true)['code'])->toBe($this->shop->language->code)
+            ->and(collect($reach['channels']['platforms'])->pluck('type')->last())->toBe('manual');
+    } finally {
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => $original]);
+    }
+});

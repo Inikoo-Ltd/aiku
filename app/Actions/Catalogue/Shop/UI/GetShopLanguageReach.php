@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShopLanguageReach
 {
     use AsAction;
+    use GetPlatformLogo;
+
+    public const array PLATFORM_ORDER = ['shopify', 'woocommerce', 'ebay', 'tiktok', 'wix', 'magento', 'allegro', 'amazon', 'manual'];
 
     public const int CACHE_SECONDS = 600;
 
@@ -36,7 +40,7 @@ class GetShopLanguageReach
      *     currency_code: string,
      *     channel_languages: bool,
      *     languages: list<array<string, mixed>>,
-     *     channels: array{by_platform: list<array{type: string, label: string, channels: int, products: int}>, by_language: list<array{code: string, language: string, channels: int, products: int}>, matrix: list<array{type: string, code: string, channels: int, products: int}>}
+     *     channels: array{platforms: list<array{type: string, label: string, logo: ?string}>, by_platform: list<array{type: string, label: string, logo: ?string, channels: int, products: int}>, by_language: list<array{code: string, language: string, channels: int, products: int}>, matrix: list<array{type: string, code: string, channels: int, products: int}>}
      * }
      */
     public function handle(Shop $shop, bool $useCache = true): array
@@ -45,7 +49,7 @@ class GetShopLanguageReach
             return $this->compute($shop);
         }
 
-        return Cache::tags(["dashboard-shop-$shop->id"])->remember("shop_language_reach:$shop->id", self::CACHE_SECONDS, fn () => $this->compute($shop));
+        return Cache::tags(["dashboard-shop-$shop->id"])->remember("shop_language_reach:v2:$shop->id", self::CACHE_SECONDS, fn () => $this->compute($shop));
     }
 
     private function compute(Shop $shop): array
@@ -113,7 +117,10 @@ class GetShopLanguageReach
             'parameters' => ['organisation' => $shop->organisation->slug, 'shop' => $shop->slug, 'filter[language]' => $code],
         ];
 
-        $rows = $languages->map(function (Language $language) use ($shop, $enabled, $preview, $webUsers, $customers, $readiness, $problems, $customersRoute) {
+        $storesByLanguage = $channelRows->groupBy('language_id');
+
+        $rows = $languages->map(function (Language $language) use ($shop, $enabled, $preview, $webUsers, $customers, $readiness, $problems, $customersRoute, $storesByLanguage) {
+            $stores   = $storesByLanguage->get($language->id, collect());
             $webUser  = $webUsers->get($language->id);
             $customer = $customers->get($language->id);
             $ready    = $readiness->get($language->code);
@@ -132,6 +139,8 @@ class GetShopLanguageReach
                 'sales_30d'         => (float) ($customer->sales_30d ?? 0),
                 'invoices_12m'      => (int) ($customer->invoices_12m ?? 0),
                 'sales_12m'         => (float) ($customer->sales_12m ?? 0),
+                'stores'            => (int) $stores->where('type', '!=', PlatformTypeEnum::MANUAL->value)->sum('channels'),
+                'stores_products'   => (int) $stores->where('type', '!=', PlatformTypeEnum::MANUAL->value)->sum('products'),
                 'readiness'         => [
                     'products'              => (int) ($ready['products'] ?? $readiness->first()['products'] ?? 0),
                     'names'                 => (int) ($ready['names'] ?? 0),
@@ -158,8 +167,9 @@ class GetShopLanguageReach
             'channel_languages' => $shop->customersChooseChannelLanguage(),
             'languages'         => $rows,
             'channels'          => [
+                'platforms'   => array_map(fn (string $type) => ['type' => $type, 'label' => $label($type), 'logo' => $this->getPlatformLogo($type)], self::PLATFORM_ORDER),
                 'by_platform' => $channelRows->groupBy('type')
-                    ->map(fn ($group, $type) => ['type' => $type, 'label' => $label($type), 'channels' => (int) $group->sum('channels'), 'products' => (int) $group->sum('products')])
+                    ->map(fn ($group, $type) => ['type' => $type, 'label' => $label($type), 'logo' => $this->getPlatformLogo($type), 'channels' => (int) $group->sum('channels'), 'products' => (int) $group->sum('products')])
                     ->sortByDesc('channels')->values()->all(),
                 'by_language' => $channelRows->groupBy('language_id')
                     ->map(fn ($group, $languageId) => ['code' => $codeById[$languageId] ?? (string) $languageId, 'language' => $named($languageId)?->name ?? (string) $languageId, 'channels' => (int) $group->sum('channels'), 'products' => (int) $group->sum('products')])
