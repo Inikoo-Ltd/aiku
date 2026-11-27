@@ -185,12 +185,12 @@ const connectedTotal = (code: string): Counts => (props.data?.channels.platforms
                     {{ ctrans("All stores use :language. Store languages are switched off for this shop.", { language: mainLanguage?.language ?? "" }) }}
                 </p>
                 <div v-else class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-                    <div v-for="row in data.channels.by_language.filter(item => item.channels > 0)" :key="row.code" class="rounded-lg border bg-white p-4 shadow-sm">
+                    <div v-for="row in data.channels.by_language.filter(item => connectedTotal(item.code).channels > 0)" :key="row.code" class="rounded-lg border bg-white p-4 shadow-sm">
                         <p class="flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-gray-700">
                             {{ row.language }} <span class="text-xs font-normal uppercase text-gray-400">{{ row.code }}</span>
                         </p>
-                        <p class="text-2xl font-bold tabular-nums text-gray-900">{{ locale.number(row.channels) }}</p>
-                        <p class="text-xs text-gray-500">{{ ctrans(":count products listed", { count: locale.number(row.products) }) }}</p>
+                        <p class="text-2xl font-bold tabular-nums text-gray-900">{{ locale.number(connectedTotal(row.code).channels) }}</p>
+                        <p class="text-xs text-gray-500">{{ ctrans(":count products listed", { count: locale.number(connectedTotal(row.code).products) }) }}</p>
                     </div>
                 </div>
             </div>

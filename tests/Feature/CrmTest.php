@@ -4558,6 +4558,12 @@ test('dropshipping customers list shows the language and open channels of each c
             ->and($row['channel_platforms'][0]['languages'])->toBe([])
             ->and($row['channel_platforms'][0]['logo'])->not->toBeNull()
             ->and($rows(['filter' => ['language' => $this->shop->language->code]])[$plain->id]['language_code'])->toBe($this->shop->language->code);
+
+        $csv = $this->get(route('grp.org.shops.show.crm.customers.export', [$this->organisation->slug, $this->shop->slug, 'type' => 'csv', 'filter' => ['language' => $other->code]]))
+            ->assertOk()->streamedContent();
+
+        expect($csv)->toContain($speaker->reference)
+            ->and($csv)->not->toContain($plain->reference);
     } finally {
         DB::table('shops')->where('id', $this->shop->id)->update(['type' => $original]);
     }
