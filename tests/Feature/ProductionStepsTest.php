@@ -245,6 +245,40 @@ test('a job carried after its pieces are made does not ask for the mix again, ev
         ->and((float) $carriedShrink->quantity_required)->toBe(40.0);
 });
 
+test('a job carried twice does not ask for a gram of mix left by rounding each part (HELP-4986)', function () {
+    $user = auth()->user();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+
+    $suffix     = rand(10000, 99999);
+    $mixTask    = StoreManufactureTask::make()->action($this->production, ['code' => 'MXT'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MKT'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $artefact   = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'ZST'.$suffix, 'name' => 'Steamer '.$suffix]);
+    $artefact->manufactureTasks()->sync([
+        $mixTask->id    => ['position' => 1, 'units_per_artefact' => 0.1385],
+        $makingTask->id => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 800]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$mix, $making] = $item->tasks()->orderBy('position')->get();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mix), ['quantity_made' => 110.8]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 174, 'outcome' => 'carry_over']);
+
+    $firstCarry = JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail()->jobOrderItems()->first();
+    [, $firstCarryMaking] = $firstCarry->tasks()->orderBy('position')->get();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $firstCarryMaking), ['quantity_made' => 325, 'outcome' => 'carry_over']);
+
+    $lastCarry = JobOrder::where('data->carried_from', $jobOrder->id)->where('id', '!=', $firstCarry->job_order_id)->firstOrFail()->jobOrderItems()->first();
+    [$lastCarryMix] = $lastCarry->tasks()->orderBy('position')->get();
+
+    expect($lastCarry->quantity)->toBe(301)
+        ->and((float) $lastCarryMix->quantity_required)->toBe(0.0)
+        ->and($lastCarryMix->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+});
+
 test('breaks belong to the artisan, last until they are finished and only their overlap is deducted from a session', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],

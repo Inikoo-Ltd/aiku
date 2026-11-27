@@ -20,6 +20,13 @@ class CreditOrderWorkToJobOrderItem
     use AsAction;
 
     /**
+     * Each line's recipe kg is rounded to grams on its own, so an order whose mix covers every line
+     * can leave its last part a gram or two short and asking for a new mix (HELP-4986). A kg step
+     * short by less than this is covered.
+     */
+    public const float KG_TOLERANCE = 0.01;
+
+    /**
      * Sets what each step of the line still asks for, counting the work the rest of its order made
      * beyond its own needs (HELP-4509): mix made in surplus on an earlier part of the order is not
      * asked for, and does not lock the later steps, again. The surplus is what the order made on the
@@ -53,6 +60,9 @@ class CreditOrderWorkToJobOrderItem
             $surplus  = max(0, $surplusByStep[$task->stepKey()] ?? 0);
             $floor    = $task->isRecordedInKg() || ShareMixPool::poolKey($task) ? 0 : (float) $task->quantity_made;
             $required = min(round($task->requiredFor($jobOrderItem->quantity) - $surplus, 3), $task->requiredFor(max(0, $jobOrderItem->quantity - $coveredArtefacts[$task->id])));
+            if ($task->isRecordedInKg() && $required < self::KG_TOLERANCE) {
+                $required = 0;
+            }
             $task->setRequiredQuantity(max($floor, $required));
         }
 
