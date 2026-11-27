@@ -2594,6 +2594,71 @@ describe('master prices tool', function () {
         expect($masterAsset->is_made_to_order)->toBeFalse()
             ->and($masterAsset->pre_order_lead_time_days)->toBeNull();
     });
+
+    test('product family tool moves a master product to another family and makes it golden in every shop, logs and reverts', function () {
+        [, $product] = createProduct($this->shop);
+        $oldFamily   = $product->family;
+        $oldFamily->update(['master_product_category_id' => $this->masterFamily->id]);
+        $product->update(['master_product_id' => $this->masterAsset->id, 'is_golden_product' => false]);
+        $this->masterAsset->updateQuietly(['master_family_id' => $this->masterFamily->id, 'is_golden_product' => false]);
+        $this->user->update(['can_use_mcp_web' => true]);
+
+        $newMasterFamily = App\Actions\Masters\MasterProductCategory\StoreMasterFamily::make()->action($this->masterFamily->masterDepartment, [
+            'code' => 'PFT-'.uniqid(),
+            'name' => 'Product family tool target',
+            'type' => App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum::FAMILY,
+        ]);
+
+        $tool = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\ProductFamilyTool::class, [
+            'shop' => $this->shop->slug,
+            'code' => $product->code,
+            ...$arguments,
+        ]);
+        $move = ['family' => $newMasterFamily->code, 'is_golden_product' => true];
+
+        $tool([])->assertOk()->assertSee($this->masterAsset->code)->assertSee('"is_golden_product":false');
+        $tool($move)->assertOk()->assertSee('MISSING')->assertSee('"changed":false');
+        $tool([...$move, 'request_text' => 'yes', 'master_product' => $this->masterAsset->code])->assertHasErrors(['have no family']);
+
+        $newFamily = App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($oldFamily->department, [
+            ...App\Models\Catalogue\ProductCategory::factory()->definition(),
+            'type' => App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value,
+        ]);
+        $newFamily->update(['master_product_category_id' => $newMasterFamily->id]);
+
+        $tool([...$move, 'request_text' => 'yes'])->assertHasErrors(['master_product='.$this->masterAsset->code]);
+        expect($product->fresh()->family_id)->toBe($oldFamily->id);
+
+        $tool([...$move, 'request_text' => 'yes, move it and make it golden', 'master_product' => $this->masterAsset->code])
+            ->assertOk()->assertSee('change_log_id');
+
+        $change = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCT_FAMILY)->latest('id')->first();
+        expect($product->fresh()->family_id)->toBe($newFamily->id)
+            ->and($product->fresh()->is_golden_product)->toBeTrue()
+            ->and($this->masterAsset->fresh()->master_family_id)->toBe($newMasterFamily->id)
+            ->and($this->masterAsset->fresh()->is_golden_product)->toBeTrue()
+            ->and($change->request_text)->toBe('yes, move it and make it golden')
+            ->and($change->data['after_text'])->toContain('golden yes');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $this->user);
+
+        expect($product->fresh()->family_id)->toBe($oldFamily->id)
+            ->and($product->fresh()->is_golden_product)->toBeFalse()
+            ->and($this->masterAsset->fresh()->master_family_id)->toBe($this->masterFamily->id);
+
+        $tool([...$move, 'only_this_shop' => true, 'request_text' => 'yes'])->assertHasErrors(['two calls']);
+
+        $tool(['is_golden_product' => true, 'only_this_shop' => true, 'request_text' => 'golden here only'])->assertOk()->assertSee('change_log_id');
+        $change = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCT_FAMILY)->latest('id')->first();
+        expect($product->fresh()->is_golden_product)->toBeTrue()
+            ->and($this->masterAsset->fresh()->is_golden_product)->toBeFalse();
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $this->user);
+        expect($product->fresh()->is_golden_product)->toBeFalse();
+
+        $oldFamily->update(['master_product_category_id' => null]);
+        $product->update(['master_product_id' => null]);
+    });
 });
 
 describe('trade unit properties tool', function () {

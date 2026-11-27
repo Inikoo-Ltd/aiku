@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\McpChange;
 
 use App\Mcp\Tools\MasterPreOrderTool;
+use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Mcp\Tools\OrgStockFlagsTool;
 use App\Actions\Chat\ChatSession\WaitForCustomerReply;
@@ -82,6 +83,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PLACED_ORDER => $this->placedOrder($target),
             McpChangeTypeEnum::MASTER_PRICES => $this->masterPrices($target),
             McpChangeTypeEnum::MASTER_PRE_ORDER => $this->masterPreOrder($target),
+            McpChangeTypeEnum::PRODUCT_FAMILY => $this->productFamily($target),
             McpChangeTypeEnum::STOCK_DELIVERY_COSTS => $this->stockDeliveryCosts($target),
             McpChangeTypeEnum::CUSTOMER_SERVICE => $this->customerService($target),
             McpChangeTypeEnum::CHAT_SPAM => $this->chatSpam($target),
@@ -162,6 +164,12 @@ class GetMcpChangeSnapshot
         if ($type === McpChangeTypeEnum::MASTER_PRE_ORDER) {
             return collect($snapshot['master_assets'])
                 ->map(fn (array $masterAsset) => $masterAsset['code'].': '.collect(Arr::except($masterAsset, 'code'))->map(fn ($value, string $field) => $field.'='.json_encode($value))->implode(', '))
+                ->implode('; ');
+        }
+
+        if ($type === McpChangeTypeEnum::PRODUCT_FAMILY) {
+            return collect($snapshot['products'])
+                ->map(fn (array $product) => $product['shop'].' '.$product['code'].': family '.($product['family'] ?? 'none').', golden '.($product['is_golden_product'] ? 'yes' : 'no'))
                 ->implode('; ');
         }
 
@@ -376,6 +384,30 @@ class GetMcpChangeSnapshot
         return (array) DB::table('trade_units')
             ->where('id', $target['trade_unit_id'])
             ->first([...self::TRADE_UNIT_FIELDS, 'barcode_id', 'barcode']);
+    }
+
+    /**
+     * The master and every shop product, so a revert also puts back a shop that differed from its master.
+     */
+    private function productFamily(array $target): array
+    {
+        $masterAsset = $target['master_asset_id'] ? MasterAsset::find($target['master_asset_id']) : null;
+
+        return [
+            'master'   => $masterAsset ? ['master_family_id' => $masterAsset->master_family_id, 'is_golden_product' => (bool) $masterAsset->is_golden_product] : null,
+            'products' => Product::whereIn('id', $target['product_ids'])
+                ->with(['shop:id,code', 'family:id,code'])
+                ->orderBy('id')
+                ->get()
+                ->mapWithKeys(fn (Product $product) => [$product->id => [
+                    'shop'              => $product->shop->code,
+                    'code'              => $product->code,
+                    'family_id'         => $product->family_id,
+                    'family'            => $product->family?->code,
+                    'is_golden_product' => (bool) $product->is_golden_product,
+                ]])
+                ->all(),
+        ];
     }
 
     private function masterPreOrder(array $target): array

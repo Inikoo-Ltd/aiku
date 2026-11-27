@@ -38,6 +38,7 @@ enum McpChangeTypeEnum: string
     case STAFF_CHAT_LISTS = 'staff_chat_lists';
     case CUSTOMS_INVOICE = 'customs_invoice';
     case MASTER_PRE_ORDER = 'master_pre_order';
+    case PRODUCT_FAMILY = 'product_family';
 
     public static function labels(): array
     {
@@ -66,6 +67,7 @@ enum McpChangeTypeEnum: string
             'staff_chat_lists'      => __('Who gets Ask CRM and Ask warehouse questions'),
             'customs_invoice'       => __('Customs invoices for a truck to a partner'),
             'master_pre_order'      => __('Master products on pre-order'),
+            'product_family'        => __('Product moved to another family or made golden'),
         ];
     }
 
@@ -75,7 +77,7 @@ enum McpChangeTypeEnum: string
     public function userSwitch(): string
     {
         return match ($this) {
-            McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
+            McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS, McpChangeTypeEnum::PRODUCT_FAMILY => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY, McpChangeTypeEnum::ORG_STOCK_FLAGS => 'can_use_mcp_discontinue',
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS, McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING, McpChangeTypeEnum::CUSTOMS_INVOICE => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',

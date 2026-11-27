@@ -52,6 +52,9 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Catalogue\Product\UpdateProductFamily;
+use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -130,6 +133,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::CHAT_CLOSED => ReopenChatSession::make()->handle(ChatSession::findOrFail($target['chat_session_id']), $this->chatAgentProfileFor($user)),
                 McpChangeTypeEnum::MASTER_PRICES => $this->revertMasterPrices($mcpChange->before),
                 McpChangeTypeEnum::MASTER_PRE_ORDER => $this->revertMasterPreOrder($mcpChange->before),
+                McpChangeTypeEnum::PRODUCT_FAMILY => $this->revertProductFamily($target, $mcpChange->before),
                 McpChangeTypeEnum::STOCK_DELIVERY_COSTS => $this->revertStockDeliveryCosts($target, $mcpChange->before),
                 McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => $this->revertTradeUnitProperties($target, $mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->revertWebsiteRedirects($mcpChange->before),
@@ -276,6 +280,23 @@ class RevertMcpChange
     {
         foreach ($before['redirects'] as $redirectId => $toWebpageId) {
             UpdateRedirect::make()->action(Redirect::findOrFail($redirectId), ['to_webpage_id' => $toWebpageId]);
+        }
+    }
+
+    private function revertProductFamily(array $target, array $before): void
+    {
+        if ($before['master']) {
+            UpdateMasterAsset::make()->action(MasterAsset::findOrFail($target['master_asset_id']), $before['master']);
+        }
+
+        foreach ($before['products'] as $productId => $was) {
+            $product = Product::findOrFail($productId);
+            if ($product->family_id !== $was['family_id']) {
+                UpdateProductFamily::run($product, ['family_id' => $was['family_id']]);
+            }
+            if ($product->refresh()->is_golden_product !== $was['is_golden_product']) {
+                UpdateProduct::make()->action($product, ['is_golden_product' => $was['is_golden_product']]);
+            }
         }
     }
 
