@@ -65305,6 +65305,143 @@
         }
       }
     },
+    "A product that came but is on none of the purchase orders of this delivery": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Продукт, който пристигна, но не е в нито една поръчка за покупка на тази доставка"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkt, který přišel, ale není na žádné objednávce této dodávky"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ein Produkt, das angekommen ist, aber auf keiner Bestellung dieser Lieferung steht"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un producto que llegó pero no está en ningún pedido de compra de esta entrega"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un produit arrivé mais absent de toutes les commandes d’achat de cette livraison"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ऐसा उत्पाद जो आया है, पर इस डिलीवरी के किसी भी खरीद ऑर्डर में नहीं है"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Proizvod koji je stigao, ali nije ni na jednoj narudžbenici ove isporuke"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Olyan termék, amely megérkezett, de a beszállítás egyik beszerzési rendelésén sem szerepel"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produk yang datang tetapi tidak ada di pesanan pembelian mana pun dari penerimaan ini"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un prodotto arrivato ma che non è in nessun ordine d’acquisto di questa consegna"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "届いたが、この入荷のどの発注にも載っていない商品"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prece, kas atnāca, bet nav nevienā šīs piegādes pirkuma pasūtījumā"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आएको तर यस डेलिभरीको कुनै पनि खरिद अर्डरमा नभएको उत्पादन"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een product dat is binnengekomen maar op geen enkele inkooporder van deze levering staat"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkt, który przyszedł, ale nie ma go w żadnym zamówieniu zakupu tej dostawy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Um produto que chegou mas não está em nenhuma encomenda de compra desta entrega"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un produs care a sosit, dar nu este pe nicio comandă de achiziție a acestei livrări"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkt, ktorý prišiel, ale nie je na žiadnej objednávke tejto dodávky"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En produkt som kom men inte finns på någon inköpsorder för leveransen"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gelen ama bu teslimatın hiçbir satın alma siparişinde olmayan ürün"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Товар, який прийшов, але не входить до жодного замовлення на закупівлю цієї поставки"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "已到货但不在本到货单任何采购订单中的商品"
+          }
+        }
+      }
+    },
     "A return note is made for the picked items. Their stock comes back when the return is put away.": {
       "extractionState": "manual",
       "localizations": {
@@ -68456,6 +68593,497 @@
         }
       }
     },
+    "Add %lld SKOs of %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Add %1$lld SKO of %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Add %lld SKOs of %@"
+                }
+              }
+            }
+          }
+        },
+        "bg": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Добави %1$lld SKO от %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Добави %1$lld SKO от %2$@"
+                }
+              }
+            }
+          }
+        },
+        "cs": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Přidat %1$lld SKO %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Přidat %1$lld SKO %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Přidat %1$lld SKO %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Přidat %1$lld SKO %2$@"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKO von %2$@ hinzufügen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKOs von %2$@ hinzufügen"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Añadir %1$lld SKO de %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Añadir %1$lld SKO de %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Añadir %1$lld SKO de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Ajouter %1$lld SKO de %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Ajouter %1$lld SKO de %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Ajouter %1$lld SKO de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "hi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ के %1$lld SKO जोड़ें"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ के %1$lld SKO जोड़ें"
+                }
+              }
+            }
+          }
+        },
+        "hr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO-a %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO-a %2$@"
+                }
+              }
+            }
+          }
+        },
+        "hu": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKO hozzáadása: %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKO hozzáadása: %2$@"
+                }
+              }
+            }
+          }
+        },
+        "id": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Tambah %1$lld SKO %2$@"
+                }
+              }
+            }
+          }
+        },
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Aggiungi %1$lld SKO di %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Aggiungi %1$lld SKO di %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Aggiungi %1$lld SKO di %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ja": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ を %1$lld SKO 追加"
+                }
+              }
+            }
+          }
+        },
+        "lv": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pievienot %1$lld SKO no %2$@"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pievienot %1$lld SKO no %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pievienot %1$lld SKO no %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ne": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ को %1$lld SKO थप्नुहोस्"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ का %1$lld SKO थप्नुहोस्"
+                }
+              }
+            }
+          }
+        },
+        "nl": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKO van %2$@ toevoegen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%1$lld SKO’s van %2$@ toevoegen"
+                }
+              }
+            }
+          }
+        },
+        "pl": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Dodaj %1$lld SKO %2$@"
+                }
+              }
+            }
+          }
+        },
+        "pt": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adicionar %1$lld SKO de %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adicionar %1$lld SKO de %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adicionar %1$lld SKO de %2$@"
+                }
+              }
+            }
+          }
+        },
+        "ro": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adăugați %1$lld SKO din %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adăugați %1$lld SKO din %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Adăugați %1$lld de SKO din %2$@"
+                }
+              }
+            }
+          }
+        },
+        "sk": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pridať %1$lld SKO %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pridať %1$lld SKO %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pridať %1$lld SKO %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Pridať %1$lld SKO %2$@"
+                }
+              }
+            }
+          }
+        },
+        "sv": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Lägg till %1$lld SKO av %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Lägg till %1$lld SKO av %2$@"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ ürününden %1$lld SKO ekle"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%2$@ ürününden %1$lld SKO ekle"
+                }
+              }
+            }
+          }
+        },
+        "uk": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Додати %1$lld SKO %2$@"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Додати %1$lld SKO %2$@"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Додати %1$lld SKO %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "Додати %1$lld SKO %2$@"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "添加 %1$lld 个 %2$@ SKO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Add %lld delivery notes": {
       "extractionState": "manual",
       "localizations": {
@@ -70585,6 +71213,143 @@
         }
       }
     },
+    "Add extra item": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добави допълнителен артикул"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Přidat položku navíc"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zusätzliche Position hinzufügen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añadir artículo adicional"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter un article en plus"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अतिरिक्त आइटम जोड़ें"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj dodatnu stavku"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plusz tétel hozzáadása"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tambah item tambahan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungi articolo extra"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "追加品目を加える"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pievienot papildu preci"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "अतिरिक्त वस्तु थप्नुहोस्"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Extra artikel toevoegen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj dodatkową pozycję"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar artigo extra"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adăugați un articol suplimentar"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pridať položku navyše"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lägg till extra artikel"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ek kalem ekle"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додати додаткову позицію"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "添加额外商品"
+          }
+        }
+      }
+    },
     "Add file": {
       "extractionState": "manual",
       "localizations": {
@@ -70718,6 +71483,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "添加文件"
+          }
+        }
+      }
+    },
+    "Add it as an extra item?": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Да се добави ли като допълнителен артикул?"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Přidat jako položku navíc?"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Als zusätzliche Position hinzufügen?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "¿Añadirlo como artículo adicional?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’ajouter comme article en plus ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "इसे अतिरिक्त आइटम के रूप में जोड़ें?"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodati kao dodatnu stavku?"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hozzáadja plusz tételként?"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tambahkan sebagai item tambahan?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungerlo come articolo extra?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "追加品目として加えますか？"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pievienot kā papildu preci?"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यसलाई अतिरिक्त वस्तुको रूपमा थप्ने?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Toevoegen als extra artikel?"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodać jako dodatkową pozycję?"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar como artigo extra?"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Îl adăugați ca articol suplimentar?"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pridať ako položku navyše?"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lägga till som extra artikel?"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ek kalem olarak eklensin mi?"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додати як додаткову позицію?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "作为额外商品添加？"
           }
         }
       }
@@ -71951,6 +72853,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "添加第一个包裹"
+          }
+        }
+      }
+    },
+    "Added as received and counted. Place it like the other items.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавя се като получен и преброен. Разположете го като другите артикули."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Přidá se jako přijaté a spočítané. Umístěte ho jako ostatní položky."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wird als erhalten und gezählt hinzugefügt. Lagern Sie es wie die anderen Positionen ein."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se añade como recibido y contado. Ubíquelo como los demás artículos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouté comme reçu et compté. Rangez-le comme les autres articles."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "प्राप्त और गिना हुआ मानकर जोड़ा जाता है। इसे बाकी आइटमों की तरह रखें।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaje se kao primljeno i prebrojano. Smjestite ga kao ostale stavke."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beérkezettként és megszámoltként kerül be. Helyezze el, mint a többi tételt."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ditambahkan sebagai diterima dan sudah dihitung. Tempatkan seperti item lainnya."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Viene aggiunto come ricevuto e contato. Lo collochi come gli altri articoli."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "受領・検品済みとして追加されます。他の品目と同じように棚入れしてください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tiek pievienots kā saņemts un saskaitīts. Izvietojiet to kā citas preces."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "प्राप्त र गनिएको रूपमा थपिन्छ। अरू वस्तुहरू जस्तै यसलाई राख्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wordt toegevoegd als ontvangen en geteld. Zet het weg zoals de andere artikelen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zostanie dodane jako przyjęte i policzone. Rozmieść je jak pozostałe pozycje."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "É adicionado como recebido e contado. Arrume-o como os outros artigos."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se adaugă ca recepționat și numărat. Amplasați-l ca pe celelalte articole."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pridá sa ako prijaté a spočítané. Umiestnite ho ako ostatné položky."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Läggs till som mottagen och räknad. Placera den som de andra artiklarna."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Teslim alınmış ve sayılmış olarak eklenir. Diğer kalemler gibi yerleştirin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додається як отримане й пораховане. Розмістіть його, як інші позиції."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "按已收货、已清点添加。请像其他商品一样上架。"
           }
         }
       }
@@ -123414,6 +124453,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "无法加载拣货批次"
+          }
+        }
+      }
+    },
+    "Couldn’t load the products you can add": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Продуктите, които могат да се добавят, не можаха да се заредят"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkty k přidání se nepodařilo načíst"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Produkte zum Hinzufügen konnten nicht geladen werden"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudieron cargar los productos que se pueden añadir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible de charger les produits à ajouter"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "जोड़े जा सकने वाले उत्पाद लोड नहीं हो सके"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Učitavanje proizvoda koje možete dodati nije uspjelo"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nem sikerült betölteni a hozzáadható termékeket"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tidak dapat memuat produk yang bisa ditambahkan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile caricare i prodotti da aggiungere"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "追加できる商品を読み込めませんでした"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Neizdevās ielādēt produktus, ko var pievienot"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "थप्न सकिने उत्पादनहरू लोड गर्न सकिएन"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De producten die je kunt toevoegen konden niet worden geladen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie udało się wczytać produktów do dodania"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível carregar os produtos que pode adicionar"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produsele care pot fi adăugate nu au putut fi încărcate"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkty na pridanie sa nepodarilo načítať"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Det gick inte att läsa in produkterna du kan lägga till"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eklenebilecek ürünler yüklenemedi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вдалося завантажити товари, які можна додати"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "无法加载可添加的商品"
           }
         }
       }
@@ -177434,6 +178610,143 @@
         }
       }
     },
+    "How many SKOs came": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Колко SKO пристигнаха"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kolik SKO přišlo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wie viele SKOs angekommen sind"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuántos SKO llegaron"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Combien de SKO sont arrivés"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कितने SKO आए"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Koliko je SKO-a stiglo"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hány SKO érkezett"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Berapa SKO yang datang"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quanti SKO sono arrivati"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "届いたSKOの数"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cik SKO atnāca"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "कति SKO आए"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hoeveel SKO’s er zijn binnengekomen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ile SKO przyszło"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quantos SKO chegaram"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Câte SKO au sosit"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Koľko SKO prišlo"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hur många SKO som kom"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kaç SKO geldi"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Скільки SKO прийшло"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "到货的 SKO 数量"
+          }
+        }
+      }
+    },
     "How many can’t be picked from this pallet.": {
       "extractionState": "manual",
       "localizations": {
@@ -225420,6 +226733,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "无拣货批次"
+          }
+        }
+      }
+    },
+    "No product to add. Try another search.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Няма продукт за добавяне. Опитайте друго търсене."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Žádný produkt k přidání. Zkuste jiné hledání."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kein Produkt zum Hinzufügen. Versuchen Sie eine andere Suche."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No hay ningún producto para añadir. Pruebe otra búsqueda."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun produit à ajouter. Essayez une autre recherche."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "जोड़ने के लिए कोई उत्पाद नहीं। कोई और खोज आज़माएँ।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nema proizvoda za dodavanje. Pokušajte s drugim pretraživanjem."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nincs hozzáadható termék. Próbáljon más keresést."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tidak ada produk untuk ditambahkan. Coba pencarian lain."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessun prodotto da aggiungere. Provi un’altra ricerca."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "追加できる商品がありません。別の検索をお試しください。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nav produktu, ko pievienot. Mēģiniet citu meklēšanu."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "थप्न कुनै उत्पादन छैन। अर्को खोज प्रयास गर्नुहोस्।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geen product om toe te voegen. Probeer een andere zoekopdracht."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Brak produktu do dodania. Spróbuj innego wyszukiwania."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nenhum produto para adicionar. Tente outra pesquisa."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Niciun produs de adăugat. Încercați altă căutare."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Žiadny produkt na pridanie. Skúste iné hľadanie."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ingen produkt att lägga till. Prova en annan sökning."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eklenecek ürün yok. Başka bir arama deneyin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Немає товару для додавання. Спробуйте інший пошук."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "没有可添加的商品。请换个搜索词。"
           }
         }
       }
@@ -320090,6 +321540,143 @@
         }
       }
     },
+    "Search the supplier’s products": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Търсене в продуктите на доставчика"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hledat v produktech dodavatele"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Produkte des Lieferanten durchsuchen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar en los productos del proveedor"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher dans les produits du fournisseur"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपूर्तिकर्ता के उत्पाद खोजें"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pretraži proizvode dobavljača"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keresés a beszállító termékei között"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cari produk pemasok"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cerca tra i prodotti del fornitore"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "仕入先の商品を検索"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Meklēt piegādātāja produktos"
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "आपूर्तिकर्ताका उत्पादनहरू खोज्नुहोस्"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zoek in de producten van de leverancier"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Szukaj w produktach dostawcy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pesquisar nos produtos do fornecedor"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Căutați în produsele furnizorului"
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hľadať v produktoch dodávateľa"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sök bland leverantörens produkter"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tedarikçinin ürünlerinde ara"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Шукати серед товарів постачальника"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "搜索供应商的商品"
+          }
+        }
+      }
+    },
     "Searching": {
       "extractionState": "manual",
       "localizations": {
@@ -364199,6 +365786,143 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "此 SKO 在此仓库的库位中没有库存。"
+          }
+        }
+      }
+    },
+    "This SKO is not a product of this supplier, so it can’t be added here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "bg": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Този SKO не е продукт на този доставчик, затова не може да се добави тук."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Toto SKO není produktem tohoto dodavatele, proto ho sem nelze přidat."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese SKO ist kein Produkt dieses Lieferanten und kann hier nicht hinzugefügt werden."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este SKO no es un producto de este proveedor, así que no se puede añadir aquí."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce SKO n’est pas un produit de ce fournisseur : il ne peut pas être ajouté ici."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यह SKO इस आपूर्तिकर्ता का उत्पाद नहीं है, इसलिए इसे यहाँ नहीं जोड़ा जा सकता।"
+          }
+        },
+        "hr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ovaj SKO nije proizvod ovog dobavljača pa se ovdje ne može dodati."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ez az SKO nem ennek a beszállítónak a terméke, ezért itt nem adható hozzá."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "SKO ini bukan produk pemasok ini, jadi tidak bisa ditambahkan di sini."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo SKO non è un prodotto di questo fornitore, quindi non si può aggiungere qui."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このSKOはこの仕入先の商品ではないため、ここには追加できません。"
+          }
+        },
+        "lv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Šis SKO nav šī piegādātāja produkts, tāpēc to šeit nevar pievienot."
+          }
+        },
+        "ne": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "यो SKO यस आपूर्तिकर्ताको उत्पादन होइन, त्यसैले यहाँ थप्न सकिँदैन।"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze SKO is geen product van deze leverancier en kan hier niet worden toegevoegd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "To SKO nie jest produktem tego dostawcy, więc nie można go tu dodać."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este SKO não é um produto deste fornecedor, por isso não pode ser adicionado aqui."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Acest SKO nu este un produs al acestui furnizor, deci nu poate fi adăugat aici."
+          }
+        },
+        "sk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Toto SKO nie je produktom tohto dodávateľa, preto ho sem nemožno pridať."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Denna SKO är inte en produkt från leverantören och kan inte läggas till här."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu SKO bu tedarikçinin ürünü değil, bu yüzden buraya eklenemez."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Цей SKO не є товаром цього постачальника, тому його не можна додати тут."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此 SKO 不是该供应商的商品，无法在此添加。"
           }
         }
       }

@@ -5,12 +5,14 @@ private enum GoodsInCameraSheet: Identifiable, Hashable {
     case typeCode
     case check(itemID: Int)
     case chooseLine(code: String, itemIDs: [Int])
+    case addExtra(scanned: GoodsInScannedExtra)
 
     var id: String {
         switch self {
         case .typeCode: "typeCode"
         case .check(let itemID): "check-\(itemID)"
         case .chooseLine(let code, _): "choose-\(code)"
+        case .addExtra(let scanned): "add-extra-\(scanned.code)"
         }
     }
 }
@@ -281,6 +283,17 @@ private struct GoodsInCheckScanContent: View {
                 sheet = nil
                 showLine(item.id)
             }
+        case .addExtra(let scanned):
+            GoodsInAddExtraItemSheet(
+                delivery: delivery,
+                scanned: scanned,
+                addable: feed.addable,
+                isWorking: feed.working.map(\.isAddItem) ?? false,
+                problem: sheetProblem ?? feed.writeErrors.values.first,
+                onSearch: { search, orgStockID in await feed.loadAddable(search: search, orgStockID: orgStockID) },
+                onAdd: { itemID, quantity in Task { await feed.addItem(itemID: itemID, skoQuantity: quantity) } },
+                onDismiss: closeSheet
+            )
         }
     }
 
@@ -307,9 +320,13 @@ private struct GoodsInCheckScanContent: View {
             showLine(itemID)
         case let .choose(code, itemIDs):
             open(.chooseLine(code: code, itemIDs: itemIDs))
-        case .notOnDelivery(let code):
+        case let .notOnDelivery(code, skoID):
             ScanFeedback.shared.rejected()
-            feedback = .problem(L10n.format("%@ is not on %@", code, delivery.reference))
+            if let skoID, delivery.canAddItems {
+                open(.addExtra(scanned: GoodsInScannedExtra(code: code, skoID: skoID)))
+            } else {
+                feedback = .problem(L10n.format("%@ is not on %@", code, delivery.reference))
+            }
         case .failed(_, let message):
             feedback = .problem(message)
         }

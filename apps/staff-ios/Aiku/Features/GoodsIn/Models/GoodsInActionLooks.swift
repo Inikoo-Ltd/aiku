@@ -10,6 +10,7 @@ enum GoodsInActionKey {
     static let unreceive = "unreceive"
     static let undo = "undo"
     static let checklist = "checklist"
+    static let addItem = "add_item"
 
     static let mainStep = AikuButtonLook(.primary, icon: .next)
     static let stepBack = AikuButtonLook(.caution, icon: .undo)

@@ -62,6 +62,9 @@ struct GoodsInAPITests {
         "mobile/warehouses/1/stock-deliveries/36604/items/177817/place-all": #"{"data":"# + detail + #","result":{"status":"done","message":"Placed"}}"#,
         "mobile/warehouses/1/stock-deliveries/36604/check-all": #"{"data":"# + detail + #","result":{"status":"done","message":"1 item checked as expected."}}"#,
         "mobile/warehouses/1/stock-deliveries/36604/checklist": #"{"data":"# + detail + #","result":{"status":"done","message":"Check failed"}}"#,
+        "mobile/warehouses/1/stock-deliveries/36604/addable-items": #"{"data":[{"id":901,"field":"org_supplier_product_id","code":"SUP-9","name":"Lavender oil","sko":{"id":4242,"code":"LAV-01","name":"Lavender Oil 10ml","packed_in":"6"}},{"id":902,"field":"org_supplier_product_id","code":"LAV-02","name":null,"sko":{"id":4243,"code":"LAV-02"}}]}"#,
+        "mobile/warehouses/1/stock-deliveries/36604/items": #"{"data":"# + detail + #","result":{"status":"done","message":"LAV-01 added as an extra item."}}"#,
+        "mobile/warehouses/1/scan": #"{"data":{"code":"5099","type":"sko","sko":{"id":4242,"code":"LAV-01"}}}"#,
         "mobile/warehouses/1/returns/635/puts/91": #"{"data":"# + returnDetail + #","result":{"status":"done","message":"Undone: Returned."}}"#,
         "mobile/warehouses/1/returns": #"{"data":[{"id":635,"reference":"GB591132-r2","type":"cancellation","type_label":"Cancellation","state":"received","state_label":"Received","created_at":"2026-10-23T07:44:16+00:00","customer":{"name":"Thimble and Wick"},"delivery_note":null,"number_items":2,"number_handled":0,"handler":null}],"meta":{"current_page":1,"last_page":1,"per_page":150,"total":1},"counts":{"received":14,"returning":21,"returned":99,"done":112,"cancelled":15,"all":261}}"#,
         "mobile/warehouses/1/returns/635": #"{"data":"# + returnDetail + "}",
@@ -300,6 +303,55 @@ struct GoodsInAPITests {
 
         await feed.scanLine("abb-07A")
         #expect(feed.scanOutcome == .line(itemID: 177817))
+    }
+
+    @Test func anSkoNotOnTheDeliveryIsOfferedAsAnExtraItem() async throws {
+        let (feed, _) = await loadedDelivery()
+
+        await feed.scanLine("5099")
+
+        #expect(feed.scanOutcome == .notOnDelivery(code: "5099", skoID: 4242))
+    }
+
+    @Test func addableItemsAskForTheSearchOrTheScannedSko() async throws {
+        let (feed, transport) = await loadedDelivery()
+
+        await feed.loadAddable(search: " lav ", orgStockID: nil)
+        let searched = try #require(last(transport, "/addable-items")?.url)
+        #expect(URLComponents(url: searched, resolvingAgainstBaseURL: false)?.queryItems == [URLQueryItem(name: "q", value: "lav")])
+        #expect(feed.addable.items.map(\.id) == [901, 902])
+        #expect(feed.addable.items[0].codes == ["SUP-9", "LAV-01"])
+        #expect(feed.addable.items[0].sko?.packedIn == 6)
+        #expect(feed.addable.items[1].codes == ["LAV-02"])
+        #expect(feed.addable.items[1].displayName == nil)
+
+        await feed.loadAddable(search: nil, orgStockID: 4242)
+        let scanned = try #require(last(transport, "/addable-items")?.url)
+        #expect(URLComponents(url: scanned, resolvingAgainstBaseURL: false)?.queryItems == [URLQueryItem(name: "org_stock_id", value: "4242")])
+    }
+
+    @Test func addingAnExtraItemSendsTheProductAndTheSkosThatCame() async throws {
+        let (feed, transport) = await loadedDelivery()
+
+        await feed.addItem(itemID: 901, skoQuantity: 3)
+
+        let request = last(transport, "/stock-deliveries/36604/items")
+        #expect(request?.httpMethod == "POST")
+        let sent = try body(request)
+        #expect(sent["item_id"] as? Int == 901)
+        #expect(sent["sko_quantity"] as? Int == 3)
+        #expect(feed.event == .done(message: "LAV-01 added as an extra item.", isNothingChanged: false, wasRaised: false))
+    }
+
+    @Test func aProblemLoadingAddableItemsIsShown() async throws {
+        let (feed, transport) = await loadedDelivery()
+        transport.fail("mobile/warehouses/1/stock-deliveries/36604/addable-items", status: 422, body: #"{"message":"Items can only be added while the delivery is being booked in"}"#)
+
+        await feed.loadAddable(search: nil, orgStockID: nil)
+
+        #expect(feed.addable.items.isEmpty)
+        #expect(feed.addable.problem == "Items can only be added while the delivery is being booked in")
+        #expect(!feed.addable.isLoading)
     }
 
     @Test func scannedStockDeliveryOpensItsScreen() throws {

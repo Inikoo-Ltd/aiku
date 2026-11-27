@@ -6,6 +6,7 @@ struct GoodsInService: Sendable {
     var deliveries: @Sendable (_ warehouseID: Int, _ query: MobileStockDeliveriesQuery) async throws -> MobileStockDeliveriesPage = { _, _ in throw APIError.unexpectedBody }
     var delivery: @Sendable (_ warehouseID: Int, _ id: Int) async throws -> MobileStockDelivery = { _, _ in throw APIError.unexpectedBody }
     var writeDelivery: @Sendable (_ warehouseID: Int, _ id: Int, _ write: GoodsInDeliveryWrite) async throws -> MobileStockDeliveryWriteResult = { _, _, _ in throw APIError.unexpectedBody }
+    var addableItems: @Sendable (_ warehouseID: Int, _ deliveryID: Int, _ search: String?, _ orgStockID: Int?) async throws -> [MobileAddableItem] = { _, _, _, _ in [] }
     var returns: @Sendable (_ warehouseID: Int, _ query: MobileReturnsQuery) async throws -> MobileReturnsPage = { _, _ in throw APIError.unexpectedBody }
     var goodsReturn: @Sendable (_ warehouseID: Int, _ id: Int) async throws -> MobileReturn = { _, _ in throw APIError.unexpectedBody }
     var writeReturn: @Sendable (_ warehouseID: Int, _ id: Int, _ write: GoodsInReturnWrite) async throws -> MobileReturnWriteResult = { _, _, _ in throw APIError.unexpectedBody }
@@ -18,6 +19,7 @@ struct GoodsInService: Sendable {
             deliveries: { try await client.fetchStockDeliveries(warehouseID: $0, query: $1) },
             delivery: { try await client.fetchStockDelivery(warehouseID: $0, id: $1) },
             writeDelivery: { try await client.writeStockDelivery(warehouseID: $0, id: $1, write: $2) },
+            addableItems: { try await client.fetchAddableItems(warehouseID: $0, deliveryID: $1, search: $2, orgStockID: $3) },
             returns: { try await client.fetchReturns(warehouseID: $0, query: $1) },
             goodsReturn: { try await client.fetchReturn(warehouseID: $0, id: $1) },
             writeReturn: { try await client.writeReturn(warehouseID: $0, id: $1, write: $2) },
@@ -256,6 +258,7 @@ extension MobileStockDelivery {
     }
 
     var canCheck: Bool { availableActions.can(GoodsInActionKey.check) }
+    var canAddItems: Bool { availableActions.can(GoodsInActionKey.addItem) }
     var canPlace: Bool { availableActions.can(GoodsInActionKey.place) }
     var canRecordChecks: Bool { availableActions.can(GoodsInActionKey.checklist) }
 
@@ -298,8 +301,19 @@ extension MobileStockDeliveryItem {
 enum GoodsInLineScanOutcome: Equatable, Sendable {
     case line(itemID: Int)
     case choose(code: String, itemIDs: [Int])
-    case notOnDelivery(code: String)
+    case notOnDelivery(code: String, skoID: Int?)
     case failed(code: String, message: String)
+}
+
+struct GoodsInScannedExtra: Hashable, Sendable {
+    let code: String
+    let skoID: Int
+}
+
+struct GoodsInAddableChoices: Equatable, Sendable {
+    var items: [MobileAddableItem] = []
+    var isLoading = false
+    var problem: String?
 }
 
 @MainActor
@@ -319,8 +333,10 @@ final class GoodsInDeliveryFeed {
     private(set) var unsurePlacement: GoodsInDeliveryWrite?
     private(set) var lookingUpCode: String?
     var scanOutcome: GoodsInLineScanOutcome?
+    private(set) var addable = GoodsInAddableChoices()
     @ObservationIgnored private let service: GoodsInService
     @ObservationIgnored private var loadTask: Task<Void, Never>?
+    @ObservationIgnored private var addableTask: Task<Void, Never>?
 
     init(warehouseID: Int, deliveryID: Int, service: GoodsInService) {
         self.warehouseID = warehouseID
@@ -415,6 +431,33 @@ final class GoodsInDeliveryFeed {
         writeErrors = [:]
     }
 
+    func loadAddable(search: String?, orgStockID: Int?) async {
+        addableTask?.cancel()
+        addable.isLoading = true
+        addable.problem = nil
+        let task = Task { await performLoadAddable(search: search, orgStockID: orgStockID) }
+        addableTask = task
+        await task.value
+    }
+
+    private func performLoadAddable(search: String?, orgStockID: Int?) async {
+        do {
+            let items = try await service.addableItems(warehouseID, deliveryID, search, orgStockID)
+            guard !Task.isCancelled else { return }
+            addable = GoodsInAddableChoices(items: items)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            guard !Task.isCancelled else { return }
+            addable.isLoading = false
+            addable.problem = GoodsInText.problem(error)
+        }
+    }
+
+    func addItem(itemID: Int, skoQuantity: Double) async {
+        await act(.addItem(itemID: itemID, skoQuantity: skoQuantity))
+    }
+
     func scanLine(_ code: String) async {
         let scanned = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let delivery, !scanned.isEmpty, lookingUpCode == nil else { return }
@@ -430,17 +473,17 @@ final class GoodsInDeliveryFeed {
         do {
             let result = try await service.scan(warehouseID, scanned)
             let skoID = result.scanType == .sko ? result.sko?.id : nil
-            scanOutcome = Self.outcome(scanned, candidates.filter { skoID != nil && $0.sko?.id == skoID }.map(\.id))
+            scanOutcome = Self.outcome(scanned, candidates.filter { skoID != nil && $0.sko?.id == skoID }.map(\.id), skoID: skoID)
         } catch APIError.http(404) {
-            scanOutcome = .notOnDelivery(code: scanned)
+            scanOutcome = .notOnDelivery(code: scanned, skoID: nil)
         } catch {
             scanOutcome = .failed(code: scanned, message: GoodsInText.scanProblem(code: scanned, error: error))
         }
     }
 
-    private static func outcome(_ code: String, _ itemIDs: [Int]) -> GoodsInLineScanOutcome {
+    private static func outcome(_ code: String, _ itemIDs: [Int], skoID: Int? = nil) -> GoodsInLineScanOutcome {
         switch itemIDs.count {
-        case 0: .notOnDelivery(code: code)
+        case 0: .notOnDelivery(code: code, skoID: skoID)
         case 1: .line(itemID: itemIDs[0])
         default: .choose(code: code, itemIDs: itemIDs)
         }
