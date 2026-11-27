@@ -9,7 +9,7 @@
 import { Link } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faClipboardListCheck, faDebug } from "@fal"
+import { faInventory, faClipboardListCheck, faDebug, faIndustry, faUndoAlt } from "@fal"
 import { computed, inject, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { RouteParams } from "@/types/route-params"
@@ -25,7 +25,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import PassWaitingItemsToCs from "@/Components/Warehouse/DeliveryNotes/PassWaitingItemsToCs.vue"
 import PickingLocationModal from "@/Components/Warehouse/DeliveryNotes/PickingLocationModal.vue"
 
-library.add(faInventory, faClipboardListCheck, faDebug)
+library.add(faInventory, faClipboardListCheck, faDebug, faIndustry, faUndoAlt)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -232,6 +232,24 @@ const errors = ref<string[]>([])
                     </span>
                 </template>
             </Button>
+
+            <!-- Button: Waiting for production -->
+            <ButtonWithLink
+                v-if="!isStillPicking"
+                :icon="item.is_waiting_production ? 'fal fa-undo-alt' : 'fal fa-industry'"
+                :label="item.is_waiting_production ? ctrans('Back to waiting items') : ctrans('Waiting for production')"
+                :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"
+                type="tertiary"
+                class="!bg-teal-200 hover:!bg-teal-300/80 !text-teal-800 !border-teal-400 !py-2"
+                :routeTarget="{
+                    method: 'post',
+                    name: 'grp.models.delivery_note_item.set_as_waiting_production',
+                    parameters: { deliveryNoteItem: item.id },
+                }"
+                :body="{ waiting_production: !item.is_waiting_production }"
+                :bindToLink="{ preserveScroll: true }"
+                isWithError
+            />
         </div>
     </div>
 

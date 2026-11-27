@@ -9,6 +9,8 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
+use Illuminate\Support\Arr;
 
 class IndexWaitingDeliveryNoteItemsStillInPicking extends BaseIndexWaitingDeliveryNoteItems
 {
@@ -20,6 +22,11 @@ class IndexWaitingDeliveryNoteItemsStillInPicking extends BaseIndexWaitingDelive
     protected function getPageTitle(): string
     {
         return __('Waiting Items').' ('.__('Still picking').')';
+    }
+
+    protected function getTabNavigation(): array
+    {
+        return Arr::except(WaitingItemsTabsEnum::navigation(), WaitingItemsTabsEnum::WAITING_PRODUCTION->value);
     }
 
     protected function getRouteName(): string

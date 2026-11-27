@@ -449,6 +449,10 @@ class UpdateShop extends OrgAction
 
         // Stock on Iris
 
+        if (Arr::has($modelData, 'send_orders_before_filled')) {
+            data_set($modelData, 'settings.orders.send_before_filled', (bool)Arr::pull($modelData, 'send_orders_before_filled'));
+        }
+
         if (Arr::has($modelData, 'allow_stocks_to_be_shown_on_iris')) {
             data_set($modelData, 'settings.catalog.allow_stocks_to_be_shown_on_iris', Arr::pull($modelData, 'allow_stocks_to_be_shown_on_iris'));
         }
@@ -1311,6 +1315,7 @@ class UpdateShop extends OrgAction
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],
             'allow_stocks_to_be_shown_on_iris'                        => ['sometimes', 'boolean'],
+            'send_orders_before_filled'                               => ['sometimes', 'boolean'],
             'allow_incoming_stocks_to_be_shown_on_iris'               => ['sometimes', 'boolean'],
             'product_price_currency_exchange'                         => ['sometimes', 'numeric', 'min:0'],
             'proforma_footer'                                         => ['sometimes', 'string', 'max:10000'],

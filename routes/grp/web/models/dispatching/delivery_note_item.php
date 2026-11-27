@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureNotHandledInAurora;
 use App\Actions\Dispatching\Picking\PickAllItemFromWaitingWarehouse;
 use App\Actions\Dispatching\Picking\SendBackWaitingWarehouse;
 use App\Actions\Dispatching\Picking\SetAsWaitingCrm;
+use App\Actions\Dispatching\Picking\SetAsWaitingProduction;
 use App\Actions\Dispatching\Picking\SetAsWaitingWarehouse;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StoreNotPickPickingFromWaitingCrm;
@@ -41,6 +42,7 @@ Route::name('delivery_note_item.')->prefix('delivery-note-item/{deliveryNoteItem
     Route::post('undo-set-as-waiting-warehouse', UndoSetAsWaitingWarehouse::class)->name('undo_set_as_waiting_warehouse')->withoutScopedBindings();
 
     Route::post('set-as-waiting-crm', SetAsWaitingCrm::class)->name('set_as_waiting_crm')->withoutScopedBindings();
+    Route::post('set-as-waiting-production', SetAsWaitingProduction::class)->name('set_as_waiting_production')->withoutScopedBindings();
     Route::post('send-back-to-waiting-warehouse', SendBackWaitingWarehouse::class)->name('send_back_waiting_warehouse')->withoutScopedBindings();
 
     Route::post('picking-from-waiting-warehouse', UpsertPickingFromWaitingWarehouse::class)->name('picking.upsert_from_waiting_warehouse');

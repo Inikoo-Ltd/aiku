@@ -18,6 +18,7 @@ use App\Http\Resources\Dispatching\WaitingDNItemsGroupedByDeliveryNoteResource;
 use App\Http\Resources\Dispatching\WaitingDNItemsTabsItemizedResource;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -101,12 +102,27 @@ abstract class BaseIndexWaitingDeliveryNoteItems extends OrgAction
             WaitingItemsTabsEnum::GROUPED_BY_ITEM->value            => $this->tab == WaitingItemsTabsEnum::GROUPED_BY_ITEM->value
                 ? fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)
                 : Inertia::optional(fn () => WaitingDeliveryNoteItemsGroupedByItemResource::collection($groupedByItem)),
+            WaitingItemsTabsEnum::WAITING_PRODUCTION->value         => $this->tab == WaitingItemsTabsEnum::WAITING_PRODUCTION->value
+                ? fn () => WaitingDNItemsTabsItemizedResource::collection($this->waitingProductionItems($warehouse))
+                : Inertia::optional(fn () => WaitingDNItemsTabsItemizedResource::collection($this->waitingProductionItems($warehouse))),
         ];
 
         return Inertia::render('Org/Dispatching/WaitingDeliveryNoteItems', $props)
             ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::ITEMIZED->value, $this->readOnly))
             ->table(IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_DELIVERY_NOTE->value))
-            ->table(IndexWaitingDeliveryNoteItemsGroupedByItem::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_ITEM->value));
+            ->table(IndexWaitingDeliveryNoteItemsGroupedByItem::make()->tableStructure(WaitingItemsTabsEnum::GROUPED_BY_ITEM->value))
+            ->table(IndexWaitingDeliveryNoteItemsItemized::make()->tableStructure(WaitingItemsTabsEnum::WAITING_PRODUCTION->value, $this->readOnly));
+    }
+
+    private function waitingProductionItems(Warehouse $warehouse): LengthAwarePaginator
+    {
+        return IndexWaitingDeliveryNoteItemsItemized::make()->handle(
+            warehouse: $warehouse,
+            waitingType: 'production',
+            state: $this->getDeliveryNoteState(),
+            shopType: $this->shopType,
+            prefix: WaitingItemsTabsEnum::WAITING_PRODUCTION->value
+        );
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Warehouse

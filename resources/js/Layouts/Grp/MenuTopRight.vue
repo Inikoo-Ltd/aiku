@@ -37,7 +37,7 @@ const mobileBadgeGroups = computed(() => [
     { key: 'notifications', dot: 'bg-blue-400', total: unreadRailNotifications(layout.notifications) },
     { key: 'tickets', dot: 'bg-lime-400', total: (layout.ticket_badges?.queue ? sumBadgeCounts(layout.ticket_badges.queue, ['assigned_to_me', 'collaborating', 'replied', 'qa_to_check']) : 0) + sumBadgeCounts(layout.ticket_badges?.mine, ['to_do', 'in_progress', 'waiting']) },
     { key: 'developments', dot: 'bg-violet-400', total: layout.development_badges?.waiting ?? 0 },
-    { key: 'orders', dot: 'bg-amber-400', total: (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) },
+    { key: 'orders', dot: 'bg-amber-400', total: (layout?.dispatching_waiting_count ?? 0) + (layout?.dispatching_production_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) },
     { key: 'catalogue', dot: 'bg-rose-400', total: (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) },
 ].filter((group) => group.total > 0))
 

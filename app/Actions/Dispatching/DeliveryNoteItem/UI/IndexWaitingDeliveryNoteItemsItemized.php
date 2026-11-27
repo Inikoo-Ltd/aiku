@@ -38,7 +38,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
         $trolleysInUseCondition = 't.id IN (SELECT dnt.trolley_id FROM delivery_note_has_trolleys dnt WHERE dnt.delivery_note_id = delivery_notes.id)'
             .' OR t.picking_session_id IN (SELECT pshdn.picking_session_id FROM picking_session_has_delivery_notes pshdn WHERE pshdn.delivery_note_id = delivery_notes.id)';
 
-        $oppositeWaitingColumn = $waitingType == 'warehouse' ? 'has_waiting_crm' : 'has_waiting_warehouse';
+        $oppositeWaitingColumn = $waitingType == 'crm' ? 'has_waiting_warehouse' : 'has_waiting_crm';
 
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
@@ -50,12 +50,20 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             ->where('delivery_notes.warehouse_id', $warehouse->id);
 
         if ($waitingType == 'warehouse') {
-            $query->where('delivery_note_items.has_waiting_warehouse', true);
+            $query->where('delivery_note_items.has_waiting_warehouse', true)
+                ->whereNull('delivery_note_items.waiting_production_at');
+        } elseif ($waitingType == 'production') {
+            $query->where('delivery_note_items.has_waiting_warehouse', true)
+                ->whereNotNull('delivery_note_items.waiting_production_at');
         } else {
             $query->where('delivery_note_items.has_waiting_crm', true);
         }
 
-        $query->where('delivery_notes.state', $state);
+        if ($waitingType == 'production') {
+            $query->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::HANDLING]);
+        } else {
+            $query->where('delivery_notes.state', $state);
+        }
 
 
         $this->whereDeliveryNotesChannel($query, $shopType);

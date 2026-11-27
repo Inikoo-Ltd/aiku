@@ -9,6 +9,8 @@
 namespace App\Actions\Dispatching\WaitingItems;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -47,6 +49,7 @@ class GetDispatchingWaitingBadgeData
                     "delivery_note_items.delivery_note_id",
                 )
                 ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->whereNull("delivery_note_items.waiting_production_at")
                 ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING_BLOCKED)
                 ->count();
 
@@ -59,8 +62,11 @@ class GetDispatchingWaitingBadgeData
                     "delivery_note_items.delivery_note_id",
                 )
                 ->where("delivery_note_items.has_waiting_warehouse", true)
+                ->whereNull("delivery_note_items.waiting_production_at")
                 ->where("delivery_notes.state", DeliveryNoteStateEnum::HANDLING)
                 ->count();
+
+            $waitingProductionCount = $this->waitingProductionCount($warehouse);
 
             $organisationsMap[$orgSlug]["warehouses"][] = [
                 "slug" => $warehouse->slug,
@@ -73,6 +79,17 @@ class GetDispatchingWaitingBadgeData
                         "parameters" => [
                             "organisation" => $warehouse->organisation->slug,
                             "warehouse" => $warehouse->slug,
+                        ],
+                    ],
+                ],
+                "waiting_items_production" => [
+                    "count" => $waitingProductionCount,
+                    "route" => [
+                        "name" => "grp.org.warehouses.show.dispatching.waiting_items",
+                        "parameters" => [
+                            "organisation" => $warehouse->organisation->slug,
+                            "warehouse" => $warehouse->slug,
+                            "tab" => WaitingItemsTabsEnum::WAITING_PRODUCTION->value,
                         ],
                     ],
                 ],
@@ -105,10 +122,35 @@ class GetDispatchingWaitingBadgeData
                 ->deliveryNotes()
                 ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                 ->where('delivery_note_items.has_waiting_warehouse', true)
+                ->whereNull('delivery_note_items.waiting_production_at')
                 ->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::HANDLING])
                 ->count();
         }
 
         return $total;
+    }
+
+    public function productionTotalCount(User $user): int
+    {
+        $total = 0;
+
+        foreach ($user->authorisedWarehouses()->get() as $warehouse) {
+            if ($user->authTo("dispatching.{$warehouse->id}.view")) {
+                $total += $this->waitingProductionCount($warehouse);
+            }
+        }
+
+        return $total;
+    }
+
+    private function waitingProductionCount(Warehouse $warehouse): int
+    {
+        return $warehouse
+            ->deliveryNotes()
+            ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+            ->where('delivery_note_items.has_waiting_warehouse', true)
+            ->whereNotNull('delivery_note_items.waiting_production_at')
+            ->whereIn('delivery_notes.state', [DeliveryNoteStateEnum::HANDLING_BLOCKED, DeliveryNoteStateEnum::HANDLING])
+            ->count();
     }
 }

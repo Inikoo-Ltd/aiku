@@ -1968,6 +1968,7 @@ test('an order raises to produce lines for stock already promised to earlier ord
 test('a bottle filled to order puts a fill line on To Produce, holds the whole order and releases it once filled', function () {
     [, , $shop] = createShop();
     createWarehouse();
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['orders' => ['send_before_filled' => false]])]);
     [, $product] = createProduct($shop);
     $orgStock    = $product->orgStocks()->first();
     $product->update(['code' => $orgStock->code.'-10ml']);
@@ -2071,6 +2072,7 @@ test('a decant that also lists its bottle and cap SKOs is still filled to order 
 test('a fill product given its SKO after the order was submitted gets its fill line when the order goes to the warehouse', function () {
     [, , $shop] = createShop();
     createWarehouse();
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['orders' => ['send_before_filled' => false]])]);
     [, $product] = createProduct($shop);
     $orgStock    = $product->orgStocks()->first();
     $product->update(['code' => $orgStock->code.'-10ml']);
@@ -2646,6 +2648,7 @@ test('an order short of a product made in-house tells the floor supervisors, and
 test('an order held for filling tells staff why on its page, and staff can still send it anyway', function () {
     [, , $shop] = createShop();
     createWarehouse();
+    $shop->update(['settings' => array_replace_recursive($shop->settings ?? [], ['orders' => ['send_before_filled' => false]])]);
     [, $product] = createProduct($shop);
     $orgStock    = $product->orgStocks()->first();
     $product->update(['code' => $orgStock->code.'-10ml']);
@@ -2678,4 +2681,50 @@ test('an order held for filling tells staff why on its page, and staff can still
         ->and($order->private_warehouse_note)->toContain(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::SENT_DESPITE_HOLD_MARKER.' (waiting for filling: '.$product->code.')')
         ->and(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::heldReason($order->private_warehouse_note))->toBeNull()
         ->and($sendToWarehouse->blockedReason($order))->toBeNull();
+});
+
+test('by default an order goes to the warehouse while its bottles are filled, and the filled note reaches its delivery note (HELP-4985)', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['send_orders_before_filled' => true]);
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::sendsBeforeFilled($shop->refresh()))->toBeTrue();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-10ml']);
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+    $fill->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILLSEND-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    $orgStock->update(['quantity_in_locations' => 100, 'quantity_available' => 100]);
+    $lines = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->blockedReason($order->refresh()))->toBeNull();
+    $deliveryNote = \App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order, []);
+    expect($deliveryNote)->not->toBeNull()
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE)
+        ->and($deliveryNote->private_warehouse_note)->toContain(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::TO_FILL_MARKER.' '.$product->code)
+        ->and($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN);
+
+    $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$lines[0]->id])['job_orders'][0];
+    $item     = $jobOrder->jobOrderItems()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first()), ['quantity_made' => 2]);
+
+    expect($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($deliveryNote->refresh()->private_warehouse_note)->toContain($product->code.' ×2 filled on '.$jobOrder->reference);
+
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['send_orders_before_filled' => false]);
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::sendsBeforeFilled($shop->refresh()))->toBeFalse();
+    \App\Actions\Catalogue\Shop\UpdateShop::make()->action($shop, ['send_orders_before_filled' => true]);
 });

@@ -20,6 +20,7 @@ enum WaitingItemsTabsEnum: string
     case ITEMIZED                   = 'itemized';
     case GROUPED_BY_DELIVERY_NOTE   = 'grouped_by_delivery_note';
     case GROUPED_BY_ITEM            = 'grouped_by_item';
+    case WAITING_PRODUCTION         = 'waiting_production';
 
     public function blueprint(): array
     {
@@ -35,6 +36,10 @@ enum WaitingItemsTabsEnum: string
             WaitingItemsTabsEnum::GROUPED_BY_ITEM => [
                 'title' => __('Grouping by item'),
                 'icon'  => 'fal fa-boxes',
+            ],
+            WaitingItemsTabsEnum::WAITING_PRODUCTION => [
+                'title' => __('Waiting for production'),
+                'icon'  => 'fal fa-industry',
             ],
         };
     }

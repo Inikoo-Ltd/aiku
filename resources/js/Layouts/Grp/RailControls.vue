@@ -100,10 +100,10 @@ const myTasksOnRail = computed(() => hasTaskBadges.value && shownOnRail('tasks',
 const createdTasksOnRail = computed(() => (createdTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_created', true))
 const reviewTasks = computed(() => layout.task_badges?.review ?? null)
 const reviewTasksOnRail = computed(() => (reviewTasks.value?.open ?? 0) > 0 && shownOnRail('tasks_review', true))
-const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
+const hasOrderBadges = computed(() => (layout?.dispatching_waiting_count ?? 0) + (layout?.dispatching_production_count ?? 0) + (layout?.crm_waiting_count ?? 0) + (layout?.crm_return_count ?? 0) + (layout?.faire_skipped_count ?? 0) > 0)
 const hasCatalogueBadges = computed(() => (layout?.master_updated_count ?? 0) + (layout?.products_need_review_count ?? 0) > 0)
 const ticketsOnRail = computed(() => shownOnRail('tickets_queue', Boolean(layout.ticket_badges?.queue)) || shownOnRail('tickets_mine', Boolean(layout.ticket_badges?.mine && (myTicketsCount.value > 0 || myTicketsUnread.value > 0))))
-const ordersOnRail = computed(() => ([['dispatching_waiting', layout?.dispatching_waiting_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]] as [string, number][]).some(([key, count]) => shownOnRail(key, (count ?? 0) > 0)))
+const ordersOnRail = computed(() => ([['dispatching_waiting', layout?.dispatching_waiting_count], ['dispatching_production', layout?.dispatching_production_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]] as [string, number][]).some(([key, count]) => shownOnRail(key, (count ?? 0) > 0)))
 const catalogueOnRail = computed(() => ([['master_updated', layout?.master_updated_count], ['products_need_review', layout?.products_need_review_count]] as [string, number][]).some(([key, count]) => shownOnRail(key, (count ?? 0) > 0)))
 
 type BadgeGroup = 'orders' | 'catalogue'
@@ -118,7 +118,7 @@ const controlsElement = ref<HTMLElement | null>(null)
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
 const countOnRail = (badges: [string, number | undefined][]) => badges.reduce((total, [key, count]) => total + (isOffRail(key) ? 0 : (count ?? 0)), 0)
-const ordersCount = computed(() => countOnRail([['dispatching_waiting', layout?.dispatching_waiting_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]]))
+const ordersCount = computed(() => countOnRail([['dispatching_waiting', layout?.dispatching_waiting_count], ['dispatching_production', layout?.dispatching_production_count], ['crm_waiting', layout?.crm_waiting_count], ['crm_return', layout?.crm_return_count], ['faire_skipped', layout?.faire_skipped_count]]))
 const catalogueCount = computed(() => countOnRail([['master_updated', layout?.master_updated_count], ['products_need_review', layout?.products_need_review_count]]))
 
 const isFolded = (group: BadgeGroup) => isCompact.value && expandedGroup.value !== group
@@ -398,6 +398,21 @@ onBeforeUnmount(clearCollapseTimer)
                         <Transition name="spin-to-right"><span :key="layout?.dispatching_waiting_count"><span :class="layout?.dispatching_waiting_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.dispatching_waiting_count > 99 ? '99+' : layout?.dispatching_waiting_count }}</span></span></Transition>
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-orange-500 text-[5px]" fixed-width aria-hidden="true" />
+                    </div>
+                </template>
+                <template #content="{ open, close }">
+                    <WaitingWarehouseList :open="open" :close="close" />
+                </template>
+            </Popover>
+        </div>
+
+        <!-- Badge: Warehouse Items Waiting for Production -->
+        <div v-if="shownOnRail('dispatching_production', layout?.dispatching_production_count > 0)" class="relative flex items-center justify-center shrink-0" :class="[layout.messagingSidebar.show ? '' : 'h-9 w-9', dimmedClass('dispatching_production')]">
+            <RailBadgeVisibilityToggle v-if="layout.messagingSidebar.show" :hidden="isHiddenBadge('dispatching_production')" @toggle="toggleBadge('dispatching_production')" />
+            <Popover width="w-80" position="right-full mr-2 top-0" fit-viewport arrow="right">
+                <template #button="{ open }">
+                    <div data-rail="items_waiting_for_production" v-tooltip="ctrans('Items waiting for production')" class="relative bg-teal-300 text-teal-800 rounded-md w-8 h-8 flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer font-medium tabular-nums">
+                        <Transition name="spin-to-right"><span :key="layout?.dispatching_production_count"><span :class="layout?.dispatching_production_count > 99 ? 'text-xxs' : 'text-xs'">{{ layout?.dispatching_production_count > 99 ? '99+' : layout?.dispatching_production_count }}</span></span></Transition>
                     </div>
                 </template>
                 <template #content="{ open, close }">

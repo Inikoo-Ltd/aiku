@@ -129,6 +129,7 @@ class GetFirstLoadProps
             'development_badges'         => ProductDevelopmentWaitingOn::railBadge($user),
             'leave_covers'               => GetUserLeaveCovers::run($user),
             'dispatching_waiting_count'  => GetDispatchingWaitingBadgeData::make()->totalCount($user),
+            'dispatching_production_count' => GetDispatchingWaitingBadgeData::make()->productionTotalCount($user),
             'crm_waiting_count'          => GetCrmWaitingBadgeData::make()->totalCount($user),
             'crm_return_count'           => GetCrmReturnedBadgeData::make()->totalCount($user),
             'master_updated_count'       => GetMasterUpdatedBadgeData::make()->totalCount($user),

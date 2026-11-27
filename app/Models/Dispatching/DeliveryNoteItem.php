@@ -94,6 +94,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $has_waiting_warehouse
  * @property bool $has_waiting_crm
  * @property \Illuminate\Support\Carbon|null $waiting_warehouse_released_at
+ * @property \Illuminate\Support\Carbon|null $waiting_production_at
  * @property int|null $batch_code_id
  * @property numeric $quantity_returned
  * @property \Illuminate\Support\Carbon|null $composition_dirty_at The SKU composition changed after picking work was done, a human must roll back or confirm
@@ -142,6 +143,7 @@ class DeliveryNoteItem extends Model
         'dispatched_at'              => 'datetime',
         'cancelled_at'               => 'datetime',
         'waiting_warehouse_released_at' => 'datetime',
+        'waiting_production_at'      => 'datetime',
         'fetched_at'                 => 'datetime',
         'last_fetched_at'            => 'datetime',
         'expiry_date'                => 'date',

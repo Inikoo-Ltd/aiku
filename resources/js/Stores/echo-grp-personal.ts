@@ -124,9 +124,10 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     }
                 }
             )
-            .listen('.waiting-items-count-update', (eventData: { dispatching_waiting_count: number; crm_waiting_count: number }) => {
+            .listen('.waiting-items-count-update', (eventData: { dispatching_waiting_count: number; crm_waiting_count: number; dispatching_production_count?: number }) => {
                 const layout = useLayoutStore()
                 layout.dispatching_waiting_count = eventData.dispatching_waiting_count
+                layout.dispatching_production_count = eventData.dispatching_production_count ?? 0
                 layout.crm_waiting_count = eventData.crm_waiting_count
             })
             .listen('.task-badges-update', (eventData: { task_badges: TaskBadges }) => {

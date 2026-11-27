@@ -27,6 +27,7 @@ const props = defineProps<{
     itemized?: object
     grouped_by_delivery_note?: object
     grouped_by_item?: object
+    waiting_production?: object
     allow_stock_controller_set_not_picked: boolean
     is_still_picking: boolean
     is_read_only: boolean
@@ -51,6 +52,7 @@ const component = computed(() => {
         itemized: TableWaitingDeliveryNoteItemsByLocation,
         grouped_by_delivery_note: TableWaitingDeliveryNoteItemsGrouped,
         grouped_by_item: TableWaitingDeliveryNoteItemsGroupedByItem,
+        waiting_production: TableWaitingDeliveryNoteItemsByLocation,
     }
     return components[currentTab.value]
 })

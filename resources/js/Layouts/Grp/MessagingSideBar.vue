@@ -87,6 +87,7 @@ const stripBadgeGroups = computed(() => [
         label: ctrans("Orders"),
         counts: [
             { key: "dispatching", label: ctrans("Orders waiting in the warehouse"), class: "text-amber-300", value: layout?.dispatching_waiting_count ?? 0 },
+            { key: "dispatching_production", label: ctrans("Items waiting for production"), class: "text-teal-300", value: layout?.dispatching_production_count ?? 0 },
             { key: "crm_waiting", label: ctrans("Orders waiting in CRM"), class: "text-purple-300", value: layout?.crm_waiting_count ?? 0 },
             { key: "crm_return", label: ctrans("Orders with returns"), class: "text-blue-300", value: layout?.crm_return_count ?? 0 },
             { key: "faire", label: ctrans("Faire orders not imported"), class: "text-sky-300", value: layout?.faire_skipped_count ?? 0 },
