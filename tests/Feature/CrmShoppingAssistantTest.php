@@ -1669,7 +1669,8 @@ test('vat is answered live from the tax rules the invoice uses, so Canarias pays
             ->and(json_encode([$canarias['content'], $mainland['content'], $noPostcode['content']]))->not->toMatch('/\d/')
             ->and($noPostcode)->not->toHaveKey('fact')
             ->and($noPostcode['content']['available'])->toBeFalse()
-            ->and($tools->execute($conversation, 'vat', ['country_code' => 'XX'])['error'])->not->toBeNull();
+            ->and($tools->execute($conversation, 'vat', ['country_code' => 'XX'])['error'])->not->toBeNull()
+            ->and($tools->execute($conversation, 'vat', ['country_code' => 'BE', 'postcode' => '5300'])['fact'])->toContain(Locale::getDisplayRegion('-BE', $locale).' ')->not->toContain('5300');
 
         Http::fake(['*chat/completions' => Http::sequence()
             ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('vat', ['country_code' => 'ES', 'postcode' => '35320'])]], 'tool_calls'))
@@ -4796,6 +4797,18 @@ test('an order waiting in the warehouse gets an estimated dispatch day range wit
         ->and($busyGeneral['fact'])->toStartWith($busySentence.' ')
         ->and($busyGeneral['content']['busy'])->toContain('customer service');
 
+    $jev = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('noul')->andReturn(0.1);
+    $jev->shouldReceive('handle')->andReturn([]);
+    $jev->shouldReceive('choice')->andReturn(null);
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', ['reference' => $order->reference]), shoppingAssistantToolCall('dispatch_times', [], 'call_2')]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Here is where your order is.', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en']))]);
+    $bothLines = AskShoppingAssistant::run($conversation, 'When will my order go out, and a new one?');
+
+    expect(substr_count($bothLines['reply'], $busySentence))->toBe(1)
+        ->and($bothLines['reply'])->toContain(__('Based on how our warehouse is running this week, an order placed today should go out between', [], 'en'));
+
     foreach (\App\Actions\Dispatching\Capacity\GetWarehouseCapacity::STREAMS as $stream) {
         \Illuminate\Support\Facades\Cache::put('dispatch-outlook-capacity:'.$warehouse->id.':'.$stream, ['out_per_day' => 0.01, 'median_hours' => 40], 900);
     }
@@ -4996,6 +5009,30 @@ test('an order question offered to our team keeps Merlin\'s grounded words above
         ->and($second['message']->refresh()->hand_over_offer->value)->toBe('order_question');
 });
 
+test('an order answer Jev finds more likely right than wrong is kept', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $jev          = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('noul')->andReturnUsing(fn (mixed $state, string $instructions) => str_contains($instructions, 'partial answer') ? 0.6 : 0.1);
+    $jev->shouldReceive('handle')->andReturn([]);
+    $jev->shouldReceive('choice')->andReturn(null);
+    $draft = 'Your order has been placed but is not paid yet, so it is waiting for the payment before it joins our warehouse queue.';
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => $draft, 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en']))]);
+
+    $turn = AskShoppingAssistant::run($conversation, 'When will you ship my order?');
+
+    expect($turn['reply'])->toStartWith($draft)
+        ->and($turn['message']->flags)->toContain('partial_answer');
+});
+
+test('a not sure answer at the order bar is still refused', function () {
+    $notSure = shoppingAssistantNotSureTurn($this, 'Our delivery texts do not give a last order date for Christmas. Dispatch takes a few working days.', 0.6);
+
+    expect($notSure['message']->flags)->toContain('partial_answer_refused');
+});
+
 test('a not sure answer Jev doubts stays the fixed sentence alone, and the draft and its confidence are logged', function () {
     Log::spy();
     $turn = shoppingAssistantNotSureTurn($this, 'Orders placed by mid December always arrive before Christmas. Dispatch takes a few working days.', 0.4);
@@ -5065,6 +5102,26 @@ test('the page the customer asks from reaches the prompt only when it is a live 
     WipeShoppingAssistantConversations::run([$onPage->shopping_assistant_conversation_id]);
     expect($onPage->refresh()->webpage_id)->toBeNull()
         ->and($onPage->trail_webpage_ids)->toBeNull();
+});
+
+test('a page note is replayed on its message exactly as first sent, so the cached prompt still matches on the next question', function () {
+    shoppingAssistantStorefront($this);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $product      = shoppingAssistantLiveProduct($this->product);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::CHAT);
+    $completions  = fn () => collect(Http::recorded())->filter(fn ($pair) => str_contains($pair[0]->url(), 'chat/completions'))->values();
+    Http::fake(['*chat/completions' => Http::response(shoppingAssistantModelReply(['content' => 'Here you go.'], 'stop'))]);
+
+    $first = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'Suggest an opening order from this page', [], $product->webpage->id);
+    AskShoppingAssistant::make()->answer($conversation, $first);
+    $sent = last($completions()->last()[0]['messages'])['content'];
+
+    $second = AskShoppingAssistant::make()->storeCustomerMessage($conversation->refresh(), 'Which of these would sell best in a gift shop like mine?');
+    AskShoppingAssistant::make()->answer($conversation->refresh(), $second);
+    $replayed = collect($completions()->last()[0]['messages'])->firstWhere('role', 'user')['content'];
+
+    expect($sent)->toContain('Page open: the product "'.$product->name)
+        ->and($replayed)->toBe($sent);
 });
 
 test('polling the conversation does not use up the Talk to our team button', function () {

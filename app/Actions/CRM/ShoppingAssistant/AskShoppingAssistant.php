@@ -145,6 +145,8 @@ class AskShoppingAssistant
 
     public const float PARTIAL_ANSWER_CONFIDENCE = 0.9;
 
+    public const float ORDER_ANSWER_CONFIDENCE = 0.5;
+
     public const int REPLAY_MESSAGES = 12;
 
     public const int EARLIER_OPENINGS = 5;
@@ -394,7 +396,7 @@ class AskShoppingAssistant
         }
 
         $known = $offerReason && $customer && !$turn['cleared']
-            ? $this->knownPart($conversation, $message, $reply, $turn, $flags)
+            ? $this->knownPart($conversation, $message, $reply, $turn, $flags, $offerReason)
             : null;
         $withKnown = fn (string $sentence) => $known ? $known."\n\n".$sentence : $sentence;
         $previous  = $offerReason ? $conversation->messages()->where('id', '<', $customerMessage->id)->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->orderByDesc('id')->first() : null;
@@ -854,7 +856,7 @@ class AskShoppingAssistant
             $turn['claim_order_id'] = $result['claim_order_id'];
         }
         if (isset($result['fact'])) {
-            $turn['facts'][] = $result['fact'];
+            $turn['facts'][] = $this->withoutRepeatedBusySentence($turn['facts'], $result['fact'], $conversation->language_code);
             if ($name === 'shop_promotions') {
                 $turn['promotion_fact'] = true;
             }
@@ -1316,12 +1318,15 @@ class AskShoppingAssistant
      * INI-397, Raul 19 Nov 2026: be honest and still useful. When Merlin is not sure, what it did find
      * is shown before the fixed sentence, but only when an independent Jev check finds every statement
      * of the draft follows from what its tools returned this turn. Otherwise the fixed sentence stands
-     * alone, as before.
+     * alone, as before. On order questions and requests for a person the draft is kept unless Jev
+     * finds it more likely wrong than right: the 0.9 bar refused about nine drafts in ten there,
+     * good ones included ("not paid yet, top up and Pay with balance"), and customers saw only the
+     * order line and the offer again and again (INI-575).
      *
      * @param  array<string, mixed>  $turn
      * @param  array<int, string>  $flags
      */
-    private function knownPart(ShoppingAssistantConversation $conversation, string $question, string $draft, array $turn, array &$flags): ?string
+    private function knownPart(ShoppingAssistantConversation $conversation, string $question, string $draft, array $turn, array &$flags, ShoppingAssistantHandOverReasonEnum $reason): ?string
     {
         $written  = $draft;
         $draft    = $this->withoutHandOverClaims(trim($draft));
@@ -1338,7 +1343,8 @@ class AskShoppingAssistant
             'No: some statement is not in the evidence, is only likely, is a promise, an exception, a policy decision or a figure not in the evidence.'
         );
 
-        if ($confidence !== null && $confidence >= self::PARTIAL_ANSWER_CONFIDENCE) {
+        $bar = $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE ? self::PARTIAL_ANSWER_CONFIDENCE : self::ORDER_ANSWER_CONFIDENCE;
+        if ($confidence !== null && $confidence >= $bar) {
             $flags[] = 'partial_answer';
 
             return $draft;
@@ -1357,6 +1363,23 @@ class AskShoppingAssistant
         }
 
         return null;
+    }
+
+    /**
+     * Two order lines, or an order line and the dispatch line, each start with the busy-warehouse
+     * sentence: it is said once per reply (INI-575).
+     *
+     * @param  array<int, string>  $facts
+     */
+    private function withoutRepeatedBusySentence(array $facts, string $fact, string $locale): string
+    {
+        foreach (GetShoppingAssistantTools::busySentences($locale) as $sentence) {
+            if (collect($facts)->contains(fn (string $earlier) => str_contains($earlier, $sentence))) {
+                $fact = trim(str_replace([$sentence.' ', $sentence], '', $fact));
+            }
+        }
+
+        return $fact;
     }
 
     private function withoutHandOverClaims(string $draft): string
@@ -1574,11 +1597,11 @@ class AskShoppingAssistant
             ->selectRaw('model_id, count(*) as images')
             ->pluck('images', 'model_id');
 
-        return $earlier->map(function (ShoppingAssistantMessage $earlierMessage) use ($shown, $imageCounts) {
+        return $earlier->map(function (ShoppingAssistantMessage $earlierMessage) use ($conversation, $shown, $imageCounts) {
             if ($earlierMessage->role === ShoppingAssistantMessageRoleEnum::CUSTOMER) {
                 $images = (int) $imageCounts->get($earlierMessage->id, 0);
 
-                return ['role' => 'user', 'content' => $images ? trim($earlierMessage->body."\n[The customer showed $images image(s) here; you saw them then.]") : $earlierMessage->body];
+                return ['role' => 'user', 'content' => ($images ? trim($earlierMessage->body."\n[The customer showed $images image(s) here; you saw them then.]") : $earlierMessage->body).$this->pagesNote($conversation, $earlierMessage)];
             }
 
             $content = $earlierMessage->body;
@@ -1797,8 +1820,9 @@ PROMPT;
     }
 
     /**
-     * The pages note goes on the latest message, not in the system prompt, so the cached prompt
-     * and the replayed conversation stay the same from one question to the next.
+     * The pages note goes on the customer's message, not in the system prompt, and is replayed on
+     * that message in later turns exactly as first sent, so the cached prompt still matches: replaying
+     * it without the note changed every later turn's prompt and lost the cache (INI-575).
      */
     private function pagesNote(ShoppingAssistantConversation $conversation, ShoppingAssistantMessage $customerMessage): string
     {

@@ -1342,9 +1342,18 @@ class GetShoppingAssistantTools
      */
     private function busySentence(string $locale): string
     {
-        return in_array(now()->month, [11, 12], true)
-            ? __('This is our busiest time of the year, so orders are taking longer than usual to go out.', [], $locale)
-            : __('We are busier than usual at the moment, so orders are taking longer than usual to go out.', [], $locale);
+        return self::busySentences($locale)[in_array(now()->month, [11, 12], true) ? 0 : 1];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    public static function busySentences(string $locale): array
+    {
+        return [
+            __('This is our busiest time of the year, so orders are taking longer than usual to go out.', [], $locale),
+            __('We are busier than usual at the moment, so orders are taking longer than usual to go out.', [], $locale),
+        ];
     }
 
     /**
@@ -2021,7 +2030,7 @@ class GetShoppingAssistantTools
      */
     private function vatFact(TaxCategory $category, Address $delivery, string $locale): array
     {
-        $place = (Locale::getDisplayRegion('-'.$delivery->country_code, $locale) ?: $delivery->country_code).($delivery->postal_code ? ' ('.$delivery->postal_code.')' : '');
+        $place = (Locale::getDisplayRegion('-'.$delivery->country_code, $locale) ?: $delivery->country_code).($delivery->postal_code && in_array($delivery->country_code, ['ES', 'PT'], true) ? ' ('.$delivery->postal_code.')' : '');
 
         $fact = match (true) {
             $category->type === TaxCategoryTypeEnum::EU_VTC  => __('Orders delivered to :place are invoiced without VAT, because your VAT number is valid (reverse charge).', ['place' => $place], $locale),
