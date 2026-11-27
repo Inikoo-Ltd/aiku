@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Traits\HasPriceMetrics;
@@ -61,7 +62,7 @@ class ProductsWebpageResource extends JsonResource
         return [
             'id'                            => $this->id,
             'code'                          => $this->code,
-            'name'                          => $this->name,
+            'name'                          => WebsiteLanguage::text($this->resource, 'name'),
             'stock'                         => $this->available_quantity,
             'is_on_demand'                  => $this->is_on_demand,
             'slug'                         => $this->slug,

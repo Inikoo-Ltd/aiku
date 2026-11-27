@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebBlock;
 
 use App\Helpers\WebsiteLanguage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class GetWebBlockCollections
         $permissions = ['hidden','delete','edit'];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['collection']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, 'collection'));
         data_set($webBlock, 'uses_website_layout', true);
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection($this->getCollections($webpage))->toArray(request()));
 

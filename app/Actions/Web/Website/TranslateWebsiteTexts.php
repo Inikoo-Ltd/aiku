@@ -80,7 +80,7 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
 
         $texts = match (true) {
             $webpage !== null  => $this->webpageTexts($webpage),
-            $marginal !== null => WebsiteTexts::collect($website->published_layout),
+            $marginal !== null => WebsiteTexts::collectWebsiteLayout($website->published_layout),
             $banner !== null   => WebsiteTexts::collectBanner($banner->compiled_layout),
             default            => $this->websiteTexts($website),
         };
@@ -123,7 +123,7 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
      */
     public function websiteTexts(Website $website): array
     {
-        $texts = WebsiteTexts::collect($website->published_layout);
+        $texts = WebsiteTexts::collectWebsiteLayout($website->published_layout);
 
         foreach (Banner::where('website_id', $website->id)->select(['id', 'compiled_layout'])->get() as $banner) {
             $texts += WebsiteTexts::collectBanner($banner->compiled_layout);

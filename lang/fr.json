@@ -27248,5 +27248,16 @@
     "Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.": "Réclamation :reference (commande :order) : approuvée, le remplacement est en préparation dans notre entrepôt.",
     "Claim :reference (order :order): approved, the items will be added free to your next order.": "Réclamation :reference (commande :order) : approuvée, les articles seront ajoutés gratuitement à votre prochaine commande.",
     "Claim :reference (order :order): approved.": "Réclamation :reference (commande :order) : approuvée.",
-    "Please send the items back with the claim slip from the approved email.": "Veuillez renvoyer les articles avec le bordereau de réclamation de l'e-mail d'approbation."
+    "Please send the items back with the claim slip from the approved email.": "Veuillez renvoyer les articles avec le bordereau de réclamation de l'e-mail d'approbation.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Ce document a également été envoyé en tant que facture électronique Peppol. Ne le comptabilisez pas deux fois.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "Votre commande :reference passée le :date est toujours en attente.",
+    "Please complete the payment.": "Veuillez effectuer le paiement.",
+    "You can also :top_up or :update_card.": "Vous pouvez aussi :top_up ou :update_card.",
+    "top up your balance": "recharger votre solde",
+    "update your card details": "mettre à jour les informations de votre carte",
+    "Order :reference is on hold and will not be sent out": "La commande :reference est en attente et ne sera pas expédiée",
+    "Reminder: order :reference is still on hold, payment needed": "Rappel : la commande :reference est toujours en attente, paiement requis",
+    "Final reminder: order :reference will be cancelled if not paid": "Dernier rappel : la commande :reference sera annulée si elle n'est pas payée",
+    "Order :reference is on hold, payment needed": "La commande :reference est en attente, paiement requis"
 }

@@ -14,6 +14,7 @@ use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Helpers\NaturalLanguage;
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Traits\HasPriceMetrics;
@@ -97,10 +98,10 @@ class ProductOfVariantResource extends JsonResource
             'slug'              => $product->slug,
             'code'              => $product->code,
             'family_code'       => $product->family?->code,
-            'name'              => $product->name,
-            'description'       => $product->description,
-            'description_title' => $product->description_title,
-            'description_extra' => $product->description_extra,
+            'name'              => WebsiteLanguage::text($product, 'name'),
+            'description'       => WebsiteLanguage::text($product, 'description'),
+            'description_title' => WebsiteLanguage::text($product, 'description_title'),
+            'description_extra' => WebsiteLanguage::text($product, 'description_extra'),
             'stock'             => $product->available_quantity,
             'specifications'    => $product->is_single_trade_unit ? $specifications : null,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
@@ -175,7 +176,7 @@ class ProductOfVariantResource extends JsonResource
             'source'    => GetPictureSources::run($media->getImage()->resize($maxWidth, $maxWidth)),
             'thumbnail' => GetPictureSources::run($media->getImage()->resize(0, 192)),
             'zoom'      => GetPictureSources::run($media->getImage()->resize(1600, 1600)),
-            'alt'       => $media->pivot?->caption,
+            'alt'       => $media->pivot?->caption === $product->name ? WebsiteLanguage::text($product, 'name') : $media->pivot?->caption,
         ])->all();
     }
 }

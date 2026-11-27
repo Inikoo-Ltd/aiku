@@ -26359,5 +26359,16 @@
     "Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.": "Reklamacja :reference (zamówienie :order): uznana, zamiennik jest przygotowywany w naszym magazynie.",
     "Claim :reference (order :order): approved, the items will be added free to your next order.": "Reklamacja :reference (zamówienie :order): uznana, towar zostanie dodany bezpłatnie do Państwa następnego zamówienia.",
     "Claim :reference (order :order): approved.": "Reklamacja :reference (zamówienie :order): uznana.",
-    "Please send the items back with the claim slip from the approved email.": "Prosimy o odesłanie towaru z formularzem reklamacyjnym z e-maila o uznaniu reklamacji."
+    "Please send the items back with the claim slip from the approved email.": "Prosimy o odesłanie towaru z formularzem reklamacyjnym z e-maila o uznaniu reklamacji.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Ten dokument został również wysłany jako e-faktura Peppol. Prosimy nie księgować go dwukrotnie.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "Państwa zamówienie :reference złożone :date jest nadal wstrzymane.",
+    "Please complete the payment.": "Prosimy o dokonanie płatności.",
+    "You can also :top_up or :update_card.": "Mogą Państwo również :top_up lub :update_card.",
+    "top up your balance": "doładować saldo",
+    "update your card details": "zaktualizować dane karty",
+    "Order :reference is on hold and will not be sent out": "Zamówienie :reference jest wstrzymane i nie zostanie wysłane",
+    "Reminder: order :reference is still on hold, payment needed": "Przypomnienie: zamówienie :reference jest nadal wstrzymane, wymagana płatność",
+    "Final reminder: order :reference will be cancelled if not paid": "Ostatnie przypomnienie: zamówienie :reference zostanie anulowane, jeśli nie zostanie opłacone",
+    "Order :reference is on hold, payment needed": "Zamówienie :reference jest wstrzymane, wymagana płatność"
 }

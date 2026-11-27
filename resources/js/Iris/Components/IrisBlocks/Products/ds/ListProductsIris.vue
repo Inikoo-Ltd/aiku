@@ -285,12 +285,12 @@ const loadMore = () => {
 const sortOptions = computed(() => {
 	const baseOptions = [
 		/* { label: "Latest Arrivals", value: "created_at" }, */
-		{ label: "Product Code", value: "code" },
-		{ label: "Name", value: "name" },
+		{ label: ctrans("Product Code"), value: "code" },
+		{ label: ctrans("Name"), value: "name" },
 	]
 	if (layout?.iris?.is_logged_in) {
-		baseOptions.splice(1, 0, { label: "Price", value: "price" })
-		baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" })
+		baseOptions.splice(1, 0, { label: ctrans("Price"), value: "price" })
+		baseOptions.splice(1, 0, { label: ctrans("RRP"), value: "rrp" })
 	}
 	if (props.fieldValue?.sub_type == "family") {
 		baseOptions.splice(1, 0, { label: ctrans("Recommended"), value: "recommended" })

@@ -78,6 +78,40 @@ final class WebsiteTexts
     }
 
     /**
+     * A website layout part by part: the catalogue templates sit under keys such as 'product' and 'family', which
+     * are skipped as catalogue data inside a block.
+     *
+     * @return array<string, string>
+     */
+    public static function collectWebsiteLayout(?array $layout): array
+    {
+        $texts = [];
+        foreach ($layout ?? [] as $part) {
+            $texts += self::collect($part);
+        }
+
+        return $texts;
+    }
+
+    /**
+     * The fieldValue of a website template (product, family, collection...) in the visitor's language.
+     *
+     * @return array<string, mixed>
+     */
+    public static function templateForVisitor(int $websiteId, ?array $layout, string $template): array
+    {
+        return self::fieldValueForVisitor($websiteId, $layout[$template]['data']['fieldValue'] ?? []);
+    }
+
+    /**
+     * A block's fieldValue taken out of its layout, in the visitor's language: only strings under a fieldValue count.
+     */
+    public static function fieldValueForVisitor(int $websiteId, ?array $fieldValue): ?array
+    {
+        return self::forVisitor($websiteId, ['fieldValue' => $fieldValue])['fieldValue'];
+    }
+
+    /**
      * The layout in the visitor's language when they chose one other than the shop's, otherwise as it is.
      */
     public static function forVisitor(int $websiteId, mixed $tree): mixed

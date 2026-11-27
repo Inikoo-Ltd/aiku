@@ -12,6 +12,7 @@ use App\Helpers\WebsiteLanguage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockSubDepartmentsResource;
 use App\Models\Catalogue\ProductCategory;
@@ -65,7 +66,7 @@ class GetIrisWebBlockSubDepartments
             ],
         ];
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['sub_department']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, 'sub_department'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_departments', WebBlockSubDepartmentsResource::collection($subDepartments)->toArray(request()));
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection(GetWebBlockCollections::make()->getCollections($webpage))->toArray(request()));

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock\Concerns;
 
+use App\Helpers\WebsiteTexts;
 use App\Models\Web\Webpage;
 
 trait HasWebBlockLayoutData
@@ -18,7 +19,7 @@ trait HasWebBlockLayoutData
         $webBlockType = data_get($webBlock, 'type', '');
         $webPublishedLayout = $webpage->website->published_layout;
 
-        $webBlockData = $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, $layoutKey);
+        $webBlockData = WebsiteTexts::fieldValueForVisitor($webpage->website_id, $this->getWebBlockLayoutData($webPublishedLayout, $webBlockType, $layoutKey));
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webBlockData);

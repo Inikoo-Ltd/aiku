@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
+import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@common/Components/Image.vue"
 import { inject, ref, onMounted, defineAsyncComponent } from 'vue';
@@ -130,7 +131,7 @@ const getStylesRemoveFontSize = (properties, screenType) => {
             <!-- Section: Profile -->
             <div class="xcol-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
                 <!-- Not Logged In -->
-                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1" aria-label="Login icon">
+                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1" :aria-label="ctrans('Login')">
                     <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"
                         :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
                         class="text-3xl"

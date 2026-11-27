@@ -254,6 +254,6 @@ watch(
     </div>
 
     <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
-        <Button label="Login / Register to Start" full :injectStyle="buttonStyleLogin"/>
+        <Button :label="ctrans('Login / Register to Start')" full :injectStyle="buttonStyleLogin"/>
     </a>
 </template>

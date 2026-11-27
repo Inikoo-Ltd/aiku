@@ -9,6 +9,7 @@
 namespace App\Actions\Web\WebBlock\Iris;
 
 use App\Actions\Web\WebBlock\Traits\WithNewInFamiliesQuery;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -23,7 +24,7 @@ class GetIrisWebBlockNewInFamilies
      */
     public function handle(Webpage $webpage, array $webBlock): array
     {
-        $fieldValue = $webpage->website->published_layout['family']['data']['fieldValue'] ?? [];
+        $fieldValue = WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, 'family');
 
         data_set($fieldValue, 'show_overview_button', false);
         data_set($fieldValue, 'families', WebBlockFamiliesResource::collection($this->getNewInFamilies($webpage)->get())->resolve());

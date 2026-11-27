@@ -27114,5 +27114,16 @@
     "EVERY order waits for the office, except orders to :countries.": "JEDE Bestellung wartet auf das Büro, außer Bestellungen nach :countries.",
     "Orders to :countries wait for the office, every other order goes to the warehouse.": "Bestellungen nach :countries warten auf das Büro, jede andere Bestellung geht ins Lager.",
     "Apply only for new customers": "Nur für neue Kunden anwenden",
-    "With \"Apply only for new customers\" on, only customers with no earlier order invoiced or dispatched wait; regular customers and partners go to the warehouse as before. A waiting order stays submitted until someone in the office opens it and presses \"Send to warehouse\". Any order can also be held with \"Do not pick\" on the order. No countries chosen: nothing waits.": "Mit „Nur für neue Kunden anwenden“ an warten nur Kunden ohne frühere fakturierte oder versendete Bestellung; Stammkunden und Partner gehen wie bisher ins Lager. Eine wartende Bestellung bleibt übermittelt, bis jemand im Büro sie öffnet und „An das Lager senden“ drückt. Jede Bestellung kann auch mit „Nicht kommissionieren“ auf der Bestellung zurückgehalten werden. Keine Länder gewählt: nichts wartet."
+    "With \"Apply only for new customers\" on, only customers with no earlier order invoiced or dispatched wait; regular customers and partners go to the warehouse as before. A waiting order stays submitted until someone in the office opens it and presses \"Send to warehouse\". Any order can also be held with \"Do not pick\" on the order. No countries chosen: nothing waits.": "Mit „Nur für neue Kunden anwenden“ an warten nur Kunden ohne frühere fakturierte oder versendete Bestellung; Stammkunden und Partner gehen wie bisher ins Lager. Eine wartende Bestellung bleibt übermittelt, bis jemand im Büro sie öffnet und „An das Lager senden“ drückt. Jede Bestellung kann auch mit „Nicht kommissionieren“ auf der Bestellung zurückgehalten werden. Keine Länder gewählt: nichts wartet.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Dieses Dokument wurde auch als Peppol-E-Rechnung versendet. Bitte nicht doppelt verbuchen.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "Ihre Bestellung :reference vom :date ist weiterhin angehalten.",
+    "Please complete the payment.": "Bitte schließen Sie die Zahlung ab.",
+    "You can also :top_up or :update_card.": "Sie können auch :top_up oder :update_card.",
+    "top up your balance": "Ihr Guthaben aufladen",
+    "update your card details": "Ihre Kartendaten aktualisieren",
+    "Order :reference is on hold and will not be sent out": "Bestellung :reference ist angehalten und wird nicht versendet",
+    "Reminder: order :reference is still on hold, payment needed": "Erinnerung: Bestellung :reference ist weiterhin angehalten, Zahlung erforderlich",
+    "Final reminder: order :reference will be cancelled if not paid": "Letzte Erinnerung: Bestellung :reference wird ohne Zahlung storniert",
+    "Order :reference is on hold, payment needed": "Bestellung :reference ist angehalten, Zahlung erforderlich"
 }

@@ -1638,6 +1638,8 @@ test('a website visitor in another language gets the translated product and cate
         ->and(\App\Helpers\WebsiteLanguage::text($family, 'name'))->toBe('Ätherische Öle')
         ->and($resource['name'])->toBe('Lavendelöl')
         ->and($resource['description'])->toBe('Shop description')
+        ->and(\App\Http\Resources\Web\ProductOfVariantResource::make($product)->toArray(request())['name'])->toBe('Lavendelöl')
+        ->and(\App\Http\Resources\Catalogue\ProductsWebpageResource::make($product)->toArray(request())['name'])->toBe('Lavendelöl')
         ->and($productName())->toBe('Lavendelöl')
         ->and(\App\Actions\Iris\Json\GetIrisSidebarData::cacheKey($this->website->id, $otherCode))->toBe('irisData:website:'.$this->website->id.':sideBar:'.$otherCode);
 
@@ -2075,7 +2077,17 @@ test('website texts typed into layouts are collected without links, styles, scri
     expect(data_get($rendered, 'web_blocks.0.web_block.layout.data.fieldValue.value'))->toBe('Aromatherapie')
         ->and($rendered['webpage_data']['title'])->toContain('Aromatherapie');
 
+    $website = $this->website->fresh();
+    $website->published_layout = array_merge($website->published_layout ?? [], ['collection' => ['data' => ['fieldValue' => ['title' => 'Aromatherapy']]]]);
+    $page->setRelation('website', $website);
+    $templateTitle = fn () => data_get(\App\Actions\Web\WebBlock\GetWebBlockCollections::make()->handle($page, []), 'web_block.layout.data.fieldValue.title');
+
+    expect(array_values(\App\Helpers\WebsiteTexts::collectWebsiteLayout($website->published_layout)))->toContain('Aromatherapy')
+        ->and($templateTitle())->toBe('Aromatherapie')
+        ->and(\App\Helpers\WebsiteTexts::fieldValueForVisitor($this->website->id, ['title' => 'Aromatherapy', 'tabs' => [['label' => 'Aromatherapy']]]))->toBe(['title' => 'Aromatherapie', 'tabs' => [['label' => 'Aromatherapie']]]);
+
     request()->attributes->remove('website_translation_locale');
+    expect($templateTitle())->toBe('Aromatherapy');
 });
 
 test('website texts are machine translated only when new, never over an existing translation, and a broken translation is left out (INI-510)', function () {

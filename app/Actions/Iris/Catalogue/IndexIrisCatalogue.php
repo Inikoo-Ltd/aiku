@@ -13,6 +13,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Helpers\WebsiteLanguage;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -42,10 +43,10 @@ class IndexIrisCatalogue extends IrisAction
                     'collections.id',
                     'collections.slug',
                     'collections.code',
-                    'collections.name',
+                    WebsiteLanguage::column('collections.name'),
                     'collections.web_images',
                     'collections.state',
-                    'collections.description',
+                    WebsiteLanguage::column('collections.description'),
                     'collections.created_at',
                     'collections.updated_at',
                     'webpages.canonical_url',
@@ -92,10 +93,10 @@ class IndexIrisCatalogue extends IrisAction
                     'product_categories.id',
                     'product_categories.slug',
                     'product_categories.code',
-                    'product_categories.name',
+                    WebsiteLanguage::column('product_categories.name'),
                     'product_categories.web_images',
                     'product_categories.state',
-                    'product_categories.description',
+                    WebsiteLanguage::column('product_categories.description'),
                     'product_categories.created_at',
                     'product_categories.updated_at',
                     'webpages.canonical_url',
@@ -163,9 +164,9 @@ class IndexIrisCatalogue extends IrisAction
                     'products.id',
                     'products.slug',
                     'products.code',
-                    'products.name',
+                    WebsiteLanguage::column('products.name'),
                     'products.state',
-                    'products.description',
+                    WebsiteLanguage::column('products.description'),
                     'products.created_at',
                     'products.updated_at',
                     'products.web_images',

@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -93,7 +94,7 @@ class GetIrisWebBlockFamiliesOverview
         ];
 
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['families_overview']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, 'families_overview'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.webpage_slug', $webpage->slug);
         data_set($webBlock, 'web_block.layout.data.fieldValue.parent', [

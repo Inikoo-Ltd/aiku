@@ -131,7 +131,7 @@ const openBundlePanel = (product:any) => {
                             <div>
                                 <div
                                     class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                                    <div>Product code: {{ product.code }}</div>
+                                    <div>{{ ctrans("Product code") }}: {{ product.code }}</div>
                                 </div>
 
                                 <div v-if="layout?.iris?.is_logged_in"

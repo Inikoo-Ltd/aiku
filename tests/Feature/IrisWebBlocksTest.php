@@ -1460,6 +1460,16 @@ test('department families list takes collection families only from active collec
         ->toContain($familyFromDepartmentCollection->id)
         ->not->toContain($familyFromOtherModelCollection->id)
         ->not->toContain($familyFromInactiveCollection->id);
+
+    $otherCode = $this->shop->language->code === 'de' ? 'fr' : 'de';
+    DB::table('product_categories')->where('id', $departmentFamily->id)->update(['name' => 'Essential oils', 'name_i8n' => json_encode([$otherCode => 'Ätherische Öle'])]);
+    $familyName = fn () => GetFamiliesUnderDepartmentPage::run($department)->firstWhere('id', $departmentFamily->id)->name;
+
+    \App\Helpers\WebsiteLanguage::set($this->shop, $otherCode);
+    expect($familyName())->toBe('Ätherische Öle');
+
+    request()->attributes->remove('website_translation_locale');
+    expect($familyName())->toBe('Essential oils');
 });
 
 test('iris variant shows its option groups and options in the shop language and still matches each product to its options', function () {

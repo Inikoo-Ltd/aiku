@@ -11,6 +11,7 @@ namespace App\Actions\Web\WebBlock\Iris;
 use App\Actions\Web\WebBlock\Traits\WithFamiliesQuery;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
@@ -57,7 +58,7 @@ class GetIrisWebBlockFamilies
             $overview_url = $model->webpages()->where('webpages.layout_style', 'families-overview')->first()?->url;
         }
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['family']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, 'family'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.products_route', $productRoute);
         data_set($webBlock, 'web_block.layout.data.fieldValue.show_overview_button', $hasOverviewPage);
         data_set($webBlock, 'web_block.layout.data.fieldValue.families', WebBlockFamiliesResource::collection($families)->resolve());

@@ -26301,5 +26301,16 @@
     "Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.": "Reclamația :reference (comanda :order): aprobată, înlocuitorul este pregătit în depozitul nostru.",
     "Claim :reference (order :order): approved, the items will be added free to your next order.": "Reclamația :reference (comanda :order): aprobată, articolele vor fi adăugate gratuit la următoarea dumneavoastră comandă.",
     "Claim :reference (order :order): approved.": "Reclamația :reference (comanda :order): aprobată.",
-    "Please send the items back with the claim slip from the approved email.": "Vă rugăm să trimiteți articolele înapoi cu fișa de reclamație din e-mailul de aprobare."
+    "Please send the items back with the claim slip from the approved email.": "Vă rugăm să trimiteți articolele înapoi cu fișa de reclamație din e-mailul de aprobare.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Acest document a fost trimis și ca factură electronică Peppol. Nu îl înregistrați de două ori.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "Comanda dvs. :reference plasată pe :date este în continuare suspendată.",
+    "Please complete the payment.": "Vă rugăm să finalizați plata.",
+    "You can also :top_up or :update_card.": "De asemenea, puteți :top_up sau :update_card.",
+    "top up your balance": "alimenta soldul",
+    "update your card details": "actualiza datele cardului",
+    "Order :reference is on hold and will not be sent out": "Comanda :reference este suspendată și nu va fi expediată",
+    "Reminder: order :reference is still on hold, payment needed": "Memento: comanda :reference este în continuare suspendată, este necesară plata",
+    "Final reminder: order :reference will be cancelled if not paid": "Ultim memento: comanda :reference va fi anulată dacă nu este plătită",
+    "Order :reference is on hold, payment needed": "Comanda :reference este suspendată, este necesară plata"
 }

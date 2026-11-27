@@ -1843,6 +1843,20 @@ test('iris collection lists the product that owns a member product webpage', fun
     AttachModelToCollection::make()->action($collection, $sample);
 
     expect($listed()->all())->toBe([$sample->code]);
+
+    $otherCode = $shop->language->code === 'de' ? 'fr' : 'de';
+    DB::table('products')->where('id', $sample->id)->update(['name' => 'Lavender oil', 'name_i8n' => json_encode([$otherCode => 'Lavendelöl'])]);
+    $listedNames = fn () => collect(IndexIrisCatalogue::make()->initialisation($request)->handle([
+        'scope'      => 'product',
+        'parent'     => 'collection',
+        'parent_key' => $collection->id,
+    ])->items())->pluck('name')->all();
+
+    \App\Helpers\WebsiteLanguage::set($shop, $otherCode);
+    expect($listedNames())->toBe(['Lavendelöl']);
+
+    request()->attributes->remove('website_translation_locale');
+    expect($listedNames())->toBe(['Lavender oil']);
 });
 
 test('shop products json carries the outer size from the stock, not the product units', function () {

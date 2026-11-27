@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Variant\LocaliseVariantData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockLayoutData;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductAttachments;
 use App\Actions\Web\WebBlock\Concerns\HasWebBlockProductLabelInfo;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\WebBlockFamilyResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
@@ -60,9 +61,9 @@ class GetWebBlockProduct
             ...Arr::except(($product?->family ? WebBlockFamilyResource::getTabsData($product->family) : []), 'marketing_material_route'),
         ];
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', data_get($webPublishedLayout, 'product.data.fieldValue', []));
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webPublishedLayout, 'product'));
         data_set($webBlock, 'web_block.layout.data.fieldValue.tabs', $tabs);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.tabs_style', WebsiteTexts::fieldValueForVisitor($webpage->website_id, $this->getFamilyExtraDescriptionLayoutData($webPublishedLayout)));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', $this->getProductAttachments($product->id));
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.label_info', $this->getProductLabelInfo($product));

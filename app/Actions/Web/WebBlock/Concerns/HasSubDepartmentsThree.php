@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteTexts;
 use App\Http\Resources\Web\FamiliesInDepartmentWebpageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -78,7 +79,7 @@ trait HasSubDepartmentsThree
 
         $familiesList = GetFamiliesUnderDepartmentPage::run($parent);
 
-        data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout[$publishedLayoutKey]['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue', WebsiteTexts::templateForVisitor($webpage->website_id, $webpage->website->published_layout, $publishedLayoutKey));
         data_set($webBlock, 'uses_website_layout', true);
         data_set($webBlock, 'web_block.layout.data.fieldValue.sub_department_list', $subDepartmentList ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections_list', $collectionList ?? []);

@@ -27311,5 +27311,16 @@
     "Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.": "Reklamace :reference (objednávka :order): uznána, náhrada se připravuje v našem skladu.",
     "Claim :reference (order :order): approved, the items will be added free to your next order.": "Reklamace :reference (objednávka :order): uznána, zboží bude přidáno zdarma k Vaší další objednávce.",
     "Claim :reference (order :order): approved.": "Reklamace :reference (objednávka :order): uznána.",
-    "Please send the items back with the claim slip from the approved email.": "Zašlete nám prosím zboží zpět s reklamačním listem ze schváleného e-mailu."
+    "Please send the items back with the claim slip from the approved email.": "Zašlete nám prosím zboží zpět s reklamačním listem ze schváleného e-mailu.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Tento doklad byl odeslán také jako e-faktura Peppol. Nezaúčtujte jej dvakrát.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "Vaše objednávka :reference ze dne :date je stále pozastavena.",
+    "Please complete the payment.": "Dokončete prosím platbu.",
+    "You can also :top_up or :update_card.": "Můžete také :top_up nebo :update_card.",
+    "top up your balance": "dobít svůj zůstatek",
+    "update your card details": "aktualizovat údaje své karty",
+    "Order :reference is on hold and will not be sent out": "Objednávka :reference je pozastavena a nebude odeslána",
+    "Reminder: order :reference is still on hold, payment needed": "Připomínka: objednávka :reference je stále pozastavena, je nutná platba",
+    "Final reminder: order :reference will be cancelled if not paid": "Poslední připomínka: objednávka :reference bude zrušena, pokud nebude zaplacena",
+    "Order :reference is on hold, payment needed": "Objednávka :reference je pozastavena, je nutná platba"
 }

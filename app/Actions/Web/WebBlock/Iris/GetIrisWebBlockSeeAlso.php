@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Catalogue\ProductsWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -64,7 +65,7 @@ class GetIrisWebBlockSeeAlso
             $dataOtherFamilyToWorkshop = [
                 'id'     => $idOtherFamily,
                 'slug'   => $modelOtherFamily->slug,
-                'name'   => $modelOtherFamily->name,
+                'name'   => WebsiteLanguage::text($modelOtherFamily, 'name'),
                 'code'   => $modelOtherFamily->code,
                 'title'  => $modelOtherFamily->webpage?->title,
                 'option' => ProductsWebpageResource::collection(
@@ -118,7 +119,7 @@ class GetIrisWebBlockSeeAlso
                 $productsInCurrentFamily = [
                     'id'     => $parent->id,
                     'slug'   => $parent->slug,
-                    'name'   => $parent->name,
+                    'name'   => WebsiteLanguage::text($parent, 'name'),
                     'option' => ProductsWebpageResource::collection(
                         $parent->getProductsDistinctVariant()->sortByDesc('id')->take(6)
                     )->resolve(),

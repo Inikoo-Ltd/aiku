@@ -14,6 +14,7 @@ use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Web\FamiliesInDepartmentWebpageResource;
 use App\Models\Catalogue\ProductCategory;
 use App\Services\QueryBuilder;
@@ -66,7 +67,7 @@ class GetFamiliesUnderDepartmentPage extends IrisAction
                     'product_categories.slug',
                     'product_categories.code',
                     'sub_department.code as sub_department_code',
-                    'product_categories.name',
+                    WebsiteLanguage::column('product_categories.name'),
                     'product_categories.web_images',
                     'product_categories.image_id',
                     'product_categories.created_at',

@@ -26020,5 +26020,16 @@
     "Claim :reference (order :order): approved, the replacement is being prepared in our warehouse.": "Reclamação :reference (encomenda :order): aprovada, o substituto está a ser preparado no nosso armazém.",
     "Claim :reference (order :order): approved, the items will be added free to your next order.": "Reclamação :reference (encomenda :order): aprovada, os artigos serão adicionados gratuitamente à sua próxima encomenda.",
     "Claim :reference (order :order): approved.": "Reclamação :reference (encomenda :order): aprovada.",
-    "Please send the items back with the claim slip from the approved email.": "Pedimos que devolva os artigos com a folha de reclamação do e-mail de aprovação."
+    "Please send the items back with the claim slip from the approved email.": "Pedimos que devolva os artigos com a folha de reclamação do e-mail de aprovação.",
+    "This document was also sent as a Peppol e-invoice. Do not book it twice.": "Este documento também foi enviado como fatura eletrónica Peppol. Não o contabilize duas vezes.",
+    "Incoterms": "Incoterms",
+    "Your order :reference placed on :date is still on hold.": "A sua encomenda :reference feita a :date continua em espera.",
+    "Please complete the payment.": "Conclua o pagamento.",
+    "You can also :top_up or :update_card.": "Também pode :top_up ou :update_card.",
+    "top up your balance": "carregar o seu saldo",
+    "update your card details": "atualizar os dados do seu cartão",
+    "Order :reference is on hold and will not be sent out": "A encomenda :reference está em espera e não será enviada",
+    "Reminder: order :reference is still on hold, payment needed": "Lembrete: a encomenda :reference continua em espera, pagamento necessário",
+    "Final reminder: order :reference will be cancelled if not paid": "Último lembrete: a encomenda :reference será cancelada se não for paga",
+    "Order :reference is on hold, payment needed": "A encomenda :reference está em espera, pagamento necessário"
 }
