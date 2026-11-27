@@ -19,6 +19,8 @@ class RecordProductDevelopmentActivity
 
     public const string SKUS_ADDED = 'skus_added';
 
+    public const string INFORMATION_COPIED = 'information_copied';
+
     public const string MEMBERS_ADDED = 'members_added';
 
     public const string MEMBERS_REMOVED = 'members_removed';

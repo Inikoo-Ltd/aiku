@@ -3397,3 +3397,78 @@ test('a blend weighs its raw materials through their SKO, a sample in ml waits f
         ->and(\App\Actions\Goods\ProductDevelopment\Recipe\FormulationPercentages::isForSample($otherSample->fresh()))->toBeFalse()
         ->and(get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $otherJob->id]))->json('brief.form.percentages'))->toBeNull();
 });
+
+test('a new SKU copies the information of an existing product, and the copied compliance still needs its confirmation', function () {
+    $sourceDevelopment = storeDevelopmentWithNewSkus($this, 1);
+    $sourceItem        = $sourceDevelopment->items->first();
+    $source            = $sourceItem->tradeUnit;
+
+    UploadProductDevelopmentFiles::make()->action($sourceDevelopment, $this->user, [
+        'files'                       => [UploadedFile::fake()->createWithContent('sds.pdf', 'SDS '.Str::random(20))],
+        'scope'                       => 'sds',
+        'product_development_item_id' => $sourceItem->id,
+    ]);
+    $ingredient = \App\Actions\Goods\Ingredient\StoreIngredient::make()->action($this->group, \App\Models\Goods\Ingredient::factory()->definition());
+    $source->ingredients()->sync([$ingredient->id => ['position' => 1, 'percentage' => 12.5]]);
+    $source->update([
+        'net_weight'           => 250,
+        'gross_weight'         => 400,
+        'marketing_dimensions' => ['type' => 'rectangle', 'units' => 'cm', 'l' => 0.1, 'w' => 0.08, 'h' => 0.12],
+        'tariff_code'          => '34060000',
+        'gpsr_warnings'        => 'Keep away from fire.',
+        'pictogram_flammable'  => true,
+        'description'          => 'A calm lavender candle.',
+        'marketing_ingredients' => 'Soy wax, lavender oil (2%)',
+        'compliance'           => ['material_composition' => ['text' => 'Soy wax 90%', 'materials' => [['material' => 'Soy wax', 'percentage' => 90]]]],
+    ]);
+
+    $suffix      = Str::upper(Str::random(5));
+    $development = StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'  => 'New box for '.$source->code,
+        'type'  => 'redesign',
+        'items' => [[
+            'code'                    => 'PDC-'.$suffix,
+            'name'                    => 'Lavender candle new box',
+            'copy_from_trade_unit_id' => $source->id,
+            'copy_sections'           => ['specifications', 'ingredients', 'compliance'],
+        ]],
+    ]);
+
+    $item      = $development->items->first();
+    $tradeUnit = $item->tradeUnit->refresh();
+
+    expect((int) $tradeUnit->net_weight)->toBe(250)
+        ->and((int) $tradeUnit->gross_weight)->toBe(400)
+        ->and($tradeUnit->marketing_dimensions['l'])->toEqual(0.1)
+        ->and($tradeUnit->tariff_code)->toBe('34060000')
+        ->and($tradeUnit->gpsr_warnings)->toBe('Keep away from fire.')
+        ->and($tradeUnit->pictogram_flammable)->toBeTrue()
+        ->and($tradeUnit->description)->toBeNull()
+        ->and($tradeUnit->ingredients()->pluck('ingredients.id')->all())->toBe([$ingredient->id])
+        ->and((float) $tradeUnit->ingredients()->first()->pivot->percentage)->toBe(12.5)
+        ->and($tradeUnit->marketing_ingredients)->toBe('Soy wax, lavender oil (2%)')
+        ->and(data_get($tradeUnit->compliance, 'material_composition.text'))->toBe('Soy wax 90%')
+        ->and($tradeUnit->documents_trade_unit_id)->toBe($source->id)
+        ->and($tradeUnit->code)->not->toBe($source->code)
+        ->and($item->copied_from_trade_unit_id)->toBe($source->id)
+        ->and($item->copied_sections)->toBe(['specifications', 'ingredients', 'compliance']);
+
+    $state = fn (string $key) => $development->checklistItems()->where('product_development_item_id', $item->id)->where('key', $key)->value('state');
+    expect($state('trade_unit.net_weight'))->toBe(ProductDevelopmentChecklistItemStateEnum::COMPLETE)
+        ->and($state('trade_unit.tariff_code'))->toBe(ProductDevelopmentChecklistItemStateEnum::COMPLETE)
+        ->and($state('trade_unit.ingredients'))->toBe(ProductDevelopmentChecklistItemStateEnum::COMPLETE)
+        ->and($state('trade_unit.pictograms'))->toBe(ProductDevelopmentChecklistItemStateEnum::MISSING);
+
+    $sentences = collect(GetProductDevelopmentActivity::run($development))->pluck('sentence');
+    expect($sentences->contains('Copied the information of '.$source->code.' into '.$tradeUnit->code))->toBeTrue();
+
+    $compliance = \App\Actions\Goods\ProductDevelopment\UI\GetProductDevelopmentChecklistEditor::make()->handle($development, $this->user, true, ProductDevelopmentMemberRoleEnum::COMPLIANCE);
+    expect($compliance['skus'][0]['copied_from']['code'])->toBe($source->code)
+        ->and($compliance['skus'][0]['copied_from']['includes_compliance'])->toBeTrue();
+
+    expect(fn () => StoreProductDevelopment::make()->action($this->group, $this->user, [
+        'name'  => 'Existing SKU cannot copy',
+        'type'  => 'redesign',
+        'items' => [['trade_unit_id' => $tradeUnit->id, 'copy_from_trade_unit_id' => $source->id]],
+    ]))->toThrow(ValidationException::class, 'Only a new SKU can copy the information of another product');
+});

@@ -16,6 +16,7 @@ use App\Actions\SupplyChain\Supplier\GetSupplierOptionFields;
 use App\Actions\Traits\Authorisations\WithProductDevelopmentAuthorisation;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentMemberRoleEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentKindEnum;
+use App\Enums\Goods\ProductDevelopment\ProductDevelopmentCopySectionEnum;
 use App\Enums\Goods\ProductDevelopment\ProductDevelopmentTypeEnum;
 use App\Enums\Goods\TradeUnit\TradeUnitMarketEnum;
 use App\Enums\Production\Production\ProductionStateEnum;
@@ -101,6 +102,12 @@ class CreateProductDevelopment extends OrgAction
                         'label'       => ProductDevelopmentKindEnum::labels()[$kind->value],
                         'description' => ProductDevelopmentKindEnum::descriptions()[$kind->value],
                         'icon'        => $kind->icon(),
+                    ])->all(),
+                    'copy_sections' => collect(ProductDevelopmentCopySectionEnum::cases())->map(fn (ProductDevelopmentCopySectionEnum $section) => [
+                        'value'       => $section->value,
+                        'label'       => ProductDevelopmentCopySectionEnum::labels()[$section->value],
+                        'description' => ProductDevelopmentCopySectionEnum::descriptions()[$section->value],
+                        'kinds'       => collect(ProductDevelopmentKindEnum::cases())->filter(fn (ProductDevelopmentKindEnum $kind) => in_array($section, ProductDevelopmentCopySectionEnum::forKind($kind), true))->map(fn (ProductDevelopmentKindEnum $kind) => $kind->value)->values()->all(),
                     ])->all(),
                     'productions' => Production::where('group_id', $group->id)->whereNot('state', ProductionStateEnum::CLOSED->value)->with('organisation')->orderBy('name')->get()
                         ->map(fn (Production $production) => [
