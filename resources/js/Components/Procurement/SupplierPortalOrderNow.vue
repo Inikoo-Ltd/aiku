@@ -221,6 +221,8 @@ async function send() {
 			</template>
 		</section>
 
+		<hr class="border-t border-gray-300 border-dashed pb-4 !mt-8" />
+
 		<section v-if="current?.proposals.length" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
 			<h2 class="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700">{{ ctrans("Your proposals") }}</h2>
 			<div class="overflow-x-auto">
