@@ -8,10 +8,12 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Dropshipping\Zentrada\ImportZentradaOrder;
 use App\Actions\Dropshipping\Zentrada\ImportZentradaOrderFromEmail;
 use App\Actions\Dropshipping\Zentrada\ParseZentradaTransactionCsv;
 use App\Actions\Dropshipping\Zentrada\SaveZentradaNoticeFromEmail;
+use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Models\Catalogue\Product;
@@ -19,6 +21,7 @@ use App\Models\Catalogue\Shop;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\Tasks\StaffTask;
@@ -193,7 +196,7 @@ function zentradaOrderSetup(Shop $shop): Customer
             'type' => SalesChannelTypeEnum::MARKETPLACE,
         ]);
 
-    $customer = createCustomer($shop);
+    $customer = zentradaAccount($shop, 'DE813805341');
     UpdateShop::make()->action($shop, [
         'zentrada_import_orders'      => true,
         'zentrada_customer_reference' => $customer->reference,
@@ -206,14 +209,22 @@ function zentradaOrderSetup(Shop $shop): Customer
     return $customer;
 }
 
+function zentradaAccount(Shop $shop, string $vatNumber): Customer
+{
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    StoreTaxNumber::run($customer, ['number' => substr($vatNumber, 2), 'country_id' => Country::where('code', substr($vatNumber, 0, 2))->value('id')], false);
+
+    return $customer;
+}
+
 /**
  * @param list<array{0: string, 1: int, 2: int, 3: string, 4: string}> $lines code, packs, pieces, piece price, line total
  */
-function zentradaTransactionCsv(string $transaction, array $lines, string $postalCode = '2000'): string
+function zentradaTransactionCsv(string $transaction, array $lines, string $postalCode = '2000', string $vatNumber = 'DE813805341'): string
 {
     $rows = ['A_TRANSAKTIONID;B_ARTIKELBEZEICHNUNG;D_MENGE_VE;E_MENGE_STUECK;F2_PREIS_GESAMT;F3_WAEHRUNG;G_ARTIKEL_NR;I2_PREIS_STUECK;L_EAN;M01_FIRMA;M02_VORNAME;M03_NACHNAME;M04_STRASSE;M05_HAUSNR;M06_PLZ;M07_ORT;M08_LAND;M09_TELEFON;N_UID_ZE;O_FREIGHT'];
     foreach ($lines as [$code, $packs, $pieces, $piecePrice, $total]) {
-        $rows[] = "$transaction;Aloë Vera Seife;$packs;$pieces;$total EUR;EUR;$code;$piecePrice EUR;;Demi Shop;Federica;Demi;Meir;12;$postalCode;Antwerpen;BE;+32 3 000 00 00;DE813805341;9,95";
+        $rows[] = "$transaction;Aloë Vera Seife;$packs;$pieces;$total EUR;EUR;$code;$piecePrice EUR;;Demi Shop;Federica;Demi;Meir;12;$postalCode;Antwerpen;BE;+32 3 000 00 00;$vatNumber;9,95";
     }
 
     return mb_convert_encoding(implode("\r\n", $rows), 'Windows-1252', 'UTF-8');
@@ -337,4 +348,27 @@ test('other TradeSafe mail is kept on the order of its transaction, or on the Ze
         ->and(Order::where('shop_id', $this->shop->id)->count())->toBe($ordersCount)
         ->and(SaveZentradaNoticeFromEmail::transactionIn('Complaint EU-NL958559'))->toBe('EU-NL 958559')
         ->and(ImportZentradaOrderFromEmail::isDeliveryOrderSubject('Re: Delivery order transaction EU-NL 958559'))->toBeFalse();
+});
+
+test('a Zentrada transaction is billed to the account holding the VAT number Zentrada invoices it under', function () {
+    $default = zentradaOrderSetup($this->shop);
+    zentradaAccount($this->shop, 'DE813805341');
+    $code    = 'ZENORD-'.Str::upper(Str::random(5));
+    $this->product->forceFill(['code' => $code, 'units' => 6, 'price' => 5.35, 'available_quantity' => 50, 'is_for_sale' => true])->saveQuietly();
+
+    $spanishVat = 'ESB'.random_int(10000000, 99999999);
+    $spanish    = zentradaAccount($this->shop, $spanishVat);
+    $tasks      = StaffTask::where('group_id', $this->shop->group_id)->count();
+    $import     = fn (string $vatNumber) => ImportZentradaOrder::make()->handle(
+        $this->shop->fresh(),
+        array_merge(
+            ParseZentradaTransactionCsv::make()->handle(zentradaTransactionCsv('1', [[$code, 1, 6, '0,90', '5,40']], (string) random_int(1000, 9999), $vatNumber)),
+            ['transaction' => 'EU-ES '.random_int(100000, 999999)]
+        )
+    );
+
+    expect($import($spanishVat)->customer_id)->toBe($spanish->id)
+        ->and($import('DE 813 805 341')->customer_id)->toBe($default->id)
+        ->and($import('ATU'.random_int(10000000, 99999999)))->toBeNull()
+        ->and(StaffTask::where('group_id', $this->shop->group_id)->count())->toBe($tasks + 1);
 });

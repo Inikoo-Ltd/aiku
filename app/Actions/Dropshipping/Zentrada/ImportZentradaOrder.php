@@ -28,6 +28,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -37,9 +38,9 @@ use Throwable;
 
 /**
  * A TradeSafe "Delivery order transaction" email is sent once Zentrada holds the buyer's payment, so it
- * is the signal to dispatch. The order is billed to the shop's Zentrada customer (another one for
- * deliveries outside the EU), delivered to the buyer, priced as Zentrada priced it, with Zentrada's
- * freight. It goes straight to the warehouse when every line matches the feed and is in stock; anything
+ * is the signal to dispatch. Zentrada decides which of its accounts each transaction is invoiced to and
+ * says so with its VAT number (N_UID_ZE), so the order is billed to the customer holding that VAT number,
+ * delivered to the buyer, priced as Zentrada priced it, with Zentrada's freight. It goes straight to the warehouse when every line matches the feed and is in stock; anything
  * else leaves it unsubmitted with the reasons in its internal notes and a task for the person in charge.
  */
 class ImportZentradaOrder
@@ -126,7 +127,7 @@ class ImportZentradaOrder
         }
 
         return Order::where('shop_id', $shop->id)
-            ->whereIn('customer_id', $this->zentradaCustomerIds($shop))
+            ->whereIn('customer_id', $this->zentradaCustomerIds($shop, $transaction['vat_number']))
             ->where('state', '!=', OrderStateEnum::CANCELLED)
             ->where('created_at', '>=', now()->subDays(self::HAND_KEYED_LOOKBACK_DAYS))
             ->with(['deliveryAddress', 'transactions.model'])
@@ -151,7 +152,7 @@ class ImportZentradaOrder
         }
 
         $country  = $this->deliveryCountry($transaction);
-        $customer = $this->customerFor($shop, $country);
+        $customer = $this->customerFor($shop, $country, $transaction['vat_number']);
         [$lines, $problems] = $this->lines($shop, $transaction['lines']);
 
         if (!$lines) {
@@ -324,32 +325,86 @@ class ImportZentradaOrder
         return $country;
     }
 
-    private function customerFor(Shop $shop, Country $country): Customer
+    /**
+     * Several Zentrada accounts share one VAT number (DE813805341 for DE, FR, NL, IT and non-EU), so when
+     * more than one customer holds it the shop's Zentrada customer settles it. A VAT number no customer
+     * holds is never billed to another account: the order is held for someone to open the account.
+     */
+    private function customerFor(Shop $shop, Country $country, string $vatNumber): Customer
     {
-        $isEu      = in_array($country->code, Country::getCountryCodesInEU(), true);
-        $reference = $isEu
+        $isEu             = in_array($country->code, Country::getCountryCodesInEU(), true);
+        $defaultReference = $isEu
             ? Arr::get($shop->settings, 'zentrada.customer_reference')
             : (Arr::get($shop->settings, 'zentrada.non_eu_customer_reference') ?: Arr::get($shop->settings, 'zentrada.customer_reference'));
 
-        $customer = $reference ? Customer::where('shop_id', $shop->id)->where('reference', $reference)->first() : null;
+        if ($this->bareVatNumber($vatNumber) === '') {
+            $customer = $defaultReference ? Customer::where('shop_id', $shop->id)->where('reference', $defaultReference)->first() : null;
+            if (!$customer) {
+                throw new RuntimeException(__('No Zentrada customer :reference in the shop to bill this order to', ['reference' => $defaultReference]));
+            }
+
+            return $customer;
+        }
+
+        $accounts = $this->customersWithVatNumber($shop, $vatNumber);
+        $customer = $accounts->count() === 1 ? $accounts->first() : $accounts->firstWhere('reference', $defaultReference);
+
         if (!$customer) {
-            throw new RuntimeException(__('No Zentrada customer :reference in the shop to bill this order to', ['reference' => $reference]));
+            throw new RuntimeException($accounts->isEmpty()
+                ? __('No customer in the shop has Zentrada\'s VAT number :vat to bill this order to', ['vat' => $vatNumber])
+                : __('Customers :references all have Zentrada\'s VAT number :vat and the shop\'s Zentrada customer :reference is not one of them', [
+                    'references' => $accounts->pluck('reference')->implode(', '),
+                    'vat'        => $vatNumber,
+                    'reference'  => $defaultReference,
+                ]));
         }
 
         return $customer;
     }
 
     /**
+     * @return Collection<int, Customer>
+     */
+    public function customersWithVatNumber(Shop $shop, string $vatNumber): Collection
+    {
+        $bareVatNumber = $this->bareVatNumber($vatNumber);
+        if ($bareVatNumber === '') {
+            return new Collection();
+        }
+
+        return Customer::where('shop_id', $shop->id)
+            ->whereHas('taxNumber', fn ($query) => $query->whereRaw(
+                "regexp_replace(upper(regexp_replace(number COLLATE \"C\", '[^A-Za-z0-9]', '', 'g')), '^[A-Z]{2}([0-9A-Z]*[0-9][0-9A-Z]*)$', '\\1') = ?",
+                [$bareVatNumber]
+            ))
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Tax numbers are kept with and without their country prefix ("813805341" and "BE0877776655"), so
+     * both sides are compared without it.
+     */
+    private function bareVatNumber(string $vatNumber): string
+    {
+        $normalised = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $vatNumber));
+
+        return preg_replace('/^[A-Z]{2}([0-9A-Z]*[0-9][0-9A-Z]*)$/', '$1', $normalised);
+    }
+
+    /**
      * @return list<int>
      */
-    private function zentradaCustomerIds(Shop $shop): array
+    private function zentradaCustomerIds(Shop $shop, string $vatNumber): array
     {
         $references = array_filter([
             Arr::get($shop->settings, 'zentrada.customer_reference'),
             Arr::get($shop->settings, 'zentrada.non_eu_customer_reference'),
         ]);
 
-        return Customer::where('shop_id', $shop->id)->whereIn('reference', $references)->pluck('id')->all();
+        return Customer::where('shop_id', $shop->id)->whereIn('reference', $references)->pluck('id')
+            ->merge($this->customersWithVatNumber($shop, $vatNumber)->pluck('id'))
+            ->unique()->values()->all();
     }
 
     private function normalisedPostalCode(?string $postalCode): string

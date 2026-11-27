@@ -1818,14 +1818,14 @@ class EditShop extends OrgAction
             'label'       => __('Customer billed for Zentrada orders'),
             'placeholder' => '27227',
             'value'       => (string) Arr::get($shop->settings, 'zentrada.customer_reference', ''),
-            'information' => __('Customer reference of the Zentrada account the orders are invoiced to.'),
+            'information' => __('Each order is billed to the customer with the VAT number Zentrada invoices it under. When several customers share that VAT number, this one is billed.'),
         ];
         $fields['zentrada_non_eu_customer_reference'] = [
             'type'        => 'input',
             'label'       => __('Customer billed for deliveries outside the EU'),
             'placeholder' => '61482',
             'value'       => (string) Arr::get($shop->settings, 'zentrada.non_eu_customer_reference', ''),
-            'information' => __('Empty bills them to the customer above.'),
+            'information' => __('Used instead of the customer above for deliveries outside the EU when several customers share Zentrada\'s VAT number. Empty bills them to the customer above.'),
         ];
         $fields['zentrada_orders_user_id'] = [
             'type'        => 'select',
