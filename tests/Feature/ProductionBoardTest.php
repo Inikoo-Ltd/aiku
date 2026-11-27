@@ -2069,6 +2069,51 @@ test('a decant that also lists its bottle and cap SKOs is still filled to order 
         ->and($lines[0]->org_stock_id)->toBe($orgStock->id);
 });
 
+test('decants whose bulk oil can not cover the whole order also raise the missing oil as a restock line of the bulk, never tied to the order line', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $bulk        = $product->orgStocks()->first();
+    $perBottle   = (float) $bulk->pivot->quantity ?: 1.0;
+    $product->update(['code' => $bulk->code.'-10ml']);
+
+    StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml'])
+        ->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+    if (!Artefact::where('organisation_id', $shop->organisation_id)->where('org_stock_id', $bulk->id)->exists()) {
+        StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BULK-'.uniqid(), 'name' => 'Bulk oil'])
+            ->update(['org_stock_id' => $bulk->id]);
+    }
+
+    $customer = createCustomer($shop);
+    $submit   = function () use ($customer, $product) {
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+            'reference'        => 'DECANT-'.uniqid(),
+            'date'             => date('Y-m-d'),
+            'customer_id'      => $customer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 4]));
+
+        return [$order, collect(\App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh()))];
+    };
+
+    $bulk->update(['quantity_in_locations' => 3 * $perBottle, 'quantity_available' => 3 * $perBottle]);
+    [$order, $lines] = $submit();
+    $fills   = $lines->whereNotNull('transaction_id');
+    $restock = $lines->whereNull('transaction_id');
+    expect($fills->map(fn ($line) => (float) $line->quantity)->values()->all())->toBe([4.0])
+        ->and($restock)->toHaveCount(1)
+        ->and((float) $restock->first()->quantity)->toBe($perBottle)
+        ->and($restock->first()->org_stock_id)->toBe($bulk->id)
+        ->and(\App\Actions\Production\JobOrder\FillToOrder::make()->pendingLines($order)->pluck('id')->sort()->values()->all())->toBe($fills->pluck('id')->sort()->values()->all());
+
+    $bulk->update(['quantity_in_locations' => 4 * $perBottle, 'quantity_available' => 4 * $perBottle]);
+    [, $lines] = $submit();
+    expect($lines)->toHaveCount(1)
+        ->and($lines->whereNull('transaction_id'))->toHaveCount(0);
+});
+
 test('a fill product given its SKO after the order was submitted gets its fill line when the order goes to the warehouse', function () {
     [, , $shop] = createShop();
     createWarehouse();
