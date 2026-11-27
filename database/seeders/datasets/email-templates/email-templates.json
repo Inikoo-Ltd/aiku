@@ -564,6 +564,17 @@
   },
   {
     "outboxes": [
+      "company_details_request"
+    ],
+    "name": "Company details request",
+    "content": "company_details_request.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
       "customer_claim_update"
     ],
     "name": "Claim update",

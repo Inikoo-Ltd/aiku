@@ -135,6 +135,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('procurement:send-minimum-poke-digests')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
         $schedule->command('e-invoices:poll')->everyTenMinutes()->onOneServer()->withoutOverlapping(30)->runInBackground();
         $schedule->command('e-invoices:fetch-received sk')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
+        $schedule->command('customers:request-company-details --organisation=sk')->dailyAt('09:00')->timezone('Europe/Bratislava')
+            ->when(fn () => now('Europe/Bratislava')->isSameDay('2026-11-30'))->onOneServer()->withoutOverlapping(120);
         $schedule->command('bank-connections:sync')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('bank-transactions:cod-payouts --commit --days=30')->hourlyAt(20)->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('bank-transactions:checkout-payouts --commit')->hourlyAt(25)->onOneServer()->withoutOverlapping(60)->runInBackground();

@@ -800,3 +800,122 @@ test('a customer who says it buys as a private person is not asked for its DIČ 
     $customer->fresh()->update(['peppol_id' => null, 'data' => []]);
     $this->organisation->update(['country_id' => $originalCountryId, 'settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
 });
+
+test('the company details link fills in only missing IČO, DIČ and IČ DPH, and only with what the register has under the customer\'s own name', function () {
+    config(['services.financna_sprava.url' => 'https://register.test/api', 'services.financna_sprava.api_key' => 'register-key']);
+    $originalCountryId = $this->organisation->country_id;
+    $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->update(['company_name' => 'Príklad, s. r. o.', 'identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    $registerRows = fn (array $rows) => Http::response(['page' => 1, 'pages' => 1, 'itemsCount' => count($rows), 'itemsPerPage' => 1000, 'data' => $rows]);
+    $ours         = ['dic' => '2021344160', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.'];
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([$ours]), '/data/ds_dphs/search' => $registerRows([['ic_dph' => 'SK2021344160', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.']])]);
+    $save  = fn (array $input) => \App\Actions\Retina\CRM\UpdateRetinaCompanyDetails::make()->handle($this->customer->fresh(), $input, VerifyCustomerDic::make());
+    $fails = function (array $input, string $field) use ($save) {
+        try {
+            $save($input);
+        } catch (Illuminate\Validation\ValidationException $exception) {
+            return array_keys($exception->errors()) === [$field];
+        }
+
+        return false;
+    };
+
+    expect($fails([], 'ico'))->toBeTrue()
+        ->and($fails(['ico' => '123'], 'ico'))->toBeTrue()
+        ->and($fails(['ico' => '50920600', 'dic' => '1234567890'], 'dic'))->toBeTrue()
+        ->and($fails(['ico' => '50920600', 'dic' => '2021965990'], 'dic'))->toBeTrue()
+        ->and($fails(['ico' => '50920600', 'vat_number' => 'SK2021965990'], 'vat_number'))->toBeTrue()
+        ->and($this->customer->fresh()->identity_document_number)->toBeNull();
+
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([['dic' => '2021344160', 'ico' => '50920600', 'nazov_ds' => 'Celkom Iná Firma s.r.o.']])]);
+    expect($fails(['ico' => '50920600'], 'ico'))->toBeTrue();
+
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([$ours])]);
+    $this->customer->fresh()->update(['contact_name' => 'Ján Novák']);
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([['dic' => '2021344160', 'ico' => '50920600', 'nazov_ds' => 'Ján Novák']])]);
+    expect($fails(['ico' => '50920600'], 'ico'))->toBeTrue();
+
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([$ours])]);
+    request()->merge(['tax_number' => ['number' => 'SK2021965990', 'country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')]]);
+    expect($save(['ico' => '50 920 600']))->toBe(['identity_document_number' => '50920600', 'peppol_dic' => '2021344160'])
+        ->and($this->customer->fresh()->identity_document_number)->toBe('50920600')
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:2021344160')
+        ->and($this->customer->fresh()->taxNumber)->toBeNull();
+
+    expect($fails(['ico' => '12345678', 'dic' => '2021965990'], 'ico'))->toBeTrue()
+        ->and($this->customer->fresh()->identity_document_number)->toBe('50920600')
+        ->and($this->customer->fresh()->peppol_id)->toBe('0245:2021344160');
+
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([$ours]), '/data/ds_dphs/search' => Http::response(['message' => 'Search not found'], 404)]);
+    expect($fails(['vat_number' => 'SK2021344160'], 'vat_number'))->toBeTrue();
+
+    softipFake(['/data/ds_dsrdp/search' => $registerRows([$ours]), '/data/ds_dphs/search' => $registerRows([['ic_dph' => 'SK2021344160', 'ico' => '50920600', 'nazov_ds' => 'PRIKLAD s.r.o.']])]);
+    expect($save(['vat_number' => 'SK 2021344160']))->toBe(['vat_number' => 'SK2021344160'])
+        ->and($this->customer->fresh()->taxNumber?->number)->toContain('2021344160');
+
+    $this->customer->fresh()->taxNumber?->delete();
+
+    $this->customer->fresh()->update(['identity_document_number' => null, 'peppol_id' => null, 'data' => []]);
+    $this->organisation->update(['country_id' => $originalCountryId]);
+});
+
+test('the company details request goes, from each shop, to the organisation\'s Slovak business customers the register has not confirmed, once until the resend days pass', function () {
+    $this->organisation->update(['settings' => array_merge($this->organisation->settings ?? [], ['e_invoicing' => ['countries' => ['SK']]])]);
+    $this->customer->address->update(['country_code' => 'SK']);
+    $this->customer->taxNumber?->delete();
+    $this->customer->shop->website ?? createWebsite($this->customer->shop);
+    $this->customer->fresh()->update(['company_name' => 'Žiadosť s.r.o.', 'identity_document_number' => '50920600', 'peppol_id' => null, 'data' => [], 'email' => 'ziadost@example.com']);
+    $recipients = fn () => \App\Actions\CRM\Customer\SendCompanyDetailsRequest::recipients($this->organisation->fresh(), 14)->pluck('customers.id');
+
+    expect($recipients())->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['data' => ['company_details_requested_at' => now()->subDays(3)->toIso8601String()]]);
+    expect($recipients())->not->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['data' => ['company_details_requested_at' => now()->subDays(20)->toIso8601String()]]);
+    expect($recipients())->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['data' => ['dic_verification' => ['status' => 'matched']]]);
+    expect($recipients())->not->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['status' => \App\Enums\CRM\Customer\CustomerStatusEnum::PENDING_APPROVAL]);
+    expect($recipients())->not->toContain($this->customer->id);
+
+    $this->customer->fresh()->update(['data' => [], 'status' => \App\Enums\CRM\Customer\CustomerStatusEnum::APPROVED]);
+    $url  = \App\Actions\Retina\CRM\ShowRetinaCompanyDetails::url($this->customer->fresh());
+    $body = \App\Actions\CRM\Customer\SendCompanyDetailsRequest::make()->generateBodyHtml($this->customer->fresh());
+    expect($url)->toContain('/app/company-details/'.$this->customer->id.'?expires=')->toContain('signature=')
+        ->and($body)->toContain(e($url))->toContain('50920600')
+        ->and(Illuminate\Support\Facades\URL::hasValidSignature(Illuminate\Http\Request::create(parse_url($url, PHP_URL_PATH).'?'.parse_url($url, PHP_URL_QUERY)), absolute: false))->toBeTrue()
+        ->and(Illuminate\Support\Facades\URL::hasValidSignature(Illuminate\Http\Request::create(str_replace('/company-details/'.$this->customer->id, '/company-details/'.($this->customer->id + 1), parse_url($url, PHP_URL_PATH)).'?'.parse_url($url, PHP_URL_QUERY)), absolute: false))->toBeFalse();
+
+    $this->customer->fresh()->update(['identity_document_number' => null]);
+    $this->organisation->update(['settings' => array_merge($this->organisation->fresh()->settings, ['e_invoicing' => ['countries' => []]])]);
+});
+
+test('the company details link sends only the customer\'s own logged-in account user to the full account page', function () {
+    $this->shop->website ?? createWebsite($this->shop);
+    $ownUser   = createWebUser($this->customer);
+    $isOwn     = function ($webUser) {
+        Illuminate\Support\Facades\Auth::guard('retina')->setUser($webUser);
+        $request = Illuminate\Http\Request::create('/app/company-details/'.$this->customer->id);
+        $request->setUserResolver(fn (?string $guard = null) => Illuminate\Support\Facades\Auth::guard($guard)->user());
+
+        return \App\Actions\Retina\CRM\ShowRetinaCompanyDetails::isOwnAccount($request, $this->customer->fresh());
+    };
+
+    $ownUser->update(['is_root' => true]);
+    $otherCustomersUser = (clone $ownUser)->forceFill(['customer_id' => $this->customer->id + 1]);
+    expect($isOwn($ownUser))->toBeTrue()
+        ->and($isOwn($otherCustomersUser))->toBeFalse();
+
+    $ownUser->update(['is_root' => false]);
+    expect($isOwn($ownUser->fresh()))->toBeFalse();
+
+    Illuminate\Support\Facades\Auth::guard('retina')->forgetUser();
+    $guest = Illuminate\Http\Request::create('/app/company-details/'.$this->customer->id);
+    $guest->setUserResolver(fn (?string $guard = null) => Illuminate\Support\Facades\Auth::guard($guard)->user());
+    expect(\App\Actions\Retina\CRM\ShowRetinaCompanyDetails::isOwnAccount($guest, $this->customer->fresh()))->toBeFalse();
+});

@@ -19,6 +19,8 @@ use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPassword;
 use App\Actions\CRM\WebUser\Retina\UI\ShowRetinaResetWebUserPasswordError;
 use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
 use App\Actions\CRM\WebUser\Retina\UpdateRetinaWebUserPassword;
+use App\Actions\Retina\CRM\ShowRetinaCompanyDetails;
+use App\Actions\Retina\CRM\UpdateRetinaCompanyDetails;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromGoogle;
 use App\Actions\Retina\SysAdmin\RegisterRetinaFromStandalone;
 use App\Actions\Retina\UI\Auth\SendRetinaResetPasswordEmail;
@@ -41,6 +43,11 @@ Route::prefix('json')->name('json.')->group(function () {
         Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click');
         Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items');
     });
+});
+
+Route::middleware(['signed:relative', 'throttle:30,1'])->group(function () {
+    Route::get('company-details/{customer:id}', ShowRetinaCompanyDetails::class)->name('company_details.show')->whereNumber('customer');
+    Route::post('company-details/{customer:id}', UpdateRetinaCompanyDetails::class)->name('company_details.update')->whereNumber('customer')->middleware('throttle:6,1');
 });
 
 Route::middleware('guest:retina')->group(function () {

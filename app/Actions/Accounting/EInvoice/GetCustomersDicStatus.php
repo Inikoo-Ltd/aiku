@@ -9,6 +9,8 @@
 namespace App\Actions\Accounting\EInvoice;
 
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
@@ -60,6 +62,17 @@ class GetCustomersDicStatus
     {
         $query->where(fn ($query) => self::scope($query))
             ->whereRaw(self::statusSql().' = ?', [$status]);
+    }
+
+    /**
+     * The organisation's Slovak business customers, in every shop, whose DIČ the register has not confirmed.
+     */
+    public static function incompleteInOrganisation(Organisation $organisation): EloquentBuilder
+    {
+        return Customer::query()
+            ->where('customers.organisation_id', $organisation->id)
+            ->where(fn (EloquentBuilder $query) => self::scope($query))
+            ->whereRaw(self::statusSql()." <> 'ok'");
     }
 
     /**
