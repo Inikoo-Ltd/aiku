@@ -13,6 +13,7 @@ use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackSyncRun;
 use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -42,21 +43,42 @@ class SyncSlackPublicChannels
      */
     public function handle(Group $group, bool $join = false, bool $history = false, bool $catchUpOnly = false): array
     {
-        $client = $this->slackClient() ?? throw new RuntimeException('Slack bot token is not set');
         $totals = ['channels' => 0, 'joined' => 0, 'messages' => 0];
         $this->added = 0;
+        foreach (SlackWorkspace::all() as $workspace) {
+            $client = $workspace->client();
+            if (!$client) {
+                $workspace->isMain() ? throw new RuntimeException('Slack bot token is not set') : null;
+
+                continue;
+            }
+            $this->syncWorkspace($group, $workspace, $client, $join, $history, $catchUpOnly, $totals);
+        }
+
+        return $totals + ['added' => $this->added];
+    }
+
+    /**
+     * @param  array{channels: int, joined: int, messages: int}  $totals
+     */
+    private function syncWorkspace(Group $group, SlackWorkspace $workspace, PendingRequest $client, bool $join, bool $history, bool $catchUpOnly, array &$totals): void
+    {
         $cursor = null;
         $listed = [];
 
         do {
             $page = $this->slackCall($client, 'conversations.list', array_filter(['types' => 'public_channel', 'limit' => 200, 'cursor' => $cursor]));
             foreach (Arr::get($page, 'channels', []) as $slackChannel) {
+                if (!$workspace->owns(SlackChannel::where('slack_id', $slackChannel['id'])->first())) {
+                    continue;
+                }
                 $channel = SlackChannel::updateOrCreate(['slack_id' => $slackChannel['id']], [
-                    'group_id'    => $group->id,
-                    'name'        => Arr::get($slackChannel, 'name'),
-                    'is_archived' => (bool) Arr::get($slackChannel, 'is_archived'),
-                    'is_member'   => (bool) Arr::get($slackChannel, 'is_member'),
-                    'data'        => $slackChannel,
+                    'group_id'      => $group->id,
+                    'slack_team_id' => $workspace->teamId,
+                    'name'          => Arr::get($slackChannel, 'name'),
+                    'is_archived'   => (bool) Arr::get($slackChannel, 'is_archived'),
+                    'is_member'     => (bool) Arr::get($slackChannel, 'is_member'),
+                    'data'          => $slackChannel,
                 ]);
                 $totals['channels']++;
                 $listed[] = $channel->slack_id;
@@ -74,10 +96,8 @@ class SyncSlackPublicChannels
         } while ($cursor);
 
         if ($listed) {
-            SlackChannel::where('is_public', true)->whereNull('deleted_in_slack_at')->whereNotIn('slack_id', $listed)->update(['is_public' => false]);
+            $workspace->channels()->where('is_public', true)->whereNull('deleted_in_slack_at')->whereNotIn('slack_id', $listed)->update(['is_public' => false]);
         }
-
-        return $totals + ['added' => $this->added];
     }
 
     protected function isStillKept(SlackChannel $channel): bool

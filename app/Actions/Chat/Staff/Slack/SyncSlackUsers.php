@@ -32,18 +32,22 @@ class SyncSlackUsers
      */
     public function handle(): array
     {
-        $client = $this->slackClient() ?? throw new RuntimeException('Slack bot token is not set');
         $people = 0;
-        $cursor = null;
-
-        do {
-            $page = $this->slackCall($client, 'users.list', array_filter(['limit' => 200, 'cursor' => $cursor]));
-            foreach (Arr::get($page, 'members', []) as $member) {
-                StoreSlackUser::run($member);
-                $people++;
+        foreach (SlackWorkspace::all() as $workspace) {
+            $client = $workspace->client() ?? ($workspace->isMain() ? throw new RuntimeException('Slack bot token is not set') : null);
+            $cursor = null;
+            while ($client) {
+                $page = $this->slackCall($client, 'users.list', array_filter(['limit' => 200, 'cursor' => $cursor]));
+                foreach (Arr::get($page, 'members', []) as $member) {
+                    StoreSlackUser::run($member);
+                    $people++;
+                }
+                $cursor = Arr::get($page, 'response_metadata.next_cursor');
+                if (!$cursor) {
+                    break;
+                }
             }
-            $cursor = Arr::get($page, 'response_metadata.next_cursor');
-        } while ($cursor);
+        }
 
         return [
             'people'          => $people,

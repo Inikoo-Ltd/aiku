@@ -74,7 +74,8 @@ class FormatSlackMessages
             ->mapWithKeys(fn (SlackUser $slackUser) => [$slackUser->slack_id => $slackUser->display_name ?: $slackUser->real_name ?: $slackUser->name])
             ->all();
         $channelNames = $this->channelIds === [] ? [] : SlackChannel::kept()->whereIn('slack_id', array_keys($this->channelIds))
-            ->pluck('name', 'slack_id')
+            ->get(['slack_id', 'name', 'slack_team_id'])
+            ->mapWithKeys(fn (SlackChannel $channel) => [$channel->slack_id => $channel->name])
             ->all();
 
         $this->fillNames($formatted, $userNames, $channelNames);

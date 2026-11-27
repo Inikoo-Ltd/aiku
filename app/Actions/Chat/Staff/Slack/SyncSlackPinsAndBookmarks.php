@@ -37,12 +37,16 @@ class SyncSlackPinsAndBookmarks
      */
     public function handle(): array
     {
-        $client = $this->slackClient() ?? throw new RuntimeException('Slack bot token is not set');
+        SlackWorkspace::main()->client() ?? throw new RuntimeException('Slack bot token is not set');
         $totals = ['channels' => 0, 'pinned' => 0, 'bookmarks' => 0];
 
         $channels = SlackChannel::where('is_public', true)->where('is_ignored', false)->where('is_member', true)->whereNull('deleted_in_slack_at')->get();
         $failure = null;
         foreach ($channels as $channel) {
+            $client = SlackWorkspace::forChannel($channel)?->client();
+            if (!$client) {
+                continue;
+            }
             foreach (['pinned' => 'syncPins', 'bookmarks' => 'syncBookmarks'] as $total => $sync) {
                 try {
                     $totals[$total] += $this->$sync($client, $channel);

@@ -539,3 +539,55 @@ test('Slack private files: a DM file of an author without the opt-in is never co
         ->and(\Illuminate\Support\Facades\Storage::disk('local')->get($again->path))->toBe('channel bytes');
     \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), "T1-FPCH$s") && $request->hasHeader('Authorization', "Bearer xoxp-test-UVIEW$s"));
 });
+
+test('Slack second workspace: its signed events create and fill its own channels, a forged team or the other app\'s events on a channel it does not own change nothing, a clashing name reads -awa in aiku only, and a private channel there is read through the person\'s account in that workspace, INI-540', function () {
+    \Illuminate\Support\Facades\Config::set('services.slack.signing_secret', 'shh');
+    \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TMAIN');
+    \Illuminate\Support\Facades\Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa']]);
+    Event::fake([SlackChannelMessageChanged::class]);
+    $webhook = function (array $payload, string $secret) {
+        $body      = json_encode($payload);
+        $timestamp = (string) time();
+
+        return $this->call('POST', route('webhooks.slack_events'), [], [], [], ['HTTP_X_SLACK_REQUEST_TIMESTAMP' => $timestamp, 'HTTP_X_SLACK_SIGNATURE' => 'v0='.hash_hmac('sha256', "v0:$timestamp:$body", $secret), 'CONTENT_TYPE' => 'application/json'], $body);
+    };
+    $message = fn (string $channel, int $i) => ['type' => 'message', 'channel' => $channel, 'channel_type' => 'channel', 'user' => "UANN{$this->s}", 'text' => "AW message $i", 'ts' => ($this->ts)($i)];
+    $stored  = fn (string $channel, int $i) => SlackMessage::whereHas('channel', fn ($query) => $query->where('slack_id', $channel))->where('ts', ($this->ts)($i))->exists();
+
+    $webhook(['type' => 'url_verification', 'challenge' => 'awa-challenge'], 'awa-secret')->assertOk()->assertJsonPath('challenge', 'awa-challenge');
+    $webhook(['type' => 'event_callback', 'team_id' => 'TAWA', 'event' => $message("CAWA{$this->s}", 1)], 'awa-secret')->assertOk();
+    $awaChannel = SlackChannel::where('slack_id', "CAWA{$this->s}")->sole();
+    expect($awaChannel->slack_team_id)->toBe('TAWA')
+        ->and($stored("CAWA{$this->s}", 1))->toBeTrue();
+
+    $webhook(['type' => 'event_callback', 'team_id' => 'TAWA', 'event' => $message("CAWA{$this->s}", 3)], 'wrong')->assertUnauthorized();
+    $webhook(['type' => 'event_callback', 'team_id' => 'TMAIN', 'event' => $message("CAWA{$this->s}", 4)], 'shh')->assertOk();
+    $webhook(['type' => 'event_callback', 'team_id' => 'TAWA', 'event' => $message($this->channel->slack_id, 5)], 'awa-secret')->assertOk();
+    $webhook(['type' => 'event_callback', 'team_id' => 'TMAIN', 'event' => $message($this->channel->slack_id, 6)], 'shh')->assertOk();
+    expect($stored("CAWA{$this->s}", 3))->toBeFalse()
+        ->and($stored("CAWA{$this->s}", 4))->toBeFalse()
+        ->and($stored($this->channel->slack_id, 5))->toBeFalse()
+        ->and($stored($this->channel->slack_id, 6))->toBeTrue();
+
+    SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GMAINPAY{$this->s}", 'name' => "payroll-{$this->s}", 'is_public' => false, 'is_private' => true]);
+    $awaPayroll = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWAPAY{$this->s}", 'name' => "payroll-{$this->s}", 'slack_team_id' => 'TAWA']);
+    $awaGeneral = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWAGEN{$this->s}", 'name' => "live-{$this->s}", 'slack_team_id' => 'TAWA']);
+    expect($awaGeneral->fresh()->name)->toBe("live-{$this->s}-awa")
+        ->and($awaGeneral->fresh()->getRawOriginal('name'))->toBe("live-{$this->s}")
+        ->and($awaPayroll->fresh()->name)->toBe("payroll-{$this->s}")
+        ->and($awaChannel->fresh()->name)->toBeNull()
+        ->and($this->channel->fresh()->name)->toBe("live-{$this->s}");
+
+    $awaPrivate = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GAWA{$this->s}", 'name' => "secret-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => false, 'is_private' => true, 'is_member' => true]);
+    $awaPrivate->members()->create(['slack_user_id' => "UVIEWAWA{$this->s}"]);
+    expect($awaPrivate->isPrivateVisibleTo($this->viewer))->toBeFalse();
+    SlackUser::create(['slack_id' => "UVIEWAWA{$this->s}", 'user_id' => $this->viewer->id, 'email' => $this->viewer->email, 'real_name' => 'Viewer at AW', 'data' => ['team_id' => 'TAWA']]);
+    expect($awaPrivate->isPrivateVisibleTo($this->viewer))->toBeTrue()
+        ->and($awaPrivate->isPrivateVisibleTo($this->stranger))->toBeFalse()
+        ->and(SlackChannel::linkedSlackPerson($this->viewer)->slack_id)->toBe("UVIEW{$this->s}");
+
+    $shared = SlackUser::create(['slack_id' => "USHAREDAWA{$this->s}", 'user_id' => $this->viewer->id, 'email' => $this->viewer->email, 'real_name' => 'Shared mailbox at AW', 'data' => ['team_id' => 'TAWA']]);
+    $sharedOnly = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GAWASHARED{$this->s}", 'name' => "shared-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => false, 'is_private' => true, 'is_member' => true]);
+    $sharedOnly->members()->create(['slack_user_id' => $shared->slack_id]);
+    expect($sharedOnly->isPrivateVisibleTo($this->viewer))->toBeFalse();
+});

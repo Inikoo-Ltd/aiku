@@ -37,7 +37,7 @@ class DeleteSlackMessage
     {
         $this->ensureMayWrite($user, $slackChannel);
         $message = $this->liveMessage($slackChannel, $ts);
-        $client  = $this->clientFor($user, standInAllowed: true);
+        $client  = $this->clientFor($user, standInAllowed: true, channel: $slackChannel);
         $this->ensureOwnMessage($message, $client);
 
         $this->callSlack($client, 'chat.delete', ['channel' => $slackChannel->slack_id, 'ts' => $message->ts], ['message_not_found']);

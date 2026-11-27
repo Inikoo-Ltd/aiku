@@ -121,6 +121,14 @@ return [
             'channel'              => env('SLACK_CHANNEL', '#general'),
             'tickets_channel'      => env('SLACK_TICKETS_CHANNEL'),
         ],
+        'other_workspaces' => [
+            [
+                'team_id'        => env('SLACK_AWA_TEAM_ID'),
+                'bot_token'      => env('SLACK_AWA_BOT_TOKEN'),
+                'signing_secret' => env('SLACK_AWA_SIGNING_SECRET'),
+                'name_suffix'    => 'awa',
+            ],
+        ],
     ],
     // Atlassian Jira Service Desk (embedded widget)
     'jsd'       => [

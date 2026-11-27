@@ -1,0 +1,100 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 27 Nov 2026 14:00:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2026, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Chat\Staff\Slack;
+
+use App\Models\Chat\SlackChannel;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Http;
+
+/**
+ * The Slack workspaces Verba reads (INI-540). The main one is services.slack (tickets, alerts and personal connections
+ * live only there) and its channels have slack_team_id null; each of services.slack.other_workspaces has its own app,
+ * bot and signing secret, and its channels carry its team id.
+ */
+final readonly class SlackWorkspace
+{
+    private function __construct(public ?string $teamId, #[\SensitiveParameter] public string $botToken, #[\SensitiveParameter] public string $signingSecret, public ?string $nameSuffix)
+    {
+    }
+
+    public static function main(): self
+    {
+        return new self(null, (string) config('services.slack.notifications.bot_user_oauth_token'), (string) config('services.slack.signing_secret'), null);
+    }
+
+    /**
+     * @return array<int, self>
+     */
+    public static function others(): array
+    {
+        $mainTeamId = config('services.slack.team_id');
+        $mainSecret = config('services.slack.signing_secret');
+
+        return collect(config('services.slack.other_workspaces', []))
+            ->filter(fn (array $workspace) => ($workspace['team_id'] ?? null) && ($workspace['bot_token'] ?? null) && ($workspace['signing_secret'] ?? null)
+                && $workspace['team_id'] !== $mainTeamId && $workspace['signing_secret'] !== $mainSecret)
+            ->map(fn (array $workspace) => new self($workspace['team_id'], $workspace['bot_token'], $workspace['signing_secret'], $workspace['name_suffix'] ?? null))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, self>
+     */
+    public static function all(): array
+    {
+        return [self::main(), ...self::others()];
+    }
+
+    public static function forTeam(?string $teamId): ?self
+    {
+        if ($teamId === null || $teamId === config('services.slack.team_id')) {
+            return self::main();
+        }
+
+        return collect(self::others())->first(fn (self $workspace) => $workspace->teamId === $teamId);
+    }
+
+    public static function isOtherTeam(?string $teamId): bool
+    {
+        return $teamId !== null && collect(self::others())->contains(fn (self $workspace) => $workspace->teamId === $teamId);
+    }
+
+    public static function forChannel(SlackChannel $channel): ?self
+    {
+        return self::forTeam($channel->slack_team_id);
+    }
+
+    public function isMain(): bool
+    {
+        return $this->teamId === null;
+    }
+
+    public function client(): ?PendingRequest
+    {
+        return $this->botToken !== '' ? Http::withToken($this->botToken)->baseUrl('https://slack.com/api') : null;
+    }
+
+    /**
+     * Channels of this workspace: the main one's have no team id.
+     */
+    public function channels(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->isMain() ? SlackChannel::whereNull('slack_team_id') : SlackChannel::where('slack_team_id', $this->teamId);
+    }
+
+    /**
+     * A channel this workspace may write to aiku: a new one, or one it already owns. A channel shared between two
+     * workspaces is listed and evented by both apps; only the workspace that brought it first keeps it current.
+     */
+    public function owns(?SlackChannel $channel): bool
+    {
+        return !$channel || $channel->slack_team_id === $this->teamId;
+    }
+}

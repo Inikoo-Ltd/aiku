@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\Concerns;
 
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -17,9 +18,18 @@ use RuntimeException;
 
 trait WithSlack
 {
-    protected function slackSignatureIsValid(Request $request): bool
+    /**
+     * The workspace whose app signed the request (INI-540): only the events webhook takes other workspaces; slash
+     * commands and interactivity stay on slackSignatureIsValid, the main app's secret.
+     */
+    protected function slackSigningWorkspace(Request $request): ?SlackWorkspace
     {
-        $secret    = config('services.slack.signing_secret');
+        return collect(SlackWorkspace::all())->first(fn (SlackWorkspace $workspace) => $this->slackSignatureIsValid($request, $workspace->signingSecret));
+    }
+
+    protected function slackSignatureIsValid(Request $request, #[\SensitiveParameter] ?string $secret = null): bool
+    {
+        $secret ??= config('services.slack.signing_secret');
         $timestamp = $request->header('X-Slack-Request-Timestamp');
         if (!$secret || !$timestamp || abs(time() - (int) $timestamp) > 300) {
             return false;

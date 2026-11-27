@@ -88,7 +88,7 @@ class SendSlackMessage
         $rootTs      = $threadTs ? $this->threadRoot($slackChannel, $threadTs) : null;
         $isBroadcast = $rootTs !== null && $alsoToChannel;
 
-        $client = $this->clientFor($user, standInAllowed: true);
+        $client = $this->clientFor($user, standInAllowed: true, channel: $slackChannel);
 
         $claimKey = 'slack-send:'.$user->id.':'.$slackChannel->id.':'.$idempotencyKey;
         if (!Cache::add($claimKey, 'sending', self::IDEMPOTENCY_SECONDS)) {

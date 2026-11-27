@@ -31,7 +31,7 @@ class RemoveSlackChannelBookmark
     {
         $this->ensureMayWrite($user, $slackChannel);
         $bookmark = $this->liveBookmark($slackChannel, $bookmark->id);
-        $client   = $this->clientFor($user);
+        $client   = $this->clientFor($user, channel: $slackChannel);
 
         $this->callSlack($client, 'bookmarks.remove', ['channel_id' => $slackChannel->slack_id, 'bookmark_id' => $bookmark->slack_id], ['bookmark_not_found']);
         SyncSlackPinsAndBookmarks::make()->removeBookmark($bookmark);

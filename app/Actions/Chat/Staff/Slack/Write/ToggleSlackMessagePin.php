@@ -39,7 +39,7 @@ class ToggleSlackMessagePin
     {
         $this->ensureMayWrite($user, $slackChannel);
         $message = $this->liveMessage($slackChannel, $ts);
-        $client  = $this->clientFor($user);
+        $client  = $this->clientFor($user, channel: $slackChannel);
 
         $this->callSlack(
             $client,

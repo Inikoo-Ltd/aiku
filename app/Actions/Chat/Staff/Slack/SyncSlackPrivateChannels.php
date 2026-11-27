@@ -54,25 +54,43 @@ class SyncSlackPrivateChannels
     /**
      * @return array{channels: int, members: int, messages: int, added: int, failed: list<string>}
      */
-    public function handle(Group $group, bool $history = false, ?string $onlySlackId = null, ?int $onlyUserId = null): array
+    public function handle(Group $group, bool $history = false, ?string $onlySlackId = null, ?int $onlyUserId = null, ?string $onlyTeamId = null): array
     {
         $totals      = ['channels' => 0, 'members' => 0, 'messages' => 0, 'failed' => []];
         $this->added = 0;
         $read        = [];
 
-        if ($onlyUserId === null) {
-            $client = $this->slackClient() ?? throw new RuntimeException('Slack bot token is not set');
+        $workspaces = $onlySlackId ? array_filter([SlackWorkspace::forTeam($onlyTeamId)]) : SlackWorkspace::all();
+        foreach ($onlyUserId === null ? $workspaces : [] as $workspace) {
+            $client = $workspace->client();
+            if (!$client) {
+                $workspace->isMain() ? throw new RuntimeException('Slack bot token is not set') : null;
+
+                continue;
+            }
             $listed = [];
             $this->readingAs = null;
-            foreach ($this->listPrivateChannels($client, $onlySlackId) as $slackChannel) {
+            try {
+                $listedByBot = $this->listPrivateChannels($client, $onlySlackId);
+            } catch (Throwable $exception) {
+                if ($workspace->isMain()) {
+                    throw $exception;
+                }
+                $totals['failed'][] = "workspace $workspace->teamId: {$exception->getMessage()}";
+
+                continue;
+            }
+            foreach ($listedByBot as $slackChannel) {
                 $slackId  = (string) Arr::get($slackChannel, 'id');
                 $listed[] = $slackId;
-                if (SlackChannel::where('slack_id', $slackId)->where('is_ignored', true)->exists()) {
+                $existing = SlackChannel::where('slack_id', $slackId)->first();
+                if ($existing?->is_ignored || !$workspace->owns($existing)) {
                     continue;
                 }
                 $channel = SlackChannel::updateOrCreate(['slack_id' => $slackId], [
-                    'group_id'    => $group->id,
-                    'is_member'   => true,
+                    'group_id'      => $group->id,
+                    'slack_team_id' => $workspace->teamId,
+                    'is_member'     => true,
                     ...$this->channelAttributes($slackChannel),
                 ]);
                 $read[$slackId] = true;
@@ -80,7 +98,7 @@ class SyncSlackPrivateChannels
             }
 
             if (!$onlySlackId) {
-                SlackChannel::where('is_private', true)->where('is_member', true)->whereNotIn('slack_id', $listed)->update(['is_member' => false]);
+                $workspace->channels()->where('is_private', true)->where('is_member', true)->whereNotIn('slack_id', $listed)->update(['is_member' => false]);
             }
         }
 
@@ -103,7 +121,7 @@ class SyncSlackPrivateChannels
                     break;
                 }
                 $slackId = (string) Arr::get($slackChannel, 'id');
-                if (isset($read[$slackId]) || SlackChannel::where('slack_id', $slackId)->where(fn ($query) => $query->where('is_ignored', true)->orWhere('is_member', true))->exists()) {
+                if (isset($read[$slackId]) || SlackChannel::where('slack_id', $slackId)->where(fn ($query) => $query->where('is_ignored', true)->orWhere('is_member', true)->orWhereNotNull('slack_team_id'))->exists()) {
                     continue;
                 }
                 $read[$slackId] = true;
@@ -322,7 +340,7 @@ class SyncSlackPrivateChannels
         Nightwatch::dontSample();
 
         $onlySlackId = $command->option('channel') ?: null;
-        $run         = fn () => $this->handle(Group::firstOrFail(), (bool) $command->option('history'), $onlySlackId);
+        $run         = fn () => $this->handle(Group::firstOrFail(), (bool) $command->option('history'), $onlySlackId, null, $onlySlackId ? SlackChannel::where('slack_id', $onlySlackId)->value('slack_team_id') : null);
         $totals      = $onlySlackId ? $run() : SlackSyncRun::record(self::COMMAND, $run);
         $command->info("Private channels: {$totals['channels']}, members: {$totals['members']}, messages read: {$totals['messages']}, new: {$totals['added']}");
         foreach ($totals['failed'] as $failure) {

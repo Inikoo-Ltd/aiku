@@ -116,7 +116,7 @@ class ShowStaffSlackChannels extends OrgAction
     public function channels(User $user, bool $private = false, bool $direct = false): array
     {
         $channels = ($direct ? SlackChannel::directVisibleTo($user) : ($private ? SlackChannel::privateVisibleTo($user) : SlackChannel::visibleTo($user)))
-            ->select(['id', 'slack_id', 'name', 'is_archived', 'data'])
+            ->select(['id', 'slack_id', 'name', 'is_archived', 'data', 'slack_team_id'])
             ->addSelect(['last_message_at' => SlackMessage::select('sent_at')
                 ->whereColumn('slack_messages.slack_channel_id', 'slack_channels.id')
                 ->whereNull('deleted_at')
@@ -190,7 +190,7 @@ class ShowStaffSlackChannels extends OrgAction
     {
         return SlackChannel::listedTo($user)
             ->where('is_archived', false)
-            ->select(['id', 'name'])
+            ->select(['id', 'name', 'slack_team_id'])
             ->withCount('members')
             ->addSelect(['requested' => DB::table('slack_channel_join_requests')->selectRaw('1')->whereColumn('slack_channel_id', 'slack_channels.id')->where('user_id', $user->id)->limit(1)])
             ->orderBy('name')
@@ -324,7 +324,7 @@ class ShowStaffSlackChannels extends OrgAction
         return [
             ...$state,
             'people'       => [['id' => '!here', 'label' => 'here'], ['id' => '!channel', 'label' => 'channel'], ...$people],
-            'channels'     => SlackChannel::visibleTo($user)->orderBy('name')->get(['slack_id', 'name'])->map(fn (SlackChannel $channel) => ['id' => $channel->slack_id, 'label' => (string) $channel->name])->all(),
+            'channels'     => SlackChannel::visibleTo($user)->orderBy('name')->get(['slack_id', 'name', 'slack_team_id'])->map(fn (SlackChannel $channel) => ['id' => $channel->slack_id, 'label' => (string) $channel->name])->all(),
             'member_count' => $members->count(),
             'max_file_bytes' => \App\Actions\Chat\Staff\Slack\Write\UploadSlackFile::maxBytes(),
         ];

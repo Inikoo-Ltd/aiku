@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
 use App\Models\SysAdmin\User;
@@ -48,8 +49,21 @@ trait WithSlackMessageWrite
         return SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $ts)->firstOrFail();
     }
 
-    protected function clientFor(User $user, bool $standInAllowed = false): SlackWriteClient
+    /**
+     * Personal Slack connections exist for the main workspace only (INI-540), so in another workspace's channel the
+     * person posts, edits and deletes through that workspace's bot, and anything needing their own token is refused.
+     */
+    protected function clientFor(User $user, bool $standInAllowed = false, ?SlackChannel $channel = null): SlackWriteClient
     {
+        $workspace = $channel ? SlackWorkspace::forChannel($channel) : SlackWorkspace::main();
+        if (!$workspace?->isMain()) {
+            $client = $workspace && $standInAllowed ? SlackWriteClient::standInFor($user, $workspace) : null;
+            if (!$client) {
+                $this->refuse(SlackWriteAccess::reasonUnavailable($user) ?? __('This cannot be done from aiku in this Slack workspace yet'));
+            }
+
+            return $client;
+        }
         $client = SlackWriteClient::for($user) ?? ($standInAllowed ? SlackWriteClient::standInFor($user) : null);
         if (!$client) {
             $this->refuse(SlackWriteAccess::reasonUnavailable($user) ?? __('Connect your Slack account first'));

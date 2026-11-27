@@ -39,7 +39,7 @@ class UpdateSlackChannelFromEvent
     /**
      * @param  array<string, mixed>  $event
      */
-    public function handle(array $event, ?string $botUserId): ?SlackChannel
+    public function handle(array $event, ?string $botUserId, ?string $teamId = null): ?SlackChannel
     {
         $channel   = Arr::get($event, 'channel');
         $slackId   = is_array($channel) ? Arr::get($channel, 'id') : $channel;
@@ -49,14 +49,14 @@ class UpdateSlackChannelFromEvent
         $isBot = $botUserId && Arr::get($event, 'user') === $botUserId;
         if (Arr::get($event, 'channel_type') === 'G') {
             return match (true) {
-                $isBot && Arr::get($event, 'type') === 'member_joined_channel' => tap($this->markPrivate($slackId), fn () => $this->slackClient() && SyncSlackPrivateChannels::dispatch(Group::firstOrFail(), true, $slackId)),
+                $isBot && Arr::get($event, 'type') === 'member_joined_channel' => tap($this->markPrivate($slackId), fn () => SlackWorkspace::forTeam($teamId)?->client() && SyncSlackPrivateChannels::dispatch(Group::firstOrFail(), true, $slackId, null, $teamId)),
                 $isBot && Arr::get($event, 'type') === 'member_left_channel'   => $this->knownChannel($slackId, ['is_public' => false, 'is_member' => false]),
                 default                                                         => $this->markPrivate($slackId),
             };
         }
 
         return match (Arr::get($event, 'type')) {
-            'channel_created'                   => $this->publicChannel($slackId, ['name' => Arr::get($channel, 'name')]),
+            'channel_created'                   => $this->publicChannel($slackId, ['name' => Arr::get($channel, 'name')], $teamId),
             'channel_rename'                    => $this->knownPublicChannel($slackId, ['name' => Arr::get($channel, 'name')]),
             'channel_archive'                   => $this->knownPublicChannel($slackId, ['is_archived' => true]),
             'channel_unarchive'                 => $this->knownPublicChannel($slackId, ['is_archived' => false]),
@@ -90,9 +90,9 @@ class UpdateSlackChannelFromEvent
     /**
      * @param  array<string, mixed>  $changes
      */
-    private function publicChannel(string $slackId, array $changes): SlackChannel
+    private function publicChannel(string $slackId, array $changes, ?string $teamId): SlackChannel
     {
-        $channel = SlackChannel::firstOrCreate(['slack_id' => $slackId], ['group_id' => Group::firstOrFail()->id]);
+        $channel = SlackChannel::firstOrCreate(['slack_id' => $slackId], ['group_id' => Group::firstOrFail()->id, 'slack_team_id' => $teamId]);
         $channel->update(array_filter($changes, fn ($value) => $value !== null));
 
         return $channel;

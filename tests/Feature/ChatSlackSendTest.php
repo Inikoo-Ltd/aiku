@@ -614,3 +614,26 @@ describe('files sent from aiku, INI-465', function () {
         actingAs($this->writer)->postJson(route('grp.chat.staff.slack.files.send', ['slackChannel' => $other->id]), ['file_ids' => [$fileId], 'idempotency_key' => Str::uuid()->toString()])->assertUnprocessable();
     });
 });
+
+test('Slack second workspace: a message in an aw-advantage channel goes through that workspace\'s bot under the person\'s own account there, never their main token; reactions there are refused, INI-540', function () {
+    Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-main');
+    Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa']]);
+    $awaChannel = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWA{$this->s}", 'name' => "awa-{$this->s}", 'is_member' => true, 'slack_team_id' => 'TAWA']);
+
+    ($this->send)($awaChannel, 'Hello aw team')->assertOk();
+    $post = ($this->posts)()->last()[0];
+    expect($post->header('Authorization')[0])->toBe('Bearer xoxb-awa')
+        ->and($post['username'])->toBe('Writer Person')
+        ->and(($this->messages)($awaChannel)->last()->slack_user_id)->toBe("UWRITE{$this->s}");
+
+    SlackUser::create(['slack_id' => "UWAWA{$this->s}", 'user_id' => $this->writer->id, 'email' => $this->writer->email, 'real_name' => 'Writer at AW', 'data' => ['team_id' => 'TAWA']]);
+    ($this->send)($awaChannel, 'Hello again')->assertOk();
+    expect(($this->posts)()->last()[0]['username'])->toBe('Writer at AW')
+        ->and(($this->messages)($awaChannel)->last()->slack_user_id)->toBe("UWAWA{$this->s}");
+
+    ($this->send)($this->general, 'Main as before')->assertOk();
+    expect(($this->posts)()->last()[0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
+
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $awaChannel->id]), ['ts' => ($this->messages)($awaChannel)->last()->ts, 'name' => 'eyes', 'add' => true])
+        ->assertUnprocessable()->assertJsonPath('message', 'This cannot be done from aiku in this Slack workspace yet');
+});
