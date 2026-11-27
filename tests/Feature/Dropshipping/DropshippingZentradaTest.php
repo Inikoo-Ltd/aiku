@@ -169,3 +169,16 @@ test('zentrada feed links the public product documents', function () {
         ->and($row['instructionsDocument1'])->toBe('https://'.$this->website->domain.'/attachment/'.$howToUse->ulid.'/download')
         ->and($row['certificate_additional'])->toBe('');
 });
+
+test('zentrada feed always sends GPSRIsRequired as 1 or 2', function () {
+    $withWarnings = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'gpsr_warnings' => '<p>Keep away from children</p>', 'gpsr_manual' => null]);
+    $withManual   = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'gpsr_warnings' => null, 'gpsr_manual' => 'Light the wick']);
+    $withNeither  = zentradaFeedProduct($this->product, ['price' => 10, 'units' => 1, 'gpsr_warnings' => null, 'gpsr_manual' => '']);
+
+    $rows = readZentradaFeed($this->shop)['rows'];
+
+    expect($rows[$withWarnings->code]['GPSRIsRequired'])->toBe('1')
+        ->and($rows[$withManual->code]['GPSRIsRequired'])->toBe('1')
+        ->and($rows[$withNeither->code]['GPSRIsRequired'])->toBe('2')
+        ->and(collect($rows)->pluck('GPSRIsRequired')->unique()->diff(['1', '2']))->toBeEmpty();
+});
