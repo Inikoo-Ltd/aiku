@@ -41,6 +41,7 @@ class WithdrawSlackPrivateConsent
 
         $mayCallSlack = app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS);
         DisconnectSlackAccount::make()->handle($user, $mayCallSlack, \App\Actions\Chat\Staff\Slack\SlackWorkspace::main());
+        PurgeSlackDirectWords::run($connection->slack_user_id);
 
         if (StartSlackConnection::unavailableReason($user)) {
             return StartSlackConnection::backToSettings(StartSlackConnection::NOTICE_KEY, __('Private conversations are off. Your Slack account is disconnected; connect it again for public channels when you want'));

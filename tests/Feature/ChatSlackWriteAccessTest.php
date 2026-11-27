@@ -492,7 +492,7 @@ test('private conversations need a second yes: the opt-in asks Slack for the pri
     \Illuminate\Support\Facades\Queue::fake();
     actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'code-p', 'state' => $query['state']]))
         ->assertRedirect(route('grp.profile.edit', ['section' => 'slack']));
-    \App\Actions\Chat\Staff\Slack\FillSlackDirectGaps::assertPushed(1, fn ($action, array $arguments) => $arguments === [$user->id]);
+    \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::assertPushed(1, fn ($action, array $arguments) => $arguments === [$user->id]);
 
     $connection = SlackConnection::where('user_id', $user->id)->firstOrFail();
     expect($connection->hasPrivateConsent())->toBeTrue()

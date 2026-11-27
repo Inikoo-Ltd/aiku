@@ -2000,6 +2000,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('slack:bring-direct-history')->dailyAt('04:20')->timezone('UTC')->onOneServer()->withoutOverlapping(10)->sentryMonitor(
+                    monitorSlug: 'BringSlackDirectHistory',
+                ),
+                name: 'BringSlackDirectHistory',
+                type: 'command',
+                scheduledAt: '04:20'
+            );
+
+            $this->logSchedule(
                 $schedule->command('slack:refresh-message-search')->dailyAt('04:05')->timezone('UTC')->onOneServer()->withoutOverlapping(60)->sentryMonitor(
                     monitorSlug: 'RefreshSlackMessageSearch',
                 ),

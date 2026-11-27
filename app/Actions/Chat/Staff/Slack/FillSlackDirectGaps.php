@@ -21,7 +21,7 @@ use Throwable;
 /**
  * When a person opts in, their own token fills the gaps already left for them in the DMs others brought (INI-431), and completes
  * those conversations' member lists. Only this person's messages are kept: the others' text in Slack's answer is dropped in memory.
- * The job carries the user id only. The walk over all of a person's earlier conversations is INI-433.
+ * The job carries the user id only. BringSlackDirectHistory runs it at the start of each slice of a person's walk (INI-433).
  */
 class FillSlackDirectGaps
 {
@@ -30,17 +30,18 @@ class FillSlackDirectGaps
     public int $jobTries = 1;
 
     /**
-     * @return array{channels: int, filled: int}
+     * @return array{channels: int, filled: int, complete: bool}
      */
     public function handle(User $user): array
     {
-        $totals      = ['channels' => 0, 'filled' => 0];
+        $totals      = ['channels' => 0, 'filled' => 0, 'complete' => false];
         $slackPerson = SlackChannel::privateReader($user);
         $client      = $slackPerson ? SlackWriteClient::for($user) : null;
         if (!$client || !StoreSlackDirectMessage::hasOptedIn($slackPerson->slack_id)) {
             return $totals;
         }
 
+        $totals['complete'] = true;
         foreach (SlackChannel::directVisibleTo($user)->get() as $channel) {
             try {
                 $members = Arr::get($client->call('conversations.members', ['channel' => $channel->slack_id, 'limit' => 100]), 'members', []);
@@ -71,11 +72,13 @@ class FillSlackDirectGaps
                     } while ($cursor);
                 }
             } catch (SlackWriteException $exception) {
+                $totals['complete'] = false;
                 Log::warning('Slack DM gaps not filled', ['user_id' => $user->id, 'channel' => $channel->slack_id, 'error' => $exception->slackError]);
                 if ($exception->slackError === 'ratelimited' || !SlackWriteClient::for($user)) {
                     break;
                 }
             } catch (Throwable $exception) {
+                $totals['complete'] = false;
                 Log::warning('Slack DM gaps not filled', ['user_id' => $user->id, 'channel' => $channel->slack_id, 'error' => $exception::class]);
             }
         }

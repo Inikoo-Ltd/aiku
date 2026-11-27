@@ -9,18 +9,27 @@
 namespace App\Actions\Chat\Staff\Slack;
 
 use App\Models\Chat\SlackChannel;
+use App\Models\Chat\SlackMessage;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Arr;
 
 /**
- * Reads a channel's history and thread replies with the bot token, for public (SyncSlackPublicChannels) and private
- * (SyncSlackPrivateChannels) channels; each says through isStillKept when to stop.
+ * Reads a channel's history and thread replies, for public (SyncSlackPublicChannels), private (SyncSlackPrivateChannels) and
+ * direct (BringSlackDirectHistory) channels; each says through isStillKept when to stop and may store through its own path.
  */
 trait WithSlackChannelHistory
 {
     private int $added = 0;
 
     abstract protected function isStillKept(SlackChannel $channel): bool;
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    protected function storeHistoryMessage(SlackChannel $channel, array $message): ?SlackMessage
+    {
+        return StoreSlackMessage::make()->store($channel, $message);
+    }
 
     /**
      * The first run walks back from the newest message to the first one and can be stopped and run again; later runs
@@ -41,7 +50,7 @@ trait WithSlackChannelHistory
                 return $stored;
             }
             foreach (Arr::get($page, 'messages', []) as $message) {
-                $this->added += (int) StoreSlackMessage::make()->store($channel, $message)?->wasRecentlyCreated;
+                $this->added += (int) $this->storeHistoryMessage($channel, $message)?->wasRecentlyCreated;
                 $stored++;
                 if (Arr::get($message, 'reply_count')) {
                     $stored += $this->syncReplies($client, $channel, $message['ts']);
@@ -70,7 +79,7 @@ trait WithSlackChannelHistory
             }
             foreach (Arr::get($page, 'messages', []) as $reply) {
                 if ($reply['ts'] !== $threadTs) {
-                    $this->added += (int) StoreSlackMessage::make()->store($channel, $reply)?->wasRecentlyCreated;
+                    $this->added += (int) $this->storeHistoryMessage($channel, $reply)?->wasRecentlyCreated;
                     $stored++;
                 }
             }

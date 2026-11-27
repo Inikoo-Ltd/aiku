@@ -61,7 +61,7 @@ class StoreSlackDirectMessage
 
         $message = $subtype === 'message_changed' ? (array) Arr::get($event, 'message', []) : $event;
         $author  = Arr::get($message, 'user');
-        if (!is_string($author) || Arr::get($message, 'bot_id') || SlackUser::where('slack_id', $author)->where('is_bot', true)->exists()) {
+        if (!self::isFromPerson($message)) {
             return null;
         }
 
@@ -142,6 +142,16 @@ class StoreSlackDirectMessage
         }
 
         return $message;
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    public static function isFromPerson(array $message): bool
+    {
+        $author = Arr::get($message, 'user');
+
+        return is_string($author) && !Arr::get($message, 'bot_id') && !SlackUser::where('slack_id', $author)->where('is_bot', true)->exists();
     }
 
     public static function hasOptedIn(string $slackUserId): bool

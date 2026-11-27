@@ -361,7 +361,7 @@ test('Slack DMs: B connecting fills B\'s gaps with B\'s own token and keeps the 
     \App\Actions\Chat\Staff\Slack\FillSlackDirectGaps::run($this->bee);
 
     $rows = SlackMessage::where('slack_channel_id', $dm->id)->orderBy('ts')->get();
-    expect($totals)->toBe(['channels' => 1, 'filled' => 2])
+    expect($totals)->toBe(['channels' => 1, 'filled' => 2, 'complete' => true])
         ->and($rows->pluck('text', 'ts')->all())->toBe([($this->ts)(1) => "secret words 1 of $b", ($this->ts)(2) => "secret words 2 of $b"])
         ->and($rows->every(fn (SlackMessage $row) => $row->versions()->doesntExist()))->toBeTrue()
         ->and($rows[1]->thread_ts)->toBe(($this->ts)(1));
@@ -408,6 +408,132 @@ test('Slack DMs: B switching off truly deletes B\'s DM words and earlier version
 
     actingAs($this->viewer)->delete(route('grp.chat.staff.slack.connect.delete'))->assertRedirect();
     expect(SlackMessage::where('slack_channel_id', $dm->id)->where('ts', ($this->ts)(4))->value('text'))->toBeNull();
+});
+
+function slackDirectHistoryFake(object $test, array $historyByChannel, ?Closure $onHistory = null): void
+{
+    \Illuminate\Support\Facades\Queue::fake();
+    \Illuminate\Support\Sleep::fake();
+    \Illuminate\Support\Facades\Http::fake(function (\Illuminate\Http\Client\Request $request) use ($test, $historyByChannel, $onHistory) {
+        $method  = \Illuminate\Support\Str::afterLast(parse_url($request->url(), PHP_URL_PATH), '/');
+        $data    = $request->data();
+        $channel = $data['channel'] ?? null;
+        $test->slackCalls[] = [$method, $channel, $request->header('Authorization')[0] ?? null];
+        if ($method === 'users.conversations') {
+            return \Illuminate\Support\Facades\Http::response(['ok' => true, 'channels' => array_map(fn (string $id) => ['id' => $id, str_starts_with($id, 'G') ? 'is_mpim' : 'is_im' => true], array_keys($historyByChannel))]);
+        }
+        if ($method === 'conversations.members') {
+            return \Illuminate\Support\Facades\Http::response(['ok' => true, 'members' => ["UVIEW{$test->s}", "UBEE{$test->s}"]]);
+        }
+        if ($method === 'conversations.history' && $onHistory && ($answer = $onHistory($channel, $data))) {
+            return $answer;
+        }
+        if ($method === 'conversations.history') {
+            return \Illuminate\Support\Facades\Http::response(['ok' => true, 'messages' => $historyByChannel[$channel] ?? []]);
+        }
+        if ($method === 'conversations.replies') {
+            return \Illuminate\Support\Facades\Http::response(['ok' => true, 'messages' => collect($historyByChannel[$channel] ?? [])->where('thread_ts', $data['ts'])->values()->all()]);
+        }
+
+        return \Illuminate\Support\Facades\Http::response(['ok' => true]);
+    });
+}
+
+test('Slack DM history: A\'s walk keeps A\'s words and stores B\'s as gaps with no text, skips bots, reads threads, shows A the progress; B\'s walk fills B\'s gaps; members only, INI-433', function () {
+    slackDirectSetup($this);
+    $a  = "UVIEW{$this->s}";
+    $b  = "UBEE{$this->s}";
+    $dm = "DDM{$this->s}";
+    $gm = "GMP{$this->s}";
+    $history = [
+        $dm => [($this->dm)($a, 1, ['reply_count' => 1]), ($this->dm)($b, 2), ($this->dm)('USLACKBOT', 3, ['bot_id' => 'B1'])],
+        $gm => [($this->dm)($b, 4, ['channel' => $gm])],
+    ];
+    $history[$dm][] = ($this->dm)($b, 5, ['thread_ts' => ($this->ts)(1)]);
+    slackDirectHistoryFake($this, $history);
+    $connection = ($this->connectPrivately)($this->viewer, $a);
+
+    $totals = \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->viewer);
+
+    $channel = SlackChannel::where('slack_id', $dm)->sole();
+    $rows    = SlackMessage::where('slack_channel_id', $channel->id)->orderBy('ts')->get()->keyBy('ts');
+    expect($totals['finished'])->toBeTrue()
+        ->and($rows->keys()->all())->toBe([($this->ts)(1), ($this->ts)(2), ($this->ts)(5)])
+        ->and($rows[($this->ts)(1)]->text)->toBe("secret words 1 of $a")
+        ->and($rows[($this->ts)(2)]->only(['text', 'data', 'slack_user_id']))->toBe(['text' => null, 'data' => null, 'slack_user_id' => $b])
+        ->and($rows[($this->ts)(5)]->text)->toBeNull()
+        ->and(SlackChannel::where('slack_id', $gm)->sole()->direct_type)->toBe('mpim')
+        ->and(\App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::progress($connection->refresh()))->toBe(['done' => 2, 'total' => 2, 'finished' => true])
+        ->and(SlackChannel::directVisibleTo($this->viewer)->whereKey($channel->id)->exists())->toBeTrue()
+        ->and(SlackChannel::directVisibleTo($this->stranger)->whereKey($channel->id)->exists())->toBeFalse();
+    $slackSection = collect(actingAs($this->viewer)->withoutVite()->get(route('grp.profile.edit'))->assertOk()->inertiaProps()['formData']['blueprint'])->firstWhere('key', 'slack');
+    expect($slackSection['fields']['slack_connection']['connection']['private']['history'])->toBe(['done' => 2, 'total' => 2, 'finished' => true]);
+
+    ($this->connectPrivately)($this->bee, $b);
+    \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->bee);
+
+    $rows = SlackMessage::where('slack_channel_id', $channel->id)->orderBy('ts')->get()->keyBy('ts');
+    expect($rows->pluck('text', 'ts')->all())->toBe([($this->ts)(1) => "secret words 1 of $a", ($this->ts)(2) => "secret words 2 of $b", ($this->ts)(5) => "secret words 5 of $b"])
+        ->and(SlackMessage::where('slack_channel_id', SlackChannel::where('slack_id', $gm)->value('id'))->sole()->text)->toBe("secret words 4 of $b");
+});
+
+test('Slack DM history: a revoked token ends the walk, asks to reconnect and hands over to the next person; after reconnecting it resumes without re-reading what was done, INI-433', function () {
+    slackDirectSetup($this);
+    $a        = "UVIEW{$this->s}";
+    $first    = "DONE{$this->s}";
+    $second   = "DTWO{$this->s}";
+    $revoked  = true;
+    slackDirectHistoryFake($this, [$first => [($this->dm)($a, 1, ['channel' => $first])], $second => [($this->dm)($a, 2, ['channel' => $second])]], function (?string $channel) use ($second, &$revoked) {
+        return $channel === $second && $revoked ? \Illuminate\Support\Facades\Http::response(['ok' => false, 'error' => 'token_revoked']) : null;
+    });
+    $connection = ($this->connectPrivately)($this->viewer, $a);
+    ($this->connectPrivately)($this->bee, "UBEE{$this->s}");
+
+    $totals = \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->viewer);
+    expect($totals['finished'])->toBeFalse()
+        ->and($totals['failed'])->not->toBe([])
+        ->and($connection->refresh()->needs_reconnect)->toBeTrue()
+        ->and(\App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::progress($connection))->toBe(['done' => 1, 'total' => 2, 'finished' => false]);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory && $job->getParameters() === [$this->bee->id]);
+
+    $revoked = false;
+    $connection->forceFill(['needs_reconnect' => false])->save();
+    $this->slackCalls = [];
+    $totals = \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->viewer);
+
+    $historyReads = collect($this->slackCalls)->where(0, 'conversations.history')->pluck(1)->all();
+    expect($totals['finished'])->toBeTrue()
+        ->and($historyReads)->toBe([$second])
+        ->and(SlackMessage::where('slack_channel_id', SlackChannel::where('slack_id', $second)->value('id'))->sole()->text)->toBe("secret words 2 of $a");
+});
+
+test('Slack DM history: switching off mid-walk stops it at the next page and keeps nothing from that page; a slice that runs out of time queues itself again, INI-433', function () {
+    slackDirectSetup($this);
+    $a     = "UVIEW{$this->s}";
+    $dm    = "DDM{$this->s}";
+    $other = "DOTH{$this->s}";
+    slackDirectHistoryFake($this, [$dm => [], $other => []], function (?string $channel) use ($a, $dm) {
+        if ($channel !== $dm) {
+            return null;
+        }
+        \App\Models\Chat\SlackConnection::where('slack_user_id', $a)->first()->endPrivateConsent('withdrawn');
+
+        return \Illuminate\Support\Facades\Http::response(['ok' => true, 'messages' => [($this->dm)($a, 1)], 'response_metadata' => ['next_cursor' => 'next']]);
+    });
+    ($this->connectPrivately)($this->viewer, $a);
+
+    $totals = \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->viewer);
+
+    expect($totals['finished'])->toBeFalse()
+        ->and(SlackMessage::where('slack_channel_id', SlackChannel::where('slack_id', $dm)->value('id'))->count())->toBe(0)
+        ->and(collect($this->slackCalls)->where(0, 'conversations.history')->count())->toBe(1);
+    \Illuminate\Support\Facades\Queue::assertNothingPushed();
+
+    slackDirectHistoryFake($this, [$dm => [], $other => []]);
+    ($this->connectPrivately)($this->viewer, $a);
+    $totals = \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::run($this->viewer, 0);
+    expect($totals['timed_out'])->toBeTrue();
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory && $job->getParameters() === [$this->viewer->id]);
 });
 
 function slackDirectStream(SlackChannel $channel, User $viewer): array

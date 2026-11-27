@@ -59,6 +59,7 @@ class ShowSlackSyncHealth extends OrgAction
         'slack:sync-pins-and-bookmarks' => '03:50',
         'slack:sync-emojis'             => '03:55',
         'slack:sync-private-channels'   => '04:00',
+        'slack:bring-direct-history'    => '04:20',
     ];
 
     private const string STATUS_SQL = "case when slack_channels.is_ignored then 'ignored' when slack_channels.deleted_in_slack_at is not null then 'deleted' when not slack_channels.is_public then 'private' when slack_channels.is_archived then 'archived' when not slack_channels.is_member then 'not_joined' else 'kept' end";

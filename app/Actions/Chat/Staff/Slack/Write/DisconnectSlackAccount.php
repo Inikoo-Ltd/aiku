@@ -64,10 +64,14 @@ class DisconnectSlackAccount
         if (!$workspace || ($teamId !== null && !is_string($teamId))) {
             return StartSlackConnection::backToSettings(StartSlackConnection::ERROR_KEY, __('That Slack workspace is not set up on this server, so nothing was disconnected'));
         }
-        if ($workspace->isMain() && $connection = SlackConnection::main()->where('user_id', $request->user()->id)->first()) {
+        $connection = $workspace->isMain() ? SlackConnection::main()->where('user_id', $request->user()->id)->first() : null;
+        if ($connection) {
             PurgeSlackDirectWords::run($connection->slack_user_id);
         }
         $revoked      = $this->handle($request->user(), $mayCallSlack, $workspace);
+        if ($connection) {
+            PurgeSlackDirectWords::run($connection->slack_user_id);
+        }
 
         return StartSlackConnection::backToSettings(
             StartSlackConnection::NOTICE_KEY,

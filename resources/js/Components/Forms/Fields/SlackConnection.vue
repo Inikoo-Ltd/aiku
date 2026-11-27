@@ -155,6 +155,10 @@ const connectTo = (url: string) => {
                         </template>
                         <template v-else>{{ ctrans('Off. Bring your direct messages, group chats and private channels to Verba') }}</template>
                     </p>
+                    <p v-if="privateSettings.on && privateSettings.history" class="text-gray-500">
+                        <template v-if="privateSettings.history.finished">{{ ctrans('All your earlier direct messages and group chats are in Verba') }}</template>
+                        <template v-else>{{ ctrans('Bringing your earlier direct messages and group chats: :done of :total', { done: privateSettings.history.done, total: privateSettings.history.total }) }}</template>
+                    </p>
                 </div>
                 <ToggleSwitch :model-value="!!privateSettings.on" :disabled="isWithdrawing" :aria-label="ctrans('Private conversations')" @update:model-value="togglePrivate" />
             </div>

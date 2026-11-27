@@ -30,6 +30,9 @@ use Illuminate\Support\Facades\DB;
  * @property \Illuminate\Support\Carbon|null $private_consented_at
  * @property string|null $private_consent_version
  * @property string|null $private_terms_version
+ * @property \Illuminate\Support\Carbon|null $direct_history_started_at
+ * @property int|null $direct_history_total
+ * @property \Illuminate\Support\Carbon|null $direct_history_finished_at
  */
 class SlackConnection extends Model
 {
@@ -45,6 +48,8 @@ class SlackConnection extends Model
             'revoked_at'      => 'datetime',
             'needs_reconnect'      => 'boolean',
             'private_consented_at' => 'datetime',
+            'direct_history_started_at'  => 'datetime',
+            'direct_history_finished_at' => 'datetime',
         ];
     }
 
@@ -129,7 +134,14 @@ class SlackConnection extends Model
             return;
         }
         $this->logPrivateConsent($event);
-        $this->forceFill(['private_consented_at' => null, 'private_consent_version' => null, 'private_terms_version' => null])->save();
+        $this->forceFill([
+            'private_consented_at'       => null,
+            'private_consent_version'    => null,
+            'private_terms_version'      => null,
+            'direct_history_started_at'  => null,
+            'direct_history_total'       => null,
+            'direct_history_finished_at' => null,
+        ])->save();
     }
 
     private function logPrivateConsent(string $event): void

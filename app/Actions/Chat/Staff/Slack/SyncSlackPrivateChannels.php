@@ -103,14 +103,14 @@ class SyncSlackPrivateChannels
         }
 
         foreach ($this->optedInConnections($onlyUserId) as $connection) {
-            $client = $this->clientFor($connection);
+            $client = self::clientFor($connection);
             if (!$client) {
                 continue;
             }
             try {
                 $listedByPerson = $this->listPrivateChannels($client, $onlySlackId);
             } catch (Throwable $exception) {
-                $this->flagReconnect($connection, $exception);
+                self::flagReconnect($connection, $exception);
                 $totals['failed'][] = "connection of user $connection->user_id: {$exception->getMessage()}";
 
                 continue;
@@ -172,7 +172,7 @@ class SyncSlackPrivateChannels
     /**
      * Re-read before each use of a person's token, so a person who withdrew while the run was going is never used again.
      */
-    private static function stillOptedIn(int $userId): bool
+    public static function stillOptedIn(int $userId): bool
     {
         $connection = self::optedInConnectionsQuery()->where('user_id', $userId)->first();
 
@@ -205,7 +205,7 @@ class SyncSlackPrivateChannels
     /**
      * A person's token reads only where a person's token may write: a local machine can hold a copy of production tokens.
      */
-    private function clientFor(SlackConnection $connection): ?PendingRequest
+    public static function clientFor(SlackConnection $connection): ?PendingRequest
     {
         if (!app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
             return null;
@@ -219,7 +219,7 @@ class SyncSlackPrivateChannels
         }
     }
 
-    private function flagReconnect(SlackConnection $connection, Throwable $exception): void
+    public static function flagReconnect(SlackConnection $connection, Throwable $exception): void
     {
         foreach (SlackWriteClient::RECONNECT_ERRORS as $error) {
             if (str_ends_with($exception->getMessage(), ": $error")) {

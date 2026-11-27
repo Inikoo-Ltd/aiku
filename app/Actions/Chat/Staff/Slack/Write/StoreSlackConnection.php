@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Actions\Chat\Staff\Slack\BringSlackDirectHistory;
 use App\Actions\Chat\Staff\Slack\FillSlackDirectGaps;
 use App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords;
 use App\Actions\Chat\Staff\Slack\SyncSlackPrivateChannels;
@@ -111,7 +112,7 @@ class StoreSlackConnection
         if ($private) {
             $connection->grantPrivateConsent($private['consent_version'], $private['terms_version']);
             SyncSlackPrivateChannels::dispatch($user->group, true, null, $user->id);
-            FillSlackDirectGaps::dispatch($user->id);
+            BringSlackDirectHistory::dispatch($user->id);
         } elseif (array_diff(SlackWriteAccess::PRIVATE_SCOPES, $granted) !== []) {
             if ($connection->private_consented_at !== null) {
                 PurgeSlackDirectWords::run($connection->slack_user_id);

@@ -223,6 +223,7 @@ class EditProfile
             'private'            => SlackWriteAccess::privateOptInOpen() ? [
                 'on'              => (bool) $connection?->hasPrivateConsent(),
                 'consented_at'    => $connection?->hasPrivateConsent() ? $connection->private_consented_at : null,
+                'history'         => $connection?->hasPrivateConsent() ? \App\Actions\Chat\Staff\Slack\BringSlackDirectHistory::progress($connection) : null,
                 'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION,
                 'terms_version'   => SlackWriteAccess::PRIVATE_TERMS_VERSION,
                 'start_route'     => ['name' => 'grp.chat.staff.slack.connect.private.start'],
