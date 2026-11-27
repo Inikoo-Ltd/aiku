@@ -52,6 +52,10 @@ type Dashboard = {
     by_resolution: { label: string, claims: number }[]
     by_reason: { reason: string, claims: number, quantity: number }[]
     by_product: { code: string, name: string | null, claims: number, quantity: number }[]
+    by_carrier: { label: string, claims: number, lines: number }[]
+    by_warehouse: { label: string, claims: number, lines: number }[]
+    by_packer: { label: string, claims: number, lines: number }[]
+    auto_settled_merlin: number
     settings: ClaimSettings
 }
 
@@ -73,6 +77,11 @@ const percent = (part: number, whole: number) => whole ? Math.round(part * 100 /
 
 const bucketLabel = (date: string) => new Date(date + "T00:00:00").toLocaleDateString(undefined, props.dashboard.bucket === "month" ? { month: "short", year: "numeric" } : { day: "numeric", month: "short" })
 
+const deliverySections = computed(() => [
+    { key: "carrier", title: ctrans("Claims by carrier"), column: ctrans("Carrier"), rows: props.dashboard.by_carrier },
+    { key: "warehouse", title: ctrans("Claims by warehouse"), column: ctrans("Warehouse"), rows: props.dashboard.by_warehouse },
+    { key: "packer", title: ctrans("Claims by packer"), column: ctrans("Packer"), rows: props.dashboard.by_packer },
+])
 const topBy = ref<"value" | "claims" | "share" | "lost">("value")
 const topOptions = computed(() => [
     { label: currencySymbol.value || ctrans("Value"), value: "value" },
@@ -217,7 +226,7 @@ const status = computed(() => {
             <div class="rounded border p-4">
                 <p class="text-xs text-gray-500">{{ ctrans("Claims made") }}</p>
                 <p class="text-2xl font-semibold tabular-nums text-gray-800">{{ n(dashboard.made) }}</p>
-                <p class="text-xs text-gray-500">{{ ctrans(":count in Merlin", { count: n(dashboard.from_merlin) }) }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans(":count in Merlin", { count: n(dashboard.from_merlin) }) }}<span v-if="dashboard.from_merlin"> · {{ ctrans(":share settled there with no person", { share: percent(dashboard.auto_settled_merlin, dashboard.from_merlin) }) }}</span></p>
             </div>
             <div class="rounded border p-4">
                 <p class="text-xs text-gray-500">{{ ctrans("Settled") }}</p>
@@ -303,6 +312,17 @@ const status = computed(() => {
                 <p v-if="!dashboard.by_resolution.length" class="text-xs text-gray-400">{{ ctrans("No claims in this period") }}</p>
                 <table v-else class="w-full text-sm">
                     <tbody><tr v-for="row in dashboard.by_resolution" :key="row.label" class="border-t first:border-t-0"><td class="py-1">{{ row.label }}</td><td class="py-1 pl-4 text-right tabular-nums">{{ n(row.claims) }}</td><td class="py-1 pl-4 text-right text-xs text-gray-500">{{ percent(row.claims, dashboard.made) }}</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div v-for="section in deliverySections" :key="section.key" class="rounded border p-4">
+                <p class="mb-2 text-sm font-semibold text-gray-700">{{ section.title }}</p>
+                <p v-if="!section.rows.length" class="text-xs text-gray-400">{{ ctrans("No claims in this period") }}</p>
+                <table v-else class="w-full text-sm">
+                    <thead class="whitespace-nowrap text-left text-xs text-gray-500"><tr><th class="pb-1 font-semibold">{{ section.column }}</th><th class="pb-1 pl-4 text-right font-semibold">{{ ctrans("Claims") }}</th><th class="pb-1 pl-4 text-right font-semibold">{{ ctrans("Lines") }}</th><th class="pb-1 pl-4 text-right font-semibold">%</th></tr></thead>
+                    <tbody><tr v-for="row in section.rows" :key="row.label" class="border-t"><td class="py-1">{{ row.label }}</td><td class="py-1 pl-4 text-right tabular-nums">{{ n(row.claims) }}</td><td class="py-1 pl-4 text-right tabular-nums">{{ n(row.lines) }}</td><td class="py-1 pl-4 text-right text-xs tabular-nums text-gray-500">{{ percent(row.claims, dashboard.made) }}</td></tr></tbody>
                 </table>
             </div>
         </div>

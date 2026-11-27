@@ -147,8 +147,48 @@ class ShowCustomerClaimsDashboard extends OrgAction
                 ->map(fn ($total, $resolution) => ['label' => ShowCustomerClaim::resolutionLabel($resolution), 'claims' => (int) $total])->values()->all(),
             'by_reason'      => $byReason,
             'by_product'     => $byProduct,
+            'by_carrier'     => $this->byDelivery($shop, $from, $to, 'carrier'),
+            'by_warehouse'   => $this->byDelivery($shop, $from, $to, 'warehouse'),
+            'by_packer'      => $this->byDelivery($shop, $from, $to, 'packer'),
+            'auto_settled_merlin' => (clone $settled)->where('source', CustomerClaimSourceEnum::MERLIN)->whereNull('reviewed_by_user_id')->count(),
             'settings'       => GetCustomerClaimSettings::for($shop),
         ];
+    }
+
+    /**
+     * Item claims in the period by where the claimed items left from: the carrier that took the
+     * parcel, the warehouse, or the person who packed it, read from the delivery note items each
+     * claim line points at. Lines with no delivery note item (old backfilled claims) are left out.
+     *
+     * @return array<int, array{label: string, claims: int, lines: int}>
+     */
+    private function byDelivery(Shop $shop, $from, $to, string $by): array
+    {
+        $query = DB::table('customer_claim_lines')
+            ->join('customer_claims', 'customer_claims.id', '=', 'customer_claim_lines.customer_claim_id')
+            ->crossJoin(DB::raw('lateral jsonb_array_elements(coalesce(customer_claim_lines.delivery_note_items::jsonb, \'[]\'::jsonb)) as claimed_item'))
+            ->join('delivery_note_items', 'delivery_note_items.id', '=', DB::raw("(claimed_item->>'id')::bigint"))
+            ->join('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+            ->where('customer_claims.shop_id', $shop->id)->where('customer_claims.kind', CustomerClaimKindEnum::ITEMS->value)->whereBetween('customer_claims.created_at', [$from, $to]);
+
+        $label = match ($by) {
+            'carrier'   => 'shippers.name',
+            'warehouse' => 'warehouses.name',
+            default     => 'coalesce(nullif(users.contact_name, \'\'), users.username)',
+        };
+
+        match ($by) {
+            'carrier'   => $query->join('model_has_shipments', fn ($join) => $join->on('model_has_shipments.model_id', '=', 'delivery_notes.id')->where('model_has_shipments.model_type', 'DeliveryNote'))
+                ->join('shipments', 'shipments.id', '=', 'model_has_shipments.shipment_id')
+                ->join('shippers', 'shippers.id', '=', 'shipments.shipper_id'),
+            'warehouse' => $query->join('warehouses', 'warehouses.id', '=', 'delivery_notes.warehouse_id'),
+            default     => $query->join('users', 'users.id', '=', 'delivery_notes.packer_user_id'),
+        };
+
+        return $query->selectRaw("$label as label, count(distinct customer_claims.id) as claims, count(distinct customer_claim_lines.id) as lines")
+            ->groupByRaw($label)->orderByDesc('claims')->limit(self::TOP)->get()
+            ->map(fn ($row) => ['label' => (string) $row->label, 'claims' => (int) $row->claims, 'lines' => (int) $row->lines])
+            ->all();
     }
 
     /**

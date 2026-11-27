@@ -107,6 +107,8 @@ class StoreCustomerClaim
                 throw ValidationException::withMessages(['box_photo' => __('Please add a photo of the outer box.')]);
             }
 
+            $this->refuseParcelStillOnItsWay($order, $data['lines']);
+
             $plan = PlanChatClaim::make()->planOrder($order, $data['resolution'], $items);
             if ($plan['error']) {
                 throw ValidationException::withMessages(['lines' => __('Some of these items are no longer left to claim on this order.')]);
@@ -116,6 +118,12 @@ class StoreCustomerClaim
             $claim = $this->createRecord($customer, $order, $plan, $data, $source, $conversation, $value);
         } finally {
             $lock->release();
+        }
+
+        try {
+            CheckCustomerClaimDelivery::run($claim);
+        } catch (Throwable $exception) {
+            report($exception);
         }
 
         if ($this->autoApproves($claim) && CheckCustomerClaimPhotos::run($claim)) {
@@ -140,6 +148,32 @@ class StoreCustomerClaim
         SendCustomerClaimEmail::run($claim);
 
         return $claim;
+    }
+
+    /**
+     * A parcel the carrier still has on its way is not lost yet: the customer is asked to wait until
+     * the carrier has had TRANSIT_PATIENCE_DAYS since dispatch. Only carriers that report tracking
+     * back can say so; any other parcel is claimed and goes to a person.
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    private function refuseParcelStillOnItsWay(Order $order, array $lines): void
+    {
+        if (!collect($lines)->contains(fn (array $line) => (string) $line['reason'] === DeliveryNoteItemReplacementReasonEnum::LOST_IN_TRANSIT->value)) {
+            return;
+        }
+
+        $tracking = CheckCustomerClaimDelivery::make()->tracking($order);
+        if ($tracking['state'] !== 'in_transit') {
+            return;
+        }
+
+        $carrier = collect($tracking['shipments'])->pluck('carrier')->filter()->first();
+        $date    = ($order->dispatched_at ?? now())->copy()->addDays(CheckCustomerClaimDelivery::TRANSIT_PATIENCE_DAYS)->locale(app()->getLocale())->isoFormat('LL');
+
+        throw ValidationException::withMessages(['lines' => $carrier
+            ? __('Your parcel is still on its way with :carrier. Please give it a few more days. If it has not arrived by :date, report it again.', ['carrier' => $carrier, 'date' => $date])
+            : __('Your parcel is still on its way. Please give it a few more days. If it has not arrived by :date, report it again.', ['date' => $date])]);
     }
 
     /**
@@ -271,6 +305,37 @@ class StoreCustomerClaim
         return $autoApproved + (float) $claim->value <= $allowance;
     }
 
+    /**
+     * The delivery check in plain words for the review task: where the carrier last saw the parcel,
+     * and which missing items our packers packed.
+     */
+    public static function deliveryCheckSummary(CustomerClaim $claim): ?string
+    {
+        $check = data_get($claim->result, 'delivery_check', []);
+        $lines = [];
+
+        if ($tracking = $check['tracking'] ?? null) {
+            $lines[] = match ($tracking['state']) {
+                'delivered'        => 'Carrier says the parcel was delivered.',
+                'partly_delivered' => 'Carrier says part of the delivery was delivered.',
+                'returning'        => 'Carrier says the parcel is coming back to us.',
+                'overdue'          => 'Carrier tracking has not moved for too long: likely lost.',
+                default            => 'No carrier tracking for this parcel: check with the carrier.',
+            };
+            foreach ($tracking['shipments'] as $shipment) {
+                $lines[] = trim(($shipment['carrier'] ?? '').' '.($shipment['tracking'] ?? '').': '.($shipment['status'] ?? 'no status'));
+            }
+        }
+
+        foreach ($check['packing'] ?? [] as $packing) {
+            $lines[] = $packing['is_packed']
+                ? $packing['code'].': packed in full ('.$packing['packed'].')'.($packing['packers'] ? ' by '.implode(', ', $packing['packers']) : '')
+                : $packing['code'].': packed '.$packing['packed'].' of '.$packing['dispatched'];
+        }
+
+        return $lines ? "Our records:\n".implode("\n", $lines) : null;
+    }
+
     private function askCustomerServices(CustomerClaim $claim): void
     {
         if (!in_array(self::REVIEW_DEPARTMENT, array_column(StaffTask::departments($claim->group_id), 'value'), true)) {
@@ -287,6 +352,7 @@ class StoreCustomerClaim
                 'Asked for: '.str_replace('_', ' ', $claim->resolution),
                 $claim->lines->map(fn ($line) => $line->code.' x'.(float) $line->quantity.' · '.$line->reason->label())->implode("\n"),
                 $claim->comment ? 'Customer comment: '.$claim->comment : null,
+                self::deliveryCheckSummary($claim),
             ])),
             'department'  => self::REVIEW_DEPARTMENT,
             'priority'    => ChatPriorityEnum::NORMAL->value,

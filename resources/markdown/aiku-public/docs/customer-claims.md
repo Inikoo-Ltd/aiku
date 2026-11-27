@@ -1,7 +1,7 @@
 ---
 title: Claims - damaged, missing and wrong items, refunds and replacements
 summary: Every refund, replacement and free item a customer gets back is a claim - customers make their own in Merlin, staff make theirs with + Claim, and the Claims pages show them all.
-date: 2026-11-22
+date: 2026-11-27
 tags: crm, claims, ordering, refunds
 category: help-desk
 help_routes: grp.org.shops.show.claims
@@ -16,7 +16,7 @@ A <b>claim</b> is anything a customer gets back from us: credit to their balance
 
 Open <b>Claims</b> in the menu of your shop. It has three tabs:
 
-- <b>Dashboard</b> - claims waiting, made, settled and rejected in the last 7, 30 or 90 days, the value settled, how fast claims are reviewed, why customers claim, which products are claimed most, and how many claims customers made themselves.
+- <b>Dashboard</b> - claims waiting, made, settled and rejected in the last 7, 30 or 90 days, the value settled, how fast claims are reviewed, why customers claim, which products are claimed most, how many claims customers made themselves and how many of those Merlin settled with no person, and the claims by <b>carrier</b>, <b>warehouse</b> and <b>packer</b> of the parcel they came from.
 - <b>Pending</b> - claims waiting for a person, oldest first. This is the queue to work every day.
 - <b>Done</b> - settled and rejected claims, newest first, with a filter for each.
 
@@ -24,18 +24,40 @@ Click a claim to open it: the items, quantities and reasons, the customer's phot
 
 ## Claims customers make themselves
 
-When a customer tells Merlin something arrived damaged, broken, missing or wrong, Merlin opens the claim form in the chat. The customer ticks the items, chooses a reason, adds photos (needed for damaged, wrong and faulty items, plus one of the box) and picks what they want: credit to their balance, a replacement now, or the items free in their next order.
+Customers open the same claim form in four places:
+
+- <b>Merlin</b> - when a customer tells Merlin something arrived damaged, broken, missing or wrong, Merlin opens the form in the chat.
+- <b>Their account</b> - every dispatched order has a <b>Report a problem</b> button.
+- <b>The dispatch email</b> - the line "Something broken, missing or wrong? Report a problem" opens the order in their account with the form open.
+- <b>The website chat</b> - signed-in customers get a <b>Problem with an order</b> button.
+
+In the form the customer ticks the items, chooses a reason, adds photos (needed for damaged, wrong and faulty items, plus one of the box) and picks what they want: credit to their balance, a replacement now, or the items free in their next order.
 
 What happens next depends on the shop's settings:
 
 - If the claim is small enough and within the customer's allowance, it is settled at once and the customer sees the result in the chat.
 - Otherwise it waits in <b>Pending</b>, and customer services get a task with a link to it.
 
+Customers can claim for the number of days after dispatch set in the shop's settings (60 unless changed). They get an email when the claim is received, saying when we will answer, and another when it is approved or rejected. Later, they can ask Merlin what happened to their claim: Merlin reads it from the claim, including whether a replacement has left the warehouse and its tracking.
+
+### Parcels that never arrived
+
+The customer chooses <b>The whole parcel never arrived</b>. Where the carrier sends its tracking back to us (GLS Spain today), the form checks it first:
+
+- If the carrier still has the parcel on its way, the claim is not made: the customer is asked to wait and to report it again if it has not arrived 7 days after dispatch.
+- If the carrier says it was delivered, is coming back to us, or its tracking has stopped moving, the claim is made and waits for a person, with what the carrier says on the claim page.
+
+For carriers that do not send tracking back, the claim is made and waits for a person: check with the carrier. A lost parcel is never approved automatically.
+
+### Items missing from the parcel
+
+For each missing item, the claim page shows how many our packers packed, who packed them and when. "Packed in full" does not mean the customer is wrong, but it is worth a look before approving. Parcels are not weighed at packing, so there is no weight to compare.
+
 ## Reviewing a claim
 
 Open the claim from <b>Pending</b> or from the task. Check the photos and the customer's earlier claims, then:
 
-- <b>Approve</b> - settles it the way the customer asked: the credit goes to their balance, the replacement goes to the warehouse, or the items wait for their next order. The window says exactly what will happen before you confirm.
+- <b>Approve</b> - settles it the way the customer asked: the credit goes to their balance, the replacement goes to the warehouse, or the items wait for their next order. The window says exactly what will happen before you confirm. Tick <b>Ask the customer to send the items back</b> when you want them returned, for example a wrong item: the approved email then has a link to a <b>claim slip</b> with the claim number as a barcode, the items and our return address, for the customer to print and put in the parcel. No carrier label is made, so tell the customer how to send it if that matters.
 - <b>Reject</b> - choose a reason; a note is needed when the reason is <b>Other</b>.
 
 You need to be able to edit the shop's customers to approve a credit or next-order claim, and to edit its orders to approve a replacement.
@@ -60,6 +82,8 @@ In shops not yet on claims only, the usual buttons stay, and every replacement, 
 
 Organisation admins see <b>Settings</b> on the Claims dashboard:
 
-- <b>Customers can claim themselves</b> - turns the claim form in Merlin on or off.
+- <b>Customers can claim themselves</b> - turns the claim form on or off in Merlin, the account, the dispatch email and the website chat.
+- <b>Claims taken for</b> - how many days after dispatch customers can still claim on an order.
+- <b>We answer claims within</b> - the working hours promised in the email a customer gets when their claim waits for customer services.
 - <b>Approve small claims automatically</b> - when off, every customer claim waits for a person. When on, a claim is settled with no person only if it is no bigger than the <b>largest claim approved automatically</b>, the customer has made fewer claims than <b>most claims</b> in the <b>days counted</b>, and everything approved automatically for them in those days, this claim included, stays within their allowance: the larger of <b>allowance at least</b> and the <b>% of what they bought</b>. Claims a person approves do not count, and lost parcels always go to a person.
 - <b>Work through claims only</b> - switches the shop to + Claim. It cannot be switched off once on, so tell your customer services team before you turn it on.

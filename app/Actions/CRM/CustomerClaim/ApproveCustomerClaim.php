@@ -18,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Customer services approve a customer's claim from its page: it is settled with the Claim panel's
  * actions, by whoever may settle that outcome on the shop (orders edit for a replacement, CRM edit
- * otherwise).
+ * otherwise). They can ask for the items back, which puts the claim slip in the approved email.
  */
 class ApproveCustomerClaim extends OrgAction
 {
@@ -27,6 +27,13 @@ class ApproveCustomerClaim extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         return ShowCustomerClaim::canSettle($this->customerClaim, $request->user());
+    }
+
+    public function rules(): array
+    {
+        return [
+            'return_items' => ['sometimes', 'boolean'],
+        ];
     }
 
     /**
@@ -39,6 +46,9 @@ class ApproveCustomerClaim extends OrgAction
 
         $claim = SettleCustomerClaim::run($customerClaim, $request->user());
         if ($claim->wasChanged('state')) {
+            if (!empty($this->validatedData['return_items'])) {
+                $claim->update(['result' => array_merge($claim->result ?? [], ['return_requested' => true])]);
+            }
             SendCustomerClaimEmail::run($claim);
         }
 

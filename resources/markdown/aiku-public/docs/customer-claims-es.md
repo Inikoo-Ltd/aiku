@@ -1,8 +1,8 @@
 ---
 title: Reclamaciones - artículos dañados, que faltan o equivocados, reembolsos y reposiciones
 summary: Todo reembolso, reposición o artículo gratis que recibe un cliente es una reclamación - los clientes crean la suya en Merlin, el personal crea la suya con + Claim, y las páginas de Claims las muestran todas.
-date: 2026-11-22
-source_date: 2026-11-22
+date: 2026-11-27
+source_date: 2026-11-27
 tags: crm, claims, ordering, refunds
 category: help-desk
 help_routes: grp.org.shops.show.claims
@@ -17,7 +17,7 @@ Una <b>reclamación</b> (claim) es todo lo que un cliente recibe de nosotros: cr
 
 Abre <b>Claims</b> (Reclamaciones) en el menú de tu tienda. Tiene tres pestañas:
 
-- <b>Dashboard</b> (Panel) - reclamaciones en espera, creadas, resueltas y rechazadas en los últimos 7, 30 o 90 días, el valor resuelto, con qué rapidez se revisan las reclamaciones, por qué reclaman los clientes, qué productos se reclaman más y cuántas reclamaciones crearon los propios clientes.
+- <b>Dashboard</b> (Panel) - reclamaciones en espera, creadas, resueltas y rechazadas en los últimos 7, 30 o 90 días, el valor resuelto, con qué rapidez se revisan las reclamaciones, por qué reclaman los clientes, qué productos se reclaman más, cuántas reclamaciones crearon los propios clientes y cuántas de ellas resolvió Merlin sin intervención de una persona, y las reclamaciones por <b>transportista</b>, <b>almacén</b> y <b>empaquetador</b> del paquete del que proceden.
 - <b>Pending</b> (Pendientes) - reclamaciones que esperan a una persona, las más antiguas primero. Esta es la cola que hay que trabajar cada día.
 - <b>Done</b> (Hechas) - reclamaciones resueltas y rechazadas, las más recientes primero, con un filtro para cada tipo.
 
@@ -25,18 +25,40 @@ Haz clic en una reclamación para abrirla: los artículos, cantidades y motivos,
 
 ## Reclamaciones que crean los clientes
 
-Cuando un cliente le dice a Merlin que algo llegó dañado, roto, que falta o que es equivocado, Merlin abre el formulario de reclamación en el chat. El cliente marca los artículos, elige un motivo, añade fotos (obligatorias para artículos dañados, equivocados o defectuosos, y además una de la caja) y elige qué quiere: crédito en su saldo, una reposición ahora o los artículos gratis en su próximo pedido.
+Los clientes abren el mismo formulario de reclamación en cuatro sitios:
+
+- <b>Merlin</b> - cuando un cliente le dice a Merlin que algo llegó dañado, roto, que falta o que es equivocado, Merlin abre el formulario en el chat.
+- <b>Su cuenta</b> - cada pedido enviado tiene un botón <b>Informar de un problema</b>.
+- <b>El correo de envío</b> - la línea "Something broken, missing or wrong? Report a problem" abre el pedido en su cuenta con el formulario abierto.
+- <b>El chat de la web</b> - los clientes que han iniciado sesión tienen un botón <b>Problema con un pedido</b>.
+
+En el formulario el cliente marca los artículos, elige un motivo, añade fotos (obligatorias para artículos dañados, equivocados o defectuosos, y además una de la caja) y elige qué quiere: crédito en su saldo, una reposición ahora o los artículos gratis en su próximo pedido.
 
 Lo que ocurre después depende de los ajustes de la tienda:
 
 - Si la reclamación es lo bastante pequeña y está dentro del límite del cliente, se resuelve al instante y el cliente ve el resultado en el chat.
 - Si no, queda en <b>Pending</b>, y atención al cliente recibe una tarea con un enlace a ella.
 
+Los clientes pueden reclamar durante el número de días después del envío que indiquen los ajustes de la tienda (60 si no se cambia). Reciben un correo cuando se recibe la reclamación, que indica cuándo les responderemos, y otro cuando se aprueba o se rechaza. Más adelante, pueden preguntarle a Merlin qué ha pasado con su reclamación: Merlin lo lee de la reclamación, incluido si una reposición ha salido del almacén y su seguimiento.
+
+### Paquetes que nunca llegaron
+
+El cliente elige <b>El paquete completo nunca llegó</b>. Cuando el transportista nos devuelve su seguimiento (hoy GLS España), el formulario lo comprueba primero:
+
+- Si el transportista todavía tiene el paquete en camino, la reclamación no se crea: se le pide al cliente que espere y que vuelva a informar si no ha llegado 7 días después del envío.
+- Si el transportista dice que se entregó, que vuelve a nosotros o que su seguimiento se ha detenido, la reclamación se crea y espera a una persona, con lo que dice el transportista en la página de la reclamación.
+
+Para los transportistas que no nos devuelven el seguimiento, la reclamación se crea y espera a una persona: consulta con el transportista. Un paquete perdido nunca se aprueba automáticamente.
+
+### Artículos que faltan en el paquete
+
+Por cada artículo que falta, la página de la reclamación muestra cuántos empaquetaron nuestros empaquetadores, quién los empaquetó y cuándo. "Empaquetado completo" no significa que el cliente se equivoque, pero conviene revisarlo antes de aprobar. Los paquetes no se pesan al empaquetar, así que no hay peso con el que comparar.
+
 ## Revisar una reclamación
 
 Abre la reclamación desde <b>Pending</b> o desde la tarea. Revisa las fotos y las reclamaciones anteriores del cliente, y después:
 
-- <b>Approve</b> (Aprobar) - la resuelve tal como la pidió el cliente: el crédito va a su saldo, la reposición va al almacén, o los artículos esperan a su próximo pedido. La ventana indica exactamente qué va a pasar antes de que confirmes.
+- <b>Approve</b> (Aprobar) - la resuelve tal como la pidió el cliente: el crédito va a su saldo, la reposición va al almacén, o los artículos esperan a su próximo pedido. La ventana indica exactamente qué va a pasar antes de que confirmes. Marca <b>Pedir al cliente que devuelva los artículos</b> cuando quieras que los devuelva, por ejemplo un artículo equivocado: el correo de aprobación lleva entonces un enlace a una <b>hoja de reclamación</b> con el número de la reclamación como código de barras, los artículos y nuestra dirección de devolución, para que el cliente la imprima y la meta en el paquete. No se crea ninguna etiqueta del transportista, así que dile al cliente cómo enviarlo si es importante.
 - <b>Reject</b> (Rechazar) - elige un motivo; hace falta una nota cuando el motivo es <b>Other</b> (Otro).
 
 Necesitas poder editar los clientes de la tienda para aprobar una reclamación de crédito o de próximo pedido, y poder editar sus pedidos para aprobar una reposición.
@@ -61,6 +83,8 @@ En las tiendas que aún no trabajan solo con reclamaciones, los botones habitual
 
 Los administradores de la organización ven <b>Settings</b> (Ajustes) en el panel de Claims:
 
-- <b>Customers can claim themselves</b> - activa o desactiva el formulario de reclamación en Merlin.
+- <b>Customers can claim themselves</b> - activa o desactiva el formulario de reclamación en Merlin, la cuenta, el correo de envío y el chat de la web.
+- <b>Reclamaciones admitidas durante</b> - cuántos días después del envío pueden los clientes seguir reclamando sobre un pedido.
+- <b>Respondemos a las reclamaciones en</b> - las horas laborables que se prometen en el correo que recibe un cliente cuando su reclamación espera a atención al cliente.
 - <b>Approve small claims automatically</b> - si está desactivado, toda reclamación de un cliente espera a una persona. Si está activado, una reclamación se resuelve sin intervención de una persona solo si no supera la <b>largest claim approved automatically</b>, el cliente ha hecho menos reclamaciones que <b>most claims</b> en los <b>days counted</b>, y todo lo aprobado automáticamente para él en esos días, incluida esta reclamación, se mantiene dentro de su límite: el mayor entre <b>allowance at least</b> y el <b>% of what they bought</b>. Las reclamaciones que aprueba una persona no cuentan, y los paquetes perdidos siempre pasan por una persona.
 - <b>Work through claims only</b> - cambia la tienda a + Claim. Una vez activado no se puede desactivar, así que avisa a tu equipo de atención al cliente antes de activarlo.

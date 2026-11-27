@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\CustomerClaim;
 
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -37,6 +38,8 @@ class UpdateCustomerClaimSettings extends OrgAction
             'allowance_floor'      => ['required', 'numeric', 'min:0', 'max:100000'],
             'allowance_share'      => ['required', 'numeric', 'min:0', 'max:100'],
             'max_claims_in_window' => ['required', 'integer', 'min:1', 'max:1000'],
+            'claim_days'           => ['sometimes', 'integer', 'min:1', 'max:'.CheckClaimCompensation::MAX_AGE_DAYS],
+            'reply_hours'          => ['sometimes', 'integer', 'min:1', 'max:720'],
             'framework'            => ['sometimes', 'boolean'],
         ];
     }

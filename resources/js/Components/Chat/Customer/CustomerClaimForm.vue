@@ -27,6 +27,7 @@ export type ClaimSummary = {
     value?: number
     currency_code: string | null
     replacement: string | null
+    slip_url?: string | null
     rejection?: { reason: string, note: string | null } | null
     lines: { code: string, name: string, quantity: number, reason?: string }[]
 }
@@ -201,6 +202,10 @@ const submit = async () => {
                 <p v-if="claim.rejection?.note" class="whitespace-pre-line text-gray-700">{{ claim.rejection.note }}</p>
                 <p class="text-gray-600">{{ ctrans("If you think this is wrong, reply here and ask to talk to a person.") }}</p>
             </div>
+            <p v-if="claim.state === 'settled' && claim.slip_url" class="text-xs text-gray-600">
+                {{ ctrans("Please send the items back to us with the claim slip in the parcel.") }}
+                <a :href="claim.slip_url" target="_blank" rel="noopener" class="underline">{{ ctrans("Print the claim slip") }}</a>
+            </p>
             <table class="w-full text-xs text-gray-600">
                 <tbody>
                     <tr v-for="line in claim.lines" :key="line.code" class="align-top">

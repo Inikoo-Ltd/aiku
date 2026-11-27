@@ -107,8 +107,8 @@ class GetCustomerClaimForm
 
         return [
             'order'           => ['id' => $order->id, 'reference' => $order->reference, 'dispatched_at' => $order->dispatched_at?->toIso8601String()],
-            'too_old'         => $case['too_old'],
-            'max_age_days'    => $case['max_age_days'],
+            'too_old'         => self::tooOld($order),
+            'max_age_days'    => GetCustomerClaimSettings::for($order->shop)['claim_days'],
             'lines'           => $lines,
             'reasons'         => array_map(fn (DeliveryNoteItemReplacementReasonEnum $reason) => [
                 'value'        => $reason->value,
@@ -120,6 +120,14 @@ class GetCustomerClaimForm
             'max_photos'      => self::MAX_PHOTOS_PER_LINE,
             'is_dropshipping' => (bool) $order->customer_client_id,
         ];
+    }
+
+    /**
+     * Customers claim for the number of days after dispatch the shop set (claim_days).
+     */
+    public static function tooOld(Order $order): bool
+    {
+        return (bool) $order->dispatched_at?->lt(now()->subDays(GetCustomerClaimSettings::for($order->shop)['claim_days']));
     }
 
     /**
