@@ -14,9 +14,11 @@ import {
 	MODULE_TYPES,
 	backgroundImageCss,
 	backgroundImageUrl,
+	buttonBorder,
 	createModule,
 	createRow,
 	setBackgroundImage,
+	setButtonBorder,
 } from "../../resources/js/Components/CMS/Website/Outboxes/EmailWorkshop/emailWorkshopBlocks.ts"
 
 const emailWithBody = (computedStyle: Record<string, unknown> = {}) => ({
@@ -234,4 +236,44 @@ test("the row and its content area are sent with their background images", () =>
 
 	assert.match(html, /class="row row-1[^"]*"[^>]*style="[^"]*background-image:url\('https:\/\/a\.test\/row\.png'\)/)
 	assert.match(html, /class="row-content[^"]*"[^>]*style="[^"]*background-image:url\('https:\/\/a\.test\/content\.png'\);[^"]*background-size:cover/)
+})
+
+test("a button border has a width and a colour on all four sides, in the editor and in the sent email", () => {
+	const button = createModule(MODULE_TYPES.button)
+	assert.deepEqual(buttonBorder(button.descriptor.button.style), { width: "0px", color: "transparent" })
+	assert.deepEqual(buttonBorder({}), { width: "0px", color: "transparent" })
+
+	setButtonBorder(button.descriptor.button.style, { width: "2px" })
+	assert.deepEqual(buttonBorder(button.descriptor.button.style), { width: "2px", color: "#000000" })
+
+	setButtonBorder(button.descriptor.button.style, { color: "rgb(10, 20, 30)" })
+	assert.deepEqual(buttonBorder(button.descriptor.button.style), { width: "2px", color: "rgb(10, 20, 30)" })
+
+	const style = buttonLinkStyle(button)
+	for (const side of ["top", "right", "bottom", "left"]) {
+		assert.ok(style.includes(`border-${side}:2px solid rgb(10, 20, 30)`))
+	}
+	assert.ok(renderModuleHtml(button, createRenderContext(emailWithBody(), 600)).includes(`style="${style}"`))
+
+	setButtonBorder(button.descriptor.button.style, { color: "" })
+	setButtonBorder(button.descriptor.button.style, { width: "0px" })
+	assert.equal(button.descriptor.button.style["border-left"], "0px solid transparent")
+})
+
+test("a button border that is dashed, or drawn on one side only, is read from its widest side and stays dashed when edited", () => {
+	const style: Record<string, any> = {
+		"border-top": "0px none transparent",
+		"border-right": "0px solid transparent",
+		"border-bottom": "0px solid transparent",
+		"border-left": "3px dashed #FF0000",
+	}
+	assert.deepEqual(buttonBorder(style), { width: "3px", color: "#FF0000" })
+
+	setButtonBorder(style, { width: "1px" })
+	assert.equal(style["border-top"], "1px dashed #FF0000")
+	assert.equal(style["border-left"], "1px dashed #FF0000")
+
+	const borderless: Record<string, any> = { "border-top": "0px none transparent" }
+	setButtonBorder(borderless, { width: "2px" })
+	assert.equal(borderless["border-bottom"], "2px solid #000000")
 })

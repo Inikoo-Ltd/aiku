@@ -16,7 +16,7 @@ import { routeType } from '@/types/route'
 import {
     DEFAULT_SOCIAL_ICON_SET, EmailBody, EmailModule, EmailRow, MODULE_TYPES, SOCIAL_ICON_SETS, SOCIAL_NETWORKS, addTableColumn, addTableRow, applySocialIconSet,
     createIconItem, createSocialIcon, getModuleText, isTableModule, isUnsubscribeModule, moduleTextToggles, removeTableColumn, removeTableRow, setModuleText,
-    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource, setBackgroundImage,
+    socialIconSetOf, socialIconSrc, tableColumnCount, videoThumbnailFromUrl, vimeoVideoId, isVideoPageUrl, dynamicContentSource, setBackgroundImage, buttonBorder, setButtonBorder,
 } from './emailWorkshopBlocks'
 import { isLinkUnderlined, moduleMobileStyle, withoutLinkUnderlineChoices } from './renderEmailHtml'
 
@@ -115,6 +115,19 @@ const imagePercWidth = computed({
         descriptor.value.image.percWidth = value
         moduleComputedStyle.value.class = `${imageAlignment.value} fixedwidth`
     },
+})
+
+const buttonBorderWidth = computed({
+    get: () => buttonBorder(descriptor.value.button?.style).width,
+    set: (width: string) => setButtonBorder(descriptor.value.button.style, { width }),
+})
+
+const buttonBorderColor = computed({
+    get: () => {
+        const { color } = buttonBorder(descriptor.value.button?.style)
+        return color === 'transparent' ? '' : color
+    },
+    set: (color: string) => setButtonBorder(descriptor.value.button.style, { color }),
 })
 
 const dividerBorderParts = (): [string, string, string] => {
@@ -546,6 +559,8 @@ const contentSectionTitle = computed(() => ({
                     <EmailWorkshopField v-model="descriptor.button.style['font-size']" type="px" :label="ctrans('Font size')" />
                     <EmailWorkshopField v-model="moduleStyle['text-align']" type="align" :label="ctrans('Align')" />
                     <EmailWorkshopField v-model="descriptor.button.style['border-radius']" type="px" :label="ctrans('Border radius')" />
+                    <EmailWorkshopField v-model="buttonBorderWidth" type="px" :label="ctrans('Border width')" />
+                    <EmailWorkshopField v-model="buttonBorderColor" type="color" :label="ctrans('Border color')" />
                     <EmailWorkshopPadding :target="descriptor.button.style" :label="ctrans('Internal padding')" />
                 </template>
 

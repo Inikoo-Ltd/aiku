@@ -374,6 +374,35 @@ export const setBackgroundImage = (style: Record<string, any>, url: string): voi
     style['background-repeat'] = 'no-repeat'
 }
 
+const BORDER_SIDES = ['top', 'right', 'bottom', 'left']
+
+const widestButtonBorder = (style: Record<string, any> | undefined | null): [string, string, string] => {
+    const [widest] = BORDER_SIDES
+        .map((side) => String(style?.[`border-${side}`] ?? '').match(/^(\S+)\s+(\S+)\s+(.+)$/))
+        .filter((parts): parts is RegExpMatchArray => parts !== null)
+        .sort((first, second) => (parseFloat(second[1]) || 0) - (parseFloat(first[1]) || 0))
+
+    return [widest?.[1] ?? '0px', widest?.[2] ?? 'solid', widest?.[3] ?? 'transparent']
+}
+
+export const buttonBorder = (style: Record<string, any> | undefined | null): { width: string, color: string } => {
+    const [width, , color] = widestButtonBorder(style)
+
+    return { width, color }
+}
+
+export const setButtonBorder = (style: Record<string, any>, border: { width?: string, color?: string }): void => {
+    const [currentWidth, currentLineStyle, currentColor] = widestButtonBorder(style)
+    const width = border.width ?? currentWidth
+    const lineStyle = ['none', 'hidden'].includes(currentLineStyle) ? 'solid' : currentLineStyle
+    const color = (border.color ?? currentColor) || 'transparent'
+    const isHiddenBorderGrowing = border.width !== undefined && parseFloat(width) > 0 && color === 'transparent'
+
+    for (const side of BORDER_SIDES) {
+        style[`border-${side}`] = `${width} ${lineStyle} ${isHiddenBorderGrowing ? '#000000' : color}`
+    }
+}
+
 export const youtubeVideoId = (url: string): string | null =>
     url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/)?.[1] ?? null
 
