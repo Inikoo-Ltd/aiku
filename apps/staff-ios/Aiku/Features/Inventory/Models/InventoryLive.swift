@@ -366,6 +366,7 @@ final class InventorySkoListFeed {
     private(set) var loadError: String?
     private(set) var loadedRequest: InventorySkoListRequest?
     private(set) var familyOptions: [InventoryFamilyOption]?
+    private(set) var filterOptions: MobileOrgStocksPage.FilterOptions?
     @ObservationIgnored private let service: InventoryService
 
     init(service: InventoryService = .live(.shared)) {
@@ -444,6 +445,9 @@ final class InventorySkoListFeed {
         lastPage = page.meta.lastPage
         if let pageCounts = page.counts {
             counts = pageCounts
+        }
+        if let options = page.filters {
+            filterOptions = options
         }
     }
 }

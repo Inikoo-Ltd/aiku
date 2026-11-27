@@ -29,10 +29,7 @@ struct InventorySkoListScreen: View {
     var body: some View {
         AppScreen(
             title: scope.listTitle,
-            kicker: isAbnormalities ? "SKOs · Abnormalities" : L10n.format("Inventory · %@", session.warehouseLabel),
-            actions: isAbnormalities ? [] : [
-                HeaderAction(.filter, label: "Filter", badge: warehouse == nil ? store.filter.activeCount : feed.filter.activeCount) { isFiltering = true }
-            ]
+            kicker: isAbnormalities ? "SKOs · Abnormalities" : L10n.format("Inventory · %@", session.warehouseLabel)
         ) {
             ModuleTabs(.inventory, current: .skos)
         } content: {
@@ -50,13 +47,15 @@ struct InventorySkoListScreen: View {
                 onSelect: { scope = $0 }
             )
             if !isAbnormalities {
-                InventorySearchField(
-                    text: $search,
-                    placeholder: "Code, name or supplier product code",
-                    isFocused: $isSearchFocused,
-                    onScan: { scan() },
-                    onSubmit: { lookUpTypedCode() }
-                )
+                SearchWithFilter(filterCount: warehouse == nil ? store.filter.activeCount : feed.filter.activeCount, onFilter: { isFiltering = true }) {
+                    InventorySearchField(
+                        text: $search,
+                        placeholder: "Code, name or supplier product code",
+                        isFocused: $isSearchFocused,
+                        onScan: { scan() },
+                        onSubmit: { lookUpTypedCode() }
+                    )
+                }
             }
             if let lookupMessage {
                 InlineAlert(tone: .warn, title: lookupMessage) { EmptyView() }
@@ -92,6 +91,7 @@ struct InventorySkoListScreen: View {
                 InventoryLiveFilterSheet(
                     initial: feed.filter,
                     families: feed.familyOptions,
+                    options: feed.filterOptions,
                     resultCount: { filter in
                         await feed.total(for: InventorySkoListRequest(warehouseID: warehouse.id, scope: scope, search: search, filter: filter))
                     },

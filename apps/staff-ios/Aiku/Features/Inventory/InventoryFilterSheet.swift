@@ -67,6 +67,7 @@ struct InventoryFilterSheet: View {
 
 struct InventoryLiveFilterSheet: View {
     let families: [InventoryFamilyOption]?
+    let options: MobileOrgStocksPage.FilterOptions?
     let resultCount: (InventoryLiveSkoFilter) async -> Int?
     let onApply: (InventoryLiveSkoFilter) -> Void
     @State private var filter: InventoryLiveSkoFilter
@@ -75,10 +76,12 @@ struct InventoryLiveFilterSheet: View {
     init(
         initial: InventoryLiveSkoFilter,
         families: [InventoryFamilyOption]?,
+        options: MobileOrgStocksPage.FilterOptions?,
         resultCount: @escaping (InventoryLiveSkoFilter) async -> Int?,
         onApply: @escaping (InventoryLiveSkoFilter) -> Void
     ) {
         self.families = families
+        self.options = options
         self.resultCount = resultCount
         self.onApply = onApply
         _filter = State(initialValue: initial)
@@ -91,19 +94,34 @@ struct InventoryLiveFilterSheet: View {
             onReset: { filter = InventoryLiveSkoFilter() },
             onShow: { onApply(filter) }
         ) {
-            InventoryFilterSection("SKO family", hint: InventoryFilterText.hint(filter.familyID == nil ? 0 : 1)) {
-                if let families {
-                    ForEach(families) { family in
-                        InventoryFilterOption(family.title, isOn: filter.familyID == family.id) {
-                            if filter.familyID == family.id {
-                                filter.familyID = nil
-                                filter.familyCode = nil
-                            } else {
-                                filter.familyID = family.id
-                                filter.familyCode = family.code
-                            }
+            if let choices = options?.stockStatus, !choices.isEmpty {
+                InventoryFilterSection("Stock status", hint: InventoryFilterText.hint(filter.stockStatus == nil ? 0 : 1)) {
+                    ForEach(choices) { choice in
+                        InventoryFilterOption(choice.title, isOn: filter.stockStatus == choice.key) {
+                            filter.stockStatus = filter.stockStatus == choice.key ? nil : choice.key
                         }
                     }
+                }
+            }
+            if let choices = options?.locationType, !choices.isEmpty {
+                InventoryFilterSection("Location type", hint: InventoryFilterText.hint(filter.locationType == nil ? 0 : 1)) {
+                    ForEach(choices) { choice in
+                        InventoryFilterOption(choice.title, isOn: filter.locationType == choice.key) {
+                            filter.locationType = filter.locationType == choice.key ? nil : choice.key
+                        }
+                    }
+                }
+            }
+            InventoryFilterSection("SKO family", hint: InventoryFilterText.hint(filter.familyID == nil ? 0 : 1), layout: .stacked) {
+                if let families {
+                    SearchableSelect(
+                        options: families.map { SearchableSelectOption(id: $0.id, title: $0.title) },
+                        selectedID: filter.familyID
+                    ) { id in
+                        filter.familyID = id
+                        filter.familyCode = id.flatMap { chosen in families.first { $0.id == chosen }?.code }
+                    }
+                    .accessibilityIdentifier("inventory.filter.family")
                 } else {
                     ProgressView()
                         .frame(minHeight: 44)
@@ -195,13 +213,20 @@ private struct InventoryFilterSheetLayout<Sections: View>: View {
 }
 
 private struct InventoryFilterSection<Options: View>: View {
+    enum Layout {
+        case chips
+        case stacked
+    }
+
     let label: String
     let hint: String
+    let layout: Layout
     @ViewBuilder let options: Options
 
-    init(_ label: String, hint: String, @ViewBuilder options: () -> Options) {
+    init(_ label: String, hint: String, layout: Layout = .chips, @ViewBuilder options: () -> Options) {
         self.label = label
         self.hint = hint
+        self.layout = layout
         self.options = options()
     }
 
@@ -218,7 +243,12 @@ private struct InventoryFilterSection<Options: View>: View {
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text4)
             }
-            FlowLayout(spacing: 8, lineSpacing: 8) {
+            switch layout {
+            case .chips:
+                FlowLayout(spacing: 8, lineSpacing: 8) {
+                    options
+                }
+            case .stacked:
                 options
             }
         }
