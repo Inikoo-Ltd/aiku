@@ -94,6 +94,45 @@ export const writeCachedChat = async (userId: number, ulid: string, messages: St
     }
 }
 
+const HOME_LIFETIME_MS = 12 * 60 * 60 * 1000
+const homeKey = (userId: number) => `${CACHE_PREFIX}${userId}:home`
+
+export const readCachedHome = async <T>(userId: number): Promise<T | null> => {
+    const cached = readJson<EncryptedChat>(homeKey(userId))
+    if (!cached?.iv || !cached.data) return null
+    if (Date.now() - cached.saved_at >= HOME_LIFETIME_MS) {
+        try {
+            localStorage.removeItem(homeKey(userId))
+        } catch { }
+        return null
+    }
+
+    const key = await cacheEncryptionKey()
+    if (!key) return null
+
+    try {
+        const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(cached.iv) }, key, fromBase64(cached.data))
+        return JSON.parse(new TextDecoder().decode(plain))
+    } catch {
+        try {
+            localStorage.removeItem(homeKey(userId))
+        } catch { }
+        return null
+    }
+}
+
+export const writeCachedHome = async (userId: number, home: unknown) => {
+    const key = await cacheEncryptionKey()
+    if (!key) return
+
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(home)))
+
+    try {
+        localStorage.setItem(homeKey(userId), JSON.stringify({ saved_at: Date.now(), iv: toBase64(iv), data: toBase64(encrypted) }))
+    } catch { }
+}
+
 export const removeCachedChat = (userId: number, ulid: string) => {
     try {
         localStorage.removeItem(chatKey(userId, ulid))

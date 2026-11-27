@@ -27,6 +27,7 @@ const props = defineProps<{
     isStarred?: boolean
     hasDraft?: boolean
     compact?: boolean
+    noStar?: boolean
 }>()
 
 const emit = defineEmits<{ select: []; toggleStar: [] }>()
@@ -77,6 +78,7 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
                 :aria-label="ctrans(':count unread', { count: unreadText() })">{{ unreadText() }}</span>
         </component>
         <button
+            v-if="!noStar"
             type="button"
             class="absolute right-1 top-1 flex h-5 w-6 items-center justify-center rounded opacity-0 hover:bg-white/20 focus:opacity-100 group-hover/row:opacity-100"
             :aria-label="isStarred ? ctrans('Remove from Starred') : ctrans('Add to Starred')"

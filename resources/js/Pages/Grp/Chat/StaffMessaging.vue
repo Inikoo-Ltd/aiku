@@ -297,6 +297,13 @@ const closeConversation = () => {
     })
 }
 
+const goHome = () => {
+    store.fullViewUlid = null
+    selectedUlid.value = null
+    openSlackChannelId.value = null
+    router.visit(homeRoute.value, { preserveState: true, preserveScroll: true })
+}
+
 const selectedConversation = computed(() => selectedUlid.value ? store.conversationByUlid(selectedUlid.value) : null)
 
 watch(() => store.fullViewUlid, (ulid) => {
@@ -357,8 +364,9 @@ const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().incl
 
 const layoutStore = useLayoutStore()
 const isDesks = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.slack."))
-const isFeed = computed(() => usePage().url.split("?")[0].endsWith("/vx/feed"))
 const isGroups = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.groups."))
+const isNothingSelected = computed(() => !selectedUlid.value && !showSlackChannel.value)
+const homeRoute = computed(() => route(isDesks.value ? "grp.chat.staff.slack.index" : isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"))
 const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
 const isNewVerbrationOpen = ref(false)
 const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbrations") : ctrans("Filter V·Ds")))
@@ -479,7 +487,6 @@ onUnmounted(() => {
 
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
-            v-if="!isFeed"
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
             :class="[selectedUlid || showSlackChannel ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
@@ -511,6 +518,10 @@ onUnmounted(() => {
                             <FontAwesomeIcon icon="fal fa-check-double" fixed-width aria-hidden="true" />
                         </button>
                     </label>
+
+                    <div v-if="!sidebarFilter" class="mb-3">
+                        <DeskSidebarRow :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                    </div>
     
                     <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbrations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
     
@@ -706,6 +717,7 @@ onUnmounted(() => {
                     <button type="button" class="mx-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-[var(--desk-hover)]" :aria-label="ctrans('Find a conversation…')" v-tooltip.right="ctrans('Find a conversation…')" @click="openFilter">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                     </button>
+                    <DeskSidebarRow compact :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
                     <template v-if="compactStarredChannels.length || compactStarredConversations.length">
                         <FontAwesomeIcon icon="fas fa-star" class="mx-auto text-[10px] opacity-60" fixed-width :aria-label="ctrans('Starred')" />
                         <DeskSidebarRow
@@ -777,7 +789,6 @@ onUnmounted(() => {
         </div>
 
         <button
-            v-if="!isFeed"
             type="button"
             class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-white md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
@@ -788,10 +799,9 @@ onUnmounted(() => {
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
         </button>
 
-        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
-            <VerbaHome v-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
+        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
             <MessagingConversation
-                v-else-if="selectedConversation"
+                v-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
                 desk
