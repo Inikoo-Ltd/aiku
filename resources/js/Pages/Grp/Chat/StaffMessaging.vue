@@ -93,7 +93,7 @@ const readCollapsed = (): string[] => {
     }
 }
 const collapsedSections = ref<string[]>(readCollapsed())
-const { isSidebarCollapsed, toggleSidebar } = useDeskSidebar()
+const { isSidebarCollapsed, toggleSidebar, isJumpOpen } = useDeskSidebar()
 const filterInput = ref<{ $el: HTMLInputElement } | null>(null)
 const openFilter = async () => {
     if (isSidebarCollapsed.value) toggleSidebar()
@@ -326,7 +326,6 @@ watch(() => store.fullViewUlid, (ulid) => {
     showConversationUrl(ulid)
 })
 
-const isJumpOpen = ref(false)
 const isShortcutsOpen = ref(false)
 
 const visitSlackChannel = (channelId: number) => {
@@ -704,21 +703,13 @@ onUnmounted(() => {
                 :class="!isSidebarCollapsed && 'pointer-events-none opacity-0'"
                 :inert="!isSidebarCollapsed || undefined"
                 :aria-label="ctrans('Verba')">
-                <div class="flex h-[50px] w-full shrink-0 items-center justify-center border-b border-[var(--desk-border)]">
-                    <button
-                        type="button"
-                        class="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[var(--desk-strong)] text-[var(--desk-sidebar)] transition hover:opacity-90"
-                        :aria-label="ctrans('New message')"
-                        v-tooltip.right="ctrans('New message')"
-                        @click="isJumpOpen = true">
-                        <FontAwesomeIcon icon="fal fa-edit" fixed-width aria-hidden="true" />
-                    </button>
-                </div>
-                <div class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto py-2">
-                    <button type="button" class="mx-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-[var(--desk-hover)]" :aria-label="ctrans('Find a conversation…')" v-tooltip.right="ctrans('Find a conversation…')" @click="openFilter">
+                <div class="flex w-full shrink-0 flex-col items-center gap-y-3 border-b border-[var(--desk-border)] py-2">
+                    <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-[var(--desk-hover)]" :aria-label="ctrans('Find a conversation…')" v-tooltip.right="ctrans('Find a conversation…')" @click="openFilter">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                     </button>
-                    <DeskSidebarRow compact :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                    <DeskSidebarRow compact icon-only :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                </div>
+                <div class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto py-2 [scrollbar-gutter:stable_both-edges]">
                     <template v-if="compactStarredChannels.length || compactStarredConversations.length">
                         <FontAwesomeIcon icon="fas fa-star" class="mx-auto text-[10px] opacity-60" fixed-width :aria-label="ctrans('Starred')" />
                         <DeskSidebarRow

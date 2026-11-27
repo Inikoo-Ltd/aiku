@@ -27,6 +27,7 @@ const props = defineProps<{
     isStarred?: boolean
     hasDraft?: boolean
     compact?: boolean
+    iconOnly?: boolean
     noStar?: boolean
 }>()
 
@@ -50,6 +51,9 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
         <span v-else-if="icon === undefined" class="h-full w-full overflow-hidden rounded-md bg-[var(--desk-chip-strong)]">
             <Image v-if="avatar" :src="avatar" :alt="label" image-cover />
             <FontAwesomeIcon v-else icon="fal fa-user" class="flex h-full items-center justify-center text-sm" fixed-width aria-hidden="true" />
+        </span>
+        <span v-else-if="iconOnly" class="flex h-full w-full items-center justify-center rounded-md text-[15px]" :class="isActive ? 'bg-[var(--desk-active)] text-[var(--desk-active-text)]' : 'hover:bg-[var(--desk-hover)]'">
+            <FontAwesomeIcon :icon="icon" fixed-width aria-hidden="true" />
         </span>
         <span v-else class="flex h-full w-full items-center justify-center rounded-md bg-[var(--desk-chip)] text-xs font-bold text-[var(--desk-strong)]" :class="isMuted && 'opacity-70'">{{ initials() }}</span>
         <span

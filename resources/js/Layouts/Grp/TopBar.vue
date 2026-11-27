@@ -73,9 +73,11 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faBallot } from "@fas"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { isMac } from "@/Composables/useDeskShortcuts"
+import { faEdit } from "@fal"
 import { useTruncate } from "@/Composables/useTruncate"
 
-library.add(faHandsHelping, faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolderDownload, faFolder, faCube, faUserPlus,
+library.add(faEdit, faHandsHelping, faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolderDownload, faFolder, faCube, faUserPlus,
     faBox, faBoxesAlt, faMoneyCheckAlt, faCashRegister, faCoins, faFileInvoiceDollar, faReceipt, faPersonDolly, faPeopleArrows, faStream, faAppleCrate,
     faConciergeBell, faGarage, faHamsa, faCodeMerge, faSortShapesDownAlt, faHatChef, faTags, faCommentDollar, faNewspaper, faMailBulk, faBell, faLaptopHouse, faHandHoldingBox,
     faShippingFast, faChessClock, faBallot, faHouseDamage, faSign, faClipboardListCheck, faClipboardList, faPiggyBank, faLongArrowRight, faTruckContainer, faNarwhal, faUsersClass, faAlbumCollection, faBooks, faUserTie, faCodeBranch, faSatelliteDish, faBullseyeArrow, faAnalytics, faUserCircle, faChevronRight
@@ -96,7 +98,8 @@ const imageSkeleton: { [key: string]: boolean } = reactive({})
 
 const layoutStore = inject("layout", layoutStructure)
 const isVerbaRoute = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff."))
-const { isSidebarCollapsed: isDeskSidebarCollapsed } = useDeskSidebar()
+const { isSidebarCollapsed: isDeskSidebarCollapsed, isJumpOpen: isDeskJumpOpen } = useDeskSidebar()
+const isVerbaChatRoute = computed(() => isVerbaRoute.value && layoutStore.currentRoute !== "grp.chat.staff.reports")
 
 const subsectionScroller = ref<HTMLElement | null>(null)
 const COUNTRY_OUTLINES = ["CN", "ID", "IN", "MA", "NP", "TR"]
@@ -199,7 +202,17 @@ const label = {
                         </Transition>
                     </div>
 
-                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:block shrink-0 self-stretch bg-[var(--vx-sidebar,#3f0e40)] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'" aria-hidden="true" />
+                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:flex shrink-0 self-stretch items-center justify-center bg-[var(--vx-sidebar,#3f0e40)] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'">
+                        <button
+                            v-if="isDeskSidebarCollapsed && isVerbaChatRoute"
+                            type="button"
+                            class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--vx-sidebar-strong,#ffffff)] text-[var(--vx-sidebar,#3f0e40)] shadow-sm transition-opacity hover:opacity-90"
+                            :aria-label="ctrans('New message')"
+                            v-tooltip.right="ctrans('New message') + (isMac ? ' (⌘J)' : ' (Ctrl+J)')"
+                            @click="isDeskJumpOpen = true">
+                            <FontAwesomeIcon icon="fal fa-edit" class="translate-x-[1px] -translate-y-[1px] text-sm" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
 
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="!isVerbaRoute && (layoutStore.group || (layoutStore.organisations.data?.length > 1))" as="div" class="ml-2 relative text-left" v-slot="{ open: isOrgMenuOpen, close: closeOrgMenu }">
