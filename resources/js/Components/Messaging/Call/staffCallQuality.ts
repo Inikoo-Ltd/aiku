@@ -45,7 +45,7 @@ export const staffCallQuality = (lk: typeof import("livekit-client")) => {
         },
         publishDefaults: {
             simulcast: true,
-            audioPreset: { maxBitrate: 32_000 },
+            audioPreset: { maxBitrate: 64_000 },
             dtx: true,
             red: true,
             videoCodec: "vp8",

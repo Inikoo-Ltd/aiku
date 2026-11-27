@@ -64,7 +64,7 @@ Assumptions (about 100 staff, a handful of small calls at a time):
 | People per call | 4 | 4, and 8 |
 | Camera stream received | 1.5 Mbit/s | 1.5 Mbit/s |
 | Screen share received | 2.5 Mbit/s | 2.5 Mbit/s |
-| Audio | 32 kbit/s, negligible | negligible |
+| Audio | 64 kbit/s, negligible | negligible |
 
 The server sends every stream to everyone else, so a call of N people with cameras costs
 N x (N-1) x 1.5 Mbit/s outgoing, plus (N-1) x 2.5 Mbit/s while someone shares a screen.
