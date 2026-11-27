@@ -10,7 +10,6 @@ namespace App\Actions\Iris\ShoppingAssistant;
 
 use Illuminate\Support\Facades\DB;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
 use App\Models\Web\Webpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -99,7 +98,6 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             'conversation' => $conversation->ulid,
             'status'       => $conversation->status->value,
             'pending'      => $conversation->isPending(),
-            'awaiting_team' => ($teamQuestion = StoreShoppingAssistantTeamQuestion::openFor($conversation)) !== null && StoreShoppingAssistantTeamQuestion::isAwaited($teamQuestion),
             'hand_over_available' => $conversation->website && $conversation->customer && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $conversation->customer),
             'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($conversation, $events, $cards, $familyLinks, $handedOverOfferIds) {
                 $data = [

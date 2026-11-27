@@ -400,25 +400,13 @@ class AskShoppingAssistant
         $previous  = $offerReason ? $conversation->messages()->where('id', '<', $customerMessage->id)->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->orderByDesc('id')->first() : null;
         $repeated  = $previous && $previous->hand_over_offer === $offerReason;
 
-        if ($offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$turn['cleared']) {
-            $askedTeam = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'ask_our_team' && $toolCall['error'] === null);
-            $open      = $askedTeam ? StoreShoppingAssistantTeamQuestion::openFor($conversation) : null;
-            $team      = $askedTeam
-                ? ($open ? ['status' => 'already_asked', 'live' => StoreShoppingAssistantTeamQuestion::isAwaited($open)] : null)
-                : StoreShoppingAssistantTeamQuestion::run($conversation, $message, $message, !collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'report_to_engineers'));
-
-            if ($team && $team['status'] === 'to_engineers') {
+        $reportRefused = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'report_to_engineers');
+        if ($offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$turn['cleared'] && !$reportRefused) {
+            $fault = StoreShoppingAssistantEngineerTicket::make()->fromQuestion($conversation, mb_substr(trim($message), 0, 500), mb_substr(trim($message), 0, 1000));
+            if ($fault['ticket']) {
                 $offerReason = null;
                 $flags[]     = 'reported_engineers';
-                $reply       = StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $team['ticket'], $team['already_reported']);
-                $isFixed     = true;
-                $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
-            } elseif ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
-                $offerReason = null;
-                $flags[]     = 'asked_team';
-                $reply       = $withKnown(!$askedTeam && $team['status'] === 'already_asked'
-                    ? __('I have added this to your question that is already with our team. Their answer will appear here in this chat, and if you have left by then, we will send it to you.', [], $conversation->language_code)
-                    : $this->teamSentence($conversation, $team['live']));
+                $reply       = StoreShoppingAssistantEngineerTicket::customerSentence($conversation, $fault['ticket'], $fault['status'] === 'already_reported');
                 $isFixed     = true;
                 $groups      = ['must_haves' => collect(), 'add_ons' => collect()];
             }
@@ -622,7 +610,7 @@ class AskShoppingAssistant
      */
     private function hasActed(array $turn): bool
     {
-        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_our_team', 'ask_purchasing_team', 'notify_when_back_in_stock', 'big_order_lead', 'report_to_engineers', 'report_order_problem'], true));
+        return $turn['cleared'] || $turn['basket'] || collect($turn['tool_calls'])->contains(fn (array $toolCall) => in_array($toolCall['name'], ['add_to_basket', 'clear_conversation', 'ask_purchasing_team', 'notify_when_back_in_stock', 'big_order_lead', 'report_to_engineers', 'report_order_problem'], true));
     }
 
     /**
@@ -1399,13 +1387,6 @@ class AskShoppingAssistant
             ->implode(' '));
     }
 
-    private function teamSentence(ShoppingAssistantConversation $conversation, bool $live): string
-    {
-        return $live
-            ? __('I don\'t know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.', [], $conversation->language_code)
-            : __('I don\'t know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.', [], $conversation->language_code);
-    }
-
     private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason): string
     {
         $locale  = $conversation->language_code;
@@ -1692,7 +1673,7 @@ class AskShoppingAssistant
 
 Dropshipping coaching and selling:
 - Many customers are new to dropshipping. Explain general ideas plainly when asked or when it helps them move on: what dropshipping is, choosing a niche and products, writing listings and photos, setting their own selling price above our price so they keep a margin, marketing, customer service, returns from their buyers. Answer these from your own knowledge with answer_kind coaching, two to four short sentences, with no figures (no percentages, prices, earnings or times), and never promise sales, earnings or success.
-- How our service works (our integrations, how to connect or reconnect a store, how products and stock are sent to their store, how orders reach us, payment, our fees, branding, packing, returns to us) is never answered from your own knowledge: call shop_information and answer only from the texts it returns, citing them. If they do not answer it, call ask_our_team. Never invent steps, menus or buttons of our website or of their platform.
+- How our service works (our integrations, how to connect or reconnect a store, how products and stock are sent to their store, how orders reach us, payment, our fees, branding, packing, returns to us) is never answered from your own knowledge: call shop_information and answer only from the texts it returns, citing them. If they do not answer it, use answer_kind offer_person with offer_reason not_sure. Never invent steps, menus or buttons of our website or of their platform.
 - Use their sales channels above to give the next step: no store connected yet (none, or only manual orders), encourage them to connect the store or marketplace they sell on; a channel with no products, suggest best sellers to add to it; products but no orders yet, give one practical tip to get the first sale (listing titles, photos, price, promotion) and suggest more products; a connection problem, say so plainly and help with shop_information; products added to a channel that are not in the store yet, bring it up only when it bears on what they ask (a product missing from their store, stock that does not update, an order that did not arrive) and call products_not_in_store so they see which ones, never as a remark at the end of another answer. Never say how many products or orders they have. Never explain how to connect a store they already have connected; help them sell more there instead. When they already sell on one platform and it fits the conversation, suggest opening another they do not have yet (for example TikTok Shop, eBay or Shopify) to reach more buyers with the same products, never claiming how much more they will sell.
 - When they ask why products do not list or upload on eBay, about an eBay error, drafts or selling limits, call ebay_listing_problems before shop_information: it reads what eBay answered for their own products and gives the fix for each cause.
 - Be an enthusiastic, honest salesperson: encourage them to start or grow, suggest best sellers and products that suit their niche, and end with a clear next step or a question that keeps them going. Never pressure them and never say something is guaranteed to sell.
@@ -1728,7 +1709,7 @@ $deliveryRule
 - When the customer asks why something costs what it does, say what the description shows they get for it (quality, size, what is included), never that it is the market price or cheaper or dearer than elsewhere, and offer to show lower-priced options of the same kind, which you find with search_products and sort cheapest.
 - When nothing we sell matches what the customer asked for, say so honestly: we do not have it. Show the closest products we do have, if any fit, and say you have noted the request for our buyers, who look at what customers ask for; never promise that anyone will get back to them about it. When the product they asked for is out of stock, say so, and for when it is back follow the restock_information rule below.
 - When the customer only thanks you or says goodbye, close warmly in one short sentence: no products, no question, no offer.
-- When in doubt, ask our team instead of answering: call ask_our_team with the customer's question in one English sentence whenever the texts shop_information returns, the family descriptions and the product documents do not clearly answer it, also when they only half answer it. That covers questions about buying from us (samples, a discount code, a special request, a document that is not online) and about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Say honestly that you do not know and have asked one of our experts; never guess and never promise an answer. Not for the customer's own orders, invoices or deliveries, or when they ask for a person. Ask once per question.
+- When in doubt, do not answer: whenever the texts shop_information returns, the family descriptions and the product documents do not clearly answer a question, also when they only half answer it, use answer_kind offer_person with offer_reason not_sure, so our customer services team answers it. That covers questions about buying from us (samples, a discount code, a special request, a document that is not online) and about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Never guess and never promise an answer.
 - When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information. When they want products made in a country ("made in the UK", "origin country United Kingdom"), call search_products with made_in set to its two-letter code; never say you cannot filter by country.
 - When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products$notBetterPrice. When they ask whether a promotion or free gift is still on, or why a gift, gift choice or sale they saw before has gone, call shop_promotions and answer from it.
 - When the customer asks for low-priced, cheap or budget products, that is a search, not a request for a better price: call search_products with sort cheapest$neverBetterPrice, and say nothing about discounts, member prices or calls from our team. When they give a price range or a highest or lowest price per product ("between 0.50 and 1", "under 5"), call search_products with min_price and max_price in the shop currency.

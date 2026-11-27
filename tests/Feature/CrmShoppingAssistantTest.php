@@ -465,8 +465,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
     expect($response->json('conversation'))->toBe($conversation->ulid)
         ->and($response->json('status'))->toBe('open')
         ->and($response->json('pending'))->toBeFalse()
-        ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'awaiting_team', 'hand_over_available', 'messages'])
-        ->and($response->json('awaiting_team'))->toBeFalse()
+        ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'hand_over_available', 'messages'])
         ->and($messages)->toHaveCount(2)
         ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'images', 'created_at'])
         ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'hand_over_offer', 'handed_over', 'feedback', 'claim', 'groups'])
@@ -3714,7 +3713,6 @@ test('a yes to asking purchasing keeps the model words and opens no team questio
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
     $purchasing   = AskShoppingAssistant::run($conversation, 'Yes, please ask the purchasing team');
     $dispatch     = AskShoppingAssistant::run($conversation->fresh(), 'How fast do you send orders?');
-    $teamTasks    = App\Models\Tasks\StaffTask::where('data->kind', App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion::TASK_KIND)->where('data->customer_id', $customer->id)->count();
     $fact         = __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => 3], $conversation->language_code);
 
     expect($purchasing['reply'])->toBe('Done: our purchasing team will reply by email.')
@@ -3722,8 +3720,7 @@ test('a yes to asking purchasing keeps the model words and opens no team questio
         ->and($purchasing['message']->flags)->toBeNull()
         ->and($dispatch['reply'])->toBe($fact)
         ->and($dispatch['message']->refresh()->hand_over_offer)->toBeNull()
-        ->and($dispatch['message']->flags)->toBeNull()
-        ->and($teamTasks)->toBe(0);
+        ->and($dispatch['message']->flags)->toBeNull();
 });
 
 test('the question just answered is not answered again when it is sent a second time, and a typed yes to an offer of a person hands over instead of asking the model', function () {
@@ -4081,12 +4078,11 @@ test('Merlin finds the order a customer asks about without a number, says it wai
     expect($others->map(fn ($order) => $order->refresh()->is_premium_dispatch)->all())->toBe([true, true, false]);
 });
 
-test('a customer nobody answered after a hand-over to the live chat or a question to our team is told once when the team is back', function () {
+test('a customer nobody answered after a hand-over to the live chat is told once when the team is back', function () {
     $customer     = shoppingAssistantCustomer($this->shop);
     $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
     $answered     = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
     $fresh        = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
-    $asked        = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
     $now          = CarbonImmutable::now();
     $waited       = $now->subMinutes(\App\Actions\CRM\ShoppingAssistant\TellShoppingAssistantCustomersTeamIsAway::WAIT_MINUTES + 5);
 
@@ -4097,30 +4093,19 @@ test('a customer nobody answered after a hand-over to the live chat or a questio
     shoppingAssistantHandOver($answered, $waited, 'not_sure', 'live_chat', true, $answeredChat);
     shoppingAssistantHandOver($fresh, $now, 'not_sure', 'live_chat', true, $freshChat);
 
-    $task = \App\Actions\Tasks\StoreStaffTask::run(\App\Actions\Tasks\GetAikuAssistant::run($customer->group_id), [
-        'subject' => 'Question', 'assignee_id' => $this->user->id, 'notify' => false,
-        'data'    => ['kind' => \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion::TASK_KIND, 'conversation_id' => $asked->id, 'customer_id' => $asked->customer_id, 'question' => 'Samples?', 'wait_until' => $waited->addMinutes(5)->toIso8601String()],
-    ]);
-    DB::table('staff_tasks')->where('id', $task->id)->update(['created_at' => $waited]);
-
     $teller = \App\Actions\CRM\ShoppingAssistant\TellShoppingAssistantCustomersTeamIsAway::make();
     $first  = $teller->handle();
     $second = $teller->handle();
     $told   = fn (ShoppingAssistantConversation $one) => $one->messages()->whereJsonContains('flags', 'team_away')->get();
     $chatSentences  = ['Our team is back on :day at :time and will reply in the chat on this website.', 'Nobody from our team is free right now. They will reply in the chat on this website.'];
-    $emailSentences = ['Our team is back on :day at :time and will reply by email, to the address on your account.', 'Nobody from our team is free right now. They will reply by email, to the address on your account.'];
     $starts = fn (string $body, array $sentences) => collect($sentences)->contains(fn (string $sentence) => str_starts_with($body, Str::before(__($sentence, [], $conversation->language_code), ':day')));
 
-    expect($first['hand_overs'])->toBeGreaterThanOrEqual(1)
-        ->and($first['questions'])->toBeGreaterThanOrEqual(1)
-        ->and($second)->toBe(['hand_overs' => 0, 'questions' => 0])
+    expect($first)->toBeGreaterThanOrEqual(1)
+        ->and($second)->toBe(0)
         ->and($told($conversation))->toHaveCount(1)
         ->and($starts($told($conversation)->first()->body, $chatSentences))->toBeTrue()
         ->and($told($answered))->toHaveCount(0)
-        ->and($told($fresh))->toHaveCount(0)
-        ->and($told($asked))->toHaveCount(1)
-        ->and($starts($told($asked)->first()->body, $emailSentences))->toBeTrue()
-        ->and(data_get($task->refresh()->data, 'away_told_at'))->not->toBeNull();
+        ->and($told($fresh))->toHaveCount(0);
 });
 
 test('a message that is only the code of a product in stock is answered from the search without a model call, and any other code still goes to the model', function () {

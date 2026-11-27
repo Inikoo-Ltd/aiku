@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\MetaChatSession;
 
+use App\Actions\Chat\ChatSession\SendChatMessage;
 use App\Actions\Chat\ChatSession\SettleChatAiDraft;
 use App\Actions\Chat\Whatsapp\Concerns\WithWhatsappTemplatePayload;
 use App\Actions\Chat\Whatsapp\NormaliseWhatsappVideo;
@@ -36,7 +37,6 @@ use App\Models\SysAdmin\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
-use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -322,7 +322,7 @@ class SendMetaChatMessage
         $metadata['wa_status'] = 'sent';
         $metadata = [
             ...$metadata,
-            ...AnswerShoppingAssistantTeamQuestion::measuredTime(Arr::only($modelData, ['writing_seconds', 'typing_seconds'])),
+            ...SendChatMessage::measuredTime(Arr::only($modelData, ['writing_seconds', 'typing_seconds'])),
             ...$this->timeSinceTaken($metaChatSession, $agent->id),
         ];
 

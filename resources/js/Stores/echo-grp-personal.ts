@@ -15,9 +15,7 @@ import { useStaffCalls, type StaffCall } from "@/Stores/staff-calls"
 import { ctrans } from "@/Composables/useTrans"
 import { alertOnce, alertWayIsOn, chosenAlertSound, showAssignedPopup, showTicketPopup, type AlertSoundKind } from "@/Composables/useNotificationSound"
 import { openChatPane } from "@/Composables/useChatPane"
-import { showAssistantQuestion } from "@/Composables/useAssistantQuestions"
 import { trimRailNotifications } from "@/Composables/useRailNotifications"
-import type { AssistantQuestion } from "@/Components/Utils/AssistantQuestionPopup.vue"
 
 const ticketAlertSpokenLines = (): Record<string, string> => ({ raised: ctrans('New ticket'), answered: ctrans('Ticket answered'), qa: ctrans('Ticket QA') })
 
@@ -162,15 +160,11 @@ export const useEchoGrpPersonal = defineStore("echo-grp-personal", {
                     })
                 }
             })
-            .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string; kind?: string; question?: AssistantQuestion } }) => {
+            .listen('.personal-notification', (eventData: { notification: { id: string | null; title: string; body: string; route: string; kind?: string } }) => {
                 const layout = useLayoutStore()
                 const notification = eventData.notification
                 layout.notifications.unshift({ read: false, href: '', created_at: new Date(), ...notification, id: notification.id ?? '' })
                 trimRailNotifications(layout.notifications)
-
-                if (notification.kind === 'assistant_question' && notification.question) {
-                    showAssistantQuestion(notification.question)
-                }
 
                 if (notification.kind === 'chat_assigned') {
                     if (alertWayIsOn('assigned', 'popup')) {

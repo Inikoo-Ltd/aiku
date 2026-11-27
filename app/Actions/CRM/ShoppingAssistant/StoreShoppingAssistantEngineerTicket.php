@@ -42,10 +42,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * per customer: a new report while one is open becomes a comment on it. The customer sees it under
  * Tickets in their account when it has a web user.
  *
- * A question Merlin was about to pass to the gurus goes here instead when it reports something of
- * ours not working for this customer (an upload, a sync, stock, orders, photos, the connection) and
- * an independent check is at least FAULT_CONFIDENCE sure of it (fromQuestion()): a guru cannot
- * explain an integration fault, only engineers can (Raul, 14 Nov 2026, the Allegro photo of INI-260).
+ * A question Merlin is not sure of goes here instead of to customer services when it reports
+ * something of ours not working for this customer (an upload, a sync, stock, orders, photos, the
+ * connection) and an independent check is at least FAULT_CONFIDENCE sure of it (fromQuestion()): a
+ * person cannot explain an integration fault, only engineers can (Raul, 14 Nov 2026, the Allegro
+ * photo of INI-260).
  * There the customer has not been offered a fix yet, so tried_fix is not asked for.
  *
  * A confirmed report that is only missing catalogue content of ours (a weight, dimensions, photos,
@@ -98,7 +99,7 @@ class StoreShoppingAssistantEngineerTicket
     }
 
     /**
-     * A question for the team that is really a fault report: a MER ticket instead of a guru task.
+     * A question Merlin is not sure of that is really a fault report: a MER ticket instead of an offer of a person.
      *
      * @return array{status: 'created'|'already_reported'|'not_a_fault', ticket: ?Ticket, confidence: ?float}
      */
@@ -307,7 +308,7 @@ class StoreShoppingAssistantEngineerTicket
     /**
      * How sure an independent model is that the customer reports something of ours not working, as
      * opposed to asking a question a person in our team can answer; null when it cannot be asked,
-     * which leaves the question with the gurus.
+     * which leaves the customer with the offer of a person.
      */
     private function confidenceFault(string $question, string $words, ?string $channels): ?float
     {

@@ -39,9 +39,7 @@ import { useColorTheme } from "@/Composables/useStockList"
 import { computed } from "vue"
 import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import AlertToast from "@/Components/Utils/AlertToast.vue"
-import AssistantQuestionPopup from "@/Components/Utils/AssistantQuestionPopup.vue"
-import GuruWelcomeDialog from "@/Components/Utils/GuruWelcomeDialog.vue"
-import { loadMyAssistantQuestions, assistantQuestionsOffset } from "@/Composables/useAssistantQuestions"
+import GuruFarewellDialog from "@/Components/Utils/GuruFarewellDialog.vue"
 import { useMediaQuery, useWindowSize } from "@vueuse/core"
 import axios from "axios"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -79,11 +77,6 @@ const { width: windowWidth } = useWindowSize()
 const alertPopupsRightPx = computed(() => layout.messagingSidebar.show ? 224 : (layout.messagingSidebar.micro || !isTablet.value ? 24 : 48))
 const alertPopupsWidth = computed(() => Math.min(340, windowWidth.value - alertPopupsRightPx.value - 8))
 const alertPopupsStyle = computed(() => ({ top: "3.5rem", right: `${alertPopupsRightPx.value}px` }))
-const assistantQuestionsStyle = computed(() => ({
-    top: "3.5rem",
-    right: `${isDesktop.value ? alertPopupsRightPx.value + alertPopupsWidth.value + 8 : alertPopupsRightPx.value}px`,
-    transform: `translate(${assistantQuestionsOffset.value.x}px, ${assistantQuestionsOffset.value.y}px)`,
-}))
 
 const orderAmountClass = (orderAlertType: string | undefined) => ({
     ecom_small: "text-gray-500",
@@ -212,7 +205,6 @@ onMounted(() => {
     if (!isEmbedded) {
         startWorkAlerts(useStaffMessaging())
         startOrderAlerts()
-        loadMyAssistantQuestions()
     }
     checkScreenType()
     window.addEventListener("resize", checkScreenType)
@@ -477,18 +469,7 @@ const safeTheme = computed(() => {
         </template>
     </notifications>
 
-    <GuruWelcomeDialog v-if="!isEmbedded" />
-
-    <notifications
-        group="assistant-questions"
-        position="top right"
-        :max="3"
-        :width="Math.min(380, windowWidth - 16)"
-        :style="assistantQuestionsStyle">
-        <template #body="{ item, close }">
-            <AssistantQuestionPopup :question="item.data.question" @close="close" />
-        </template>
-    </notifications>
+    <GuruFarewellDialog v-if="!isEmbedded" />
 
     <notifications
         group="alert-popups"

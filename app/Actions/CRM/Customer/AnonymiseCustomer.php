@@ -16,16 +16,17 @@ use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatAuraQuestion;
+use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatMessageTranslation;
 use App\Models\Chat\ChatSession;
+use App\Models\Tasks\StaffTask;
 use App\Models\Comms\EmailAddress;
 use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\CustomerClaim\CustomerClaim;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
-use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\WipeShoppingAssistantConversations;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Address;
@@ -314,7 +315,37 @@ class AnonymiseCustomer extends OrgAction
         DB::table('shopping_assistant_refusals')->where('customer_id', $customer->id)->update(['question' => null]);
 
         WipeShoppingAssistantConversations::run(ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id')->all());
-        AnswerShoppingAssistantTeamQuestion::deleteKeptNotesOf($customer->id);
+        $this->deleteKeptNotesOf($customer->id);
+    }
+
+    /**
+     * The shop notes gurus kept from this customer's questions (before INI-574 removed the gurus):
+     * a note carries the customer's own question as its title. Tasks answered before kept_note_id
+     * was recorded are matched by that title in the task's shop.
+     */
+    private function deleteKeptNotesOf(int $customerId): void
+    {
+        StaffTask::where('data->kind', 'shopping_assistant_team_question')
+            ->where('data->customer_id', $customerId)
+            ->get()
+            ->each(function (StaffTask $task) {
+                $notes  = ChatKnowledgeEntry::where('is_manual', true)->where('kind', 'note');
+                $noteId = data_get($task->data, 'kept_note_id');
+
+                if ($noteId) {
+                    $notes->whereKey($noteId)->delete();
+                } elseif (data_get($task->data, 'kept_for_everyone') && data_get($task->data, 'shop_id')) {
+                    $questions = array_values(array_filter([data_get($task->data, 'question'), ...array_column(data_get($task->data, 'more_questions', []), 'question')]));
+                    $title     = count($questions) > 1
+                        ? implode("\n", array_map(fn (string $text, int $index) => ($index + 1).'. '.$text, $questions, array_keys($questions)))
+                        : ($questions[0] ?? '');
+
+                    $notes->where('shop_id', data_get($task->data, 'shop_id'))
+                        ->where('title', mb_substr(str_replace("\n", ' ', $title), 0, 200))
+                        ->where('created_at', '>=', $task->created_at)
+                        ->delete();
+                }
+            });
     }
 
     /**

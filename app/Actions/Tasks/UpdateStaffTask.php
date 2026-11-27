@@ -8,9 +8,7 @@
 
 namespace App\Actions\Tasks;
 
-use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\FollowUpShoppingAssistantRestockQuestion;
-use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\Goods\ProductDevelopment\FollowUpProductDevelopmentTask;
 use App\Actions\Chat\Staff\SendStaffMessage;
@@ -88,12 +86,6 @@ class UpdateStaffTask
             FollowUpProductDevelopmentTask::run($task, $actor);
             if (data_get($task->data, 'kind') === StoreShoppingAssistantRestockQuestion::TASK_KIND && $task->status === StaffTaskStatusEnum::DONE) {
                 FollowUpShoppingAssistantRestockQuestion::dispatch($task, $actor, $note);
-            }
-            if (data_get($task->data, 'kind') === StoreShoppingAssistantTeamQuestion::TASK_KIND && $task->status === StaffTaskStatusEnum::DONE && $note && !data_get($task->data, 'answered_at')) {
-                $result = AnswerShoppingAssistantTeamQuestion::run($task, $actor, $note, false);
-                if (in_array($result, ['not_an_answer', 'has_gap'], true) && $task->conversation) {
-                    SendStaffMessage::run($task->conversation, GetAikuAssistant::run($task->group_id), ['body' => AnswerShoppingAssistantTeamQuestion::refusalMessage($result)]);
-                }
             }
         }
 

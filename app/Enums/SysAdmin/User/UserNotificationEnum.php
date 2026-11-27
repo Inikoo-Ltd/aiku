@@ -48,7 +48,6 @@ enum UserNotificationEnum: string
     case PRODUCTION_SHORTFALL = 'production_shortfall';
     case SALES_LEAD = 'sales_lead';
     case RESTOCK_QUESTION = 'restock_question';
-    case ASSISTANT_QUESTION = 'assistant_question';
     case DELIVERY_FEEDBACK = 'delivery_feedback';
     case SLACK_MENTION = 'slack_mention';
     case E_INVOICE_PROBLEM = 'e_invoice_problem';
@@ -126,7 +125,6 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_MINIMUM_POKE   => __('Another organisation asks me to add to my draft to reach a supplier minimum (email and Slack come grouped every 15 minutes)'),
             self::SALES_LEAD                    => __('A customer of my organisation asks the AI assistant for a call about a big order, and when nobody has taken it yet'),
             self::RESTOCK_QUESTION              => __('A customer of my organisation asks the AI assistant when a product will be back in stock and we have no reliable date, and when nobody has answered yet'),
-            self::ASSISTANT_QUESTION            => __('A customer of my organisation asks the AI assistant something only our team can answer, and I am the person or the backup who answers'),
             self::DELIVERY_FEEDBACK             => __('Someone gives feedback on a delivery I bought'),
             self::SLACK_MENTION                 => __('Someone @mentions me in a Slack channel (off until you pick a channel; the notification inside Aiku comes with it)'),
             self::E_INVOICE_PROBLEM             => __('An invoice of my organisation could not be sent as an e-invoice, or the customer\'s system refused it'),
@@ -169,7 +167,7 @@ enum UserNotificationEnum: string
             return ['email', 'browser'];
         }
 
-        if ($this === self::SALES_LEAD || $this === self::RESTOCK_QUESTION || $this === self::ASSISTANT_QUESTION) {
+        if ($this === self::SALES_LEAD || $this === self::RESTOCK_QUESTION) {
             return self::CHANNELS;
         }
 
@@ -223,7 +221,6 @@ enum UserNotificationEnum: string
             self::PRODUCTION_SHORTFALL          => 'fal fa-industry-alt',
             self::SALES_LEAD                    => 'fal fa-phone-alt',
             self::RESTOCK_QUESTION              => 'fal fa-box-open',
-            self::ASSISTANT_QUESTION            => 'fal fa-head-side-brain',
             self::DELIVERY_FEEDBACK             => 'fal fa-star',
             self::SLACK_MENTION                 => 'fal fa-at',
             self::E_INVOICE_PROBLEM             => 'fal fa-file-invoice',

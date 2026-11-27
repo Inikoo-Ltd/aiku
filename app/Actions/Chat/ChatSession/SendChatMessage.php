@@ -13,7 +13,6 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithTimeSinceTaken;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
-use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
 use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -71,6 +70,8 @@ class SendChatMessage
     public const MAX_CUSTOMER_DAILY_BYTES = 100 * 1024 * 1024;
 
     private const float KEPT_OWN_LANGUAGE = 0.5;
+
+    public const int MAX_MEASURED_SECONDS = 1800;
 
     /**
      * @throws \Throwable
@@ -264,13 +265,36 @@ class SendChatMessage
         return $sinceTaken ? [...($metadata ?? []), ...$sinceTaken] : $metadata;
     }
 
+    /**
+     * Measured seconds are kept only when they are numbers, clamped to MAX_MEASURED_SECONDS: a bad
+     * figure from the page never costs the reply.
+     *
+     * @param  array{writing_seconds?: mixed, typing_seconds?: mixed}  $activeTime
+     *
+     * @return array{writing_seconds?: int, typing_seconds?: int}
+     */
+    public static function measuredTime(array $activeTime): array
+    {
+        $writing = $activeTime['writing_seconds'] ?? null;
+        if (!is_numeric($writing)) {
+            return [];
+        }
+
+        $typing = $activeTime['typing_seconds'] ?? null;
+
+        return [
+            'writing_seconds' => (int) min(max((float) $writing, 0), self::MAX_MEASURED_SECONDS),
+            'typing_seconds'  => (int) min(max(is_numeric($typing) ? (float) $typing : 0, 0), self::MAX_MEASURED_SECONDS),
+        ];
+    }
+
     private function withActiveTime(?array $metadata, array $modelData): ?array
     {
         if (($modelData['sender_type'] ?? null) !== ChatSenderTypeEnum::AGENT->value || empty($modelData['active_time'])) {
             return $metadata;
         }
 
-        $measured = AnswerShoppingAssistantTeamQuestion::measuredTime($modelData['active_time']);
+        $measured = self::measuredTime($modelData['active_time']);
 
         return $measured ? [...($metadata ?? []), ...$measured] : $metadata;
     }
