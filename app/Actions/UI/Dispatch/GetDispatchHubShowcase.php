@@ -19,6 +19,7 @@ use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Models\Dispatching\DeliveryNoteItem;
 
 class GetDispatchHubShowcase
 {
@@ -72,11 +73,12 @@ class GetDispatchHubShowcase
                 ],
             ],
             'waiting_items' => [
-                'count' => $warehouse->deliveryNotes()
+                ...DeliveryNoteItem::waitingCounts(
+                    $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
-                    ->count(),
+                ),
                 'route' => [
                     'name' => 'grp.org.warehouses.show.dispatching.waiting_items',
                     'parameters' => request()->route()->originalParameters()

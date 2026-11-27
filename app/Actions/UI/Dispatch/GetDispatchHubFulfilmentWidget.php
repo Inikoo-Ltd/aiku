@@ -18,6 +18,7 @@ use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Facades\Route;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Dispatching\DeliveryNoteItem;
 
 class GetDispatchHubFulfilmentWidget
 {
@@ -112,13 +113,14 @@ class GetDispatchHubFulfilmentWidget
                 ],
             ],
             'waiting_items' => [
-                'count' => $warehouse->deliveryNotes()
+                ...DeliveryNoteItem::waitingCounts(
+                    $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
-                    ->count(),
+                ),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
                     'parameters' => [$organisation->slug, $warehouse->slug, $shopType],

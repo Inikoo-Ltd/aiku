@@ -12,6 +12,30 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardDispatchHubDashboardResource extends JsonResource
 {
+    /**
+     * The Waiting delivery notes list, filtered by how ready to pick their waiting items are (HELP-4985).
+     *
+     * @param array{name?: string, parameters?: array<int|string, mixed>}|null $route
+     * @return array{name: string, parameters: array<string, mixed>}|null
+     */
+    private static function readyToPickRoute(?array $route, string $readyToPick): ?array
+    {
+        if (!isset($route['name'])) {
+            return null;
+        }
+
+        $parameters = array_values($route['parameters'] ?? []);
+        $names      = ['organisation', 'warehouse', 'shopType'];
+
+        return [
+            'name'       => $route['name'],
+            'parameters' => [
+                ...array_combine(array_slice($names, 0, count($parameters)), $parameters),
+                'filter' => ['ready_to_pick' => $readyToPick],
+            ],
+        ];
+    }
+
     public function toArray($request): array
     {
         $waitingItemsStillPicking    = $this->resource['waiting_items_still_picking'] ?? ['count' => 0, 'route' => null];
@@ -129,11 +153,27 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 }
 
                 if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
-                    $entry['warning'] = [
-                        'route_target' => $widget['waiting_items']['route'],
-                        'tooltip' => __('Waiting items'),
-                        'value' => $widget['waiting_items']['count'],
-                    ];
+                    $ready = (int) ($widget['waiting_items']['ready'] ?? 0);
+                    if ($widget['waiting_items']['count'] > $ready) {
+                        $entry['warning'] = [
+                            'route_target' => $widget['waiting_items']['route'],
+                            'tooltip' => __('Waiting items'),
+                            'value' => $widget['waiting_items']['count'] - $ready,
+                        ];
+                    }
+                    $readyNotes = (int) ($widget['waiting_items']['ready_notes'] ?? 0);
+                    if ($readyNotes > 0) {
+                        $entry['ready']     = [
+                            'route_target' => self::readyToPickRoute($caseData['route'] ?? null, 'all'),
+                            'tooltip'      => __('Orders whose waiting items are all on the shelf now: pick them'),
+                            'value'        => $readyNotes,
+                        ];
+                        $entry['not_ready'] = [
+                            'route_target' => self::readyToPickRoute($caseData['route'] ?? null, 'not_all'),
+                            'tooltip'      => __('Orders not ready to pick yet: waiting for stock or for customer service'),
+                            'value'        => max(0, ($entry['value'] ?? 0) - $readyNotes),
+                        ];
+                    }
                 }
 
                 if ($caseKey === 'handling' && ($widget['waiting_crm_items_still_picking']['count'] ?? 0) > 0) {
@@ -196,11 +236,27 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             }
 
             if ($caseKey === 'handling_blocked' && $waitingItems['count'] > 0) {
-                $totals[$caseKey]['warning'] = [
-                    'route_target' => $waitingItems['route'],
-                    'tooltip'      => __('Waiting items'),
-                    'value'        => $waitingItems['count'],
-                ];
+                $ready = (int) ($waitingItems['ready'] ?? 0);
+                if ($waitingItems['count'] > $ready) {
+                    $totals[$caseKey]['warning'] = [
+                        'route_target' => $waitingItems['route'],
+                        'tooltip'      => __('Waiting items'),
+                        'value'        => $waitingItems['count'] - $ready,
+                    ];
+                }
+                $readyNotes = (int) ($waitingItems['ready_notes'] ?? 0);
+                if ($readyNotes > 0) {
+                    $totals[$caseKey]['ready']     = [
+                        'route_target' => self::readyToPickRoute($totals[$caseKey]['route_target'] ?? null, 'all'),
+                        'tooltip'      => __('Orders whose waiting items are all on the shelf now: pick them'),
+                        'value'        => $readyNotes,
+                    ];
+                    $totals[$caseKey]['not_ready'] = [
+                        'route_target' => self::readyToPickRoute($totals[$caseKey]['route_target'] ?? null, 'not_all'),
+                        'tooltip'      => __('Orders not ready to pick yet: waiting for stock or for customer service'),
+                        'value'        => max(0, $totals[$caseKey]['value'] - $readyNotes),
+                    ];
+                }
             }
 
             if ($caseKey === 'handling' && $waitingCrmItemsStillPicking['count'] > 0) {

@@ -12,6 +12,7 @@ use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -142,6 +143,19 @@ trait IsDeliveryNotesIndex
         $query->where('shops.is_aiku', true);
 
         $allowedFilters = [$globalSearch];
+
+        if ($bucket == 'handling_blocked') {
+            $allowedFilters[] = AllowedFilter::callback('ready_to_pick', function ($query, $value) {
+                $ready   = self::readyToPickCountSql();
+                $waiting = '(SELECT count(*) FROM delivery_note_items w WHERE w.delivery_note_id = delivery_notes.id AND w.has_waiting_warehouse)';
+                match ($value) {
+                    'all'   => $query->whereRaw("$ready > 0 AND $ready = $waiting"),
+                    'some'  => $query->whereRaw("$ready > 0"),
+                    'not_all' => $query->whereRaw("NOT ($ready > 0 AND $ready = $waiting)"),
+                    default => null,
+                };
+            });
+        }
 
         if ($bucket == 'dispatched') {
             $query->leftJoin('countries', 'delivery_notes.delivery_country_id', '=', 'countries.id');
@@ -294,6 +308,9 @@ trait IsDeliveryNotesIndex
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_w WHERE dni_w.delivery_note_id = delivery_notes.id AND dni_w.has_waiting_warehouse = true) as waiting_warehouse_count")
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_c WHERE dni_c.delivery_note_id = delivery_notes.id AND dni_c.has_waiting_crm = true) as waiting_crm_count")
+            ->when($bucket == 'handling_blocked', fn ($query) => $query
+                ->selectRaw(self::readyToPickCountSql().' as ready_to_pick_count')
+                ->selectRaw('(SELECT count(*) FROM delivery_note_items t WHERE t.delivery_note_id = delivery_notes.id) as items_count'))
             ->allowedSorts([
                 'reference',
                 'date',
@@ -314,6 +331,11 @@ trait IsDeliveryNotesIndex
             ])
             ->allowedFilters($allowedFilters)
             ->withBetweenDates(['date']);
+    }
+
+    private static function readyToPickCountSql(): string
+    {
+        return '(SELECT count(*) FROM delivery_note_items r WHERE r.delivery_note_id = delivery_notes.id AND '.DeliveryNoteItem::readyToPickSql('r').')';
     }
 
     protected function getRecordsPerPage(): ?int
@@ -405,6 +427,14 @@ trait IsDeliveryNotesIndex
                     ]
                 );
 
+            if ($bucket == 'handling_blocked' && $parent instanceof Warehouse) {
+                $table->selectFilter('ready_to_pick', [
+                    'all'  => __('Every waiting item ready'),
+                    'some' => __('Some waiting items ready'),
+                    'not_all' => __('Not ready yet'),
+                ], __('Ready to pick'));
+            }
+
             if ($bucket == 'dispatched' && $parent instanceof Warehouse) {
                 $weightBracketOptions = [
                     'up_to_1kg'  => __('Up to').' 1 kg',
@@ -492,6 +522,10 @@ trait IsDeliveryNotesIndex
             $table->column(key: 'parcels', label: __('Parcel'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'number_items', label: __('Items'), canBeHidden: false, sortable: true, searchable: true);
+
+            if ($bucket == 'handling_blocked') {
+                $table->column(key: 'pick_progress', label: __('Picked · Ready · Waiting'), canBeHidden: false);
+            }
 
             if ($bucket == 'handling' || $bucket == 'handling_blocked' || $bucket == 'picked' || $bucket == 'packing' || $bucket == 'packed' || $bucket == 'finalised') {
                 $table->column(key: 'sort_picker', label: __('Picker'), canBeHidden: false, sortable: true, searchable: true);

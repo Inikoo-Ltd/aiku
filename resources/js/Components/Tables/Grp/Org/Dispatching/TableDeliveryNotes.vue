@@ -271,6 +271,23 @@ const dateColumnOptions = computed(() => [
 		tooltip: ctrans('Show when the delivery note was submitted by the customer'),
 	},
 ])
+
+const pickProgress = (deliveryNote: Record<string, unknown>) => {
+	const total = Number(deliveryNote.items_count) || 1
+	const waitingWarehouse = Number(deliveryNote.waiting_warehouse_count)
+	const ready = Math.min(Number(deliveryNote.ready_to_pick_count), waitingWarehouse)
+	const crm = Number(deliveryNote.waiting_crm_count)
+	const parts = [
+		{ key: "picked", label: ctrans("Picked"), count: Math.max(total - waitingWarehouse - crm, 0), class: "bg-green-600" },
+		{ key: "ready", label: ctrans("Ready to pick"), count: ready, class: "bg-green-300" },
+		{ key: "waiting", label: ctrans("Waiting"), count: waitingWarehouse - ready, class: "bg-amber-400" },
+		{ key: "crm", label: ctrans("With customer service"), count: crm, class: "bg-purple-400" },
+	]
+
+	return parts
+		.filter((part) => part.key !== "crm" || part.count > 0)
+		.map((part) => ({ ...part, percentage: Math.round((part.count / total) * 100) }))
+}
 </script>
 
 <template>
@@ -384,6 +401,7 @@ const dateColumnOptions = computed(() => [
 						v-if="Number(deliveryNote.waiting_warehouse_count) > 0"
 						:count="Number(deliveryNote.waiting_warehouse_count)"
 						type="warehouse"
+						:ready="Number(deliveryNote.ready_to_pick_count)"
 						:href="deliveryNoteHref(deliveryNote)"
 					/>
 					<WaitingOppositeCountBadge
@@ -393,6 +411,27 @@ const dateColumnOptions = computed(() => [
 						:href="deliveryNoteHref(deliveryNote)"
 					/>
 				</div>
+			</div>
+		</template>
+
+		<template #cell(pick_progress)="{ item: deliveryNote }">
+			<div
+				v-if="Number(deliveryNote.items_count) > 0"
+				v-tooltip="pickProgress(deliveryNote).map((part) => `${part.label}: ${part.count}`).join(' · ')"
+				class="flex items-center gap-2">
+				<div class="flex h-2 w-28 overflow-hidden rounded-full bg-gray-100">
+					<div
+						v-for="part in pickProgress(deliveryNote)"
+						:key="part.key"
+						:class="part.class"
+						:style="{ width: part.percentage + '%' }" />
+				</div>
+				<span class="text-xs tabular-nums whitespace-nowrap text-gray-500">
+					{{ pickProgress(deliveryNote).filter((part) => part.key !== 'crm').map((part) => part.percentage + '%').join(' · ') }}
+					<span v-if="pickProgress(deliveryNote).some((part) => part.key === 'crm')" class="text-purple-600">
+						· {{ ctrans(":percentage% with CS", { percentage: pickProgress(deliveryNote).find((part) => part.key === 'crm')?.percentage }) }}
+					</span>
+				</span>
 			</div>
 		</template>
 

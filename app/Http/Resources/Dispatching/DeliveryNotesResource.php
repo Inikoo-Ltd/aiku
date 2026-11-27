@@ -130,6 +130,8 @@ class DeliveryNotesResource extends JsonResource
             'picking_sessions_count'      => $this->picking_sessions_count,
             'picking_session_ids'         => $this->picking_session_ids,
             'waiting_warehouse_count'     => (int) $this->waiting_warehouse_count,
+            'ready_to_pick_count'         => (int) ($this->ready_to_pick_count ?? 0),
+            'items_count'                 => (int) ($this->items_count ?? 0),
             'waiting_crm_count'           => (int) $this->waiting_crm_count,
             'customer_notes'              => $this->customer_notes,
             'internal_notes'              => $this->internal_notes,

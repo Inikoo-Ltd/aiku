@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Models\Dispatching\DeliveryNoteItem;
 
 class GetDispatchHubB2CWidget
 {
@@ -44,13 +45,14 @@ class GetDispatchHubB2CWidget
                 ],
             ],
             'waiting_items' => [
-                'count' => $warehouse->deliveryNotes()
+                ...DeliveryNoteItem::waitingCounts(
+                    $warehouse->deliveryNotes()
                     ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', ShopTypeEnum::B2C->value)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED)
-                    ->count(),
+                ),
                 'route' => [
                     'name'       => 'grp.org.warehouses.show.dispatching.waiting_items.shop',
                     'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value],

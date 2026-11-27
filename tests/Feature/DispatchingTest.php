@@ -10338,3 +10338,48 @@ test('handling blocked delivery notes list shows the picked bays column', functi
 
     expect($columns->pluck('key'))->toContain('sort_picked_bays');
 });
+
+test('a waiting delivery note shows how many waiting items now have stock on a shelf, and can be filtered by it (HELP-4985)', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'handling_blocked_at' => now()]);
+    $item->updateQuietly(['quantity_waiting_warehouse' => 5]);
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('org_stock_id', $item->org_stock_id)->sole();
+
+    $listed = function (?string $readyToPick) use ($deliveryNote) {
+        $rows = get(route('grp.org.warehouses.show.dispatching.handling-blocked.delivery-notes', [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            ...($readyToPick ? ['filter' => ['ready_to_pick' => $readyToPick]] : []),
+        ]))->assertOk()->viewData('page')['props']['data']['data'];
+
+        return collect($rows)->firstWhere('id', $deliveryNote->id);
+    };
+
+    $locationOrgStock->updateQuietly(['quantity' => 100]);
+    expect($listed(null)['ready_to_pick_count'])->toBe(1)
+        ->and($listed(null)['items_count'])->toBe(1)
+        ->and($listed('all'))->not->toBeNull()
+        ->and($listed('some'))->not->toBeNull()
+        ->and($listed('not_all'))->toBeNull();
+
+    $locationOrgStock->updateQuietly(['quantity' => 4]);
+    expect($listed(null)['ready_to_pick_count'])->toBe(0)
+        ->and($listed('some'))->toBeNull()
+        ->and($listed('not_all'))->not->toBeNull();
+
+    $locationOrgStock->updateQuietly(['quantity' => 100]);
+    \App\Models\Production\Production::where('organisation_id', $this->organisation->id)->orderBy('id')->first()
+        ?->update(['factory_location_id' => $locationOrgStock->location_id]);
+    if (\App\Models\Production\Production::where('factory_location_id', $locationOrgStock->location_id)->exists()) {
+        expect($listed(null)['ready_to_pick_count'])->toBe(0);
+    }
+
+    \App\Models\Production\Production::where('factory_location_id', $locationOrgStock->location_id)->update(['factory_location_id' => null]);
+    get(route('grp.org.warehouses.show.dispatching.backlog', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('delivery_note.totals.handling_blocked.ready.value', fn ($value) => $value >= 1)
+            ->where('delivery_note.totals.handling_blocked.ready.route_target.parameters.filter.ready_to_pick', 'all')
+            ->where('delivery_note.totals.handling_blocked.not_ready.route_target.parameters.filter.ready_to_pick', 'not_all')
+            ->etc());
+});

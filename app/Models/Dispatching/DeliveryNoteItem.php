@@ -296,4 +296,35 @@ class DeliveryNoteItem extends Model
 
         return $whole >= 1 && abs($quantity - $whole) < 0.00001 ? $whole : $quantity;
     }
+
+    /**
+     * HELP-4985. A waiting item whose missing quantity is now on a shelf of its note's warehouse, so the picker can go back for it.
+     * Not counted: stock in the production factory location or a partner's goods-out location, and lines production still has to make or fill.
+     * ponytail: ignores stock other notes are about to pick from the same shelf; reserve it if two notes race for the last units.
+     */
+    public static function readyToPickSql(string $item = 'delivery_note_items', string $note = 'delivery_notes'): string
+    {
+        return "($item.has_waiting_warehouse
+            AND NOT EXISTS (SELECT 1 FROM partner_shopping_list_items p WHERE p.transaction_id = $item.transaction_id AND p.state = 'open')
+            AND $item.quantity_waiting_warehouse <= (SELECT COALESCE(SUM(lo.quantity), 0) FROM location_org_stocks lo
+                WHERE lo.org_stock_id = $item.org_stock_id AND lo.warehouse_id = $note.warehouse_id AND lo.quantity > 0
+                AND NOT EXISTS (SELECT 1 FROM productions pr WHERE pr.organisation_id = $note.organisation_id AND pr.factory_location_id = lo.location_id)
+                AND NOT EXISTS (SELECT 1 FROM org_partners op WHERE op.organisation_id = $note.organisation_id
+                    AND lo.location_id IN (op.goods_out_location_id, op.gb_goods_out_location_id, op.cosmetic_goods_out_location_id))))";
+    }
+
+    /**
+     * Waiting items, those of them ready to pick, and the notes whose every waiting item is ready.
+     *
+     * @return array{count: int, ready: int, ready_notes: int}
+     */
+    public static function waitingCounts($waitingItemsQuery): array
+    {
+        $counts = $waitingItemsQuery->toBase()
+            ->selectRaw('count(*) as count, count(*) FILTER (WHERE '.self::readyToPickSql().') as ready')
+            ->selectRaw('count(DISTINCT delivery_notes.id) FILTER (WHERE NOT EXISTS (SELECT 1 FROM delivery_note_items x WHERE x.delivery_note_id = delivery_notes.id AND x.has_waiting_warehouse AND NOT '.self::readyToPickSql('x').')) as ready_notes')
+            ->first();
+
+        return ['count' => (int) $counts->count, 'ready' => (int) $counts->ready, 'ready_notes' => (int) $counts->ready_notes];
+    }
 }
