@@ -9,7 +9,7 @@ import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare, faParachuteBox } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
@@ -19,7 +19,7 @@ import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare)
+library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare, faParachuteBox)
 
 const layout = inject("layout", layoutStructure)
 

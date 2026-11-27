@@ -13,7 +13,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { RouteParams } from "@/types/route-params"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar } from "@fas"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 
 defineProps<{
     data: object,
@@ -74,7 +74,7 @@ function tagColorClass(scope?: string) {
         case "user customer":
             return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
         default:
-            return "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+            return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
     }
 }
 
@@ -90,10 +90,10 @@ const shortLocation = (location: string[]) => {
     <div class="[&_td]:!text-xs [&_th_div]:!text-xs">
     <Table :resource="data" :name="tab" :useTopPagination="useTopPagination" class="mt-5">
         <template #cell(reference)="{ item: customer }">
-            <Link v-if="customerRoute(customer)" :href="customerRoute(customer) as string" class="primaryLink">
+            <Link v-if="customerRoute(customer)" :href="customerRoute(customer) as string" class="primaryLink whitespace-nowrap">
                 {{ customer["reference"] }}
             </Link>
-            <span v-else>
+            <span v-else class="whitespace-nowrap">
                 {{ customer["reference"] }}
             </span>
             <FontAwesomeIcon
@@ -115,6 +115,38 @@ const shortLocation = (location: string[]) => {
             </span>
         </template>
 
+        <template #cell(language_code)="{ item: customer }">
+            <span
+                v-if="customer.language_code"
+                v-tooltip="customer.language_name"
+                class="whitespace-nowrap uppercase"
+                :class="customer.language_is_shop ? 'text-gray-400' : 'text-gray-600'"
+            >
+                {{ customer.language_code }}
+            </span>
+            <span v-else class="text-gray-300">–</span>
+        </template>
+        <template #cell(number_customer_sales_channels)="{ item: customer }">
+            <div v-if="customer.channel_platforms?.length" class="flex flex-nowrap items-center gap-2">
+                <span
+                    v-for="platform in customer.channel_platforms"
+                    :key="platform.type"
+                    v-tooltip="[platform.label, ctransChoice(':count store|:count stores', platform.channels, { count: platform.channels }), platform.languages.join(', ').toUpperCase()].filter(Boolean).join(' · ')"
+                    class="inline-flex items-center gap-0.5 whitespace-nowrap"
+                >
+                    <img v-if="platform.logo" :src="platform.logo" :alt="platform.label" class="h-4 w-4 object-contain" />
+                    <span v-else class="text-xs text-gray-500">{{ platform.label }}</span>
+                    <span v-if="platform.channels > 1" class="text-xs tabular-nums text-gray-500">{{ platform.channels }}</span>
+                    <span
+                        v-for="code in platform.languages.filter((code: string) => code !== customer.language_code)"
+                        :key="code"
+                        class="text-[10px] uppercase text-gray-400"
+                    >{{ code }}</span>
+                </span>
+            </div>
+            <span v-else-if="customer.channel_platforms" class="text-gray-300">–</span>
+            <span v-else>{{ customer.number_customer_sales_channels }}</span>
+        </template>
         <template #cell(invoiced_net_amount)="{ item: customer }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}</div>
         </template>
@@ -137,7 +169,7 @@ const shortLocation = (location: string[]) => {
                 </span>
             </div>
             <div v-else class="text-gray-400 text-[10px] italic">
-                No tags
+                {{ ctrans("No tags") }}
             </div>
         </template>
         <template #cell(upcoming_products)="{ item: customer }">

@@ -42,7 +42,7 @@ class ExportCustomers extends OrgAction
         $fields = $modelData['columns'] ?? [];
         $tag = $modelData['filter']['tag'] ?? null;
 
-        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields, $upcoming, $tag);
+        $export = new CustomersExport($parent, $recipe, $states, $statuses, $fields, $upcoming, $tag, $modelData['filter']['language'] ?? null);
 
         if ($type === ExportTypeEnum::XLSX->value && $export->query()->toBase()->count() < self::STREAM_THRESHOLD) {
             return $this->export($export, 'customers', $type);
@@ -58,6 +58,7 @@ class ExportCustomers extends OrgAction
             'filters'    => ['sometimes', 'nullable', 'array'],
             'filter'     => ['sometimes', 'nullable', 'array'],
             'filter.tag' => ['sometimes', 'nullable', 'string'],
+            'filter.language' => ['sometimes', 'nullable', 'string', 'max:10'],
             'state'      => ['sometimes', 'nullable', 'array'],
             'state.*'    => ['string'],
             'status'     => ['sometimes', 'nullable', 'array'],

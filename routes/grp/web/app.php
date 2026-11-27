@@ -133,6 +133,9 @@ Route::middleware(
     Route::prefix("supply-chain")
         ->name("supply-chain.")
         ->group(__DIR__."/supply-chain.php");
+    Route::prefix("dropshipping")
+        ->name("dropshipping.")
+        ->group(__DIR__."/dropshipping.php");
     Route::prefix("masters")
         ->name("masters.")
         ->group(__DIR__."/masters.php");

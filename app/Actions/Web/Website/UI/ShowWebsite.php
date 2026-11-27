@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website\UI;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Actions\Catalogue\Shop\UI\GetShopLanguageReach;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
@@ -33,6 +34,9 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Closure;
+use App\InertiaTable\InertiaTable;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -68,6 +72,7 @@ class ShowWebsite extends OrgAction
     {
         $shop               = $website->shop;
         $hasOtherLanguages  = $shop && array_diff($shop->websiteLanguageCodes(), [$shop->language->code]) !== [];
+        $showsLanguageReach = $shop?->type === ShopTypeEnum::DROPSHIPPING;
         $stats              = [
             [
                 'label'     => __('Departments'),
@@ -287,7 +292,7 @@ class ShowWebsite extends OrgAction
             ];
         }
 
-        return Inertia::render(
+        $response = Inertia::render(
             'Org/Web/Website',
             [
                 'title'       => __('Website').' '.$website->name,
@@ -345,7 +350,10 @@ class ShowWebsite extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => $hasOtherLanguages ? WebsiteTabsEnum::navigation() : WebsiteTabsEnum::navigationExcept([WebsiteTabsEnum::TRANSLATIONS])
+                    'navigation' => WebsiteTabsEnum::navigationExcept(array_merge(
+                        $hasOtherLanguages ? [] : [WebsiteTabsEnum::TRANSLATIONS],
+                        $showsLanguageReach ? [] : [WebsiteTabsEnum::LANGUAGES],
+                    ))
                 ],
 
                 'route_storefront'   => $route_storefront,
@@ -409,6 +417,9 @@ class ShowWebsite extends OrgAction
 
                 WebsiteTabsEnum::TRANSLATIONS->value => $this->tab == WebsiteTabsEnum::TRANSLATIONS->value ? fn () => JsonResource::collection(IndexWebsiteTextTranslations::run($website, WebsiteTabsEnum::TRANSLATIONS->value))
                     : Inertia::optional(fn () => JsonResource::collection(IndexWebsiteTextTranslations::run($website, WebsiteTabsEnum::TRANSLATIONS->value))),
+                WebsiteTabsEnum::LANGUAGES->value => $showsLanguageReach
+                    ? ($this->tab == WebsiteTabsEnum::LANGUAGES->value ? fn () => $this->languageRows($shop) : Inertia::optional(fn () => $this->languageRows($shop)))
+                    : null,
                 'text_translation_route' => ['name' => 'grp.models.website.text_translation.update', 'parameters' => ['website' => $website->id]],
 
             ]
@@ -417,6 +428,43 @@ class ShowWebsite extends OrgAction
             ->table(IndexExternalLinks::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::EXTERNAL_LINKS->value))
             ->table(IndexCrawls::make()->tableStructure(parent: $website, prefix: WebsiteTabsEnum::CRAWLS->value))
             ->table(IndexWebsiteTextTranslations::make()->tableStructure(WebsiteTabsEnum::TRANSLATIONS->value));
+
+        return $showsLanguageReach ? $response->table($this->languagesTableStructure($shop)) : $response;
+    }
+
+    private function languageRows(Shop $shop): JsonResource
+    {
+        $reach = GetShopLanguageReach::run($shop);
+        $rows  = array_map(fn (array $row) => $row + ['currency_code' => $reach['currency_code'], 'channel_languages' => $reach['channel_languages']], $reach['languages']);
+
+        return JsonResource::collection(new LengthAwarePaginator($rows, count($rows), max(1, count($rows))));
+    }
+
+    private function languagesTableStructure(Shop $shop): Closure
+    {
+        return function (InertiaTable $table) use ($shop) {
+            $table->name(WebsiteTabsEnum::LANGUAGES->value)
+                ->pageName(WebsiteTabsEnum::LANGUAGES->value.'Page')
+                ->withEmptyState(['title' => __('No languages yet')])
+                ->column(key: 'language', label: __('Language'), canBeHidden: false)
+                ->column(key: 'customers', label: __('Customers'), canBeHidden: false, align: 'right')
+                ->column(key: 'web_users', label: __('Web users'), canBeHidden: false, align: 'right')
+                ->column(key: 'invoices_30d', label: __('Invoices 30d'), canBeHidden: false, align: 'right')
+                ->column(key: 'sales_30d', label: __('Sales 30d'), canBeHidden: false, align: 'right')
+                ->column(key: 'invoices_12m', label: __('Invoices 12m'), canBeHidden: false, align: 'right')
+                ->column(key: 'sales_12m', label: __('Sales 12m'), canBeHidden: false, align: 'right')
+                ->column(
+                    key: 'stores',
+                    label: __('Stores'),
+                    tooltip: $shop->customersChooseChannelLanguage() ? __('Connected stores in this language') : __("Connected stores. Store languages are switched off, so all stores count under the shop's language"),
+                    canBeHidden: false,
+                    align: 'right'
+                )
+                ->column(key: 'names', label: __('Names'), canBeHidden: false, align: 'right')
+                ->column(key: 'descriptions', label: __('Descriptions'), canBeHidden: false, align: 'right')
+                ->column(key: 'categories', label: __('Categories'), tooltip: __('Category names translated'), canBeHidden: false, align: 'right')
+                ->column(key: 'issues', label: __('Issues'), tooltip: __('Translations that failed, and translations still to clean'), canBeHidden: false, align: 'right');
+        };
     }
 
 

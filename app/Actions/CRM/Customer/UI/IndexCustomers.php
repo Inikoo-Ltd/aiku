@@ -24,6 +24,8 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -35,6 +37,8 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Language;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Models\CRM\TrafficSource;
 use App\Models\Helpers\Tag;
 use App\Models\Discounts\Offer;
@@ -58,6 +62,7 @@ class IndexCustomers extends OrgAction
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
     use HasSearchableText;
+    use GetPlatformLogo;
 
     private Group|Shop|Organisation $parent;
 
@@ -344,6 +349,10 @@ class IndexCustomers extends OrgAction
             $query->whereRaw("customers.location->>0 = ?", [$value]);
         });
 
+        $languageFilter = AllowedFilter::callback('language', function ($query, $value) {
+            $query->whereRaw(self::LANGUAGE_CODE_SQL.' = ?', [$value]);
+        });
+
         $hasOrdersFilter = AllowedFilter::callback('has_orders', function ($query, $value) {
             if ($value) {
                 $query->where('customer_stats.number_orders', '>', 0);
@@ -545,18 +554,87 @@ class IndexCustomers extends OrgAction
                 'shops.currency_id',
                 'number_customer_sales_channels',
                 'currencies.code as currency_code',
+                DB::raw(self::LANGUAGE_CODE_SQL.' as language_code'),
             ])
             ->leftJoin('customer_stats', 'customers.id', 'customer_stats.customer_id')
             ->leftJoin('shops', 'customers.shop_id', 'shops.id')
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
-            ->allowedFilters([$globalSearch, $tagFilter, $countryFilter, $hasOrdersFilter])
+            ->allowedFilters([$globalSearch, $tagFilter, $countryFilter, $languageFilter, $hasOrdersFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+
+        if ($parent instanceof Shop && $parent->type == ShopTypeEnum::DROPSHIPPING) {
+            $this->attachChannels($parent, $customers);
+        }
 
         $this->estimatedRecipients = $customers->total();
 
         return $customers;
+    }
+
+    /**
+     * The customer's language: its root web user's, else the shop's.
+     */
+    public const string LANGUAGE_CODE_SQL = "coalesce((select languages.code from web_users join languages on languages.id = web_users.language_id where web_users.customer_id = customers.id and web_users.is_root and web_users.deleted_at is null order by web_users.id limit 1), (select languages.code from languages join shops as customer_shops on customer_shops.language_id = languages.id where customer_shops.id = customers.shop_id))";
+
+    /**
+     * Open channels of the customers on this page, per platform with their languages, in one query after pagination
+     * (customer_sales_channels has no index on customer_id). A channel's language is its own only while the shop lets
+     * customers choose channel languages.
+     */
+    /**
+     * The shop's website languages, main first, plus the language in the address when it is another one
+     * (a "Not offered" link from the website Languages tab), so the select shows what is filtered.
+     *
+     * @return array<string, string>
+     */
+    private function languageFilterOptions(Shop $shop): array
+    {
+        $codes = array_values(array_unique(array_filter(array_merge(
+            [$shop->language->code],
+            $shop->websiteLanguageCodes(),
+            [is_string(request()->input('filter.language')) ? request()->input('filter.language') : null]
+        ))));
+
+        $names = Language::whereIn('code', $codes)->pluck('name', 'code');
+
+        return collect($codes)->filter(fn ($code) => $names->has($code))->mapWithKeys(fn ($code) => [$code => $names[$code].' ('.$code.')'])->all();
+    }
+
+    private function attachChannels(Shop $shop, LengthAwarePaginator $customers): void
+    {
+        $ids = collect($customers->items())->pluck('id')->all();
+        if (!$ids) {
+            return;
+        }
+
+        $channelLanguage = $shop->customersChooseChannelLanguage() ? 'customer_sales_channels.language_id' : 'null';
+
+        $rows = DB::table('customer_sales_channels')
+            ->join('platforms', 'platforms.id', '=', 'customer_sales_channels.platform_id')
+            ->join('languages', 'languages.id', '=', DB::raw("coalesce($channelLanguage, ".(int) $shop->language_id.')'))
+            ->where('customer_sales_channels.shop_id', $shop->id)
+            ->whereIn('customer_sales_channels.customer_id', $ids)
+            ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)
+            ->whereNull('customer_sales_channels.deleted_at')
+            ->groupBy('customer_sales_channels.customer_id', 'platforms.type', 'languages.code')
+            ->selectRaw('customer_sales_channels.customer_id, platforms.type, languages.code, count(*) as channels')
+            ->get()
+            ->groupBy('customer_id');
+
+        $languageNames = Language::whereIn('code', collect($customers->items())->pluck('language_code')->filter()->unique()->all())->pluck('name', 'code');
+
+        collect($customers->items())->each(fn (Customer $customer) => $customer->setAttribute('language_name', $languageNames[$customer->language_code] ?? null)->setAttribute('language_is_shop', $customer->language_code === $shop->language->code)->setAttribute(
+            'channel_platforms',
+            ($rows[$customer->id] ?? collect())->groupBy('type')->map(fn ($group, $type) => [
+                'type'      => $type,
+                'label'     => PlatformTypeEnum::tryFrom($type)?->labels()[$type] ?? $type,
+                'logo'      => $this->getPlatformLogo($type),
+                'channels'  => (int) $group->sum('channels'),
+                'languages' => $shop->customersChooseChannelLanguage() ? $group->pluck('code')->unique()->values()->all() : [],
+            ])->sortByDesc('channels')->values()->all()
+        ));
     }
 
     public function tableStructure(Group|Organisation|Shop|Product|TrafficSource|Offer $parent, ?array $modelOperations = null, $prefix = null, ?TrafficSourcesTypeEnum $channelType = null): Closure
@@ -646,6 +724,11 @@ class IndexCustomers extends OrgAction
             $table->column(key: 'created_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
 
             if ($isDropshipping) {
+                $languageOptions = $this->languageFilterOptions($parent);
+                if (count($languageOptions) > 1) {
+                    $table->selectFilter('language', $languageOptions, __('Language'), noFilterOptionLabel: __('All languages'));
+                }
+                $table->column(key: 'language_code', label: __('Language'), tooltip: __("The customer's website language, or the shop's when the customer has no web user"), canBeHidden: true);
                 $table->column(
                     key: 'number_current_customer_clients',
                     label: '',
