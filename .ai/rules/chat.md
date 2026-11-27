@@ -101,3 +101,6 @@ Raul, 27 Nov 2026 (INI-564 hostile review; corrects the two INI-564 rules above)
 
 ## A private channel nobody can still read keeps its last known members
 Raul, 27 Nov 2026 (INI-564). When neither the aiku bot nor an opted-in member is left in a private channel, slack_channel_members is no longer refreshed and access follows the last known members; the channel is not hidden. Do not add a "no live source, hide it" check to privateVisibleTo.
+
+## Listed private channels: name only, members choose
+A private channel's name is as private as its messages until a member turns on `slack_channels.is_listed` (any member, UpdateSlackPrivateChannelListing). Then SlackChannel::listedTo offers only id, name and member count to other staff linked to Slack (slack_listed_channels on Verbrations), with Ask to join (RequestToJoinSlackPrivateChannel: notifies the members, at most once a week per person). A member adds them in Slack; reading still goes only through privateVisibleTo. DMs are never listed. Decided by Raul, 27 Nov 2026.

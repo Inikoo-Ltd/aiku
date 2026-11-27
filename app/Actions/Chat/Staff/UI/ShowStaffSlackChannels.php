@@ -163,7 +163,7 @@ class ShowStaffSlackChannels extends OrgAction
         $starred = Arr::get($user->settings, 'desk_starred') ?? [];
 
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
+            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
         }
 
         $memo        = null;
@@ -173,10 +173,34 @@ class ShowStaffSlackChannels extends OrgAction
         $liveChannel = fn () => $channels() === [] ? null : 'grp.slack.'.$group->id;
         $private     = fn (): array => $this->channels($user, private: true);
         $direct      = fn (): array => $this->channels($user, direct: true);
+        $listed      = fn (): array => $this->listedChannels($user);
 
         return $deferred
-            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+            ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
+            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+    }
+
+    /**
+     * Private channels the viewer is not in but whose members chose to list them: the name and size only, to ask to join.
+     *
+     * @return list<array{id: int, name: string|null, member_count: int, requested: bool}>
+     */
+    public function listedChannels(User $user): array
+    {
+        return SlackChannel::listedTo($user)
+            ->where('is_archived', false)
+            ->select(['id', 'name'])
+            ->withCount('members')
+            ->addSelect(['requested' => DB::table('slack_channel_join_requests')->selectRaw('1')->whereColumn('slack_channel_id', 'slack_channels.id')->where('user_id', $user->id)->limit(1)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (SlackChannel $channel) => [
+                'id'           => $channel->id,
+                'name'         => $channel->name,
+                'member_count' => $channel->members_count,
+                'requested'    => (bool) $channel->requested,
+            ])
+            ->all();
     }
 
     private function tsParameter(ActionRequest $request, string $key): ?string
@@ -247,6 +271,7 @@ class ShowStaffSlackChannels extends OrgAction
                     'purpose'      => ($slackChannel->data['purpose']['value'] ?? null) ?: null,
                     'is_archived'  => $slackChannel->is_archived,
                     'is_private'   => $slackChannel->is_private,
+                    'is_listed'    => $slackChannel->is_private && !$slackChannel->direct_type ? $slackChannel->is_listed : null,
                     'brought_by'   => $slackChannel->is_private && $slackChannel->brought_by_user_id ? User::whereKey($slackChannel->brought_by_user_id)->first()?->chatName() : null,
                     'member_count' => $slackChannel->members()->count(),
                     'pinned_count' => $slackChannel->messages()->whereNotNull('pinned_at')->count(),

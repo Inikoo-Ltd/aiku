@@ -11,7 +11,7 @@ import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks } from "@fal"
+import { faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks } from "@fal"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import { faChevronLeft } from "@far"
@@ -31,7 +31,7 @@ import SlackChannelStream, { type SlackChannelHeader, type SlackStreamMessage } 
 import SlackMessageSearch from "@/Components/Messaging/Slack/SlackMessageSearch.vue"
 import { isInSlackStream, reloadSlack, useSlackLive, type SlackLiveEvent } from "@/Components/Messaging/Slack/slackLive"
 
-library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
+library.add(faSlack, faArchive, faCaretDown, faCheckDouble, faComments, faEdit, faFilter, faHashtag, faKeyboard, faLock, faTimes, faUser, faUsers, faTasks, faChevronLeft, faStarSolid)
 
 interface SlackChannelListItem {
     id: number
@@ -44,11 +44,19 @@ interface SlackChannelListItem {
     last_read_ts?: string | null
 }
 
+interface SlackListedChannel {
+    id: number
+    name: string | null
+    member_count: number
+    requested: boolean
+}
+
 const props = defineProps<{
     title: string
     selected_ulid: string | null
     slack_channels?: SlackChannelListItem[]
     slack_private_channels?: SlackChannelListItem[]
+    slack_listed_channels?: SlackListedChannel[]
     slack_direct_channels?: SlackChannelListItem[]
     slack_live_channel?: string | null
     slack_channel?: SlackChannelHeader | null
@@ -68,6 +76,23 @@ const knownPrivateChannels = ref<SlackChannelListItem[]>(props.slack_private_cha
 watch(() => props.slack_private_channels, (channels) => {
     if (channels !== undefined) knownPrivateChannels.value = channels
 })
+const knownListedChannels = ref<SlackListedChannel[]>(props.slack_listed_channels ?? [])
+watch(() => props.slack_listed_channels, (channels) => {
+    if (channels !== undefined) knownListedChannels.value = channels
+})
+const askingToJoin = ref<number | null>(null)
+const joinError = ref<string | null>(null)
+const askToJoin = (channel: SlackListedChannel) => {
+    router.post(route("grp.chat.staff.groups.slack.join_request.store", channel.id), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["slack_listed_channels"],
+        onStart: () => { askingToJoin.value = channel.id; joinError.value = null },
+        onSuccess: () => { channel.requested = true },
+        onError: () => { joinError.value = ctrans("Could not send the request. Try again.") },
+        onFinish: () => { askingToJoin.value = null },
+    })
+}
 const privateChannels = computed(() => [...knownPrivateChannels.value].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")))
 const isPrivateChannel = (channelId: number) => knownPrivateChannels.value.some((channel) => channel.id === channelId)
 const knownDirectChannels = ref<SlackChannelListItem[]>(props.slack_direct_channels ?? [])
@@ -637,6 +662,16 @@ onUnmounted(() => {
                             :is-starred="false"
                             @select="selectConversation(conversation.ulid)"
                             @toggle-star="toggleStar('dm-' + conversation.ulid)" />
+                        <template v-if="isGroups && knownListedChannels.length && !filterText">
+                            <p class="px-4 pb-1 pt-3 text-xs opacity-70">{{ ctrans("Other private channels") }}</p>
+                            <div v-for="channel in knownListedChannels" :key="'listed-' + channel.id" class="mx-2 flex h-7 items-center gap-x-2 rounded-md px-4 text-[13px] opacity-80">
+                                <FontAwesomeIcon icon="fal fa-lock" class="shrink-0 text-[13px]" fixed-width aria-hidden="true" />
+                                <span class="min-w-0 flex-1 truncate" v-tooltip="ctrans(':count members', { count: String(channel.member_count) })">{{ channel.name }}</span>
+                                <span v-if="channel.requested" class="shrink-0 text-xs opacity-70">{{ ctrans("Asked") }}</span>
+                                <button v-else type="button" class="shrink-0 rounded px-1.5 text-xs underline hover:bg-[var(--desk-hover)] disabled:opacity-50" :disabled="askingToJoin === channel.id" @click="askToJoin(channel)">{{ ctrans("Ask to join") }}</button>
+                            </div>
+                            <p v-if="joinError" class="px-4 py-1 text-xs text-red-300" role="alert">{{ joinError }}</p>
+                        </template>
                         <p v-if="isGroups && !tabConversations.length && !privateChannels.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("Your Slack private channels will show here once they sync.") }}</p>
                         <button
                             v-if="!filterText"
