@@ -57,10 +57,14 @@ class ShowOrgChatInbox extends OrgAction
     {
         $user = $request->user();
 
-        $selectedSessionShop = $this->selectedSession?->shop;
+        if ($this->selectedSession) {
+            if (!$this->userCanViewChatSession($user, $this->selectedSession)) {
+                return false;
+            }
 
-        if ($this->selectedSession && !($selectedSessionShop && $this->userCanViewChatOnShop($user, $selectedSessionShop))) {
-            return false;
+            if (!$this->selectedSession->shop || !$this->userCanViewChatOnShop($user, $this->selectedSession->shop)) {
+                return true;
+            }
         }
 
         if (isset($this->shop)) {
@@ -183,7 +187,7 @@ class ShowOrgChatInbox extends OrgAction
                     'slug' => $organisation->slug,
                     'name' => $organisation->name,
                 ],
-                'is_read_only'         => false,
+                'is_read_only'         => $this->selectedSession?->shop && !$this->userCanActOnChatOnShop($user, $this->selectedSession->shop),
                 // Overseeing shows everybody's conversations on a shop, whoever holds them, and
                 // the people holding them down the side.
                 'supervisor'           => $this->supervising,

@@ -33,7 +33,7 @@ trait WithChatSessionReadAuthorisation
             return false;
         }
 
-        if ($this->userCanViewChatOnShop($user, $shop)) {
+        if ($this->userCanViewChatSession($user, $chatSession)) {
             return true;
         }
 

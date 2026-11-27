@@ -1207,6 +1207,67 @@ test('forwarding a conversation to a colleague opens one staff thread and option
         ->assertJsonPath('data.not_emailed', []);
 });
 
+test('a colleague a conversation was forwarded to, or given a task on, can open it without chat on its shop, HELP-4987', function () {
+    $session = ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'shop_id'          => $this->shop->id,
+        'language_id'      => 68,
+        'status'           => ChatSessionStatusEnum::ACTIVE->value,
+        'priority'         => ChatPriorityEnum::NORMAL->value,
+        'guest_identifier' => 'guest-'.\Illuminate\Support\Str::random(8),
+    ]);
+
+    $sender = User::factory()->create(['group_id' => $this->organisation->group_id]);
+    $agent  = ChatAgent::create(['user_id' => $sender->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+
+    $forwardedTo = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true, 'contact_name' => 'Raluca Italia']);
+    $taskedTo    = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $outsider    = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    foreach ([$forwardedTo, $taskedTo, $outsider] as $staff) {
+        $staff->assignRole(RolesEnum::getRoleName(RolesEnum::PROCUREMENT_CLERK->value, $this->organisation));
+    }
+
+    $files = route('grp.api.chats.sessions.files', $session->ulid);
+
+    foreach ([$forwardedTo, $taskedTo] as $colleague) {
+        actingAs($colleague)->getJson($files)->assertForbidden();
+    }
+
+    $sender->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+    \App\Actions\Chat\ChatSession\ForwardChatSessionToColleague::make()->handle($session, $agent, ['user_ids' => [$forwardedTo->id]]);
+    \App\Actions\Chat\ChatSession\StoreStaffTaskFromChatSession::make()->handle($session, $sender, ['subject' => 'Italian customer', 'assignee_id' => $taskedTo->id]);
+
+    actingAs($outsider)->postJson(route('grp.tasks.store'), [
+        'subject'     => 'Let me read this',
+        'assignee_id' => $outsider->id,
+        'model_type'  => 'ChatSession',
+        'model_id'    => $session->id,
+    ])->assertSuccessful();
+
+    actingAs($forwardedTo)->getJson($files)->assertOk();
+    actingAs($taskedTo)->getJson($files)->assertOk();
+    actingAs($outsider)->getJson($files)->assertForbidden();
+
+    $pages = [
+        route('grp.org.chat.conversations.detail', [$this->organisation->slug, $session->id]),
+        route('grp.org.chat.inbox.conversation', [$this->organisation->slug, $session->ulid]),
+    ];
+
+    $this->withoutVite();
+
+    foreach ($pages as $page) {
+        actingAs($forwardedTo)->followingRedirects()->get($page)->assertOk();
+        actingAs($taskedTo)->followingRedirects()->get($page)->assertOk();
+        actingAs($outsider)->followingRedirects()->get($page)->assertForbidden();
+    }
+
+    $event = $session->chatEvents()->where('event_type', 'forward')->latest('id')->first();
+    expect(\App\Http\Resources\CRM\Livechat\ChatTimelineEventResource::make($event)->resolve()['payload'])
+        ->toEqual(['recipient_names' => ['Raluca Italia'], 'also_emailed' => false]);
+});
+
 test('an agent can hand a conversation to another named agent', function () {
     $user = $this->user;
 

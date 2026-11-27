@@ -36,7 +36,7 @@ class ShowOrgChatConversation extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->userCanViewChatOnShop($request->user(), $this->chatSession->shop);
+        return $this->userCanViewChatSession($request->user(), $this->chatSession);
     }
 
     public function handle(ChatSession $chatSession): ChatSession

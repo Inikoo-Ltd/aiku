@@ -37,6 +37,11 @@ class ChatTimelineEventResource extends JsonResource
             'event_type'  => $eventType?->value,
             'actor_name'  => $this->actorName(),
             'description' => $this->describe($eventType),
+            'payload'     => match ($eventType) {
+                ChatEventTypeEnum::FORWARD => Arr::only($this->payload ?? [], ['recipient_names', 'also_emailed']),
+                ChatEventTypeEnum::PHONE_CALL => Arr::only($this->payload ?? [], ['agent_name', 'contact_name', 'duration_seconds', 'notes']),
+                default => null,
+            },
             'note'        => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? Str::ucfirst(preg_replace('/^\s*[\pL ]{0,20}\bCS routine:\s*/iu', '', (string) $this->payload('text'))) : null,
             'note_follow_up' => $eventType === ChatEventTypeEnum::INTERNAL_NOTE && $this->payload('follow_up_in') ? Arr::first($this->noteLinks((string) $this->payload('follow_up_in'), auth()->user()?->group_id)) : null,
             'note_answer_in' => $eventType === ChatEventTypeEnum::INTERNAL_NOTE && $this->payload('answer_in') ? Arr::first($this->noteLinks((string) $this->payload('answer_in'), auth()->user()?->group_id)) : null,

@@ -14,7 +14,6 @@ use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Http\Resources\CRM\Livechat\ChatMessageResource;
 use App\Http\Resources\CRM\Livechat\ChatTimelineEventResource;
 use App\Models\Chat\ChatAgent;
-use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
@@ -59,8 +58,7 @@ class GetChatMessages
 
         $user = $request->user();
         $forStaff = $user instanceof User
-            && $chatSession->shop instanceof Shop
-            && $this->userCanViewChatOnShop($user, $chatSession->shop);
+            && $this->userCanViewChatSession($user, $chatSession);
 
         if (array_key_exists('request_from', $validated) && !($validated['preview'] ?? false)) {
             $requestFrom = $validated['request_from'] ?? ChatSenderTypeEnum::GUEST->value;

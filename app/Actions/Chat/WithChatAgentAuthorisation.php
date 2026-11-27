@@ -14,8 +14,10 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChatSession;
+use App\Models\Chat\StaffConversation;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -142,6 +144,44 @@ trait WithChatAgentAuthorisation
         }
 
         return $this->holdsFulfilmentPermission($user, $shop, 'fulfilment-chat');
+    }
+
+    /**
+     * A colleague a conversation was forwarded to, or asked about it in a task, reads it even
+     * without chat on its shop: a customer who wrote to the wrong country is passed to whoever
+     * speaks their language, and the link they are sent has to open. Only someone who works the
+     * shop's chat can bring a colleague in: anybody can link a task to any record, so a task
+     * counts only when its requester could act on this chat (HELP-4987).
+     */
+    protected function userCanViewChatSession(User $user, ChatSession|MetaChatSession $chatSession): bool
+    {
+        $shop = $chatSession->shop;
+
+        if (!$shop instanceof Shop || !$user->status) {
+            return false;
+        }
+
+        if ($this->userCanViewChatOnShop($user, $shop)) {
+            return true;
+        }
+
+        $modelType = class_basename($chatSession);
+
+        if (StaffConversation::where('dm_key', 'ctx:'.$modelType.':'.$chatSession->id)
+            ->where('group_id', $shop->group_id)
+            ->whereHas('participants', fn ($query) => $query->where('users.id', $user->id))
+            ->exists()) {
+            return true;
+        }
+
+        return StaffTask::with('requester')
+            ->where('group_id', $shop->group_id)
+            ->where('model_type', $modelType)
+            ->where('model_id', $chatSession->id)
+            ->where(fn ($query) => $query->where('assignee_id', $user->id)
+                ->orWhereHas('collaborators', fn ($query) => $query->where('users.id', $user->id)))
+            ->get()
+            ->contains(fn (StaffTask $task) => $task->requester instanceof User && $this->userCanActOnChatOnShop($task->requester, $shop));
     }
 
     protected function userCanViewChatOnShop(User $user, Shop $shop): bool
