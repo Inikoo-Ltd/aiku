@@ -166,7 +166,10 @@ struct LocationsDetailView: View {
     private func sheetContent(_ kind: LocationsDetailSheet, location: LocationsLocation) -> some View {
         switch kind {
         case .audit:
-            LocationsAuditSheet(location: location) { counts in
+            LocationsAuditSheet(
+                location: location,
+                onFindSko: store.isRemote ? { code in await store.findSkoForAudit(code, in: location.code, apiClient: apiClient) } : nil
+            ) { counts in
                 saveAudit(location: location, counts: counts)
             } onCancel: {
                 sheet = nil

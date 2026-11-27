@@ -240,6 +240,47 @@ struct LocationsAPITests {
         #expect(store.location(code: "A-03-02")?.code == "A-03-02")
     }
 
+    @Test func aBlindCountFindsAnSkoAlreadyInTheLocation() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        var responses = Self.responses
+        responses["mobile/warehouses/1/scan"] = #"{"data":{"code":"5060","type":"sko","sko":{"id":5,"code":"SKO-00733"}}}"#
+
+        let found = await store.findSkoForAudit("5060", in: "A-03-02", apiClient: client(responses))
+
+        #expect(found == .here(skoReference: "SKO-00733"))
+    }
+
+    @Test func aBlindCountLinksAnSkoFoundOnTheShelfToTheLocation() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        var responses = Self.responses
+        responses["mobile/warehouses/1/scan"] = #"{"data":{"code":"EO-13","type":"sko","sko":{"id":9,"code":"EO-13"}}}"#
+        responses["mobile/warehouses/1/org-stocks/9/locations"] = #"{"data":{"id":9,"code":"EO-13","state":"active","locations":[]},"result":{"status":"done","message":"Added"}}"#
+        responses["mobile/locations/7"] = Self.responses["mobile/locations/7"]!.replacingOccurrences(
+            of: #""org_stocks":["#,
+            with: #""org_stocks":[{"id":9,"code":"EO-13","name":"Basil Essential Oil","slug":"eo-13","type":"storing","value":null,"notes":null,"quantity":"0","location_org_stock_id":12,"default_wholesale_picking_location":false,"default_dropshipping_picking_location":false,"min_stock":null,"max_stock":null,"replenishment_stock":null,"audited_at":null},"#
+        )
+
+        let found = await store.findSkoForAudit("EO-13", in: "A-03-02", apiClient: client(responses))
+
+        #expect(found == .here(skoReference: "EO-13"))
+        #expect(store.location(code: "A-03-02")?.slots.map(\.skoReference).sorted() == ["EO-13", "SKO-00733"])
+    }
+
+    @Test func aBlindCountRefusesACodeThatIsNotAnSko() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        var responses = Self.responses
+        responses["mobile/warehouses/1/scan"] = #"{"data":{"code":"B-01","type":"location","location":{"id":3,"code":"B-01"}}}"#
+
+        #expect(await store.findSkoForAudit("B-01", in: "A-03-02", apiClient: client(responses)) == .notSko(code: "B-01"))
+        #expect(await store.findSkoForAudit("NOPE", in: "A-03-02", apiClient: client()) == .notSko(code: "NOPE"))
+    }
+
     @Test func locationOpensFromAnotherScreenBeforeTheLocationsListLoaded() async {
         let store = LocationsStore()
         store.selectedWarehouseID = { 1 }
