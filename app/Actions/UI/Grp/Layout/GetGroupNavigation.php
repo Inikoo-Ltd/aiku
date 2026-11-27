@@ -12,6 +12,7 @@ use App\Actions\Chat\UI\IndexChatAiAcceptance;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
+use App\Actions\Dropshipping\UI\ShowDropshippingCommandCentre;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -104,6 +105,27 @@ class GetGroupNavigation
 
         if ($user->hasPermissionTo('organisations.view')) {
             $groupNavigation['organisations'] = $this->getOrganisationsNavs();
+        }
+
+        if (ShowDropshippingCommandCentre::visibleShops($user->group, $user)->isNotEmpty()) {
+            $groupNavigation['dropshipping'] = [
+                'label' => __('Dropshipping'),
+                'icon'  => ['fal', 'fa-parachute-box'],
+                'root'  => 'grp.dropshipping.',
+                'route' => [
+                    'name' => 'grp.dropshipping.dashboard',
+                ],
+                'topMenu' => [
+                    'subSections' => [
+                        [
+                            'label' => __('Overview'),
+                            'icon'  => ['fal', 'fa-tachometer-alt'],
+                            'root'  => 'grp.dropshipping.dashboard',
+                            'route' => ['name' => 'grp.dropshipping.dashboard'],
+                        ],
+                    ],
+                ],
+            ];
         }
 
         if (app()->isLocal()) {

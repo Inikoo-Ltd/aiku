@@ -2138,3 +2138,96 @@ test('adding a category keeps going when a product reaches the channel while the
     expect($addedByCustomerMeanwhile)->toBeTrue()
         ->and($channel->portfolios()->whereIn('item_id', $products->pluck('id'))->count())->toBe(3);
 });
+
+test('dropshipping command centre shows only open dropshipping shops and its totals add up the shops', function () {
+    $closedData = Shop::factory()->definition();
+    data_set($closedData, 'type', ShopTypeEnum::DROPSHIPPING);
+    $closedShop = StoreShop::make()->action($this->organisation, $closedData);
+    UpdateShop::make()->action($closedShop, ['state' => ShopStateEnum::CLOSED]);
+
+    $shops = \App\Actions\Dropshipping\UI\ShowDropshippingCommandCentre::visibleShops($this->group, $this->user);
+
+    expect($shops->pluck('id'))->toContain($this->shop->id)
+        ->not->toContain($closedShop->id)
+        ->and($shops->every(fn (Shop $shop) => $shop->type === ShopTypeEnum::DROPSHIPPING && $shop->state === ShopStateEnum::OPEN))->toBeTrue();
+
+    $overview = \App\Actions\Dropshipping\UI\ShowDropshippingCommandCentre::make()->handle($this->group, $shops);
+    $sections = collect($overview['sections'])->keyBy('key');
+
+    expect($sections->keys()->all())->toBe(['customers', 'channels', 'products', 'languages', 'currencies', 'sales'])
+        ->and(collect($overview['shops'])->pluck('id')->all())->toBe($shops->pluck('id')->all());
+
+    foreach ($overview['headline'] as $tile) {
+        [$sectionKey, $rowKey] = explode('.', $tile['path']);
+        expect(collect($sections[$sectionKey]['rows'])->pluck('key'))->toContain($rowKey);
+    }
+
+    $openStores = collect($sections['channels']['rows'])->firstWhere('key', 'connected');
+    expect($openStores['cells'][$this->shop->id]['value'])->toBe(
+        \App\Models\Dropshipping\CustomerSalesChannel::where('shop_id', $this->shop->id)->where('status', CustomerSalesChannelStatusEnum::OPEN)->count()
+    );
+
+    $customers = collect($sections['customers']['rows'])->keyBy('key');
+    expect($customers['total']['cells'][$this->shop->id]['value'])->toBe(Customer::where('shop_id', $this->shop->id)->count())
+        ->and($customers['total']['cells'][$this->shop->id]['route']['name'])->toBe('grp.org.shops.show.crm.customers.index');
+
+    foreach ($sections as $section) {
+        foreach ($section['rows'] as $row) {
+            expect(array_keys($row['cells']))->toBe($shops->pluck('id')->all());
+            if (in_array($row['kind'], ['count', 'language']) && $row['total'] !== null) {
+                expect($row['total']['value'])->toBe(collect($row['cells'])->sum('value'));
+            }
+            if ($row['kind'] === 'money') {
+                expect($row['total']['amounts'][$this->group->currency->code])->toEqual(round(collect($row['cells'])->sum('amounts.'.$this->group->currency->code), 2));
+            }
+        }
+    }
+});
+
+test('dropshipping command centre reads orders and sales from the shop daily time series', function () {
+    $timeSeries = \App\Models\Catalogue\ShopTimeSeries::firstOrCreate(['shop_id' => $this->shop->id, 'frequency' => \App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::DAILY]);
+    foreach (['2033-06-20' => [3, 120.5, 100], '2033-01-10' => [2, 80, 60]] as $period => [$orders, $sales, $salesGrp]) {
+        $timeSeries->records()->updateOrCreate(
+            ['period' => $period, 'frequency' => \App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum::DAILY->singleLetter()],
+            ['orders' => $orders, 'sales_external' => $sales, 'sales_grp_currency_external' => $salesGrp]
+        );
+    }
+
+    $overview = \App\Actions\Dropshipping\UI\ShowDropshippingCommandCentre::make()->handle($this->group, collect([$this->shop]), \Illuminate\Support\Carbon::parse('2033-06-30', 'UTC'));
+    $rows     = collect(collect($overview['sections'])->firstWhere('key', 'sales')['rows'])->keyBy('key');
+    $grp      = $this->group->currency->code;
+
+    expect($rows['orders_30d']['cells'][$this->shop->id]['value'])->toBe(3)
+        ->and($rows['orders_12m']['cells'][$this->shop->id]['value'])->toBe(5)
+        ->and((float) $rows['sales_30d']['cells'][$this->shop->id]['amounts'][$grp])->toBe(100.0)
+        ->and((float) $rows['sales_12m']['total']['amounts'][$grp])->toBe(160.0);
+
+    if ($this->shop->currency->code === 'EUR') {
+        expect((float) $rows['sales_12m']['cells'][$this->shop->id]['amounts']['EUR'])->toBe(200.5);
+    }
+});
+
+test('dropshipping command centre page and menu item only for users who can see a dropshipping shop', function () {
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($this->user))->toHaveKey('dropshipping');
+
+    $this->get(route('grp.dropshipping.dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dropshipping/DropshippingCommandCentre')
+            ->where('pageHead.title', 'Dropshipping')
+            ->missing('overview')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->has('overview.sections', 6)
+                ->where('overview.shops', fn ($shops) => collect($shops)->pluck('id')->contains($this->shop->id))));
+
+    setPermissionsTeamId($this->group->id);
+    $guest = StoreGuest::make()->action(
+        $this->group,
+        array_merge(Guest::factory()->definition(), ['positions' => []])
+    )->getUser();
+
+    expect(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($guest))->not->toHaveKey('dropshipping');
+    actingAs($guest)->get(route('grp.dropshipping.dashboard'))->assertForbidden();
+
+    actingAs($this->user);
+});
