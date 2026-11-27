@@ -8,6 +8,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import SelectQuery from "@/Components/SelectQuery.vue"
 import { isPlainObject, set } from 'lodash-es'
 import type { ComputedRef } from "vue"
+import { withDefaultLinkType } from "@/Components/CMS/Fields/linkFieldValue"
 
 export interface RevealBlockOption {
 	key: string
@@ -38,9 +39,9 @@ const emit = defineEmits(['update:modelValue'])
 
 const localModel = computed({
 	get: () => {
-		return props.modelValue ?? (props.defaultValue
+		return withDefaultLinkType(props.modelValue ?? (props.defaultValue
 			? { ...props.defaultValue, data: props.defaultValue }
-			: { type: 'internal', href: null, id: null, target: "_self", url: null, data: {} })
+			: { type: 'internal', href: null, id: null, target: "_self", url: null, data: {} }))
 	},
 	set: (newValue) => {
 		emit('update:modelValue', newValue)
