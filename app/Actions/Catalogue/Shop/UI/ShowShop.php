@@ -30,6 +30,7 @@ use App\Enums\Dashboards\ShopDashboardSalesTableTabsEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\SysAdmin\Organisation;
@@ -114,6 +115,7 @@ class ShowShop extends OrgAction
 
         if ($shop->type->value === 'dropshipping') {
             $dashboard['super_blocks'][0]['channel_health'] = $this->getChannelHealthStats($shop);
+            $dashboard['super_blocks'][0]['language_reach_enabled'] = true;
             $dashboard['super_blocks'][0]['brands_link']    = ShopDashboardSalesTableTabsEnum::brandsLink($shop);
         }
 
@@ -143,6 +145,7 @@ class ShowShop extends OrgAction
                 : null,
             'customers_dashboard'   => Inertia::optional(fn () => GetShopCustomersDashboard::run($shop)),
             'sales_analysis'        => Inertia::optional(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners']))),
+            'language_reach'        => $shop->type === ShopTypeEnum::DROPSHIPPING ? Inertia::optional(fn () => GetShopLanguageReach::run($shop)) : null,
         ]);
     }
 

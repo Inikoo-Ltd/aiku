@@ -5279,3 +5279,35 @@ test('rechecking external links marks a link that is not a url as an error and s
     expect($notAUrl->refresh()->status)->toBe('error')
         ->and($url->refresh()->status)->toBe('200');
 });
+
+test('UI website languages tab shows each website language of a dropshipping shop, preview ones marked', function (Website $website) {
+    $original = DB::table('shops')->where('id', $this->shop->id)->first(['type', 'settings']);
+    $preview  = \App\Models\Helpers\Language::where('id', '!=', $this->shop->language_id)->whereIn('code', ['de', 'fr', 'es'])->orderBy('code')->first();
+    $settings = json_decode($original->settings ?? '{}', true) ?: [];
+
+    $page = function (array $query = []) use ($website): array {
+        $response = get(route('grp.org.shops.show.web.websites.show', array_merge([$this->organisation->slug, $this->shop->slug, $website->slug], $query)))->assertOk();
+
+        return $response->original->getData()['page']['props'];
+    };
+
+    try {
+        expect($page()['tabs']['navigation'])->not->toHaveKey('languages');
+
+        DB::table('shops')->where('id', $this->shop->id)->update([
+            'type'     => ShopTypeEnum::DROPSHIPPING->value,
+            'settings' => json_encode(array_merge($settings, ['preview_languages' => [$preview->id]])),
+        ]);
+        \Illuminate\Support\Facades\Cache::tags(["dashboard-shop-{$this->shop->id}"])->flush();
+
+        $props = $page(['tab' => 'languages']);
+        $rows  = collect($props['languages']['data'])->keyBy('code');
+
+        expect($props['tabs']['navigation'])->toHaveKey('languages')
+            ->and($rows[$this->shop->language->code]['is_main'])->toBeTrue()
+            ->and($rows[$preview->code]['is_preview'])->toBeTrue()
+            ->and($rows[$preview->code]['customers_route']['parameters']['filter[language]'])->toBe($preview->code);
+    } finally {
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => $original->type, 'settings' => $original->settings]);
+    }
+})->depends('launch website');

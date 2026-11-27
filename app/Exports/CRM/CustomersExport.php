@@ -2,6 +2,7 @@
 
 namespace App\Exports\CRM;
 
+use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Customer\GetCustomersQueryByRecipe;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Ordering\Transaction\UpcomingTransactionStateEnum;
@@ -20,7 +21,7 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
     /**
      * @param array<int, string> $fields Selected field keys; empty means all fields.
      */
-    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [], public ?string $upcoming = null, public ?string $tag = null)
+    public function __construct(public Organisation|Shop $parent, public array $recipe = [], public array $states = [], public array $statuses = [], public array $fields = [], public ?string $upcoming = null, public ?string $tag = null, public ?string $language = null)
     {
     }
 
@@ -97,6 +98,10 @@ class CustomersExport implements FromArray, ShouldAutoSize, WithHeadings
             $query->whereHas('tags', function ($tagQuery) {
                 $tagQuery->where('tags.slug', $this->tag);
             });
+        }
+
+        if ($this->language) {
+            $query->whereRaw(IndexCustomers::LANGUAGE_CODE_SQL.' = ?', [$this->language]);
         }
 
         if (count($this->states) > 0) {
