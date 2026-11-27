@@ -8,9 +8,21 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Dropshipping\Zentrada\ImportZentradaOrder;
+use App\Actions\Dropshipping\Zentrada\ImportZentradaOrderFromEmail;
+use App\Actions\Dropshipping\Zentrada\ParseZentradaTransactionCsv;
+use App\Actions\Dropshipping\Zentrada\SaveZentradaNoticeFromEmail;
+use App\Actions\Ordering\SalesChannel\StoreSalesChannel;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\SalesChannel;
+use App\Models\Tasks\StaffTask;
+use App\Services\Gmail\GmailClient;
 use Illuminate\Support\Str;
 
 beforeAll(function () {
@@ -168,4 +180,161 @@ test('zentrada feed links the public product documents', function () {
     expect($row['certificate_CE'])->toBe('https://'.$this->website->domain.'/attachment/'.$declaration->ulid.'/download')
         ->and($row['instructionsDocument1'])->toBe('https://'.$this->website->domain.'/attachment/'.$howToUse->ulid.'/download')
         ->and($row['certificate_additional'])->toBe('');
+});
+
+function zentradaOrderSetup(Shop $shop): Customer
+{
+    createWarehouse();
+
+    SalesChannel::where('group_id', $shop->group_id)->where('code', 'zentrada')->first()
+        ?? StoreSalesChannel::make()->action($shop->group, [
+            'code' => 'zentrada',
+            'name' => 'Zentrada',
+            'type' => SalesChannelTypeEnum::MARKETPLACE,
+        ]);
+
+    $customer = createCustomer($shop);
+    UpdateShop::make()->action($shop, [
+        'zentrada_import_orders'      => true,
+        'zentrada_customer_reference' => $customer->reference,
+        'zentrada_promotion_discount' => null,
+        'zentrada_tier_1_quantity'    => null,
+        'zentrada_tier_2_quantity'    => null,
+        'zentrada_tier_3_quantity'    => null,
+    ]);
+
+    return $customer;
+}
+
+/**
+ * @param list<array{0: string, 1: int, 2: int, 3: string, 4: string}> $lines code, packs, pieces, piece price, line total
+ */
+function zentradaTransactionCsv(string $transaction, array $lines, string $postalCode = '2000'): string
+{
+    $rows = ['A_TRANSAKTIONID;B_ARTIKELBEZEICHNUNG;D_MENGE_VE;E_MENGE_STUECK;F2_PREIS_GESAMT;F3_WAEHRUNG;G_ARTIKEL_NR;I2_PREIS_STUECK;L_EAN;M01_FIRMA;M02_VORNAME;M03_NACHNAME;M04_STRASSE;M05_HAUSNR;M06_PLZ;M07_ORT;M08_LAND;M09_TELEFON;N_UID_ZE;O_FREIGHT'];
+    foreach ($lines as [$code, $packs, $pieces, $piecePrice, $total]) {
+        $rows[] = "$transaction;Aloë Vera Seife;$packs;$pieces;$total EUR;EUR;$code;$piecePrice EUR;;Demi Shop;Federica;Demi;Meir;12;$postalCode;Antwerpen;BE;+32 3 000 00 00;DE813805341;9,95";
+    }
+
+    return mb_convert_encoding(implode("\r\n", $rows), 'Windows-1252', 'UTF-8');
+}
+
+test('a TradeSafe transaction CSV is read despite its Windows encoding, decimal commas and EUR suffixes', function () {
+    $parsed = ParseZentradaTransactionCsv::make()->handle(zentradaTransactionCsv('958559', [['ATumbleL-01', 2, 12, '0,90', '10,80']]));
+
+    expect($parsed['transaction'])->toBe('958559')
+        ->and($parsed['freight'])->toBe(9.95)
+        ->and($parsed['vat_number'])->toBe('DE813805341')
+        ->and($parsed['address'])->toMatchArray(['company' => 'Demi Shop', 'firstName' => 'Federica', 'name' => 'Demi', 'street' => 'Meir', 'number' => '12', 'postal' => '2000', 'city' => 'Antwerpen', 'country' => 'BE'])
+        ->and($parsed['lines'][0])->toMatchArray(['code' => 'ATumbleL-01', 'packs' => 2.0, 'pieces' => 12.0, 'piece_price' => 0.9, 'amount' => 10.8])
+        ->and(ImportZentradaOrderFromEmail::transactionFromSubject('Delivery order transaction EU-NL 958559 , Buyer Federica Demi (ZuL-Auto)'))->toBe('EU-NL 958559')
+        ->and(ImportZentradaOrderFromEmail::deliveryDate("Order value: 388,50 EUR\nAnnounced delivery date: 30.11.2026"))->toBe('30.11.2026');
+});
+
+test('only TradeSafe mail that gmail authenticated is taken as a Zentrada order', function () {
+    zentradaOrderSetup($this->shop);
+    $shop    = $this->shop->fresh();
+    $subject = 'Delivery order transaction EU-NL 958559 , Buyer Federica Demi (ZuL-Auto)';
+    $mail    = fn (string $results) => ['payload' => ['headers' => [['name' => 'Authentication-Results', 'value' => $results]]]];
+
+    $dkim    = $mail('mx.google.com; dkim=pass header.i=@tradesafe.eu header.s=s1; spf=softfail smtp.mailfrom=pavol@awgifts.eu');
+    $spoofed = $mail('mx.google.com; dkim=none; spf=fail smtp.mailfrom=service-eu@tradesafe.eu');
+    $other   = $mail('mx.google.com; dkim=pass header.i=@tradesafe.eu.attacker.com');
+    $planted = ['payload' => ['headers' => [
+        ['name' => 'Authentication-Results', 'value' => 'mx.google.com; dkim=none; spf=fail smtp.mailfrom=service-eu@tradesafe.eu'],
+        ['name' => 'Authentication-Results', 'value' => 'mx.google.com; dkim=pass header.i=@tradesafe.eu'],
+    ]]];
+
+    expect(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $dkim, 'Service-EU@tradesafe.eu', $subject))->toBeTrue()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $spoofed, 'Service-EU@tradesafe.eu', $subject))->toBeFalse()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $other, 'Service-EU@tradesafe.eu', $subject))->toBeFalse()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $planted, 'Service-EU@tradesafe.eu', $subject))->toBeFalse()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $dkim, 'someone@gmail.com', $subject))->toBeFalse()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $dkim, 'Service-EU@tradesafe.eu', 'Fwd: '.$subject))->toBeFalse()
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderMail($shop, $dkim, 'Service-EU@tradesafe.eu', 'Cancellation of transaction EU-NL 958559'))->toBeFalse();
+
+    UpdateShop::make()->action($this->shop, ['zentrada_import_orders' => false]);
+
+    expect(ImportZentradaOrderFromEmail::isDeliveryOrderMail($this->shop->fresh(), $dkim, 'Service-EU@tradesafe.eu', $subject))->toBeFalse();
+});
+
+test('a Zentrada transaction becomes an order at Zentrada prices with its freight, sent to the warehouse, and only once', function () {
+    $customer = zentradaOrderSetup($this->shop);
+    $code     = 'ZENORD-'.Str::upper(Str::random(5));
+    $this->product->forceFill(['code' => $code, 'units' => 6, 'price' => 5.35, 'available_quantity' => 50, 'is_for_sale' => true])->saveQuietly();
+
+    $transaction = 'EU-BE '.random_int(100000, 999999);
+    $parsed      = array_merge(ParseZentradaTransactionCsv::make()->handle(zentradaTransactionCsv('1', [[$code, 2, 12, '0,90', '10,80']])), ['transaction' => $transaction]);
+
+    $order = ImportZentradaOrder::make()->handle($this->shop->fresh(), $parsed, ['delivery_date' => '30.11.2026', 'buyer' => 'Federica Demi'], [['name' => 'transaction_1.csv', 'contents' => 'csv']]);
+    $line  = $order->transactions()->where('model_type', 'Product')->sole();
+
+    expect($order->customer_id)->toBe($customer->id)
+        ->and($order->customer_reference)->toBe($transaction)
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->contact_name)->toBe('Federica Demi')
+        ->and($order->company_name)->toBe('Demi Shop')
+        ->and($order->deliveryAddress->country_code)->toBe('BE')
+        ->and($order->deliveryAddress->address_line_1)->toBe('Meir 12')
+        ->and($order->shipping_notes)->toContain('30.11.2026')
+        ->and((float) $line->quantity_ordered)->toBe(2.0)
+        ->and((float) $line->net_amount)->toBe(10.8)
+        ->and((float) $order->shipping_amount)->toBe(9.95)
+        ->and($order->attachments()->count())->toBe(1)
+        ->and(ImportZentradaOrder::make()->handle($this->shop->fresh(), $parsed)->id)->toBe($order->id)
+        ->and(Order::where('shop_id', $this->shop->id)->where('customer_reference', $transaction)->count())->toBe(1);
+});
+
+test('a Zentrada transaction that does not match the feed is left unsubmitted with a task, and one keyed in by hand is not imported again', function () {
+    zentradaOrderSetup($this->shop);
+    $code = 'ZENORD-'.Str::upper(Str::random(5));
+    $this->product->forceFill(['code' => $code, 'units' => 6, 'price' => 5.35, 'available_quantity' => 1, 'is_for_sale' => true])->saveQuietly();
+    $tasksBefore = StaffTask::where('group_id', $this->shop->group_id)->count();
+
+    $postalCode = (string) random_int(1000, 9999);
+    $parsed     = ParseZentradaTransactionCsv::make()->handle(zentradaTransactionCsv('EU-BE '.random_int(100000, 999999), [[$code, 2, 12, '0,70', '8,40'], ['NOPE-01', 1, 1, '1,00', '1,00']], $postalCode));
+
+    $order = ImportZentradaOrder::make()->handle($this->shop->fresh(), $parsed);
+
+    expect($order->state)->toBe(OrderStateEnum::CREATING)
+        ->and($order->internal_notes)->toContain('NOPE-01 is not a product of the shop')
+        ->and($order->internal_notes)->toContain('0.70 a piece, the feed sends 0.90')
+        ->and($order->internal_notes)->toContain('2 packs ordered, 1 in stock')
+        ->and(StaffTask::where('group_id', $this->shop->group_id)->count())->toBe($tasksBefore + 1);
+
+    $order->update(['customer_reference' => null, 'external_id' => null]);
+    $sameTransactionKeyedByHand = array_merge($parsed, ['transaction' => 'EU-BE '.random_int(100000, 999999), 'lines' => [$parsed['lines'][0]]]);
+
+    expect(ImportZentradaOrder::make()->existingOrder($this->shop->fresh(), $sameTransactionKeyedByHand)?->id)->toBe($order->id);
+});
+
+test('other TradeSafe mail is kept on the order of its transaction, or on the Zentrada customer, and never makes an order', function () {
+    $customer = zentradaOrderSetup($this->shop);
+    $code     = 'ZENORD-'.Str::upper(Str::random(5));
+    $this->product->forceFill(['code' => $code, 'units' => 6, 'price' => 5.35, 'available_quantity' => 50, 'is_for_sale' => true])->saveQuietly();
+
+    $transaction = 'EU-BE '.random_int(100000, 999999);
+    $parsed      = array_merge(ParseZentradaTransactionCsv::make()->handle(zentradaTransactionCsv('1', [[$code, 2, 12, '0,90', '10,80']], (string) random_int(1000, 9999))), ['transaction' => $transaction]);
+    $order       = ImportZentradaOrder::make()->handle($this->shop->fresh(), $parsed);
+
+    $mail = fn (string $subject, string $body) => ['payload' => [
+        'headers'  => [['name' => 'Subject', 'value' => $subject]],
+        'mimeType' => 'text/plain',
+        'body'     => ['data' => rtrim(strtr(base64_encode($body), '+/', '-_'), '=')],
+    ]];
+    $client      = Mockery::mock(GmailClient::class);
+    $ordersCount = Order::where('shop_id', $this->shop->id)->count();
+    $tasksBefore = StaffTask::where('group_id', $this->shop->group_id)->count();
+
+    $cancelled = SaveZentradaNoticeFromEmail::make()->handle($this->shop->fresh(), $client, 'gmail-1', $mail('Cancellation of transaction '.str_replace(' ', '', $transaction), 'The buyer cancelled.'));
+    $payout    = SaveZentradaNoticeFromEmail::make()->handle($this->shop->fresh(), $client, 'gmail-2', $mail('Payout notice 11/2026', 'Payout of 1.234,00 EUR'));
+
+    expect($cancelled?->is($order))->toBeTrue()
+        ->and($order->refresh()->internal_notes)->toContain('Cancellation of transaction')
+        ->and($order->attachments()->count())->toBe(1)
+        ->and($payout?->is($customer))->toBeTrue()
+        ->and(StaffTask::where('group_id', $this->shop->group_id)->count())->toBe($tasksBefore + 1)
+        ->and(Order::where('shop_id', $this->shop->id)->count())->toBe($ordersCount)
+        ->and(SaveZentradaNoticeFromEmail::transactionIn('Complaint EU-NL958559'))->toBe('EU-NL 958559')
+        ->and(ImportZentradaOrderFromEmail::isDeliveryOrderSubject('Re: Delivery order transaction EU-NL 958559'))->toBeFalse();
 });

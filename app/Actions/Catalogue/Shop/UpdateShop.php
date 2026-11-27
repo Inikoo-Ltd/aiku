@@ -287,7 +287,13 @@ class UpdateShop extends OrgAction
         foreach (self::zentradaSettingFields() as $field => $cast) {
             if (Arr::has($modelData, "zentrada_$field")) {
                 $value = Arr::pull($modelData, "zentrada_$field");
-                data_set($modelData, "settings.zentrada.$field", blank($value) ? null : ($cast === 'int' ? (int) $value : (float) $value));
+                data_set($modelData, "settings.zentrada.$field", match (true) {
+                    $cast === 'bool'  => (bool) $value,
+                    blank($value)     => null,
+                    $cast === 'int'   => (int) $value,
+                    $cast === 'float' => (float) $value,
+                    default           => trim((string) $value),
+                });
             }
         }
 
@@ -1102,11 +1108,17 @@ class UpdateShop extends OrgAction
     }
 
     /**
-     * @return array<string, 'int'|'float'>
+     * @return array<string, 'int'|'float'|'bool'|'string'>
      */
     public static function zentradaSettingFields(): array
     {
-        $fields = ['promotion_discount' => 'float'];
+        $fields = [
+            'promotion_discount'        => 'float',
+            'import_orders'             => 'bool',
+            'customer_reference'        => 'string',
+            'non_eu_customer_reference' => 'string',
+            'orders_user_id'            => 'int',
+        ];
         foreach (range(1, ZentradaWebApi::MAX_VOLUME_TIERS) as $tier) {
             $fields["tier_{$tier}_quantity"] = 'int';
             $fields["tier_{$tier}_discount"] = 'float';
@@ -1347,6 +1359,10 @@ class UpdateShop extends OrgAction
             'zentrada_tier_2_discount'                                 => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
             'zentrada_tier_3_quantity'                                 => ['sometimes', 'nullable', 'integer', 'min:2'],
             'zentrada_tier_3_discount'                                 => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:99.99'],
+            'zentrada_import_orders'                                  => ['sometimes', 'boolean'],
+            'zentrada_customer_reference'                             => ['sometimes', 'nullable', 'string', 'max:64', Rule::exists('customers', 'reference')->where('shop_id', $this->shop->id)],
+            'zentrada_non_eu_customer_reference'                      => ['sometimes', 'nullable', 'string', 'max:64', Rule::exists('customers', 'reference')->where('shop_id', $this->shop->id)],
+            'zentrada_orders_user_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'newsletter_to_suppliers'                                 => ['sometimes', 'boolean'],
             'pre_order_enabled'                                       => ['sometimes', 'boolean'],
             'pre_order_deposit_percentage'                            => ['sometimes', 'numeric', 'min:0', 'max:100'],
