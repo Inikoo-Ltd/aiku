@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Webhooks;
 
+use App\Actions\Dropshipping\Tiktok\Fulfilment\SyncTiktokFulfilmentOrderStatus;
 use App\Actions\Dropshipping\Tiktok\Order\ShowTiktokOrderApi;
 use App\Actions\Dropshipping\Tiktok\Order\ValidateIncomingTiktokOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -50,6 +51,10 @@ class HandleOrderIncomingTiktok
                 'CANCELLED' => $this->cancelOrder($tiktokUser, $order),
                 default => null
             };
+
+            if ($tiktokUser->customer->is_fulfilment) {
+                SyncTiktokFulfilmentOrderStatus::run($tiktokUser, $order);
+            }
         }
     }
 
