@@ -115,6 +115,35 @@ const readConsentCookie = (): string | null => {
     return value === null ? null : decodeURIComponent(value)
 }
 
+/* Counts for the accept / reject / ignore rates in grp (INI-572): "shown" once per browser session
+   while the visitor has no choice, "choice" for their first choice only. Counters only, nothing that
+   identifies the visitor, so this is sent before any consent; failures are ignored. */
+const SHOWN_SESSION_KEY = "iris_cookie_banner_shown"
+
+export const recordConsentStat = (body: { event: "shown" } | ({ event: "choice" } & ConsentChoice)) => {
+    const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? "")
+
+    fetch("/analytics/cookie-consent", {
+        method: "POST",
+        keepalive: true,
+        headers: { "Content-Type": "application/json", Accept: "application/json", "X-XSRF-TOKEN": token },
+        body: JSON.stringify(body),
+    }).catch(() => {})
+}
+
+const recordShownOncePerSession = () => {
+    try {
+        if (sessionStorage.getItem(SHOWN_SESSION_KEY)) {
+            return
+        }
+        sessionStorage.setItem(SHOWN_SESSION_KEY, "1")
+    } catch {
+        return
+    }
+
+    recordConsentStat({ event: "shown" })
+}
+
 const consent = ref<ConsentChoice | null>(null)
 const isSettingsOpen = ref(false)
 
@@ -125,12 +154,22 @@ export const useCookieConsent = () => {
         if (!consent.value) {
             const legacy = parseCookieScriptConsent(readCookie(LEGACY_CONSENT_COOKIE))
             if (legacy) {
-                save(legacy)
+                store(legacy)
+            } else {
+                recordShownOncePerSession()
             }
         }
     }
 
+    /* A choice made on the banner; the first one is counted, later changes from Cookie settings are not. */
     const save = (choice: ConsentChoice) => {
+        if (!consent.value) {
+            recordConsentStat({ event: "choice", ...choice })
+        }
+        store(choice)
+    }
+
+    const store = (choice: ConsentChoice) => {
         consent.value = choice
         document.cookie = `${CONSENT_COOKIE}=${serializeConsent(choice)}; path=/; max-age=${CONSENT_MAX_AGE_SECONDS}; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`
 

@@ -13,6 +13,7 @@ use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\WebsiteSearchLog;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 
 trait WithWebsiteAnalyticsSubNavigation
 {
@@ -74,6 +75,17 @@ trait WithWebsiteAnalyticsSubNavigation
                     "tooltip" => __("What customers searched for and did not find"),
                 ],
             ],
+            Arr::get($website->settings, 'own_cookie_banner') ? [
+                "label"    => __("Cookie consent"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.cookie_consent",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-cookie-bite"],
+                    "tooltip" => __("Accept, reject and ignore rates of the cookie banner"),
+                ],
+            ] : null,
             [
                 "label"    => GetShoppingAssistantSettings::name($website),
                 "route"    => [

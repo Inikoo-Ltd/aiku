@@ -73,6 +73,7 @@ use App\Actions\Web\Website\UI\ShowRestrictedCountry;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\UI\ShowLiveUsers;
+use App\Actions\Web\Website\UI\ShowWebsiteCookieConsentStats;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchAnalytics;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchCustomer;
 use App\Actions\Web\Website\UI\ShowWebsiteSearchOpportunities;
@@ -218,6 +219,7 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('visitors', IndexWebsiteVisitors::class)->name('visitors.index');
     Route::get('live-users', ShowLiveUsers::class)->name('live_users');
     Route::get('search', ShowWebsiteSearchAnalytics::class)->name('search');
+    Route::get('cookie-consent', ShowWebsiteCookieConsentStats::class)->name('cookie_consent');
     Route::get('search/boost-candidates', GetWebsiteSearchBoostCandidates::class)->name('search.boost_candidates');
     Route::post('search/boosts', UpdateWebsiteSearchBoosts::class)->name('search.boosts.update');
     Route::post('search/featured-items', UpdateWebsiteSearchFeaturedItems::class)->name('search.featured_items.update');

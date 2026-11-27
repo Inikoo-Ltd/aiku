@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Web\Website\Analytics\RecordCookieConsentStat;
 use App\Actions\Web\Website\Analytics\RecordWebsiteHit;
 use App\Actions\Web\WebVital\StoreWebVitalSample;
 use Illuminate\Support\Facades\Route;
@@ -19,3 +20,5 @@ Route::post('analytics/hit', RecordWebsiteHit::class)->name('hit')->middleware(
 );
 
 Route::post('analytics/web-vitals', StoreWebVitalSample::class)->name('web_vitals')->middleware('throttle:web-vitals');
+
+Route::post('analytics/cookie-consent', RecordCookieConsentStat::class)->name('cookie_consent')->middleware('throttle:cookie-consent');
