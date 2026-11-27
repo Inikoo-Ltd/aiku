@@ -129,6 +129,8 @@ trait WithOrgSupplierSubNavigation
     {
         return OrgSupplierProduct::query()
             ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
+            ->join('org_suppliers', 'org_suppliers.id', 'org_supplier_products.org_supplier_id')
+            ->whereColumn('supplier_products.supplier_id', 'org_suppliers.supplier_id')
             ->whereIn('org_supplier_products.org_supplier_id', $orgSupplierIds)
             ->where('supplier_products.state', SupplierProductStateEnum::ACTIVE)
             ->distinct()

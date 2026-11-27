@@ -320,7 +320,8 @@ class ShowOrgSupplierProduct extends OrgAction
         if ($orgAgent instanceof OrgAgent) {
             $query->where('org_supplier_products.org_agent_id', $orgAgent->id);
         } elseif ($orgSupplier instanceof OrgSupplier) {
-            $query->where('org_supplier_products.org_supplier_id', $orgSupplier->id);
+            $query->where('org_supplier_products.org_supplier_id', $orgSupplier->id)
+                ->where('supplier_products.supplier_id', $orgSupplier->supplier_id);
         } elseif ($agent) {
             $query->whereIn('org_supplier_products.org_agent_id', OrgAgent::where('agent_id', $agent->id)->select('id'));
         } else {

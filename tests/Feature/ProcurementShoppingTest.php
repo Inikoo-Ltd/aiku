@@ -3615,6 +3615,45 @@ test('repair supplier drift repoints org supplier products to the right org supp
     expect($drifted->refresh()->org_supplier_id)->toBe($orgSupplierB->id);
 });
 
+test('supplier product lists of an org supplier leave out products of another supplier', function () {
+    $supplierA = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierB = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $orgSupplierA = $supplierA->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $ownProduct = StoreSupplierProduct::make()->action($supplierA, [
+        'code'             => 'OWN-1',
+        'name'             => 'Own Asset',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+    $foreignProduct = StoreSupplierProduct::make()->action($supplierA, [
+        'code'             => 'FOREIGN-1',
+        'name'             => 'Foreign Asset',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+    $foreignProduct->updateQuietly(['supplier_id' => $supplierB->id]);
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.supplier_products.index', [$this->organisation->slug, $orgSupplierA->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('index.data', 1)
+            ->where('index.data.0.code', 'OWN-1'));
+
+    expect(App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries::numberActiveSupplierProducts([$orgSupplierA->id]))->toBe(1);
+});
+
 test('repair supplier drift leaves rows whose correct twin already exists', function () {
     $supplierA = StoreSupplier::make()->action(
         parent: $this->group,
@@ -3709,6 +3748,73 @@ test('repair supplier drift moves open purchase order lines to the twin and disc
         ->and($settledLine->refresh()->org_supplier_product_id)->toBe($drifted->id)
         ->and($drifted->refresh()->state)->toBe(OrgSupplierProductStateEnum::DISCONTINUED->value)
         ->and($twin->refresh()->state)->toBe(OrgSupplierProductStateEnum::ACTIVE->value);
+});
+
+test('repair supplier drift with history moves finished lines of the twin and deletes the row, keeping rows with lines of another supplier', function () {
+    $supplierA = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+    $supplierB = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition()
+    );
+
+    $orgSupplierA = $supplierA->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+    $orgSupplierB = $supplierB->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $driftedWithLineOn = function (string $code, OrgSupplier $purchaseOrderParent) use ($supplierB, $orgSupplierA, $orgSupplierB): array {
+        $supplierProduct = StoreSupplierProduct::make()->action($supplierB, [
+            'code'             => $code,
+            'name'             => $code,
+            'cost'             => 100,
+            'stock_id'         => $this->stocks[0]->id,
+            'units_per_pack'   => 10,
+            'units_per_carton' => 100
+        ]);
+        $twin    = OrgSupplierProduct::where('org_supplier_id', $orgSupplierB->id)->where('supplier_product_id', $supplierProduct->id)->firstOrFail();
+        $drifted = $twin->replicate()->fill(['org_supplier_id' => $orgSupplierA->id, 'slug' => strtolower($code).'-'.Str::random(6), 'state' => OrgSupplierProductStateEnum::DISCONTINUED]);
+        $drifted->saveQuietly();
+
+        $purchaseOrder = StorePurchaseOrder::make()->action($purchaseOrderParent, PurchaseOrder::factory()->definition());
+        $line          = StorePurchaseOrderTransaction::make()->action(
+            $purchaseOrder,
+            $supplierProduct->historicSupplierProduct,
+            $this->orgStocks[0],
+            PurchaseOrderTransaction::factory()->definition()
+        );
+        $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED]);
+        $line->updateQuietly(['org_supplier_product_id' => $drifted->id]);
+
+        return [$twin, $drifted, $line];
+    };
+
+    StoreSupplierProduct::make()->action($supplierA, [
+        'code'             => 'OWN-H',
+        'name'             => 'Own product of supplier A',
+        'cost'             => 100,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 10,
+        'units_per_carton' => 100
+    ]);
+
+    [$twin, $drifted, $twinLine]          = $driftedWithLineOn('DRIFT-H1', $orgSupplierB);
+    [, $foreignDrifted, $foreignLine]     = $driftedWithLineOn('DRIFT-H2', $orgSupplierA);
+
+    $repair = RepairOrgSupplierProductsSupplierDrift::make();
+    $repair->handle(withHistory: true);
+    $dryRunOutcomes = collect($repair->historyReport)->pluck('outcome', 'id');
+
+    expect($dryRunOutcomes[$drifted->id])->toBe('would move and delete')
+        ->and($dryRunOutcomes[$foreignDrifted->id])->toBe('kept: lines of another supplier')
+        ->and($twinLine->refresh()->org_supplier_product_id)->toBe($drifted->id);
+
+    RepairOrgSupplierProductsSupplierDrift::make()->handle(fix: true, withHistory: true);
+
+    expect($twinLine->refresh()->org_supplier_product_id)->toBe($twin->id)
+        ->and(OrgSupplierProduct::find($drifted->id))->toBeNull()
+        ->and($foreignLine->refresh()->org_supplier_product_id)->toBe($foreignDrifted->id)
+        ->and(OrgSupplierProduct::find($foreignDrifted->id))->not->toBeNull();
 });
 
 test('repair supplier drift only treats a drifted row as a redundant copy when its org supplier keeps the product live through a same code copy', function () {

@@ -159,7 +159,8 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
 
         if (class_basename($parent) == 'OrgSupplier') {
-            $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id);
+            $queryBuilder->where('org_supplier_products.org_supplier_id', $parent->id)
+                ->where('supplier_products.supplier_id', $parent->supplier_id);
         } else {
             $queryBuilder->where('org_supplier_products.organisation_id', $this->organisation->id);
         }

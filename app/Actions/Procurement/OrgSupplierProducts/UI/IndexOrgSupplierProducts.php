@@ -85,6 +85,10 @@ class IndexOrgSupplierProducts extends OrgAction
             $query->where('org_supplier_products.organisation_id', $parent->id);
         }
 
+        if ($parent instanceof OrgSupplier) {
+            $query->where('supplier_products.supplier_id', $parent->supplier_id);
+        }
+
         $counts = $query
             ->selectRaw('supplier_products.state, count(distinct supplier_products.id) as total')
             ->groupBy('supplier_products.state')
@@ -161,6 +165,10 @@ class IndexOrgSupplierProducts extends OrgAction
             });
         } else {
             $queryBuilder->where('org_supplier_products.organisation_id', $parent->id);
+        }
+
+        if ($parent instanceof OrgSupplier) {
+            $queryBuilder->where('supplier_products.supplier_id', $parent->supplier_id);
         }
 
         $queryBuilder->select([
