@@ -10,6 +10,7 @@ namespace App\Actions\Search;
 use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Helpers\SearchTextMatch;
 use App\Helpers\WebsiteLanguage;
 use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
@@ -68,7 +69,7 @@ trait WithIrisSearchEnrichedItems
             if ($options->count() < 2) {
                 if (!isset($listed[$model->id])) {
                     $listed[$model->id] = true;
-                    $enriched[]         = $this->enrichItem($item, $model, $url, $largeImage, $withOffers);
+                    $enriched[]         = $this->enrichItem($item, $model, $url, $largeImage, $withOffers, $query);
                 }
                 continue;
             }
@@ -84,7 +85,8 @@ trait WithIrisSearchEnrichedItems
                     $option,
                     $url,
                     $largeImage,
-                    $withOffers
+                    $withOffers,
+                    $query
                 );
             }
         }
@@ -113,11 +115,32 @@ trait WithIrisSearchEnrichedItems
     }
 
     /**
+     * An item whose name and code hold every searched word is a match the visitor can see at a
+     * glance; any other was found through its description, so that part of the text is shown.
+     *
+     * @param array<string, mixed> $item
+     *
+     * @return array{matches_name: bool, description_snippet: string|null}
+     */
+    private function matchedText(array $item, object $model, string $query): array
+    {
+        $words       = SearchTextMatch::words($query);
+        $matchesName = SearchTextMatch::containsAllWords(($item['name'] ?? '').' '.($item['code'] ?? ''), $words);
+
+        return [
+            'matches_name'        => $matchesName,
+            'description_snippet' => $matchesName
+                ? null
+                : SearchTextMatch::snippet(WebsiteLanguage::text($model, 'description').' '.$model->getAttribute('description_extra'), $words),
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $item
      *
      * @return array<string, mixed>
      */
-    private function enrichItem(array $item, object $model, string $url, bool $largeImage, bool $withOffers): array
+    private function enrichItem(array $item, object $model, string $url, bool $largeImage, bool $withOffers, ?string $query = null): array
     {
         $image = $largeImage
             ? $model->imageSources(150, 150)
@@ -134,6 +157,10 @@ trait WithIrisSearchEnrichedItems
             $item['is_golden_product'] = (bool)$model->is_golden_product;
             $item['size_label']        = GetVariantProductSizeLabel::make()->forProduct($model);
             $item['is_pre_order']      = GetProductPreOrder::make()->type($model) !== null;
+        }
+
+        if ($query !== null) {
+            $item = array_merge($item, $this->matchedText($item, $model, $query));
         }
 
         if (auth()->check()) {

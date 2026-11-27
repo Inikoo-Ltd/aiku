@@ -35,8 +35,8 @@ class SearchIrisCatalogue extends IrisAction
         ]);
 
         data_set($results, 'results.products', $this->enrichItems(Arr::get($results, 'results.products', []), Product::class, largeImage: true, query: $query));
-        data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class, largeImage: true));
-        data_set($results, 'results.collections', $this->enrichItems(Arr::get($results, 'results.collections', []), Collection::class));
+        data_set($results, 'results.product_categories', $this->enrichItems(Arr::get($results, 'results.product_categories', []), ProductCategory::class, largeImage: true, query: $query));
+        data_set($results, 'results.collections', $this->enrichItems(Arr::get($results, 'results.collections', []), Collection::class, query: $query));
 
         data_set($results, 'results.best_match', $this->bestMatch($query, Arr::get($results, 'results', [])));
 
@@ -46,7 +46,10 @@ class SearchIrisCatalogue extends IrisAction
     /**
      * A family beats the top product in the Best Match spotlight when the query is
      * its exact code or name ("jcg" must land on the JCG family, not a JCGB product),
-     * or when Typesense scores it above every product hit.
+     * or when Typesense scores it above every product hit. Only items whose name or
+     * code holds every searched word compete: one found through its description
+     * ("big garden" -> a speaker "for the garden", "a big part of the appeal") is no
+     * best match.
      *
      * @param array<string, array<int, array<string, mixed>>> $results
      *
@@ -54,7 +57,7 @@ class SearchIrisCatalogue extends IrisAction
      */
     protected function bestMatch(string $query, array $results): ?array
     {
-        $topCategory = Arr::first(Arr::get($results, 'product_categories', []));
+        $topCategory = Arr::first(Arr::get($results, 'product_categories', []), fn (array $category) => $category['matches_name'] ?? false);
         if (!$topCategory) {
             return null;
         }
@@ -65,7 +68,7 @@ class SearchIrisCatalogue extends IrisAction
             mb_strtolower($topCategory['name'] ?? ''),
         ], true);
 
-        $topProduct = Arr::first(Arr::get($results, 'products', []));
+        $topProduct = Arr::first(Arr::get($results, 'products', []), fn (array $product) => $product['matches_name'] ?? false);
 
         if ($isExactMatch || Arr::get($topCategory, 'score', 0) > Arr::get($topProduct ?? [], 'score', 0)) {
             return array_merge($topCategory, ['type' => 'product_category']);

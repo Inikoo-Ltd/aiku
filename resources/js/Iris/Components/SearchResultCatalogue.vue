@@ -35,6 +35,8 @@ const props = defineProps<{
             unit?: string | null
             is_golden_product?: boolean
             url?: string
+            matches_name?: boolean
+            description_snippet?: string | null
         }[]
         product_categories: {
             id: number
@@ -105,11 +107,11 @@ const formatPrice = (price?: number | string | null) => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-// A family sent as best_match takes the spotlight; otherwise the first product does
-// and the rest fill the grid (10 items -> 11 total)
+// A family sent as best_match takes the spotlight; otherwise the first product whose name or code
+// holds every searched word does, and the rest fill the grid (10 items)
 const bestFamily = computed(() => props.results?.best_match?.type === 'product_category' ? props.results.best_match : null)
-const bestProduct = computed(() => bestFamily.value ? null : props.results?.products?.[0] ?? null)
-const gridProducts = computed(() => props.results?.products?.slice(bestFamily.value ? 0 : 1, bestFamily.value ? 10 : 11) ?? [])
+const bestProduct = computed(() => bestFamily.value ? null : props.results?.products?.find(product => product.matches_name !== false) ?? null)
+const gridProducts = computed(() => props.results?.products?.filter(product => product !== bestProduct.value).slice(0, 10) ?? [])
 
 // Categories and collections are capped at 10 each
 const productCategories = computed(() => props.results?.product_categories?.slice(0, 10) ?? [])
@@ -133,14 +135,15 @@ const escapeHtml = (value: string): string =>
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-// Wrap the part of the text that matches the current query with a highlight mark
-const highlightMatch = (text?: string): string => {
+// Each searched word is marked where a word of the text starts with it, as the search matches it
+const highlightMatch = (text?: string | null): string => {
     const safe = escapeHtml(text ?? '')
-    const query = props.query?.trim()
-    if (!query) {
+    const words = (props.query ?? '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+    if (!words.length) {
         return safe
     }
-    const pattern = new RegExp(`(${escapeRegExp(query)})`, 'ig')
+    const alternatives = words.map(word => escapeRegExp(escapeHtml(word))).sort((a, b) => b.length - a.length).join('|')
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}&#])(${alternatives})`, 'giu')
     return safe.replace(pattern, '<mark class="lb-search-highlight">$1</mark>')
 }
 
@@ -315,6 +318,9 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     {{ ctrans('See more') }}
                 </span>
             </LinkIris>
+            <div v-else-if="props.results?.products?.length" class="flex flex-1 items-center justify-center text-center text-gray-400 text-sm">
+                {{ ctrans('No product name contains all your search words') }}
+            </div>
             <div v-else class="flex flex-1 items-center justify-center text-gray-400 text-sm">
                 {{ ctrans('No products found') }}
             </div>
@@ -359,6 +365,11 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                     {{ formatPrice(Number(product.price)) }} <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
                                 </span>
                             </p>
+                            <p
+                                v-if="product.description_snippet"
+                                class="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug"
+                                v-html="highlightMatch(product.description_snippet)"
+                            />
                         </div>
                     </LinkIris>
 

@@ -31,6 +31,8 @@ const props = defineProps<{
             unit?: string | null
             is_golden_product?: boolean
             url?: string
+            matches_name?: boolean
+            description_snippet?: string | null
         }[]
         product_categories: {
             id: number
@@ -101,9 +103,15 @@ const formatPrice = (price?: number | string | null) => {
     return locale.currencyFormat(currency?.code, Number(price))
 }
 
-// A family sent as best_match leads the list as a spotlight card; products then all render small
+// A family sent as best_match leads the list as a spotlight card; otherwise the first product whose
+// name or code holds every searched word leads it, and the rest render small
 const bestFamily = computed(() => props.results?.best_match?.type === 'product_category' ? props.results.best_match : null)
-const products = computed(() => props.results?.products?.slice(0, bestFamily.value ? 10 : 11) ?? [])
+const bestProduct = computed(() => bestFamily.value ? null : props.results?.products?.find(product => product.matches_name !== false) ?? null)
+const products = computed(() => {
+    const others = props.results?.products?.filter(product => product !== bestProduct.value) ?? []
+    return bestProduct.value ? [bestProduct.value, ...others.slice(0, 10)] : others.slice(0, 10)
+})
+const isSpotlight = (index: number): boolean => index === 0 && !!bestProduct.value
 
 // Only sent by SearchIrisCatalogue when a customer is signed in, and only their own documents
 const orders = computed(() => props.results?.orders ?? [])
@@ -128,13 +136,15 @@ const escapeHtml = (value: string): string =>
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-const highlightMatch = (text?: string): string => {
+// Each searched word is marked where a word of the text starts with it, as the search matches it
+const highlightMatch = (text?: string | null): string => {
     const safe = escapeHtml(text ?? '')
-    const query = props.query?.trim()
-    if (!query) {
+    const words = (props.query ?? '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+    if (!words.length) {
         return safe
     }
-    const pattern = new RegExp(`(${escapeRegExp(query)})`, 'ig')
+    const alternatives = words.map(word => escapeRegExp(escapeHtml(word))).sort((a, b) => b.length - a.length).join('|')
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}&#])(${alternatives})`, 'giu')
     return safe.replace(pattern, '<mark class="lb-search-highlight">$1</mark>')
 }
 
@@ -256,7 +266,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                 >
                     <div
                         class="relative bg-gray-50 overflow-hidden flex-shrink-0 flex items-center justify-center"
-                        :class="index === 0 && !bestFamily ? 'w-20 h-20' : 'w-14 h-14'"
+                        :class="isSpotlight(index) ? 'w-20 h-20' : 'w-14 h-14'"
                     >
                         <Image v-if="product.image" :src="product.image" class="w-full h-full object-cover" :class="{ 'grayscale opacity-60': product.stock === 0 && !product.is_pre_order }" />
                         <span v-else class="text-[10px] text-gray-300 font-bold uppercase">{{ product.code?.slice(0, 3) }}</span>
@@ -266,7 +276,7 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                     <div class="min-w-0 flex-1">
                         <p
                             class="text-slate-800 leading-snug line-clamp-2"
-                            :class="index === 0 && !bestFamily ? 'text-base font-semibold' : 'text-sm font-medium'"
+                            :class="isSpotlight(index) ? 'text-base font-semibold' : 'text-sm font-medium'"
                             v-html="highlightMatch(getProductName(product))"
                         />
                         <p class="text-sm mt-0.5 truncate">
@@ -275,6 +285,11 @@ const getProductPrice = (product: { price?: number | string | null; unit?: strin
                                 {{ formatPrice(Number(product.price)) }} <span v-if="Number(product.units) !== 1" class="font-normal opacity-80">({{ getProductPrice(product) }})</span>
                             </span>
                         </p>
+                        <p
+                            v-if="product.description_snippet"
+                            class="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-snug"
+                            v-html="highlightMatch(product.description_snippet)"
+                        />
                     </div>
                 </LinkIris>
 
