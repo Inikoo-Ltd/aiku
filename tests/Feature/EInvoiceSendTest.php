@@ -919,3 +919,61 @@ test('the company details link sends only the customer\'s own logged-in account 
     $guest->setUserResolver(fn (?string $guard = null) => Illuminate\Support\Facades\Auth::guard($guard)->user());
     expect(\App\Actions\Retina\CRM\ShowRetinaCompanyDetails::isOwnAccount($guest, $this->customer->fresh()))->toBeFalse();
 });
+
+test('company numbers are labelled by the customer\'s country in Slovak and Spanish organisations, and a Slovak DIČ shows once and goes on invoices', function () {
+    $originalCountryId = $this->organisation->country_id;
+    $originalSettings  = $this->shop->settings;
+    $originalCountry   = $this->customer->address->country_code;
+    $labels            = \App\Actions\CRM\Customer\CompanyIdLabels::class;
+
+    try {
+        $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'SK')->value('id')]);
+        $this->customer->address->update(['country_code' => 'SK']);
+        $this->customer->taxNumber?->delete();
+        $this->customer->fresh()->update(['company_name' => 'Obchod s.r.o.', 'peppol_id' => '0245:2021344160', 'identity_document_number_alt' => '2021 344 160', 'data' => []]);
+        $this->shop->update(['settings' => array_merge($this->shop->settings ?? [], ['customer' => ['identity_document_number' => 'Local VAT ID', 'identity_document_number_alt' => 'Steuernummer-StNr']])]);
+        $customer = $this->customer->fresh();
+
+        expect($labels::for($customer->shop, 'SK'))->toBe(['id' => 'IČO', 'alt' => 'DIČ', 'vat' => 'IČ DPH'])
+            ->and($labels::customerAltLabel($customer))->toBeNull()
+            ->and($labels::customerAltForDisplay($customer))->toBe(['label' => 'DIČ', 'number' => '2021344160'])
+            ->and($labels::invoiceAlt($customer))->toBe('2021344160')
+            ->and($labels::invoiceAltLabel($labels::for($customer->shop, 'SK'), 'SK', '2021344160'))->toBe('DIČ')
+            ->and($labels::invoiceAltLabel($labels::for($customer->shop, 'SK'), 'SK', '55844669'))->toBe(__('Other number'));
+
+        $customer->update(['identity_document_number_alt' => '1234567890']);
+        expect($labels::customerAltLabel($customer->fresh()))->toBe(__('Other number'));
+
+        $staffCreated = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, ['contact_name' => 'Staff Created', 'email' => 'staff-dic-'.uniqid().'@example.com', 'peppol_dic' => '2021 344 160']);
+        expect($staffCreated->peppol_id)->toBe('0245:2021344160');
+
+        $customer->update(['identity_document_number_alt' => null]);
+        $customer->address->update(['country_code' => 'DE']);
+        $customer = $customer->fresh();
+        expect($labels::for($customer->shop, 'DE'))->toBe(['id' => 'Local VAT ID', 'alt' => 'Steuernummer-StNr', 'vat' => 'USt-IdNr.'])
+            ->and($labels::customerAltLabel($customer))->toBe('Steuernummer-StNr');
+
+        $this->shop->update(['settings' => $originalSettings]);
+        $customer->update(['identity_document_number_alt' => '5273067448']);
+        $customer->address->update(['country_code' => 'PL']);
+        $customer = $customer->fresh();
+        expect($labels::customerAltLabel($customer))->toBe('NIP')
+            ->and($labels::invoiceAlt($customer))->toBe('5273067448')
+            ->and($labels::for($customer->shop, 'JP'))->toBe(['id' => __('Company reg. no.'), 'alt' => null, 'vat' => __('VAT number')]);
+
+        $customer->update(['identity_document_number_alt' => null]);
+        $customer->address->update(['country_code' => 'FR']);
+        expect($labels::customerAltLabel($customer->fresh()))->toBeNull();
+
+        $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')]);
+        expect($labels::for($customer->fresh()->shop, 'ES'))->toBe(['id' => 'NIF', 'alt' => null, 'vat' => 'NIF-IVA']);
+
+        $this->organisation->update(['country_id' => \App\Models\Helpers\Country::where('code', 'GB')->value('id')]);
+        expect($labels::for($customer->fresh()->shop, 'SK'))->toBe(['id' => 'IČO', 'alt' => 'DIČ', 'vat' => 'IČ DPH']);
+    } finally {
+        $this->organisation->update(['country_id' => $originalCountryId]);
+        $this->shop->update(['settings' => $originalSettings]);
+        $this->customer->address->update(['country_code' => $originalCountry]);
+        $this->customer->update(['peppol_id' => null, 'identity_document_number_alt' => null, 'company_name' => null]);
+    }
+});

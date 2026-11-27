@@ -3555,11 +3555,14 @@ test('a Slovak business registering in a shop of a Slovak company must give its 
             ->assertSessionHasErrors('dic');
         post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-letters@example.com', 'dic' => 'abc']))
             ->assertSessionHasErrors('dic');
-        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic@example.com', 'dic' => '2021 344 160']))
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-ico-typo@example.com', 'dic' => '2021344160', 'identity_document_number' => '12AB']))
+            ->assertSessionHasErrors('identity_document_number');
+        post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic@example.com', 'dic' => '2021 344 160', 'identity_document_number' => '54 018 579']))
             ->assertSessionHasNoErrors();
 
         expect(Customer::where('email', 'registration-dic-missing@example.com')->exists())->toBeFalse()
-            ->and(Customer::where('email', 'registration-dic@example.com')->firstOrFail()->peppol_id)->toBe('0245:2021344160');
+            ->and(Customer::where('email', 'registration-dic@example.com')->firstOrFail()->peppol_id)->toBe('0245:2021344160')
+            ->and(Customer::where('email', 'registration-dic@example.com')->firstOrFail()->identity_document_number)->toBe('54018579');
 
         auth('retina')->logout();
         post(route('retina.register_from_standalone.store'), $registration(['email' => 'registration-dic-person@example.com', 'company_name' => '']))

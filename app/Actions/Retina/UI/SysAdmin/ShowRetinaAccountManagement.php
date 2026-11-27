@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\CRM\Customer\PdfCustomerLetterOfAuthorisation;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\RetinaAction;
@@ -48,6 +49,9 @@ class ShowRetinaAccountManagement extends RetinaAction
 
         $showInterests = Tag::where('shop_id', $this->shop->id)
             ->whereNotIn('scope', [TagScopeEnum::SYSTEM_CUSTOMER, TagScopeEnum::ADMIN_CUSTOMER])->count() > 0;
+
+        $companyIdLabels = CompanyIdLabels::for($customer->shop, $customer->address?->country_code);
+        $altLabel        = CompanyIdLabels::customerAltLabel($customer);
 
         return Inertia::render(
             'EditModel',
@@ -126,7 +130,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ],
                                     'tax_number'       => [
                                         'type'          => 'tax_number',
-                                        'label'         => __('Tax number'),
+                                        'label'         => $companyIdLabels['vat'],
                                         'value'         => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country'       => $customer->address->country_code,
                                         'options'       => [
@@ -148,12 +152,13 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ],
                                     'identity_document_number' => [
                                         'type'          => 'input',
-                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                                        'label'         => $companyIdLabels['id'],
                                         'value'         => $customer->identity_document_number
                                     ],
                                     'identity_document_number_alt' => [
                                         'type'          => 'input',
-                                        'label'         => data_get($customer->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                                        'hidden'        => $altLabel === null,
+                                        'label'         => $altLabel ?? '',
                                         'value'         => $customer->identity_document_number_alt
                                     ],
                                     'peppol_dic' => [

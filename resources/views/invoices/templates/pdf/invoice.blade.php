@@ -225,13 +225,13 @@
                     @endif
                 @if($invoice->tax_number && ($invoice->tax_number_valid || $invoice->billingAddress?->country?->code === 'ES'))
                     <div>
-                        <span class="address_label">{{ __('Tax Number') }}:</span>
+                        <span class="address_label">{{ $companyIdLabels['vat'] ?? __('Tax Number') }}:</span>
                         <span class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
                 @endif
                 @if($invoice->identity_document_number)
                     <div>
-                        <span class="address_label">{{ data_get($shop->settings, 'customer.identity_document_number') ?? __('Identity Document Number') }}:</span>
+                        <span class="address_label">{{ $companyIdLabels['id'] ?? data_get($shop->settings, 'customer.identity_document_number') ?? __('Identity Document Number') }}:</span>
                         <span class="address_value"> {{$invoice->identity_document_number}} </span>
                     </div>
                 @endif
@@ -243,7 +243,7 @@
                     @endif
                 @if($invoice->identity_document_number_alt)
                     <div>
-                        <span class="address_label">{{ data_get($shop->settings, 'customer.identity_document_number_alt') ?? __('Identity Document Number Alt.') }}:</span>
+                        <span class="address_label">{{ $companyIdLabels['alt'] ?? data_get($shop->settings, 'customer.identity_document_number_alt') ?? __('Identity Document Number Alt.') }}:</span>
                         <span class="address_value"> {{$invoice->identity_document_number_alt}} </span>
                     </div>
                 @endif

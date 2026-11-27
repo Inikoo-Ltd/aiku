@@ -224,19 +224,20 @@ watch(
     </div>
 
 
-    <!-- Field: Tax Number -->
-    <div class="sm:col-span-6">
-        <label for="tax_number" class="mb-2 block text-sm font-medium text-gray-700" >
-            <FontAwesomeIcon v-if="registration_settings.tax_number_is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-            {{ ctrans("Tax number") }}
-        </label >
-        <TaxNumber
-            :form="form"
-            fieldName="tax_number"
-            :country_code="selectedCountryCode"
-            :options="{ countriesAddressData: countriesAddressData }"
-        >
-        </TaxNumber>
+    <!-- Field: IČO -->
+    <div v-if="showsDic" class="sm:col-span-6">
+        <label for="identity_document_number" class="mb-2 block text-sm font-medium text-gray-700">IČO</label>
+        <InputText
+            v-model="form.identity_document_number"
+            @update:model-value="form.clearErrors('identity_document_number')"
+            id="identity_document_number"
+            name="identity_document_number"
+            inputmode="numeric"
+            maxlength="8"
+            placeholder="12345678"
+            class="w-full"
+            :class="form.errors.identity_document_number ? 'errorShake' : ''" />
+        <p v-if="form.errors.identity_document_number" class="text-sm text-red-600 mt-1">{{ form.errors.identity_document_number }}</p>
     </div>
 
     <!-- Field: DIČ -->
@@ -257,6 +258,21 @@ watch(
             :class="form.errors.dic ? 'errorShake' : ''" />
         <p class="mt-1 text-xs text-gray-500">{{ ctrans("10 digits, without SK. We send your invoices to it as e-invoices.") }}</p>
         <p v-if="form.errors.dic" class="text-sm text-red-600 mt-1">{{ form.errors.dic }}</p>
+    </div>
+
+    <!-- Field: Tax Number -->
+    <div class="sm:col-span-6">
+        <label for="tax_number" class="mb-2 block text-sm font-medium text-gray-700" >
+            <FontAwesomeIcon v-if="registration_settings.tax_number_is_required" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            {{ showsDic ? "IČ DPH" : ctrans("Tax number") }}
+        </label >
+        <TaxNumber
+            :form="form"
+            fieldName="tax_number"
+            :country_code="selectedCountryCode"
+            :options="{ countriesAddressData: countriesAddressData }"
+        >
+        </TaxNumber>
     </div>
 
     <div v-if="form.poll_replies?.length" class="sm:col-span-6">

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
@@ -121,13 +122,12 @@ class CustomerResource extends JsonResource
             'status'                        => $customer->status,
             'currency_code'                 => $shop?->currency?->code,
             'identity_document_number'      => $customer->identity_document_number ? [
-                'label'     => data_get($shop?->settings, 'customer.identity_document_number') ?? __('Identity document number'),
+                'label'     => $shop ? CompanyIdLabels::for($shop, $customer->address?->country_code)['id'] : __('Identity document number'),
                 'number'    => $customer->identity_document_number,
             ] : null,
-            'identity_document_number_alt'  => $customer->identity_document_number_alt ? [
-                'label'     => data_get($shop?->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt'),
-                'number'    => $customer->identity_document_number_alt,
-            ] : null,
+            'identity_document_number_alt'  => $customer->shop
+                ? CompanyIdLabels::customerAltForDisplay($customer->resource)
+                : null,
             'email_subscriptions'           => [
                 'update_route'  => [
                     'method'     => 'patch',

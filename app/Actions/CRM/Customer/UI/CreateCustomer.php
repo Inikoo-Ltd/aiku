@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
@@ -24,6 +25,8 @@ class CreateCustomer extends OrgAction
 
     public function handle(Shop $shop, ActionRequest $request): Response
     {
+        $companyIdLabels = CompanyIdLabels::for($shop, $shop->country->code);
+
         return Inertia::render(
             'CreateModel',
             [
@@ -91,9 +94,19 @@ class CreateCustomer extends OrgAction
 
                                         ]
                                     ],
+                                    'identity_document_number' => [
+                                        'type'   => 'input',
+                                        'label'  => $companyIdLabels['id'],
+                                    ],
+                                    'peppol_dic'      => [
+                                        'type'        => 'input',
+                                        'hidden'      => $shop->country->code !== 'SK',
+                                        'label'       => 'DIČ',
+                                        'information' => __('10 digits, without SK. Peppol e-invoices go to it, so a wrong number sends them to another company.'),
+                                    ],
                                     'tax_number'      => [
                                         'type'    => 'tax_number',
-                                        'label'   => __('Tax number'),
+                                        'label'   => $companyIdLabels['vat'],
                                         'value'   => null,
                                         'country' => $shop->country->code,
                                         'options' => [

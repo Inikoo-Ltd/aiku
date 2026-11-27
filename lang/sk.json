@@ -27286,5 +27286,7 @@
     "Your IČ DPH is SK followed by your DIČ.": "Vaše IČ DPH je SK a za ním vaše DIČ.",
     "This IČ DPH is not in the list of VAT payers. Leave it empty if you are not a VAT payer.": "Toto IČ DPH nie je v zozname platiteľov DPH. Ak nie ste platiteľ DPH, nechajte ho prázdne.",
     "Please fill in the details that are missing.": "Vyplňte, prosím, chýbajúce údaje.",
-    "Your details have just changed. Please reload the page.": "Vaše údaje sa práve zmenili. Načítajte, prosím, stránku znova."
+    "Your details have just changed. Please reload the page.": "Vaše údaje sa práve zmenili. Načítajte, prosím, stránku znova.",
+    "Other number": "Iné číslo",
+    "Company reg. no.": "Registračné číslo firmy"
 }

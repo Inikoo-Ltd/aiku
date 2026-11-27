@@ -212,6 +212,7 @@ trait WithRetinaRegistration
         if (self::asksForDic($this->shop) && $this->isSlovakAddress($this->all())) {
             $dic = preg_replace('/\D/', '', (string)$this->get('dic'));
             $this->set('dic', $dic ?: $this->dicFromSlovakVatNumber($this->get('tax_number')));
+            $this->set('identity_document_number', preg_replace('/\D/', '', (string)$this->get('identity_document_number')) ?: null);
         } elseif ($this->has('dic')) {
             $this->set('dic', null);
         }
@@ -280,6 +281,16 @@ trait WithRetinaRegistration
                 function (string $attribute, mixed $value, Closure $fail) {
                     if (is_string($value) && !BuildUblInvoice::isSlovakDic($value)) {
                         $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                    }
+                },
+            ],
+            'identity_document_number' => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    if (is_string($value) && self::asksForDic($this->shop) && $this->isSlovakAddress($this->all()) && !preg_match('/^\d{6,8}$/', $value)) {
+                        $fail(__('The IČO has 6 to 8 digits.'));
                     }
                 },
             ],

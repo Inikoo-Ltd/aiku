@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Accounting;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,11 +47,11 @@ class InvoiceResource extends JsonResource
             'tax_number_valid'    => $invoice->tax_number_valid,
             'tax_number_status'   => $invoice->tax_number_status,
             'identity_document_number'      => $invoice->identity_document_number ? [
-                'label'     => data_get($shop?->settings, 'customer.identity_document_number') ?? __('Identity document number'),
+                'label'     => CompanyIdLabels::for($shop, $invoice->address?->country_code)['id'],
                 'number'    => $invoice->identity_document_number,
             ] : null,
             'identity_document_number_alt'  => $invoice->identity_document_number_alt ? [
-                'label'     => data_get($shop?->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt'),
+                'label'     => CompanyIdLabels::invoiceAltLabel(CompanyIdLabels::for($shop, $invoice->address?->country_code), $invoice->address?->country_code, $invoice->identity_document_number_alt),
                 'number'    => $invoice->identity_document_number_alt,
             ] : null,
             'name'                => $invoice->customer_name,

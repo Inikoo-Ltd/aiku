@@ -9,6 +9,8 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Accounting\EInvoice\BuildUblInvoice;
+use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
+use Closure;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomersDashboard;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateIsStaff;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
@@ -78,6 +80,10 @@ class StoreCustomer extends OrgAction
         $deliveryAddressData = Arr::get($modelData, 'delivery_address', []);
         Arr::forget($modelData, 'delivery_address');
         $taxNumberData = Arr::pull($modelData, 'tax_number');
+        $dic           = preg_replace('/\D/', '', (string)Arr::pull($modelData, 'peppol_dic'));
+        if ($dic !== '') {
+            $modelData['peppol_id'] = BuildUblInvoice::PEPPOL_SCHEME.':'.$dic;
+        }
 
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
@@ -296,6 +302,17 @@ class StoreCustomer extends OrgAction
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'peppol_id'                => BuildUblInvoice::peppolIdRules(),
+            'peppol_dic'               => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, Closure $fail) {
+                    $dic = preg_replace('/\D/', '', (string)$value);
+                    if ($dic !== '' && !BuildUblInvoice::isSlovakDic($dic)) {
+                        $fail(__('This is not a valid Slovak DIČ. Please check the number.'));
+                    }
+                },
+            ],
             'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_address'          => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
@@ -381,7 +398,10 @@ class StoreCustomer extends OrgAction
     {
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($shop, $this->validatedData);
+        $customer = $this->handle($shop, $this->validatedData);
+        VerifyCustomerDic::dispatchIfApplies($customer);
+
+        return $customer;
     }
 
     /**

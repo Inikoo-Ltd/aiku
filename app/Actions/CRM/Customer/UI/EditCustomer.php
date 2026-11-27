@@ -12,6 +12,7 @@ use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\Accounting\EInvoice\VerifyCustomerDic;
 use App\Actions\OrgAction;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
@@ -104,6 +105,9 @@ class EditCustomer extends OrgAction
 
         $isExternal = $customer->shop->type == ShopTypeEnum::EXTERNAL;
 
+        $companyIdLabels = CompanyIdLabels::for($customer->shop, $customer->address?->country_code);
+        $altLabel        = CompanyIdLabels::customerAltLabel($customer);
+
 
         $contact    = [
             'title'  => __('Contact information'),
@@ -165,7 +169,7 @@ class EditCustomer extends OrgAction
                 ],
                 'tax_number'               => [
                     'type'                  => 'tax_number',
-                    'label'                 => __('Tax number'),
+                    'label'                 => $companyIdLabels['vat'],
                     'value'                 => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                     'mark_as_valid_button'  => [
                         'show'      => true,
@@ -202,12 +206,13 @@ class EditCustomer extends OrgAction
                 ],
                 'identity_document_number' => [
                     'type'          => 'input',
-                    'label'         => data_get($customer->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                    'label'         => $companyIdLabels['id'],
                     'value'         => $customer->identity_document_number
                 ],
                 'identity_document_number_alt' => [
                     'type'          => 'input',
-                    'label'         => data_get($customer->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                    'hidden'        => $altLabel === null,
+                    'label'         => $altLabel ?? '',
                     'value'         => $customer->identity_document_number_alt
                 ],
             ]

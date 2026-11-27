@@ -10,6 +10,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\Accounting\EInvoice\IsInvoiceInEInvoiceScope;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -420,6 +421,7 @@ trait WithInvoicesExport
         $pdf = PDF::loadView('invoices.templates.pdf.invoice', [
             'shop'                    => $invoice->shop,
             'invoice'                 => $invoice,
+            'companyIdLabels'         => $this->invoicePdfCompanyIdLabels($invoice),
             'deliveryNote'            => $deliveryNote,
             'deliveryAddress'         => $deliveryAddress,
             'isCollection'            => $isCollection,
@@ -443,5 +445,19 @@ trait WithInvoicesExport
         ], [], $config);
 
         return [$pdf, $filename];
+    }
+
+    /**
+     * @return array{id: string, alt: string, vat: string|null}
+     */
+    private function invoicePdfCompanyIdLabels(Invoice $invoice): array
+    {
+        $labels = CompanyIdLabels::for($invoice->shop, $invoice->address?->country_code);
+
+        return [
+            'id'  => $labels['id'],
+            'alt' => CompanyIdLabels::invoiceAltLabel($labels, $invoice->address?->country_code, $invoice->identity_document_number_alt),
+            'vat' => $invoice->tax_number_valid ? $labels['vat'] : null,
+        ];
     }
 }

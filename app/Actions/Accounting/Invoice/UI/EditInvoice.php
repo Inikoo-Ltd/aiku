@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice\UI;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\Accounting\Invoice\UpdateInvoiceTaxNumber;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -55,6 +56,7 @@ class EditInvoice extends OrgAction
 
     public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
     {
+        $companyIdLabels = CompanyIdLabels::for($invoice->shop, $invoice->address?->country_code);
 
         $title = _('Edit invoice');
         if ($invoice->type == InvoiceTypeEnum::REFUND) {
@@ -177,12 +179,12 @@ class EditInvoice extends OrgAction
                                 ],
                                 'identity_document_number'      => [
                                     'type'          => 'input',
-                                    'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number') ?? __('Identity document number').'/'.__('Registration number'),
+                                    'label'         => $companyIdLabels['id'],
                                     'value'         => $invoice->identity_document_number
                                 ],
                                 'identity_document_number_alt'  => [
                                     'type'          => 'input',
-                                    'label'         => data_get($invoice->shop->settings, 'customer.identity_document_number_alt') ?? __('Identity document number Alt').'/'.__('Registration number Alt'),
+                                    'label'         => CompanyIdLabels::invoiceAltLabel($companyIdLabels, $invoice->address?->country_code, $invoice->identity_document_number_alt),
                                     'value'         => $invoice->identity_document_number_alt
                                 ],
 

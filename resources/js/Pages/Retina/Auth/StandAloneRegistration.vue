@@ -73,6 +73,7 @@ const form = useForm({
 	interest: [],
     tax_number: '',
     dic: '',
+    identity_document_number: '',
 
 })
 
