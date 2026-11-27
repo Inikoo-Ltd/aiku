@@ -34,6 +34,10 @@ use App\Actions\Dropshipping\Tiktok\User\CheckTiktokChannel;
 use App\Actions\Dropshipping\Tiktok\User\StoreTiktokUser;
 use App\Actions\Dropshipping\Tiktok\User\UpdateTiktokUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
+use App\Actions\Dropshipping\Tiktok\Fulfilment\SyncTiktokFulfilmentOrderStatus;
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
+use App\Models\Fulfilment\PalletReturn;
+use App\Models\Fulfilment\StoredItemMovement;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -1239,4 +1243,115 @@ test('a tiktok error getting the shipment reaches the user and stores nothing, H
     expect(fn () => ProcessTiktokOrderShipment::run($order, $secondDeliveryNote))
         ->toThrow(ValidationException::class, 'Order status is not allowed for this operation')
         ->and($secondDeliveryNote->shipments()->count())->toBe(0);
+});
+
+/**
+ * @return array{0: TiktokUser, 1: PalletReturn, 2: \App\Models\Fulfilment\PalletStoredItem}
+ */
+function tiktokFulfilmentOrder(object $ctx, int $ordered, int $onPallet, bool $syncOn = true): array
+{
+    require_once __DIR__.'/../../Support/MobileFulfilmentOutboundHelpers.php';
+
+    $warehouse          = createWarehouse();
+    $fulfilment         = \Tests\Feature\mfoFulfilment($ctx->organisation, $warehouse);
+    $fulfilmentCustomer = \Tests\Feature\mfoCustomer($fulfilment);
+    $stock              = \Tests\Feature\mfoStock(\Tests\Feature\mfoPallet($fulfilmentCustomer, $warehouse, \Tests\Feature\mfoLocation($warehouse)), \Tests\Feature\mfoStoredItem($fulfilmentCustomer), $onPallet);
+    $palletReturn       = \Tests\Feature\mfoItemsReturn($fulfilmentCustomer, $warehouse, [[$stock, $ordered]]);
+
+    $tiktokUser = tiktokChannel($fulfilmentCustomer->customer);
+    $tiktokUser->customerSalesChannel->update(['settings' => [SyncTiktokFulfilmentOrderStatus::SETTING => $syncOn]]);
+
+    $palletReturn->update([
+        'customer_sales_channel_id' => $tiktokUser->customer_sales_channel_id,
+        'platform_id'               => $tiktokUser->platform_id,
+        'platform_order_id'         => '5769'.random_int(100000000, 999999999),
+        'is_shipping_by_external'   => true,
+    ]);
+
+    return [$tiktokUser->refresh(), $palletReturn->refresh(), $stock->refresh()];
+}
+
+test('a fulfilment order tiktok shows as sent is picked from its pallet and dispatched once, HELP-4974', function () {
+    [$tiktokUser, $palletReturn, $stock] = tiktokFulfilmentOrder($this, ordered: 2, onPallet: 10);
+
+    fakeTiktokOrderIntake([tiktokOrder($palletReturn->platform_order_id, [['product_id' => 'TT-FUL']], ['status' => 'IN_TRANSIT', 'shipping_type' => 'TIKTOK'])]);
+    HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, $palletReturn->platform_order_id, 'IN_TRANSIT'));
+
+    $palletReturn->refresh();
+    expect($palletReturn->state)->toBe(PalletReturnStateEnum::DISPATCHED)
+        ->and((float) $palletReturn->items()->first()->quantity_dispatched)->toBe(2.0)
+        ->and((float) $stock->refresh()->quantity)->toBe(8.0)
+        ->and(StoredItemMovement::where('pallet_return_id', $palletReturn->id)->sum('quantity'))->toEqual(-2)
+        ->and($palletReturn->internal_notes)->toContain('Sent on TikTok, dispatched by itself')
+        ->and(Http::recorded()->filter(fn ($pair) => str_contains($pair[0]->url(), '/shipping_info/'))->count())->toBe(0);
+
+    HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, $palletReturn->platform_order_id, 'DELIVERED'));
+
+    expect((float) $stock->refresh()->quantity)->toBe(8.0)
+        ->and(StoredItemMovement::where('pallet_return_id', $palletReturn->id)->count())->toBe(1);
+});
+
+test('a sent order with less stock in aiku than sent takes what is there and says so, HELP-4974', function () {
+    [$tiktokUser, $palletReturn, $stock] = tiktokFulfilmentOrder($this, ordered: 3, onPallet: 3);
+    $stock->update(['quantity' => 1]);
+
+    fakeTiktokOrderIntake([tiktokOrder($palletReturn->platform_order_id, [['product_id' => 'TT-FUL']], ['status' => 'IN_TRANSIT'])]);
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser, ['id' => $palletReturn->platform_order_id, 'status' => 'IN_TRANSIT']);
+
+    $palletReturn->refresh();
+    expect($palletReturn->state)->toBe(PalletReturnStateEnum::DISPATCHED)
+        ->and((float) $palletReturn->items()->first()->quantity_picked)->toBe(1.0)
+        ->and($palletReturn->internal_notes)->toContain('aiku had less stock than sent')
+        ->and($palletReturn->internal_notes)->toContain('1 of 3');
+});
+
+test('tiktok cancelling a fulfilment order cancels it, and with the channel switch off nothing moves, HELP-4974', function () {
+    [$tiktokUser, $palletReturn, $stock] = tiktokFulfilmentOrder($this, ordered: 2, onPallet: 10, syncOn: false);
+
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser, ['id' => $palletReturn->platform_order_id, 'status' => 'IN_TRANSIT']);
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser, ['id' => $palletReturn->platform_order_id, 'status' => 'CANCELLED']);
+
+    expect($palletReturn->refresh()->state)->toBe(PalletReturnStateEnum::CONFIRMED)
+        ->and((float) $stock->refresh()->quantity)->toBe(10.0);
+
+    $tiktokUser->customerSalesChannel->update(['settings' => [SyncTiktokFulfilmentOrderStatus::SETTING => true]]);
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser->refresh(), ['id' => $palletReturn->platform_order_id, 'status' => 'AWAITING_COLLECTION']);
+    expect($palletReturn->refresh()->state)->toBe(PalletReturnStateEnum::CONFIRMED);
+
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser, ['id' => $palletReturn->platform_order_id, 'status' => 'CANCELLED']);
+    expect($palletReturn->refresh()->state)->toBe(PalletReturnStateEnum::CANCEL)
+        ->and((float) $stock->refresh()->quantity)->toBe(10.0);
+});
+
+test('the daily sweep asks tiktok for the open orders of switched on channels and dispatches the sent ones, HELP-4974', function () {
+    [, $palletReturn, $stock] = tiktokFulfilmentOrder($this, ordered: 2, onPallet: 10);
+
+    fakeTiktokOrderIntake([tiktokOrder($palletReturn->platform_order_id, [['product_id' => 'TT-FUL']], ['status' => 'COMPLETED'])]);
+    $this->artisan('tiktok:sync-fulfilment-orders')->assertExitCode(0);
+
+    expect($palletReturn->refresh()->state)->toBe(PalletReturnStateEnum::DISPATCHED)
+        ->and((float) $stock->refresh()->quantity)->toBe(8.0);
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/order/202309/orders')
+        && str_contains(urldecode($request->url()), $palletReturn->platform_order_id));
+});
+
+test('a sent order already picked in aiku is dispatched without taking stock again, and one we ship ourselves is left alone, HELP-4974', function () {
+    [$tiktokUser, $palletReturn, $stock] = tiktokFulfilmentOrder($this, ordered: 2, onPallet: 10);
+
+    \App\Actions\Fulfilment\PalletReturn\PickingPalletReturn::make()->action($palletReturn);
+    \App\Actions\Fulfilment\PalletReturnItem\PickPalletReturnItemInPalletReturnWithStoredItem::make()->action($palletReturn->items()->first(), ['quantity_picked' => 2]);
+    \App\Actions\Fulfilment\PalletReturn\SetPalletReturnAsPicked::run($palletReturn->refresh());
+
+    SyncTiktokFulfilmentOrderStatus::run($tiktokUser, ['id' => $palletReturn->platform_order_id, 'status' => 'DELIVERED']);
+
+    expect($palletReturn->refresh()->state)->toBe(PalletReturnStateEnum::DISPATCHED)
+        ->and((float) $stock->refresh()->quantity)->toBe(8.0)
+        ->and(StoredItemMovement::where('pallet_return_id', $palletReturn->id)->count())->toBe(1);
+
+    [$ownUser, $ownShipping] = tiktokFulfilmentOrder($this, ordered: 1, onPallet: 5);
+    $ownShipping->update(['is_shipping_by_external' => false]);
+
+    SyncTiktokFulfilmentOrderStatus::run($ownUser, ['id' => $ownShipping->platform_order_id, 'status' => 'IN_TRANSIT']);
+
+    expect($ownShipping->refresh()->state)->toBe(PalletReturnStateEnum::CONFIRMED);
 });

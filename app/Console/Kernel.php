@@ -811,6 +811,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('tiktok:sync-fulfilment-orders')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'SyncTiktokFulfilmentOrderStatus',
+                ),
+                name: 'SyncTiktokFulfilmentOrderStatus',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('ebay:update-inventory')->everyTwoHours()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'UpdateInventoryInEbayPortfolio',
                 ),
