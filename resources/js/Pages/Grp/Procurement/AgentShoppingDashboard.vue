@@ -6,11 +6,11 @@
 
 <script setup lang="ts">
 import { Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import InputNumber from "primevue/inputnumber"
 import ToggleSwitch from "primevue/toggleswitch"
 import { ref, computed } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import SupplierOrderProposals, { type SupplierOrderProposalsData } from "@/Components/Procurement/SupplierOrderProposals.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
@@ -82,6 +82,7 @@ const props = defineProps<{
     orderCapacity: OrderCapacity
     canPrepareOrder: boolean
     prepareOrder?: { buckets: PrepareBucket[], url: string }
+    supplierOrderProposals: SupplierOrderProposalsData
 }>()
 
 const locale = useLocaleStore()
@@ -313,22 +314,22 @@ const isCappedByBudget = computed(() => !!budget.value && budget.value < estimat
 const roundLeft = computed(() => (roundBudget.value === null ? null : Math.max(0, roundBudget.value - props.stats.estimated_total)))
 const isOverRound = computed(() => roundLeft.value !== null && (isCappedByBudget.value ? budget.value! : estimate.value.cost) > roundLeft.value)
 
+const prepareError = ref<string | null>(null)
+
 const prepare = () => {
     if (!props.prepareOrder) {
         return
     }
+    prepareError.value = null
     router.post(
         props.prepareOrder.url,
         { buckets: selectedBuckets.value, worst_only: worstOnly.value, ...(budget.value ? { budget: budget.value } : {}) },
         {
             onStart: () => (isPreparing.value = true),
             onFinish: () => (isPreparing.value = false),
-            onError: (errors) =>
-                notify({
-                    title: ctrans("No order prepared"),
-                    text: errors.rescue ?? errors.budget ?? errors.buckets ?? ctrans("Something went wrong, please try again"),
-                    type: "error",
-                }),
+            onError: (errors) => {
+                prepareError.value = errors.rescue ?? errors.budget ?? errors.buckets ?? ctrans("Something went wrong, please try again")
+            },
         }
     )
 }
@@ -341,6 +342,8 @@ const prepare = () => {
     <PageHeading :data="pageHead" />
 
     <div class="mx-4 mt-4 flex flex-col gap-6 pb-8">
+        <SupplierOrderProposals :data="supplierOrderProposals" :can-decide="canPrepareOrder" show-supplier />
+
         <section class="rounded-r border-l-4 border-gray-300 bg-gray-50">
             <div class="flex flex-col gap-3 px-4 py-3">
                 <div class="flex flex-col gap-x-8 gap-y-3 lg:flex-row lg:items-center">
@@ -566,6 +569,7 @@ const prepare = () => {
                                 :disabled="!prepareOrder || !estimate.lines"
                             />
                         </div>
+                        <p v-if="prepareError" class="w-full text-xs text-red-600">{{ ctrans("No order prepared") }}: {{ prepareError }}</p>
                     </form>
                 </div>
 

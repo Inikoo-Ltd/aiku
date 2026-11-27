@@ -19,6 +19,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faExclamationTriangle, faShoppingCart } from "@fal"
 import ModalAutoFillSupplierShoppingList from "@/Components/Procurement/ModalAutoFillSupplierShoppingList.vue"
+import SupplierOrderProposals, { type SupplierOrderProposalsData } from "@/Components/Procurement/SupplierOrderProposals.vue"
 
 library.add(faExclamationTriangle, faShoppingCart)
 
@@ -49,6 +50,7 @@ const props = defineProps<{
     orderCapacity: OrderCapacity
     prepareOrder: { lines: number, cost: number, buckets: Record<string, { lines: number, cost: number }> }
     canPrepareOrder: boolean
+    supplierOrderProposals: SupplierOrderProposalsData
 }>()
 
 const toneClasses = {
@@ -164,6 +166,8 @@ const rankClasses: Record<string, string> = {
         <span class="text-xs text-gray-400">{{ ctrans("Lines go on the draft purchase order, where you can change them before submitting") }}</span>
         <p v-if="prepareOrderError" class="w-full text-xs text-red-600">{{ prepareOrderError }}</p>
     </div>
+
+    <SupplierOrderProposals class="mx-4 mt-4" :data="supplierOrderProposals" :can-decide="canPrepareOrder" />
 
     <div class="mx-4 mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4">

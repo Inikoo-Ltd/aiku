@@ -128,6 +128,10 @@ class ShowSupplierShare
             'open_purchase_orders' => IndexSupplierPortalPurchaseOrders::make()->openCount($supplier),
             'purchase_order_stages' => Inertia::defer(fn () => IndexSupplierPortalPurchaseOrderStages::make()->handle($supplier), 'stages'),
             'order_plan'           => Inertia::defer(fn () => GetSupplierPortalOrderPlan::make()->handle($supplier), 'order_plan'),
+            'order_now'            => Inertia::defer(fn () => GetSupplierPortalOrderNow::make()->handle($supplier), 'order_now'),
+            'order_proposal_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'path' => 'order-proposals'])
+                : route('grp.supplier_share.order_proposals.store', $token),
             'compliance'           => Inertia::defer(fn () => GetSupplierPortalCompliance::make()->handle($supplier), 'compliance'),
             'purchase_orders'      => SupplierPortalPurchaseOrdersResource::collection(IndexSupplierPortalPurchaseOrders::make()->handle($supplier, 'purchase_orders'))
                 ->additional(IndexSupplierPortalPurchaseOrders::make()->facets($supplier, 'purchase_orders')),

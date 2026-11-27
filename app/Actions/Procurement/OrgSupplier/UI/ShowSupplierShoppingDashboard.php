@@ -13,6 +13,7 @@ use App\Actions\Procurement\OrgSupplier\GetSupplierOrderCapacity;
 use App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets;
 use App\Actions\Procurement\OrgSupplier\PrepareSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplier\WithOrgSupplierSubNavigation;
+use App\Actions\Procurement\SupplierOrderProposal\UI\GetSupplierOrderProposals;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
@@ -200,6 +201,11 @@ class ShowSupplierShoppingDashboard extends OrgAction
                 'openStockDeliveries' => $data['open_stock_deliveries'],
                 'prepareOrder'        => $data['prepare'],
                 'canPrepareOrder'     => $request->user()->authTo("procurement.{$this->organisation->id}.edit"),
+                'supplierOrderProposals' => [
+                    'lines'      => GetSupplierOrderProposals::make()->handle($this->organisation->id, [$this->orgSupplier->id]),
+                    'accept_url' => route('grp.org.procurement.supplier_order_proposals.accept', $this->organisation->slug),
+                    'reject_url' => route('grp.org.procurement.supplier_order_proposals.reject', $this->organisation->slug),
+                ],
             ]
         );
     }

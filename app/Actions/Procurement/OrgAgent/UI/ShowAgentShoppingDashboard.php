@@ -14,11 +14,13 @@ use App\Actions\Procurement\OrgAgent\GetAgentStockCoverBuckets;
 use App\Actions\Procurement\OrgAgent\PrepareAgentPurchaseOrders;
 use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\OrgAgent\WithAgentShoppingSubNavigation;
+use App\Actions\Procurement\SupplierOrderProposal\UI\GetSupplierOrderProposals;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -179,6 +181,11 @@ class ShowAgentShoppingDashboard extends OrgAction
                 'leadTime'     => $data['cover']['lead_time'],
                 'orderCapacity' => $data['order_capacity'],
                 'canPrepareOrder' => $request->user()->authTo("procurement.{$this->organisation->id}.edit"),
+                'supplierOrderProposals' => [
+                    'lines'      => GetSupplierOrderProposals::make()->handle($this->organisation->id, OrgSupplier::where('organisation_id', $this->organisation->id)->where('org_agent_id', $this->orgAgent->id)->pluck('id')),
+                    'accept_url' => route('grp.org.procurement.supplier_order_proposals.accept', $this->organisation->slug),
+                    'reject_url' => route('grp.org.procurement.supplier_order_proposals.reject', $this->organisation->slug),
+                ],
                 'prepareOrder'    => Inertia::defer(fn () => [
                     'buckets' => PrepareAgentPurchaseOrders::make()->summary($this->orgAgent),
                     'url'     => route('grp.org.procurement.org_agents.show.shopping.prepare', [$this->organisation->slug, $this->orgAgent->slug]),

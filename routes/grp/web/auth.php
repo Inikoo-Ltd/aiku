@@ -32,6 +32,7 @@ use App\Actions\SupplyChain\SupplierShareLink\UI\PdfSupplierPortalLabels;
 use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
 use App\Actions\SupplyChain\SupplierShareLink\UI\ShowSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\UpdateSupplierPortalProfile;
+use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalOrderProposal;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierPortalPurchaseOrderDocument;
 use App\Actions\SupplyChain\SupplierShareLink\CompleteSupplierPortalPurchaseOrder;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalPurchaseOrderDocument;
@@ -62,6 +63,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('product-proposals/import', ImportSupplierPortalProductProposals::class)->middleware('throttle:supplier-portal-batch')->name('product_proposals.import');
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
+        Route::post('order-proposals', StoreSupplierPortalOrderProposal::class)->middleware('throttle:supplier-portal-submit')->name('order_proposals.store');
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
         Route::post('agreement', AcceptSupplierAgreement::class)->middleware('throttle:supplier-portal-submit')->name('agreement.accept');
         Route::get('search', SearchSupplierPortal::class)->name('search');

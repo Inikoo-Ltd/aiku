@@ -76,6 +76,8 @@ use App\Actions\Procurement\OrgSupplier\UI\ShowSupplierDraftsToSend;
 use App\Actions\Procurement\OrgSupplier\PrepareSupplierPurchaseOrder;
 use App\Actions\Procurement\OrgSupplier\RemoveMisplacedSupplierShoppingListItems;
 use App\Actions\Procurement\ShoppingListItem\StoreShoppingListItems;
+use App\Actions\Procurement\SupplierOrderProposal\AcceptSupplierOrderProposals;
+use App\Actions\Procurement\SupplierOrderProposal\RejectSupplierOrderProposals;
 use App\Actions\Procurement\ShoppingListItem\SuggestSupplierShoppingList;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UI\EditOrgSupplierProduct;
@@ -295,6 +297,11 @@ Route::prefix('shopping-list')->as('shopping_list.')->group(function () {
     Route::delete('{shoppingListItem}', DeleteShoppingListItem::class)->name('destroy');
     Route::post('{shoppingListItem}/propose-dismiss', ProposeDismissShoppingListItem::class)->name('propose_dismiss');
     Route::post('{shoppingListItem}/resolve-dismiss', ResolveDismissShoppingListItem::class)->name('resolve_dismiss');
+});
+
+Route::prefix('supplier-order-proposals')->as('supplier_order_proposals.')->group(function () {
+    Route::post('accept', AcceptSupplierOrderProposals::class)->name('accept');
+    Route::post('reject', RejectSupplierOrderProposals::class)->name('reject');
 });
 
 Route::prefix('agent-supplier-purchase-orders')->as('agent_supplier_purchase_orders.')->group(function () {

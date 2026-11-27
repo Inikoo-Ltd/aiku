@@ -25,6 +25,7 @@ enum UserNotificationEnum: string
     case PURCHASE_ORDER_BALANCE_DUE = 'purchase_order_balance_due';
     case PURCHASE_ORDER_DEPOSIT_REQUESTED = 'purchase_order_deposit_requested';
     case PURCHASE_ORDER_SHIPPED_BY_SUPPLIER = 'purchase_order_shipped_by_supplier';
+    case SUPPLIER_ORDER_PROPOSAL = 'supplier_order_proposal';
     case MONEY_REQUEST_CREATED = 'money_request_created';
     case MONEY_REQUEST_APPROVED = 'money_request_approved';
     case MONEY_REQUEST_PAID = 'money_request_paid';
@@ -69,6 +70,7 @@ enum UserNotificationEnum: string
         self::PURCHASE_ORDER_BALANCE_DUE,
         self::PURCHASE_ORDER_DEPOSIT_REQUESTED,
         self::PURCHASE_ORDER_SHIPPED_BY_SUPPLIER,
+        self::SUPPLIER_ORDER_PROPOSAL,
         self::MONEY_REQUEST_CREATED,
         self::MONEY_REQUEST_APPROVED,
         self::MONEY_REQUEST_PAID,
@@ -100,6 +102,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid, or its agent reminds me to pay it'),
             self::PURCHASE_ORDER_DEPOSIT_REQUESTED => __('A supplier asks for a deposit on a purchase order I buy or my organisation buys or handles as agent'),
             self::PURCHASE_ORDER_SHIPPED_BY_SUPPLIER => __('A supplier marks from its portal that it shipped a purchase order I buy or my organisation buys'),
+            self::SUPPLIER_ORDER_PROPOSAL       => __('A supplier proposes from its portal to order products my organisation is out of, or will run out of before a new order can arrive'),
             self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
             self::MONEY_REQUEST_APPROVED        => __('The client approves a money request I asked for or am copied on'),
             self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
@@ -196,6 +199,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_BALANCE_DUE    => 'fal fa-file-invoice',
             self::PURCHASE_ORDER_DEPOSIT_REQUESTED => 'fal fa-coins',
             self::PURCHASE_ORDER_SHIPPED_BY_SUPPLIER => 'fal fa-shipping-fast',
+            self::SUPPLIER_ORDER_PROPOSAL       => 'fal fa-cart-plus',
             self::MONEY_REQUEST_CREATED         => 'fal fa-money-check-alt',
             self::MONEY_REQUEST_APPROVED        => 'fal fa-thumbs-up',
             self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',
