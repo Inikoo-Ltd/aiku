@@ -6,6 +6,7 @@
 
 namespace App\Actions\Goods\Ingredient\Json;
 
+use App\Actions\Goods\Ingredient\SplitIngredientsText;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\OrgAction;
 use App\Models\Goods\Ingredient;
@@ -49,7 +50,8 @@ class ParseIngredientsList extends OrgAction
      */
     private function extractNames(string $text): array
     {
-        return collect(preg_split('/[,;\r\n]+/', $text))
+        return collect(preg_split('/[;\r\n]+/', $text))
+            ->flatMap(fn (string $line) => SplitIngredientsText::run($line))
             ->map(fn ($name) => trim(preg_replace('/[*†\x{00B0}]+$/u', '', trim($name))))
             ->filter()
             ->unique(fn (string $name) => mb_strtolower($name))

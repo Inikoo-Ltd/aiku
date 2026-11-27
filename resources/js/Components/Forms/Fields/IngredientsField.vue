@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import axios from "axios"
+import draggable from "vuedraggable"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faGripVertical } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
-import { notify } from "@kyvg/vue3-notification"
 import SelectInfiniteScroll from "@/Components/Forms/Fields/SelectInfiniteScroll.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -28,9 +30,29 @@ const isModalOpen = ref(false)
 const pastedText = ref("")
 const preview = ref<ParsedIngredient[] | null>(null)
 const isLoading = ref(false)
+const parseError = ref<string | null>(null)
+
+const rememberOptions = (options: { slug: string; name: string }[]) => {
+    for (const option of options ?? []) {
+        if (!localOptions.value.some((known) => known.slug === option.slug)) {
+            localOptions.value.push({ slug: option.slug, name: option.name })
+        }
+    }
+}
+
+const ingredientName = (slug: string) => localOptions.value.find((option) => option.slug === slug)?.name ?? slug
+
+const orderedSlugs = computed({
+    get: () => props.form[props.fieldName] ?? [],
+    set: (slugs: string[]) => {
+        props.form[props.fieldName] = slugs
+        selectRemountKey.value++
+    },
+})
 
 const parse = async (commit: boolean, replace = false) => {
     isLoading.value = true
+    parseError.value = null
     try {
         const response = await axios.post(
             route(props.fieldData.parseRoute.name, props.fieldData.parseRoute.parameters),
@@ -49,9 +71,7 @@ const parse = async (commit: boolean, replace = false) => {
             if (!ingredient.slug) {
                 continue
             }
-            if (!localOptions.value.some((option) => option.slug === ingredient.slug)) {
-                localOptions.value.push({ slug: ingredient.slug, name: ingredient.name })
-            }
+            rememberOptions([{ slug: ingredient.slug, name: ingredient.name }])
             selected.add(ingredient.slug)
         }
 
@@ -60,11 +80,7 @@ const parse = async (commit: boolean, replace = false) => {
         closeModal()
         props.submit?.()
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error.response?.data?.message ?? ctrans("Failed to parse the ingredients"),
-            type: "error",
-        })
+        parseError.value = error.response?.data?.message ?? ctrans("Failed to parse the ingredients")
     } finally {
         isLoading.value = false
     }
@@ -74,6 +90,7 @@ const closeModal = () => {
     isModalOpen.value = false
     pastedText.value = ""
     preview.value = null
+    parseError.value = null
 }
 </script>
 
@@ -85,7 +102,23 @@ const closeModal = () => {
             :fieldName="fieldName"
             :options="localOptions"
             :fieldData="fieldData"
+            @optionsList="rememberOptions"
         />
+
+        <div v-if="orderedSlugs.length > 1" class="mt-3">
+            <div class="text-xs text-gray-500 mb-1">
+                {{ ctrans("Order shown on product pages and labels. Drag to change it.") }}
+            </div>
+            <draggable v-model="orderedSlugs" :item-key="(slug: string) => slug" handle=".drag-handle" :animation="150" tag="ol" class="space-y-1">
+                <template #item="{ element: slug, index }">
+                    <li class="drag-handle flex items-center gap-2 rounded border border-gray-200 bg-white px-2 py-1 text-sm cursor-move">
+                        <FontAwesomeIcon :icon="faGripVertical" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <span class="w-6 text-right text-gray-400 tabular-nums">{{ index + 1 }}.</span>
+                        <span>{{ ingredientName(slug) }}</span>
+                    </li>
+                </template>
+            </draggable>
+        </div>
 
         <div class="mt-2">
             <Button
@@ -130,6 +163,8 @@ const closeModal = () => {
                         </span>
                     </div>
                 </div>
+
+                <p v-if="parseError" class="mt-2 text-xs text-red-600">{{ parseError }}</p>
 
                 <div class="mt-4 flex items-center justify-end gap-2 whitespace-nowrap">
                     <div v-if="preview && (form[fieldName] ?? []).length" class="mr-auto text-xs text-gray-500 whitespace-normal">

@@ -43,9 +43,11 @@ use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\UI\Dashboards\GetGroupWarehouseDashboardData;
 use App\Actions\UI\Dashboards\GetOperationsDashboardData;
 use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Models\Goods\Ingredient;
 use App\Models\Goods\Stock;
 use App\Models\Inventory\Location;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -3103,6 +3105,81 @@ test('a compliance editor pastes an ingredients list onto a trade unit', functio
     patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['ingredients' => [$slug]])->assertSessionHasNoErrors();
 
     expect($tradeUnit->refresh()->ingredients()->pluck('slug')->all())->toBe([$slug]);
+
+    postJson(route('grp.json.ingredients.parse'), ['text' => "Aqua (Water, Eau), $ingredient"])
+        ->assertOk()
+        ->assertJsonPath('0.name', 'Aqua (Water, Eau)')
+        ->assertJsonPath('1.name', $ingredient);
+
+    postJson(route('grp.json.ingredients.parse'), ['text' => "Aqua, Glycerin, CI 45430)"])
+        ->assertOk()
+        ->assertJsonCount(3)
+        ->assertJsonPath('2.name', 'CI 45430)');
+});
+
+test('trade unit ingredients keep the order they were entered in, and a corrected ingredient name reaches its products', function () {
+    setPermissionsTeamId($this->group->id);
+    $compliance = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $compliance->givePermissionTo(['compliance.view', 'compliance.edit']);
+    actingAs($compliance);
+
+    $tradeUnit = $this->product->tradeUnits()->first();
+    $suffix    = Str::random(6);
+    $glycerin  = StoreIngredient::make()->action($this->group, ['name' => 'Glicerin '.$suffix]);
+    $zinc      = StoreIngredient::make()->action($this->group, ['name' => 'Zinc '.$suffix]);
+    $aqua      = StoreIngredient::make()->action($this->group, ['name' => 'Aqua '.$suffix]);
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['ingredients' => [$zinc->slug, $aqua->slug, $glycerin->slug]])->assertSessionHasNoErrors();
+
+    expect($tradeUnit->refresh()->ingredients()->pluck('slug')->all())->toBe([$zinc->slug, $aqua->slug, $glycerin->slug])
+        ->and($tradeUnit->marketing_ingredients)->toBe("Zinc $suffix, Aqua $suffix, Glicerin $suffix");
+
+    patch(route('grp.models.trade-unit.update', $tradeUnit->id), ['ingredients' => [$aqua->slug, $zinc->slug, $glycerin->slug]])->assertSessionHasNoErrors();
+
+    expect($tradeUnit->refresh()->load('ingredients')->ingredients->pluck('slug')->all())->toBe([$aqua->slug, $zinc->slug, $glycerin->slug])
+        ->and($tradeUnit->marketing_ingredients)->toBe("Aqua $suffix, Zinc $suffix, Glicerin $suffix")
+        ->and($tradeUnit->ingredients()->toSql())->toContain('order by "trade_unit_has_ingredients"."position" asc, "trade_unit_has_ingredients"."id" asc');
+
+    $slug = $glycerin->slug;
+    get(route('grp.goods.ingredients.edit', $slug))->assertOk();
+    patch(route('grp.models.ingredient.update', $glycerin->id), ['name' => 'Glycerin '.$suffix])->assertSessionHasNoErrors();
+
+    expect($glycerin->refresh()->name)->toBe('Glycerin '.$suffix)
+        ->and($glycerin->slug)->toBe($slug)
+        ->and($tradeUnit->refresh()->marketing_ingredients)->toBe("Aqua $suffix, Zinc $suffix, Glycerin $suffix")
+        ->and($this->product->refresh()->marketing_ingredients)->toContain("Aqua $suffix, Zinc $suffix, Glycerin $suffix");
+
+    patch(route('grp.models.ingredient.update', $glycerin->id), ['name' => 'Aqua '.$suffix])->assertSessionHasErrors('name');
+
+    $misspelt = StoreIngredient::make()->action($this->group, ['name' => 'Zinkc '.$suffix]);
+    $tradeUnit->ingredients()->attach($misspelt->id, ['position' => 4]);
+    $tradeUnit->update(['marketing_ingredients' => "Aqua $suffix, Zinc $suffix, Glycerin $suffix, Zinkc $suffix"]);
+
+    patch(route('grp.models.ingredient.merge', $misspelt->id), ['merge_into' => $aqua->slug])
+        ->assertRedirect(route('grp.goods.ingredients.show', $aqua->slug));
+
+    expect(Ingredient::find($misspelt->id))->toBeNull()
+        ->and($tradeUnit->refresh()->ingredients()->pluck('slug')->all())->toBe([$aqua->slug, $zinc->slug, $glycerin->slug])
+        ->and($tradeUnit->marketing_ingredients)->toBe("Aqua $suffix, Zinc $suffix, Glycerin $suffix");
+
+    $typo = StoreIngredient::make()->action($this->group, ['name' => 'Glicerine '.$suffix]);
+    $tradeUnit->ingredients()->detach($glycerin->id);
+    $tradeUnit->ingredients()->attach($typo->id, ['position' => 3]);
+    $tradeUnit->update(['marketing_ingredients' => "Aqua $suffix, Zinc $suffix, Glicerine $suffix"]);
+
+    patch(route('grp.models.ingredient.merge', $typo->id), ['merge_into' => $glycerin->slug])->assertSessionHasNoErrors();
+
+    expect($tradeUnit->refresh()->ingredients()->pluck('slug')->all())->toBe([$aqua->slug, $zinc->slug, $glycerin->slug])
+        ->and($tradeUnit->marketing_ingredients)->toBe("Aqua $suffix, Zinc $suffix, Glycerin $suffix");
+
+    patch(route('grp.models.ingredient.merge', $glycerin->id), ['merge_into' => $glycerin->slug])->assertSessionHasErrors('merge_into');
+
+    $viewer = StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $viewer->givePermissionTo('compliance.view');
+    actingAs($viewer);
+    get(route('grp.goods.ingredients.edit', $glycerin->slug))->assertForbidden();
+    patch(route('grp.models.ingredient.update', $glycerin->id), ['name' => 'Nope '.$suffix])->assertForbidden();
+    patch(route('grp.models.ingredient.merge', $glycerin->id), ['merge_into' => $aqua->slug])->assertForbidden();
 });
 
 test('a compliance editor declares the non-packaging materials of a trade unit and the compliance tab shows them', function () {

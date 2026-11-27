@@ -395,6 +395,8 @@ use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\AssignBrandTagsToTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UpdateTradeUnitFamily;
+use App\Actions\Goods\Ingredient\MergeIngredient;
+use App\Actions\Goods\Ingredient\UpdateIngredient;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToNewAgentContainer;
@@ -2467,6 +2469,9 @@ Route::name('product_development.')->prefix('product-development')->group(functi
     Route::post('item/{productDevelopmentItem:id}/label-translation', TranslateProductDevelopmentLabel::class)->name('item.label_translation.store')->withoutScopedBindings();
     Route::delete('label-translation/{labelTranslation:id}', DeleteProductDevelopmentLabelTranslation::class)->name('label_translation.delete')->withoutScopedBindings();
 });
+
+Route::patch('ingredient/{ingredient:id}/update', UpdateIngredient::class)->name('ingredient.update')->withoutScopedBindings();
+Route::patch('ingredient/{ingredient:id}/merge', MergeIngredient::class)->name('ingredient.merge')->withoutScopedBindings();
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();

@@ -309,7 +309,7 @@ class GetProductDevelopmentChecklistEditor
         }
 
         if ($item && $targetField === ProductDevelopmentTargetFieldEnum::TRADE_UNIT_INGREDIENTS) {
-            return $item->tradeUnit->ingredients()->orderBy('trade_unit_has_ingredients.position')->orderBy('trade_unit_has_ingredients.id')->get(['ingredients.slug', 'ingredients.name'])
+            return $item->tradeUnit->ingredients()->get(['ingredients.slug', 'ingredients.name'])
                 ->map(fn ($ingredient) => ['slug' => $ingredient->slug, 'name' => $ingredient->name])
                 ->all();
         }

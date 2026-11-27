@@ -516,8 +516,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
                 'concentration',
                 'purity',
                 'percentage',
-                'aroma'
-            );
+                'aroma',
+                'position'
+            )
+            ->orderByPivot('position')
+            ->orderByPivot('id');
     }
 
     public function stats(): HasOne

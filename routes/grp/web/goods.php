@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Goods\Ingredient\UI\IndexIngredients;
+use App\Actions\Goods\Ingredient\UI\EditIngredient;
 use App\Actions\Goods\Ingredient\UI\ShowIngredient;
 use App\Actions\Goods\Stock\UI\CreateStock;
 use App\Actions\Goods\Stock\UI\EditStock;
@@ -132,5 +133,6 @@ Route::prefix('ingredients')->as('ingredients.')->group(function () {
     Route::get('/', IndexIngredients::class)->name('index');
     Route::prefix('{ingredient:slug}')->group(function () {
         Route::get('', ShowIngredient::class)->name('show');
+        Route::get('edit', EditIngredient::class)->name('edit');
     });
 });

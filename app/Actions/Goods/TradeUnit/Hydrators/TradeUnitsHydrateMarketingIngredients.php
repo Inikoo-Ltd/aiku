@@ -29,7 +29,7 @@ class TradeUnitsHydrateMarketingIngredients implements ShouldBeUnique
         $materials = '';
 
 
-        foreach ($tradeUnit->ingredients()->orderBy('position')->get() as $ingredient) {
+        foreach ($tradeUnit->ingredients()->get() as $ingredient) {
             if ($ingredient->may_contain) {
                 $may_contain_tag = '±';
             } else {

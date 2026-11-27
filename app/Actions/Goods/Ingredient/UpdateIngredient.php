@@ -10,7 +10,6 @@
 namespace App\Actions\Goods\Ingredient;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\Ingredient;
@@ -21,14 +20,29 @@ class UpdateIngredient extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
-    use WithGoodsEditAuthorisation;
 
     private Ingredient $ingredient;
 
 
     public function handle(Ingredient $ingredient, array $modelData): Ingredient
     {
-        return $this->update($ingredient, $modelData, ['data']);
+        $oldName    = $ingredient->name;
+        $ingredient = $this->update($ingredient, $modelData, ['data']);
+
+        if ($ingredient->wasChanged('name')) {
+            RenameIngredientInTradeUnits::dispatch($ingredient, $oldName);
+        }
+
+        return $ingredient;
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        if ($this->asAction) {
+            return true;
+        }
+
+        return $request->user()->authTo(['goods.edit', 'compliance.edit']);
     }
 
     public function rules(): array
@@ -77,6 +91,7 @@ class UpdateIngredient extends OrgAction
 
     public function asController(Ingredient $ingredient, ActionRequest $request): Ingredient
     {
+        $this->ingredient = $ingredient;
         $this->initialisationFromGroup($ingredient->group, $request);
         return $this->handle($ingredient, $this->validatedData);
     }

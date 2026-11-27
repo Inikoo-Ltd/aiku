@@ -36,6 +36,10 @@ const props = defineProps<{
     }
 }>()
 
+const emits = defineEmits<{
+    (e: "optionsList", value: any[]): void
+}>()
+
 const locale = inject('locale', aikuLocaleStructure)
 // Auto assign to first option if 'required' and value is null
 onMounted(() => {
@@ -64,6 +68,7 @@ function unsnakeCase(str?: string | null) {
 			<PureMultiselectInfiniteScroll
 				v-model="form[fieldName]"
                 @update:modelValue="() => form.errors[fieldName] = null"
+                @optionsList="(list: any[]) => emits('optionsList', list)"
 				:fetchRoute="fieldData.fetchRoute"
 				:class="{ 'pr-8': form.errors[fieldName] || form.recentlySuccessful }"
 				:initOptions="props.options"

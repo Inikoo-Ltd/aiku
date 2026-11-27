@@ -58,8 +58,18 @@ class ShowIngredient extends OrgAction
                         'title' => __('SKOs'),
                         'icon'  => 'fal fa-apple-crate'
                     ],
-                    'title' => $ingredient->name,
-
+                    'title'   => $ingredient->name,
+                    'actions' => $this->canEdit || $this->canEditCompliance ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => 'grp.goods.ingredients.edit',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ] : [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
