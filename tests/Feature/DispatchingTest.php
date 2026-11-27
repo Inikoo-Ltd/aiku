@@ -3411,10 +3411,27 @@ test('restockers move a waiting item to waiting for production and back, and pas
     $productionBefore = GetDispatchingWaitingBadgeData::make()->productionTotalCount($user);
     expect($listed('warehouse'))->toBeTrue()->and($listed('production'))->toBeFalse();
 
-    $this->post(route('grp.models.delivery_note_item.set_as_waiting_production', $item->id), ['waiting_production' => true])->assertSuccessful();
+    $backlogCounts = fn () => \App\Models\Dispatching\DeliveryNoteItem::waitingCounts(
+        $this->warehouse->deliveryNotes()
+            ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
+            ->where('delivery_note_items.has_waiting_warehouse', true)
+            ->where('delivery_notes.state', $state)
+    );
+    $backlogBefore = $backlogCounts();
+
+    $item->orgStock->update(['is_made_in_house' => false]);
+    $this->post(route('grp.models.delivery_note_item.set_as_waiting_production', $item->id), ['waiting_production' => true])->assertStatus(422);
+    expect($item->refresh()->waiting_production_at)->toBeNull();
+
+    $item->orgStock->update(['is_made_in_house' => true]);
+    $this->from(route('grp.org.warehouses.show.dispatching.waiting_items', [$this->organisation->slug, $this->warehouse->slug]))
+        ->post(route('grp.models.delivery_note_item.set_as_waiting_production', $item->id), ['waiting_production' => true])
+        ->assertRedirect(route('grp.org.warehouses.show.dispatching.waiting_items', [$this->organisation->slug, $this->warehouse->slug]));
 
     expect($item->refresh()->waiting_production_at)->not->toBeNull()
         ->and((float)$item->quantity_waiting_warehouse)->toBe(4.0)
+        ->and($backlogCounts()['count'])->toBe($backlogBefore['count'] - 1)
+        ->and($backlogCounts()['production'])->toBe($backlogBefore['production'] + 1)
         ->and($listed('warehouse'))->toBeFalse()
         ->and($listed('production'))->toBeTrue()
         ->and(GetDispatchingWaitingBadgeData::make()->totalCount($user))->toBe($waitingBefore - 1)

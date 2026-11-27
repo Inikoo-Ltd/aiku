@@ -113,7 +113,7 @@ const getSafeRoute = (routeTarget?: RouteTarget): string | null => {
 
 const hasExtras = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number }) => !!cell?.breakdown?.length || cell?.lines !== undefined || cell?.shared !== undefined
 
-const needsRoom = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number; queued_prefix?: unknown; warning?: unknown; crm_warning?: unknown; ready?: unknown }) => hasExtras(cell) || !!cell?.queued_prefix || !!cell?.warning || !!cell?.crm_warning || !!cell?.ready
+const needsRoom = (cell?: { breakdown?: unknown[]; lines?: number; shared?: number; queued_prefix?: unknown; warning?: unknown; crm_warning?: unknown; production_warning?: unknown; ready?: unknown }) => hasExtras(cell) || !!cell?.queued_prefix || !!cell?.warning || !!cell?.crm_warning || !!cell?.production_warning || !!cell?.ready
 
 const isWeakValue = (value: number | null | undefined) => {
     return value === null || value === 0
@@ -324,6 +324,16 @@ const isWeakValue = (value: number | null | undefined) => {
 
                                 <span v-if="!data.data[row.key]?.[item.key]?.crm_warning && data.totals[item.key]?.ready?.value && data.totals[item.key]?.crm_warning" class="invisible rounded px-1.5 ml-1" aria-hidden="true">{{ data.totals[item.key]?.crm_warning?.value }}</span>
 
+                                <component
+                                    v-if="data.data[row.key]?.[item.key]?.production_warning"
+                                    :is="getSafeRoute(data.data[row.key]?.[item.key]?.production_warning?.route_target) ? Link : 'span'"
+                                    :href="getSafeRoute(data.data[row.key]?.[item.key]?.production_warning?.route_target) ?? undefined"
+                                    class="bg-teal-300 text-teal-800 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
+                                    v-tooltip="data.data[row.key]?.[item.key]?.production_warning?.tooltip"
+                                >{{ data.data[row.key]?.[item.key]?.production_warning?.value }}</component>
+
+                                <span v-if="!data.data[row.key]?.[item.key]?.production_warning && data.totals[item.key]?.ready?.value && data.totals[item.key]?.production_warning" class="invisible rounded px-1.5 ml-1" aria-hidden="true">{{ data.totals[item.key]?.production_warning?.value }}</span>
+
                                 <!-- Section: Breakdown -->
                                 <span v-if="data.data[row.key]?.[item.key]?.breakdown?.length" class="inline-flex items-stretch rounded-md border border-gray-200 bg-gray-50 text-[11px] md:text-sm tabular-nums divide-x divide-gray-200">
                                     <component
@@ -419,6 +429,14 @@ const isWeakValue = (value: number | null | undefined) => {
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px] animate-ping" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon icon="fas fa-circle" class="absolute top-0 -right-0.5 text-purple-500 text-[5px]" fixed-width aria-hidden="true" />
                             </component>
+
+                            <component
+                                v-if="data.totals[item.key]?.production_warning"
+                                :is="getSafeRoute(data.totals[item.key]?.production_warning?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.production_warning?.route_target) ?? undefined"
+                                class="bg-teal-300 text-teal-800 rounded px-1.5 ml-1 opacity-70 hover:opacity-100"
+                                v-tooltip="data.totals[item.key]?.production_warning?.tooltip"
+                            >{{ data.totals[item.key]?.production_warning?.value }}</component>
 
                             <!-- Section: Breakdown -->
                             <span v-if="data.totals[item.key]?.breakdown?.length" class="inline-flex items-stretch rounded-md border border-gray-200 bg-gray-50 text-[11px] md:text-sm tabular-nums divide-x divide-gray-200">

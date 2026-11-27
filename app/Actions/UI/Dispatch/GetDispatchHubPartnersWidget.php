@@ -10,6 +10,7 @@ namespace App\Actions\UI\Dispatch;
 
 use App\Actions\Dispatching\DeliveryNote\UI\WithDeliveryNotesChannel;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -25,7 +26,7 @@ class GetDispatchHubPartnersWidget
         $stateCounts     = $this->partnerDeliveryNotesStateCounts($organisation);
 
         $waitingItems = fn (string $waitingColumn, DeliveryNoteStateEnum $state, string $routeName) => [
-            'count' => $this->waitingItemsCount($warehouse, $waitingColumn, $state),
+            ...$this->waitingItemsCount($warehouse, $waitingColumn, $state),
             'route' => [
                 'name'       => $routeName,
                 'parameters' => $routeParameters,
@@ -79,7 +80,10 @@ class GetDispatchHubPartnersWidget
         ];
     }
 
-    private function waitingItemsCount(Warehouse $warehouse, string $waitingColumn, DeliveryNoteStateEnum $state): int
+    /**
+     * @return array{count: int, ready_notes?: int, production?: int}
+     */
+    private function waitingItemsCount(Warehouse $warehouse, string $waitingColumn, DeliveryNoteStateEnum $state): array
     {
         $query = $warehouse->deliveryNotes()
             ->join('delivery_note_items', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
@@ -89,6 +93,10 @@ class GetDispatchHubPartnersWidget
 
         $this->whereDeliveryNotesChannel($query, self::PARTNERS_CHANNEL);
 
-        return $query->count();
+        if ($waitingColumn === 'has_waiting_warehouse') {
+            return DeliveryNoteItem::waitingCounts($query);
+        }
+
+        return ['count' => $query->count()];
     }
 }

@@ -105,6 +105,7 @@ class GetDispatchHubFulfilmentWidget
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->where('shops.type', $shopType)
                     ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->whereNull('delivery_note_items.waiting_production_at')
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [

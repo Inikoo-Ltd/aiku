@@ -130,6 +130,7 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
 
             'is_handled'                        => $this->is_handled,
             'notes'                             => $this->notes,
+            'is_made_in_house'                  => (bool) $orgStock?->is_made_in_house,
 
             'locations'                         => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],
             'pickings'                          => PickingResource::collection($pickings),

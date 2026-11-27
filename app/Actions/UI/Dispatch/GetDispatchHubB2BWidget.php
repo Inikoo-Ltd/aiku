@@ -41,6 +41,7 @@ class GetDispatchHubB2BWidget
                     ->leftJoin('shops', 'delivery_notes.shop_id', '=', 'shops.id')
                     ->tap(fn ($query) => $this->whereDeliveryNotesChannel($query, ShopTypeEnum::B2B->value))
                     ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->whereNull('delivery_note_items.waiting_production_at')
                     ->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING)
                     ->count(),
                 'route' => [

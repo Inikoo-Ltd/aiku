@@ -133,6 +133,7 @@ class WaitingDNItemsGroupedByDeliveryNoteForItemsResource extends JsonResource
             'is_handled'                 => $this->is_handled,
             'notes'                      => $this->notes,
             'is_waiting_production'      => $this->waiting_production_at !== null,
+            'is_made_in_house'           => (bool) $this->is_made_in_house,
             'picking_position'           => $this->picking_position,
             'warehouse_area'             => $warehouseArea,
             'locations'                  => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collectionForPicking($pickingLocations, $deliveryNoteItem?->organisation_id) : [],

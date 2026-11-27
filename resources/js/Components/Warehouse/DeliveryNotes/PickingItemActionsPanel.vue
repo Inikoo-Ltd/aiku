@@ -235,7 +235,7 @@ const errors = ref<string[]>([])
 
             <!-- Button: Waiting for production -->
             <ButtonWithLink
-                v-if="!isStillPicking"
+                v-if="!isStillPicking && (item.is_made_in_house || item.is_waiting_production)"
                 :icon="item.is_waiting_production ? 'fal fa-undo-alt' : 'fal fa-industry'"
                 :label="item.is_waiting_production ? ctrans('Back to waiting items') : ctrans('Waiting for production')"
                 :size="twBreakPoint().includes('lg') ? 'xs' : 'lg'"

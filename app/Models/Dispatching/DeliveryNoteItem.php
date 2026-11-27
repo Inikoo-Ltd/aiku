@@ -314,17 +314,18 @@ class DeliveryNoteItem extends Model
     }
 
     /**
-     * Waiting items, those of them ready to pick, and the notes whose every waiting item is ready.
+     * Waiting items (those waiting for production apart, HELP-4975), those waiting for production, and the notes whose every waiting item is ready to pick.
      *
-     * @return array{count: int, ready: int, ready_notes: int}
+     * @return array{count: int, ready_notes: int, production: int}
      */
     public static function waitingCounts($waitingItemsQuery): array
     {
         $counts = $waitingItemsQuery->toBase()
-            ->selectRaw('count(*) as count, count(*) FILTER (WHERE '.self::readyToPickSql().') as ready')
-            ->selectRaw('count(DISTINCT delivery_notes.id) FILTER (WHERE NOT EXISTS (SELECT 1 FROM delivery_note_items x WHERE x.delivery_note_id = delivery_notes.id AND x.has_waiting_warehouse AND NOT '.self::readyToPickSql('x').')) as ready_notes')
+            ->selectRaw('count(*) FILTER (WHERE delivery_note_items.waiting_production_at IS NULL) as count')
+            ->selectRaw('count(*) FILTER (WHERE delivery_note_items.waiting_production_at IS NOT NULL) as production')
+            ->selectRaw('count(DISTINCT delivery_notes.id) FILTER (WHERE NOT EXISTS (SELECT 1 FROM delivery_note_items x WHERE x.delivery_note_id = delivery_notes.id AND x.has_waiting_warehouse AND (x.waiting_production_at IS NOT NULL OR NOT '.self::readyToPickSql('x').'))) as ready_notes')
             ->first();
 
-        return ['count' => (int) $counts->count, 'ready' => (int) $counts->ready, 'ready_notes' => (int) $counts->ready_notes];
+        return ['count' => (int) $counts->count, 'ready_notes' => (int) $counts->ready_notes, 'production' => (int) $counts->production];
     }
 }

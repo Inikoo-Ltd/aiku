@@ -13,6 +13,7 @@ use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\SysAdmin\User;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -43,6 +44,10 @@ class SetAsWaitingProduction extends OrgAction
             abort(422, 'Only items waiting in the warehouse can wait for production');
         }
 
+        if ($isWaitingProduction && !$deliveryNoteItem->orgStock?->is_made_in_house) {
+            abort(422, 'Only products made in-house can wait for production');
+        }
+
         $deliveryNoteItem->update([
             'waiting_production_at' => $isWaitingProduction ? ($deliveryNoteItem->waiting_production_at ?? now()) : null,
         ]);
@@ -56,6 +61,11 @@ class SetAsWaitingProduction extends OrgAction
         return [
             'waiting_production' => ['required', 'boolean'],
         ];
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 
     public function asController(DeliveryNoteItem $deliveryNoteItem, ActionRequest $request): DeliveryNoteItem

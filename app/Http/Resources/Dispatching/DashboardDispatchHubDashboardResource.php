@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dispatching;
 
+use App\Enums\UI\Dispatch\WaitingItemsTabsEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DashboardDispatchHubDashboardResource extends JsonResource
@@ -20,6 +21,27 @@ class DashboardDispatchHubDashboardResource extends JsonResource
      */
     private static function readyToPickRoute(?array $route, string $readyToPick): ?array
     {
+        return self::routeWithQuery($route, ['filter' => ['ready_to_pick' => $readyToPick]]);
+    }
+
+    /**
+     * The Waiting for production tab of the waiting items list (HELP-4975).
+     *
+     * @param array{name?: string, parameters?: array<int|string, mixed>}|null $route
+     * @return array{name: string, parameters: array<string, mixed>}|null
+     */
+    private static function waitingProductionRoute(?array $route): ?array
+    {
+        return self::routeWithQuery($route, ['tab' => WaitingItemsTabsEnum::WAITING_PRODUCTION->value]);
+    }
+
+    /**
+     * @param array{name?: string, parameters?: array<int|string, mixed>}|null $route
+     * @param array<string, mixed> $query
+     * @return array{name: string, parameters: array<string, mixed>}|null
+     */
+    private static function routeWithQuery(?array $route, array $query): ?array
+    {
         if (!isset($route['name'])) {
             return null;
         }
@@ -31,7 +53,7 @@ class DashboardDispatchHubDashboardResource extends JsonResource
             'name'       => $route['name'],
             'parameters' => [
                 ...array_combine(array_slice($names, 0, count($parameters)), $parameters),
-                'filter' => ['ready_to_pick' => $readyToPick],
+                ...$query,
             ],
         ];
     }
@@ -152,15 +174,20 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                     ];
                 }
 
+                if ($caseKey === 'handling_blocked' && ($widget['waiting_items']['production'] ?? 0) > 0) {
+                    $entry['production_warning'] = [
+                        'route_target' => self::waitingProductionRoute($widget['waiting_items']['route'] ?? null),
+                        'tooltip'      => __('Waiting for production'),
+                        'value'        => $widget['waiting_items']['production'],
+                    ];
+                }
+
                 if ($caseKey === 'handling_blocked' && $widget['waiting_items']['count'] > 0) {
-                    $ready = (int) ($widget['waiting_items']['ready'] ?? 0);
-                    if ($widget['waiting_items']['count'] > $ready) {
-                        $entry['warning'] = [
-                            'route_target' => $widget['waiting_items']['route'],
-                            'tooltip' => __('Waiting items'),
-                            'value' => $widget['waiting_items']['count'] - $ready,
-                        ];
-                    }
+                    $entry['warning'] = [
+                        'route_target' => $widget['waiting_items']['route'],
+                        'tooltip' => __('Waiting items'),
+                        'value' => $widget['waiting_items']['count'],
+                    ];
                     $readyNotes = (int) ($widget['waiting_items']['ready_notes'] ?? 0);
                     if ($readyNotes > 0) {
                         $entry['ready']     = [
@@ -235,15 +262,20 @@ class DashboardDispatchHubDashboardResource extends JsonResource
                 ];
             }
 
+            if ($caseKey === 'handling_blocked' && ($waitingItems['production'] ?? 0) > 0) {
+                $totals[$caseKey]['production_warning'] = [
+                    'route_target' => self::waitingProductionRoute($waitingItems['route'] ?? null),
+                    'tooltip'      => __('Waiting for production'),
+                    'value'        => $waitingItems['production'],
+                ];
+            }
+
             if ($caseKey === 'handling_blocked' && $waitingItems['count'] > 0) {
-                $ready = (int) ($waitingItems['ready'] ?? 0);
-                if ($waitingItems['count'] > $ready) {
-                    $totals[$caseKey]['warning'] = [
-                        'route_target' => $waitingItems['route'],
-                        'tooltip'      => __('Waiting items'),
-                        'value'        => $waitingItems['count'] - $ready,
-                    ];
-                }
+                $totals[$caseKey]['warning'] = [
+                    'route_target' => $waitingItems['route'],
+                    'tooltip'      => __('Waiting items'),
+                    'value'        => $waitingItems['count'],
+                ];
                 $readyNotes = (int) ($waitingItems['ready_notes'] ?? 0);
                 if ($readyNotes > 0) {
                     $totals[$caseKey]['ready']     = [
