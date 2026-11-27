@@ -149,6 +149,95 @@ const decidingSupplierChange = ref<{ id: number; decision: SupplierDecision } | 
 const supplierChangeErrors = reactive<Record<number, string | null>>({})
 const updateOpenPurchaseOrders = reactive<Record<number, boolean>>({})
 
+interface AcceptedPrice {
+    currency: string | null
+    old: number
+    new: number
+}
+
+const acceptedPrice = ref<AcceptedPrice | null>(null)
+const suggestedPrices = reactive<Record<number, Record<string, { old: number; new: number }>>>({})
+
+function acceptedRatio(): number | null {
+    return acceptedPrice.value && acceptedPrice.value.old > 0 ? acceptedPrice.value.new / acceptedPrice.value.old : null
+}
+
+function suggestMasterPrices(): void {
+    for (const masterProduct of data.value?.master_products ?? []) {
+        if (!masterProduct.cost || !masterProduct.cost_at_new_price || masterProduct.cost_at_new_price === masterProduct.cost) {
+            continue
+        }
+
+        const factor = masterProduct.cost_at_new_price / masterProduct.cost
+        const suggestions: Record<string, { old: number; new: number }> = {}
+        for (const currency of masterProduct.main_currencies) {
+            const oldPrice = masterProduct.prices[currency]
+            if (!oldPrice) {
+                continue
+            }
+
+            const newPrice = Math.round(oldPrice * factor * 100) / 100
+            if (newPrice !== oldPrice) {
+                suggestions[currency] = { old: oldPrice, new: newPrice }
+            }
+        }
+
+        if (Object.keys(suggestions).length) {
+            suggestedPrices[masterProduct.id] = suggestions
+        }
+    }
+}
+
+function fillSuggestedPrices(): void {
+    for (const [masterProductId, suggestions] of Object.entries(suggestedPrices)) {
+        const form = masterForms[Number(masterProductId)]
+        if (!form) {
+            continue
+        }
+
+        for (const [currency, suggestion] of Object.entries(suggestions)) {
+            form.prices[currency] = suggestion.new
+        }
+    }
+}
+
+async function acceptPrice(price: AcceptedPrice): Promise<void> {
+    acceptedPrice.value = price
+    for (const masterProductId of Object.keys(suggestedPrices)) {
+        delete suggestedPrices[Number(masterProductId)]
+    }
+
+    await fetchData()
+    if (data.value?.can_edit_master_prices) {
+        suggestMasterPrices()
+        fillSuggestedPrices()
+    }
+}
+
+function hasSuggestion(masterProduct: MasterProduct, currency?: string): boolean {
+    const suggestions = suggestedPrices[masterProduct.id]
+
+    return !!suggestions && (currency === undefined || !!suggestions[currency])
+}
+
+const suggestionCount = computed(() => Object.keys(suggestedPrices).length)
+
+const acceptedPriceSummary = computed(() => {
+    const price = acceptedPrice.value
+    if (!price) {
+        return null
+    }
+
+    const ratio = acceptedRatio()
+    const percent = ratio === null ? null : Math.round((ratio - 1) * 1000) / 10
+
+    return ctrans("You accepted :new per unit, was :old (:percent).", {
+        new: unitCost(price.currency, price.new),
+        old: unitCost(price.currency, price.old),
+        percent: percent === null ? "—" : `${percent > 0 ? "+" : ""}${percent}%`,
+    })
+})
+
 const masterForms = reactive<Record<number, { prices: Record<string, number | null>; rrps: Record<string, number | null> }>>({})
 const savingMasterId = ref<number | null>(null)
 const masterErrors = reactive<Record<number, string | null>>({})
@@ -172,11 +261,13 @@ async function fetchData(): Promise<void> {
     isLoading.value = true
     loadError.value = null
     try {
-        const response = await axios.get(route("grp.goods.products.price_requests", { stock: props.stockSlug }))
+        const ratio = acceptedRatio()
+        const response = await axios.get(route("grp.goods.products.price_requests", { stock: props.stockSlug }), { params: ratio === null ? {} : { price_ratio: ratio } })
         data.value = response.data
         for (const masterProduct of data.value?.master_products ?? []) {
             masterForms[masterProduct.id] = { prices: { ...masterProduct.prices }, rrps: rrpsPerUnit(masterProduct) }
         }
+        fillSuggestedPrices()
         for (const change of data.value?.supplier_price_changes ?? []) {
             updateOpenPurchaseOrders[change.id] ??= change.open_purchase_order_lines.length > 0
         }
@@ -199,6 +290,10 @@ watch(
             savedMasterId.value = null
             answeredHere.value = false
             rejectingSupplierChangeId.value = null
+            acceptedPrice.value = null
+            for (const masterProductId of Object.keys(suggestedPrices)) {
+                delete suggestedPrices[Number(masterProductId)]
+            }
             fetchData()
         }
     },
@@ -260,7 +355,13 @@ function answer(request: PriceRequest, answerValue: Answer): void {
             onSuccess: () => {
                 adjustingId.value = null
                 answeredHere.value = true
-                fetchData()
+                const oldCost = request.previous_unit_cost ?? request.unit_cost
+                const newCost = answerValue === "adjusted" ? adjustedCosts[request.id] : request.asked_unit_cost
+                if (answerValue !== "rejected" && newCost && oldCost && newCost !== oldCost) {
+                    acceptPrice({ currency: request.currency, old: oldCost, new: newCost })
+                } else {
+                    fetchData()
+                }
             },
             onError: (errors) => (requestErrors[request.id] = firstError(errors)),
             onFinish: () => (answering.value = null),
@@ -302,7 +403,11 @@ function decideSupplierChange(change: SupplierPriceChange, decision: SupplierDec
             onSuccess: () => {
                 rejectingSupplierChangeId.value = null
                 answeredHere.value = true
-                fetchData()
+                if (decision === "accepted" && change.cost && change.proposed_cost !== change.cost) {
+                    acceptPrice({ currency: change.currency, old: change.cost, new: change.proposed_cost })
+                } else {
+                    fetchData()
+                }
             },
             onError: (errors) => (supplierChangeErrors[change.id] = firstError(errors)),
             onFinish: () => (decidingSupplierChange.value = null),
@@ -483,13 +588,31 @@ function changedValues(current: Record<string, number | null>, saved: Record<str
     return Object.fromEntries(Object.entries(current).filter(([currency, value]) => value !== null && value !== saved[currency])) as Record<string, number>
 }
 
-function saveMaster(masterProduct: MasterProduct): void {
+const isSavingAll = ref(false)
+
+async function saveAllSuggested(): Promise<void> {
+    isSavingAll.value = true
+    try {
+        for (const masterProduct of data.value?.master_products ?? []) {
+            if (hasSuggestion(masterProduct) && isMasterChanged(masterProduct)) {
+                const saved = await saveMaster(masterProduct)
+                if (!saved) {
+                    return
+                }
+            }
+        }
+    } finally {
+        isSavingAll.value = false
+    }
+}
+
+function saveMaster(masterProduct: MasterProduct): Promise<boolean> {
     const form = masterForms[masterProduct.id]
     savingMasterId.value = masterProduct.id
     masterErrors[masterProduct.id] = null
     savedMasterId.value = null
 
-    router.patch(
+    return new Promise((resolve) => router.patch(
         route(masterProduct.update_route.name, masterProduct.update_route.parameters),
         {
             master_prices: changedValues(form.prices, masterProduct.prices),
@@ -502,13 +625,19 @@ function saveMaster(masterProduct: MasterProduct): void {
             only: props.reloadProps,
             onSuccess: async () => {
                 copyRrps[masterProduct.id] = false
+                delete suggestedPrices[masterProduct.id]
                 await fetchData()
                 savedMasterId.value = masterProduct.id
+                resolve(true)
             },
-            onError: (errors) => (masterErrors[masterProduct.id] = firstError(errors)),
+            onError: (errors) => {
+                masterErrors[masterProduct.id] = firstError(errors)
+                resolve(false)
+            },
+            onCancel: () => resolve(false),
             onFinish: () => (savingMasterId.value = null),
         }
-    )
+    ))
 }
 </script>
 
@@ -723,8 +852,12 @@ function saveMaster(masterProduct: MasterProduct): void {
                 <p v-if="!data.master_products.length" class="text-xs text-gray-500">{{ ctrans("No active master product sells this product") }}</p>
                 <p v-else-if="!data.can_edit_master_prices" class="text-xs text-gray-500">{{ ctrans("You need master edit rights to change these prices") }}</p>
 
-                <div v-for="masterProduct in data.master_products" :key="masterProduct.id" class="space-y-2 rounded-lg border border-gray-200 px-3 py-2">
+                <div v-for="masterProduct in data.master_products" :key="masterProduct.id" class="space-y-2 rounded-lg border px-3 py-2" :class="hasSuggestion(masterProduct) ? 'border-orange-300' : 'border-gray-200'">
                     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-gray-600">
+                        <span v-if="hasSuggestion(masterProduct)" class="flex items-center gap-1.5 whitespace-nowrap rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-orange-700">
+                            <PingIcon class="text-[6px] text-orange-500" aria-hidden="true" />
+                            {{ ctrans("To do: save new price") }}
+                        </span>
                         <span v-if="masterProduct.master_shop" class="rounded bg-gray-100 px-1.5 py-0.5 font-semibold uppercase text-gray-700">{{ masterProduct.master_shop }}</span>
                         <a v-if="masterProduct.url" :href="masterProduct.url" target="_blank" class="flex items-center gap-1 whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline">
                             {{ masterProduct.code }}
@@ -800,6 +933,10 @@ function saveMaster(masterProduct: MasterProduct): void {
                                         size="small"
                                     />
                                     <span v-else>{{ money(currency, masterProduct.prices[currency]) }}</span>
+                                    <span v-if="hasSuggestion(masterProduct, currency)" class="mt-0.5 flex items-center gap-1 whitespace-nowrap text-[10px] text-orange-700">
+                                        <PingIcon class="text-[5px] text-orange-500" aria-hidden="true" />
+                                        {{ ctrans("Suggested price. Previous was :old", { old: money(currency, suggestedPrices[masterProduct.id][currency].old) }) }}
+                                    </span>
                                 </td>
                                 <td class="py-1 pr-3">
                                     <span v-if="margin(masterProduct, currency) !== null" v-tooltip="marginTooltip(masterProduct, currency)" class="inline-flex cursor-help items-center gap-1" :class="(margin(masterProduct, currency) as number) < 0 ? 'text-red-600' : 'text-gray-700'">{{ margin(masterProduct, currency) }}%<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
@@ -889,6 +1026,31 @@ function saveMaster(masterProduct: MasterProduct): void {
                     </div>
                     <p v-if="masterErrors[masterProduct.id]" class="text-xs text-red-600">{{ masterErrors[masterProduct.id] }}</p>
                 </div>
+
+                <div v-if="acceptedPriceSummary && suggestionCount" class="flex items-start gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-xs text-gray-700">
+                    <PingIcon class="mt-1 shrink-0 text-[7px] text-orange-500" aria-hidden="true" />
+                    <div class="space-y-1">
+                        <p class="font-semibold text-orange-800">
+                            {{ suggestionCount === 1 ? ctrans("To do: check and save the new selling price of 1 master product") : ctrans("To do: check and save the new selling prices of :count master products", { count: suggestionCount }) }}
+                        </p>
+                        <p>{{ acceptedPriceSummary }}</p>
+                        <p>{{ ctrans("The prices marked above are filled in to keep each product's current margin: price × cost at the new price ÷ current cost. A bundle moves only by this SKU's share of its cost.") }}</p>
+                        <p>{{ ctrans("Nothing is saved yet: change a price if you want, then click Save price and RRP on each product, or Save all suggested prices. The RRPs stay as they are.") }}</p>
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            <Button type="tertiary" size="xs" :label="suggestionCount === 1 ? ctrans('Save the suggested price') : ctrans('Save all :count suggested prices', { count: suggestionCount })" :loading="isSavingAll" :disabled="savingMasterId !== null" @click="saveAllSuggested">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+                <p v-else-if="acceptedPriceSummary && data.can_edit_master_prices" class="rounded border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                    {{ acceptedPriceSummary }} {{ ctrans("Every master product is saved or has no cost to work from, so no selling price is waiting.") }}
+                </p>
+                <p v-else-if="acceptedPriceSummary" class="text-xs text-gray-500">
+                    {{ acceptedPriceSummary }} {{ ctrans("Ask someone with master edit rights to update the selling prices.") }}
+                </p>
             </section>
         </div>
 

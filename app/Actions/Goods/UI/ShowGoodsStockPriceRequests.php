@@ -53,14 +53,18 @@ class ShowGoodsStockPriceRequests extends OrgAction
 
     public function rules(): array
     {
-        return [];
+        return [
+            'price_ratio' => ['sometimes', 'nullable', 'numeric', 'gt:0', 'lt:100'],
+        ];
     }
 
     public function asController(Stock $stock, ActionRequest $request): array
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        return $this->handle($stock, $request->user());
+        $priceRatio = $this->validatedData['price_ratio'] ?? null;
+
+        return $this->handle($stock, $request->user(), $priceRatio !== null ? (float) $priceRatio : null);
     }
 
     /**
@@ -99,9 +103,14 @@ class ShowGoodsStockPriceRequests extends OrgAction
     /**
      * @return array{code: string, name: ?string, image: ?array, requests: array, supplier_price_changes: array, new_price: ?array, master_products: array, can_edit_master_prices: bool}
      */
-    public function handle(Stock $stock, User $user): array
+    /**
+     * A price ratio given here is the change just accepted in the dialog (new cost ÷ old cost): the margins and the
+     * suggested selling prices use it instead of the latest agent line.
+     */
+    public function handle(Stock $stock, User $user, ?float $priceRatio = null): array
     {
-        $newPriceLine = $this->newPriceLine($stock);
+        $newPriceLine = $priceRatio === null ? $this->newPriceLine($stock) : null;
+        $priceRatio ??= $newPriceLine ? $this->priceRatio($newPriceLine) : null;
 
         return [
             'code'                   => $stock->code,
@@ -110,7 +119,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
             'requests'               => $this->requests($stock, $user),
             'supplier_price_changes' => $this->supplierPriceChanges($stock, $user),
             'new_price'              => $newPriceLine ? $this->newPrice($newPriceLine) : null,
-            'master_products'        => $this->masterProducts($stock, $newPriceLine ? $this->priceRatio($newPriceLine) : null),
+            'master_products'        => $this->masterProducts($stock, $priceRatio),
             'can_edit_master_prices' => $user->authTo('masters.edit'),
         ];
     }
