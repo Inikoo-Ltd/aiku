@@ -44,7 +44,8 @@ class GetMixesToPrepare
         $consumption = RecipeStepRawMaterial::query()
             ->whereIn('raw_material_id', $intermediates->keys())
             ->join('artefacts_manufacture_tasks', 'artefacts_manufacture_tasks.id', 'recipe_step_raw_materials.artefact_manufacture_task_id')
-            ->get(['recipe_step_raw_materials.raw_material_id', 'recipe_step_raw_materials.quantity_per_unit', 'artefacts_manufacture_tasks.artefact_id'])
+            ->with('recipeStep')
+            ->get(['recipe_step_raw_materials.raw_material_id', 'recipe_step_raw_materials.artefact_manufacture_task_id', 'recipe_step_raw_materials.quantity_per_unit', 'artefacts_manufacture_tasks.artefact_id'])
             ->groupBy('artefact_id');
 
         $inProgressByArtefact = $openItems->groupBy('artefact_id')->map(fn ($items) => (float) $items->sum('quantity'));
@@ -53,7 +54,7 @@ class GetMixesToPrepare
         foreach ($openItems as $item) {
             foreach ($consumption->get($item->artefact_id, collect()) as $usage) {
                 $rawMaterial = $intermediates->get($usage->raw_material_id);
-                if ($rawMaterial->artefact_id === $item->artefact_id) {
+                if ($rawMaterial->artefact_id === $item->artefact_id || ($usage->recipeStep && !$item->runsStep($usage->recipeStep))) {
                     continue;
                 }
                 $lines[$rawMaterial->id] ??= ['needed' => 0.0, 'needed_for' => []];

@@ -132,6 +132,7 @@ class StoreJobOrderItem extends OrgAction
     public function asController(JobOrder $jobOrder, ActionRequest $request): JobOrderItem
     {
         $this->initialisationFromProduction($jobOrder->production, $request);
+        Arr::forget($this->validatedData, ['data.steps', 'data.repack_from']);
 
         $artefact = Artefact::with('orgStock')->find($this->validatedData['artefact_id']);
         data_set($this->validatedData, 'quantity', BatchedUnitsForDemand::make()->wholeOuters(

@@ -2059,6 +2059,10 @@ test('a repack job runs only the steps it was raised with and takes its pieces f
     \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::run($item->refresh());
     expect($item->tasks()->count())->toBe(1);
 
+    $packingStep->update(['label' => 'Box']);
+    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::run($item->refresh());
+    expect($item->tasks()->pluck('manufacture_task_id')->all())->toBe([$packing->id]);
+
     $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH'.substr($suffix, -6), 'name' => 'Repack warehouse']);
     $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A'.substr($suffix, -6), 'name' => 'Repack area']);
     $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L'.substr($suffix, -6), 'name' => 'Repack loc'] + \App\Models\Inventory\Location::factory()->definition());

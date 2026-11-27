@@ -340,13 +340,16 @@ class JobOrderItem extends Model
     /**
      * A repack or rework line runs only the recipe steps it was raised with (HELP-4991); the others never
      * reach the floor, the receive or a recipe change. Steps are kept by key (task + label), so they
-     * survive a recipe edit that recreates the rows.
+     * survive a recipe edit that recreates the rows; the recipe's last step always runs, so relabelling
+     * it never leaves the line with nothing to make.
      */
     public function runsStep(ArtefactManufactureTask $recipeStep): bool
     {
         $steps = Arr::get($this->data, 'steps');
 
-        return !$steps || in_array($recipeStep->stepKey(), $steps, true);
+        return !$steps
+            || in_array($recipeStep->stepKey(), $steps, true)
+            || $recipeStep->id === $this->artefact->recipeSteps()->reorder()->orderByDesc('position')->orderByDesc('id')->value('id');
     }
 
     public function isFinished(): bool
