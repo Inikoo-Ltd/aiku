@@ -134,7 +134,7 @@ class IndexSupplierPortalPriceChanges
                 ->column(key: 'code', label: __('Product'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'status', label: __('Status'), canBeHidden: false)
                 ->column(key: 'cost', label: __('Current price'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'suggested_price', label: __('Suggested price'), canBeHidden: false, align: 'right')
+                ->column(key: 'suggested_price', label: __('AI Suggested Price'), tooltip: __('A lower price our AI suggests from your recent sales and prices at other wholesalers. Click a price to see why'), canBeHidden: false, align: 'right', tooltipIcon: true)
                 ->column(key: 'proposed_price', label: __('Proposed price'), canBeHidden: false, align: 'right')
                 ->column(key: 'moq', label: __('MOQ (cartons)'), align: 'right')
                 ->column(key: 'effective_from', label: __('From'))

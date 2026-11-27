@@ -130,7 +130,7 @@ const stateClass: Record<string, string> = {
 								</dd>
 							</dl>
 							<dl v-if="suggestionFor(row)" class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
-								<dt class="text-gray-400">{{ ctrans("Suggested price") }}</dt>
+								<dt class="text-gray-400">{{ ctrans("AI Suggested Price") }}</dt>
 								<dd class="whitespace-nowrap text-right tabular-nums text-[var(--app-accent)]">
 									{{ price(suggestionFor(row)!.price) }} <span class="text-xs text-gray-500">{{ suggestionFor(row)!.change_percent }}%</span>
 								</dd>

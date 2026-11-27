@@ -108,7 +108,7 @@ class GetSupplierPortalPriceSuggestions
 
     private function rounded(float $price, float $cost): float
     {
-        $step = $cost >= 2 ? 0.05 : 0.01;
+        $step = max($cost >= 2 ? 0.05 : 0.01, 5 * 10 ** (floor(log10($price)) - 3));
 
         return round(round($price / $step) * $step, 2);
     }

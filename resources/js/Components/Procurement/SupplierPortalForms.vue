@@ -408,10 +408,10 @@ const caption = "font-medium text-gray-700"
 					<div class="flex flex-wrap items-center justify-between gap-2">
 						<span class="flex items-center gap-2 font-semibold text-gray-900">
 							<FontAwesomeIcon icon="fal fa-lightbulb-on" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
-							{{ ctrans("Suggested price: :price", { price: String(locale.currencyFormatUnitCost(currency, suggestion.price)) }) }}
+							{{ ctrans("AI suggested price: :price", { price: String(locale.currencyFormatUnitCost(currency, suggestion.price)) }) }}
 							<span class="whitespace-nowrap font-normal tabular-nums text-gray-500">{{ suggestion.change_percent }}%</span>
 						</span>
-						<Button type="secondary" size="xs" :label="ctrans('Use suggested price')" @click="useSuggestion">
+						<Button type="secondary" size="xs" :label="ctrans('Use AI suggested price')" @click="useSuggestion">
 							<template #icon><FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" /></template>
 						</Button>
 					</div>
