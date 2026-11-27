@@ -2123,6 +2123,8 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
         ->and(route('grp.chat.staff.slack.index', [], false))->toBe('/vx/slack');
 
     actingAs($this->user)->get(route('grp.chat.staff.index'))->assertOk();
+    actingAs($this->user)->get(route('grp.chat.staff.feed'))->assertOk();
+    expect(route('grp.chat.staff.feed', [], false))->toBe('/vx/feed');
 
     $ulid = (string) Str::ulid();
     $base = route('grp.chat.staff.index');
@@ -2133,7 +2135,7 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
     $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
     $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
 
-    expect($verba)->toBe(['V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
+    expect($verba)->toBe([__('News'), 'V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
         ->and($chat)->not->toContain(__('Verba'));
 });
 

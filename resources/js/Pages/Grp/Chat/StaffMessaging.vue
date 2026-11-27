@@ -26,6 +26,7 @@ import { listSwatch } from "@/Components/Messaging/chatWallpaper"
 import DeskJumpDialog, { type DeskJumpTarget } from "@/Components/Messaging/DeskJumpDialog.vue"
 import NewVerbrationDialog from "@/Components/Messaging/NewVerbrationDialog.vue"
 import VerbaHome from "@/Components/Messaging/VerbaHome.vue"
+import SlackPrivateConsentDialog from "@/Components/Forms/Fields/SlackPrivateConsentDialog.vue"
 import { useStaffMessaging, type StaffCoworker } from "@/Stores/staff-messaging"
 import { useLayoutStore } from "@/Stores/layout"
 import { deskShortcutList, isMac, useDeskShortcuts } from "@/Composables/useDeskShortcuts"
@@ -67,6 +68,7 @@ const props = defineProps<{
     slack_around_ts?: string | null
     slack_reply_ts?: string | null
     desk_starred?: string[]
+    slack_private_opt_in?: { consent_version: string; terms_version: string; start_route: { name: string }; unavailable_reason: string | null } | null
 }>()
 
 const knownSlackChannels = ref<SlackChannelListItem[] | null>(props.slack_channels ?? null)
@@ -390,12 +392,16 @@ const filterText = computed(() => sidebarFilter.value.trim().toLowerCase())
 const matchesFilter = (label: string | null) => (label ?? "").toLowerCase().includes(filterText.value)
 
 const layoutStore = useLayoutStore()
-const isDesks = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.slack."))
-const isGroups = computed(() => (layoutStore.currentRoute ?? "").startsWith("grp.chat.staff.groups."))
+const currentRouteName = computed(() => (usePage().url, route().current() ?? layoutStore.currentRoute ?? ""))
+const isDesks = computed(() => currentRouteName.value.startsWith("grp.chat.staff.slack."))
+const isGroups = computed(() => currentRouteName.value.startsWith("grp.chat.staff.groups."))
+const isFeed = computed(() => currentRouteName.value === "grp.chat.staff.feed")
+const homeTab = computed(() => (isDesks.value ? "desks" : isGroups.value ? "groups" : "directs"))
 const isNothingSelected = computed(() => !selectedUlid.value && !showSlackChannel.value)
 const homeRoute = computed(() => route(isDesks.value ? "grp.chat.staff.slack.index" : isGroups.value ? "grp.chat.staff.groups.index" : "grp.chat.staff.index"))
 const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
 const isNewVerbrationOpen = ref(false)
+const isPrivateConsentOpen = ref(false)
 const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbrations") : ctrans("Filter V·Ds")))
 
 const isChannelRowShown = (channelId: number) => isDesks.value || isSelectedChannel(channelId) || unreadOf(channelId) > 0
@@ -514,6 +520,7 @@ onUnmounted(() => {
 
     <div class="desk-palette relative flex min-h-[50vh] md:min-h-[70vh] h-[calc(100dvh_-_2.75rem_-_var(--desk-footer,0px))] lg:h-[calc(100dvh_-_2.5rem_-_var(--desk-footer,0px))] font-desk text-[15px]" :style="{ '--desk-footer': footerHeight + 'px' }">
         <div
+            v-if="!isFeed"
             class="relative shrink-0 bg-[var(--desk-sidebar)] md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out"
             :class="[selectedUlid || showSlackChannel ? 'hidden md:block' : 'w-full md:block', isSidebarCollapsed ? 'md:w-14' : 'md:w-64']">
             <nav
@@ -687,7 +694,6 @@ onUnmounted(() => {
                             </div>
                             <p v-if="joinError" class="px-4 py-1 text-xs text-red-300" role="alert">{{ joinError }}</p>
                         </template>
-                        <p v-if="isGroups && !tabConversations.length && !privateChannels.length && !filterText" class="px-4 py-2 text-[13px]">{{ ctrans("Your Slack private channels will show here once they sync.") }}</p>
                         <button
                             v-if="!filterText"
                             type="button"
@@ -823,6 +829,7 @@ onUnmounted(() => {
         </div>
 
         <button
+            v-if="!isFeed"
             type="button"
             class="absolute md:top-[calc(50dvh-33px)] lg:top-[calc(50dvh-2.5rem)] z-10 hidden aspect-square w-8 lg:w-5 -translate-x-1/2 -translate-y-1/2 items-center md:transition-[left] md:duration-200 md:ease-in-out justify-center rounded-full border border-gray-300 bg-[var(--desk-sidebar)] text-[var(--desk-text)] hover:text-[var(--desk-strong)] md:flex"
             :class="isSidebarCollapsed ? 'left-14' : 'left-64'"
@@ -833,9 +840,10 @@ onUnmounted(() => {
             <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none transition-transform duration-300" :class="isSidebarCollapsed && 'rotate-180'" fixed-width aria-hidden="true" />
         </button>
 
-        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
+        <div class="flex-1 h-full min-w-0 border-t border-gray-200" :class="isFeed || selectedUlid || showSlackChannel ? 'flex' : 'hidden md:flex'">
+            <VerbaHome v-if="isFeed" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
             <MessagingConversation
-                v-if="selectedConversation"
+                v-else-if="selectedConversation"
                 :conversation="selectedConversation"
                 full-screen
                 desk
@@ -866,12 +874,19 @@ onUnmounted(() => {
                     :live-channel="knownSlackLiveChannel"
                     @read="onSlackChannelRead(slack_channel.id, $event)"
                     @back="router.visit(route('grp.chat.staff.slack.index'))" />
-                <VerbaHome v-else @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
+                <VerbaHome v-else :key="homeTab" :tab="homeTab" :private-opt-in="!!slack_private_opt_in" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" @private-opt-in="isPrivateConsentOpen = true" />
             </SlackMessageSearch>
-            <VerbaHome v-else @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" />
+            <VerbaHome v-else :key="homeTab" :tab="homeTab" :private-opt-in="!!slack_private_opt_in" @new-verb="isJumpOpen = true" @new-verbration="isNewVerbrationOpen = true" @private-opt-in="isPrivateConsentOpen = true" />
         </div>
 
         <DeskJumpDialog v-model:visible="isJumpOpen" :targets="jumpTargets" @select="onJump" />
+        <SlackPrivateConsentDialog
+            v-if="slack_private_opt_in"
+            v-model:visible="isPrivateConsentOpen"
+            :consent-version="slack_private_opt_in.consent_version"
+            :terms-version="slack_private_opt_in.terms_version"
+            :start-route="slack_private_opt_in.start_route"
+            :unavailable-reason="slack_private_opt_in.unavailable_reason" />
         <NewVerbrationDialog v-model:visible="isNewVerbrationOpen" @created="(url) => router.visit(url)" />
         <StaffProfileCard />
 

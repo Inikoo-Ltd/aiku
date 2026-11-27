@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('index');
+    Route::get('/feed', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('feed');
     Route::get('/reports', \App\Actions\Chat\Staff\UI\ShowStaffChatReports::class)->name('reports');
     Route::get('/c/{staffConversation}', [\App\Actions\Chat\Staff\UI\ShowStaffMessaging::class, 'inConversation'])->name('show');
     Route::get('/groups', \App\Actions\Chat\Staff\UI\ShowStaffMessaging::class)->name('groups.index');

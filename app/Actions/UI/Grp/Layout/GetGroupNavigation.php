@@ -383,10 +383,19 @@ class GetGroupNavigation
             'icon'    => ['fal', 'fa-comments'],
             'root'    => 'grp.chat.staff.',
             'route'   => [
-                'name' => 'grp.chat.staff.index',
+                'name' => 'grp.chat.staff.feed',
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label'   => __('News'),
+                        'tooltip' => __('Verba news: highlights from your chats and channels'),
+                        'icon'    => ['fal', 'fa-newspaper'],
+                        'root'    => 'grp.chat.staff.feed',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.feed',
+                        ],
+                    ],
                     [
                         'label'   => 'V·Desks',
                         'note'     => __('Public channels'),
