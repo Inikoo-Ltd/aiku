@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import { router, useForm } from "@inertiajs/vue3"
 import Dialog from "primevue/dialog"
-import InputNumber from "primevue/inputnumber"
+import InputNumber, { type InputNumberInputEvent } from "primevue/inputnumber"
 import ToggleSwitch from "primevue/toggleswitch"
 import Checkbox from "primevue/checkbox"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-export type ClaimSettings = { self_service: boolean, auto_approve: boolean, max_claim_amount: number, window_days: number, allowance_floor: number, allowance_share: number, max_claims_in_window: number, framework: boolean, framework_since: string | null }
+export type ClaimSettings = { self_service: boolean, auto_approve: boolean, max_claim_amount: number, window_days: number, allowance_floor: number, allowance_share: number, max_claims_in_window: number, claim_days: number, reply_hours: number, framework: boolean, framework_since: string | null }
 
 const props = defineProps<{
     settings: ClaimSettings
@@ -57,6 +57,23 @@ const saveSettings = () => {
                 </span>
                 <ToggleSwitch v-model="form.self_service" />
             </label>
+
+            <div v-if="form.self_service" class="grid grid-cols-2 gap-3">
+                <label class="block">
+                    <span class="mb-1 block text-xs text-gray-600">{{ ctrans("Claims taken for") }} <span class="text-red-500">*</span></span>
+                    <InputNumber v-model="form.claim_days" :min="1" :max="60" :suffix="' ' + ctrans('days')" class="w-full" input-class="w-full"
+                        @input="(event: InputNumberInputEvent) => (form.claim_days = typeof event.value === 'number' ? event.value : form.claim_days)" />
+                    <span class="block text-xs text-gray-500">{{ ctrans("After the order is dispatched") }}</span>
+                    <span v-if="form.errors.claim_days" class="text-xs text-red-500">{{ form.errors.claim_days }}</span>
+                </label>
+                <label class="block">
+                    <span class="mb-1 block text-xs text-gray-600">{{ ctrans("We answer claims within") }} <span class="text-red-500">*</span></span>
+                    <InputNumber v-model="form.reply_hours" :min="1" :max="720" :suffix="' ' + ctrans('hours')" class="w-full" input-class="w-full"
+                        @input="(event: InputNumberInputEvent) => (form.reply_hours = typeof event.value === 'number' ? event.value : form.reply_hours)" />
+                    <span class="block text-xs text-gray-500">{{ ctrans("Working hours, told to the customer") }}</span>
+                    <span v-if="form.errors.reply_hours" class="text-xs text-red-500">{{ form.errors.reply_hours }}</span>
+                </label>
+            </div>
 
             <label class="flex items-start justify-between gap-4">
                 <span>

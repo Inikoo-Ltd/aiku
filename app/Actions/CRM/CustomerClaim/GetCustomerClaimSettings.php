@@ -19,6 +19,8 @@ use App\Models\Catalogue\Shop;
  * fewer than max_claims_in_window claims in it. Customers claim only where an admin switched
  * self_service on; from then a small automatic allowance applies from day one (Raul, 22 Nov 2026),
  * which admins can change or switch off.
+ * claim_days is how long after dispatch customers can claim, and reply_hours is how soon customer
+ * services promise to answer a claim waiting for review (both in the received email).
  * framework_since is when the shop moved to claims only, a one-way switch.
  */
 class GetCustomerClaimSettings
@@ -31,11 +33,13 @@ class GetCustomerClaimSettings
         'allowance_floor'       => 30.0,
         'allowance_share'       => 3.0,
         'max_claims_in_window'  => 3,
+        'claim_days'            => 60,
+        'reply_hours'           => 24,
         'framework_since'       => null,
     ];
 
     /**
-     * @return array{self_service: bool, auto_approve: bool, max_claim_amount: float, window_days: int, allowance_floor: float, allowance_share: float, max_claims_in_window: int, framework: bool, framework_since: ?string}
+     * @return array{self_service: bool, auto_approve: bool, max_claim_amount: float, window_days: int, allowance_floor: float, allowance_share: float, max_claims_in_window: int, claim_days: int, reply_hours: int, framework: bool, framework_since: ?string}
      */
     public static function for(Shop $shop): array
     {
@@ -49,6 +53,8 @@ class GetCustomerClaimSettings
             'allowance_floor'      => (float) ($stored['allowance_floor'] ?? self::DEFAULTS['allowance_floor']),
             'allowance_share'      => (float) ($stored['allowance_share'] ?? self::DEFAULTS['allowance_share']),
             'max_claims_in_window' => (int) ($stored['max_claims_in_window'] ?? self::DEFAULTS['max_claims_in_window']),
+            'claim_days'           => (int) ($stored['claim_days'] ?? self::DEFAULTS['claim_days']),
+            'reply_hours'          => (int) ($stored['reply_hours'] ?? self::DEFAULTS['reply_hours']),
             'framework'            => !empty($stored['framework_since']),
             'framework_since'      => $stored['framework_since'] ?? null,
         ];

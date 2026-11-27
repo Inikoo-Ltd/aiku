@@ -9,6 +9,7 @@
 namespace App\Actions\Iris\CustomerClaim;
 
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaimSlip;
 use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Actions\IrisAction;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
@@ -38,6 +39,7 @@ class ShowIrisCustomerClaim extends IrisAction
             'amount'        => $claim->state === CustomerClaimStateEnum::SETTLED && $claim->resolution === 'refund_to_balance' ? (float) $claim->amount : null,
             'currency_code' => $claim->currency_code,
             'replacement'   => data_get($claim->result, 'replacement'),
+            'slip_url'      => data_get($claim->result, 'return_requested') ? ShowCustomerClaimSlip::url($claim) : null,
             'value'         => (float) $claim->value,
             'rejection'     => $claim->state === CustomerClaimStateEnum::REJECTED ? [
                 'reason' => __(RejectCustomerClaim::reasonLabel((string) $claim->rejection_reason), [], $locale),

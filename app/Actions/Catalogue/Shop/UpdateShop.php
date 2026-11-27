@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop;
 
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Actions\CRM\Appointment\Zoom\ZoomClient;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
@@ -106,6 +107,8 @@ class UpdateShop extends OrgAction
         'allowance_floor'      => 'float',
         'allowance_share'      => 'float',
         'max_claims_in_window' => 'int',
+        'claim_days'           => 'int',
+        'reply_hours'          => 'int',
     ];
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
@@ -1383,6 +1386,8 @@ class UpdateShop extends OrgAction
             'claims_allowance_floor'                                  => ['sometimes', 'numeric', 'min:0', 'max:100000'],
             'claims_allowance_share'                                  => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'claims_max_claims_in_window'                             => ['sometimes', 'integer', 'min:1', 'max:1000'],
+            'claims_claim_days'                                       => ['sometimes', 'integer', 'min:1', 'max:'.CheckClaimCompensation::MAX_AGE_DAYS],
+            'claims_reply_hours'                                      => ['sometimes', 'integer', 'min:1', 'max:720'],
             'unpaid_bank_orders_enabled'                              => ['sometimes', 'boolean'],
             'unpaid_bank_orders_reminder_every_days'                  => ['sometimes', 'integer', 'min:1', 'max:60'],
             'unpaid_bank_orders_cancel_after_days'                    => ['sometimes', 'integer', 'min:2', 'max:180'],

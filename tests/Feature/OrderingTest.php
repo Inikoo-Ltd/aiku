@@ -194,6 +194,8 @@ use App\Actions\Accounting\Invoice\UI\CreateTaxRefund;
 use App\Actions\CRM\CustomerClaim\RejectCustomerClaim;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Actions\CRM\CustomerClaim\StoreCustomerClaim;
+use App\Actions\CRM\CustomerClaim\CheckCustomerClaimDelivery;
+use App\Actions\CRM\CustomerClaim\UI\ShowCustomerClaimSlip;
 use App\Actions\CRM\CustomerClaim\SettleCustomerClaim;
 use App\Enums\CRM\CustomerClaim\CustomerClaimSourceEnum;
 use App\Enums\CRM\CustomerClaim\CustomerClaimStateEnum;
@@ -208,6 +210,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
+use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Platform;
@@ -8449,6 +8452,104 @@ test('a claim that would be approved automatically has its photos checked first,
         ->and($reused->result['photo_check']['problems'][0])->toContain($passed->reference);
 
     expect($store(UploadedFile::fake()->image('again.jpg', 42, 42))->state)->toBe(CustomerClaimStateEnum::IN_REVIEW);
+
+    UpcomingTransaction::where('customer_id', $customer->id)->delete();
+    $this->shop->update(['settings' => $settings]);
+});
+
+test('lost parcels the carrier still has on their way are not claimed, missing items show the packing record, staff can ask for the items back with a claim slip, and Merlin answers what happened', function () {
+    SeedEmailTemplates::run($this->group);
+    $settings = $this->shop->settings;
+    $this->shop->update(['settings' => array_merge($settings ?? [], ['claims' => array_merge(GetCustomerClaimSettings::DEFAULTS, ['self_service' => true, 'auto_approve' => false, 'reply_hours' => 8])])]);
+    $order    = dispatchedOrderToClaim($this, 4);
+    $customer = $order->customer;
+    $line     = GetCustomerClaimForm::run($customer->refresh(), $order)['lines'][0];
+    $note     = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->firstOrFail();
+    $item     = $note->deliveryNoteItems()->firstOrFail();
+    $store    = fn (string $reason, int $quantity = 1) => StoreCustomerClaim::run($customer->refresh(), $order->refresh(), ['resolution' => 'next_order', 'lines' => [['transaction_id' => $line['transaction_id'], 'quantity' => $quantity, 'reason' => $reason]]], CustomerClaimSourceEnum::ACCOUNT);
+
+    $untracked = $store('lost_in_transit');
+    expect($untracked->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($untracked->result['delivery_check']['tracking']['state'])->toBe('untracked');
+    RejectCustomerClaim::make()->handle($untracked, $this->user, 'other', 'test');
+
+    $shipper  = StoreShipper::make()->action($this->organisation, ['code' => 'CT'.Str::upper(Str::random(5)), 'name' => 'Claim Tracking Couriers', 'trade_as' => 'CTC']);
+    $shipment = Shipment::create(['group_id' => $order->group_id, 'organisation_id' => $order->organisation_id, 'shop_id' => $order->shop_id, 'shipper_id' => $shipper->id, 'tracking' => 'TRK'.Str::random(6), 'data' => [], 'carrier_status' => 'EN TRANSITO A DESTINO', 'tracked_at' => now()]);
+    $note->shipments()->attach($shipment->id);
+
+    expect(fn () => $store('lost_in_transit'))->toThrow(ValidationException::class, 'still on its way with CTC');
+
+    $shipment->update(['carrier_status' => null]);
+    expect(CheckCustomerClaimDelivery::make()->tracking($order->refresh())['state'])->toBe('untracked');
+    $shipment->update(['carrier_status' => 'DEVUELTA AL CLIENTE']);
+    expect(CheckCustomerClaimDelivery::make()->tracking($order->refresh())['state'])->toBe('returning');
+    $shipment->update(['carrier_status' => 'EN TRANSITO A DESTINO', 'tracked_at' => now()->subDays(3)]);
+    expect(CheckCustomerClaimDelivery::make()->tracking($order->refresh())['state'])->toBe('overdue');
+
+    $shipment->update(['carrier_status' => 'ENTREGADO', 'delivered_at' => now()->subDay(), 'tracked_at' => now()]);
+    $lost = $store('lost_in_transit');
+    expect($lost->state)->toBe(CustomerClaimStateEnum::IN_REVIEW)
+        ->and($lost->result['delivery_check']['tracking']['state'])->toBe('delivered')
+        ->and($lost->result['delivery_check']['tracking']['shipments'][0]['carrier'])->toBe('CTC')
+        ->and(StoreCustomerClaim::deliveryCheckSummary($lost))->toContain('Carrier says the parcel was delivered.', 'ENTREGADO');
+    RejectCustomerClaim::make()->handle($lost, $this->user, 'other', 'test');
+
+    $item->update(['quantity_packed' => $item->quantity_dispatched]);
+    $note->update(['packer_user_id' => $this->user->id]);
+    Packing::create(['group_id' => $item->group_id, 'organisation_id' => $item->organisation_id, 'shop_id' => $item->shop_id, 'delivery_note_id' => $note->id, 'delivery_note_item_id' => $item->id, 'quantity' => $item->quantity_dispatched, 'packer_user_id' => $this->user->id, 'engine' => 'aiku', 'done_at' => now()->subDays(2)]);
+    $missing = $store('missing_from_parcel', 2);
+    $packing = $missing->result['delivery_check']['packing'][0];
+    expect($packing['is_packed'])->toBeTrue()
+        ->and($packing['claimed'])->toEqual(2.0)
+        ->and($packing['packers'])->toBe([$this->user->contact_name ?: $this->user->username])
+        ->and(SendCustomerClaimEmail::make()->generateBodyHtml($missing))->toContain('within 8 working hours');
+
+    actingAs($this->user);
+    $claimRoute = ['organisation' => $this->organisation->slug, 'shop' => $this->shop->slug];
+    get(route('grp.org.shops.show.claims.show', array_merge($claimRoute, ['customerClaim' => $missing->ulid])))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('claim.result.delivery_check.packing.0.is_packed', true)->where('claim.slip_url', null));
+
+    $this->post(route('grp.models.customer_claim.approve', ['customerClaim' => $missing->ulid]), ['return_items' => true])->assertRedirect();
+    $approved = $missing->refresh();
+    $slipUrl  = ShowCustomerClaimSlip::url($approved);
+    expect($approved->state)->toBe(CustomerClaimStateEnum::SETTLED)
+        ->and($approved->result['return_requested'])->toBeTrue()
+        ->and(SendCustomerClaimEmail::make()->generateBodyHtml($approved))->toContain('Print the claim slip', e($slipUrl), 'free to your next order')
+        ->and(ShowIrisCustomerClaim::make()->summary($approved)['slip_url'])->toBe($slipUrl);
+
+    auth()->logout();
+    $this->get($slipUrl)->assertOk()->assertSee($approved->reference)->assertSee('<svg', false);
+    $this->get(route('grp.customer_claim_slip', ['customerClaim' => $approved->ulid]))->assertForbidden();
+    $this->get(ShowCustomerClaimSlip::url($lost->refresh()))->assertNotFound();
+
+    $conversation = StartShoppingAssistantConversation::run($customer->refresh(), ShoppingAssistantEntryPointEnum::CHAT);
+    $tools        = GetShoppingAssistantTools::make();
+    $status       = $tools->execute($conversation, 'claim_status', ['reference' => $approved->reference]);
+    expect(collect($tools->definitions(claimsEnabled: true))->pluck('function.name'))->toContain('claim_status')
+        ->and(collect($tools->definitions())->pluck('function.name'))->not->toContain('claim_status')
+        ->and($status['content']['claims'])->toHaveCount(1)
+        ->and($status['content']['claims'][0]['state'])->toBe('settled')
+        ->and($status['content']['claims'][0]['return_requested'])->toBeTrue()
+        ->and($status['content']['claims'][0]['in_next_order'])->toBeTrue()
+        ->and(json_encode($status['content']))->not->toMatch('/\d/')
+        ->and($status['fact'])->toContain($approved->reference, $order->reference, 'added free to your next order', 'claim slip')
+        ->and($tools->execute($conversation, 'claim_status', ['reference' => strtolower($order->reference)])['content']['claims'])->toHaveCount(3)
+        ->and($tools->execute($conversation, 'claim_status', ['reference' => 'NOPE-1'])['content']['found'])->toBeFalse();
+
+    actingAs($this->user);
+    get(route('grp.org.shops.show.claims.dashboard', $claimRoute))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.by_carrier', fn ($rows) => collect($rows)->contains(fn ($row) => $row['label'] === 'Claim Tracking Couriers' && $row['claims'] >= 3))
+            ->where('dashboard.by_packer', fn ($rows) => collect($rows)->isNotEmpty())
+            ->has('dashboard.by_warehouse')
+            ->has('dashboard.auto_settled_merlin'));
+
+    $this->patch(route('grp.org.shops.show.claims.settings.update', $claimRoute), array_merge(GetCustomerClaimSettings::for($this->shop->refresh()), ['claim_days' => 61, 'framework' => false]))->assertSessionHasErrors('claim_days');
+    $this->patch(route('grp.org.shops.show.claims.settings.update', $claimRoute), array_merge(GetCustomerClaimSettings::for($this->shop->refresh()), ['claim_days' => 1, 'framework' => false]))->assertRedirect();
+    $order->update(['dispatched_at' => now()->subDays(3)]);
+    $order->unsetRelation('shop');
+    expect(GetCustomerClaimSettings::for($this->shop->refresh())['claim_days'])->toBe(1)
+        ->and(GetCustomerClaimForm::run($customer->refresh(), $order->refresh())['too_old'])->toBeTrue()
+        ->and(collect(IndexIrisCustomerClaimOrders::make()->handle($customer->refresh()))->pluck('id'))->not->toContain($order->id);
 
     UpcomingTransaction::where('customer_id', $customer->id)->delete();
     $this->shop->update(['settings' => $settings]);

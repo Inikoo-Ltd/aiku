@@ -11,6 +11,7 @@ namespace App\Actions\CRM\CustomerClaim\UI;
 use App\Actions\Chat\ChatSession\PlanChatClaim;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimForm;
 use App\Actions\OrgAction;
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemReplacementReasonEnum;
 use App\Enums\SysAdmin\Authorisation\ShopPermissionsEnum;
@@ -55,7 +56,7 @@ class CreateStaffCustomerClaim extends OrgAction
             'order'       => ['reference' => $order->reference, 'route' => ['name' => 'grp.org.shops.show.ordering.orders.show', 'parameters' => [$order->organisation->slug, $order->shop->slug, $order->slug]]],
             'customer'    => ['name' => $order->customer->name, 'claims' => CustomerClaim::where('customer_id', $order->customer_id)->count()],
             'lines'       => $form['lines'] ?? [],
-            'too_old'     => (bool) ($form['too_old'] ?? false),
+            'too_old'     => CheckClaimCompensation::isTooOld($order),
             'reasons'     => collect(DeliveryNoteItemReplacementReasonEnum::cases())->map(fn (DeliveryNoteItemReplacementReasonEnum $reason) => ['value' => $reason->value, 'label' => $reason->label()])->all(),
             'outcomes'    => collect($outcomes)->map(fn (string $outcome) => ['value' => $outcome, 'label' => ShowCustomerClaim::resolutionLabel($outcome)])->all(),
             'currency_code' => $order->currency?->code,

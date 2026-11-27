@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Ordering\Order\CheckClaimCompensation;
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
@@ -2001,6 +2002,20 @@ class EditShop extends OrgAction
                     'bind'  => ['min' => 1, 'max' => 1000, 'maxFractionDigits' => 0],
                     'label' => __('Most claims'),
                     'value' => $settings['max_claims_in_window'],
+                ],
+                'claims_claim_days'           => [
+                    'type'        => 'input_number',
+                    'bind'        => ['min' => 1, 'max' => CheckClaimCompensation::MAX_AGE_DAYS, 'maxFractionDigits' => 0, 'suffix' => ' '.__('days')],
+                    'label'       => __('Claims taken for'),
+                    'information' => __('How many days after an order is dispatched customers can still claim on it.'),
+                    'value'       => $settings['claim_days'],
+                ],
+                'claims_reply_hours'          => [
+                    'type'        => 'input_number',
+                    'bind'        => ['min' => 1, 'max' => 720, 'maxFractionDigits' => 0, 'suffix' => ' '.__('hours')],
+                    'label'       => __('We answer claims within'),
+                    'information' => __('Working hours promised in the email a customer gets when their claim waits for customer services.'),
+                    'value'       => $settings['reply_hours'],
                 ],
             ],
         ];
