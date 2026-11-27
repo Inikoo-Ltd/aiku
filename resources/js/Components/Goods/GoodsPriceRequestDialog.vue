@@ -43,6 +43,7 @@ interface PriceRequest {
     note: string | null
     asked_by: string | null
     asked_at: string | null
+    master_costs_at_new_price: Record<number, number>
     can_update_supplier_cost: boolean
     answer_route: routeType | null
 }
@@ -64,6 +65,7 @@ interface SupplierPriceChange {
     reason: string | null
     submitted_at: string | null
     url: string
+    master_costs_at_new_price: Record<number, number>
     open_purchase_order_lines: OpenPurchaseOrderLine[]
     decide_route: routeType | null
 }
@@ -162,13 +164,17 @@ function acceptedRatio(): number | null {
     return acceptedPrice.value && acceptedPrice.value.old > 0 ? acceptedPrice.value.new / acceptedPrice.value.old : null
 }
 
-function suggestMasterPrices(): void {
+type PriceSuggestions = Record<number, Record<string, { old: number; new: number }>>
+
+function priceSuggestions(costsAtNewPrice: Record<number, number | null>): PriceSuggestions {
+    const result: PriceSuggestions = {}
     for (const masterProduct of data.value?.master_products ?? []) {
-        if (!masterProduct.cost || !masterProduct.cost_at_new_price || masterProduct.cost_at_new_price === masterProduct.cost) {
+        const costAtNewPrice = costsAtNewPrice[masterProduct.id]
+        if (!masterProduct.cost || !costAtNewPrice || costAtNewPrice === masterProduct.cost) {
             continue
         }
 
-        const factor = masterProduct.cost_at_new_price / masterProduct.cost
+        const factor = costAtNewPrice / masterProduct.cost
         const suggestions: Record<string, { old: number; new: number }> = {}
         for (const currency of masterProduct.main_currencies) {
             const oldPrice = masterProduct.prices[currency]
@@ -183,8 +189,39 @@ function suggestMasterPrices(): void {
         }
 
         if (Object.keys(suggestions).length) {
-            suggestedPrices[masterProduct.id] = suggestions
+            result[masterProduct.id] = suggestions
         }
+    }
+
+    return result
+}
+
+function suggestMasterPrices(): void {
+    const costsAtNewPrice = Object.fromEntries((data.value?.master_products ?? []).map((masterProduct) => [masterProduct.id, masterProduct.cost_at_new_price]))
+    Object.assign(suggestedPrices, priceSuggestions(costsAtNewPrice))
+}
+
+const alsoSaveSellingPrices = reactive<Record<string, boolean>>({})
+
+function previewFor(costsAtNewPrice: Record<number, number>): { masterProduct: MasterProduct; currencies: { currency: string; old: number; new: number }[] }[] {
+    if (!data.value?.can_edit_master_prices) {
+        return []
+    }
+
+    const suggestions = priceSuggestions(costsAtNewPrice)
+
+    return (data.value.master_products ?? [])
+        .filter((masterProduct) => suggestions[masterProduct.id])
+        .map((masterProduct) => ({
+            masterProduct,
+            currencies: Object.entries(suggestions[masterProduct.id]).map(([currency, suggestion]) => ({ currency, ...suggestion })),
+        }))
+}
+
+async function acceptAndMaybeSave(price: AcceptedPrice, saveKey: string): Promise<void> {
+    await acceptPrice(price)
+    if (alsoSaveSellingPrices[saveKey] && suggestionCount.value) {
+        await saveAllSuggested()
     }
 }
 
@@ -270,6 +307,10 @@ async function fetchData(): Promise<void> {
         fillSuggestedPrices()
         for (const change of data.value?.supplier_price_changes ?? []) {
             updateOpenPurchaseOrders[change.id] ??= change.open_purchase_order_lines.length > 0
+            alsoSaveSellingPrices[`supplier-${change.id}`] ??= true
+        }
+        for (const request of data.value?.requests ?? []) {
+            alsoSaveSellingPrices[`agent-${request.id}`] ??= true
         }
         for (const request of data.value?.requests ?? []) {
             updateSupplierCost[request.id] ??= request.can_update_supplier_cost
@@ -358,7 +399,7 @@ function answer(request: PriceRequest, answerValue: Answer): void {
                 const oldCost = request.previous_unit_cost ?? request.unit_cost
                 const newCost = answerValue === "adjusted" ? adjustedCosts[request.id] : request.asked_unit_cost
                 if (answerValue !== "rejected" && newCost && oldCost && newCost !== oldCost) {
-                    acceptPrice({ currency: request.currency, old: oldCost, new: newCost })
+                    acceptAndMaybeSave({ currency: request.currency, old: oldCost, new: newCost }, `agent-${request.id}`)
                 } else {
                     fetchData()
                 }
@@ -404,7 +445,7 @@ function decideSupplierChange(change: SupplierPriceChange, decision: SupplierDec
                 rejectingSupplierChangeId.value = null
                 answeredHere.value = true
                 if (decision === "accepted" && change.cost && change.proposed_cost !== change.cost) {
-                    acceptPrice({ currency: change.currency, old: change.cost, new: change.proposed_cost })
+                    acceptAndMaybeSave({ currency: change.currency, old: change.cost, new: change.proposed_cost }, `supplier-${change.id}`)
                 } else {
                     fetchData()
                 }
@@ -698,6 +739,32 @@ function saveMaster(masterProduct: MasterProduct): Promise<boolean> {
                             {{ ctrans("Also save the new price as the supplier product cost") }}
                         </label>
 
+                        <div v-if="previewFor(request.master_costs_at_new_price).length" class="space-y-1 rounded border border-orange-200 bg-white px-2 py-1.5">
+                            <p class="flex items-center gap-1.5 text-xs font-semibold text-orange-800">
+                                <PingIcon class="text-[6px] text-orange-500" aria-hidden="true" />
+                                {{ previewFor(request.master_costs_at_new_price).length === 1 ? ctrans("To do: new selling price for 1 master product") : ctrans("To do: new selling prices for :count master products", { count: previewFor(request.master_costs_at_new_price).length }) }}
+                            </p>
+                            <ul class="space-y-0.5 pl-4 text-xs text-gray-600">
+                                <li v-for="item in previewFor(request.master_costs_at_new_price)" :key="item.masterProduct.id" class="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                    <span class="whitespace-nowrap font-semibold text-gray-700">{{ item.masterProduct.master_shop?.toUpperCase() }} {{ item.masterProduct.code }}</span>
+                                    <span v-for="price in item.currencies" :key="price.currency" class="whitespace-nowrap">
+                                        {{ ctrans(":old → :new", { old: money(price.currency, price.old), new: money(price.currency, price.new) }) }}
+                                    </span>
+                                </li>
+                            </ul>
+                            <label class="flex w-fit cursor-pointer items-center gap-2 text-xs text-gray-700">
+                                <Checkbox v-model="alsoSaveSellingPrices[`agent-${request.id}`]" binary size="small" />
+                                {{ ctrans("Also save these selling prices when I accept") }}
+                                <FontAwesomeIcon
+                                    v-tooltip="ctrans('Each price keeps the product\'s current margin: price × cost at the new price ÷ current cost. A bundle moves only by this SKU\'s share of its cost. Unticked, the prices are only filled in below for you to check and save. The RRPs stay as they are.')"
+                                    :icon="faInfoCircle"
+                                    class="cursor-help text-gray-400"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </label>
+                        </div>
+
                         <div class="flex flex-wrap items-center gap-1.5">
                             <Button type="tertiary" size="xs" :label="ctrans('Accept')" :loading="isAnswering(request, 'accepted')" :disabled="!!answering" @click="answer(request, 'accepted')">
                                 <template #icon>
@@ -805,6 +872,32 @@ function saveMaster(masterProduct: MasterProduct): Promise<boolean> {
                                     </span>
                                 </li>
                             </ul>
+                        </div>
+
+                        <div v-if="rejectingSupplierChangeId !== change.id && previewFor(change.master_costs_at_new_price).length" class="space-y-1 rounded border border-orange-200 bg-white px-2 py-1.5">
+                            <p class="flex items-center gap-1.5 text-xs font-semibold text-orange-800">
+                                <PingIcon class="text-[6px] text-orange-500" aria-hidden="true" />
+                                {{ previewFor(change.master_costs_at_new_price).length === 1 ? ctrans("To do: new selling price for 1 master product") : ctrans("To do: new selling prices for :count master products", { count: previewFor(change.master_costs_at_new_price).length }) }}
+                            </p>
+                            <ul class="space-y-0.5 pl-4 text-xs text-gray-600">
+                                <li v-for="item in previewFor(change.master_costs_at_new_price)" :key="item.masterProduct.id" class="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                    <span class="whitespace-nowrap font-semibold text-gray-700">{{ item.masterProduct.master_shop?.toUpperCase() }} {{ item.masterProduct.code }}</span>
+                                    <span v-for="price in item.currencies" :key="price.currency" class="whitespace-nowrap">
+                                        {{ ctrans(":old → :new", { old: money(price.currency, price.old), new: money(price.currency, price.new) }) }}
+                                    </span>
+                                </li>
+                            </ul>
+                            <label class="flex w-fit cursor-pointer items-center gap-2 text-xs text-gray-700">
+                                <Checkbox v-model="alsoSaveSellingPrices[`supplier-${change.id}`]" binary size="small" />
+                                {{ ctrans("Also save these selling prices when I accept") }}
+                                <FontAwesomeIcon
+                                    v-tooltip="ctrans('Each price keeps the product\'s current margin: price × cost at the new price ÷ current cost. A bundle moves only by this SKU\'s share of its cost. Unticked, the prices are only filled in below for you to check and save. The RRPs stay as they are.')"
+                                    :icon="faInfoCircle"
+                                    class="cursor-help text-gray-400"
+                                    fixed-width
+                                    aria-hidden="true"
+                                />
+                            </label>
                         </div>
 
                         <div v-if="rejectingSupplierChangeId !== change.id" class="flex flex-wrap items-center gap-1.5">

@@ -28,6 +28,7 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierSubmission;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -111,15 +112,16 @@ class ShowGoodsStockPriceRequests extends OrgAction
     {
         $newPriceLine = $priceRatio === null ? $this->newPriceLine($stock) : null;
         $priceRatio ??= $newPriceLine ? $this->priceRatio($newPriceLine) : null;
+        $masterAssets = $this->masterAssets($stock);
 
         return [
             'code'                   => $stock->code,
             'name'                   => $stock->name,
             'image'                  => ($stock->image_id ? $stock : $stock->tradeUnits()->first())?->imageSources(160, 160),
-            'requests'               => $this->requests($stock, $user),
-            'supplier_price_changes' => $this->supplierPriceChanges($stock, $user),
+            'requests'               => $this->requests($stock, $user, $masterAssets),
+            'supplier_price_changes' => $this->supplierPriceChanges($stock, $user, $masterAssets),
             'new_price'              => $newPriceLine ? $this->newPrice($newPriceLine) : null,
-            'master_products'        => $this->masterProducts($stock, $priceRatio),
+            'master_products'        => $this->masterProducts($masterAssets, $stock, $priceRatio),
             'can_edit_master_prices' => $user->authTo('masters.edit'),
         ];
     }
@@ -179,7 +181,10 @@ class ShowGoodsStockPriceRequests extends OrgAction
         ];
     }
 
-    private function requests(Stock $stock, User $user): array
+    /**
+     * @param  Collection<int, MasterAsset>  $masterAssets
+     */
+    private function requests(Stock $stock, User $user, Collection $masterAssets): array
     {
         $canUpdateSupplierCost = $user->authTo('supply-chain.edit');
 
@@ -188,8 +193,9 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->with(['purchaseOrder.organisation', 'purchaseOrder.agent', 'purchaseOrder.currency', 'purchaseOrder.parent', 'supplierProduct.supplier', 'priceQueriedBy', 'currency', 'orgStock'])
             ->orderBy('price_queried_at')
             ->get()
-            ->map(function (PurchaseOrderTransaction $transaction) use ($user, $canUpdateSupplierCost) {
+            ->map(function (PurchaseOrderTransaction $transaction) use ($user, $canUpdateSupplierCost, $stock, $masterAssets) {
                 $purchaseOrder = $transaction->purchaseOrder;
+                $previousCost  = (float) ($transaction->price_query_previous_unit_cost ?? $transaction->unit_cost);
                 $canAnswer     = $user->authTo("procurement.$transaction->organisation_id.edit");
 
                 return [
@@ -212,6 +218,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'note'                     => $transaction->price_query_note,
                     'asked_by'                 => $transaction->priceQueriedBy?->contact_name ?: $transaction->priceQueriedBy?->username,
                     'asked_at'                 => $transaction->price_queried_at,
+                    'master_costs_at_new_price' => $previousCost > 0 ? $this->costsAtPriceRatio($masterAssets, $stock, (float) $transaction->price_query_unit_cost / $previousCost) : [],
                     'can_update_supplier_cost' => $canAnswer && $canUpdateSupplierCost && $transaction->supplierProduct !== null,
                     'answer_route'             => $canAnswer ? [
                         'name'       => 'grp.models.purchase-order.transaction.price_change.answer',
@@ -231,7 +238,10 @@ class ShowGoodsStockPriceRequests extends OrgAction
      * Price and MOQ changes suppliers proposed on their portal for a supplier product of this stock, still waiting
      * for a decision: the same states the Goods dashboard counts.
      */
-    private function supplierPriceChanges(Stock $stock, User $user): array
+    /**
+     * @param  Collection<int, MasterAsset>  $masterAssets
+     */
+    private function supplierPriceChanges(Stock $stock, User $user, Collection $masterAssets): array
     {
         return SupplierSubmission::query()
             ->where('group_id', $this->group->id)
@@ -241,7 +251,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->with(['supplier', 'supplierProduct.currency'])
             ->orderBy('submitted_at')
             ->get()
-            ->map(function (SupplierSubmission $supplierSubmission) use ($user) {
+            ->map(function (SupplierSubmission $supplierSubmission) use ($user, $stock, $masterAssets) {
                 $supplierProduct = $supplierSubmission->supplierProduct;
                 $data            = $supplierSubmission->data ?? [];
                 $canDecide       = $supplierProduct !== null && DecideSupplierSubmission::canDecide($user, $supplierSubmission);
@@ -263,6 +273,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
                     'reason'               => $data['reason'] ?? null,
                     'submitted_at'         => $supplierSubmission->submitted_at,
                     'url'                  => route('grp.supply-chain.supplier_submissions.show', [$supplierSubmission->id]),
+                    'master_costs_at_new_price' => $supplierProduct && (float) $supplierProduct->cost > 0 ? $this->costsAtPriceRatio($masterAssets, $stock, (float) ($data['proposed_price'] ?? 0) / (float) $supplierProduct->cost) : [],
                     'open_purchase_order_lines' => $canDecide ? $this->openPurchaseOrderLines($supplierProduct, $user, (float) ($data['proposed_price'] ?? 0)) : [],
                     'decide_route'         => $canDecide ? [
                         'name'       => 'grp.models.supplier_submission.decide',
@@ -294,15 +305,16 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ->all();
     }
 
-    private function masterProducts(Stock $stock, ?float $priceRatio): array
+    /**
+     * @return Collection<int, MasterAsset>
+     */
+    private function masterAssets(Stock $stock): Collection
     {
-        $effectiveCost = MasterAssetHydrateEffectiveCost::make();
-
         return MasterAsset::query()
             ->whereHas('stocks', fn (Builder $query) => $query->where('stocks.id', $stock->id))
             ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->where('status', true)
-            ->with(['masterShop', 'masterFamily', ...($priceRatio !== null ? ['tradeUnits.orgStocks'] : [])])
+            ->with(['masterShop', 'masterFamily', 'tradeUnits.orgStocks'])
             ->addSelect([
                 'stocks_in_product' => DB::table('master_asset_has_stocks')
                     ->selectRaw('count(distinct stock_id)')
@@ -314,6 +326,39 @@ class ShowGoodsStockPriceRequests extends OrgAction
             ])
             ->get()
             ->sortBy(fn (MasterAsset $masterAsset) => [(int) $masterAsset->stocks_in_product > 1, $masterAsset->code])
+            ->values();
+    }
+
+    /**
+     * The cost of each master product once this stock is bought at old cost × ratio, as the dialog shows it, so the
+     * selling prices it suggests before and after an answer are the same.
+     *
+     * @param  Collection<int, MasterAsset>  $masterAssets
+     * @return array<int, float>
+     */
+    private function costsAtPriceRatio(Collection $masterAssets, Stock $stock, ?float $priceRatio): array
+    {
+        if ($priceRatio === null || $priceRatio <= 0 || $priceRatio === 1.0) {
+            return [];
+        }
+
+        $effectiveCost = MasterAssetHydrateEffectiveCost::make();
+
+        return $masterAssets
+            ->mapWithKeys(fn (MasterAsset $masterAsset) => [$masterAsset->id => $effectiveCost->costWithStockPriceChange($masterAsset, $stock->id, $priceRatio)])
+            ->filter(fn (?float $cost) => $cost !== null)
+            ->map(fn (float $cost) => round($cost, 2))
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, MasterAsset>  $masterAssets
+     */
+    private function masterProducts(Collection $masterAssets, Stock $stock, ?float $priceRatio): array
+    {
+        $effectiveCost = MasterAssetHydrateEffectiveCost::make();
+
+        return $masterAssets
             ->map(function (MasterAsset $masterAsset) use ($stock, $priceRatio, $effectiveCost) {
                 $exchanges           = collect($masterAsset->masterShop?->price_exchanges ?? []);
                 $mainCurrencies      = $exchanges->filter(fn (array $exchange) => $exchange['is_major'] ?? false)->keys()->values();
