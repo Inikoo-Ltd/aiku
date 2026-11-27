@@ -12,12 +12,14 @@ import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputNumber from "primevue/inputnumber"
 import Checkbox from "primevue/checkbox"
+import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube, faInfoCircle } from "@fal"
+import { faCheck, faTimes, faPen, faTags, faExternalLink, faLayerGroup, faCube, faInfoCircle, faIndustry } from "@fal"
 import { faStar } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
+import ProductDialogHeader from "@/Components/Product/ProductDialogHeader.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -44,6 +46,28 @@ interface PriceRequest {
     can_update_supplier_cost: boolean
     answer_route: routeType | null
 }
+
+interface SupplierPriceChange {
+    id: number
+    state: string
+    supplier: string | null
+    supplier_code: string | null
+    code: string | null
+    currency: string | null
+    cost: number | null
+    proposed_cost: number
+    units_per_carton: number
+    minimum_carton_order: number | null
+    proposed_moq: number | null
+    effective_from: string | null
+    effective_until: string | null
+    reason: string | null
+    submitted_at: string | null
+    url: string
+    decide_route: routeType | null
+}
+
+type SupplierDecision = "accepted" | "not_proceeding"
 
 interface MasterProduct {
     id: number
@@ -79,7 +103,9 @@ interface NewPrice {
 interface PriceRequestData {
     code: string
     name: string | null
+    image: object | null
     requests: PriceRequest[]
+    supplier_price_changes: SupplierPriceChange[]
     new_price: NewPrice | null
     master_products: MasterProduct[]
     can_edit_master_prices: boolean
@@ -105,6 +131,11 @@ const adjustedCosts = reactive<Record<number, number | null>>({})
 const updateSupplierCost = reactive<Record<number, boolean>>({})
 const answering = ref<{ id: number; answer: Answer } | null>(null)
 const requestErrors = reactive<Record<number, string | null>>({})
+
+const rejectingSupplierChangeId = ref<number | null>(null)
+const supplierRejectFeedback = reactive<Record<number, string>>({})
+const decidingSupplierChange = ref<{ id: number; decision: SupplierDecision } | null>(null)
+const supplierChangeErrors = reactive<Record<number, string | null>>({})
 
 const masterForms = reactive<Record<number, { prices: Record<string, number | null>; rrps: Record<string, number | null> }>>({})
 const savingMasterId = ref<number | null>(null)
@@ -152,6 +183,7 @@ watch(
             adjustingId.value = null
             savedMasterId.value = null
             answeredHere.value = false
+            rejectingSupplierChangeId.value = null
             fetchData()
         }
     },
@@ -165,7 +197,7 @@ const header = computed(() => {
         return ctrans("Prices")
     }
 
-    return data.value.requests.length || answeredHere.value ? ctrans("Price requests for :code", { code: data.value.code }) : ctrans("Price and RRP of :code", { code: data.value.code })
+    return data.value.requests.length || data.value.supplier_price_changes.length || answeredHere.value ? ctrans("Price requests for :code", { code: data.value.code }) : ctrans("Price and RRP of :code", { code: data.value.code })
 })
 
 const unitCost = (currency: string | null, amount: number | null): string => locale.currencyFormatUnitCost(currency, amount ?? 0)
@@ -223,6 +255,53 @@ function answer(request: PriceRequest, answerValue: Answer): void {
 
 function isAnswering(request: PriceRequest, answerValue: Answer): boolean {
     return answering.value?.id === request.id && answering.value.answer === answerValue
+}
+
+function supplierChangePercent(change: SupplierPriceChange): number | null {
+    if (!change.cost) {
+        return null
+    }
+
+    return Math.round((change.proposed_cost / change.cost - 1) * 1000) / 10
+}
+
+function decideSupplierChange(change: SupplierPriceChange, decision: SupplierDecision): void {
+    if (!change.decide_route) {
+        return
+    }
+
+    decidingSupplierChange.value = { id: change.id, decision }
+    supplierChangeErrors[change.id] = null
+
+    router.post(
+        route(change.decide_route.name, change.decide_route.parameters),
+        {
+            state: decision,
+            ...(decision === "not_proceeding" ? { feedback: supplierRejectFeedback[change.id] } : {}),
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: props.reloadProps,
+            onSuccess: () => {
+                rejectingSupplierChangeId.value = null
+                answeredHere.value = true
+                fetchData()
+            },
+            onError: (errors) => (supplierChangeErrors[change.id] = firstError(errors)),
+            onFinish: () => (decidingSupplierChange.value = null),
+        }
+    )
+}
+
+function isDecidingSupplierChange(change: SupplierPriceChange, decision: SupplierDecision): boolean {
+    return decidingSupplierChange.value?.id === change.id && decidingSupplierChange.value.decision === decision
+}
+
+function openSupplierReject(change: SupplierPriceChange): void {
+    rejectingSupplierChangeId.value = change.id
+    supplierRejectFeedback[change.id] ??= ""
+    supplierChangeErrors[change.id] = null
 }
 
 function marginCost(masterProduct: MasterProduct): number | null {
@@ -426,7 +505,7 @@ function saveMaster(masterProduct: MasterProduct): void {
         <p v-else-if="loadError" class="text-sm text-red-600">{{ loadError }}</p>
 
         <div v-else-if="data" class="space-y-5 text-sm">
-            <p v-if="data.name" class="-mt-2 text-xs text-gray-500">{{ data.name }}</p>
+            <ProductDialogHeader :code="data.code" :name="data.name" :image="data.image" />
 
             <section v-if="data.requests.length || answeredHere" class="space-y-2">
                 <h3 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -515,6 +594,85 @@ function saveMaster(masterProduct: MasterProduct): void {
                 </div>
             </section>
 
+            <section v-if="data.supplier_price_changes.length" class="space-y-2">
+                <h3 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <FontAwesomeIcon :icon="faIndustry" class="text-amber-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("Price or MOQ changes proposed by the supplier") }}
+                    <LoadingIcon v-if="isLoading" />
+                </h3>
+
+                <div v-for="change in data.supplier_price_changes" :key="change.id" class="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2">
+                    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-gray-600">
+                        <span v-if="change.supplier_code" class="whitespace-nowrap rounded bg-white px-1.5 py-0.5 font-semibold text-gray-700">{{ change.supplier_code }}</span>
+                        <span v-if="change.supplier">{{ change.supplier }}</span>
+                        <a :href="change.url" target="_blank" class="flex items-center gap-1 whitespace-nowrap font-medium text-[var(--app-accent)] hover:underline">
+                            {{ change.code ?? ctrans("Submission") }}
+                            <FontAwesomeIcon :icon="faExternalLink" class="text-[10px]" aria-hidden="true" />
+                        </a>
+                        <span v-if="change.submitted_at" class="ml-auto text-gray-500">{{ ctrans("Sent :date", { date: useFormatTime(change.submitted_at) }) }}</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-baseline gap-x-3 tabular-nums text-amber-900">
+                        <span v-if="change.cost !== null">
+                            {{ ctrans("The supplier proposes :new per unit, now :old", { new: unitCost(change.currency, change.proposed_cost), old: unitCost(change.currency, change.cost) }) }}
+                        </span>
+                        <span v-else>{{ ctrans("The supplier proposes :new per unit", { new: unitCost(change.currency, change.proposed_cost) }) }}</span>
+                        <span v-if="supplierChangePercent(change) !== null" class="font-semibold" :class="(supplierChangePercent(change) as number) > 0 ? 'text-red-600' : 'text-green-700'">
+                            {{ (supplierChangePercent(change) as number) > 0 ? "+" : "" }}{{ supplierChangePercent(change) }}%
+                        </span>
+                        <span v-if="change.units_per_carton > 1" class="text-xs text-gray-500">
+                            {{ ctrans(":new per carton of :units", { new: unitCost(change.currency, change.proposed_cost * change.units_per_carton), units: change.units_per_carton }) }}
+                        </span>
+                    </div>
+                    <p v-if="change.proposed_moq" class="text-xs text-amber-900">
+                        {{ change.minimum_carton_order && change.minimum_carton_order !== change.proposed_moq ? ctrans("MOQ :new cartons, now :old", { new: change.proposed_moq, old: change.minimum_carton_order }) : ctrans("MOQ :new cartons", { new: change.proposed_moq }) }}
+                    </p>
+                    <p v-if="change.effective_from || change.effective_until" class="text-xs text-gray-600">
+                        <template v-if="change.effective_from">{{ ctrans("From :date", { date: useFormatTime(change.effective_from) }) }}</template>
+                        <template v-if="change.effective_from && change.effective_until"> · </template>
+                        <template v-if="change.effective_until">{{ ctrans("Until :date", { date: useFormatTime(change.effective_until) }) }}</template>
+                    </p>
+                    <p v-if="change.reason" class="text-xs italic text-gray-600">{{ change.reason }}</p>
+
+                    <template v-if="change.decide_route">
+                        <div v-if="rejectingSupplierChangeId !== change.id" class="flex flex-wrap items-center gap-1.5">
+                            <Button type="tertiary" size="xs" :label="ctrans('Accept, save as supplier cost')" :loading="isDecidingSupplierChange(change, 'accepted')" :disabled="!!decidingSupplierChange" @click="decideSupplierChange(change, 'accepted')">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                            <Button type="tertiary" size="xs" :label="ctrans('Reject')" :disabled="!!decidingSupplierChange" @click="openSupplierReject(change)">
+                                <template #icon>
+                                    <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </div>
+
+                        <div v-else class="space-y-1.5">
+                            <label class="block space-y-1">
+                                <span class="block text-xs text-gray-500">{{ ctrans("Tell the supplier why") }} <span class="text-red-500">*</span></span>
+                                <Textarea v-model="supplierRejectFeedback[change.id]" rows="2" autoResize class="w-full text-sm" />
+                            </label>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="rejectingSupplierChangeId = null">
+                                    <template #icon>
+                                        <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
+                                <Button type="tertiary" size="xs" :label="ctrans('Reject, keep current cost')" :loading="isDecidingSupplierChange(change, 'not_proceeding')" :disabled="!supplierRejectFeedback[change.id]?.trim() || !!decidingSupplierChange" @click="decideSupplierChange(change, 'not_proceeding')">
+                                    <template #icon>
+                                        <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
+                            </div>
+                        </div>
+                    </template>
+                    <p v-else class="text-xs text-gray-500">{{ ctrans("You need supply chain edit rights to decide this change") }}</p>
+
+                    <p v-if="supplierChangeErrors[change.id]" class="text-xs text-red-600">{{ supplierChangeErrors[change.id] }}</p>
+                </div>
+            </section>
+
             <section class="space-y-2">
                 <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Selling price and RRP of the master products") }}</h3>
 
@@ -568,7 +726,7 @@ function saveMaster(masterProduct: MasterProduct): void {
                         <thead class="whitespace-nowrap text-left text-[10px] uppercase tracking-wide text-gray-400">
                             <tr>
                                 <th class="w-16 pr-3 font-medium">{{ ctrans("Currency") }}</th>
-                                <th class="w-px pr-2 font-medium">{{ ctrans("Price per outer") }}</th>
+                                <th class="w-px pr-2 font-medium">{{ (masterProduct.units || 1) === 1 ? ctrans("Price per outer (1 unit)") : ctrans("Price per outer (:units units)", { units: masterProduct.units }) }}</th>
                                 <th class="w-px pr-6 font-medium">
                                     <span v-tooltip="ctrans('Our margin = (price per outer − cost) ÷ price per outer')" class="inline-flex cursor-help items-center gap-1">{{ ctrans("Our margin") }}<FontAwesomeIcon :icon="faInfoCircle" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" /></span>
                                 </th>

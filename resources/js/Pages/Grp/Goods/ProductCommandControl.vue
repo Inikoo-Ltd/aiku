@@ -27,9 +27,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags } from "@fal"
+import { faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags, faIndustry } from "@fal"
 import { faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle } from "@fas"
-library.add(faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags, faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle)
+library.add(faSlidersH, faWarehouse, faBan, faExclamationTriangle, faBoxes, faPlug, faDownload, faThumbsDown, faTags, faIndustry, faCheckCircle, faPauseCircle, faTimesCircle, faExclamationCircle)
 
 type Condition = "ok" | "low" | "oos" | "ns" | "over" | "off" | "sell" | "hold" | "ret" | "dead"
 type Period = "30d" | "90d" | "quarter" | "year"
@@ -638,6 +638,10 @@ function openPriceRequestsFromDrawer(row: Row): void {
 function priceRequestLabel(count: number): string {
     return count === 1 ? ctrans("1 price request") : ctrans(":count price requests", { count })
 }
+
+function supplierPriceChangeLabel(count: number): string {
+    return count === 1 ? ctrans("1 supplier price change") : ctrans(":count supplier price changes", { count })
+}
 </script>
 
 <template>
@@ -1001,7 +1005,17 @@ function priceRequestLabel(count: number): string {
                         {{ priceRequestLabel(row.price_requests) }}
                     </button>
                     <button
-                        v-else
+                        v-if="row.supplier_price_changes > 0"
+                        v-tooltip="ctrans('The supplier proposes a new price or MOQ. Click to accept or reject it, and to change the selling price and RRP')"
+                        type="button"
+                        class="flex items-center gap-1 whitespace-nowrap rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 hover:bg-amber-200"
+                        @click="openPriceRequests(row)"
+                    >
+                        <FontAwesomeIcon :icon="['fal', 'industry']" fixed-width aria-hidden="true" />
+                        {{ supplierPriceChangeLabel(row.supplier_price_changes) }}
+                    </button>
+                    <button
+                        v-if="!row.price_requests && !row.supplier_price_changes"
                         v-tooltip="ctrans('Change the selling price and RRP')"
                         type="button"
                         class="rounded p-1 text-gray-400 transition-colors hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent)]"
@@ -1159,7 +1173,10 @@ function priceRequestLabel(count: number): string {
                 <span v-if="drawerRow.price_requests > 0" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
                     {{ priceRequestLabel(drawerRow.price_requests) }}
                 </span>
-                <Button type="tertiary" size="xs" class="ml-auto" :label="drawerRow.price_requests > 0 ? ctrans('Answer and change prices') : ctrans('Change prices')" @click="openPriceRequestsFromDrawer(drawerRow)">
+                <span v-if="drawerRow.supplier_price_changes > 0" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                    {{ supplierPriceChangeLabel(drawerRow.supplier_price_changes) }}
+                </span>
+                <Button type="tertiary" size="xs" class="ml-auto" :label="drawerRow.price_requests > 0 || drawerRow.supplier_price_changes > 0 ? ctrans('Answer and change prices') : ctrans('Change prices')" @click="openPriceRequestsFromDrawer(drawerRow)">
                     <template #icon>
                         <FontAwesomeIcon :icon="['fal', 'tags']" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                     </template>

@@ -12,14 +12,18 @@ namespace App\Actions\Goods\UI;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\SupplierSubmission\DecideSupplierSubmission;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionPriceQueryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
+use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\MasterAsset;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Models\SupplyChain\SupplierSubmission;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -91,7 +95,7 @@ class ShowGoodsStockPriceRequests extends OrgAction
     }
 
     /**
-     * @return array{code: string, name: ?string, requests: array, new_price: ?array, master_products: array, can_edit_master_prices: bool}
+     * @return array{code: string, name: ?string, image: ?array, requests: array, supplier_price_changes: array, new_price: ?array, master_products: array, can_edit_master_prices: bool}
      */
     public function handle(Stock $stock, User $user): array
     {
@@ -100,7 +104,9 @@ class ShowGoodsStockPriceRequests extends OrgAction
         return [
             'code'                   => $stock->code,
             'name'                   => $stock->name,
+            'image'                  => ($stock->image_id ? $stock : $stock->tradeUnits()->first())?->imageSources(160, 160),
             'requests'               => $this->requests($stock, $user),
+            'supplier_price_changes' => $this->supplierPriceChanges($stock, $user),
             'new_price'              => $newPriceLine ? $this->newPrice($newPriceLine) : null,
             'master_products'        => $this->masterProducts($stock, $newPriceLine ? $this->priceRatio($newPriceLine) : null),
             'can_edit_master_prices' => $user->authTo('masters.edit'),
@@ -203,6 +209,53 @@ class ShowGoodsStockPriceRequests extends OrgAction
                             'purchaseOrderTransaction' => $transaction->id,
                         ],
                         'method'     => 'patch',
+                    ] : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Price and MOQ changes suppliers proposed on their portal for a supplier product of this stock, still waiting
+     * for a decision: the same states the Goods dashboard counts.
+     */
+    private function supplierPriceChanges(Stock $stock, User $user): array
+    {
+        return SupplierSubmission::query()
+            ->where('group_id', $this->group->id)
+            ->where('type', SupplierSubmissionTypeEnum::PRICE_CHANGE)
+            ->whereIn('state', [SupplierSubmissionStateEnum::RECEIVED, SupplierSubmissionStateEnum::UNDER_REVIEW])
+            ->whereIn('supplier_product_id', DB::table('stock_has_supplier_products')->where('stock_id', $stock->id)->select('supplier_product_id'))
+            ->with(['supplier', 'supplierProduct.currency'])
+            ->orderBy('submitted_at')
+            ->get()
+            ->map(function (SupplierSubmission $supplierSubmission) use ($user) {
+                $supplierProduct = $supplierSubmission->supplierProduct;
+                $data            = $supplierSubmission->data ?? [];
+                $canDecide       = $supplierProduct !== null && DecideSupplierSubmission::canDecide($user, $supplierSubmission);
+
+                return [
+                    'id'                   => $supplierSubmission->id,
+                    'state'                => $supplierSubmission->state->value,
+                    'supplier'             => $supplierSubmission->supplier?->name,
+                    'supplier_code'        => $supplierSubmission->supplier?->code,
+                    'code'                 => $supplierProduct?->code,
+                    'currency'             => $supplierProduct?->currency?->code,
+                    'cost'                 => $supplierProduct ? (float) $supplierProduct->cost : null,
+                    'proposed_cost'        => (float) ($data['proposed_price'] ?? 0),
+                    'units_per_carton'     => (float) ($supplierProduct?->units_per_carton ?: 1),
+                    'minimum_carton_order' => $supplierProduct?->minimum_carton_order,
+                    'proposed_moq'         => isset($data['moq']) ? (int) $data['moq'] : null,
+                    'effective_from'       => $data['effective_from'] ?? null,
+                    'effective_until'      => $data['effective_until'] ?? null,
+                    'reason'               => $data['reason'] ?? null,
+                    'submitted_at'         => $supplierSubmission->submitted_at,
+                    'url'                  => route('grp.supply-chain.supplier_submissions.show', [$supplierSubmission->id]),
+                    'decide_route'         => $canDecide ? [
+                        'name'       => 'grp.models.supplier_submission.decide',
+                        'parameters' => ['supplierSubmission' => $supplierSubmission->id],
+                        'method'     => 'post',
                     ] : null,
                 ];
             })
