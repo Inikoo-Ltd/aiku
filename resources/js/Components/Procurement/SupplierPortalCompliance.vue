@@ -189,7 +189,7 @@ async function send() {
 						<td v-for="document in product.documents" :key="document.scope" class="px-2 py-2 text-center align-top">
 							<button
 								type="button"
-								class="rounded p-1 hover:bg-gray-100"
+								class="rounded border border-dashed border-gray-300 px-2 py-1 transition-colors hover:border-solid hover:border-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] focus-visible:border-solid focus-visible:border-[var(--app-accent)] focus-visible:outline-none"
 								v-tooltip="`${document.label}: ${statusStyles[document.status].label}${document.expires_on ? ` · ${useFormatTime(document.expires_on)}` : ''}`"
 								@click="open(product, document)"
 							>
