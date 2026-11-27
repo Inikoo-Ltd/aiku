@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\UI;
 
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\Chat\SlackConnection;
 use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
@@ -113,7 +114,7 @@ class ShowStaffSlackChannels extends OrgAction
     /**
      * Each channel with this person's unread count and read position; a channel seen for the first time starts read.
      *
-     * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, last_message_at: string|null, unread_count: int, last_read_ts: string|null}>
+     * @return list<array{id: int, slack_id: string, name: string|null, topic: string|null, is_archived: bool, workspace: string|null, last_message_at: string|null, unread_count: int, last_read_ts: string|null}>
      */
     public function channels(User $user, bool $private = false, bool $direct = false): array
     {
@@ -144,6 +145,7 @@ class ShowStaffSlackChannels extends OrgAction
                 'name'            => $direct ? self::directName($channel, $user) : $channel->name,
                 'topic'           => ($channel->data['topic']['value'] ?? null) ?: ($channel->data['purpose']['value'] ?? null) ?: null,
                 'is_archived'     => $channel->is_archived,
+                'workspace'       => $channel->slack_team_id ? SlackWorkspace::forTeam($channel->slack_team_id)?->name : null,
                 'last_message_at' => $channel->last_message_at ? Carbon::parse($channel->last_message_at)->toIso8601String() : null,
                 'unread_count'    => $reads[$channel->id]['count'] ?? 0,
                 'last_read_ts'    => $reads[$channel->id]['last_read_ts'] ?? null,

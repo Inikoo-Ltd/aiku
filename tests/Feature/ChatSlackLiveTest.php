@@ -717,3 +717,14 @@ test('Slack second workspace: its signed events create and fill its own channels
     $sharedOnly->members()->create(['slack_user_id' => $shared->slack_id]);
     expect($sharedOnly->isPrivateVisibleTo($this->viewer))->toBeFalse();
 });
+
+test('Verba channel list names the Slack workspace of each channel from the second workspace, so the sidebar can dot them, HELP-5001', function () {
+    \Illuminate\Support\Facades\Config::set('services.slack.team_id', 'TMAIN');
+    \Illuminate\Support\Facades\Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-secret', 'name_suffix' => 'awa', 'name' => 'AW Advantage']]);
+    $awa = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CAWADOT{$this->s}", 'name' => "dot-{$this->s}", 'slack_team_id' => 'TAWA', 'is_public' => true, 'is_member' => true]);
+
+    $workspaces = collect(\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::make()->channels($this->viewer))->pluck('workspace', 'id');
+
+    expect($workspaces->get($this->channel->id))->toBeNull()
+        ->and($workspaces->get($awa->id))->toBe('AW Advantage');
+});

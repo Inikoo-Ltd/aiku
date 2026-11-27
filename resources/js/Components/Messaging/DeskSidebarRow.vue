@@ -30,6 +30,7 @@ const props = defineProps<{
     iconOnly?: boolean
     noStar?: boolean
     swatch?: string | null
+    workspace?: string | null
 }>()
 
 const emit = defineEmits<{ select: []; toggleStar: [] }>()
@@ -76,6 +77,7 @@ const initials = () => props.label.replace(/[^a-z0-9]/gi, "").slice(0, 2).toUppe
             </span>
             <FontAwesomeIcon v-else :icon="icon" class="shrink-0 text-[13px]" fixed-width aria-hidden="true" />
             <span class="min-w-0 flex-1 truncate">{{ label }}</span>
+            <span v-if="workspace" class="shrink-0 rounded-sm bg-amber-400 px-[3px] text-[9px] font-bold leading-[13px] text-black" v-tooltip="ctrans(':workspace Slack (Bali)', { workspace })" :aria-label="ctrans(':workspace Slack (Bali)', { workspace })">B</span>
             <span v-if="swatch" class="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/40" :style="{ backgroundColor: swatch }" v-tooltip="ctrans('Wallpaper colour of this chat')" />
             <FontAwesomeIcon v-if="hasDraft" icon="fal fa-pencil" class="shrink-0 text-[11px] opacity-70 group-hover/row:hidden" fixed-width v-tooltip="ctrans('Draft')" :aria-label="ctrans('Draft')" />
             <span

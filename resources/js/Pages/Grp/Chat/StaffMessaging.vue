@@ -42,6 +42,7 @@ interface SlackChannelListItem {
     name: string | null
     topic: string | null
     is_archived: boolean
+    workspace?: string | null
     last_message_at: string | null
     unread_count?: number
     last_read_ts?: string | null
@@ -584,6 +585,7 @@ onUnmounted(() => {
                             v-for="channel in shownStarredChannels"
                             :key="'starred-slack-' + channel.id"
                             :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
                             :href="route('grp.chat.staff.slack.show', channel.id)"
                             :icon="channel.is_archived ? 'fal fa-archive' : 'fal fa-hashtag'"
                             :unread="unreadOf(channel.id)"
@@ -596,6 +598,7 @@ onUnmounted(() => {
                             v-for="channel in shownStarredPrivateChannels"
                             :key="'starred-private-' + channel.id"
                             :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
                             :href="route('grp.chat.staff.groups.slack.show', channel.id)"
                             icon="fal fa-lock"
                             :unread="unreadOf(channel.id)"
@@ -622,6 +625,7 @@ onUnmounted(() => {
                             v-for="channel in shownActiveChannels"
                             :key="'slack-' + channel.id"
                             :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
                             :href="route('grp.chat.staff.slack.show', channel.id)"
                             icon="fal fa-hashtag"
                             :unread="unreadOf(channel.id)"
@@ -641,6 +645,7 @@ onUnmounted(() => {
                                 v-for="channel in shownArchivedChannels"
                                 :key="'slack-' + channel.id"
                                 :label="channel.name ?? ''"
+                                :workspace="channel.workspace"
                                 :href="route('grp.chat.staff.slack.show', channel.id)"
                                 icon="fal fa-archive"
                                 :unread="unreadOf(channel.id)"
@@ -656,6 +661,7 @@ onUnmounted(() => {
                             v-for="channel in shownDirectChannels"
                             :key="'direct-' + channel.id"
                             :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
                             :href="route('grp.chat.staff.direct.slack.show', channel.id)"
                             icon="fab fa-slack"
                             :unread="unreadOf(channel.id)"
@@ -665,6 +671,7 @@ onUnmounted(() => {
                             v-for="channel in shownPrivateChannels"
                             :key="'private-' + channel.id"
                             :label="channel.name ?? ''"
+                            :workspace="channel.workspace"
                             :href="route('grp.chat.staff.groups.slack.show', channel.id)"
                             icon="fal fa-lock"
                             :unread="unreadOf(channel.id)"
