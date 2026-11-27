@@ -2,6 +2,7 @@
 import { ctrans } from "@/Composables/useTrans"
 import { inject } from "vue"
 import { getStyles } from "@/Composables/styles"
+import IrisTopBarLanguageSwitch from "@/Iris/Components/IrisTopBarLanguageSwitch.vue"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -92,6 +93,8 @@ const screenType = inject("screenType", "desktop")
 				<FontAwesomeIcon icon="fal fa-sign-out" class="inline opacity-70" fixed-width aria-hidden="true" />
 				<span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
 			</button>
+
+			<IrisTopBarLanguageSwitch class="ml-2" />
 
 		</div>
 	</div>

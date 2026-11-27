@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject, ref, computed} from "vue"
 import { getStyles } from "@/Composables/styles"
+import IrisTopBarLanguageSwitch from "@/Iris/Components/IrisTopBarLanguageSwitch.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 interface ModelTopbar2 {
@@ -107,6 +108,7 @@ const informationItems = computed(() => {
             ]">
                <div v-html="item"></div> 
             </span>
+            <IrisTopBarLanguageSwitch class="hidden md:block ml-2" />
         </div>
     </div>
 </template>

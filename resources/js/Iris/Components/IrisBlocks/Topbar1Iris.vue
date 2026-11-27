@@ -12,6 +12,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
+import IrisTopBarLanguageSwitch from "@/Iris/Components/IrisTopBarLanguageSwitch.vue"
 import GoldReward from "@/Components/Utils/GoldReward.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -334,6 +335,8 @@ const goToBundle = () => {
                     </span>
                 </template>
             </Button>
+
+            <IrisTopBarLanguageSwitch class="button ml-2" />
         </div>
     </div>
 </template>

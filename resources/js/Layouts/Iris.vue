@@ -332,7 +332,7 @@ watch(() => layout.iris?.is_logged_in, syncLoggedInClass)
                 :custom-sidebar="customSidebar"
             />
 
-            <div v-if="(layout.iris?.website_i18n?.enabled_languages?.length ?? 0) > 1" class="flex justify-end px-4 py-1">
+            <div v-if="(layout.iris?.website_i18n?.enabled_languages?.length ?? 0) > 1" class="flex justify-end px-4 py-1" :class="{ 'md:hidden': header?.topBar?.data?.fieldValue }">
                 <WebsiteLanguageSwitch
                     :languages="layout.iris.website_i18n.enabled_languages"
                     :currentCode="layout.iris.locale"
