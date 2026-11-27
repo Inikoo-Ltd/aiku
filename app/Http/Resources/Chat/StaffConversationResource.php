@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Chat;
 
+use App\Actions\Chat\Staff\StaffChatWallpaper;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\Analytics\UserRequest;
 use App\Models\Chat\StaffConversation;
@@ -74,7 +75,9 @@ class StaffConversationResource extends JsonResource
 
     public function toArray($request): array
     {
-        $myPivot      = $this->participants->firstWhere('id', $request->user()?->id)?->pivot;
+        $viewer       = $request->user();
+        $myPivot      = $this->participants->firstWhere('id', $viewer?->id)?->pivot;
+        $myWallpaper  = $myPivot?->wallpaper ? json_decode($myPivot->wallpaper, true) : null;
         $myLeftAt     = $myPivot?->left_at;
         $participants = $this->participants->filter(fn (User $user) => !$user->pivot?->left_at)->map(fn (User $user) => [
             'id'     => $user->id,
@@ -98,6 +101,8 @@ class StaffConversationResource extends JsonResource
             'participants'    => $participants,
             'my_left_at'      => $myLeftAt ? Carbon::parse($myLeftAt)->toIso8601ZuluString() : null,
             'is_watching'     => (bool) ($myPivot?->is_watching ?? false),
+            'wallpaper'       => $viewer ? StaffChatWallpaper::forConversation($viewer, $this->resource, $myWallpaper) : null,
+            'wallpaper_is_set' => (bool) $myWallpaper,
             'can_call'        => $myPivot && !$myLeftAt && \App\Models\Chat\StaffCall::isEnabled() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource),
             'last_message_at' => $this->last_message_at,
             'last_message'    => \App\Models\Chat\StaffCall::entryText($this->last_message_body ?? null),

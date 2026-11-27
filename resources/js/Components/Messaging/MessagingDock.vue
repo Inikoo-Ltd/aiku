@@ -27,6 +27,11 @@ library.add(faComments, faSearch, faUser, faChevronLeft, faTimes, faEye, faEyeSl
 
 const layout = inject("layout", layoutStructure)
 const store = useStaffMessaging()
+
+watch(
+    () => JSON.stringify((usePage().props as any)?.auth?.user?.settings?.chat_wallpapers?.stored ?? null),
+    (stored, previous) => { if (previous !== undefined && stored !== previous && store.fetched) store.fetchConversations() },
+)
 const visibleConversationWindows = computed(() =>
     store.openWindowsVisible
         .map((openWindow) => ({ ulid: openWindow.ulid, conversation: store.conversationByUlid(openWindow.ulid) }))

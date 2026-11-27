@@ -29,6 +29,8 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/conversations/{staffConversation}/read', \App\Actions\Chat\Staff\MarkStaffConversationRead::class)->name('conversations.read');
     Route::post('/conversations/{staffConversation}/typing', \App\Actions\Chat\Staff\SendStaffTyping::class)->middleware('throttle:30,1,staff-typing')->name('conversations.typing');
     Route::post('/delivered', \App\Actions\Chat\Staff\MarkStaffConversationsDelivered::class)->middleware('throttle:60,1,staff-delivered')->name('conversations.delivered');
+    Route::post('/wallpaper', \App\Actions\Chat\Staff\SetStaffChatWallpaper::class)->name('wallpaper.update');
+    Route::post('/wallpaper/seen', \App\Actions\Chat\Staff\MarkStaffChatWallpapersSeen::class)->name('wallpaper.seen');
     Route::post('/conversations/{staffConversation}/watch', \App\Actions\Chat\Staff\ToggleStaffConversationWatch::class)->name('conversations.watch');
     Route::post('/messages/{staffMessage}/reactions', \App\Actions\Chat\Staff\ToggleStaffMessageReaction::class)->name('messages.reactions.toggle');
     Route::post('/context', \App\Actions\Chat\Staff\OpenStaffContextConversation::class)->name('context.open');

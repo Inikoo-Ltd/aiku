@@ -35,6 +35,8 @@ import { STAFF_MESSAGE_COUNT_SHOWN_FROM, STAFF_MESSAGE_MAX_CHARACTERS, staffMess
 import { useLocaleStore } from "@/Stores/locale"
 import { faTasks, faCommentDots, faFolder } from "@fal"
 import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
+import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
+import { hasWallpaper, useBubbles, wallpaperStyle } from "@/Components/Messaging/chatWallpaper"
 
 library.add(faTimes, faChevronDown, faPaperPlane, faChevronLeft, faQuoteLeft, faPaperclip, faSmile, faExpandAlt, faCheck, faCheckDouble, faExclamationCircle, faComments, faCheckCircle, faCircle, faSpinner, faBan, faEye, faEyeSlash, faChevronRight, faLink, faExternalLink)
 
@@ -203,6 +205,17 @@ const endChat = async () => {
 }
 
 useLiveStaffTasks(refreshTaskInfo, (event) => !props.embedded && event.reference === taskInfo.value?.reference)
+
+const isWallpapered = computed(() => hasWallpaper(props.conversation.wallpaper))
+const bubbles = useBubbles()
+const floatsHeader = computed(() => isWallpapered.value && !!props.fullScreen && !props.embedded)
+const theirBubbleClass = computed(() => (isWallpapered.value ? "bg-white text-gray-900 shadow-sm" : "bg-gray-100 text-gray-900"))
+
+const onWallpaperSaved = (wallpaper: StaffConversation["wallpaper"], isSet: boolean) => {
+    Object.assign(props.conversation, { wallpaper, wallpaper_is_set: isSet })
+    const listed = store.conversations.find((conversation) => conversation.ulid === props.conversation.ulid)
+    if (listed && listed !== props.conversation) Object.assign(listed, { wallpaper, wallpaper_is_set: isSet })
+}
 
 const reactsOnHover = computed(() => !props.fullScreen || (props.embedded && window.matchMedia("(hover: hover)").matches))
 
@@ -641,7 +654,8 @@ const onReactionPick = (emoji: string) => {
 </script>
 
 <template>
-    <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full font-desk" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'">
+    <div class="flex flex-col bg-white text-gray-900 text-left h-full w-full font-desk" :class="fullScreen ? '' : 'rounded-t-lg border border-gray-200 shadow-lg'" :style="floatsHeader ? wallpaperStyle(conversation.wallpaper) : undefined">
+        <div :class="floatsHeader ? 'm-2 mb-0 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm' : 'contents'">
         <!-- Header -->
         <div class="flex items-center gap-x-2 px-3 py-2 border-b" :class="fullScreen ? (isDesk ? 'shrink-0 border-[var(--vx-head-line,#e5e7eb)] bg-[var(--vx-head-bg,#f9fafb)]' : 'shrink-0 border-gray-200 bg-gray-50') : 'rounded-t-lg border-[var(--chat-line)] bg-[var(--chat-bg)]'">
             <button v-if="fullScreen && !embedded" :aria-label="ctrans('Back')" class="p-2 -ml-2" :class="isDesk ? 'text-[var(--vx-head-muted,#4b5563)]' : 'text-gray-600'" @click="emit('back')">
@@ -721,6 +735,13 @@ const onReactionPick = (emoji: string) => {
                     <FontAwesomeIcon icon="fal fa-desktop" fixed-width aria-hidden="true" />
                 </button>
             </template>
+            <ChatWallpaperButton
+                v-if="!embedded"
+                :conversation-ulid="conversation.ulid"
+                :wallpaper="conversation.wallpaper"
+                :is-set="!!conversation.wallpaper_is_set"
+                :button-class="fullScreen ? 'text-gray-600 hover:bg-gray-100' : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'"
+                @saved="onWallpaperSaved" />
             <slot name="header-actions" />
             <button
                 v-if="taskInfo && !embedded"
@@ -829,6 +850,7 @@ const onReactionPick = (emoji: string) => {
                 <FontAwesomeIcon :icon="tab.icon" fixed-width aria-hidden="true" />{{ tab.label }}
             </button>
         </div>
+        </div>
 
         <FilesAndLinksPanel
             v-if="showsTabs && hasOpenedFiles"
@@ -839,7 +861,7 @@ const onReactionPick = (emoji: string) => {
             @jump="showMessage" />
 
         <!-- Messages -->
-        <div v-show="activeTab === 'messages'" ref="messagesContainer" class="flex-1 overflow-y-auto py-2" :class="isDesk ? 'text-[#1d1c1d]' : 'px-3'" @scroll="onScroll">
+        <div v-show="activeTab === 'messages'" ref="messagesContainer" class="flex-1 overflow-y-auto py-2" :class="isDesk ? 'text-[#1d1c1d]' : 'px-3'" :style="floatsHeader ? undefined : wallpaperStyle(conversation.wallpaper)" @scroll="onScroll">
             <div v-if="isLoadingFirstMessages" class="space-y-3 py-2" :aria-label="ctrans('Loading…')" aria-busy="true">
                 <div v-for="(side, row) in ['left', 'right', 'left', 'right']" :key="'message-skeleton-' + row" class="flex items-end gap-2" :class="side === 'right' ? 'justify-end' : 'justify-start'">
                     <span v-if="side === 'left' && isGroupChat" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-gray-200" />
@@ -857,13 +879,13 @@ const onReactionPick = (emoji: string) => {
                 :data-message-id="message.id"
                 class="flex transition-colors duration-700"
                 :class="isDesk
-                    ? ['group relative px-5 hover:bg-[#f8f8f8]', highlightedMessageId === message.id && '!bg-amber-100/70', message.call ? 'justify-center py-1' : startsRun(messageIndex) ? 'mt-2 pt-1 pb-0.5' : 'py-0.5']
+                    ? ['group relative px-5', bubbles ? '' : isWallpapered ? 'hover:bg-black/[0.04]' : 'hover:bg-[#f8f8f8]', highlightedMessageId === message.id && '!bg-amber-100/70', message.call ? 'justify-center py-1' : startsRun(messageIndex) ? 'mt-2 pt-1 pb-0.5' : 'py-0.5']
                     : [
                         message.call ? 'justify-center' : message.user_id === myId ? 'justify-end' : 'justify-start',
                         messageIndex === 0 ? '' : isGroupChat && !startsRun(messageIndex) ? 'mt-0.5' : 'mt-2.5',
                     ]"
             >
-            <div v-if="message.call" class="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+            <div v-if="message.call" class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-gray-600" :class="isWallpapered ? 'bg-white shadow-sm' : 'bg-gray-100'">
                 <FontAwesomeIcon :icon="message.call.outcome === 'answered' ? 'fal fa-phone' : 'fal fa-phone-slash'" :class="message.call.outcome === 'missed' && message.call.started_by_user_id !== myId ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
                 <span v-tooltip="message.call.joined.length > 1 ? message.call.joined.join(', ') : undefined">{{ callEntryText(message.call) }}</span>
                 <span v-if="isGroupChat || message.call.started_by_user_id !== myId" class="text-gray-400">· {{ message.user_name }}</span>
@@ -886,7 +908,7 @@ const onReactionPick = (emoji: string) => {
             <div
                 v-if="!message.call"
                 class="flex min-w-0 flex-1 flex-col"
-                :class="isDesk ? 'items-start' : ['group', message.user_id === myId ? 'items-end' : 'items-start']"
+                :class="isDesk ? (bubbles ? ['flex-none max-w-[85%] items-start rounded-lg px-3 py-1.5 shadow-sm', isMine(message) ? 'bg-[var(--app-accent-soft)]' : isWallpapered ? 'bg-white' : 'bg-gray-100'] : 'items-start') : ['group', message.user_id === myId ? 'items-end' : 'items-start']"
             >
                 <div v-if="isDesk && startsRun(messageIndex)" class="flex flex-wrap items-baseline gap-x-2">
                     <StaffProfileTrigger :user-id="message.user_id">
@@ -894,7 +916,7 @@ const onReactionPick = (emoji: string) => {
                     </StaffProfileTrigger>
                     <span class="text-xs text-[#616061] hover:underline" v-tooltip="useFormatTime(message.created_at, { formatTime: 'hm' })">{{ useFormatTime(message.created_at, { formatTime: 'HH:mm' }) }}</span>
                 </div>
-                <div v-if="parentById(message.parent_id)" class="mb-0.5 border-l-4 px-2 py-0.5" :class="isDesk ? 'max-w-full border-[#dddddd] text-[13px] text-[#616061]' : 'max-w-[80%] rounded border-l-2 border-gray-300 bg-gray-100 text-xxs text-gray-500'">
+                <div v-if="parentById(message.parent_id)" class="mb-0.5 border-l-4 px-2 py-0.5" :class="isDesk ? 'max-w-full border-[#dddddd] text-[13px] text-[#616061]' : ['max-w-[80%] rounded border-l-2 border-gray-300 text-xxs text-gray-500', isWallpapered ? 'bg-white/90' : 'bg-gray-100']">
                     <FontAwesomeIcon icon="fal fa-quote-left" class="mr-1" fixed-width aria-hidden="true" />
                     {{ parentById(message.parent_id)?.body }}
                 </div>
@@ -908,7 +930,7 @@ const onReactionPick = (emoji: string) => {
                                 'max-w-[80%] rounded-lg',
                                 fullScreen ? 'text-[15px] leading-[1.46668]' : 'text-sm',
                                 message.gif_url ? 'p-1' : 'px-3 py-2',
-                                message.user_id === myId ? 'bg-[--app-accent] text-[--app-accent-text]' : 'bg-gray-100 text-gray-900',
+                                message.user_id === myId ? 'bg-[--app-accent] text-[--app-accent-text]' : theirBubbleClass,
                                 message.client_status === 'failed' && 'opacity-60 ring-1 ring-red-400',
                                 isGroupChat && startsRun(messageIndex) && (message.user_id === myId ? 'rounded-tr-sm' : 'rounded-tl-sm'),
                             ]"
@@ -980,7 +1002,7 @@ const onReactionPick = (emoji: string) => {
                     </button>
                 </TransitionGroup>
 
-                <div v-if="isDesk ? !!message.client_status || (isMine(message) && endsRun(messageIndex)) : showsMessageMeta(message, messageIndex)" class="mt-0.5 flex items-center gap-1 text-xxs text-gray-400">
+                <div v-if="isDesk ? !!message.client_status || (isMine(message) && endsRun(messageIndex)) : showsMessageMeta(message, messageIndex)" class="mt-0.5 flex items-center gap-1 text-xxs" :class="isWallpapered ? 'text-gray-600' : 'text-gray-400'">
                     <template v-if="message.client_status === 'failed'">
                         <span class="flex items-center gap-1 font-medium text-red-600">
                             <FontAwesomeIcon icon="fal fa-exclamation-circle" fixed-width aria-hidden="true" />
@@ -1022,7 +1044,7 @@ const onReactionPick = (emoji: string) => {
             </div>
             </div>
 
-            <div v-if="typingText" class="mt-2 flex items-center gap-1.5 px-1 text-xs text-gray-500" aria-live="polite">
+            <div v-if="typingText" class="mt-2 flex items-center gap-1.5 px-1 text-xs" :class="isWallpapered ? 'text-gray-700' : 'text-gray-500'" aria-live="polite">
                 <span class="typing-dots" aria-hidden="true"><span /><span /><span /></span>
                 {{ typingText }}
             </div>
