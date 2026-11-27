@@ -1,7 +1,7 @@
 ---
 title: Setting targets for products in development
 summary: How aiku follows products paid as development step by step, proposes a target per hour once a step has enough runs, asks the reviewers to accept, adjust or keep the product on development, and lists what is overdue.
-date: 2026-11-10
+date: 2026-11-27
 tags: production, targets, development, payroll
 category: production
 help_routes: grp.org.productions.show.crafts.development
@@ -22,6 +22,19 @@ Open **Factory → Crafts → Development** and the **Paid as development** tab.
 - **Steps**: for each step, the sessions, artisans and hours counted so far and the rate per hour they give. A tick means the step is ready for its target; steps with a target show it, steps paid by the hour need none.
 
 Overdue products are listed first. They stay overdue until somebody decides.
+
+## Only one step in development
+
+Sometimes only one step needs timing, for example **Packing** of a family whose **Making** and **Shrinking** already have targets. Instead of keeping the whole product in development, switch on **In development** on that step only:
+
+- On one product: open its **Manufacture tasks** tab and switch on **In development** on the step.
+- On several products at once: on the family (or department) page, select the products, choose **Step in development**, pick the step, choose **In development** and press **Set**. **Normal targets** switches it off again.
+
+Only the production manager sees these switches. Steps paid by the hour cannot be switched.
+
+That step is then paid at the Development rate, with no target or band on the tablet and in **Performance** (its sessions show **Band D**), and its runs are collected as below. The other steps of the product keep their targets and bands. The recipe and the tablet mark the step **In development**, and the product is listed on the **Paid as development** tab. When its target is saved with **Review**, the step goes back to normal pay. A target typed on the recipe does not switch it off: switch it off there too.
+
+To move a product from whole-product development to one step, switch the step on first, then switch **In development** off on the product, so the step is never paid without its development rate in between.
 
 ## How the proposed target is worked out
 

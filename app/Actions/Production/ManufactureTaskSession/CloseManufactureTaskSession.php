@@ -163,8 +163,9 @@ class CloseManufactureTaskSession extends OrgAction
                 'standard_rate'                   => $session->recipeStandardRate(),
                 'raw_material_batches'            => $this->rawMaterialBatches($session, $members, $modelData),
             ]);
-            if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $task->jobOrderItem->artefact->isPaidAsDevelopment()) {
+            if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $task->isPaidAsDevelopment()) {
                 $session->activity_type = ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT;
+                $session->standard_rate = null;
             }
             $payType = $session->employee?->artisan_pay_type ?? ArtisanPayTypeEnum::PIECE_RATE;
             if (!$isQuantityOnly && !$this->recordedFromBoard) {

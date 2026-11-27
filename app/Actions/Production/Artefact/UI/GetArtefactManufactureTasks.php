@@ -80,6 +80,8 @@ class GetArtefactManufactureTasks
                 'is_recorded_in_kg'  => (bool) $task->is_recorded_in_kg,
                 'mix_batch_kg'       => $task->pivot->mix_batch_kg,
                 'blocks_later_steps' => $task->pivot->blocks_later_steps ?? true,
+                'is_in_development'  => (bool) $task->pivot->is_in_development,
+                'is_piece_rate'      => (bool) $task->is_piece_rate,
                 'standard_rate'      => $task->pivot->standard_rate,
                 'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands, $source == 'artefact' ? $ownTiers : ($source == 'family' ? $familyTier : [])),
                 'tiers'              => [
@@ -115,6 +117,11 @@ class GetArtefactManufactureTasks
             'first_open_day'      => SetArtefactStepTarget::firstOpenDay($artefact),
             'family_code'         => $artefact->artefactFamily?->code,
             'can_edit_tiers'      => (bool) request()->user()?->authTo(["org-supervisor.{$artefact->organisation_id}", "accounting.{$artefact->organisation_id}.edit"]),
+            'is_in_development'   => $artefact->is_in_development,
+            'step_development'    => request()->user()?->authTo("org-supervisor.{$artefact->organisation_id}") ? [
+                'name'       => 'grp.models.production.artefacts.set_step_development',
+                'parameters' => [$artefact->production_id],
+            ] : null,
             'routes'              => [
                 'task_options' => [
                     'name'       => 'grp.json.production.manufacture_tasks.index',

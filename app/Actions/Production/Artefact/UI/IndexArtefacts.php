@@ -19,6 +19,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactDepartment;
 use App\Models\Production\ArtefactFamily;
+use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -383,6 +384,22 @@ class IndexArtefacts extends OrgAction
         ];
     }
 
+    /**
+     * HELP-4982: production managers only, the same as the switch on the recipe.
+     */
+    public function getSetStepDevelopmentProps(Production $production): ?array
+    {
+        if (!request()->user()?->authTo("org-supervisor.{$production->organisation_id}")) {
+            return null;
+        }
+
+        return [
+            'set_route' => ['name' => 'grp.models.production.artefacts.set_step_development', 'parameters' => [$production->id]],
+            'tasks'     => ManufactureTask::where('production_id', $production->id)->where('is_piece_rate', true)->orderBy('name')->get(['id', 'name'])
+                ->map(fn (ManufactureTask $task) => ['value' => $task->id, 'label' => $task->name])->all(),
+        ];
+    }
+
     public function getSetRecipeProps(Production $production, bool $canEdit): ?array
     {
         if (!$canEdit) {
@@ -603,6 +620,7 @@ class IndexArtefacts extends OrgAction
                 'set_state'          => $this->parent instanceof Production ? $this->getSetStateProps($this->parent, $this->canEdit) : null,
                 'set_recipe'         => $this->parent instanceof Production ? $this->getSetRecipeProps($this->parent, $this->canEdit) : null,
                 'set_mix_batch'      => $this->parent instanceof Production ? $this->getSetMixBatchProps($this->parent, $this->canEdit) : null,
+                'set_step_development' => $this->parent instanceof Production ? $this->getSetStepDevelopmentProps($this->parent) : null,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => $this->parent instanceof Group ? Arr::except(ArtefactsTabsEnum::navigation(), [ArtefactsTabsEnum::ARTEFACTS_HISTORIES->value]) : ArtefactsTabsEnum::navigation(),

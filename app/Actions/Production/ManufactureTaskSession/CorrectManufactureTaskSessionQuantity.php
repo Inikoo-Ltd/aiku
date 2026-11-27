@@ -291,7 +291,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             'quantity_rejected'      => 0,
         ]);
         if (in_array($session->activity_type, [ManufactureTaskSessionActivityTypeEnum::PRODUCTION, ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT])) {
-            $session->activity_type = $toItem->artefact->isPaidAsDevelopment() ? ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT : ManufactureTaskSessionActivityTypeEnum::PRODUCTION;
+            $session->activity_type = $to->isPaidAsDevelopment() ? ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT : ManufactureTaskSessionActivityTypeEnum::PRODUCTION;
         }
         $session->setRelation('jobOrderItemTask', $to);
         $session->unsetRelation('manufactureTask');

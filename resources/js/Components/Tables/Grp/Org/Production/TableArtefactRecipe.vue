@@ -63,6 +63,8 @@ interface RecipeRow {
     is_recorded_in_kg: boolean
     mix_batch_kg: number | null
     blocks_later_steps: boolean
+    is_in_development: boolean
+    is_piece_rate: boolean
     standard_rate: number | string | null
     targets: { code: string, name: string, hourly_rate: number, units_per_hour: number, calculated_units_per_hour: number, is_edited: boolean }[]
     tiers: { source: 'artefact' | 'family' | null, artefact: Record<string, number> | null, family: Record<string, number> | null, history: { applies_to: 'artefact' | 'family', thresholds: Record<string, number> | null, previous_thresholds: Record<string, number> | null, set_by: string | null, set_at: string | null }[] }
@@ -80,6 +82,8 @@ const props = defineProps<{
         first_open_day: string
         family_code: string | null
         can_edit_tiers: boolean
+        is_in_development: boolean
+        step_development: routeType | null
         routes: {
             task_options: routeType
             raw_material_options: routeType
@@ -364,6 +368,26 @@ function setMixBatch(row: RecipeRow, mixBatchKg: number | null) {
     attachStep(row, { mix_batch_kg: mixBatchKg })
 }
 
+const stepDevelopmentError = ref<Record<number, string>>({})
+
+function setStepInDevelopment(row: RecipeRow, isInDevelopment: boolean) {
+    if (!props.data.step_development) return
+    processing.value = true
+    delete stepDevelopmentError.value[row.step_id]
+    router.post(
+        route(props.data.step_development.name, props.data.step_development.parameters),
+        { artefacts: [props.data.artefact_id], manufacture_task_id: row.id, label: row.label, is_in_development: isInDevelopment },
+        {
+            preserveScroll: true,
+            onError: (errors) => {
+                failedSaves.value++
+                stepDevelopmentError.value[row.step_id] = Object.values(errors)[0] as string
+            },
+            onFinish: () => processing.value = false,
+        }
+    )
+}
+
 function setBlocksLaterSteps(row: RecipeRow, blocksLaterSteps: boolean) {
     attachStep(row, { blocks_later_steps: blocksLaterSteps })
 }
@@ -431,6 +455,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                     <div class="truncate">
                         <span class="font-medium">{{ row.code }}</span>
                         <span class="ml-2 text-gray-500">{{ row.step_name }}</span>
+                        <span v-if="row.is_in_development || data.is_in_development" class="ml-2 whitespace-nowrap rounded bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700">{{ ctrans('In development') }}</span>
                     </div>
                 </div>
 
@@ -546,6 +571,19 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         :modelValue="row.blocks_later_steps"
                         :disabled="processing"
                         @update:modelValue="setBlocksLaterSteps(row, $event)" />
+                </label>
+
+                <label v-if="data.step_development && row.is_piece_rate" class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('In development') }}
+                        <InformationIcon :information="ctrans('On: only this step is paid at the Development rate, with no target or band, and its runs are collected to set its target. The other steps keep their targets. To switch a step for a whole family, select the products on the family page.')" />
+                    </span>
+                    <ToggleSwitch
+                        :key="`${row.step_id}-development-${failedSaves}`"
+                        :modelValue="row.is_in_development"
+                        :disabled="processing"
+                        @update:modelValue="setStepInDevelopment(row, $event)" />
+                    <span v-if="stepDevelopmentError[row.step_id]" class="mt-1 block text-xs text-red-600">{{ stepDevelopmentError[row.step_id] }}</span>
                 </label>
 
                 <div v-if="Number(row.position) > 1" class="block">

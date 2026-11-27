@@ -265,7 +265,7 @@ class Artefact extends Model implements Auditable, HasMedia
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
             ->using(ArtefactManufactureTask::class)
-            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for', 'unit_name')
+            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for', 'unit_name', 'is_in_development')
             ->orderByPivot('position')
             ->orderByPivot('id');
     }
@@ -311,6 +311,21 @@ class Artefact extends Model implements Auditable, HasMedia
     public function isPaidAsDevelopment(): bool
     {
         return $this->is_in_development || $this->state->isBeforeLaunch();
+    }
+
+    /**
+     * Followed for development targets: the whole product, or only some of its recipe steps (HELP-4982).
+     */
+    public function scopeFollowedAsDevelopment(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $query) => $query
+            ->where('is_in_development', true)
+            ->orWhereHas('recipeSteps', fn (Builder $query) => $query->where('is_in_development', true)));
+    }
+
+    public function isFollowedAsDevelopment(): bool
+    {
+        return $this->is_in_development || $this->recipeSteps()->where('is_in_development', true)->exists();
     }
 
     /**

@@ -52,7 +52,7 @@ class GetArtefactDevelopmentProposal
             ->max('manufacture_task_sessions.ended_at');
 
         $isIdle  = !$lastRunAt || Carbon::parse($lastRunAt)->lt(now()->subWeeks($settings['idle_weeks']));
-        $isReady      = $artefact->is_in_development && $steps->contains('is_ready', true);
+        $isReady      = $steps->contains('is_ready', true);
         $feedbackTask = StoreArtefactDevelopmentFeedback::openTaskFor($artefact);
 
         return [
@@ -87,6 +87,7 @@ class GetArtefactDevelopmentProposal
         $artisans = $counted->pluck('employee_id')->unique()->count();
         $hours    = round($counted->sum('hours'), 2);
         $target   = $step->standard_rate === null ? null : (float) $step->standard_rate;
+        $needsTarget = $step->manufactureTask->is_piece_rate && (($artefact->is_in_development && $target === null) || $step->is_in_development);
 
         $hasEnough = $counted->count() >= $settings['min_sessions'] && $artisans >= $settings['min_artisans'] && $hours >= $settings['min_hours'];
         if ($hasEnough && $kept) {
@@ -110,7 +111,9 @@ class GetArtefactDevelopmentProposal
             'max_rate'           => $rates->isEmpty() ? null : round($rates->last(), 1),
             'q1_rate'            => $rates->isEmpty() ? null : round(self::quantile($rates, 0.25), 1),
             'q3_rate'            => $rates->isEmpty() ? null : round(self::quantile($rates, 0.75), 1),
-            'is_ready'           => $target === null && $step->manufactureTask->is_piece_rate && $hasEnough,
+            'is_in_development'  => $artefact->is_in_development || $step->is_in_development,
+            'needs_target'       => $needsTarget,
+            'is_ready'           => $needsTarget && $hasEnough,
             'missing'            => [
                 'sessions' => max(0, $settings['min_sessions'] - $counted->count()),
                 'artisans' => max(0, $settings['min_artisans'] - $artisans),

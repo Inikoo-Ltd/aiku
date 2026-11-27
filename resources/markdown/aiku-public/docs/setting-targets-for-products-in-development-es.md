@@ -1,8 +1,8 @@
 ---
 title: Fijar objetivos para los productos en desarrollo
 summary: Cómo aiku sigue paso a paso los productos pagados como desarrollo, propone un objetivo por hora cuando un paso tiene suficientes ejecuciones, pide a los revisores que lo acepten, lo ajusten o mantengan el producto en desarrollo, y lista lo que está atrasado.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-27
+source_date: 2026-11-27
 tags: production, targets, development, payroll
 category: production
 ---
@@ -22,6 +22,19 @@ Abre **Factory → Crafts → Development** y la pestaña **Paid as development*
 - **Steps**: para cada paso, las sesiones, artesanos y horas contados hasta ahora y el ritmo por hora que resulta. Una marca indica que el paso está listo para su objetivo; los pasos con objetivo lo muestran, y los pasos pagados por hora no necesitan ninguno.
 
 Los productos atrasados aparecen primero. Siguen atrasados hasta que alguien decide.
+
+## Solo un paso en desarrollo
+
+A veces solo hay que cronometrar un paso, por ejemplo **Packing** de una familia cuyos pasos **Making** y **Shrinking** ya tienen objetivo. En lugar de mantener todo el producto en desarrollo, activa **In development** solo en ese paso:
+
+- En un producto: abre su pestaña **Manufacture tasks** y activa **In development** en el paso.
+- En varios productos a la vez: en la página de la familia (o del departamento), selecciona los productos, elige **Step in development**, escoge el paso, elige **In development** y pulsa **Set**. **Normal targets** lo desactiva de nuevo.
+
+Solo el responsable de producción ve estos interruptores. Los pasos pagados por hora no se pueden cambiar.
+
+Ese paso se paga entonces con la tarifa de desarrollo, sin objetivo ni banda en la tablet y en **Performance** (sus sesiones muestran **Band D**), y sus ejecuciones se recogen como se explica más abajo. Los demás pasos del producto conservan sus objetivos y bandas. La receta y la tablet marcan el paso como **In development**, y el producto aparece en la pestaña **Paid as development**. Cuando su objetivo se guarda con **Review**, el paso vuelve al pago normal. Un objetivo escrito en la receta no lo desactiva: desactívalo también ahí.
+
+Para pasar un producto del desarrollo completo a un solo paso, activa primero el paso y después desactiva **In development** en el producto, de modo que el paso nunca se pague sin su tarifa de desarrollo entre medias.
 
 ## Cómo se calcula el objetivo propuesto
 

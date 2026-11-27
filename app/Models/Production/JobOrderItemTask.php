@@ -209,6 +209,14 @@ class JobOrderItemTask extends Model
         return parent::refresh();
     }
 
+    /**
+     * The whole product in development, or only this step of its recipe (HELP-4982: MMSS Packing while Making and Shrinking keep their targets).
+     */
+    public function isPaidAsDevelopment(): bool
+    {
+        return $this->jobOrderItem->artefact->isPaidAsDevelopment() || (bool) $this->recipeStep?->is_in_development;
+    }
+
     public function recipeStep(): BelongsTo
     {
         return $this->belongsTo(ArtefactManufactureTask::class, 'artefact_manufacture_task_id');

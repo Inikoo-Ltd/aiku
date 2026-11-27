@@ -30,6 +30,8 @@ type StepSummary = {
     name: string
     target: number | null
     is_piece_rate: boolean
+    is_in_development: boolean
+    needs_target: boolean
     sessions_count: number
     artisans_count: number
     hours: number
@@ -229,7 +231,7 @@ const openReview = async (row: Row) => {
         const response = await axios.get(route(props.review.proposal_route.name, { artefact: row.id }))
         steps.value = response.data.steps
         steps.value
-            .filter(step => step.is_piece_rate && step.target === null)
+            .filter(step => step.needs_target)
             .forEach(step => targets.value[step.id] = step.is_ready ? step.proposed_target : null)
     } catch {
         reviewError.value = ctrans("The sessions could not be loaded, try again")
@@ -238,7 +240,7 @@ const openReview = async (row: Row) => {
     }
 }
 
-const editableSteps = computed(() => steps.value.filter(step => step.is_piece_rate && step.target === null))
+const editableSteps = computed(() => steps.value.filter(step => step.needs_target))
 const filledTargets = computed(() => Object.fromEntries(Object.entries(targets.value).filter(([, rate]) => rate !== null && rate > 0)))
 
 const decide = (decision: "accepted" | "adjusted" | "kept") => {
@@ -343,7 +345,7 @@ onMounted(() => {
             <ul class="space-y-0.5 text-xs">
                 <li v-for="step in item.steps" :key="step.id" class="whitespace-nowrap">
                     <span class="font-medium">{{ step.name }}</span>
-                    <template v-if="step.target !== null"> · <span class="text-green-700">{{ ctrans(":rate/h target", { rate: step.target }) }}</span></template>
+                    <template v-if="step.target !== null && !step.needs_target"> · <span class="text-green-700">{{ ctrans(":rate/h target", { rate: step.target }) }}</span></template>
                     <template v-else-if="!step.is_piece_rate"> · <span class="text-gray-500">{{ ctrans("paid by the hour") }}</span></template>
                     <template v-else>
                         · {{ ctrans(":sessions sessions, :artisans artisans, :hours h", { sessions: step.sessions_count, artisans: step.artisans_count, hours: step.hours }) }}
@@ -382,7 +384,7 @@ onMounted(() => {
                             {{ ctrans(":sessions sessions counted, :excluded left out, :artisans artisans, :hours h", { sessions: step.sessions_count, excluded: step.excluded_count, artisans: step.artisans_count, hours: step.hours }) }}
                         </div>
                     </div>
-                    <div v-if="step.target !== null" class="text-sm text-green-700">{{ ctrans("Target :rate/h", { rate: step.target }) }}</div>
+                    <div v-if="step.target !== null && !step.needs_target" class="text-sm text-green-700">{{ ctrans("Target :rate/h", { rate: step.target }) }}</div>
                     <div v-else-if="!step.is_piece_rate" class="text-sm text-gray-500">{{ ctrans("Paid by the hour, no target") }}</div>
                     <label v-else class="flex items-center gap-2 text-sm">
                         <span class="whitespace-nowrap">{{ ctrans("Target per hour") }}</span>
@@ -390,7 +392,7 @@ onMounted(() => {
                     </label>
                 </div>
 
-                <div v-if="step.proposed_target !== null && step.target === null && step.is_piece_rate" class="mt-2 text-xs">
+                <div v-if="step.proposed_target !== null && step.needs_target" class="mt-2 text-xs">
                     <span :class="step.is_ready ? 'text-green-700' : 'text-amber-700'">
                         {{ step.is_ready ? ctrans("Proposed :rate/h (median)", { rate: step.proposed_target }) : ctrans("Not enough data yet: :rate/h so far (median)", { rate: step.proposed_target }) }}
                     </span>

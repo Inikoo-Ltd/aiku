@@ -695,6 +695,7 @@ use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
 use App\Actions\Production\Artefact\SetArtefactsMixBatch;
+use App\Actions\Production\Artefact\SetArtefactsStepDevelopment;
 use App\Actions\Production\Artefact\SetArtefactsRecipe;
 use App\Actions\Production\ArtefactFamily\DeleteArtefactFamily;
 use App\Actions\Production\ArtefactFamily\MoveArtefactFamiliesToDepartment;
@@ -1938,6 +1939,7 @@ Route::name('production.')->prefix('production/{production:id}')->group(function
     Route::post('artefacts/shelf-life', SetArtefactsShelfLife::class)->name('artefacts.set_shelf_life');
     Route::post('artefacts/recipe', SetArtefactsRecipe::class)->name('artefacts.set_recipe');
     Route::post('artefacts/mix-batch', SetArtefactsMixBatch::class)->name('artefacts.set_mix_batch');
+    Route::post('artefacts/step-development', SetArtefactsStepDevelopment::class)->name('artefacts.set_step_development');
     Route::post('artefacts/state', SetArtefactsState::class)->name('artefacts.set_state');
     Route::post('artefacts/{artefact:id}/launch', LaunchArtefact::class)->name('artefacts.launch')->withoutScopedBindings();
     Route::post('artefacts/{artefact:id}/cancel-development', CancelArtefactDevelopment::class)->name('artefacts.cancel_development')->withoutScopedBindings();

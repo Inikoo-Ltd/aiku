@@ -46,6 +46,7 @@ class DecideArtefactDevelopmentReview extends OrgAction
                 $steps = $artefact->recipeSteps()->get()->keyBy('id');
                 foreach ($modelData['targets'] as $stepId => $rate) {
                     SetArtefactStepTarget::run($artefact, $steps[$stepId], $rate, $today);
+                    $steps[$stepId]->update(['is_in_development' => false]);
                 }
                 $review['targets'] = $modelData['targets'];
             }
@@ -56,7 +57,7 @@ class DecideArtefactDevelopmentReview extends OrgAction
 
             $artefact->update([
                 'data'              => [...$artefact->data, 'development_review' => $review],
-                'is_in_development' => $modelData['decision'] === 'kept' || !$isEveryStepTargeted,
+                'is_in_development' => $artefact->is_in_development && ($modelData['decision'] === 'kept' || !$isEveryStepTargeted),
             ]);
 
             AskToReviewArtefactDevelopment::make()->tickDecided($artefact);
@@ -89,7 +90,7 @@ class DecideArtefactDevelopmentReview extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->artefact->is_in_development) {
+        if (!$this->artefact->isFollowedAsDevelopment()) {
             $validator->errors()->add('decision', __(':code is not paid as development', ['code' => $this->artefact->code]));
 
             return;

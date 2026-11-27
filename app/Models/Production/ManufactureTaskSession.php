@@ -282,7 +282,7 @@ class ManufactureTaskSession extends Model implements Auditable
 
     public function recipeStandardRate(): ?float
     {
-        if (!$this->manufactureTask?->is_piece_rate) {
+        if (!$this->manufactureTask?->is_piece_rate || $this->activity_type == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT) {
             return null;
         }
 

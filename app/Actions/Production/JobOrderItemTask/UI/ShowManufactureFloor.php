@@ -466,7 +466,7 @@ class ShowManufactureFloor extends OrgAction
         }
 
         $standardRate = $session->recipeStandardRate();
-        if ($standardRate === null) {
+        if ($standardRate === null || $session->jobOrderItemTask?->isPaidAsDevelopment()) {
             return null;
         }
 
@@ -656,8 +656,8 @@ class ShowManufactureFloor extends OrgAction
                 'parameters' => ['jobOrderItemTask' => $task->id],
                 'method'     => 'patch',
             ] : null,
-            'in_development'      => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact)->filter(fn ($artefact) => $artefact->is_in_development)
-                ->unique('id')->map(fn ($artefact) => ['id' => $artefact->id, 'code' => $artefact->code])->values()->all(),
+            'in_development'      => $members->filter(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->is_in_development || $member->recipeStep?->is_in_development)
+                ->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact)->unique('id')->map(fn ($artefact) => ['id' => $artefact->id, 'code' => $artefact->code])->values()->all(),
             'trial_run'           => !$isCombined && $task->jobOrder->isRequestedByDevelopment() ? [
                 'needs_formulation' => in_array($task->job_order_id, $this->trialRunsNeedingFormulation, true),
                 'brief_route'       => ['name' => 'grp.json.production.job_order.trial_run_brief', 'parameters' => ['jobOrder' => $task->job_order_id]],

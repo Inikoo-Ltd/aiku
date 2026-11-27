@@ -41,7 +41,7 @@ class AskToReviewArtefactDevelopment
     {
         $proposals = [];
         $waiting   = collect();
-        foreach (Artefact::where('production_id', $production->id)->where('is_in_development', true)->orderBy('code')->get() as $artefact) {
+        foreach (Artefact::where('production_id', $production->id)->followedAsDevelopment()->orderBy('code')->get() as $artefact) {
             $proposals[$artefact->id] = GetArtefactDevelopmentProposal::run($artefact);
             if ($proposals[$artefact->id]['is_ready']) {
                 $waiting->put($artefact->id, $artefact);

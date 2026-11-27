@@ -828,3 +828,89 @@ test('ticking task lines by hand keeps what the lines are linked to', function (
     expect($task->data['subtasks'][0])->toMatchArray(['status' => 'done', 'artefact_id' => $experiment->id])
         ->and($task->data['subtasks'][1])->toBe(['title' => 'Call supplier', 'status' => 'todo']);
 });
+
+test('one recipe step in development is paid as development with no target while the other steps keep theirs, and only a production manager switches it', function () {
+    foreach ([['0', 12.71, null], ['1', 13.00, 1.0228], ['2', 14.00, 1.1015], ['3', 15.00, 1.1802], ['D', 13.30, null], ['DG', 15.00, null]] as [$code, $hourlyRate, $multiplier]) {
+        \App\Models\Production\ManufacturePayBand::query()->firstOrCreate(
+            ['production_id' => $this->production->id, 'code' => $code],
+            ['group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'name' => 'Band '.$code, 'hourly_rate' => $hourlyRate, 'target_multiplier' => $multiplier, 'effective_from' => now()->subYear()]
+        );
+    }
+    $orgStock = labelTestOrgStock($this->production->organisation, $this->group);
+    $orgStock->update(['quantity_in_locations' => 10710]);
+    $making  = tap(stepTestManufactureTask($this->production, 'DEVSTMK', 'Making'))->update(['is_piece_rate' => true]);
+    $packing = tap(stepTestManufactureTask($this->production, 'DEVSTPK', 'Packing'))->update(['is_piece_rate' => true]);
+    $hourly  = tap(stepTestManufactureTask($this->production, 'DEVSTHR', 'Mixing (hourly)'))->update(['is_piece_rate' => false]);
+
+    $live = StoreArtefact::make()->action($this->production, ['code' => 'STEPDEV'.rand(1000, 9999), 'name' => 'Step in development', 'org_stock_id' => $orgStock->id]);
+    $live->manufactureTasks()->sync([
+        $making->id  => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 50],
+        $packing->id => ['position' => 2, 'units_per_artefact' => 1],
+        $hourly->id  => ['position' => 4, 'units_per_artefact' => 1],
+    ]);
+    $giftPacking = \App\Models\Production\ArtefactManufactureTask::create(['artefact_id' => $live->id, 'manufacture_task_id' => $packing->id, 'label' => 'Gift', 'position' => 3, 'units_per_artefact' => 1]);
+    expect($live->state)->toBe(ArtefactStateEnum::ACTIVE);
+
+    $switch = fn (array $data) => \Pest\Laravel\post(route('grp.models.production.artefacts.set_step_development', [$this->production->id]), ['artefacts' => [$live->id], 'is_in_development' => true, ...$data]);
+
+    $developer = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($developer, ["productions_rd.{$this->production->id}.edit"]);
+    $switch(['manufacture_task_id' => $packing->id, 'label' => null])->assertForbidden();
+    actingAs($this->guest->getUser());
+
+    $switch(['manufacture_task_id' => $hourly->id])->assertSessionHasErrors('manufacture_task_id');
+    $switch(['manufacture_task_id' => $packing->id, 'label' => null])->assertRedirect();
+    $live->refresh();
+    expect($live->is_in_development)->toBeFalse()
+        ->and($live->isFollowedAsDevelopment())->toBeTrue()
+        ->and($live->recipeSteps()->get()->pluck('is_in_development', 'id')->all())->toBe([$live->recipeSteps()->get()[0]->id => false, $live->recipeSteps()->get()[1]->id => true, $giftPacking->id => false, $live->recipeSteps()->get()[3]->id => false])
+        ->and(Artefact::followedAsDevelopment()->whereKey($live->id)->exists())->toBeTrue();
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $live->id, 'quantity' => 5]);
+    ConfirmJobOrder::make()->action($jobOrder->refresh());
+    $tasks = $jobOrder->jobOrderItems()->first()->tasks()->get()->keyBy(fn ($task) => $task->manufacture_task_id.'|'.$task->label);
+    $user  = $this->guest->getUser();
+    $close = function ($task, float $made) use ($user) {
+        $session = StartManufactureTaskSession::make()->action($user, $task->refresh());
+        $session->update(['started_at' => now()->subMinutes(30)]);
+        CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => $made, 'rate_confirmed' => true]);
+
+        return $session->refresh();
+    };
+    $move = fn (ManufactureTaskSession $session, $task) => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => (float) $session->quantity_made, 'job_order_item_task_id' => $task->id, 'reason' => 'Entered on the wrong step'], 'Martina')->refresh();
+
+    $made = $close($tasks[$making->id.'|'], 3);
+    expect($made->activity_type)->toBe(ManufactureTaskSessionActivityTypeEnum::PRODUCTION)
+        ->and((float) $made->standard_rate)->toBe(50.0)
+        ->and($made->band_code)->toBe('0');
+
+    $moved = $move($made, $tasks[$packing->id.'|']);
+    expect($moved->activity_type)->toBe(ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT)
+        ->and($moved->standard_rate)->toBeNull()
+        ->and($moved->band_code)->toBe('D');
+
+    $back = $move($moved, $tasks[$making->id.'|']);
+    expect($back->activity_type)->toBe(ManufactureTaskSessionActivityTypeEnum::PRODUCTION)
+        ->and((float) $back->standard_rate)->toBe(50.0)
+        ->and($back->band_code)->toBe('0');
+
+    $close($tasks[$making->id.'|'], 2);
+    $packed = $close($tasks[$packing->id.'|'], 5);
+    expect($packed->activity_type)->toBe(ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT)
+        ->and($packed->standard_rate)->toBeNull()
+        ->and($packed->band_code)->toBe('D');
+
+    $steps = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($live)['steps'];
+    expect(collect($steps)->pluck('needs_target')->all())->toBe([false, true, false, false]);
+
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($live, ['decision' => 'kept', 'reason' => 'More packing runs']);
+    expect($live->refresh()->is_in_development)->toBeFalse()
+        ->and($live->data['development_review']['decision'])->toBe('kept');
+
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($live, ['decision' => 'accepted', 'targets' => [$steps[1]['id'] => 80]]);
+    $live->refresh();
+    expect($live->is_in_development)->toBeFalse()
+        ->and($live->isFollowedAsDevelopment())->toBeFalse()
+        ->and((float) $live->recipeSteps()->get()[1]->standard_rate)->toBe(80.0);
+});

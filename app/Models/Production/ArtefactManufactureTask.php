@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
  * @property numeric|null $standard_rate
  * @property float|null $mix_batch_kg
  * @property bool $blocks_later_steps
+ * @property bool $is_in_development
  * @property string|null $label
  * @property string|null $unit_name
  * @property array<int, int>|null $waits_for
@@ -43,6 +44,7 @@ class ArtefactManufactureTask extends Pivot
     protected $casts = [
         'mix_batch_kg'       => 'float',
         'blocks_later_steps' => 'boolean',
+        'is_in_development'  => 'boolean',
         'waits_for'          => 'array',
     ];
 

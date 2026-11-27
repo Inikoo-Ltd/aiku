@@ -20,6 +20,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faCheckSquare, faExclamationTriangle, faChevronDown, faTasks, faPencil, faPlus, faTimes, faCheck } from '@fal'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import Modal from '@/Components/Utils/Modal.vue'
 import Popover from '@/Components/Popover.vue'
 import SegmentedToggle from '@/Components/Utils/SegmentedToggle.vue'
@@ -40,6 +41,7 @@ const props = defineProps<{
     setState?: { set_state_route: routeType }
     setRecipe?: SetRecipeProps
     setMixBatch?: { set_route: routeType, sizes_kg: number[], sizes_route: routeType }
+    setStepDevelopment?: { set_route: routeType, tasks: { value: number, label: string }[] }
 }>()
 
 const routeCurrent = route().current()
@@ -95,6 +97,7 @@ const bulkActions = computed(() => [
     props.setShelfLife ? { value: 'shelf_life', label: ctrans('Shelf life') } : null,
     props.setRecipe ? { value: 'manufacture_task', label: ctrans('Manufacture task') } : null,
     props.setMixBatch ? { value: 'mix_batch', label: ctrans('Mix batch size') } : null,
+    props.setStepDevelopment ? { value: 'step_development', label: ctrans('Step in development') } : null,
     props.moveToFamily ? { value: 'move_family', label: ctrans('Move to family') } : null,
     props.moveToDepartment ? { value: 'move_department', label: ctrans('Move to department') } : null,
     props.setState ? { value: 'discontinue', label: ctrans('Discontinue') } : null,
@@ -104,7 +107,7 @@ const bulkActions = computed(() => [
 const currentAction = computed(() => bulkActions.value.find(action => action.value === bulkAction.value))
 
 const selectedIds = computed(() => Object.entries(selected.value).filter(([, on]) => on).map(([id]) => Number(id)))
-const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setShelfLife || props.setState || props.setRecipe || props.setMixBatch) && selectedIds.value.length > 0)
+const showBulkBar = computed(() => (props.moveToDepartment || props.moveToFamily || props.setBatchSize || props.setShelfLife || props.setState || props.setRecipe || props.setMixBatch || props.setStepDevelopment) && selectedIds.value.length > 0)
 
 const knownArtefacts = ref<Record<number, UnifiedRecipeArtefact>>({})
 
@@ -211,6 +214,31 @@ const submitShelfLife = () => {
                 shelfLifeDays.value = null
             },
             onError: (errors) => notify({ title: ctrans('Something went wrong'), text: Object.values(errors).join(' '), type: 'error' }),
+        }
+    )
+}
+
+const developmentTaskId = ref<number | null>(null)
+const developmentOn = ref('on')
+const developmentOptions = [
+    { value: 'on', label: ctrans('In development') },
+    { value: 'off', label: ctrans('Normal targets') },
+]
+const stepDevelopmentError = ref<string | null>(null)
+
+const submitStepDevelopment = () => {
+    if (!props.setStepDevelopment || !developmentTaskId.value) return
+
+    stepDevelopmentError.value = null
+    router.post(
+        route(props.setStepDevelopment.set_route.name, props.setStepDevelopment.set_route.parameters),
+        { artefacts: selectedIds.value, manufacture_task_id: developmentTaskId.value, is_in_development: developmentOn.value === 'on' },
+        {
+            preserveScroll: true,
+            onStart: () => isMoving.value = true,
+            onFinish: () => isMoving.value = false,
+            onSuccess: () => clearSelection(),
+            onError: (errors) => stepDevelopmentError.value = Object.values(errors).join(' '),
         }
     )
 }
@@ -376,6 +404,31 @@ function productionRoute(artefact: { slug: string }) {
                     @click="submitMixBatch" />
             </div>
 
+            <div v-if="setStepDevelopment && bulkAction === 'step_development'" class="flex flex-wrap items-center gap-2">
+                <Select
+                    v-model="developmentTaskId"
+                    :options="setStepDevelopment.tasks"
+                    optionLabel="label"
+                    optionValue="value"
+                    size="small"
+                    filter
+                    :placeholder="ctrans('Step')" />
+                <SegmentedToggle
+                    v-model="developmentOn"
+                    :ariaLabel="ctrans('Step in development')"
+                    :options="developmentOptions" />
+                <Button
+                    type="primary"
+                    size="s"
+                    :label="ctrans('Set')"
+                    :loading="isMoving"
+                    :disabled="!developmentTaskId"
+                    @click="submitStepDevelopment">
+                    <template #icon><FontAwesomeIcon :icon="['fal', 'check']" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <span v-if="stepDevelopmentError" class="text-xs text-red-600">{{ stepDevelopmentError }}</span>
+            </div>
+
             <Button
                 v-if="setRecipe && bulkAction === 'manufacture_task'"
                 type="primary"
@@ -506,7 +559,7 @@ function productionRoute(artefact: { slug: string }) {
         </div>
     </Dialog>
 
-    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || setShelfLife || setState || setRecipe || setMixBatch)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
+    <Table ref="tableRef" :resource="data" :name="tab" class="mt-5" :isCheckBox="!!(moveToDepartment || moveToFamily || setBatchSize || setShelfLife || setState || setRecipe || setMixBatch || setStepDevelopment)" checkboxKey="id" @onSelectRow="(rows) => selected = { ...rows }">
         <template #cell(state)="{ item: artefact }">
             <Icon :data="artefact.state" />
         </template>

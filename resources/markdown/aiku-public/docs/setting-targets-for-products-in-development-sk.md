@@ -1,8 +1,8 @@
 ---
 title: Nastavovanie cieľov pre produkty vo vývoji
 summary: Ako aiku krok za krokom sleduje produkty platené ako vývoj, navrhne cieľ na hodinu, keď má krok dosť behov, požiada schvaľovateľov, aby ho prijali, upravili alebo nechali produkt vo vývoji, a vypíše, čo mešká.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-27
+source_date: 2026-11-27
 tags: production, targets, development, payroll
 category: production
 ---
@@ -22,6 +22,19 @@ Otvorte **Factory → Crafts → Development** a kartu **Paid as development**. 
 - **Steps**: pri každom kroku relácie, remeselníci a hodiny doteraz započítané a sadzba na hodinu, ktorú dávajú. Zatrhnutie znamená, že krok je pripravený na cieľ; kroky s cieľom ho ukazujú, kroky platené za hodinu ho nepotrebujú.
 
 Meškajúce produkty sú na začiatku zoznamu. Meškajú, kým sa niekto nerozhodne.
+
+## Len jeden krok vo vývoji
+
+Niekedy treba odmerať len jeden krok, napríklad **Packing** v rodine, ktorej **Making** a **Shrinking** už majú ciele. Namiesto ponechania celého produktu vo vývoji zapnite **In development** len na tomto kroku:
+
+- Pri jednom produkte: otvorte jeho kartu **Manufacture tasks** a pri kroku zapnite **In development**.
+- Pri viacerých produktoch naraz: na stránke rodiny (alebo oddelenia) vyberte produkty, zvoľte **Step in development**, vyberte krok, zvoľte **In development** a stlačte **Set**. **Normal targets** ho opäť vypne.
+
+Tieto prepínače vidí len výrobný manažér. Kroky platené za hodinu sa prepnúť nedajú.
+
+Tento krok sa potom platí sadzbou za vývoj, bez cieľa a pásma na tablete a v **Performance** (jeho relácie ukazujú **Band D**), a jeho behy sa zbierajú ako je uvedené nižšie. Ostatné kroky produktu si ponechajú ciele a pásma. Recept aj tablet označia krok ako **In development** a produkt je uvedený na karte **Paid as development**. Keď sa jeho cieľ uloží cez **Review**, krok sa vráti k bežnej výplate. Cieľ zadaný v recepte ho nevypne: vypnite ho aj tam.
+
+Ak chcete produkt presunúť z vývoja celého produktu na vývoj jedného kroku, najprv zapnite krok a potom na produkte vypnite **In development**, aby sa krok medzitým nikdy neplatil bez sadzby za vývoj.
 
 ## Ako sa počíta navrhnutý cieľ
 

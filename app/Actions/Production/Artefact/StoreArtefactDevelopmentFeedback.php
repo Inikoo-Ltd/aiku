@@ -137,7 +137,7 @@ class StoreArtefactDevelopmentFeedback extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->artefact->is_in_development) {
+        if (!$this->artefact->isFollowedAsDevelopment()) {
             $validator->errors()->add('reasons', __(':code is no longer in development', ['code' => $this->artefact->code]));
         } elseif (!$this->get('reasons') && !trim((string) $this->get('comment'))) {
             $validator->errors()->add('reasons', __('Pick what is wrong or write a comment'));

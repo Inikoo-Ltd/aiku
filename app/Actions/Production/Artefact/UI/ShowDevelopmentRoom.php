@@ -74,7 +74,7 @@ class ShowDevelopmentRoom extends OrgAction
     public function developmentTargets(Production $production): array
     {
         return Artefact::where('production_id', $production->id)
-            ->where('is_in_development', true)
+            ->followedAsDevelopment()
             ->with(['production', 'artefactFamily'])
             ->orderBy('code')
             ->get()
@@ -98,7 +98,7 @@ class ShowDevelopmentRoom extends OrgAction
                     },
                     'kept'                   => $proposal['kept'],
                     'open_feedback'          => $proposal['open_feedback'],
-                    'steps'                  => array_map(fn (array $step) => Arr::only($step, ['id', 'name', 'target', 'is_piece_rate', 'sessions_count', 'artisans_count', 'hours', 'proposed_target', 'is_ready', 'missing']), $proposal['steps']),
+                    'steps'                  => array_map(fn (array $step) => Arr::only($step, ['id', 'name', 'target', 'is_piece_rate', 'is_in_development', 'needs_target', 'sessions_count', 'artisans_count', 'hours', 'proposed_target', 'is_ready', 'missing']), $proposal['steps']),
                 ];
             })
             ->sortBy(fn (array $row) => [array_search($row['status'], ['overdue', 'ready_idle', 'collecting', 'kept']), $row['code']])
