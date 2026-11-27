@@ -2,7 +2,7 @@
 title: Plánování výrobního dne
 summary: Pro manažera výroby a vedoucí výroby - zařazení úkolů do plánu dne bez uvedení jména, přidělení každého kroku dělníkovi a co se stane s prací, která se ten den nedokončila.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Některé výrobky se vyrábějí z jiného výrobku továrny: jumbo bomba do ko
 Stiskněte **Create JBB-04 job** (Vytvořit úkol JBB-04) vedle zprávy: otevře se okno **Create job order** (Vytvořit výrobní příkaz) s již vyplněným JBB-04 a chybějícími SKO a s poznámkou, pro který výrobek je určen. Zkontrolujte ho, vyberte dělníka a uložte. Jakmile je úkol JBB-04 vytvořen pro sklad, zpráva zmodrá, *Waits for 3 SKO JBB-04 from* (Čeká na 3 SKO JBB-04 z) nového úkolu, dokud se bomby do koupele nevyrobí. Úkol JBB-04 vytvořený pro objednávku zákazníka nebo partnera se nepočítá, protože tyto bomby jsou už slíbeny.
 
 Zpráva zmizí, jakmile je hotov krok, který JBB-04 používá.
+
+## Přebalení ze skladu, nebo výroba jen některých kroků
+
+Někdy se výrobek vyrábí ze zásob, které už máte, bez celého receptu: bomby do koupele Gem Bracelet bez etikety balené po 8 (GBBBUL-04), přebalené jako GBBB-04 do krabiček po 4, potřebují jen **Packing**. Recept kvůli tomu neměňte; změnil by i všechny otevřené úkoly GBBB-04.
+
+V okně **Vytvořit pracovní objednávku** přidejte GBBB-04 a pod řádkem stiskněte **Repack from stock / only some steps**:
+
+- **Steps in this job**: odškrtněte kroky, které úkol přeskočí, zde **Mixing** a **Making**. Poslední krok receptu zůstává vždy, protože právě on uvede výrobek na sklad. Vynechané kroky se nikdy nezobrazí na obrazovkách dílny a k dokončení úkolu nejsou potřeba.
+- **Take the pieces from**: vyberte GBBBUL-04. Když je úkol přijat, ze skladu odejde jedna bomba GBBBUL-04 za každou vyrobenou bombu GBBB-04 (jedno balení GBBBUL-04 po 8 dá dvě krabičky po 4) spolu s materiály kroků, které úkol provádí, například krabičkou pro **Packing**. Materiály vynechaných kroků zůstávají na skladě.
+
+Úkol na přebalení se vytváří přesně pro SKO, o která požádáte, nikdy se nezaokrouhluje na dávku směsi. Cíle a odměna za jeho kroky fungují jako u každého jiného úkolu. Recept ani ostatní úkoly výrobku se nemění.
 
 ## Vyžádání materiálu od skladu
 

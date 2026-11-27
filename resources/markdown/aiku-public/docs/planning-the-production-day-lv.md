@@ -2,7 +2,7 @@
 title: Ražošanas dienas plānošana
 summary: Ražošanas vadītājam un maiņas vadītājam - darbu ievietošana dienas plānā, nenorādot nevienu cilvēku, katra soļa nodošana strādniekam un kas notiek ar darbu, kas savā dienā nav pabeigts.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Daži produkti tiek izgatavoti no cita ražotnes produkta: Puckator liela vannas
 Nospied **Create JBB-04 job** (Izveidot JBB-04 darbu) blakus ziņojumam: atveras logs **Create job order** (Izveidot darba uzdevumu), kurā JBB-04 un trūkstošie SKO jau ir ievadīti, ar piezīmi, kuram produktam tas paredzēts. Pārbaudi, izvēlies strādnieku un saglabā. Kad JBB-04 darbs krājumam ir izveidots, ziņojums kļūst zils, *Waits for 3 SKO JBB-04 from* (Gaida 3 SKO JBB-04 no) jaunā darba, līdz vannas bumbas ir izgatavotas. JBB-04 darbs, kas izgatavots klienta vai partnera pasūtījumam, neskaitās, jo šīs vannas bumbas jau ir apsolītas.
 
 Ziņojums pazūd, kad solis, kas izmanto JBB-04, ir pabeigts.
+
+## Pārpakošana no krājuma vai tikai daži soļi
+
+Dažreiz produktu izgatavo no krājumā jau esošām precēm, neizpildot visu recepti: vannas bumbas ar dārgakmeņu rokassprādzēm bez etiķetes, iepakotas pa 8 (GBBBUL-04), pārpakotas kā GBBB-04 kastītēs pa 4, prasa tikai **Packing**. Receptei šim nolūkam nepieskaries; tā mainītos arī visi atvērtie GBBB-04 darbi.
+
+Logā **Izveidot darba pasūtījumu** pievieno GBBB-04 un zem rindas nospied **Repack from stock / only some steps**:
+
+- **Steps in this job**: noņem ķeksīti soļiem, kurus darbs izlaiž, šeit tie ir **Mixing** un **Making**. Receptes pēdējais solis vienmēr paliek, jo tieši tas ieliek produktu krājumā. Izlaistie soļi nekad nenonāk ražotnes ekrānos, un darba pabeigšanai tie nav vajadzīgi.
+- **Take the pieces from**: izvēlies GBBBUL-04. Kad darbs ir saņemts, par katru izgatavoto GBBB-04 vannas bumbu no krājuma aiziet viena GBBBUL-04 vannas bumba (viena GBBBUL-04 pakā pa 8 dod divas kastītes pa 4), kā arī to soļu materiāli, kurus darbs izpilda, piemēram, Packing kastīte. Izlaisto soļu materiāli paliek krājumā.
+
+Pārpakošanas darbs tiek izveidots tieši tik SKO, cik pieprasīji, nekad netiek noapaļots līdz maisījuma partijai. Tā soļu normas un atalgojums darbojas kā jebkuram citam darbam. Receptes un produkta pārējie darbi nemainās.
 
 ## Materiālu pieprasīšana noliktavai
 

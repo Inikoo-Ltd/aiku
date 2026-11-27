@@ -2,7 +2,7 @@
 title: Plánovanie výrobného dňa
 summary: Pre výrobného manažéra a vedúceho dielne - zaradenie úloh do denného plánu bez uvedenia mena, pridelenie každého kroku operátorovi a čo sa stane s prácou, ktorá sa v daný deň nedokončila.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Niektoré výrobky sa vyrábajú z iného výrobku továrne: veľká bomba do k�
 Vedľa správy stlačte **Create JBB-04 job** (Vytvoriť úlohu JBB-04): otvorí sa okno **Create job order** (Vytvoriť pracovný príkaz) s už vyplneným JBB-04 a chýbajúcimi SKO a s poznámkou, pre aký výrobok je určený. Skontrolujte ho, vyberte remeselníka a uložte. Keď je úloha JBB-04 vytvorená pre sklad, správa sa zmení na modrú, *Waits for 3 SKO JBB-04 from* (Čaká na 3 SKO JBB-04 z) novej úlohy, kým sa bomby nevyrobia. Úloha JBB-04 vytvorená pre objednávku zákazníka alebo partnera sa nezapočítava, pretože tieto bomby sú už pridelené.
 
 Správa zmizne, keď je hotový krok, ktorý JBB-04 používa.
+
+## Prebalenie zásob alebo výroba iba niektorých krokov
+
+Niekedy sa výrobok vyrába zo zásob, ktoré už máte, bez celého receptu: bomby do kúpeľa s drahokamom v tvare náramku bez etikety, balené po 8 (GBBBUL-04), prebalené ako GBBB-04 do škatúľ po 4, potrebujú iba **Packing** (Balenie). Recept kvôli tomu nemeňte; zmenil by sa aj pre všetky otvorené úlohy GBBB-04.
+
+V okne **Create job order** (Vytvoriť pracovný príkaz) pridajte GBBB-04 a pod riadkom stlačte **Repack from stock / only some steps**:
+
+- **Steps in this job**: odškrtnite kroky, ktoré úloha vynecháva, tu **Mixing** (Mieša sa) a **Making** (Vyrába sa). Posledný krok receptu zostáva vždy, pretože práve ten dáva výrobok na sklad. Vynechané kroky sa nikdy nezobrazia na obrazovkách dielne a na dokončenie úlohy nie sú potrebné.
+- **Take the pieces from**: vyberte GBBBUL-04. Pri prevzatí úlohy sa zo skladu odpíše jedna bomba GBBBUL-04 za každú vyrobenú bombu GBBB-04 (jedno balenie GBBBUL-04 po 8 dá dve škatule po 4), spolu s materiálmi krokov, ktoré úloha vykonáva, napríklad škatuľou na balenie. Materiály vynechaných krokov zostávajú na sklade.
+
+Prebaľovacia úloha sa vystaví presne na SKO, ktoré požadujete, nikdy nie zaokrúhlená na dávku zmesi. Ciele a odmena za jej kroky fungujú ako pri každej inej úlohe. Recept a ostatné úlohy výrobku sa nemenia.
 
 ## Vyžiadanie materiálu od skladu
 

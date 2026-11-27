@@ -898,6 +898,18 @@ class IndexPartnerShippingList extends OrgAction
                 ->all()
         )->map(fn (Collection $labels) => $labels->pluck('run_sources')->flatten()->unique()->values()->all());
 
+        $recipeSteps = DB::table('artefacts_manufacture_tasks')
+            ->join('manufacture_tasks', 'manufacture_tasks.id', 'artefacts_manufacture_tasks.manufacture_task_id')
+            ->whereIn('artefacts_manufacture_tasks.artefact_id', Artefact::where('production_id', $this->production->id)->select('id'))
+            ->orderBy('artefacts_manufacture_tasks.position')
+            ->orderBy('artefacts_manufacture_tasks.id')
+            ->get(['artefacts_manufacture_tasks.id', 'artefacts_manufacture_tasks.artefact_id', 'artefacts_manufacture_tasks.label', 'manufacture_tasks.name'])
+            ->groupBy('artefact_id')
+            ->map(fn (Collection $steps) => $steps->map(fn ($step) => [
+                'id'   => $step->id,
+                'name' => $step->name.($step->label ? ' – '.$step->label : ''),
+            ])->values()->all());
+
         return [
             'reasons'                 => StoreManualJobOrder::REASONS,
             'periods_after_opening'   => TradeUnitBestBeforeEnum::periodAfterOpeningOptions(),
@@ -915,6 +927,7 @@ class IndexPartnerShippingList extends OrgAction
                     'artefacts.code',
                     'artefacts.name',
                     'artefacts.artefact_department_id',
+                    'artefacts.org_stock_id',
                     'org_stocks.packed_in',
                     'org_stocks.quantity_available as stock_available',
                     'stocks.gross_weight',
@@ -933,6 +946,8 @@ class IndexPartnerShippingList extends OrgAction
                     'gross_weight'    => $artefact->gross_weight ? (int) $artefact->gross_weight : null,
                     'on_board'        => (int) $artefact->on_board,
                     'run_sources'     => $runSources->get($artefact->id, []),
+                    'org_stock_id'    => $artefact->org_stock_id,
+                    'steps'           => $recipeSteps->get($artefact->id, []),
                     'shelf_life'      => Artefact::resolveShelfLife(
                         json_decode($artefact->settings ?? 'null', true),
                         json_decode($artefact->family_data ?? 'null', true),

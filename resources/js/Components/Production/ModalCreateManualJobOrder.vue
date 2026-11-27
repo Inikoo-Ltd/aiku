@@ -8,13 +8,14 @@ import Select from "primevue/select"
 import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import DatePicker from "primevue/datepicker"
+import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-type ArtefactOption = { id: number, code: string, name: string, artefact_department_id: number | null, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number, run_sources?: string[], shelf_life?: RunShelfLife | null }
-type Line = { artefact: ArtefactOption, quantity: number, batch_code: string, expiry_date: string, period_after_opening: string | null }
+type ArtefactOption = { id: number, code: string, name: string, artefact_department_id: number | null, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number, run_sources?: string[], shelf_life?: RunShelfLife | null, org_stock_id?: number, steps?: { id: number, name: string }[] }
+type Line = { artefact: ArtefactOption, quantity: number, batch_code: string, expiry_date: string, period_after_opening: string | null, repack: boolean, steps: number[], repack_from: number | null }
 
 const props = defineProps<{
     isOpen: boolean
@@ -62,8 +63,8 @@ watch(() => [props.isOpen, props.options, props.prefill] as const, ([open, optio
 }, { immediate: true })
 
 const reasonOptions = computed(() => (props.options?.reasons ?? []).map(reason => ({ value: reason, label: reasonLabels[reason] ?? reason })))
-const lineError = (index: number) => errors.value[`lines.${index}.batch_code`] ?? errors.value[`lines.${index}.expiry_date`] ?? errors.value[`lines.${index}.period_after_opening`] ?? null
-const otherError = computed(() => Object.entries(errors.value).find(([key]) => key !== "reason" && key !== "lines" && !/^lines\.\d+\.(batch_code|expiry_date|period_after_opening)$/.test(key))?.[1] ?? null)
+const lineError = (index: number) => errors.value[`lines.${index}.batch_code`] ?? errors.value[`lines.${index}.expiry_date`] ?? errors.value[`lines.${index}.period_after_opening`] ?? errors.value[`lines.${index}.steps`] ?? errors.value[`lines.${index}.repack_from`] ?? null
+const otherError = computed(() => Object.entries(errors.value).find(([key]) => key !== "reason" && key !== "lines" && !/^lines\.\d+\.(batch_code|expiry_date|period_after_opening|steps|repack_from)$/.test(key))?.[1] ?? null)
 
 const matches = computed(() => {
     const term = search.value.trim().toLowerCase()
@@ -90,11 +91,17 @@ function addLine(artefact: ArtefactOption) {
         batch_code: "",
         expiry_date: expiryFromMonths(artefact.shelf_life?.expiry_months),
         period_after_opening: artefact.shelf_life?.period_after_opening ?? null,
+        repack: false,
+        steps: (artefact.steps ?? []).map(step => step.id),
+        repack_from: null,
     })
     search.value = ""
 }
 
 const labelNeeds = (line: Line, source: string) => !!line.artefact.run_sources?.includes(source)
+const sourceOptions = (line: Line) => (props.options?.artefacts ?? [])
+    .filter(artefact => artefact.org_stock_id && artefact.id !== line.artefact.id)
+    .map(artefact => ({ value: artefact.org_stock_id, label: `${artefact.code} ${artefact.name}` }))
 
 const lineDepartmentIds = computed(() => form.lines.map(line => line.artefact.artefact_department_id).filter((id): id is number => !!id))
 const worksOnTheseProducts = (artisan: { department_ids?: number[] }) => lineDepartmentIds.value.some(id => artisan.department_ids?.includes(id))
@@ -115,7 +122,7 @@ const units = (line: Line) => line.artefact.packed_in ? line.quantity * line.art
 const totalUnits = computed(() => form.lines.reduce((total, line) => total + (units(line) ?? 0), 0))
 const totalKilos = computed(() => form.lines.reduce((total, line) => total + (line.artefact.gross_weight ?? 0) * line.quantity, 0) / 1000)
 
-const canSave = computed(() => !saving.value && !!form.reason && form.lines.length > 0 && form.lines.every(line => line.quantity > 0))
+const canSave = computed(() => !saving.value && !!form.reason && form.lines.length > 0 && form.lines.every(line => line.quantity > 0 && (!line.repack || line.steps.length > 0)))
 
 function close() {
     form.reason = ""
@@ -142,6 +149,8 @@ function save() {
                 batch_code: line.batch_code.trim() || null,
                 expiry_date: line.period_after_opening ? null : line.expiry_date || null,
                 period_after_opening: line.period_after_opening,
+                steps: line.repack && line.steps.length < (line.artefact.steps?.length ?? 0) ? line.steps : null,
+                repack_from: line.repack ? line.repack_from : null,
             })),
         },
         {
@@ -251,6 +260,28 @@ const smallInputPt = { root: { class: "w-full min-w-0 !py-0.5 !text-xs" } }
                                         :periods="options?.periods_after_opening ?? []"
                                         :months="line.artefact.shelf_life?.expiry_months"
                                         :required="labelNeeds(line, 'expiry_date')" />
+                                </div>
+                                <button v-show="!line.repack" type="button" class="mt-1.5 text-xs text-gray-500 hover:text-gray-700 hover:underline" @click="line.repack = true">
+                                    {{ ctrans("Repack from stock / only some steps") }}
+                                </button>
+                                <div v-show="line.repack" class="mt-1.5 rounded border border-gray-200 p-2 text-xs dark:border-gray-700">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-500">{{ ctrans("Steps in this job") }}</span>
+                                        <button type="button" class="text-gray-400 hover:text-red-600" :title="ctrans('Use the whole recipe')" @click="line.repack = false; line.repack_from = null; line.steps = (line.artefact.steps ?? []).map(step => step.id)">
+                                            <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                                        <label v-for="step in line.artefact.steps ?? []" :key="step.id" class="flex items-center gap-1.5 whitespace-nowrap">
+                                            <Checkbox v-model="line.steps" :value="step.id" />
+                                            {{ step.name }}
+                                        </label>
+                                    </div>
+                                    <label class="mt-2 flex min-w-0 flex-col gap-0.5">
+                                        <span class="text-gray-500">{{ ctrans("Take the pieces from") }}</span>
+                                        <Select v-model="line.repack_from" :options="sourceOptions(line)" optionLabel="label" optionValue="value" filter showClear :placeholder="ctrans('Nothing: made from the recipe')" :pt="smallInputPt" />
+                                    </label>
+                                    <p v-if="line.repack_from" class="mt-1 text-gray-400">{{ ctrans("One piece of it leaves stock for each piece made, when the job is received.") }}</p>
                                 </div>
                                 <div v-if="lineError(index)" class="mt-1 text-xs text-red-600">{{ lineError(index) }}</div>
                             </td>

@@ -337,6 +337,18 @@ class JobOrderItem extends Model
         return $this->artefact->name.' – '.trim($fill['oil'].' '.($fill['oil_name'] ?? '')).($for ? ', '.$for : '');
     }
 
+    /**
+     * A repack or rework line runs only the recipe steps it was raised with (HELP-4991); the others never
+     * reach the floor, the receive or a recipe change. Steps are kept by key (task + label), so they
+     * survive a recipe edit that recreates the rows.
+     */
+    public function runsStep(ArtefactManufactureTask $recipeStep): bool
+    {
+        $steps = Arr::get($this->data, 'steps');
+
+        return !$steps || in_array($recipeStep->stepKey(), $steps, true);
+    }
+
     public function isFinished(): bool
     {
         return !$this->tasks->contains(fn (JobOrderItemTask $task) => $task->state !== JobOrderItemTaskStateEnum::DONE);

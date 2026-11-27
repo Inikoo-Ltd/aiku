@@ -122,6 +122,9 @@ class StoreJobOrderItem extends OrgAction
             'data.expiry_date'   => ['sometimes', 'nullable', 'date'],
             'data.period_after_opening' => ['sometimes', 'nullable', 'string', 'max:16'],
             'data.fill'          => ['sometimes', 'array'],
+            'data.steps'         => ['sometimes', 'array'],
+            'data.steps.*'       => ['string'],
+            'data.repack_from'   => ['sometimes', 'integer'],
         ];
     }
 

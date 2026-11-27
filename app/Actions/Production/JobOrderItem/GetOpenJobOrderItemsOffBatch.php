@@ -11,6 +11,7 @@ namespace App\Actions\Production\JobOrderItem;
 use App\Actions\Production\JobOrder\BatchedUnitsForDemand;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -33,7 +34,7 @@ class GetOpenJobOrderItemsOffBatch
             ->whereDoesntHave('tasks', fn ($query) => $query->where('quantity_made', '>', 0))
             ->with(['jobOrder', 'artefact.orgStock'])
             ->get()
-            ->filter(fn (JobOrderItem $item) => $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size)
+            ->filter(fn (JobOrderItem $item) => !Arr::hasAny($item->data ?? [], ['steps', 'repack_from']) && $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size)
             ->map(fn (JobOrderItem $item) => [
                 'id'                  => $item->id,
                 'job_order_slug'      => $item->jobOrder->slug,

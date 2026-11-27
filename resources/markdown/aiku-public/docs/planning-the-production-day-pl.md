@@ -2,7 +2,7 @@
 title: Planowanie dnia produkcji
 summary: Dla kierownika produkcji i kierownika hali - wstawianie zadań do planu dnia bez wskazywania osoby, przydzielanie każdego kroku pracownikowi oraz co dzieje się z pracą niezakończoną w swoim dniu.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Niektóre produkty powstają z innego produktu fabryki: jumbo kula do kąpieli P
 Naciśnij **Create JBB-04 job** (Utwórz zadanie JBB-04) obok komunikatu: otworzy się okno **Create job order** (Utwórz zlecenie produkcyjne) z już wpisanym JBB-04 i brakującymi SKO oraz z notatką, dla jakiego produktu jest to zadanie. Sprawdź je, wybierz pracownika i zapisz. Gdy zadanie JBB-04 jest wykonywane na stan, komunikat zmienia się na niebieski, *Waits for 3 SKO JBB-04 from* (Czeka na 3 SKO JBB-04 z) nowego zadania, aż kule do kąpieli powstaną. Zadanie JBB-04 wykonywane na zamówienie klienta lub partnera się nie liczy, bo te kule są już obiecane.
 
 Komunikat znika, gdy krok używający JBB-04 jest zrobiony.
+
+## Przepakowanie ze stanu albo wykonanie tylko niektórych kroków
+
+Czasem produkt powstaje ze stanu, który już masz, bez całej receptury: kule do kąpieli z bransoletką z kamieniem, bez etykiety, pakowane po 8 (GBBBUL-04), przepakowane jako GBBB-04 w pudełka po 4, wymagają tylko kroku **Packing**. Nie zmieniaj w tym celu receptury; zmieniłaby się też we wszystkich otwartych zadaniach GBBB-04.
+
+W oknie **Utwórz zlecenie produkcyjne** dodaj GBBB-04 i naciśnij **Repack from stock / only some steps** (Przepakuj ze stanu / tylko niektóre kroki) pod linią:
+
+- **Steps in this job** (Kroki w tym zadaniu): odznacz kroki, które zadanie pomija, tutaj **Mixing** i **Making**. Ostatni krok receptury zawsze zostaje, bo to on wprowadza produkt na stan. Pominięte kroki nie trafiają na ekrany hali i nie są potrzebne do zakończenia zadania.
+- **Take the pieces from** (Weź sztuki z): wybierz GBBBUL-04. Gdy zadanie zostanie przyjęte, na każdą wykonaną kulę GBBB-04 ze stanu schodzi jedna kula GBBBUL-04 (jedna paczka GBBBUL-04 po 8 daje dwa pudełka po 4), razem z materiałami kroków, które zadanie wykonuje, na przykład pudełkiem do pakowania. Materiały pominiętych kroków zostają na stanie.
+
+Zadanie przepakowania powstaje dokładnie dla tylu SKO, o ile prosisz, nigdy nie jest zaokrąglane w górę do partii mieszania. Cele i płace za jego kroki działają jak w każdym innym zadaniu. Receptura i pozostałe zadania produktu się nie zmieniają.
 
 ## Prośba do magazynu o materiały
 

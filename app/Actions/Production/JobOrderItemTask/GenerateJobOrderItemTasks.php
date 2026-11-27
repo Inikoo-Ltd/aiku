@@ -50,7 +50,7 @@ class GenerateJobOrderItemTasks
         $jobSteps        = $jobOrderItem->tasks()->get();
         $finishedStepIds = $jobSteps->where('state', JobOrderItemTaskStateEnum::DONE)->pluck('artefact_manufacture_task_id')->filter();
         $workedStepIds   = $jobOrderItem->tasks()->whereNot(fn ($query) => $query->unworked())->pluck('artefact_manufacture_task_id')->filter();
-        $recipeSteps     = $artefact->recipeSteps()->get();
+        $recipeSteps     = $artefact->recipeSteps()->get()->filter(fn (ArtefactManufactureTask $step) => $jobOrderItem->runsStep($step))->values();
 
         foreach ($recipeSteps as $recipeStep) {
             $task = $jobSteps->firstWhere('artefact_manufacture_task_id', $recipeStep->id)
@@ -108,7 +108,7 @@ class GenerateJobOrderItemTasks
 
         if (in_array($jobOrder->state, JobOrderStateEnum::open())) {
             $jobOrderItem->tasks()
-                ->where(fn ($query) => $query->whereNull('artefact_manufacture_task_id')->orWhereNotIn('artefact_manufacture_task_id', $artefact->recipeSteps()->select('id')))
+                ->where(fn ($query) => $query->whereNull('artefact_manufacture_task_id')->orWhereNotIn('artefact_manufacture_task_id', $recipeSteps->pluck('id')))
                 ->unworked()
                 ->delete();
             $jobOrderItem->unsetRelation('tasks');

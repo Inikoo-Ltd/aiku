@@ -17,6 +17,7 @@ use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -70,6 +71,11 @@ class StoreManualJobOrder extends OrgAction
             throw ValidationException::withMessages($missing);
         }
 
+        $repacks = [];
+        foreach ($modelData['lines'] as $index => $line) {
+            $repacks[$index] = $this->repack($artefacts->get($line['artefact_id']), $line, "lines.$index");
+        }
+
         $employeeId      = Arr::get($modelData, 'employee_id');
         $departmentPicks = $employeeId ? [] : PickDepartmentArtisans::run($production);
         foreach ($modelData['lines'] as $line) {
@@ -79,11 +85,11 @@ class StoreManualJobOrder extends OrgAction
 
         $label = trim(ucfirst($modelData['reason']).(filled(Arr::get($modelData, 'notes')) ? ': '.$modelData['notes'] : ''));
 
-        return DB::transaction(function () use ($production, $modelData, $artefacts, $employeeId, $label) {
+        return DB::transaction(function () use ($production, $modelData, $artefacts, $employeeId, $label, $repacks) {
             $seller = $production->organisation;
             $lines  = [];
 
-            foreach ($modelData['lines'] as $line) {
+            foreach ($modelData['lines'] as $index => $line) {
                 $artefact           = $artefacts->get($line['artefact_id']);
                 $batchCode          = trim((string) Arr::get($line, 'batch_code')) ?: null;
                 $periodAfterOpening = Arr::get($line, 'period_after_opening') ?: null;
@@ -111,6 +117,7 @@ class StoreManualJobOrder extends OrgAction
                     'batch_code'           => $batchCode,
                     'expiry_date'          => $expiryDate,
                     'period_after_opening' => $periodAfterOpening,
+                    ...$repacks[$index],
                     'after'    => fn (JobOrder $jobOrder) => $boardLine->update(['job_order_id' => $jobOrder->id]),
                 ];
             }
@@ -132,6 +139,43 @@ class StoreManualJobOrder extends OrgAction
         });
     }
 
+    /**
+     * A line can run only some of its recipe steps, e.g. Packing only to repack stock already made, and take
+     * the pieces from another SKO, one piece for each piece made (HELP-4991). The last step must stay, it is
+     * what finishes the line and puts it in stock.
+     *
+     * @param  array{steps?: array<int, int>|null, repack_from?: int|null}  $line
+     * @return array{steps?: array<int, string>, repack_from?: int}
+     */
+    private function repack(Artefact $artefact, array $line, string $field): array
+    {
+        $chosen = collect(Arr::get($line, 'steps') ?? [])->map(fn ($id) => (int) $id);
+        $source = Arr::get($line, 'repack_from');
+        if ($chosen->isEmpty() && !$source) {
+            return [];
+        }
+
+        $recipe = $artefact->recipeSteps()->get();
+        $steps  = $chosen->isEmpty() ? $recipe : $recipe->whereIn('id', $chosen->all());
+
+        if ($chosen->isNotEmpty() && $steps->count() != $chosen->count()) {
+            throw ValidationException::withMessages([$field.'.steps' => __('Some steps are not in the recipe of :code', ['code' => $artefact->code])]);
+        }
+
+        if ($recipe->isNotEmpty() && !$steps->contains('id', $recipe->sortBy([['position', 'asc'], ['id', 'asc']])->last()->id)) {
+            throw ValidationException::withMessages([$field.'.steps' => __('The last step of :code must be in the job, it is what puts it in stock', ['code' => $artefact->code])]);
+        }
+
+        if ($source == $artefact->org_stock_id) {
+            throw ValidationException::withMessages([$field.'.repack_from' => __(':code can not be repacked from itself', ['code' => $artefact->code])]);
+        }
+
+        return array_filter([
+            'steps'       => $steps->count() < $recipe->count() ? $steps->map(fn (ArtefactManufactureTask $step) => $step->stepKey())->values()->all() : null,
+            'repack_from' => $source ? (int) $source : null,
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -145,6 +189,9 @@ class StoreManualJobOrder extends OrgAction
             'lines.*.batch_code'  => ['sometimes', 'nullable', 'string', 'max:64'],
             'lines.*.expiry_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'lines.*.period_after_opening' => ['sometimes', 'nullable', Rule::in(TradeUnitBestBeforeEnum::periodsAfterOpening())],
+            'lines.*.steps'       => ['sometimes', 'nullable', 'array'],
+            'lines.*.steps.*'     => ['integer', 'distinct'],
+            'lines.*.repack_from' => ['sometimes', 'nullable', 'integer', Rule::exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id)],
         ];
     }
 

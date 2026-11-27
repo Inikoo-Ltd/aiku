@@ -2,7 +2,7 @@
 title: Planificar el día de producción
 summary: Para el responsable de producción y el supervisor de planta - poner trabajos en el plan de un día sin nombrar a nadie, dar cada paso a un operario, y qué pasa con el trabajo que no se terminó en su día.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Algunos productos se fabrican a partir de otro producto de la fábrica: una bomb
 Pulsa **Create JBB-04 job** (Crear trabajo de JBB-04) junto al mensaje: se abre la ventana **Create job order** (Crear orden de trabajo) con JBB-04 y los SKO que faltan ya rellenados, y una nota que dice para qué producto es. Revísala, elige al artesano y guarda. Cuando ya hay un trabajo de JBB-04 hecho para stock, el mensaje se vuelve azul, *Waits for 3 SKO JBB-04 from* (Espera 3 SKO de JBB-04 de) el nuevo trabajo, hasta que las bombas de baño estén fabricadas. Un trabajo de JBB-04 hecho para un pedido de cliente o de socio no cuenta, porque esas bombas de baño ya están comprometidas.
 
 El mensaje desaparece cuando se hace el paso que usa JBB-04.
+
+## Reenvasar stock o hacer solo algunos pasos
+
+A veces un producto se fabrica a partir de stock que ya tienes, sin pasar por toda su receta: unas bombas de baño de piedras preciosas sin etiquetar, envasadas de 8 en 8 (GBBBUL-04), que se reenvasan como GBBB-04 en cajas de 4, solo necesitan **Packing** (Embalando). No cambies la receta para esto: cambiaría también todos los trabajos de GBBB-04 que estén abiertos.
+
+En **Create job order** (Crear orden de trabajo), añade GBBB-04 y pulsa **Repack from stock / only some steps** (Reenvasar desde stock / solo algunos pasos) bajo la línea:
+
+- **Steps in this job** (Pasos de este trabajo): desmarca los pasos que el trabajo se salta, aquí **Mixing** (Mezclando) y **Making** (Fabricando). El último paso de la receta siempre se queda, porque es el que mete el producto en stock. Los pasos omitidos no llegan nunca a las pantallas de planta y no hacen falta para terminar el trabajo.
+- **Take the pieces from** (Tomar las piezas de): elige GBBBUL-04. Al recibir el trabajo, por cada bomba de baño GBBB-04 fabricada sale del stock una bomba de baño GBBBUL-04 (un paquete de 8 GBBBUL-04 da dos cajas de 4), junto con los materiales de los pasos que el trabajo sí hace, como la caja de **Packing**. Los materiales de los pasos omitidos se quedan en stock.
+
+Un trabajo de reenvasado se crea exactamente para los SKO que pides, nunca redondeado a un lote de mezcla. Los objetivos y la paga de sus pasos funcionan como en cualquier otro trabajo. La receta y los demás trabajos del producto no cambian.
 
 ## Pedir materiales al almacén
 

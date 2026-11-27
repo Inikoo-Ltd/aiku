@@ -2004,3 +2004,81 @@ test('HELP-4941 a job done but not received is flagged on the list, board and da
         ->and(\App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production->refresh())->keys()->all())->not->toContain($carried->job_order_id)
         ->and(\App\Actions\Production\JobOrder\GetJobOrdersDoneNotReceived::run($this->production)->keys()->all())->toContain($root->job_order_id);
 });
+
+test('a repack job runs only the steps it was raised with and takes its pieces from another stock', function () {
+    $suffix   = 'RPK'.uniqid();
+    $newStock = function (int $packedIn) {
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
+            $this->group,
+            array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE])
+        ));
+        $orgStock->update(['packed_in' => $packedIn]);
+
+        return $orgStock;
+    };
+    $packed    = $newStock(4);
+    $unlabeled = $newStock(8);
+    $mould     = $newStock(1);
+    $box       = $newStock(1);
+
+    $making  = StoreManufactureTask::make()->action($this->production, ['code' => 'MK'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $packing = StoreManufactureTask::make()->action($this->production, ['code' => 'PK'.$suffix, 'name' => 'Packing '.$suffix, 'is_piece_rate' => true]);
+
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'GB'.$suffix, 'name' => 'Gem bombs', 'org_stock_id' => $packed->id, 'recommended_batch_size' => 40]);
+    $artefact->manufactureTasks()->sync([
+        $making->id  => ['position' => 1, 'units_per_artefact' => 1],
+        $packing->id => ['position' => 2, 'units_per_artefact' => 0.25],
+    ]);
+    $makingStep  = $artefact->recipeSteps()->where('manufacture_task_id', $making->id)->first();
+    $packingStep = $artefact->recipeSteps()->where('manufacture_task_id', $packing->id)->first();
+    foreach ([[$makingStep, $mould, 'MOULD'], [$packingStep, $box, 'BOX']] as [$step, $orgStock, $code]) {
+        $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+            'type' => RawMaterialTypeEnum::CONSUMABLE->value, 'state' => RawMaterialStateEnum::ORPHAN->value,
+            'code' => $code.$suffix, 'description' => $code, 'unit' => RawMaterialUnitEnum::UNIT->value, 'unit_cost' => 1,
+        ]);
+        UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $orgStock->id]);
+        AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => 1]);
+    }
+
+    expect(fn () => \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'rework',
+        'lines'  => [['artefact_id' => $artefact->id, 'quantity' => 2, 'steps' => [$makingStep->id]]],
+    ]))->toThrow(ValidationException::class);
+
+    $normal = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, ['reason' => 'stock', 'lines' => [['artefact_id' => $artefact->id, 'quantity' => 1]]]);
+    $repack = \App\Actions\Production\JobOrder\StoreManualJobOrder::make()->action($this->production, [
+        'reason' => 'rework',
+        'lines'  => [['artefact_id' => $artefact->id, 'quantity' => 2, 'steps' => [$packingStep->id], 'repack_from' => $unlabeled->id]],
+    ]);
+    $item = $repack->jobOrderItems()->first();
+
+    expect($item->quantity)->toBe(8)
+        ->and($item->tasks()->pluck('manufacture_task_id')->all())->toBe([$packing->id])
+        ->and($normal->jobOrderItems()->first()->tasks()->count())->toBe(2);
+
+    \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::run($item->refresh());
+    expect($item->tasks()->count())->toBe(1);
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH'.substr($suffix, -6), 'name' => 'Repack warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A'.substr($suffix, -6), 'name' => 'Repack area']);
+    $location  = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'L'.substr($suffix, -6), 'name' => 'Repack loc'] + \App\Models\Inventory\Location::factory()->definition());
+    foreach ([$unlabeled, $mould, $box] as $orgStock) {
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($orgStock, $location, ['type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING]);
+        \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $location, ['quantity' => 50, 'type' => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PRODUCTION]);
+    }
+
+    ConfirmJobOrder::make()->action($repack);
+    $packingTask = $item->tasks()->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $packingTask), ['quantity_made' => 2]);
+
+    expect($item->refresh()->load('tasks')->isFinished())->toBeTrue();
+
+    \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($repack->refresh(), ['location_id' => $location->id]);
+
+    $taken = fn ($orgStock) => (float) \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $orgStock->id)->where('quantity', '<', 0)->sum('quantity');
+    expect($repack->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($taken($unlabeled))->toBe(-1.0)
+        ->and($taken($box))->toBe(-8.0)
+        ->and($taken($mould))->toBe(0.0)
+        ->and((float) \App\Models\Inventory\OrgStockMovement::where('org_stock_id', $packed->id)->where('quantity', '>', 0)->sum('quantity'))->toBe(2.0);
+});

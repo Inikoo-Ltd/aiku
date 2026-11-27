@@ -41,7 +41,7 @@ class GetJobOrderItemMissingMixes
             ->whereIn('artefacts_manufacture_tasks.artefact_id', $jobOrderItems->pluck('artefact_id')->unique()->values())
             ->whereNotNull('raw_materials.artefact_id')
             ->whereColumn('raw_materials.artefact_id', '!=', 'artefacts_manufacture_tasks.artefact_id')
-            ->with('rawMaterial.artefact', 'rawMaterial.orgStock')
+            ->with('rawMaterial.artefact', 'rawMaterial.orgStock', 'recipeStep')
             ->get(['recipe_step_raw_materials.*', 'artefacts_manufacture_tasks.artefact_id as usage_artefact_id'])
             ->groupBy('usage_artefact_id');
 
@@ -50,7 +50,7 @@ class GetJobOrderItemMissingMixes
             $missing = [];
             foreach ($usagesByArtefact->get($jobOrderItem->artefact_id, []) as $usage) {
                 $rawMaterial = $usage->rawMaterial;
-                if (!$rawMaterial) {
+                if (!$rawMaterial || ($usage->recipeStep && !$jobOrderItem->runsStep($usage->recipeStep))) {
                     continue;
                 }
                 $needed = round((float) $jobOrderItem->quantity * (float) $usage->quantity_per_unit, 3);

@@ -1,7 +1,7 @@
 ---
 title: Planning the production day
 summary: For the production manager and the floor supervisor - putting jobs on a day's plan without naming anyone, giving each step to an operator, and what happens to work not finished on its day.
-date: 2026-11-19
+date: 2026-11-27
 tags: production, planning, floor
 category: production
 help_routes: grp.org.productions.show.operations.day_plan, grp.org.productions.show.operations.materials_check
@@ -79,6 +79,17 @@ Some products are made from another product of the factory: a Puckator jumbo bat
 Press **Create JBB-04 job** next to the message: the **Create job order** window opens with JBB-04 and the missing SKOs already filled in, and a note saying which product it is for. Check it, choose the artisan and save. Once a JBB-04 job is made for stock, the message turns blue, *Waits for 3 SKO JBB-04 from* the new job, until the bath bombs are made. A JBB-04 job made for a customer or partner order does not count, because those bath bombs are already promised.
 
 The message goes once the step that uses JBB-04 is done.
+
+## Repacking stock, or making only some steps
+
+Sometimes a product is made from stock you already have, without its whole recipe: unlabelled gem bracelet bath bombs packed in 8 (GBBBUL-04) repacked as GBBB-04 in boxes of 4 only need **Packing**. Do not change the recipe for this; it would change every open GBBB-04 job too.
+
+In **Create job order**, add GBBB-04 and press **Repack from stock / only some steps** under the line:
+
+- **Steps in this job**: untick the steps the job skips, here **Mixing** and **Making**. The last step of the recipe always stays, because it is what puts the product in stock. The steps left out never reach the floor screens and are not needed to finish the job.
+- **Take the pieces from**: choose GBBBUL-04. When the job is received, one GBBBUL-04 bath bomb leaves stock for every GBBB-04 bath bomb made (one GBBBUL-04 pack of 8 makes two boxes of 4), together with the materials of the steps the job runs, such as the Packing box. The materials of the skipped steps stay in stock.
+
+A repack job is raised for exactly the SKOs you ask for, never rounded up to a mix batch. Targets and pay for its steps work as for any other job. The recipe and the other jobs of the product do not change.
 
 ## Asking the warehouse for materials
 

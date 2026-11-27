@@ -2,7 +2,7 @@
 title: Planificarea zilei de producție
 summary: Pentru managerul de producție și supervizorul de hală - cum pui sarcinile în planul unei zile fără să numești pe nimeni, cum dai fiecare pas unui operator și ce se întâmplă cu munca nefinalizată în ziua ei.
 date: 2026-10-15
-source_date: 2026-11-19
+source_date: 2026-11-27
 tags: production, planning, floor
 category: production
 series: Ordering from partners
@@ -79,6 +79,17 @@ Unele produse se fac dintr-un alt produs al fabricii: un jumbo bath bomb Puckato
 Apasă **Create JBB-04 job** lângă mesaj: se deschide fereastra **Create job order** cu JBB-04 și SKO-urile lipsă deja completate, plus o notă care spune pentru ce produs este. Verific-o, alege artizanul și salvează. Odată ce o sarcină JBB-04 este făcută pentru stoc, mesajul devine albastru, *Waits for 3 SKO JBB-04 from* (așteaptă 3 SKO JBB-04 de la) noua sarcină, până când bilele de baie sunt gata. O sarcină JBB-04 făcută pentru o comandă de client sau de partener nu se numără, pentru că acele bile de baie sunt deja promise.
 
 Mesajul dispare când pasul care folosește JBB-04 este terminat.
+
+## Reambalarea stocului sau realizarea doar a unor pași
+
+Uneori un produs se face din stoc deja existent, fără toată rețeta lui: bilele de baie cu pietre prețioase, fără etichetă, ambalate câte 8 (GBBBUL-04), reambalate ca GBBB-04 în cutii de câte 4, au nevoie doar de **Packing**. Nu schimba rețeta pentru asta; ar schimba și toate sarcinile GBBB-04 deschise.
+
+În **Creați comandă de producție**, adaugă GBBB-04 și apasă **Repack from stock / only some steps** sub linie:
+
+- **Steps in this job**: debifează pașii pe care sarcina îi sare, aici **Mixing** și **Making**. Ultimul pas al rețetei rămâne mereu, pentru că el pune produsul în stoc. Pașii lăsați deoparte nu ajung niciodată pe ecranele din hală și nu sunt necesari pentru a termina sarcina.
+- **Take the pieces from**: alege GBBBUL-04. Când sarcina este recepționată, pentru fiecare bilă de baie GBBB-04 făcută iese din stoc o bilă de baie GBBBUL-04 (un pachet GBBBUL-04 de 8 face două cutii de 4), împreună cu materialele pașilor pe care îi parcurge sarcina, cum ar fi cutia de la **Packing**. Materialele pașilor săriți rămân în stoc.
+
+O sarcină de reambalare se face exact pentru SKO-urile cerute, niciodată rotunjite în sus la un lot de amestec. Țintele și plata pentru pașii ei funcționează ca la orice altă sarcină. Rețeta și celelalte sarcini ale produsului nu se schimbă.
 
 ## Cererea de materiale la depozit
 

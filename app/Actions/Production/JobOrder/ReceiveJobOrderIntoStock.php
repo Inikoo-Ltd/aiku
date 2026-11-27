@@ -281,15 +281,21 @@ class ReceiveJobOrderIntoStock extends OrgAction
     /**
      * A step whose mix came from a shared mix already took its raw materials when the mix was recorded (HELP-4562).
      * A recipe listing the artefact's own stock as a raw material (bulk oils, HELP-4770) never takes it back out.
+     * A repack line takes only the materials of the steps it runs, and a piece of its source stock for each piece made (HELP-4991).
      */
     private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits, ?int $userId): void
     {
         $recipeSteps = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
             ->whereNotIn('id', $this->stepsTakenWithTheirMix($item))
             ->with(['rawMaterials.rawMaterial.orgStock.organisation.currency', 'rawMaterials.rawMaterial.orgStock.group.currency'])
-            ->get();
+            ->get()
+            ->filter(fn (ArtefactManufactureTask $recipeStep) => $item->runsStep($recipeStep));
 
         $consumptionByOrgStock = [];
+
+        if ($source = OrgStock::find(Arr::get($item->data, 'repack_from'))) {
+            $consumptionByOrgStock[$source->id] = ['orgStock' => $source, 'quantity' => $producedArtefactUnits];
+        }
 
         foreach ($recipeSteps as $recipeStep) {
             foreach ($recipeStep->rawMaterials as $recipeStepRawMaterial) {
