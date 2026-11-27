@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Models\Chat\StaffCall;
 use App\Actions\Chat\UI\IndexChatAiAcceptance;
 use App\Actions\Accounting\BankTransaction\UI\IndexBankIncoming;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
@@ -398,9 +399,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label'   => 'V·Desks',
-                        'note'     => __('Public channels'),
-                        'noteIcon' => ['fal', 'fa-tv-retro'],
-                        'tooltip' => 'V·Desks',
+                        'tooltip' => __('V·Desks: public channels'),
                         'icon'    => ['fal', 'fa-hashtag'],
                         'root'    => 'grp.chat.staff.slack.',
                         'route'   => [
@@ -408,10 +407,8 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label'   => 'Verbrations',
-                        'note'     => __('Private groups'),
-                        'noteIcon' => ['fac', 'square-compass'],
-                        'tooltip' => __('Verbrations: private groups, only the people invited see them'),
+                        'label'   => 'Verbations',
+                        'tooltip' => __('Verbations: private groups, only the people invited see them'),
                         'icon'    => ['fal', 'fa-draw-square'],
                         'root'    => 'grp.chat.staff.groups.',
                         'route'   => [
@@ -420,7 +417,6 @@ class GetGroupNavigation
                     ],
                     [
                         'label'   => 'V·Ds',
-                        'note'    => __('Direct messages'),
                         'tooltip' => __('Verba directs: direct messages and group chats'),
                         'icon'    => ['fal', 'fa-comments'],
                         'root'    => 'grp.chat.staff.index',
@@ -429,9 +425,18 @@ class GetGroupNavigation
                             'name' => 'grp.chat.staff.index',
                         ],
                     ],
+                    ...(StaffCall::isEnabled() ? [[
+                        'label'   => __('Calls'),
+                        'tooltip' => __('Your calls, missed ones included'),
+                        'icon'    => ['fal', 'fa-phone'],
+                        'root'    => 'grp.chat.staff.calls.index',
+                        'route'   => [
+                            'name' => 'grp.chat.staff.calls.index',
+                        ],
+                    ]] : []),
                     ...($user->hasGroupAccess() ? [[
-                        'label'   => __('Stats'),
-                        'tooltip' => __('Verba stats: messages, calls and people'),
+                        'label'   => __('Analytics'),
+                        'tooltip' => __('Verba analytics: messages, calls and people'),
                         'icon'    => ['fal', 'fa-chart-line'],
                         'root'    => 'grp.chat.staff.reports',
                         'route'   => [

@@ -542,11 +542,12 @@ test('each ping adds what the browser measured to the person\'s call quality, no
 });
 
 test('the quick call list offers the people called last, then starred colleagues, active ones of the group only', function () {
-    StartStaffCall::run($this->dm, $this->user);
+    $caller = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => true]);
+    StartStaffCall::run(StoreStaffConversation::run($caller, ['user_ids' => [$this->callee->id]]), $caller);
     $retired = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => false]);
-    $this->user->teamMembers()->syncWithoutDetaching([$this->outsider->id, $retired->id, $this->callee->id]);
+    $caller->teamMembers()->syncWithoutDetaching([$this->outsider->id, $retired->id, $this->callee->id]);
 
-    $people = collect(actingAs($this->user)->getJson(route('grp.chat.staff.calls.live'))->assertOk()->json('quick_people'));
+    $people = collect(actingAs($caller)->getJson(route('grp.chat.staff.calls.live'))->assertOk()->json('quick_people'));
 
     expect($people->first()['id'])->toBe($this->callee->id)
         ->and($people->pluck('id'))->toContain($this->outsider->id)
@@ -1015,4 +1016,21 @@ test('the summary is for those in the call while it was recorded: not who left b
         ->and($recording->isVisibleTo($this->callee))->toBeTrue()
         ->and($recording->isVisibleTo($this->user))->toBeTrue();
     EndStaffCall::run($call);
+});
+
+test('the calls page lists a person\'s calls, shows a call they never picked up as missed, and filters to missed ones', function () {
+    $call = StartStaffCall::run($this->dm, $this->user)['call'];
+    $call->update(['started_at' => now()->subSeconds(StaffCall::RING_SECONDS + 1)]);
+    CloseStaleStaffCalls::make()->handle($this->dm);
+
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+    $rowFor = fn (User $user, array $query = []) => collect(actingAs($user)->get(route('grp.chat.staff.calls.index', $query))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffCalls'))
+        ->inertiaProps('calls.data'))->firstWhere('ulid', $call->ulid);
+
+    expect($rowFor($this->callee))->toMatchArray(['status' => 'missed', 'direction' => 'incoming', 'who' => $this->user->chatName(), 'can_call_back' => true])
+        ->and($rowFor($this->user))->toMatchArray(['status' => 'no_answer', 'direction' => 'outgoing', 'who' => $this->callee->chatName()])
+        ->and($rowFor($this->callee, ['calls_filter' => ['missed' => 1]]))->not->toBeNull()
+        ->and($rowFor($this->user, ['calls_filter' => ['missed' => 1]]))->toBeNull()
+        ->and($rowFor($this->outsider))->toBeNull();
 });

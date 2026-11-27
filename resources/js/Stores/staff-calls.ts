@@ -42,6 +42,13 @@ export interface StaffCall {
 
 export type StaffCallKind = "voice" | "video" | "screen"
 
+export interface StaffQuickPerson {
+    id: number
+    name: string
+    avatar: Record<string, string> | null
+    starred: boolean
+}
+
 export interface StaffCallGuestSession {
     pollUrl: string
     leaveUrl: string
@@ -115,6 +122,7 @@ export const useStaffCalls = defineStore("staff-calls", {
         meetingError: null as string | null,
         pingSeconds: 20,
         ringSeconds: 30,
+        quickPeople: [] as StaffQuickPerson[],
     }),
     getters: {
         myId: () => usePage().props?.auth?.user?.id as number | undefined,
@@ -128,6 +136,7 @@ export const useStaffCalls = defineStore("staff-calls", {
                 this.enabled = true
                 this.pingSeconds = data.ping_seconds
                 this.ringSeconds = data.ring_seconds
+                this.quickPeople = data.quick_people ?? []
                 data.data.forEach((call: StaffCall) => this.handleBroadcast(call))
             } catch {
                 this.enabled = false

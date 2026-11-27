@@ -2135,7 +2135,7 @@ test('Verba lives at /vx, /chat/staff redirects there permanently keeping the pa
     $verba      = collect($navigation['verba']['topMenu']['subSections'])->pluck('label')->all();
     $chat       = collect($navigation['chat']['topMenu']['subSections'])->pluck('label')->all();
 
-    expect($verba)->toBe([__('News'), 'V·Desks', 'Verbrations', 'V·Ds', __('Stats')])
+    expect($verba)->toBe([__('News'), 'V·Desks', 'Verbations', 'V·Ds', ...(App\Models\Chat\StaffCall::isEnabled() ? [__('Calls')] : []), __('Analytics')])
         ->and($chat)->not->toContain(__('Verba'));
 });
 

@@ -17,11 +17,11 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faComments, faUsers, faReply, faPhone, faClock, faUserFriends, faArrowUp, faArrowDown, faVideo, faDesktop, faChartLine } from "@fal"
+import { faComments, faUsers, faReply, faPhone, faClock, faUserFriends, faArrowUp, faArrowDown, faVideo, faDesktop, faChartLine, faHashtag } from "@fal"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faComments, faUsers, faReply, faPhone, faClock, faUserFriends, faArrowUp, faArrowDown, faVideo, faDesktop, faChartLine, faSlack)
+library.add(faComments, faUsers, faReply, faPhone, faClock, faUserFriends, faArrowUp, faArrowDown, faVideo, faDesktop, faChartLine, faSlack, faHashtag)
 
 type Totals = {
 	messages: number
@@ -228,7 +228,7 @@ const callFacts = computed(() => [
 const chatFacts = computed(() => [
 	{ label: ctrans("Chats with messages"), value: locale.number(current.value.conversations) },
 	{ label: ctrans("Verbs in 1:1 chats"), value: locale.number(current.value.direct_messages) },
-	{ label: ctrans("Verbs in Verbrations"), value: locale.number(current.value.group_messages) },
+	{ label: ctrans("Verbs in Verbations"), value: locale.number(current.value.group_messages) },
 	{ label: ctrans("Slack messages sent from aiku"), value: locale.number(current.value.slack_from_aiku) },
 ])
 </script>

@@ -51,7 +51,7 @@ const submit = async () => {
         emit("created", data.url)
     } catch (exception: any) {
         const errors = exception?.response?.data?.errors
-        error.value = (errors && (errors.name?.[0] ?? errors.user_ids?.[0])) ?? exception?.response?.data?.message ?? ctrans("The Verbration could not be created. Try again.")
+        error.value = (errors && (errors.name?.[0] ?? errors.user_ids?.[0])) ?? exception?.response?.data?.message ?? ctrans("The Verbation could not be created. Try again.")
     } finally {
         isSaving.value = false
     }
@@ -59,7 +59,7 @@ const submit = async () => {
 </script>
 
 <template>
-    <Dialog v-model:visible="visible" modal :header="ctrans('New Verbration')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
+    <Dialog v-model:visible="visible" modal :header="ctrans('New Verbation')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <div class="space-y-4 text-sm">
             <p class="text-gray-500">{{ ctrans("A Slack private channel, created as you: only the people you invite can see it, in Slack and in Verba.") }}</p>
             <label class="block space-y-1">

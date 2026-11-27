@@ -45,6 +45,7 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/calls/{staffCall}/link', \App\Actions\Chat\Staff\Meeting\ShareStaffCallLink::class)->name('calls.link');
     Route::post('/calls/{staffCall}/lock', \App\Actions\Chat\Staff\Meeting\LockStaffMeeting::class)->name('calls.lock');
     Route::post('/calls/{staffCall}/guests/{guest}', \App\Actions\Chat\Staff\Meeting\DecideStaffMeetingGuest::class)->name('calls.guests.decide');
+    Route::get('/calls', \App\Actions\Chat\Staff\UI\IndexStaffCalls::class)->name('calls.index');
     Route::get('/calls/live', \App\Actions\Chat\Staff\Call\GetLiveStaffCalls::class)->name('calls.live');
     Route::post('/calls/{staffCall}/join', \App\Actions\Chat\Staff\Call\JoinStaffCall::class)->name('calls.join');
     Route::post('/calls/{staffCall}/decline', \App\Actions\Chat\Staff\Call\DeclineStaffCall::class)->name('calls.decline');

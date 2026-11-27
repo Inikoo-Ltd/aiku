@@ -58,7 +58,7 @@ class StoreSlackPrivateChannel
     {
         $client = SlackConnection::main()->where('user_id', $user->id)->first()?->hasPrivateConsent() ? SlackWriteClient::for($user) : null;
         if (!$client) {
-            $this->refuse(__('Bring your private conversations to Verba first (your profile, Slack section): a Verbration is a Slack private channel created as you'));
+            $this->refuse(__('Bring your private conversations to Verba first (your profile, Slack section): a Verbation is a Slack private channel created as you'));
         }
         $slackName = Str::of($name)->ascii()->lower()->replaceMatches('/[^a-z0-9_-]+/', '-')->trim('-')->limit(80, '')->toString();
         if ($slackName === '') {
@@ -107,7 +107,7 @@ class StoreSlackPrivateChannel
         try {
             $client->call('conversations.invite', ['channel' => $channel->slack_id, 'users' => $people->values()->implode(',')]);
         } catch (SlackWriteException $exception) {
-            $this->refuse(__('The Verbration was created, but Slack did not add the people (:error). Add them in Slack', ['error' => $exception->slackError]), 'user_ids');
+            $this->refuse(__('The Verbation was created, but Slack did not add the people (:error). Add them in Slack', ['error' => $exception->slackError]), 'user_ids');
         }
         foreach ($people as $slackUserId) {
             $channel->members()->firstOrCreate(['slack_user_id' => $slackUserId]);

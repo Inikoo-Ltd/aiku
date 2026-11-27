@@ -75,6 +75,7 @@ import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isMac } from "@/Composables/useDeskShortcuts"
 import { faEdit } from "@fal"
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 import { useTruncate } from "@/Composables/useTruncate"
 
 library.add(faEdit, faHandsHelping, faExchange, faChevronLeft, faGoogle, faChevronDown, faTerminal, faUserAlien, faCog, faInbox, faCity, faBuilding, faNetworkWired, faUserHardHat, faCalendar, faStopwatch, faStoreAlt, faWarehouseAlt, faChartNetwork, faFolderTree, faFolderDownload, faFolder, faCube, faUserPlus,
@@ -202,7 +203,7 @@ const label = {
                         </Transition>
                     </div>
 
-                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:flex shrink-0 self-stretch items-center justify-center bg-[var(--vx-sidebar,#3f0e40)] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14' : 'w-64'">
+                    <div v-if="isVerbaRoute" class="relative z-[1] -mb-px hidden md:flex shrink-0 self-stretch items-center bg-[var(--vx-sidebar,#3f0e40)] transition-[width] duration-200 ease-in-out" :class="isDeskSidebarCollapsed ? 'w-14 justify-center' : 'w-64 justify-start pl-4'">
                         <button
                             v-if="isDeskSidebarCollapsed && isVerbaChatRoute"
                             type="button"
@@ -212,6 +213,10 @@ const label = {
                             @click="isDeskJumpOpen = true">
                             <FontAwesomeIcon icon="fal fa-edit" class="translate-x-[1px] -translate-y-[1px] text-sm" fixed-width aria-hidden="true" />
                         </button>
+                        <Link v-else-if="!isDeskSidebarCollapsed" :href="route('grp.chat.staff.feed')" class="flex items-center gap-x-2.5 text-white hover:opacity-90">
+                            <DeskIcon class="text-[28px]" />
+                            <span class="font-[Lobster] text-[28px] leading-none tracking-[0.01em]">Verba</span>
+                        </Link>
                     </div>
 
                     <!-- Dropdown: TopBars -->

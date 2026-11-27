@@ -402,7 +402,7 @@ const homeRoute = computed(() => route(isDesks.value ? "grp.chat.staff.slack.ind
 const tabConversations = computed(() => messagingConversations.value.filter((conversation) => isVerbration(conversation) === isGroups.value))
 const isNewVerbrationOpen = ref(false)
 const isPrivateConsentOpen = ref(false)
-const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbrations") : ctrans("Filter V·Ds")))
+const filterLabel = computed(() => (isDesks.value ? ctrans("Filter V·Desks") : isGroups.value ? ctrans("Filter Verbations") : ctrans("Filter V·Ds")))
 
 const isChannelRowShown = (channelId: number) => isDesks.value || isSelectedChannel(channelId) || unreadOf(channelId) > 0
 const isConversationRowShown = (conversation: { ulid: string; unread_count: number }) => !isDesks.value || selectedUlid.value === conversation.ulid || conversation.unread_count > 0
@@ -557,7 +557,7 @@ onUnmounted(() => {
                 </div>
 
                 <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                    <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbrations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
+                    <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
     
                     <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
     
@@ -700,7 +700,7 @@ onUnmounted(() => {
                             class="mx-2 flex h-7 w-[calc(100%-1rem)] items-center gap-x-2 rounded-md px-4 text-left hover:bg-[var(--desk-hover)]"
                             @click="isGroups ? (isNewVerbrationOpen = true) : (isJumpOpen = true)">
                             <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[var(--desk-chip)] text-sm">+</span>
-                            <span class="truncate">{{ isGroups ? ctrans("New Verbration") : ctrans("Add coworkers") }}</span>
+                            <span class="truncate">{{ isGroups ? ctrans("New Verbation") : ctrans("Add coworkers") }}</span>
                         </button>
                     </section>
     

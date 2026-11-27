@@ -8,6 +8,7 @@ import { unreadRailNotifications } from '@/Composables/useRailNotifications'
 const Profile = defineAsyncComponent(() => import("@/Pages/Grp/Profile.vue"))
 import WaitingWarehouseList from "@/Layouts/Grp/WaitingWarehouseList.vue"
 import FocusModeButton from "@/Layouts/Grp/FocusModeButton.vue"
+import QuickCallButton from "@/Layouts/Grp/QuickCallButton.vue"
 import WaitingCrmList from "@/Layouts/Grp/WaitingCrmList.vue"
 
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -89,7 +90,8 @@ const isUserMac = navigator.platform.includes('Mac')
                 <SearchBar v-model="showSearchDialog" />
             </button>
 
-            <FocusModeButton class="sm:pl-4" />
+            <QuickCallButton class="sm:pl-4" />
+            <FocusModeButton class="pl-2" />
 
             <!-- Search: AI -->
             <!-- <button v-if="true" @click="showAskBot = !showAskBot" id="ask-bot"

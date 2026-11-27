@@ -329,7 +329,7 @@ class ShowStaffChatReports extends OrgAction
     {
         $report = $this->handle($group, $this->days, $this->by);
         $window = $this->window($this->days);
-        $title  = __('Verba stats');
+        $title  = __('Verba analytics');
 
         return Inertia::render(
             'Chat/StaffChatReports',
@@ -357,7 +357,7 @@ class ShowStaffChatReports extends OrgAction
                     'simple' => [
                         'icon'  => 'fal fa-chart-line',
                         'route' => ['name' => 'grp.chat.staff.reports'],
-                        'label' => __('Stats'),
+                        'label' => __('Analytics'),
                     ],
                 ],
             ]

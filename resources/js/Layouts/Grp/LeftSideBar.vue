@@ -9,17 +9,17 @@ import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare, faParachuteBox } from "@fal"
+import { faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faTasks, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faParachuteBox } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSlack } from "@fortawesome/free-brands-svg-icons"
 import { computed, inject, onBeforeUnmount, onMounted, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { isNavigationActive } from "@/Composables/useUrl"
 import { Link } from "@inertiajs/vue3"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import DeskIcon from "@/Components/Messaging/DeskIcon.vue"
 
-library.add(faSlack, faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faDrawSquare, faParachuteBox)
+library.add(faTasks, faChevronLeft, faSignOutAlt, faSensor, faLifeRing, faHeadset, faCommentAlt, faSignOut, faServer, faRobot, faProjectDiagram, faLightbulbOn, faHatWizard, faParachuteBox)
 
 const layout = inject("layout", layoutStructure)
 
@@ -106,7 +106,7 @@ const allBottomLinks = computed(() => [
     isEngineer.value ? devopsLink.value : tasksLink.value,
     { route: ticketsRoute.value.name, parameters: ticketsRoute.value.parameters, root: ticketsRoute.value.root, label: ctrans("Tickets"), tooltip: ctrans("Tickets: report a problem or ask for help"), icon: "fal fa-life-ring", problems: 0 },
     { route: chatRoute.value.name, parameters: chatRoute.value.parameters, root: chatRoute.value.root, label: ctrans("Chat"), tooltip: ctrans("Chat with customers and colleagues"), icon: "fal fa-comment-alt", problems: 0 },
-    { route: "grp.chat.staff.feed", parameters: {}, root: "grp.chat.staff.", label: "V·X", tooltip: ctrans("V·X: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
+    { route: "grp.chat.staff.feed", parameters: {}, root: "grp.chat.staff.", label: "Verba", tooltip: ctrans("Verba: messages, channels and calls with colleagues"), icon: "desk", problems: 0 },
 ])
 
 const loadingRoute = ref<string | null>(null)
@@ -180,7 +180,7 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
                     @start="() => (loadingRoute = link.route)"
                     @finish="() => (loadingRoute = null)">
                     <LoadingIcon v-if="loadingRoute === link.route" class="flex-shrink-0 h-4 w-4" />
-                    <FontAwesomeIcon v-else-if="link.icon === 'desk'" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width icon="fal fa-draw-square" />
+                    <DeskIcon v-else-if="link.icon === 'desk'" mono class="flex-shrink-0 h-4 w-4" />
                     <FontAwesomeIcon
                         v-else
                         aria-hidden="true"
@@ -197,15 +197,14 @@ onBeforeUnmount(() => bottomLinksObserver?.disconnect())
 								layout.leftSidebar.show
 									? 'truncate block md:block'
 									: 'block md:hidden',
+								link.icon === 'desk' && 'font-[Lobster] !font-normal text-[17px] tracking-[0.01em]',
 							]">
-							<span v-if="link.icon === 'desk'" class="inline-flex items-baseline font-semibold"><span>V</span><span class="-mx-[0.2em] relative z-10">·</span><span>X</span></span>
-                            <template v-else>{{ link.label }}</template>
+							{{ link.label }}
 						</span>
                         <span v-else class="leading-none whitespace-nowrap block md:hidden">
 							{{ link.label }}
 						</span>
                     </Transition>
-                    <FontAwesomeIcon v-if="link.icon === 'desk' && layout.leftSidebar.show" icon="fab fa-slack" class="h-3.5 w-3.5 opacity-80" fixed-width aria-hidden="true" />
                 </Link>
 
             </div>
