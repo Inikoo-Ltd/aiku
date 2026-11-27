@@ -59,6 +59,10 @@ class UpdateOrder extends OrgAction
             $modelData['collection_address_id'] = $order->shop->collection_address_id;
         }
 
+        if (Arr::has($modelData, 'do_not_pick')) {
+            data_set($modelData, 'data.do_not_pick', (bool)Arr::pull($modelData, 'do_not_pick'));
+        }
+
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
         $oldShippingZoneId       = $order->shipping_zone_id;
@@ -263,6 +267,7 @@ class UpdateOrder extends OrgAction
             'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
             'private_warehouse_note'  => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'do_not_pick'             => ['sometimes', 'boolean'],
             'state'                   => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'shipping_engine'         => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
             'sales_channel_id'        => [

@@ -83,6 +83,8 @@ import {
     faHandHoldingUsd,
     faInfoCircle,
     faGift,
+    faBan,
+    faHandPaper,
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -114,7 +116,7 @@ import CustomsExportLink from "@/Components/Warehouse/DeliveryNotes/CustomsExpor
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
-library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle, faGift)
+library.add(faParachuteBox, faEllipsisH, faSortNumericDown, fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faEdit, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy, faMoneyCheckEditAlt, faSackDollar, faInfoCircle, faGift, faBan, faHandPaper)
 
 const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
@@ -145,6 +147,7 @@ const props = defineProps<{
     e_invoice_dic_missing?: { name: string, parameters: (string | number)[] } | null
     aurora_notice?: string | null
     send_to_warehouse_hold?: { reason: string, route: routeType } | null
+    office_hold?: string | null
     production_review?: InstanceType<typeof ProductionReviewBar>['$props']['review'] | null
     basket_customer_balance?: number | string | null
     title: string
@@ -1748,6 +1751,15 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
             @start="() => (sendDespiteHoldError = null)"
             @error="(errors: Record<string, string>) => (sendDespiteHoldError = Object.values(errors ?? {})[0] ?? ctrans('Could not send it, please try again'))"
         />
+    </div>
+
+    <div v-if="office_hold" class="m-3 flex flex-wrap items-center gap-4 rounded-lg border-2 border-amber-400 bg-amber-50 p-4 text-amber-900">
+        <FontAwesomeIcon :icon="faHandPaper" class="text-3xl text-amber-500" fixed-width aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+            <div class="text-lg font-semibold">{{ ctrans("Waiting for the office") }}</div>
+            <div class="text-sm">{{ ctrans("Held: :reason", { reason: office_hold }) }}</div>
+            <div class="text-sm">{{ ctrans("When it is checked, press Send to warehouse.") }}</div>
+        </div>
     </div>
 
     <PageHeading :data="pageHeadWithUploadInAddGroup">
