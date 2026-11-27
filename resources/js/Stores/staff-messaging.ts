@@ -99,6 +99,8 @@ export interface StaffConversation {
     is_watching?: boolean
     can_call?: boolean
     last_message_user_id?: number | null
+    wallpaper?: { pattern: string | null; colour: string | null } | null
+    wallpaper_is_set?: boolean
 }
 
 export interface StaffConversationTask {
