@@ -8,6 +8,8 @@
 
 namespace App\Actions\Chat\Staff\UI;
 
+use App\Models\Chat\SlackConnection;
+use App\Actions\Chat\Staff\Slack\Write\StartSlackConnection;
 use App\Actions\Chat\Staff\Slack\FormatSlackMessages;
 use App\Actions\Chat\Staff\StaffChatWallpaper;
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
@@ -164,7 +166,7 @@ class ShowStaffSlackChannels extends OrgAction
         $starred = Arr::get($user->settings, 'desk_starred') ?? [];
 
         if (!$user->status) {
-            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred];
+            return ['slack_channels' => [], 'slack_private_channels' => [], 'slack_listed_channels' => [], 'slack_direct_channels' => [], 'slack_live_channel' => null, 'desk_starred' => $starred, 'slack_private_opt_in' => null];
         }
 
         $memo        = null;
@@ -176,9 +178,30 @@ class ShowStaffSlackChannels extends OrgAction
         $direct      = fn (): array => $this->channels($user, direct: true);
         $listed      = fn (): array => $this->listedChannels($user);
 
-        return $deferred
+        $optIn = ['slack_private_opt_in' => $this->privateOptIn($user)];
+
+        return $optIn + ($deferred
             ? ['slack_channels' => Inertia::defer($channels, 'slack'), 'slack_private_channels' => Inertia::defer($private, 'slack'), 'slack_listed_channels' => Inertia::defer($listed, 'slack'), 'slack_direct_channels' => Inertia::defer($direct, 'slack'), 'slack_live_channel' => Inertia::defer($liveChannel, 'slack'), 'desk_starred' => $starred]
-            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred];
+            : ['slack_channels' => $channels, 'slack_private_channels' => $private, 'slack_listed_channels' => $listed, 'slack_direct_channels' => $direct, 'slack_live_channel' => $liveChannel, 'desk_starred' => $starred]);
+    }
+
+    /**
+     * The private conversations yes (INI-429) offered where it matters, on V·Ds and Verbrations, until the person has given it.
+     *
+     * @return array{consent_version: string, terms_version: string, start_route: array{name: string}, unavailable_reason: string|null}|null
+     */
+    public function privateOptIn(User $user): ?array
+    {
+        if (!SlackWriteAccess::privateOptInOpen() || !SlackWriteAccess::allows($user) || SlackConnection::main()->where('user_id', $user->id)->first()?->hasPrivateConsent()) {
+            return null;
+        }
+
+        return [
+            'consent_version'    => SlackWriteAccess::PRIVATE_CONSENT_VERSION,
+            'terms_version'      => SlackWriteAccess::PRIVATE_TERMS_VERSION,
+            'start_route'        => ['name' => 'grp.chat.staff.slack.connect.private.start'],
+            'unavailable_reason' => StartSlackConnection::unavailableReason($user),
+        ];
     }
 
     /**
