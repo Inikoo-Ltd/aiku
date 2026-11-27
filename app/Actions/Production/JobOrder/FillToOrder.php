@@ -238,8 +238,7 @@ class FillToOrder
             $filledItems = JobOrderItem::whereIn('data->fill->to_produce_id', $lineIds)->where('quantity_received', '>', 0)->with('jobOrder')->get();
             $filled      = (int) $filledItems->sum('quantity_received');
             $product     = $transaction->model?->code;
-            $order->update(['private_warehouse_note' => collect([
-                $order->private_warehouse_note,
+            $filledNote  = collect([
                 $filled > 0 ? __(':product ×:filled filled on :job_orders, take them from the waiting area', [
                     'product'    => $product,
                     'filled'     => $filled,
@@ -248,7 +247,13 @@ class FillToOrder
                 $filled < (float) $transaction->quantity_ordered
                     ? __('only :filled of :ordered :product filled', ['filled' => $filled, 'ordered' => (float) $transaction->quantity_ordered, 'product' => $product])
                     : null,
-            ])->filter()->implode(' — ')]);
+            ])->filter()->implode(' — ');
+
+            $order->update(['private_warehouse_note' => collect([$order->private_warehouse_note, $filledNote])->filter()->implode(' — ')]);
+
+            /** HELP-4985: the order may already be in the warehouse, and its delivery note copied the note when it was made */
+            $deliveryNote = $order->state == OrderStateEnum::SUBMITTED ? null : $order->currentDeliveryNote();
+            $deliveryNote?->update(['private_warehouse_note' => collect([$deliveryNote->private_warehouse_note, $filledNote])->filter()->implode(' — ')]);
         }
 
         if ($order

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\Ordering\Order\CheckClaimCompensation;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\CRM\Appointment\UI\WithAppointmentSettingsBlueprint;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
@@ -313,6 +314,18 @@ class EditShop extends OrgAction
                         ],
                     ],
                 ],
+                $shop->organisation->is_manufacturing_hub ? [
+                    'label'  => __('Production'),
+                    'icon'   => 'fal fa-industry',
+                    'fields' => [
+                        'send_orders_before_filled' => [
+                            'label'       => __('Send orders to the warehouse before their bottles are filled'),
+                            'type'        => 'toggle',
+                            'value'       => SendOrderToWarehouse::sendsBeforeFilled($shop),
+                            'information' => __('On: a paid order goes to the warehouse straight away and production fills its bottles meanwhile. Off: the order waits in submitted until every bottle is filled.'),
+                        ],
+                    ],
+                ] : [],
                 $shop->masterShop ? [
                     'label'  => __('Catalogue'),
                     'icon'   => 'fal fa-books',

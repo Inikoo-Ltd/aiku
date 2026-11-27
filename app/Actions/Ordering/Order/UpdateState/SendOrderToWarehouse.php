@@ -43,6 +43,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
+use App\Models\Catalogue\Shop;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,8 @@ class SendOrderToWarehouse extends OrgAction
     public const string SENT_WITHOUT_AN_ADDRESS_MARKER = 'Sent without an address on purpose';
 
     public const string SENT_DESPITE_HOLD_MARKER = 'Sent to the warehouse despite the hold';
+
+    public const string TO_FILL_MARKER = 'Bottles still being filled by production:';
 
     /** Set from the "Send anyway" button of the held bar: staff take responsibility for the missing bottles or SKOs (HELP-4969) */
     private bool $despiteHold = false;
@@ -154,7 +157,15 @@ class SendOrderToWarehouse extends OrgAction
         }
 
         $lines = FillToOrder::make()->pendingLines($order);
-        if ($lines->isEmpty()) {
+        if ($lines->isEmpty() || self::sendsBeforeFilled($order->shop)) {
+            $toFill = $lines->isEmpty() ? null : self::TO_FILL_MARKER.' '.$lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ');
+            $note   = collect(explode(' — ', (string)self::withoutHeldNote($order->private_warehouse_note)))
+                ->reject(fn (string $part) => str_starts_with($part, self::TO_FILL_MARKER))
+                ->push($toFill)->filter()->implode(' — ');
+            if (($note ?: null) !== $order->private_warehouse_note && ($lines->isNotEmpty() || str_contains((string)$order->private_warehouse_note, self::TO_FILL_MARKER))) {
+                $this->update($order, ['private_warehouse_note' => $note ?: null]);
+            }
+
             return false;
         }
 
@@ -257,6 +268,12 @@ class SendOrderToWarehouse extends OrgAction
         ])]);
     }
 
+    /** HELP-4985: on by default, so an order goes to the warehouse while production fills its bottles; a shop can switch it off to hold the order until filled */
+    public static function sendsBeforeFilled(Shop $shop): bool
+    {
+        return (bool)Arr::get($shop->settings, 'orders.send_before_filled', true);
+    }
+
     private function sentDespiteHold(Order $order): bool
     {
         return $this->despiteHold || str_contains((string)$order->private_warehouse_note, self::SENT_DESPITE_HOLD_MARKER);
@@ -283,7 +300,7 @@ class SendOrderToWarehouse extends OrgAction
         }
 
         $lines = FillToOrder::make()->pendingLines($order);
-        if ($lines->isNotEmpty()) {
+        if ($lines->isNotEmpty() && !self::sendsBeforeFilled($order->shop)) {
             return __('waiting for filling: :products', ['products' => $lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ')]);
         }
 
