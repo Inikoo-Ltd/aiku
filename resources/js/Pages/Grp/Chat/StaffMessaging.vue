@@ -495,8 +495,8 @@ onUnmounted(() => {
                 :class="isSidebarCollapsed && 'md:pointer-events-none md:opacity-0'"
                 :inert="(isSidebarCollapsed && !isMobile) || undefined"
                 :aria-label="ctrans('Verba')">
-                <div class="min-h-0 flex-1 overflow-y-auto py-2">
-                    <label class="mx-2 mb-2 flex h-7 items-center gap-x-2 rounded-md bg-[var(--desk-chip)] px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-[var(--desk-chip-strong)] focus-within:ring-1 focus-within:ring-[var(--desk-text)] hover:bg-[var(--desk-chip-strong)]">
+                <div class="shrink-0 space-y-4 border-b border-[var(--desk-border)] py-2">
+                    <label class="mx-2 flex h-7 items-center gap-x-2 rounded-md bg-[var(--desk-chip)] px-2 text-[13px] text-[var(--desk-text)] focus-within:bg-[var(--desk-chip-strong)] focus-within:ring-1 focus-within:ring-[var(--desk-text)] hover:bg-[var(--desk-chip-strong)]">
                         <FontAwesomeIcon icon="fal fa-filter" fixed-width aria-hidden="true" />
                         <InputText
                             ref="filterInput"
@@ -520,10 +520,10 @@ onUnmounted(() => {
                         </button>
                     </label>
 
-                    <div v-if="!sidebarFilter" class="mb-3">
-                        <DeskSidebarRow :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
-                    </div>
-    
+                    <DeskSidebarRow v-if="!sidebarFilter" :label="ctrans('Home')" icon="fal fa-newspaper" :is-active="isNothingSelected" no-star @select="goHome" />
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-y-auto py-2">
                     <p v-if="hasNoFilterMatch" class="px-4 py-2 text-[13px]">{{ isDesks ? ctrans("No V·Desks match “:filter”", { filter: sidebarFilter.trim() }) : (isGroups ? ctrans("No Verbrations match “:filter”", { filter: sidebarFilter.trim() }) : ctrans("No people match “:filter”", { filter: sidebarFilter.trim() })) }}</p>
     
                     <div v-if="slackReadError" class="px-4 py-1 text-[13px] text-red-300">{{ slackReadError }}</div>
