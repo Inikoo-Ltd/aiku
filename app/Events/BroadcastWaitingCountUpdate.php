@@ -24,7 +24,8 @@ class BroadcastWaitingCountUpdate implements ShouldBroadcast
     public function __construct(
         public int $userId,
         public int $dispatchingWaitingCount,
-        public int $crmWaitingCount
+        public int $crmWaitingCount,
+        public int $dispatchingProductionCount = 0
     ) {
     }
 
@@ -45,6 +46,7 @@ class BroadcastWaitingCountUpdate implements ShouldBroadcast
         return [
             'dispatching_waiting_count' => $this->dispatchingWaitingCount,
             'crm_waiting_count'         => $this->crmWaitingCount,
+            'dispatching_production_count' => $this->dispatchingProductionCount,
         ];
     }
 }

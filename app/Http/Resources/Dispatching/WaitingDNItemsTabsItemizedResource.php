@@ -151,6 +151,7 @@ class WaitingDNItemsTabsItemizedResource extends JsonResource
             'delivery_note_internal_notes' => $this->delivery_note_internal_notes,
             'delivery_note_shipping_notes' => $this->delivery_note_shipping_notes,
             'notes'                        => $this->notes,
+            'is_waiting_production'        => $this->waiting_production_at !== null,
 
             'delivery_note_is_premium_dispatch' => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'   => $this->delivery_note_has_extra_packing,

@@ -4,10 +4,10 @@ import { ctrans } from '@/Composables/useTrans'
 import { Link } from '@inertiajs/vue3'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight } from '@fal'
+import { faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight, faIndustry } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useLayoutStore } from '@/Stores/layout'
-library.add(faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight)
+library.add(faHourglassStart, faHourglassHalf, faChevronDown, faChevronRight, faIndustry)
 
 type WarehouseEntry = {
     slug: string
@@ -15,6 +15,7 @@ type WarehouseEntry = {
     code: string
     waiting_items: { count: number; route: { name: string; parameters: Record<string, string> } }
     waiting_items_still_picking: { count: number; route: { name: string; parameters: Record<string, string> } }
+    waiting_items_production: { count: number; route: { name: string; parameters: Record<string, string> } }
 }
 
 type OrgEntry = {
@@ -47,6 +48,9 @@ watch(() => props.open, async (isOpen) => {
             total + org.warehouses.reduce((wTotal, wh) =>
                 wTotal + wh.waiting_items.count + wh.waiting_items_still_picking.count, 0
             ), 0
+        )
+        layout.dispatching_production_count = data.value.reduce((total, org) =>
+            total + org.warehouses.reduce((wTotal, wh) => wTotal + wh.waiting_items_production.count, 0), 0
         )
     } finally {
         isLoading.value = false
@@ -128,8 +132,23 @@ function toggleOrg(orgSlug: string): void {
                             </span>
                         </Link>
 
+                        <Link
+                            v-if="warehouse.waiting_items_production.count > 0"
+                            :href="route(warehouse.waiting_items_production.route.name, warehouse.waiting_items_production.route.parameters)"
+                            @click="close()"
+                            class="flex items-center justify-between px-2 py-1 rounded hover:bg-teal-50 group"
+                        >
+                            <div class="flex items-center gap-x-1.5 text-xs text-gray-600 group-hover:text-teal-700">
+                                <FontAwesomeIcon icon="fal fa-industry" class="text-teal-500" fixed-width />
+                                <span>{{ ctrans('Waiting for production') }}</span>
+                            </div>
+                            <span class="text-xs font-semibold text-teal-700 bg-teal-100 rounded-full px-1.5 py-0.5">
+                                {{ warehouse.waiting_items_production.count }}
+                            </span>
+                        </Link>
+
                         <div
-                            v-if="warehouse.waiting_items.count === 0 && warehouse.waiting_items_still_picking.count === 0"
+                            v-if="warehouse.waiting_items.count === 0 && warehouse.waiting_items_still_picking.count === 0 && warehouse.waiting_items_production.count === 0"
                             class="px-2 py-1 text-xs text-gray-400 italic"
                         >
                             {{ ctrans('No waiting items') }}

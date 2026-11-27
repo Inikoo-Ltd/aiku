@@ -75,7 +75,9 @@ use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked;
+use App\Actions\Dispatching\Picking\SendBackWaitingWarehouse;
 use App\Actions\Dispatching\Picking\SetAsWaitingCrm;
+use App\Actions\Dispatching\Picking\SetAsWaitingProduction;
 use App\Actions\Dispatching\Picking\SetAsWaitingWarehouse;
 use App\Actions\Dispatching\PickingSession\StartPickPickingSession;
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
@@ -3395,6 +3397,47 @@ test('a waiting delivery note with only items waiting for customer services is n
 
     expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::HANDLING_BLOCKED)
         ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(4.0);
+});
+
+test('restockers move a waiting item to waiting for production and back, and passing it to customer services clears it', function () {
+    [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+    $state = DeliveryNoteStateEnum::HANDLING_BLOCKED;
+    $user  = $this->adminGuest->getUser();
+
+    $listed = fn (string $waitingType) => \App\Actions\Dispatching\DeliveryNoteItem\UI\IndexWaitingDeliveryNoteItemsItemized::make()
+        ->handle($this->warehouse, $waitingType, $state)->getCollection()->pluck('id')->contains($item->id);
+
+    $waitingBefore    = GetDispatchingWaitingBadgeData::make()->totalCount($user);
+    $productionBefore = GetDispatchingWaitingBadgeData::make()->productionTotalCount($user);
+    expect($listed('warehouse'))->toBeTrue()->and($listed('production'))->toBeFalse();
+
+    $this->post(route('grp.models.delivery_note_item.set_as_waiting_production', $item->id), ['waiting_production' => true])->assertSuccessful();
+
+    expect($item->refresh()->waiting_production_at)->not->toBeNull()
+        ->and((float)$item->quantity_waiting_warehouse)->toBe(4.0)
+        ->and($listed('warehouse'))->toBeFalse()
+        ->and($listed('production'))->toBeTrue()
+        ->and(GetDispatchingWaitingBadgeData::make()->totalCount($user))->toBe($waitingBefore - 1)
+        ->and(GetDispatchingWaitingBadgeData::make()->productionTotalCount($user))->toBe($productionBefore + 1);
+
+    get(route('grp.org.warehouses.show.dispatching.waiting_items', [$this->organisation->slug, $this->warehouse->slug, 'tab' => 'waiting_production']))->assertOk();
+
+    SetAsWaitingProduction::make()->action($item, $this->user, ['waiting_production' => false]);
+    expect($item->refresh()->waiting_production_at)->toBeNull()
+        ->and($listed('warehouse'))->toBeTrue();
+
+    SetAsWaitingProduction::make()->action($item, $this->user, ['waiting_production' => true]);
+    SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 1]);
+    expect($item->refresh()->waiting_production_at)->not->toBeNull();
+    SendBackWaitingWarehouse::make()->action($item, $this->user, []);
+    expect($item->refresh()->waiting_production_at)->toBeNull();
+
+    SetAsWaitingProduction::make()->action($item, $this->user, ['waiting_production' => true]);
+    SetAsWaitingCrm::make()->action($item->refresh(), $this->user, ['quantity' => 4]);
+    expect($item->refresh()->waiting_production_at)->toBeNull();
+
+    expect(fn () => SetAsWaitingProduction::make()->action($item, $this->user, ['waiting_production' => true]))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
 
 test('only a waiting delivery note can be stepped back to picking', function () {

@@ -48,7 +48,8 @@ class IndexWaitingDeliveryNoteItemsGroupedByItem extends OrgAction
             ->where('delivery_notes.state', $state);
 
         if ($waitingType === 'warehouse') {
-            $query->where('delivery_note_items.has_waiting_warehouse', true);
+            $query->where('delivery_note_items.has_waiting_warehouse', true)
+                ->whereNull('delivery_note_items.waiting_production_at');
         } else {
             $query->where('delivery_note_items.has_waiting_crm', true);
         }

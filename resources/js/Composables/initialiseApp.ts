@@ -157,6 +157,7 @@ export const initialiseApp = () => {
         layout.development_badges = badges.development_badges
         layout.leave_covers = badges.leave_covers
         layout.dispatching_waiting_count = badges.dispatching_waiting_count
+        layout.dispatching_production_count = badges.dispatching_production_count ?? 0
         layout.crm_waiting_count = badges.crm_waiting_count
         layout.crm_return_count = badges.crm_return_count
         layout.products_need_review_count = badges.products_need_review_count

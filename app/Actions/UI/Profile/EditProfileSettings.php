@@ -301,6 +301,7 @@ class EditProfileSettings
             'tasks_review'         => __('To review & publish'),
             'developments'         => __('Developments'),
             'dispatching_waiting'  => __('Orders waiting in the warehouse'),
+            'dispatching_production' => __('Items waiting for production'),
             'crm_waiting'          => __('Orders waiting in CRM'),
             'crm_return'           => __('Orders with returns'),
             'faire_skipped'        => __('Faire orders not imported'),

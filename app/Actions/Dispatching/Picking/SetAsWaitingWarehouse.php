@@ -53,6 +53,7 @@ class SetAsWaitingWarehouse extends OrgAction
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
             'quantity_waiting_warehouse' => $quantityToMove,
             'waiting_warehouse_released_at' => null,
+            'waiting_production_at'      => null,
         ];
         if (Arr::has($modelData, 'note')) {
             $dataToUpdate['notes'] = $modelData['note'];

@@ -99,6 +99,7 @@ export const layoutStructure = {
     development_badges: null as { waiting: number, late: number, reminded?: boolean } | null,
     leave_covers: [] as LeaveCover[],
     dispatching_waiting_count: 0 as number,
+    dispatching_production_count: 0 as number,
     crm_waiting_count: 0 as number,
     crm_return_count: 0 as number,
     products_need_review_count: 0 as number,

@@ -50,7 +50,8 @@ class SendWaitingCountUpdateToWarehouseUsers implements ShouldBeUnique
             BroadcastWaitingCountUpdate::dispatch(
                 $user->id,
                 GetDispatchingWaitingBadgeData::make()->totalCount($user),
-                GetCrmWaitingBadgeData::make()->totalCount($user)
+                GetCrmWaitingBadgeData::make()->totalCount($user),
+                GetDispatchingWaitingBadgeData::make()->productionTotalCount($user)
             );
         }
     }

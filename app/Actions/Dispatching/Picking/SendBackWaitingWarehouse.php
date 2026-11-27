@@ -44,6 +44,7 @@ class SendBackWaitingWarehouse extends OrgAction
         $dataToUpdate = [
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
             'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
+            'waiting_production_at'      => null,
             'quantity_waiting_crm'       => 0,
             'waiting_warehouse_released_at' => now(),
         ];

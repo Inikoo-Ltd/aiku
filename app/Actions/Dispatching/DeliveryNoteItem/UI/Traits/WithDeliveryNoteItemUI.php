@@ -166,6 +166,7 @@ trait WithDeliveryNoteItemUI
         return [
             'delivery_note_items.id',
             'delivery_note_items.state',
+            'delivery_note_items.waiting_production_at',
             'delivery_note_items.quantity_required',
             'delivery_note_items.original_quantity_required',
             'delivery_note_items.replacement_reason',

@@ -73,7 +73,7 @@ class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
                         ignoreParentPagination: true,
                         stateFilter: [DeliveryNoteItemStateEnum::HANDLING_BLOCKED, DeliveryNoteItemStateEnum::QUEUED]
                     )
-                )->resolve())->filter(fn ($item) => ($item['quantity_waiting_warehouse'] ?? 0) > 0)->values()->toArray()
+                )->resolve())->filter(fn ($item) => ($item['quantity_waiting_warehouse'] ?? 0) > 0 && !$item['is_waiting_production'])->values()->toArray()
                 : [],
         ];
     }

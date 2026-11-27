@@ -59,6 +59,7 @@ class WaitingDeliveryNoteItemsGroupedByItemResource extends JsonResource
                 $q->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED);
             })
             ->where('has_waiting_warehouse', true)
+            ->whereNull('waiting_production_at')
             ->get();
 
         return [

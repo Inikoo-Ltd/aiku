@@ -48,7 +48,8 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
         $query->where('delivery_notes.warehouse_id', $warehouse->id)
             ->whereHas('deliveryNoteItems', function ($q) use ($waitingType) {
                 if ($waitingType == 'warehouse') {
-                    $q->where('delivery_note_items.has_waiting_warehouse', true);
+                    $q->where('delivery_note_items.has_waiting_warehouse', true)
+                        ->whereNull('delivery_note_items.waiting_production_at');
                 } else {
                     $q->where('delivery_note_items.has_waiting_crm', true);
                 }
@@ -85,7 +86,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
                 'organisations.slug as organisation_slug',
             ])
             ->selectRaw(DeliveryNote::WAITING_SINCE_SQL.' as waiting_since')
-            ->selectRaw('(SELECT min(dni_rel.waiting_warehouse_released_at) FROM delivery_note_items dni_rel WHERE dni_rel.delivery_note_id = delivery_notes.id AND dni_rel.has_waiting_warehouse = true) as waiting_warehouse_released_at')
+            ->selectRaw('(SELECT min(dni_rel.waiting_warehouse_released_at) FROM delivery_note_items dni_rel WHERE dni_rel.delivery_note_id = delivery_notes.id AND dni_rel.has_waiting_warehouse = true AND dni_rel.waiting_production_at IS NULL) as waiting_warehouse_released_at')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['delivery_note_reference', $waitingSinceSort])
             ->allowedFilters([$globalSearch])
