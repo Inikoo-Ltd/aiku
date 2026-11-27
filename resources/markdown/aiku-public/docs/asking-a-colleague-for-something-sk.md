@@ -13,7 +13,7 @@ category: help-desk
 
 ## Prečo tasky a nie Slack
 
-Požiadavka napísaná na Slacku nemá majiteľa ani koniec. Odsunie sa v scrollovaní, nikto nevie, či ju niekto videl, a o týždeň sa na ňu niekto znova pýta. Task je tá istá veta, ale s majiteľom a koncom, takže obe strany sa o ňu už nemusia starať. Diskusia stále prebieha v chate: každý task otvorí konverzáciu v internom chate pomenovanú podľa neho, s rovnakým prekladom, odpoveďami, fotkami a rýchlymi odpoveďami, ako sú popísané v [Rozhovor s kolegami v internom chate](/docs/staff-chat-sk).
+Požiadavka napísaná na Slacku nemá majiteľa ani koniec. Odsunie sa v scrollovaní, nikto nevie, či ju niekto videl, a o týždeň sa na ňu niekto znova pýta. Task je tá istá veta, ale s majiteľom a koncom, takže obe strany sa o ňu už nemusia starať. Diskusia stále prebieha v chate: každý task otvorí konverzáciu v internom chate pomenovanú podľa neho, s rovnakým prekladom, odpoveďami, fotkami a rýchlymi odpoveďami, ako sú popísané v [Verbations a V·Ds](/docs/verba-verbations-and-v-ds-sk).
 
 ## Vytvorenie tasku
 

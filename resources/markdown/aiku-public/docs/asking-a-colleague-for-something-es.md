@@ -13,7 +13,7 @@ Una <b>task</b> (tarea) es una petición de un miembro del personal a otro, o a 
 
 ## Por qué tareas y no Slack
 
-Una petición escrita en Slack no tiene responsable ni final. Se pierde en el desplazamiento, nadie sabe si se ha visto, y una semana después alguien vuelve a preguntar. Una tarea es la misma frase con un responsable y un final, para que ambas partes puedan dejar de preocuparse por ella. La conversación sigue pasando en el chat: cada tarea abre una conversación de chat interno con su mismo nombre, con la misma traducción, respuestas, fotos y respuestas rápidas descritas en [Hablar con compañeros en el chat interno](/docs/staff-chat-es).
+Una petición escrita en Slack no tiene responsable ni final. Se pierde en el desplazamiento, nadie sabe si se ha visto, y una semana después alguien vuelve a preguntar. Una tarea es la misma frase con un responsable y un final, para que ambas partes puedan dejar de preocuparse por ella. La conversación sigue pasando en el chat: cada tarea abre una conversación de chat interno con su mismo nombre, con la misma traducción, respuestas, fotos y respuestas rápidas descritas en [Verbations y V·Ds](/docs/verba-verbations-and-v-ds-es).
 
 ## Levantar una tarea
 

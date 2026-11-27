@@ -13,7 +13,7 @@ A <b>task</b> is a request from one member of staff to another, or to a whole de
 
 ## Why tasks and not Slack
 
-A request written in Slack has no owner and no end. It scrolls away, nobody knows if it was seen, and a week later someone asks again. A task is the same sentence with an owner and a done, so both sides can stop worrying about it. The discussion still happens in chat: every task opens a staff chat conversation named after it, with the same translation, replies, photos and quick replies described in [Talking to colleagues in staff chat](/docs/staff-chat).
+A request written in Slack has no owner and no end. It scrolls away, nobody knows if it was seen, and a week later someone asks again. A task is the same sentence with an owner and a done, so both sides can stop worrying about it. The discussion still happens in chat: every task opens a staff chat conversation named after it, with the same translation, replies, photos and quick replies described in [Verbations and V·Ds](/docs/verba-verbations-and-v-ds).
 
 ## Raising a task
 

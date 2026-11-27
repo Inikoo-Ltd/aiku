@@ -9,6 +9,7 @@
 namespace App\Actions\UI\AikuPublic;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -18,14 +19,24 @@ class ShowDoc
 {
     use AsController;
 
+    public const array RENAMED = [
+        'staff-chat'    => 'verba',
+        'staff-chat-es' => 'verba-es',
+        'staff-chat-sk' => 'verba-sk',
+    ];
+
     /**
      * Rendering parses every doc's markdown three times over (2 s), and the page depends on nothing
      * but the slug, the doc files and the request's scheme, host and port (every link, the canonical).
      * Proxies are trusted for X-Forwarded-Port/Proto, so only a request for the real address is cached,
      * or one forged header would point every visitor's links at it.
      */
-    public function handle(string $slug): string
+    public function handle(string $slug): string|RedirectResponse
     {
+        if (isset(self::RENAMED[$slug])) {
+            return redirect()->route('aiku-public.docs.show', self::RENAMED[$slug], 301);
+        }
+
         if (request()->getSchemeAndHttpHost() !== 'https://'.config('app.domain')) {
             return $this->render($slug)->render();
         }

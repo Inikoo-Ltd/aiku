@@ -81,6 +81,7 @@ test('blog post renders markdown and structured data', function () {
 
 test('renamed slugs redirect permanently', function () {
     get($this->host.'/blog/an-mcp-server-for-a-whole-business')->assertRedirect(route('aiku-public.blog.show', 'rag-is-dead-give-the-model-the-tools'))->assertStatus(301);
+    get($this->host.'/docs/staff-chat-es')->assertRedirect(route('aiku-public.docs.show', 'verba-es'))->assertStatus(301);
 });
 
 test('unknown post is 404 and slug is validated', function () {
@@ -374,7 +375,9 @@ test('helpFor matches grp routes to docs by longest prefix', function () {
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.show.shopping_list.index')['title'])->toBe('Buying from a partner')
         ->and(BlogPosts::helpFor('grp.org.procurement.org_partners.index')['title'])->toBe('Ordering from a partner organisation')
         ->and(BlogPosts::helpFor('grp.org.shops.show.chat.reports')['url'])->toContain('/docs/customer-chat')
-        ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/staff-chat-sk')
+        ->and(BlogPosts::helpFor('grp.chat.staff.show', 'sk')['url'])->toEndWith('/docs/verba-verbations-and-v-ds-sk')
+        ->and(BlogPosts::helpFor('grp.chat.staff.calls.index')['url'])->toEndWith('/docs/verba-calls')
+        ->and(BlogPosts::helpFor('grp.chat.staff.reports')['url'])->toEndWith('/docs/verba')
         ->and(BlogPosts::helpFor('grp.profile.edit')['url'])->toContain('/docs/getting-notifications-on-your-computer-and-phone')
         ->and(BlogPosts::helpFor('grp.org.warehouses.show.inventory.org_stock_families.show.org_stocks.show.labels')['title'])->toBe('Making compliance labels')
         ->and(BlogPosts::helpFor('grp.org.procurement.agent_labels.index', 'zh-hans')['url'])->toEndWith('/docs/printing-labels-as-an-agent-zh-hans')
