@@ -604,6 +604,25 @@ describe('partner shopping list', function () {
         expect($customerId)->toBe($order->customer_id);
     });
 
+    test('an ordered basket line holds its SKO back from auto-fill only until its order is dispatched (HELP-4992)', function () {
+        $item    = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 25]);
+        $order   = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]])['orders'][0];
+        $buckets = GetPartnerStockCoverBuckets::make();
+        $isComing = fn () => (bool) DB::selectOne(
+            'select '.(new ReflectionMethod($buckets, 'alreadyComingExpression'))->invoke($buckets, $this->orgPartner).' as coming from org_stocks os where os.id = ?',
+            [$this->buyerOrgStock->id]
+        )->coming;
+
+        expect($isComing())->toBeTrue();
+
+        $order->updateQuietly(['state' => OrderStateEnum::FINALISED]);
+        expect($isComing())->toBeTrue();
+
+        $order->updateQuietly(['state' => OrderStateEnum::DISPATCHED]);
+        expect($item->refresh()->state)->toBe(ShoppingListItemStateEnum::ORDERED)
+            ->and($isComing())->toBeFalse();
+    });
+
     test('hub partners buy at the hub partner discount from settings, not from shop offers', function () {
         $hub              = $this->orgPartner->partner;
         $originalSettings = $hub->settings;

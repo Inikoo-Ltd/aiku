@@ -576,14 +576,22 @@ class GetPartnerStockCoverBuckets
 
     /**
      * Our SKO is already being sorted: on an open purchase order to anyone, on the order being
-     * prepared for this partner, in a stock delivery not yet put away, or on the hub shopping list.
+     * prepared for this partner, in a stock delivery not yet put away, or on the hub shopping list
+     * and not dispatched yet. The stock delivery made when the order goes to the warehouse carries
+     * it from dispatch on, so an ordered line stops counting then, or it would hold the SKO back for ever.
      */
     private function alreadyComingExpression(OrgPartner $orgPartner): string
     {
         return '('.$this->onOrderOrDeliveryExpression($orgPartner)."
             or exists (select 1 from partner_shopping_list_items sli
                 where sli.org_stock_id = os.id and sli.deleted_at is null
-                    and sli.state in ('".implode("', '", [...ShoppingListItemStateEnum::onPartnerBuyerList(), ShoppingListItemStateEnum::ORDERED->value])."')))";
+                    and sli.state in ('".implode("', '", ShoppingListItemStateEnum::onPartnerBuyerList())."'))
+            or exists (select 1 from partner_shopping_list_items sli
+                join transactions sli_transactions on sli_transactions.id = sli.transaction_id and sli_transactions.deleted_at is null
+                join orders sli_orders on sli_orders.id = sli_transactions.order_id
+                where sli.org_stock_id = os.id and sli.deleted_at is null
+                    and sli.state = '".ShoppingListItemStateEnum::ORDERED->value."'
+                    and sli_orders.state not in ('".OrderStateEnum::DISPATCHED->value."', '".OrderStateEnum::CANCELLED->value."')))";
     }
 
     /**
