@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\StaticWebsite;
 
+use App\Actions\Web\StaticWebsite\Iris\ServeStaticWebsite;
 use App\Models\Web\StaticWebsite;
 use Dom\HTMLDocument;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ trait WithStaticWebsiteEditing
                 $this->refuse("Edit $number on $where: find is empty. Quote the exact HTML to change, as info-websites-tool shows it.");
             }
             if ($action !== 'remove') {
-                $this->checkNewHtml($staticWebsite, $new, "Edit $number on $where");
+                $new = $this->checkNewHtml($staticWebsite, $new, "Edit $number on $where");
             }
 
             $occurrences = substr_count($html, $find);
@@ -77,11 +78,21 @@ trait WithStaticWebsiteEditing
 
     /**
      * New HTML may not run scripts, load from the old host, or point at a frozen file that is not there.
+     * The one script allowed is Elfsight's platform script: it is taken out here and served once on each
+     * page that has an Elfsight widget, so only its widget container is stored.
      */
-    protected function checkNewHtml(StaticWebsite $staticWebsite, string $html, string $where): void
+    protected function checkNewHtml(StaticWebsite $staticWebsite, string $html, string $where): string
     {
+        $html = preg_replace(ServeStaticWebsite::ELFSIGHT_SCRIPT_PATTERN, '', $html) ?? $html;
+
         if (preg_match('/<script\b/i', $html)) {
-            $this->refuse("$where: scripts cannot be added to an info website.");
+            $this->refuse("$where: scripts cannot be added to an info website. Only an Elfsight widget can be embedded: its container div, with or without the Elfsight platform script.");
+        }
+        preg_match_all('/\sclass=(["\'])([^"\']*)\1/i', $html, $classAttributes);
+        foreach (preg_split('/\s+/', implode(' ', $classAttributes[2])) as $class) {
+            if (stripos($class, 'elfsight-app-') === 0 && !preg_match('/^'.ServeStaticWebsite::ELFSIGHT_WIDGET_CLASS_PATTERN.'$/', $class)) {
+                $this->refuse("$where: $class is not an Elfsight widget; copy its container div from Elfsight as it is.");
+            }
         }
         if (preg_match('/\son[a-z]+\s*=/i', $html) || preg_match('/javascript\s*:/i', $html)) {
             $this->refuse("$where: inline event handlers and javascript: links cannot be added to an info website.");
@@ -104,6 +115,8 @@ trait WithStaticWebsiteEditing
                 $this->refuse("$where: ".StaticWebsite::ASSET_URL_PREFIX."$asset is not a file of this website.");
             }
         }
+
+        return $html;
     }
 
     /**

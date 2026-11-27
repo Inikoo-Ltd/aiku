@@ -5249,6 +5249,17 @@ describe('serving an info website on its own domain', function () {
             ->and($response->headers->has('Set-Cookie'))->toBeFalse();
     });
 
+    it('loads the Elfsight platform script once, only on pages with an Elfsight widget', function () {
+        $this->staticWebsite->webpages()->where('path', '/our-story')->update(['html' => '<!DOCTYPE html><html><head><title>Our story</title></head><body><h1>How it started</h1>'
+            .'<div class="elfsight-app-38e4796d-6f09-4e6c-9a6f-89ca8c59d9ef" data-elfsight-app-lazy></div><div class="elfsight-app-11111111-2222-3333-4444-555555555555"></div></body></html>']);
+
+        $story = Pest\Laravel\get($this->www.'/our-story')->assertOk()->getContent();
+        $home  = Pest\Laravel\get($this->www.'/')->assertOk()->getContent();
+
+        expect(substr_count($story, '<script src="https://elfsightcdn.com/platform.js" async></script>'))->toBe(1)
+            ->and($home)->not->toContain('elfsightcdn.com');
+    });
+
     it('sends the bare domain to the www address, keeping the path and query', function () {
         Pest\Laravel\get('https://'.$this->staticWebsite->domain.'/our-story?ref=old')
             ->assertStatus(301)
@@ -5609,10 +5620,11 @@ describe('browsing and restoring an info website', function () {
             ->and($bans->where('host', 'http://varnish-a.test')->pluck('page')->sort()->values()->all())->toBe([
                 "$domain/",
                 "$domain/our%20story",
+                "$domain/our%20story/",
                 "$domain/robots.txt",
                 "$domain/sitemap.xml",
             ])
-            ->and($bans->where('host', 'http://varnish-b.test'))->toHaveCount(4);
+            ->and($bans->where('host', 'http://varnish-b.test'))->toHaveCount(5);
     });
 
     it('bans the pages a change makes stale from varnish once the change is committed', function () {
@@ -5637,13 +5649,13 @@ describe('browsing and restoring an info website', function () {
         expect($bans())->toBe([]);
 
         $story = $this->staticWebsite->webpages()->create(['path' => '/story', 'title' => 'Story', 'html' => '<p>Story</p>']);
-        expect($bans())->toBe(["$domain/sitemap.xml", "$domain/story"]);
+        expect($bans())->toBe(["$domain/sitemap.xml", "$domain/story", "$domain/story/"]);
 
         $story->update(['path' => '/our-story']);
-        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml", "$domain/story"]);
+        expect($bans())->toBe(["$domain/our-story", "$domain/our-story/", "$domain/sitemap.xml", "$domain/story", "$domain/story/"]);
 
         $story->delete();
-        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml"]);
+        expect($bans())->toBe(["$domain/our-story", "$domain/our-story/", "$domain/sitemap.xml"]);
 
         $this->header->update(['html' => '<nav>New menu</nav>']);
         expect($bans())->toBe(["$domain/", "$domain/robots.txt", "$domain/sitemap.xml"]);

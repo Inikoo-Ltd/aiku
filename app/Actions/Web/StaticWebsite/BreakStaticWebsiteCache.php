@@ -20,7 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
  * Drops every page of an info website from Varnish, so its domain serves what Aiku holds now. Info
  * pages carry no X-AIKU-WEBSITE header, so the website and all-websites bans never reach them: each
  * page is banned by its host and path instead, on every Varnish host. Cloudflare does not keep these
- * pages, so there is no edge to purge.
+ * pages, so there is no edge to purge. A page answers with and without a trailing slash and Varnish
+ * keeps each URL as its own copy while a ban matches the URL exactly, so both forms are banned.
  */
 class BreakStaticWebsiteCache extends OrgAction
 {
@@ -37,10 +38,10 @@ class BreakStaticWebsiteCache extends OrgAction
             return $staticWebsite;
         }
 
-        $host  = 'www.'.strtolower($staticWebsite->domain);
-        $paths = $paths === null
-            ? $staticWebsite->webpages()->pluck('path')->merge(self::SERVED_FILES)
-            : collect($paths)->push('/sitemap.xml');
+        $host      = 'www.'.strtolower($staticWebsite->domain);
+        $pagePaths = collect($paths ?? $staticWebsite->webpages()->pluck('path'))
+            ->flatMap(fn (string $path) => $path === '/' ? [$path] : [$path, $path.'/']);
+        $paths     = $pagePaths->merge($paths === null ? self::SERVED_FILES : ['/sitemap.xml']);
 
         $this->sendVarnishBansHttpPool(
             $paths->unique()

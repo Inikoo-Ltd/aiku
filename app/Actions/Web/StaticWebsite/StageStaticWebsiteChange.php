@@ -117,7 +117,7 @@ class StageStaticWebsiteChange
 
         if (isset($input['content_html'])) {
             $content = (string) $input['content_html'];
-            $this->checkNewHtml($staticWebsite, $content, 'content_html');
+            $content = $this->checkNewHtml($staticWebsite, $content, 'content_html');
             $element = $this->findElement($html, 'article', 'id="sections"') ?? $this->findElement($html, 'main', 'id="page"');
             if (!$element) {
                 $this->refuse("The page $template->path has no content area to fill; use edits on it instead.");
@@ -193,7 +193,7 @@ class StageStaticWebsiteChange
         if (trim($html) === '') {
             $this->refuse('A new shared part needs its html.');
         }
-        $this->checkNewHtml($staticWebsite, $html, "shared $code");
+        $html = $this->checkNewHtml($staticWebsite, $html, "shared $code");
 
         $position = $input['position'] ?? 'after_header';
         if (!in_array($position, ['after_header', 'before_footer'], true)) {
