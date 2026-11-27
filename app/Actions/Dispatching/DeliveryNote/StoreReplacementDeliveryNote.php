@@ -52,7 +52,7 @@ class StoreReplacementDeliveryNote extends OrgAction
             $modelData['delivery_address'] = $order->deliveryAddress;
         }
 
-        $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+        $deliveryAddress = Arr::pull($modelData, 'delivery_address') ?? $order->collectionAddress;
 
         data_set($modelData, 'date', now());
         data_set($modelData, 'shop_id', $order->shop_id);

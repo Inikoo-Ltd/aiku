@@ -56,7 +56,7 @@ class StoreDeliveryNote extends OrgAction
             data_set($modelData, 'is_cash_on_delivery', true);
         }
 
-        $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+        $deliveryAddress = Arr::pull($modelData, 'delivery_address') ?? $order->collectionAddress;
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);

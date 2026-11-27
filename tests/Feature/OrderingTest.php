@@ -4294,6 +4294,12 @@ test('new customers\' orders to an export country, and orders marked do not pick
     SendOrderToWarehouse::make()->action($collection, []);
     expect($collection->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE);
 
+    $collectionWithoutDeliveryAddress = $submittedOrder(['country_id' => $otherCountry->id, 'country_code' => $otherCountry->code]);
+    $collectionWithoutDeliveryAddress->update(['collection_address_id' => $collectionWithoutDeliveryAddress->billing_address_id, 'delivery_address_id' => null]);
+    $collectionDeliveryNote = SendOrderToWarehouse::make()->action($collectionWithoutDeliveryAddress->refresh(), []);
+    expect($collectionWithoutDeliveryAddress->refresh()->state)->toEqual(OrderStateEnum::IN_WAREHOUSE)
+        ->and($collectionDeliveryNote->address->address_line_1)->toBe($collectionWithoutDeliveryAddress->billingAddress->address_line_1);
+
     \App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation->refresh(), ['order_release' => ['except_countries' => false, 'countries' => []]]);
     $this->shop->refresh();
     $noCountry = $submittedOrder(['country_id' => $otherCountry->id, 'country_code' => $otherCountry->code]);
