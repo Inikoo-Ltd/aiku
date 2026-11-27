@@ -48,7 +48,7 @@ class EditSlackMessage
     {
         $this->ensureMayWrite($user, $slackChannel);
         $message = $this->liveMessage($slackChannel, $ts);
-        $client  = $this->clientFor($user, standInAllowed: true);
+        $client  = $this->clientFor($user, standInAllowed: true, channel: $slackChannel);
         $this->ensureOwnMessage($message, $client);
 
         $addsEveryone = collect(['here', 'channel'])->contains(fn (string $code) => str_contains($text, "\u{E000}!{$code}\u{E000}") && !str_contains((string) $message->text, "<!{$code}>"));

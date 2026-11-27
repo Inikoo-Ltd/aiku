@@ -8,6 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
 use App\Models\Chat\SlackUser;
@@ -30,10 +31,11 @@ class SlackWriteClient
      * For a person who has not connected their Slack, the Desk bot posts in their place under their name and photo
      * (Slack labels it APP). It can post, edit and delete what it posted, never react or touch the person's own messages.
      */
-    public static function standInFor(User $user): ?self
+    public static function standInFor(User $user, ?SlackWorkspace $workspace = null): ?self
     {
-        $token  = (string) config('services.slack.notifications.bot_user_oauth_token');
-        $person = SlackChannel::linkedSlackPerson($user);
+        $workspace ??= SlackWorkspace::main();
+        $token  = $workspace->botToken;
+        $person = $workspace->isMain() ? SlackChannel::linkedSlackPerson($user) : self::personIn($user, $workspace);
         if ($token === '' || !$person || !SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
             return null;
         }
@@ -41,17 +43,27 @@ class SlackWriteClient
         return new self(null, $token, $person);
     }
 
+    /**
+     * The person's own account in that workspace when they have one, so what they post there is theirs; else their main one.
+     */
+    private static function personIn(User $user, SlackWorkspace $workspace): ?SlackUser
+    {
+        $linkedIds = SlackChannel::linkedSlackIds($user);
+
+        return SlackUser::whereIn('slack_id', $linkedIds)->where('data->team_id', $workspace->teamId)->first() ?? SlackChannel::linkedSlackPerson($user);
+    }
+
     public function isStandIn(): bool
     {
         return $this->standInFor !== null;
     }
 
-    public static function for(User $user): ?self
+    public static function for(User $user, ?SlackWorkspace $workspace = null): ?self
     {
-        if (!SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
+        if (!SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) || ($workspace && !$workspace->isMain() && !$workspace->personOf($user))) {
             return null;
         }
-        $connection = SlackConnection::where('user_id', $user->id)->live()->first();
+        $connection = SlackConnection::forWorkspace($workspace ?? SlackWorkspace::main())->where('user_id', $user->id)->live()->first();
 
         if (!$connection || $connection->missingScopes() !== []) {
             return null;

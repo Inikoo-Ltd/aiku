@@ -31,7 +31,7 @@ class WithdrawSlackPrivateConsent
     public function asController(ActionRequest $request): Response
     {
         $user       = $request->user();
-        $connection = SlackConnection::where('user_id', $user->id)->first();
+        $connection = SlackConnection::main()->where('user_id', $user->id)->first();
         if ($connection) {
             PurgeSlackDirectWords::run($connection->slack_user_id);
         }
@@ -40,7 +40,7 @@ class WithdrawSlackPrivateConsent
         }
 
         $mayCallSlack = app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS);
-        DisconnectSlackAccount::make()->handle($user, $mayCallSlack);
+        DisconnectSlackAccount::make()->handle($user, $mayCallSlack, \App\Actions\Chat\Staff\Slack\SlackWorkspace::main());
 
         if (StartSlackConnection::unavailableReason($user)) {
             return StartSlackConnection::backToSettings(StartSlackConnection::NOTICE_KEY, __('Private conversations are off. Your Slack account is disconnected; connect it again for public channels when you want'));

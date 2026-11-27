@@ -77,7 +77,9 @@ class CopySlackMessageFile
             return $this->handlePrivate($message, (array) $file);
         }
 
-        return $this->copy($message, (array) $file, $this->slackClient(), config('services.slack.notifications.bot_user_oauth_token'), false);
+        $workspace = SlackWorkspace::forChannel($channel);
+
+        return $this->copy($message, (array) $file, $workspace?->client(), $workspace?->botToken ?: null, false);
     }
 
     /**
@@ -139,7 +141,7 @@ class CopySlackMessageFile
             return null;
         }
         if (!$isDirect && $channel->is_member) {
-            return config('services.slack.notifications.bot_user_oauth_token') ?: null;
+            return SlackWorkspace::forChannel($channel)?->botToken ?: null;
         }
         if (!app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
             return null;

@@ -101,7 +101,7 @@ class EraseSlackDirectWords
         }
         DB::table('slack_erasure_requests')->where('id', $requestId)->update(['status' => 'erasing', 'updated_at' => now()]);
 
-        SlackConnection::where('slack_user_id', $request->slack_user_id)->whereNotNull('private_consented_at')->get()
+        SlackConnection::main()->where('slack_user_id', $request->slack_user_id)->whereNotNull('private_consented_at')->get()
             ->each(fn (SlackConnection $connection) => $connection->endPrivateConsent('withdrawn'));
 
         $totals = ['messages' => 0, 'files' => 0];

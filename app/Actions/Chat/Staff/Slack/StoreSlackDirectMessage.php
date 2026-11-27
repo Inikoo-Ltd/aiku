@@ -146,7 +146,7 @@ class StoreSlackDirectMessage
 
     public static function hasOptedIn(string $slackUserId): bool
     {
-        return SlackConnection::where('slack_user_id', $slackUserId)->live()->whereNotNull('private_consented_at')->get()
+        return SlackConnection::main()->where('slack_user_id', $slackUserId)->live()->whereNotNull('private_consented_at')->get()
             ->contains(fn (SlackConnection $connection) => $connection->hasPrivateConsent());
     }
 
@@ -161,7 +161,7 @@ class StoreSlackDirectMessage
             return null;
         }
 
-        return SlackConnection::where('slack_user_id', $slackUserId)->live()->whereNotNull('private_consented_at')->with('user')->get()
+        return SlackConnection::main()->where('slack_user_id', $slackUserId)->live()->whereNotNull('private_consented_at')->with('user')->get()
             ->first(fn (SlackConnection $connection) => $connection->hasPrivateConsent() && $connection->user && SlackChannel::privateReader($connection->user)?->slack_id === $slackUserId);
     }
 

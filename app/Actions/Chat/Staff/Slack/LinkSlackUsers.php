@@ -50,10 +50,10 @@ class LinkSlackUsers
             if (!$user || !$user->status) {
                 return [...$row, 'action' => 'refused: no active aiku user '.$username];
             }
-            $current = SlackChannel::linkedSlackPerson($user);
-            if ($current?->is($slackUser)) {
+            if (in_array($slackUser->slack_id, SlackChannel::linkedSlackIds($user), true)) {
                 return [...$row, 'action' => 'already linked'];
             }
+            $current = self::linkedInSameWorkspace($user, $slackUser);
             if ($current?->link_confirmed_at) {
                 return [...$row, 'action' => 'refused: '.$user->username.' is already linked by hand to Slack person '.$current->name];
             }
@@ -65,9 +65,22 @@ class LinkSlackUsers
         }, $pairs);
     }
 
+    /**
+     * A person has one Slack account per workspace (INI-540): a hand link replaces only the one in the same workspace.
+     */
+    private static function linkedInSameWorkspace(User $user, SlackUser $slackUser): ?SlackUser
+    {
+        $teamId = $slackUser->data['team_id'] ?? null;
+
+        return SlackUser::whereIn('slack_id', SlackChannel::linkedSlackIds($user))
+            ->orderByRaw('link_confirmed_at is null')->orderBy('id')
+            ->get()
+            ->first(fn (SlackUser $linked) => ($linked->data['team_id'] ?? null) === $teamId);
+    }
+
     public function link(SlackUser $slackUser, User $user, User $by): void
     {
-        $replaced = SlackChannel::linkedSlackPerson($user);
+        $replaced = self::linkedInSameWorkspace($user, $slackUser);
         DB::transaction(function () use ($slackUser, $user, $by, $replaced) {
             $slackUser->update(['user_id' => $user->id, 'link_confirmed_at' => now(), 'link_confirmed_by_user_id' => $by->id]);
             if (!$user->slack_user_id || $user->slack_user_id === $replaced?->slack_id) {

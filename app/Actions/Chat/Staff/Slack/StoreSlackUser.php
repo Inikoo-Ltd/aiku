@@ -47,7 +47,7 @@ class StoreSlackUser
         $slackUser->user_id  = $user?->id;
         $slackUser->save();
 
-        if ($user && !$user->slack_user_id && !$slackUser->is_bot && !$slackUser->is_deleted) {
+        if ($user && !$user->slack_user_id && !$slackUser->is_bot && !$slackUser->is_deleted && !SlackWorkspace::isOtherTeam(Arr::get($member, 'team_id'))) {
             $user->update(['slack_user_id' => $slackId]);
         }
         $this->linkMessages($slackId);

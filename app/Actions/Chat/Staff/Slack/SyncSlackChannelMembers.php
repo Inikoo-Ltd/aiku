@@ -38,12 +38,16 @@ class SyncSlackChannelMembers
      */
     public function handle(): array
     {
-        $client  = $this->slackClient() ?? throw new RuntimeException('Slack bot token is not set');
+        SlackWorkspace::main()->client() ?? throw new RuntimeException('Slack bot token is not set');
         $totals  = ['channels' => 0, 'members' => 0, 'failed' => []];
 
         SlackChannelMember::whereNotIn('slack_channel_id', SlackChannel::kept()->select('id'))->whereNotIn('slack_channel_id', SlackChannel::keptPrivate()->select('id'))->whereNotIn('slack_channel_id', SlackChannel::keptDirect()->select('id'))->delete();
 
         foreach (SlackChannel::kept()->where('is_member', true)->get() as $channel) {
+            $client = SlackWorkspace::forChannel($channel)?->client();
+            if (!$client) {
+                continue;
+            }
             try {
                 $slackUserIds = [];
                 $cursor       = null;

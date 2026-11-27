@@ -114,7 +114,7 @@ class UploadSlackFile
             $this->refuse(__('Slack files of this type cannot be sent from aiku.'));
         }
 
-        $client = $this->clientFor($user);
+        $client = $this->clientFor($user, channel: $slackChannel);
         $name   = Str::limit(trim(basename(str_replace('\\', '/', $file->getClientOriginalName()))) ?: 'file', 200, '');
 
         $upload = $this->callSlack($client, 'files.getUploadURLExternal', ['filename' => $name, 'length' => $size]);

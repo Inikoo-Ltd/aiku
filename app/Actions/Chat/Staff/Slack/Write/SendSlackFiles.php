@@ -74,7 +74,7 @@ class SendSlackFiles
             $this->refuse(__('The message is too long for Slack, keep it under :max characters.', ['max' => number_format(SendSlackMessage::MAX_LENGTH)]));
         }
         $rootTs = $threadTs ? $sender->threadRoot($slackChannel, $threadTs) : null;
-        $client = $this->clientFor($user);
+        $client = $this->clientFor($user, channel: $slackChannel);
 
         $claimKey = 'slack-send-files:'.$user->id.':'.$slackChannel->id.':'.$idempotencyKey;
         if (!Cache::add($claimKey, 'sending', SendSlackMessage::IDEMPOTENCY_SECONDS)) {

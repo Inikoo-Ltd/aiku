@@ -8,7 +8,7 @@
 
 namespace App\Actions\Chat\Staff\Slack\Write;
 
-use App\Models\Chat\SlackChannel;
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -32,9 +32,11 @@ class StartSlackConnection
         return SlackWriteAccess::allows($request->user());
     }
 
-    public static function isConfigured(): bool
+    public static function isConfigured(?SlackWorkspace $workspace = null): bool
     {
-        return config('services.slack.client_id') && config('services.slack.client_secret') && config('services.slack.team_id');
+        $workspace ??= SlackWorkspace::main();
+
+        return $workspace->clientId && $workspace->clientSecret && $workspace->slackTeamId();
     }
 
     /**
@@ -46,15 +48,19 @@ class StartSlackConnection
         return route('grp.chat.staff.slack.connect.callback');
     }
 
-    public static function unavailableReason(User $user): ?string
+    public static function unavailableReason(User $user, ?SlackWorkspace $workspace = null): ?string
     {
+        $workspace ??= SlackWorkspace::main();
         if (!app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
             return __('Connecting a Slack account is switched off on this machine');
         }
-        if (!self::isConfigured()) {
+        if (!self::isConfigured($workspace)) {
             return __('Connecting a Slack account is not set up on this server');
         }
-        if (!SlackChannel::linkedSlackPerson($user)) {
+        if (!$workspace->isMain() && !$workspace->personOf($user)) {
+            return __('You have no account in this Slack workspace, so it cannot be connected');
+        }
+        if (!$workspace->personOf($user)) {
             return __('Your aiku user is not linked to a Slack person with the same email, so it cannot be connected yet');
         }
 
@@ -75,8 +81,9 @@ class StartSlackConnection
      * @param  list<string>  $scopes
      * @param  array{consent_version: string, terms_version: string}|null  $private
      */
-    public static function authorizeUrl(User $user, array $scopes, ?array $private = null, ?string $notice = null): string
+    public static function authorizeUrl(User $user, array $scopes, ?array $private = null, ?string $notice = null, ?SlackWorkspace $workspace = null): string
     {
+        $workspace ??= SlackWorkspace::main();
         $state = Str::random(48);
         session()->put(self::STATE_KEY, [
             'value'      => $state,
@@ -84,23 +91,29 @@ class StartSlackConnection
             'expires_at' => now()->addMinutes(self::STATE_MINUTES)->timestamp,
             'private'    => $private,
             'notice'     => $notice,
+            'team_id'    => $workspace->teamId,
         ]);
 
         return 'https://slack.com/oauth/v2/authorize?'.http_build_query([
-            'client_id'    => config('services.slack.client_id'),
+            'client_id'    => $workspace->clientId,
             'user_scope'   => implode(',', $scopes),
             'redirect_uri' => self::redirectUri(),
             'state'        => $state,
-            'team'         => config('services.slack.team_id'),
+            'team'         => $workspace->slackTeamId(),
         ]);
     }
 
     public function asController(ActionRequest $request): RedirectResponse
     {
-        if ($reason = self::unavailableReason($request->user())) {
+        $teamId    = $request->query('team_id');
+        $workspace = $teamId === null || (is_string($teamId) && $teamId !== '') ? SlackWorkspace::forTeam($teamId) : null;
+        if (!$workspace) {
+            return self::backToSettings(self::ERROR_KEY, __('Connecting a Slack account is not set up on this server'));
+        }
+        if ($reason = self::unavailableReason($request->user(), $workspace)) {
             return self::backToSettings(self::ERROR_KEY, $reason);
         }
 
-        return redirect()->away(self::authorizeUrl($request->user(), SlackWriteAccess::USER_SCOPES));
+        return redirect()->away(self::authorizeUrl($request->user(), SlackWriteAccess::USER_SCOPES, workspace: $workspace));
     }
 }

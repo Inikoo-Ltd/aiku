@@ -36,7 +36,7 @@ class AddSlackChannelBookmark
     public function handle(User $user, SlackChannel $slackChannel, array $attributes): array
     {
         $this->ensureMayWrite($user, $slackChannel);
-        $client = $this->clientFor($user);
+        $client = $this->clientFor($user, channel: $slackChannel);
 
         $answer = $this->callSlack($client, 'bookmarks.add', [
             'channel_id' => $slackChannel->slack_id,

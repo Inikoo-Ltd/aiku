@@ -56,7 +56,7 @@ class StoreSlackPrivateChannel
      */
     public function handle(User $user, string $name, array $userIds): SlackChannel
     {
-        $client = SlackConnection::where('user_id', $user->id)->first()?->hasPrivateConsent() ? SlackWriteClient::for($user) : null;
+        $client = SlackConnection::main()->where('user_id', $user->id)->first()?->hasPrivateConsent() ? SlackWriteClient::for($user) : null;
         if (!$client) {
             $this->refuse(__('Bring your private conversations to Verba first (your profile, Slack section): a Verbration is a Slack private channel created as you'));
         }

@@ -38,7 +38,7 @@ class EditSlackChannelBookmark
     {
         $this->ensureMayWrite($user, $slackChannel);
         $bookmark = $this->liveBookmark($slackChannel, $bookmark->id);
-        $client   = $this->clientFor($user);
+        $client   = $this->clientFor($user, channel: $slackChannel);
 
         $answer = $this->callSlack($client, 'bookmarks.edit', [
             'channel_id'  => $slackChannel->slack_id,

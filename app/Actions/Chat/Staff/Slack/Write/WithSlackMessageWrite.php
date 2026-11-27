@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\GetSlackChannelMessages;
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackMessage;
 use App\Models\SysAdmin\User;
@@ -48,11 +49,16 @@ trait WithSlackMessageWrite
         return SlackMessage::where('slack_channel_id', $slackChannel->id)->where('ts', $ts)->firstOrFail();
     }
 
-    protected function clientFor(User $user, bool $standInAllowed = false): SlackWriteClient
+    /**
+     * The person's own connection to the channel's workspace (INI-540); without one, posting, editing and deleting go
+     * through that workspace's bot in their place.
+     */
+    protected function clientFor(User $user, bool $standInAllowed = false, ?SlackChannel $channel = null): SlackWriteClient
     {
-        $client = SlackWriteClient::for($user) ?? ($standInAllowed ? SlackWriteClient::standInFor($user) : null);
+        $workspace = $channel ? SlackWorkspace::forChannel($channel) : SlackWorkspace::main();
+        $client    = $workspace ? (SlackWriteClient::for($user, $workspace) ?? ($standInAllowed ? SlackWriteClient::standInFor($user, $workspace) : null)) : null;
         if (!$client) {
-            $this->refuse(SlackWriteAccess::reasonUnavailable($user) ?? __('Connect your Slack account first'));
+            $this->refuse(($workspace ? SlackWriteAccess::reasonUnavailable($user, $workspace) : null) ?? __('Connect your Slack account first'));
         }
 
         return $client;

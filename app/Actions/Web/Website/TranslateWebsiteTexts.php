@@ -48,9 +48,9 @@ class TranslateWebsiteTexts implements ShouldBeUniqueUntilProcessing
      */
     private const array JSON_MARGINALS = ['footer', 'sidebar'];
 
-    public function getJobUniqueId(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?Banner $banner = null): string
+    public function getJobUniqueId(Website $website, ?Webpage $webpage = null, ?string $marginal = null, ?Banner $banner = null, ?string $onlyLocale = null): string
     {
-        return $website->id.'-'.($webpage?->id ?? $marginal ?? ($banner ? 'banner-'.$banner->id : 'all'));
+        return $website->id.'-'.($webpage?->id ?? $marginal ?? ($banner ? 'banner-'.$banner->id : 'all')).($onlyLocale ? '-'.$onlyLocale : '');
     }
 
     /**

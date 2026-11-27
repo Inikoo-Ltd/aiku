@@ -11,6 +11,7 @@ namespace App\Models\Chat;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -33,9 +34,34 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $history_synced_at
  * @property int|null $brought_by_user_id
  * @property bool $is_listed
+ * @property string|null $slack_team_id
  */
 class SlackChannel extends Model
 {
+    /**
+     * Slack's own name, except that a channel of another workspace whose name a main workspace channel already has
+     * reads name-suffix (general-awa) in aiku (INI-540). Slack keeps its name; the column stores Slack's.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::get(function (?string $name) {
+            if ($name === null || $this->slack_team_id === null) {
+                return $name;
+            }
+            $suffix = \App\Actions\Chat\Staff\Slack\SlackWorkspace::forTeam($this->slack_team_id)?->nameSuffix;
+
+            return $suffix && in_array($name, self::mainWorkspaceNames(), true) ? $name.'-'.$suffix : $name;
+        });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function mainWorkspaceNames(): array
+    {
+        return once(fn () => self::kept()->whereNull('slack_team_id')->whereNotNull('name')->pluck('name')->all());
+    }
+
     protected $guarded = [];
 
     protected $attributes = [
@@ -105,12 +131,11 @@ class SlackChannel extends Model
     public function scopeDirectVisibleTo(Builder $query, User $user): Builder
     {
         $query->keptDirect()->where('group_id', $user->group_id);
-        $slackPerson = self::privateReader($user);
-        if (!$slackPerson) {
+        if (!self::privateReader($user)) {
             return $query->whereRaw('false');
         }
 
-        return $query->whereIn('id', SlackChannelMember::where('slack_user_id', $slackPerson->slack_id)->select('slack_channel_id'));
+        return $query->whereIn('id', SlackChannelMember::whereIn('slack_user_id', self::linkedSlackIds($user))->select('slack_channel_id'));
     }
 
     public function isDirectVisibleTo(User $user): bool
@@ -149,12 +174,11 @@ class SlackChannel extends Model
     public function scopePrivateVisibleTo(Builder $query, User $user): Builder
     {
         $query->keptPrivate()->where('group_id', $user->group_id);
-        $slackPerson = $user->status && !$user->worksOnlyForAgents() && \App\Actions\Chat\Staff\Slack\Write\SlackWriteAccess::privateOptInOpen() ? self::linkedSlackPerson($user) : null;
-        if (!$slackPerson) {
+        if (!self::privateReader($user)) {
             return $query->whereRaw('false');
         }
 
-        return $query->whereIn('id', SlackChannelMember::where('slack_user_id', $slackPerson->slack_id)->select('slack_channel_id'));
+        return $query->whereIn('id', SlackChannelMember::whereIn('slack_user_id', self::linkedSlackIds($user))->select('slack_channel_id'));
     }
 
     public function isPrivateVisibleTo(User $user): bool
@@ -212,12 +236,38 @@ class SlackChannel extends Model
             && (Ticket::canBeManagedBy($user) || self::linkedSlackPerson($user) !== null);
     }
 
+    /**
+     * The person's main Slack account: their main workspace one when they have it, else their account elsewhere.
+     */
     public static function linkedSlackPerson(User $user): ?SlackUser
     {
+        return self::linkedSlackPeople($user)->first();
+    }
+
+    /**
+     * One Slack account per workspace (INI-540), the one linked by hand first: private and direct channels let them read
+     * through any of them, never through a second account of the same workspace.
+     *
+     * @return array<int, string>
+     */
+    public static function linkedSlackIds(User $user): array
+    {
+        return self::linkedSlackPeople($user)->unique(fn (SlackUser $person) => $person->data['team_id'] ?? '')->pluck('slack_id')->values()->all();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, SlackUser>
+     */
+    private static function linkedSlackPeople(User $user): \Illuminate\Support\Collection
+    {
+        $otherTeams = array_map(fn ($workspace) => $workspace->teamId, \App\Actions\Chat\Staff\Slack\SlackWorkspace::others());
+
         return SlackUser::where('user_id', $user->id)->where('is_bot', false)->where('is_deleted', false)
             ->where(fn (Builder $query) => $query->whereNotNull('link_confirmed_at')->orWhereRaw('lower(email) = ?', [strtolower((string) $user->email)]))
             ->whereRaw("coalesce((data->>'is_restricted')::boolean, false) = false")
-            ->orderByRaw('link_confirmed_at is null')
-            ->first();
+            ->orderByRaw('link_confirmed_at is null')->orderBy('id')
+            ->get()
+            ->sortBy(fn (SlackUser $person) => in_array($person->data['team_id'] ?? null, $otherTeams, true) ? 1 : 0)
+            ->values();
     }
 }
