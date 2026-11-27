@@ -16,7 +16,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import StaffCallTrack from "@/Components/Messaging/Call/StaffCallTrack.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { useStaffCalls, type StaffCallJoin } from "@/Stores/staff-calls"
-import { rememberDataMode, rememberedDataMode, staffCallQuality, type StaffCallDataMode } from "@/Components/Messaging/Call/staffCallQuality"
+import { rememberDataMode, rememberedDataMode, staffCallQuality, staffCallQualitySampler, type StaffCallDataMode } from "@/Components/Messaging/Call/staffCallQuality"
 import type { LocalTrack, Participant, Room, Track } from "livekit-client"
 
 library.add(faMicrophone, faMicrophoneSlash, faVideo, faVideoSlash, faDesktop, faCog, faPhoneSlash, faExpand, faCompress, faExclamationTriangle, faVolumeUp, faSignal, faTachometerAltSlow)
@@ -37,6 +37,7 @@ const dataModeOptions = [
 ]
 let isLeaving = false
 let pingTimer: ReturnType<typeof setInterval> | null = null
+let sampleQuality: ReturnType<typeof staffCallQualitySampler> | null = null
 let ringTimer: ReturnType<typeof setTimeout> | null = null
 
 const version = ref(0)
@@ -247,6 +248,7 @@ const connect = async () => {
     const { Room, RoomEvent, Track: LkTrack } = livekit
     const lkRoom = new Room(quality.room)
     room.value = lkRoom
+    sampleQuality = staffCallQualitySampler(lkRoom)
 
     lkRoom
         .on(RoomEvent.TrackSubscribed, (track) => {
@@ -344,7 +346,10 @@ watch(() => [call.value.ended_at, call.value.present_user_ids.join(","), call.va
 onMounted(() => {
     window.addEventListener("beforeunload", warnBeforeUnload)
     window.addEventListener("pagehide", leaveOnPageHide)
-    pingTimer = setInterval(() => store.ping(), store.pingSeconds * 1000)
+    pingTimer = setInterval(async () => {
+        const sample = sampleQuality ? await Promise.race([sampleQuality().catch(() => null), new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))]) : null
+        store.ping(sample)
+    }, store.pingSeconds * 1000)
     if (isWaitingForAnswer.value) {
         const ringLeft = store.ringSeconds * 1000 - (Date.now() - (call.value.local_started_at ?? Date.now()))
         ringTimer = setTimeout(() => {

@@ -8,6 +8,7 @@ import { defineStore } from "pinia"
 import axios from "axios"
 import { usePage } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
+import type { StaffCallQualitySample } from "@/Components/Messaging/Call/staffCallQuality"
 
 export interface StaffCall {
     ulid: string
@@ -201,11 +202,11 @@ export const useStaffCalls = defineStore("staff-calls", {
             postLeave(active.call.ulid, null, true).catch(() => { })
         },
 
-        async ping() {
+        async ping(quality: StaffCallQualitySample | null = null) {
             const active = this.active
             if (!active) return
             try {
-                const { data } = await axios.post(route("grp.chat.staff.calls.ping", active.call.ulid), {}, { headers: { "X-Background-Request": "1" } })
+                const { data } = await axios.post(route("grp.chat.staff.calls.ping", active.call.ulid), quality ? { quality } : {}, { headers: { "X-Background-Request": "1" } })
                 this.handleBroadcast(data.call)
             } catch (error: any) {
                 if (error?.response?.status === 403 || error?.response?.status === 404) {

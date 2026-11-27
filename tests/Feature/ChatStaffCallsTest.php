@@ -500,3 +500,56 @@ test('Verba reports count messages, reply time, calls and meetings in the period
         ->assertInertia(fn (AssertableInertia $page) => $page->component('Chat/StaffChatReports')->where('report.days', 30)->where('report.by', 'day')->has('people.data'));
     actingAs($this->callee)->get(route('grp.chat.staff.reports'))->assertForbidden();
 });
+
+test('each ping adds what the browser measured to the person\'s call quality, nonsense is dropped without failing the ping, and the report averages it', function () {
+    $call = StartStaffCall::run($this->dm, $this->user)['call'];
+    $ping = fn (array $quality) => actingAs($this->user)->postJson(route('grp.chat.staff.calls.ping', $call->ulid), ['quality' => $quality]);
+
+    $ping(['path' => 'udp', 'connection' => 'excellent', 'rtt_ms' => 40, 'loss_pct' => 0, 'sent_audio_kbps' => 60, 'unknown' => 5])->assertOk();
+    $ping(['path' => 'relay', 'connection' => 'poor', 'rtt_ms' => 120.04, 'loss_pct' => 3])->assertOk();
+    $seenBefore = $call->users()->newPivotStatement()->where('staff_call_id', $call->id)->where('user_id', $this->user->id)->value('last_seen_at');
+    $this->travel(5)->seconds();
+    $ping(['rtt_ms' => -1, 'loss_pct' => 'lots', 'path' => 'carrier-pigeon'])->assertOk();
+    actingAs($this->user)->postJson(route('grp.chat.staff.calls.ping', $call->ulid), ['quality' => 'garbage'])->assertOk();
+    expect($call->users()->newPivotStatement()->where('staff_call_id', $call->id)->where('user_id', $this->user->id)->value('last_seen_at'))->not->toBe($seenBefore);
+
+    $quality = json_decode($call->users()->newPivotStatement()->where('staff_call_id', $call->id)->where('user_id', $this->user->id)->value('quality'), true);
+    expect($quality)->toEqual([
+        'samples'         => 2,
+        'poor_samples'    => 1,
+        'paths'           => ['udp' => 1, 'relay' => 1],
+        'rtt_ms'          => ['sum' => 160.0, 'n' => 2, 'max' => 120.0],
+        'loss_pct'        => ['sum' => 3.0, 'n' => 2, 'max' => 3.0],
+        'sent_audio_kbps' => ['sum' => 60.0, 'n' => 1, 'max' => 60.0],
+    ]);
+
+    $at   = fn (string $time) => \Illuminate\Support\Carbon::parse('2032-03-10 '.$time, 'UTC');
+    $past = StaffCall::create(['group_id' => $this->dm->group_id, 'staff_conversation_id' => $this->dm->id, 'started_by_user_id' => $this->user->id, 'started_at' => $at('11:00:00'), 'answered_at' => $at('11:00:10'), 'ended_at' => $at('11:05:10'), 'outcome' => StaffCall::OUTCOME_ANSWERED]);
+    $past->users()->attach($this->user->id, ['joined_at' => $at('11:00:10'), 'left_at' => $at('11:05:10'), 'last_seen_at' => $at('11:05:10'), 'quality' => json_encode($quality)]);
+    $past->users()->attach($this->callee->id, ['joined_at' => $at('11:00:10'), 'left_at' => $at('11:05:10'), 'last_seen_at' => $at('11:05:10'), 'quality' => json_encode(['samples' => 2, 'poor_samples' => 0, 'paths' => ['udp' => 2], 'rtt_ms' => ['sum' => 40, 'n' => 2, 'max' => 30]])]);
+
+    $report = \App\Actions\Chat\Staff\UI\ShowStaffChatReports::make()->handle($this->user->group, 7, 'day', $at('18:00:00'));
+
+    expect($report['current'])->toMatchArray([
+        'quality_measured'   => 2,
+        'quality_rtt_ms'     => 50,
+        'quality_rtt_max_ms' => 120,
+        'quality_loss_pct'   => 1.5,
+        'quality_not_direct' => 1,
+        'quality_poor_pct'   => 25.0,
+    ]);
+});
+
+test('the quick call list offers the people called last, then starred colleagues, active ones of the group only', function () {
+    StartStaffCall::run($this->dm, $this->user);
+    $retired = User::factory()->create(['group_id' => $this->user->group_id, 'language_id' => $this->user->language_id, 'status' => false]);
+    $this->user->teamMembers()->syncWithoutDetaching([$this->outsider->id, $retired->id, $this->callee->id]);
+
+    $people = collect(actingAs($this->user)->getJson(route('grp.chat.staff.calls.live'))->assertOk()->json('quick_people'));
+
+    expect($people->first()['id'])->toBe($this->callee->id)
+        ->and($people->pluck('id'))->toContain($this->outsider->id)
+        ->and($people->pluck('id'))->not->toContain($retired->id)
+        ->and($people->pluck('id')->duplicates())->toBeEmpty()
+        ->and($people->firstWhere('id', $this->outsider->id)['starred'])->toBeTrue();
+});

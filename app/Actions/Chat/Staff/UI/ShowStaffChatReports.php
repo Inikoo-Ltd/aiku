@@ -151,6 +151,18 @@ class ShowStaffChatReports extends OrgAction
             $bindings
         );
 
+        $quality = DB::selectOne(
+            "select count(*) as measured,
+                sum((p.quality->'rtt_ms'->>'sum')::float) / nullif(sum((p.quality->'rtt_ms'->>'n')::float), 0) as rtt_ms,
+                max((p.quality->'rtt_ms'->>'max')::float) as rtt_max_ms,
+                sum((p.quality->'loss_pct'->>'sum')::float) / nullif(sum((p.quality->'loss_pct'->>'n')::float), 0) as loss_pct,
+                count(*) filter (where p.quality->'paths' ?? 'relay' or p.quality->'paths' ?? 'tcp') as not_direct,
+                sum((p.quality->>'poor_samples')::float) / nullif(sum((p.quality->>'samples')::float), 0) * 100 as poor_pct
+            from staff_call_participants p join staff_calls sc on sc.id = p.staff_call_id
+            where sc.group_id = :group and p.joined_at >= :from and p.joined_at < :to and p.quality is not null",
+            $bindings
+        );
+
         $slackChannelIds = $this->slackChannelIds($group);
         $slack           = $slackChannelIds
             ? DB::table('slack_messages')
@@ -183,6 +195,12 @@ class ShowStaffChatReports extends OrgAction
             'call_median_seconds'   => $calls->median_call_seconds === null ? null : (int) round($calls->median_call_seconds),
             'talk_minutes'          => (int) round($calls->talk_seconds / 60),
             'person_minutes'        => (int) round($personSeconds->seconds / 60),
+            'quality_measured'      => (int) $quality->measured,
+            'quality_rtt_ms'        => $quality->rtt_ms === null ? null : (int) round($quality->rtt_ms),
+            'quality_rtt_max_ms'    => $quality->rtt_max_ms === null ? null : (int) round($quality->rtt_max_ms),
+            'quality_loss_pct'      => $quality->loss_pct === null ? null : round((float) $quality->loss_pct, 1),
+            'quality_not_direct'    => (int) $quality->not_direct,
+            'quality_poor_pct'      => $quality->poor_pct === null ? null : round((float) $quality->poor_pct, 1),
             'slack_messages'        => (int) ($slack->messages ?? 0),
             'slack_from_aiku'       => (int) ($slack->from_aiku ?? 0),
             'slack_people'          => (int) ($slack->people ?? 0),
@@ -277,9 +295,12 @@ class ShowStaffChatReports extends OrgAction
             ->selectSub(fn ($query) => $query->from('staff_calls')->whereColumn('staff_calls.started_by_user_id', 'users.id')->where('staff_calls.group_id', $group->id)->whereBetween('staff_calls.started_at', $range)->selectRaw('count(*)'), 'calls_started')
             ->selectSub(fn ($query) => $participations($query)->selectRaw('count(*)'), 'calls')
             ->selectSub(fn ($query) => $participations($query)->selectRaw('coalesce(round(sum(extract(epoch from coalesce(staff_call_participants.left_at, staff_call_participants.last_seen_at) - staff_call_participants.joined_at)) / 60), 0)::int'), 'call_minutes')
+            ->selectSub(fn ($query) => $participations($query)->selectRaw("round(sum((staff_call_participants.quality->'rtt_ms'->>'sum')::float) / nullif(sum((staff_call_participants.quality->'rtt_ms'->>'n')::float), 0))::int"), 'call_delay_ms')
+            ->selectSub(fn ($query) => $participations($query)->selectRaw("round((sum((staff_call_participants.quality->'loss_pct'->>'sum')::float) / nullif(sum((staff_call_participants.quality->'loss_pct'->>'n')::float), 0))::numeric, 1)"), 'call_loss_pct')
+            ->selectSub(fn ($query) => $participations($query)->selectRaw("round(coalesce(sum((staff_call_participants.quality->'received_audio_kbps'->>'sum')::float) / nullif(sum((staff_call_participants.quality->'received_audio_kbps'->>'n')::float), 0), 0) + coalesce(sum((staff_call_participants.quality->'received_video_kbps'->>'sum')::float) / nullif(sum((staff_call_participants.quality->'received_video_kbps'->>'n')::float), 0), 0))::int"), 'call_kbps')
             ->selectSub(fn ($query) => $slackMessages($query)->selectRaw('count(*)'), 'slack_messages')
             ->defaultSort('-messages')
-            ->allowedSorts(['contact_name', 'messages', 'conversations', 'calls_started', 'calls', 'call_minutes', 'slack_messages'])
+            ->allowedSorts(['contact_name', 'messages', 'conversations', 'calls_started', 'calls', 'call_minutes', 'call_delay_ms', 'call_loss_pct', 'call_kbps', 'slack_messages'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
@@ -296,6 +317,9 @@ class ShowStaffChatReports extends OrgAction
                 ->column(key: 'calls_started', label: __('Calls made'), sortable: true, align: 'right')
                 ->column(key: 'calls', label: __('Calls joined'), sortable: true, align: 'right')
                 ->column(key: 'call_minutes', label: __('Call minutes'), sortable: true, align: 'right')
+                ->column(key: 'call_delay_ms', label: __('Call delay'), sortable: true, align: 'right')
+                ->column(key: 'call_loss_pct', label: __('Packets lost'), sortable: true, align: 'right')
+                ->column(key: 'call_kbps', label: __('Kbit/s received'), sortable: true, align: 'right')
                 ->column(key: 'slack_messages', label: __('Slack'), sortable: true, align: 'right')
                 ->defaultSort('-messages');
         };

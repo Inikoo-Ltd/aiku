@@ -44,6 +44,12 @@ type Totals = {
 	call_median_seconds: number | null
 	talk_minutes: number
 	person_minutes: number
+	quality_measured: number
+	quality_rtt_ms: number | null
+	quality_rtt_max_ms: number | null
+	quality_loss_pct: number | null
+	quality_not_direct: number
+	quality_poor_pct: number | null
 	slack_messages: number
 	slack_from_aiku: number
 	slack_people: number
@@ -213,6 +219,10 @@ const callFacts = computed(() => [
 	{ label: ctrans("Video"), value: locale.number(current.value.video), icon: "fal fa-video" },
 	{ label: ctrans("Screen share"), value: locale.number(current.value.screen), icon: "fal fa-desktop" },
 	{ label: ctrans("Cancelled before an answer"), value: locale.number(current.value.cancelled) },
+	{ label: ctrans("Delay (round trip)"), value: current.value.quality_rtt_ms === null ? "—" : ctrans(":avg ms, worst :max ms", { avg: locale.number(current.value.quality_rtt_ms), max: locale.number(current.value.quality_rtt_max_ms ?? 0) }) },
+	{ label: ctrans("Packets lost"), value: current.value.quality_loss_pct === null ? "—" : `${locale.number(current.value.quality_loss_pct)}%` },
+	{ label: ctrans("Time on a poor connection"), value: current.value.quality_poor_pct === null ? "—" : `${locale.number(current.value.quality_poor_pct)}%` },
+	{ label: ctrans("People not on the direct path"), value: ctrans(":count of :total measured", { count: locale.number(current.value.quality_not_direct), total: locale.number(current.value.quality_measured) }) },
 ])
 
 const chatFacts = computed(() => [
@@ -316,6 +326,15 @@ const chatFacts = computed(() => [
 				<Table :resource="people" name="people" class="mt-2">
 					<template #cell(call_minutes)="{ item }">
 						<span class="tabular-nums">{{ item.call_minutes ? minutes(item.call_minutes) : "—" }}</span>
+					</template>
+					<template #cell(call_delay_ms)="{ item }">
+						<span class="tabular-nums">{{ item.call_delay_ms === null ? "—" : `${locale.number(item.call_delay_ms)} ms` }}</span>
+					</template>
+					<template #cell(call_loss_pct)="{ item }">
+						<span class="tabular-nums">{{ item.call_loss_pct === null ? "—" : `${locale.number(item.call_loss_pct)}%` }}</span>
+					</template>
+					<template #cell(call_kbps)="{ item }">
+						<span class="tabular-nums">{{ item.call_kbps ? locale.number(item.call_kbps) : "—" }}</span>
 					</template>
 				</Table>
 			</div>
