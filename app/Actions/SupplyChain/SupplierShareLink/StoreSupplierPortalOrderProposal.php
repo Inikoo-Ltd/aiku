@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * The supplier proposes, from its portal, lines of Ready to order: only a line still offered there can be proposed,
+ * The supplier proposes, from its portal, lines of its Propose an order tab: only a line still offered there can be proposed,
  * in any quantity above zero: the buyer settles the quantity on accepting. Each line waits for the buyer of its organisation,
  * who is told once per organisation.
  */
@@ -67,7 +67,7 @@ class StoreSupplierPortalOrderProposal
 
         $chosen = collect($lines)->keyBy('id')->filter(fn (array $line, int $id) => $offered->has($id));
         if ($chosen->isEmpty()) {
-            throw ValidationException::withMessages(['lines' => __('These products no longer need ordering. Reload the page to see what is ready to order now.')]);
+            throw ValidationException::withMessages(['lines' => __('These products no longer need ordering. Reload the page to see what we need now.')]);
         }
 
         return $chosen->map(function (array $line, int $id) use ($offered, $supplier, $link, $note) {

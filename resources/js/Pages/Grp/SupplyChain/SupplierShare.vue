@@ -142,7 +142,7 @@ const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolea
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
 	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
-	{ key: "order_now", label: ctrans("Ready to order"), icon: "fal fa-cart-plus" },
+	{ key: "order_now", label: ctrans("Propose an order"), icon: "fal fa-cart-plus" },
 	{ key: "order_plan", label: ctrans("Plan for next orders"), icon: "fal fa-calendar-alt" },
 	{ key: "compliance", label: ctrans("Compliance"), icon: "fal fa-clipboard-check" },
 	{ key: "products", label: ctrans("Your Products"), icon: "fal fa-box" },
