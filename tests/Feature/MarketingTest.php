@@ -5620,10 +5620,11 @@ describe('browsing and restoring an info website', function () {
             ->and($bans->where('host', 'http://varnish-a.test')->pluck('page')->sort()->values()->all())->toBe([
                 "$domain/",
                 "$domain/our%20story",
+                "$domain/our%20story/",
                 "$domain/robots.txt",
                 "$domain/sitemap.xml",
             ])
-            ->and($bans->where('host', 'http://varnish-b.test'))->toHaveCount(4);
+            ->and($bans->where('host', 'http://varnish-b.test'))->toHaveCount(5);
     });
 
     it('bans the pages a change makes stale from varnish once the change is committed', function () {
@@ -5648,13 +5649,13 @@ describe('browsing and restoring an info website', function () {
         expect($bans())->toBe([]);
 
         $story = $this->staticWebsite->webpages()->create(['path' => '/story', 'title' => 'Story', 'html' => '<p>Story</p>']);
-        expect($bans())->toBe(["$domain/sitemap.xml", "$domain/story"]);
+        expect($bans())->toBe(["$domain/sitemap.xml", "$domain/story", "$domain/story/"]);
 
         $story->update(['path' => '/our-story']);
-        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml", "$domain/story"]);
+        expect($bans())->toBe(["$domain/our-story", "$domain/our-story/", "$domain/sitemap.xml", "$domain/story", "$domain/story/"]);
 
         $story->delete();
-        expect($bans())->toBe(["$domain/our-story", "$domain/sitemap.xml"]);
+        expect($bans())->toBe(["$domain/our-story", "$domain/our-story/", "$domain/sitemap.xml"]);
 
         $this->header->update(['html' => '<nav>New menu</nav>']);
         expect($bans())->toBe(["$domain/", "$domain/robots.txt", "$domain/sitemap.xml"]);
