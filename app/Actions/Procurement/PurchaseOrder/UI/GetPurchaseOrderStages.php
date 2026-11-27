@@ -389,6 +389,7 @@ class GetPurchaseOrderStages
             'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
             'not_required' => $stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder) && !$this->depositChoicePending($purchaseOrder),
             'unpaid'       => $stage === Stage::DEPOSIT_PAID && $stages[$stage->value]['reached'] && $purchaseOrder->deposit_paid_at === null && !$this->depositNotRequired($purchaseOrder),
+            'deposit_request' => $stage === Stage::DEPOSIT_PAID ? $this->pendingSupplierDepositRequest($purchaseOrder) : null,
             'steps'       => collect($steps[$stage->value] ?? [])->map(fn (array $step) => [
                 'key'   => $step['key'],
                 'label' => $step['label'],
@@ -437,6 +438,26 @@ class GetPurchaseOrderStages
                     'blocked'     => $this->blockedReason($purchaseOrder, $stage, $stages),
                 ])->values()->all(),
         ])->all();
+    }
+
+    /**
+     * The deposit the supplier asked for from its portal, while it is still not paid.
+     *
+     * @return array{percentage: int|float, amount: float, currency_code: string|null, requested_at: string|null}|null
+     */
+    private function pendingSupplierDepositRequest(PurchaseOrder $purchaseOrder): ?array
+    {
+        $request = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request');
+        if (!$request || $purchaseOrder->deposit_paid_at !== null || $purchaseOrder->isDepositPaid()) {
+            return null;
+        }
+
+        return [
+            'percentage'    => $request['percentage'],
+            'amount'        => (float) $request['amount'],
+            'currency_code' => $purchaseOrder->currency?->code,
+            'requested_at'  => $request['requested_at'] ?? null,
+        ];
     }
 
     /**

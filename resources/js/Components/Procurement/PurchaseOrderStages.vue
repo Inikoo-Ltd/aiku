@@ -4,6 +4,7 @@ import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
@@ -81,6 +82,7 @@ interface Stage {
     received_lines?: { received: number, total: number, quantity_received: number, quantity_ordered: number } | null
     not_required?: boolean
     unpaid?: boolean
+    deposit_request?: { percentage: number, amount: number, currency_code: string | null, requested_at: string | null } | null
     note?: string | null
     steps: Step[]
     checks?: Check[] | null
@@ -341,6 +343,7 @@ async function upload(evidence: Evidence, event: Event) {
 }
 
 const formatDate = (date: string | Date | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : null
+const locale = useLocaleStore()
 
 const toIso = (date: Date | null) => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null
 
@@ -592,6 +595,11 @@ function save() {
             <div v-if="!stage.reached && stage.expected" class="mt-0.5 w-fit cursor-help text-xs tabular-nums" :class="stage.days_late ? 'text-red-600' : 'text-gray-500'" v-tooltip="stage.expected_note">
                 {{ ctrans("Expected :date", { date: formatDate(stage.expected) as string }) }}
                 <template v-if="stage.days_late"> · {{ ctrans(":days days late", { days: stage.days_late }) }}</template>
+            </div>
+
+            <div v-if="stage.deposit_request" class="mt-1 w-fit rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800" v-tooltip="stage.deposit_request.requested_at ? ctrans('Requested by the supplier on :date', { date: formatDate(stage.deposit_request.requested_at) as string }) : null">
+                <div class="font-medium">{{ ctrans("Deposit :percentage% pending", { percentage: stage.deposit_request.percentage }) }}</div>
+                <div class="tabular-nums">{{ locale.currencyFormat(stage.deposit_request.currency_code ?? "", stage.deposit_request.amount) }}</div>
             </div>
 
             <div v-if="stage.note" class="mt-0.5 text-xs text-gray-500">{{ stage.note }}</div>
