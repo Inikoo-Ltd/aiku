@@ -2130,6 +2130,14 @@ test('website texts are machine translated only when new, never over an existing
     \App\Actions\Web\Website\TranslateWebsiteTexts::dispatchIfTranslated($website);
     Queue::assertPushedOn('low-priority', \App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Web\Website\TranslateWebsiteTexts);
 
+    Queue::fake();
+    foreach (['cs', 'pl', 'cs'] as $locale) {
+        \App\Actions\Web\Website\TranslateWebsiteTexts::dispatch($website, null, null, null, $locale);
+    }
+    Queue::assertPushed(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, 2);
+    expect(\App\Actions\Web\Website\TranslateWebsiteTexts::make()->getJobUniqueId($website, onlyLocale: 'pl'))->toBe($website->id.'-all-pl')
+        ->and(\App\Actions\Web\Website\TranslateWebsiteTexts::make()->getJobUniqueId($website))->toBe($website->id.'-all');
+
     enableShopLanguages($this->shop, null);
 });
 
