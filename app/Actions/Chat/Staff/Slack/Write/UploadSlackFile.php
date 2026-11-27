@@ -151,7 +151,7 @@ class UploadSlackFile
 
     private function keepCopy(SlackChannel $slackChannel, string $slackId, string $name, string $mime, int $size, UploadedFile $file): void
     {
-        $slackFile = SlackFile::updateOrCreate(['slack_id' => $slackId], [
+        $slackFile = SlackFile::updateOrCreate(['slack_id' => $slackId, 'is_private' => false], [
             'group_id'  => $slackChannel->group_id,
             'name'      => $name,
             'mime_type' => $mime,

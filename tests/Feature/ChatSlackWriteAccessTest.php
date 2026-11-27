@@ -573,3 +573,73 @@ test('the private opt-in stays closed in production until the launch, and is not
     }
     expect(SlackWriteAccess::privateOptInOpen())->toBeTrue();
 });
+
+test('a person asks for their DM words to be removed: a group administrator approves, a legal hold keeps them hidden, and only their DM words go, INI-568', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $ann   = ($this->makeUser)();
+    $ben   = ($this->makeUser)();
+    $admin = ($this->makeUser)('group-admin');
+    $clerk = ($this->makeUser)();
+    $annId = ($this->slackIdOf)($ann);
+    $benId = ($this->slackIdOf)($ben);
+    $connection = ($this->connect)($ann, ['scopes' => implode(',', [...SlackWriteAccess::USER_SCOPES, ...SlackWriteAccess::PRIVATE_SCOPES])]);
+    $connection->grantPrivateConsent(SlackWriteAccess::PRIVATE_CONSENT_VERSION, SlackWriteAccess::PRIVATE_TERMS_VERSION);
+
+    $s       = Str::upper(Str::random(6));
+    $dm      = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "DER{$s}", 'direct_type' => 'im', 'is_private' => true, 'is_public' => false, 'is_member' => false]);
+    $private = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "GER{$s}", 'name' => "er-{$s}", 'is_private' => true, 'is_public' => false, 'is_member' => true]);
+    $public  = SlackChannel::create(['group_id' => $this->group->id, 'slack_id' => "CER{$s}", 'name' => "erp-{$s}", 'is_member' => true]);
+    $message = fn (SlackChannel $channel, string $author, string $ts) => \App\Models\Chat\SlackMessage::create(['slack_channel_id' => $channel->id, 'ts' => $ts, 'slack_user_id' => $author, 'text' => "words of $author", 'data' => ['text' => "words of $author"], 'sent_at' => now()->subDay()]);
+    $annDm   = $message($dm, $annId, '1789800000.000100');
+    $annDm2  = $message($dm, $annId, '1789800001.000100');
+    $benDm   = $message($dm, $benId, '1789800002.000100');
+    $annPriv = $message($private, $annId, '1789800003.000100');
+    $annPub  = $message($public, $annId, '1789800004.000100');
+    \App\Models\Chat\SlackMessageVersion::create(['slack_message_id' => $annDm->id, 'text' => 'older', 'data' => [], 'replaced_at' => now()]);
+    \App\Models\Chat\SlackMessageReaction::create(['slack_message_id' => $annDm->id, 'slack_user_id' => $benId, 'name' => 'tada']);
+    $file = \App\Models\Chat\SlackFile::create(['group_id' => $this->group->id, 'slack_id' => "FER{$s}", 'slack_message_id' => $annDm2->id, 'name' => 'payslip.pdf', 'state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::NOT_AVAILABLE]);
+    $shared = \App\Models\Chat\SlackFile::create(['group_id' => $this->group->id, 'slack_id' => "FSH{$s}", 'slack_message_id' => $annDm->id, 'is_private' => true, 'name' => 'plan.pdf', 'state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::NOT_AVAILABLE]);
+    $annPriv->update(['data' => ['text' => "words of $annId", 'files' => [['id' => "FSH{$s}"]]]]);
+    $erase = \App\Actions\Chat\Staff\Slack\EraseSlackDirectWords::make();
+
+    expect(fn () => $erase->request($annId, $clerk))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => $erase->request($annId, $admin, holdReason: 'just_in_case'))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => $erase->request($annId, $admin, holdReason: 'dispute', holdUntil: now()->addYears(7)))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(DB::table('slack_erasure_requests')->where('slack_user_id', $annId)->count())->toBe(0);
+
+    $held = $erase->request($annId, $admin, 'HELP-1', 'dispute', now()->addMonth());
+    expect(\App\Models\Chat\SlackMessage::whereIn('id', [$annDm->id, $annDm2->id])->count())->toBe(0)
+        ->and(\App\Models\Chat\SlackMessage::withTrashed()->whereIn('id', [$annDm->id, $annDm2->id])->whereNotNull('text')->count())->toBe(2)
+        ->and($benDm->refresh()->deleted_at)->toBeNull()
+        ->and(\App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords::run($annId))->toBe(0)
+        ->and($annDm->refresh()->text)->toBe("words of $annId")
+        ->and($erase->due())->toBe(0);
+
+    $this->travel(32)->days();
+    expect($erase->due())->toBe(1);
+    $this->travelBack();
+
+    $row = DB::table('slack_erasure_requests')->find($held);
+    expect($row->status)->toBe('erased')
+        ->and($row->messages_erased)->toBe(2)
+        ->and($row->files_erased)->toBe(1)
+        ->and(\App\Models\Chat\SlackMessage::withTrashed()->whereIn('id', [$annDm->id, $annDm2->id])->exists())->toBeFalse()
+        ->and(\App\Models\Chat\SlackMessageVersion::where('slack_message_id', $annDm->id)->exists())->toBeFalse()
+        ->and(\App\Models\Chat\SlackMessageReaction::where('slack_message_id', $annDm->id)->exists())->toBeFalse()
+        ->and(\App\Models\Chat\SlackFile::whereKey($file->id)->exists())->toBeFalse()
+        ->and($shared->refresh()->slack_message_id)->toBe($annPriv->id)
+        ->and($benDm->refresh()->text)->toBe("words of $benId")
+        ->and($annPriv->refresh()->text)->toBe("words of $annId")
+        ->and($annPub->refresh()->text)->toBe("words of $annId")
+        ->and($connection->refresh()->private_consented_at)->toBeNull()
+        ->and($connection->token)->not->toBeNull()
+        ->and($erase->erase($held))->toBe(['messages' => 0, 'files' => 0]);
+    \Illuminate\Support\Facades\Notification::assertSentToTimes($ann, \App\Notifications\SlackJoinRequestNotification::class, 2);
+
+    $message($dm, $benId, '1789800005.000100');
+    $now = $erase->request($benId, $admin, 'HELP-2');
+    expect(DB::table('slack_erasure_requests')->find($now)->messages_erased)->toBe(2)
+        ->and(\App\Models\Chat\SlackMessage::withTrashed()->where('slack_channel_id', $dm->id)->exists())->toBeFalse();
+
+    $this->artisan('slack:erase-direct-words', ['person' => $annId, '--approved-by' => $clerk->username])->assertExitCode(1);
+});

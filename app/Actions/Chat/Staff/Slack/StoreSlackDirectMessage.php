@@ -74,7 +74,12 @@ class StoreSlackDirectMessage
         }
         $this->addMembers($channel, [$bringer->slack_user_id, $author]);
 
-        return $this->store($channel, $message, $bringer->user);
+        $stored = $this->store($channel, $message, $bringer->user);
+        if ($stored?->data !== null) {
+            CopySlackMessageFile::dispatchFor($stored);
+        }
+
+        return $stored;
     }
 
     /**

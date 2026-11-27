@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notification;
 
 class SlackJoinRequestNotification extends Notification
 {
-    public function __construct(public string $title, public string $body, public string $url)
+    public function __construct(public string $title, public string $body, public string $url, public string $type = 'slack_join_request')
     {
     }
 
@@ -29,7 +29,7 @@ class SlackJoinRequestNotification extends Notification
         return [
             'title' => $this->title,
             'body'  => $this->body,
-            'type'  => 'slack_join_request',
+            'type'  => $this->type,
             'route' => $this->url,
         ];
     }

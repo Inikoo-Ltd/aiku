@@ -65,7 +65,7 @@ class SendSlackFiles
             if (!$name) {
                 $this->refuse(__('A file was not uploaded or took too long to send. Attach it again.'));
             }
-            $titles[] = ['id' => $id, 'title' => (string) (SlackFile::where('slack_id', $id)->value('name') ?: $name)];
+            $titles[] = ['id' => $id, 'title' => (string) (SlackFile::where('slack_id', $id)->where('is_private', false)->value('name') ?: $name)];
         }
 
         $sender  = SendSlackMessage::make();
