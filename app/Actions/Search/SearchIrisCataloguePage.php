@@ -194,23 +194,56 @@ class SearchIrisCataloguePage extends IrisAction
      */
     private function matchedProductIds(string $query): array
     {
-        $searchQuery = Product::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)
-            ->options(['query_by' => SearchCatalogue::queryBy(Product::class, WebsiteLanguage::translateTo())]);
+        $strictHits = $this->catalogueHits($query, Product::class, SearchCatalogue::strictSearchOptions(...));
+        $hits       = $strictHits ?: $this->fallbackCatalogueHits($query, Product::class);
 
-        $hits = $this->rawHits($searchQuery);
-        $ids  = array_column(Arr::pluck($hits, 'document'), 'id');
-        $ids  = array_values(array_unique(array_map('intval', array_filter($ids))));
+        $ids = array_column(Arr::pluck($hits, 'document'), 'id');
+        $ids = array_values(array_unique(array_map('intval', array_filter($ids))));
 
-        $categoryHit = Arr::first($this->rawHits(
-            ProductCategory::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)
-                ->options(['query_by' => SearchCatalogue::queryBy(ProductCategory::class, WebsiteLanguage::translateTo())])
-                ->take(1)
-        ));
+        $categoryHit = Arr::first(
+            $this->catalogueHits($query, ProductCategory::class, SearchCatalogue::strictSearchOptions(...), 1)
+                ?: $this->fallbackCatalogueHits($query, ProductCategory::class, 1)
+        );
 
         return [
             'ids'        => $this->withBestMatchCategoryProducts($query, $categoryHit, $hits, $ids),
-            'arm_counts' => $this->armCounts($hits),
+            'arm_counts' => $this->armCounts($strictHits),
         ];
+    }
+
+    /**
+     * Same two passes as the search dropdown (SearchCatalogue): every word first, and only
+     * when that finds nothing, a word-dropping pass against code and name.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fallbackCatalogueHits(string $query, string $modelClass, ?int $limit = null): array
+    {
+        if (!SearchCatalogue::allowsFallback($query)) {
+            return [];
+        }
+
+        return SearchCatalogue::fallbackHits(
+            $this->catalogueHits($query, $modelClass, SearchCatalogue::fallbackSearchOptions(...), $limit),
+            $query
+        );
+    }
+
+    /**
+     * @param callable(string): array<string, mixed> $passOptions
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function catalogueHits(string $query, string $modelClass, callable $passOptions, ?int $limit = null): array
+    {
+        $searchQuery = $modelClass::search($query)->where('shop_id', $this->shop->id)->where('is_in_website', true)
+            ->options($passOptions(SearchCatalogue::queryBy($modelClass, WebsiteLanguage::translateTo())));
+
+        if ($limit) {
+            $searchQuery->take($limit);
+        }
+
+        return $this->rawHits($searchQuery);
     }
 
     /**

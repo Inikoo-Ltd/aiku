@@ -12,6 +12,7 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Arr;
+use Laravel\Scout\Builder;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -38,6 +39,34 @@ class SearchCatalogue
     ];
 
     /**
+     * Typesense drops words from a query nothing fully matches and searches again with the
+     * rest, which matched stray marketing copy: "big garden statue" served Bluetooth speakers
+     * whose descriptions say "big sound" and "in the garden". The first pass keeps every
+     * word; only when it finds nothing does a second pass drop words, and then only against
+     * the item's own code and name.
+     */
+    public const array STRICT_SEARCH = [
+        'drop_tokens_threshold' => 0,
+    ];
+
+    public const array FALLBACK_FIELDS = ['code', 'name', 'name_translations'];
+
+    /**
+     * Description fields still find an item whose name lacks the words, but a word met in
+     * passing in the copy must not outrank the same word in another item's name.
+     */
+    public const array FIELD_WEIGHTS = [
+        'code'                     => 15,
+        'name'                     => 15,
+        'name_translations'        => 15,
+        'barcode'                  => 12,
+        'variant_codes'            => 10,
+        'description'              => 2,
+        'description_extra'        => 1,
+        'description_translations' => 1,
+    ];
+
+    /**
      * result key => [model class, boost type, hits limit]
      */
     protected const array SEARCH_TARGETS = [
@@ -50,12 +79,12 @@ class SearchCatalogue
     {
         if (config('scout.driver') === 'typesense') {
             try {
-                $hits = $this->multiSearch($query, $options);
+                ['hits' => $hits, 'strict_hits' => $strictHits] = $this->multiSearch($query, $options);
             } catch (Throwable) {
-                $hits = $this->scoutSearch($query, $options);
+                ['hits' => $hits, 'strict_hits' => $strictHits] = $this->scoutSearch($query, $options);
             }
         } else {
-            $hits = $this->scoutSearch($query, $options);
+            ['hits' => $hits, 'strict_hits' => $strictHits] = $this->scoutSearch($query, $options);
         }
 
         $mapCatalogueItem = static fn (array $hit) => [
@@ -86,51 +115,93 @@ class SearchCatalogue
             'results'     => $results,
             'arm_counts'  => $this->sumArmCounts(array_map(
                 fn (array $collectionHits) => $this->armCounts($collectionHits),
-                $hits
+                $strictHits
             )),
         ];
     }
 
     /**
-     * All three collections in one HTTP round trip instead of three sequential ones.
+     * All three collections in one HTTP round trip instead of three sequential ones; the
+     * word-dropping fallback costs a second round trip only for collections that found nothing.
+     * strict_hits feed the assortment-gap counts: a query only the fallback answered is still a gap.
      *
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return array{hits: array<string, array<int, array<string, mixed>>>, strict_hits: array<string, array<int, array<string, mixed>>>}
      */
     private function multiSearch(string $query, array $options): array
     {
-        $searches = [];
-
-        foreach (self::SEARCH_TARGETS as [$modelClass, $boostType, $limit]) {
-            $filters = [];
-            if ($shopId = Arr::get($options, 'shop_id')) {
-                $filters[] = "shop_id:=$shopId";
-            }
-            if (Arr::get($options, 'is_in_website')) {
-                $filters[] = 'is_in_website:=true';
-            }
-
-            $searches[] = array_merge(
-                [
-                    'collection'             => (new $modelClass())->searchableAs(),
-                    'q'                      => $query,
-                    'query_by'               => self::queryBy($modelClass, Arr::get($options, 'translate_to')),
-                    'filter_by'              => implode(' && ', $filters),
-                    'per_page'               => $limit,
-                    'page'                   => 1,
-                    'prioritize_exact_match' => true,
-                    'enable_overrides'       => true,
-                    'prefix'                 => true,
-                ],
-                $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language'))
+        $strictSearches = [];
+        foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
+            $strictSearches[$key] = array_merge(
+                $this->typesenseSearchParameters($query, $options, $modelClass, $boostType, $limit),
+                self::strictSearchOptions(self::queryBy($modelClass, Arr::get($options, 'translate_to')))
             );
         }
 
+        $strictHits = $this->runMultiSearch($strictSearches);
+        $hits       = $strictHits;
+
+        $fallbackSearches = [];
+        if (self::allowsFallback($query)) {
+            foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
+                if (empty($hits[$key])) {
+                    $fallbackSearches[$key] = array_merge(
+                        $this->typesenseSearchParameters($query, $options, $modelClass, $boostType, $limit),
+                        self::fallbackSearchOptions(self::queryBy($modelClass, Arr::get($options, 'translate_to')))
+                    );
+                }
+            }
+        }
+
+        if ($fallbackSearches) {
+            foreach ($this->runMultiSearch($fallbackSearches) as $key => $fallbackHits) {
+                $hits[$key] = self::fallbackHits($fallbackHits, $query);
+            }
+        }
+
+        return ['hits' => $hits, 'strict_hits' => $strictHits];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function typesenseSearchParameters(string $query, array $options, string $modelClass, string $boostType, int $limit): array
+    {
+        $filters = [];
+        if ($shopId = Arr::get($options, 'shop_id')) {
+            $filters[] = "shop_id:=$shopId";
+        }
+        if (Arr::get($options, 'is_in_website')) {
+            $filters[] = 'is_in_website:=true';
+        }
+
+        return array_merge(
+            [
+                'collection'             => (new $modelClass())->searchableAs(),
+                'q'                      => $query,
+                'filter_by'              => implode(' && ', $filters),
+                'per_page'               => $limit,
+                'page'                   => 1,
+                'prioritize_exact_match' => true,
+                'enable_overrides'       => true,
+                'prefix'                 => true,
+            ],
+            $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language'))
+        );
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $searches
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function runMultiSearch(array $searches): array
+    {
         $response = $this->typesenseClient()
-            ->post($this->typesenseUrl().'/multi_search', ['searches' => $searches])
+            ->post($this->typesenseUrl().'/multi_search', ['searches' => array_values($searches)])
             ->throw();
 
         $hits = [];
-        foreach (array_keys(self::SEARCH_TARGETS) as $index => $key) {
+        foreach (array_keys($searches) as $index => $key) {
             if ($error = $response->json("results.$index.error")) {
                 logger()->warning("Typesense multi_search $key failed: $error");
             }
@@ -143,31 +214,112 @@ class SearchCatalogue
     /**
      * Fallback for non-typesense drivers (tests) and typesense outages.
      *
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return array{hits: array<string, array<int, array<string, mixed>>>, strict_hits: array<string, array<int, array<string, mixed>>>}
      */
     private function scoutSearch(string $query, array $options): array
     {
-        $hits = [];
+        $hits       = [];
+        $strictHits = [];
         foreach (self::SEARCH_TARGETS as $key => [$modelClass, $boostType, $limit]) {
-            $searchQuery = $modelClass::search($query);
+            $queryBy = self::queryBy($modelClass, Arr::get($options, 'translate_to'));
 
-            if ($shopId = Arr::get($options, 'shop_id')) {
-                $searchQuery->where('shop_id', $shopId);
+            $strictHits[$key] = $this->rawHits($this->scoutQuery($query, $options, $modelClass, $boostType, $limit, self::strictSearchOptions($queryBy)));
+            $hits[$key]       = $strictHits[$key];
+
+            if (empty($hits[$key]) && self::allowsFallback($query)) {
+                $hits[$key] = self::fallbackHits(
+                    $this->rawHits($this->scoutQuery($query, $options, $modelClass, $boostType, $limit, self::fallbackSearchOptions($queryBy))),
+                    $query
+                );
             }
-            if (Arr::get($options, 'is_in_website')) {
-                $searchQuery->where('is_in_website', true);
-            }
-
-            $searchQuery->options(array_merge(
-                $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language')),
-                ['query_by' => self::queryBy($modelClass, Arr::get($options, 'translate_to'))]
-            ));
-            $searchQuery->take($limit);
-
-            $hits[$key] = $this->rawHits($searchQuery);
         }
 
-        return $hits;
+        return ['hits' => $hits, 'strict_hits' => $strictHits];
+    }
+
+    /**
+     * @param array<string, mixed> $passOptions
+     */
+    private function scoutQuery(string $query, array $options, string $modelClass, string $boostType, int $limit, array $passOptions): Builder
+    {
+        $searchQuery = $modelClass::search($query);
+
+        if ($shopId = Arr::get($options, 'shop_id')) {
+            $searchQuery->where('shop_id', $shopId);
+        }
+        if (Arr::get($options, 'is_in_website')) {
+            $searchQuery->where('is_in_website', true);
+        }
+
+        $searchQuery->options(array_merge(
+            $this->extraSearchOptions(Arr::get($options, "boosts.$boostType"), Arr::get($options, 'language')),
+            $passOptions
+        ));
+
+        return $searchQuery->take($limit);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function strictSearchOptions(string $queryBy): array
+    {
+        return array_merge(self::STRICT_SEARCH, [
+            'query_by'         => $queryBy,
+            'query_by_weights' => self::queryByWeights($queryBy),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function fallbackSearchOptions(string $queryBy): array
+    {
+        $fallbackQueryBy = implode(',', array_values(array_intersect(explode(',', $queryBy), self::FALLBACK_FIELDS)));
+
+        return [
+            'query_by'         => $fallbackQueryBy,
+            'query_by_weights' => self::queryByWeights($fallbackQueryBy),
+        ];
+    }
+
+    public static function queryByWeights(string $queryBy): string
+    {
+        return implode(',', array_map(
+            static fn (string $field) => self::FIELD_WEIGHTS[$field] ?? 1,
+            explode(',', $queryBy)
+        ));
+    }
+
+    public static function allowsFallback(string $query): bool
+    {
+        return count(self::queryWords($query)) > 1;
+    }
+
+    /**
+     * A word-dropping hit must still carry at least half the words typed: "big" alone is
+     * no answer to "big garden statue".
+     *
+     * @param array<int, array<string, mixed>> $hits
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function fallbackHits(array $hits, string $query): array
+    {
+        $minimumWords = (int)ceil(count(self::queryWords($query)) / 2);
+
+        return array_values(array_filter(
+            $hits,
+            static fn (array $hit) => (int)Arr::get($hit, 'text_match_info.tokens_matched', 0) >= $minimumWords
+        ));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function queryWords(string $query): array
+    {
+        return preg_split('/\s+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
     }
 
     /**
