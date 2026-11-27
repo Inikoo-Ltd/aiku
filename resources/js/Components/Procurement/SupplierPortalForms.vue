@@ -159,6 +159,7 @@ watch(
 				}
 			}
 		}
+		form.defaults()
 	},
 	{ immediate: true }
 )
@@ -265,6 +266,9 @@ const fieldsFor: Record<string, string[]> = {
 const isoDate = (date: Date | null) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null)
 
 const send = (asDraft = false) => {
+	if (!form.isDirty) {
+		return
+	}
 	form.draft = asDraft
 	const url = props.editing ? props.forms.update.replace("/submissions/0/", `/submissions/${props.editing.id}/`) : props.forms.submit[type.value]
 	form
@@ -471,15 +475,15 @@ const caption = "font-medium text-gray-700"
 				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="emit('done')">
 					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="primary" full :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
+				<Button type="primary" full :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" :disabled="!form.isDirty" @click="send(false)">
 					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
 			<div v-else class="flex justify-end gap-2 md:col-span-2">
-				<Button v-if="type === 'product_proposal' && (!editing || editing.state === 'draft')" type="tertiary" size="xs" :label="ctrans('Save draft')" :loading="form.processing" @click="send(true)">
+				<Button v-if="type === 'product_proposal' && (!editing || editing.state === 'draft')" type="tertiary" size="xs" :label="ctrans('Save draft')" :loading="form.processing" :disabled="!form.isDirty" @click="send(true)">
 					<template #icon><FontAwesomeIcon icon="fal fa-save" fixed-width aria-hidden="true" /></template>
 				</Button>
-				<Button type="primary" size="xs" :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
+				<Button type="primary" size="xs" :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" :disabled="!form.isDirty" @click="send(false)">
 					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" /></template>
 				</Button>
 			</div>
