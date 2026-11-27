@@ -355,8 +355,8 @@ const onDeleteParcel = (index: number) => {
     parcelsCopy.value.splice(index, 1)
 }
 const newParcel = () => (props.boxStats?.shop_type === 'dropshipping'
-    ? { weight: 1, dimensions: [5, 5, 5] }
-    : { weight: 1, dimensions: [null, null, null] })
+    ? { weight: null, dimensions: [5, 5, 5] }
+    : { weight: null, dimensions: [null, null, null] })
 
 const isDimensionsRequired = computed(() => props.boxStats?.shop_type !== 'dropshipping')
 const isDimensionMissing = (dimension) => isDimensionsRequired.value && !(Number(dimension) > 0)
@@ -878,7 +878,7 @@ function returnNoteRoute(returnDeliveryNote) {
                                 <li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
                                     class="xtabular-nums">
                                     <span class="truncate">
-                                        {{ parcel.weight }} kg
+                                        {{ parcel.weight ? `${parcel.weight} kg` : ctrans('not weighed') }}
                                     </span>
 
                                     <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">

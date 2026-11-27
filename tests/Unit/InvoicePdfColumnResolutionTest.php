@@ -7,8 +7,11 @@
 
 use App\Actions\Accounting\Invoice\GetInvoicePdfColumns;
 use App\Actions\Accounting\Invoice\WithInvoicesExport;
+use App\Actions\Dropshipping\Ankorstore\ShipAnkorstoreOrder;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNote;
+use App\Helpers\NaturalLanguage;
 
 function invoiceWithColumns(array $shopColumns, array $invoiceColumns = []): Invoice
 {
@@ -77,7 +80,7 @@ test('export by tariff code collapses lines into one row per tariff code and ori
 
 test('the invoice prints a delivery address whose street was typed into the town box, and nothing for a blank one', function () {
     $invoice      = new Invoice();
-    $deliveryNote = new \App\Models\Dispatching\DeliveryNote();
+    $deliveryNote = new DeliveryNote();
     $streetInTown = new \App\Models\Helpers\Address(['address_line_1' => '', 'locality' => 'Rear of 230 Church Lane', 'postal_code' => 'NR25 6LZ']);
     $placeholder  = new \App\Models\Helpers\Address(['address_line_1' => '0', 'locality' => '0', 'postal_code' => '0']);
 
@@ -101,4 +104,35 @@ test('an unticked column sent as 0 switches off a column the invoice had saved a
 
     expect($columns['barcode'])->toBeFalse()
         ->and($columns['group_by_tariff_code'])->toBeTrue();
+});
+
+test('boxes nobody weighed print the estimated weight instead', function (array $parcels, int $estimatedWeight, string $expected) {
+    $deliveryNote                   = new DeliveryNote();
+    $deliveryNote->parcels          = $parcels;
+    $deliveryNote->estimated_weight = $estimatedWeight;
+
+    expect($deliveryNote->getBestWeight())->toBe($expected);
+})->with([
+    'eight boxes at the default, 62.8 kg estimated' => [array_fill(0, 8, ['weight' => 1, 'dimensions' => [40, 40, 40]]), 62818, NaturalLanguage::make()->weight(62818)],
+    'boxes at the default heavier than the estimate' => [array_fill(0, 3, ['weight' => 1]), 800, NaturalLanguage::make()->weight(3000)],
+    'weighed boxes win over the estimate'           => [[['weight' => 12.5], ['weight' => 1]], 62818, NaturalLanguage::make()->weight(13500)],
+    'no boxes'                                      => [[], 62818, NaturalLanguage::make()->weight(62818)],
+    'a box left blank'                              => [[['weight' => 12.5], ['weight' => null, 'dimensions' => [40, 40, 40]]], 62818, NaturalLanguage::make()->weight(62818)],
+]);
+
+test('carriers get the estimate left after the weighed boxes, split over the boxes left blank', function (array $parcels, ?int $estimatedWeight, array $expectedWeights) {
+    expect(array_column(DeliveryNote::parcelsWithCarrierWeights($parcels, $estimatedWeight), 'weight'))->toBe($expectedWeights);
+})->with([
+    'all weighed, untouched'              => [[['weight' => 12.5], ['weight' => 3]], 62818, [12.5, 3]],
+    'one weighed, two blank'              => [[['weight' => 12.5], ['weight' => null], []], 62818, [12.5, 25.159, 25.159]],
+    'weighed boxes already over estimate' => [[['weight' => 70], ['weight' => null]], 62818, [70, 1.0]],
+    'pallet return, no estimate'          => [[['weight' => null], ['weight' => 4]], null, [1.0, 4]],
+]);
+
+test('Ankorstore gets the estimate for a box left blank, not 1 g', function () {
+    $deliveryNote                   = new DeliveryNote();
+    $deliveryNote->parcels          = [['weight' => null, 'dimensions' => [40, 30, 20]]];
+    $deliveryNote->estimated_weight = 6200;
+
+    expect(array_column(ShipAnkorstoreOrder::make()->parcels($deliveryNote), 'weight'))->toBe([6200]);
 });

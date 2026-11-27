@@ -79,8 +79,8 @@ const statesWithEditableParcels = ['handling', 'picked', 'packing', 'packed']
 const isCollection = computed(() => Boolean(data.value?.delivery_note?.is_collection))
 const isDropshipping = computed(() => data.value?.delivery_note?.shop_type === 'dropshipping')
 const newParcel = () => isDropshipping.value
-    ? { weight: 1, dimensions: [5, 5, 5] }
-    : { weight: 1, dimensions: [null, null, null] }
+    ? { weight: null, dimensions: [5, 5, 5] }
+    : { weight: null, dimensions: [null, null, null] }
 const isParcelMissingDimensions = (parcel) => !isDropshipping.value
     && ![0, 1, 2].every(index => Number(parcel?.dimensions?.[index]) > 0)
 const isParcelsMissingForPacking = computed(() => !isDropshipping.value
@@ -346,7 +346,7 @@ onMounted(() => {
                     </div>
                     <ul class="list-disc pl-4 mt-1 text-gray-600 text-xs space-y-0.5">
                         <li v-for="(parcel, idx) in data.delivery_note?.parcels" :key="idx">
-                            {{ parcel.weight }} kg
+                            {{ parcel.weight ? `${parcel.weight} kg` : ctrans('not weighed') }}
                             <span v-if="isParcelMissingDimensions(parcel)" class="text-red-500">({{ ctrans("dimensions missing") }})</span>
                             <span v-else>({{ parcel.dimensions?.join('×') }} cm)</span>
                         </li>

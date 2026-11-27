@@ -97,7 +97,7 @@ trait WithMobilePalletReturnShipments
         return collect((array) $palletReturn->parcels)
             ->filter(fn ($parcel) => is_array($parcel))
             ->map(fn (array $parcel) => [
-                'weight'     => (float) Arr::get($parcel, 'weight'),
+                'weight'     => Arr::get($parcel, 'weight') !== null ? (float) Arr::get($parcel, 'weight') : null,
                 'dimensions' => array_map(fn ($dimension) => (float) $dimension, array_values((array) Arr::get($parcel, 'dimensions', []))),
             ])
             ->values()

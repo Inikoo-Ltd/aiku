@@ -173,8 +173,13 @@ it('adds a box allowance to the estimated weight but takes a weight typed at the
     $boxesFilledFromEstimate->estimated_weight = 1800;
     $boxesFilledFromEstimate->parcels = [['weight' => 1.8, 'dimensions' => [5, 5, 5]]];
 
+    $oneBoxLeftBlank = new DeliveryNote();
+    $oneBoxLeftBlank->estimated_weight = 1800;
+    $oneBoxLeftBlank->parcels = [['weight' => 0.6, 'dimensions' => [20, 20, 15]], ['weight' => null, 'dimensions' => [30, 20, 15]]];
+
     expect($resolver->weightForShipperChoice($estimatedOnly))->toBe(2300)
         ->and($resolver->weightForShipperChoice($weighed))->toBe(1900)
         ->and($resolver->weightForShipperChoice($boxesWeighed))->toBe(2050)
-        ->and($resolver->weightForShipperChoice($boxesFilledFromEstimate))->toBe(2300);
+        ->and($resolver->weightForShipperChoice($boxesFilledFromEstimate))->toBe(2300)
+        ->and($resolver->weightForShipperChoice($oneBoxLeftBlank))->toBe(2300);
 });

@@ -1055,7 +1055,7 @@ const locationRoute = (item: any) => {
                     <div class="mt-2">
                         <ul v-if="selectedDispatchableReturn?.parcels?.length" class="list-disc pl-4 mt-2">
                             <li v-for="(parcel, parcelIdx) in selectedDispatchableReturn?.parcels" :key="parcelIdx" class="text-sm tabular-nums">
-                                <span>{{ parcel.weight }} kg</span>
+                                <span>{{ parcel.weight ? `${parcel.weight} kg` : ctrans('not weighed') }}</span>
                                 <span class="text-gray-500"> ({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }} cm)</span>
                             </li>
                         </ul>
@@ -1063,7 +1063,7 @@ const locationRoute = (item: any) => {
                             @click="onOpenModalParcels"
                             :label="ctrans('Edit')" icon="fal fa-pencil" type="tertiary" size="xs" />
                         <Button v-else-if="canEditParcels"
-                            @click="() => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+                            @click="() => (parcelsCopy = [{ weight: null, dimensions: [5, 5, 5] }], onSubmitParcels())"
                             :label="ctrans('Add')" icon="fas fa-plus" type="tertiary" size="xs" />
                     </div>
                 </div>
@@ -1243,7 +1243,7 @@ const locationRoute = (item: any) => {
             </div>
             <div class="grid grid-cols-12 mt-2">
                 <div></div>
-                <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                <div @click="() => parcelsCopy.push({ weight: null, dimensions: [5, 5, 5]})" class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                     {{ ctrans("Add another parcel") }}
                 </div>

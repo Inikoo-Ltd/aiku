@@ -163,7 +163,7 @@ class UpdateShippingFaireOrder extends OrgAction
         }
 
         $rate    = $this->getFaireFundedShippingRate($order);
-        $parcels = $deliveryNote->parcels;
+        $parcels = is_array($deliveryNote->parcels) ? DeliveryNote::parcelsWithCarrierWeights($deliveryNote->parcels, $deliveryNote->estimated_weight) : $deliveryNote->parcels;
         if (!$rate || !is_array($parcels) || !$parcels || !array_is_list($parcels)) {
             return null;
         }

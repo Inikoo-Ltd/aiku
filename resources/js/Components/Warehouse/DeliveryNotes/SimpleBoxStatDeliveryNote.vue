@@ -123,7 +123,7 @@ const listError = inject('listError', {})
                         <li v-for="(p, i) in parcelsCopy" :key="i"
                             class="bg-gray-50 border border-gray-200 rounded px-3 py-1.5 flex justify-between items-center text-xs text-gray-700">
                             <div class="truncate">
-                                <span class="font-medium">{{ p.weight }} kg</span> &ndash;
+                                <span class="font-medium">{{ p.weight ? `${p.weight} kg` : ctrans('not weighed') }}</span> &ndash;
                                 <span class="text-gray-500">{{ p.dimensions.join(' x') }} cm</span>
                             </div>
                         </li>
@@ -215,7 +215,7 @@ const listError = inject('listError', {})
                     <!-- Repeat for more rows -->
                     <div class=" grid grid-cols-12 mt-2">
                         <div></div>
-                        <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [null, null, null] })"
+                        <div @click="() => parcelsCopy.push({ weight: null, dimensions: [null, null, null] })"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                             {{ ctrans("Add another parcel") }}

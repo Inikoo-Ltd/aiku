@@ -179,7 +179,7 @@ trait WithPreferredShipperResolver
         }
 
         $estimatedWeight = (int) $deliveryNote->estimated_weight;
-        $weighedWeight   = (int) round(collect($deliveryNote->parcels ?? [])->sum(fn ($parcel) => (float) ($parcel['weight'] ?? 0)) * 1000);
+        $weighedWeight   = (int) round(collect(DeliveryNote::parcelsWithCarrierWeights($deliveryNote->parcels, $deliveryNote->estimated_weight))->sum(fn ($parcel) => (float) ($parcel['weight'] ?? 0)) * 1000);
 
         if ($weighedWeight > 0 && $weighedWeight != $estimatedWeight) {
             return $weighedWeight;

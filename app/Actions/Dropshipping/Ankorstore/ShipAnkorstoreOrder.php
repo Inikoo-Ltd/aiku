@@ -67,7 +67,7 @@ class ShipAnkorstoreOrder
     public function parcels(DeliveryNote $deliveryNote): array
     {
         $parcels = [];
-        foreach (is_array($deliveryNote->parcels) ? $deliveryNote->parcels : [] as $parcel) {
+        foreach (DeliveryNote::parcelsWithCarrierWeights($deliveryNote->parcels, $deliveryNote->estimated_weight) as $parcel) {
             $dimensions = array_values(array_map(fn ($size) => min(274, max(1, (int)ceil((float)$size))), (array)Arr::get($parcel, 'dimensions', [])));
             $parcelData = [
                 'length'       => $dimensions[0] ?? 1,

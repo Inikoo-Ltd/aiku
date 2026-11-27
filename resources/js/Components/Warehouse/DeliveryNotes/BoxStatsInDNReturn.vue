@@ -663,7 +663,7 @@ const replacementRoute = (replacement) => {
                                 <li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
                                     class="xtabular-nums">
                                     <span class="truncate">
-                                        {{ parcel.weight }} kg
+                                        {{ parcel.weight ? `${parcel.weight} kg` : ctrans('not weighed') }}
                                     </span>
 
                                     <span class="text-gray-500 truncate">
@@ -815,7 +815,7 @@ const replacementRoute = (replacement) => {
                     <!-- Repeat for more rows -->
                     <div class=" grid grid-cols-12 mt-2">
                         <div></div>
-                        <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
+                        <div @click="() => parcelsCopy.push({ weight: null, dimensions: [5, 5, 5] })"
                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
                             <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                             {{ ctrans("Add another parcel") }}

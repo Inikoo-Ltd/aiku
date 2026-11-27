@@ -685,17 +685,36 @@ class DeliveryNote extends Model implements Auditable
 
     public function getBestWeight(): string
     {
-        $weight     = 0;
-        $hasParcels = false;
-        foreach ($this->parcels ?? [] as $parcel) {
-            $weight     += $parcel['weight'] * 1000;
-            $hasParcels = true;
-        }
-        if (!$hasParcels) {
-            $weight = $this->estimated_weight;
+        $parcelWeights = array_map(fn ($parcel) => (float) ($parcel['weight'] ?? 0), $this->parcels ?? []);
+        $weight        = array_sum($parcelWeights) * 1000;
+
+        $hasUnweighedBoxes = in_array(0.0, $parcelWeights, true);
+        $boxesLeftAtOldDefaultKg = array_filter($parcelWeights, fn ($parcelWeight) => $parcelWeight != 1.0) === [];
+        if ($hasUnweighedBoxes || $boxesLeftAtOldDefaultKg) {
+            $weight = max($weight, (float) $this->estimated_weight);
         }
 
         return NaturalLanguage::make()->weight($weight);
+    }
+
+    /**
+     * Carriers need a weight on every box: the boxes the packer did not weigh share what the estimate (grams) leaves after
+     * the weighed ones, or go as 1 kg each when nothing is left or there is no estimate (pallet returns).
+     */
+    public static function parcelsWithCarrierWeights(mixed $parcels, int|float|null $estimatedWeight): array
+    {
+        $parcels        = is_array($parcels) ? $parcels : [];
+        $isUnweighed    = fn (mixed $parcel) => is_array($parcel) && (float) ($parcel['weight'] ?? 0) <= 0;
+        $unweighedBoxes = count(array_filter($parcels, $isUnweighed));
+        if ($unweighedBoxes === 0) {
+            return $parcels;
+        }
+
+        $weighedKg = array_sum(array_map(fn (mixed $parcel) => is_array($parcel) ? (float) ($parcel['weight'] ?? 0) : 0, $parcels));
+        $leftKg    = (float) $estimatedWeight / 1000 - $weighedKg;
+        $kgPerBox  = $leftKg > 0 ? max(round($leftKg / $unweighedBoxes, 3), 0.001) : 1.0;
+
+        return array_map(fn (mixed $parcel) => $isUnweighed($parcel) ? array_merge($parcel, ['weight' => $kgPerBox]) : $parcel, $parcels);
     }
 
     public function hasDangerousGoods(): bool

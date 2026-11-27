@@ -64,7 +64,7 @@
                 {{ __("Box :box of :boxes", ['box' => $box, 'boxes' => $numberBoxes]) }}
                 @if($parcel)
                     <span style="font-weight: normal; font-size: 12px; color: #777;">
-                        {{ $parcel['weight'] ?? '' }} kg
+                        {{ !empty($parcel['weight']) ? $parcel['weight'].' kg' : __('not weighed') }}
                         @if(!empty($parcel['dimensions']))
                             · {{ implode('x', $parcel['dimensions']) }} cm
                         @endif

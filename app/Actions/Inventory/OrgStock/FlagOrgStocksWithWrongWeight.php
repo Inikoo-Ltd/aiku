@@ -56,6 +56,7 @@ class FlagOrgStocksWithWrongWeight
                     AND dn.dispatched_at > now() - make_interval(days => :days)
                     AND dn.estimated_weight > 0
                     AND jsonb_typeof(dn.parcels::jsonb) = 'array'
+                    AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(dn.parcels::jsonb) parcel WHERE jsonb_typeof(parcel->'weight') IS DISTINCT FROM 'number')
                     AND NOT EXISTS (
                         SELECT 1 FROM delivery_notes shared
                         WHERE shared.customer_id = dn.customer_id

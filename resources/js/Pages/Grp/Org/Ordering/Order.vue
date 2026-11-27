@@ -2592,7 +2592,7 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                                         <li v-for="(parcel, parcelIdx) in note?.parcels" :key="parcelIdx"
                                             class="tabular-nums">
                                             <span class="truncate">
-                                                {{ parcel.weight }} kg
+                                                {{ parcel.weight ? `${parcel.weight} kg` : ctrans('not weighed') }}
                                             </span>
 
                                             <span class="text-gray-500 truncate">
