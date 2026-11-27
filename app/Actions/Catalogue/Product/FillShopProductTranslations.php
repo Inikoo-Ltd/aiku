@@ -879,12 +879,14 @@ EOT;
         if (array_diff($this->placeholders($output), $this->placeholders($source))) {
             return 'placeholders changed';
         }
-        $sourceLength = mb_strlen(strip_tags($source));
+        $plainLength  = fn (string $text) => mb_strlen(trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5))));
+        $sourceLength = $plainLength($source);
+        $outputLength = $plainLength($output);
         $keptLength   = $this->borrowing ? mb_strlen(trim(preg_replace('/\s+/u', ' ', $this->withoutShopClaims($source)))) : $sourceLength;
-        if ($keptLength - mb_strlen(trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($output), ENT_QUOTES | ENT_HTML5)))) > max(40, 0.3 * $keptLength)) {
+        if ($keptLength - $outputLength > max(40, 0.3 * $keptLength)) {
             return 'too much removed';
         }
-        if (mb_strlen(strip_tags($output)) > $sourceLength + 20) {
+        if ($outputLength > $sourceLength + 20) {
             return 'text added';
         }
 

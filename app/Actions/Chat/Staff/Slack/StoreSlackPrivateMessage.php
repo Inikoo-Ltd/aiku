@@ -17,8 +17,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * The private path (INI-431/564): a message event of a Slack private channel brought by the aiku bot or by a member's opted-in
  * connection, while one of them is still in it (SyncSlackPrivateChannels::isBroughtLive). StoreSlackMessage::handle
  * keeps refusing every group, im and mpim event, so the public path is never a way in. DMs and group DMs never come here.
- * Nothing leaves the row: no broadcast on the group's Slack channel, no file copy (served to members only from INI-441),
- * no mention notifications and no Home stories, until the members-only paths exist.
+ * Only its files are copied (by ids, served to members only, INI-441); nothing else leaves the row: no broadcast on the
+ * group's Slack channel, no mention notifications and no Home stories, until the members-only paths exist.
  */
 class StoreSlackPrivateMessage
 {
@@ -37,10 +37,15 @@ class StoreSlackPrivateMessage
             return null;
         }
 
-        return match (Arr::get($event, 'subtype')) {
+        $message = match (Arr::get($event, 'subtype')) {
             'message_deleted' => tap($channel->messages()->where('ts', (string) Arr::get($event, 'deleted_ts'))->first(), fn (?SlackMessage $message) => $message?->delete()),
             'message_changed' => StoreSlackMessage::make()->store($channel, (array) Arr::get($event, 'message', [])),
             default           => StoreSlackMessage::make()->store($channel, $event),
         };
+        if ($message) {
+            CopySlackMessageFile::dispatchFor($message);
+        }
+
+        return $message;
     }
 }

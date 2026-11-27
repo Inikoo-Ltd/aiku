@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\CRM\CustomerClaim\GetCustomerClaimSettings;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -20,11 +21,42 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetEcomOrderActions
 {
     use AsObject;
+
+    /** HELP-4961: the office keeps a submitted order out of the warehouse until it presses Send to warehouse */
+    public static function doNotPickAction(Order $order): array
+    {
+        $doNotPick = (bool)Arr::get($order->data, 'do_not_pick');
+        if ($doNotPick && SendOrderToWarehouse::heldReason($order->private_warehouse_note)) {
+            return [];
+        }
+
+        return [
+            'type'    => 'button',
+            'style'   => 'tertiary',
+            'icon'    => $doNotPick ? 'fal fa-hand-paper' : 'fal fa-ban',
+            'key'     => 'do-not-pick',
+            'label'   => $doNotPick ? __('Allow picking') : __('Do not pick'),
+            'tooltip' => $doNotPick
+                ? __('The order goes to the warehouse as usual once it is paid')
+                : __('The order waits for the office even when it is paid, until someone presses Send to warehouse'),
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.order.update',
+                'parameters' => [
+                    'order' => $order->id,
+                ],
+                'body'       => [
+                    'do_not_pick' => !$doNotPick,
+                ],
+            ],
+        ];
+    }
 
     public function handle(Order $order, $canEdit = false): array
     {
@@ -135,6 +167,7 @@ class GetEcomOrderActions
                 ],
                 OrderStateEnum::SUBMITTED => [
                     ...$sendWithoutAnAddress,
+                    self::doNotPickAction($order),
                     [
                         'type'   => 'buttonGroup',
                         'key'    => 'upload-add',

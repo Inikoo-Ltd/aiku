@@ -25,12 +25,16 @@ class PurgeSlackDirectWords
 
     public function handle(string $slackUserId): int
     {
+        if (EraseSlackDirectWords::isHeld($slackUserId)) {
+            return 0;
+        }
         $messages = SlackMessage::withTrashed()
             ->whereIn('slack_channel_id', SlackChannel::whereNotNull('direct_type')->select('id'))
             ->where('slack_user_id', $slackUserId);
 
         return DB::transaction(function () use ($messages) {
             SlackMessageVersion::whereIn('slack_message_id', (clone $messages)->select('id'))->delete();
+            EraseSlackDirectWords::forgetFiles(clone $messages);
 
             return (clone $messages)->toBase()->update([
                 'text'          => null,

@@ -68,9 +68,7 @@ class StoreSlackMessage
         rescue(fn () => SlackChannelMessageChanged::dispatch($channel, $message, $message->trashed() ? 'deleted' : ($isNew ? 'new' : 'changed')));
 
         if (!$message->trashed()) {
-            foreach ((array) Arr::get($message->data, 'files', []) as $file) {
-                CopySlackMessageFile::dispatch($message, (array) $file);
-            }
+            CopySlackMessageFile::dispatchFor($message);
             if ($isNew || !$message->wasRecentlyCreated) {
                 rescue(fn () => NotifySlackMentions::run($message));
             }

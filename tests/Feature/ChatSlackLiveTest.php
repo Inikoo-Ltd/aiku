@@ -416,3 +416,126 @@ function slackDirectStream(SlackChannel $channel, User $viewer): array
 
     return \App\Actions\Chat\Staff\Slack\GetSlackChannelMessages::make()->rows($channel, $messages, $viewer);
 }
+
+function slackPrivateFilesSetup(object $test): void
+{
+    slackDirectSetup($test);
+    app()->instance('group', $test->group);
+    setPermissionsTeamId($test->group->id);
+    \Illuminate\Support\Facades\Storage::fake('local');
+    \Illuminate\Support\Facades\Config::set('filesystems.disks.staff-chat-r2.bucket', null);
+    \Illuminate\Support\Facades\Config::set('services.slack.notifications.bot_user_oauth_token', 'xoxb-bot');
+    $s = $test->s;
+    ($test->connectPrivately)($test->viewer, "UVIEW$s");
+    \Illuminate\Support\Facades\Http::fake([
+        "files.slack.com/files-pri/T1-FPCH$s/*" => fn () => \Illuminate\Support\Facades\Http::response('channel bytes', 200, ['Content-Type' => 'application/pdf']),
+        "files.slack.com/files-pri/T1-FPDM$s/*" => \Illuminate\Support\Facades\Http::response('dm bytes', 200, ['Content-Type' => 'image/png']),
+        "files.slack.com/files-pri/T1-FPBEE$s/*" => \Illuminate\Support\Facades\Http::response('bee bytes', 200, ['Content-Type' => 'image/png']),
+        'slack.com/api/files.info*' => \Illuminate\Support\Facades\Http::response(['ok' => true, 'file' => ['id' => "FPDM$s", 'name' => 'payslip march.png', 'mimetype' => 'image/png', 'size' => 8, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FPDM$s/download/payslip-march.png"]]),
+    ]);
+    $test->privateChannel = SlackChannel::create(['group_id' => $test->group->id, 'slack_id' => "GPF$s", 'name' => "secret-files-$s", 'is_public' => false, 'is_private' => true, 'is_member' => true]);
+    $test->privateChannel->members()->create(['slack_user_id' => "UVIEW$s"]);
+    $test->channelFile = ['id' => "FPCH$s", 'name' => 'contract.pdf', 'mimetype' => 'application/pdf', 'size' => 13, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FPCH$s/download/contract.pdf"];
+    $test->channelMessage = \App\Actions\Chat\Staff\Slack\StoreSlackPrivateMessage::run(['type' => 'message', 'channel' => "GPF$s", 'channel_type' => 'group', 'user' => "UVIEW$s", 'text' => 'the contract', 'ts' => ($test->ts)(1), 'files' => [$test->channelFile]]);
+    ($test->webhook)(($test->dm)("UVIEW$s", 2, ['files' => [['id' => "FPDM$s", 'file_access' => 'check_file_info']]]), "UVIEW$s")->assertOk();
+    $test->dmChannel = SlackChannel::where('slack_id', "DDM$s")->sole();
+    $test->dmMessage = SlackMessage::where('slack_channel_id', $test->dmChannel->id)->where('ts', ($test->ts)(2))->sole();
+    $test->fileUrl   = fn (SlackMessage $message, string $slackFileId, array $query = []) => route('grp.chat.staff.slack.files.show', ['slackMessage' => $message->id, 'slackFile' => $slackFileId, ...$query]);
+}
+
+test('Slack private files: a private channel file (bot in it) and a DM file (author\'s own token) are kept on a private disk under an opaque name, never in the media library, and stream to members only with no-store; a non-member, a group admin and an engineer get 404; a public message sharing the id never serves the private copy, nor a private message the public one, INI-441', function () {
+    slackPrivateFilesSetup($this);
+    $s = $this->s;
+
+    $channelCopy = \App\Models\Chat\SlackFile::where('slack_id', "FPCH$s")->sole();
+    $dmCopy      = \App\Models\Chat\SlackFile::where('slack_id', "FPDM$s")->sole();
+    foreach ([[$channelCopy, 'channel bytes'], [$dmCopy, 'dm bytes']] as [$copy, $bytes]) {
+        expect($copy->only(['state', 'is_private', 'media_id', 'disk']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED, 'is_private' => true, 'media_id' => null, 'disk' => 'local'])
+            ->and($copy->path)->toMatch('/^slack-private-files\/[0-9a-z]{26}$/')
+            ->and($copy->getMedia('slack_files'))->toHaveCount(0)
+            ->and($copy->temporaryUrl())->toBeNull()
+            ->and(\Illuminate\Support\Facades\Storage::disk('local')->get($copy->path))->toBe($bytes);
+    }
+    expect($dmCopy->name)->toBe('payslip march.png');
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), "T1-FPCH$s") && $request->hasHeader('Authorization', 'Bearer xoxb-bot'));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), 'files.info') && $request->hasHeader('Authorization', "Bearer xoxp-test-UVIEW$s"));
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), "T1-FPDM$s") && $request->hasHeader('Authorization', "Bearer xoxp-test-UVIEW$s"));
+    \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => (str_contains($request->url(), 'files.info') || str_contains($request->url(), "T1-FPDM$s")) && $request->hasHeader('Authorization', 'Bearer xoxb-bot'));
+
+    foreach ([[$this->channelMessage, "FPCH$s", 'channel bytes', 'contract.pdf'], [$this->dmMessage, "FPDM$s", 'dm bytes', 'payslip march.png']] as [$message, $slackFileId, $bytes, $name]) {
+        $response = actingAs($this->viewer)->get(($this->fileUrl)($message, $slackFileId))->assertOk();
+        expect($response->streamedContent())->toBe($bytes)
+            ->and($response->headers->get('Cache-Control'))->toContain('no-store')
+            ->and($response->headers->get('Content-Type'))->toBe('application/octet-stream')
+            ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff')
+            ->and($response->headers->get('Content-Disposition'))->toContain('attachment')->toContain($name);
+        actingAs($this->viewer)->get(($this->fileUrl)($message, $slackFileId, ['variant' => 'thumbnail']))->assertNotFound();
+    }
+    expect(slackDirectStream($this->privateChannel, $this->viewer)[0]['files'][0])->toMatchArray(['state' => 'ready', 'is_image' => false, 'opens_in_tab' => false, 'thumbnail_url' => null, 'url' => ($this->fileUrl)($this->channelMessage, "FPCH$s")])
+        ->and(collect(slackDirectStream($this->dmChannel, $this->viewer))->firstWhere('ts', ($this->ts)(2))['files'][0])->toMatchArray(['state' => 'ready', 'is_image' => false, 'thumbnail_url' => null]);
+
+    $person = function (string $key, ?string $role = null) use ($s): User {
+        $user = User::factory()->create(['group_id' => $this->group->id, 'language_id' => $this->user->language_id]);
+        if ($role) {
+            $user->assignRole($role);
+        }
+        SlackUser::create(['slack_id' => "U$key$s", 'user_id' => $user->id, 'email' => $user->email, 'real_name' => $key]);
+
+        return $user->refresh();
+    };
+    $engineer = $person('ENGR', 'help-desk-clerk');
+    expect(\App\Models\Helpers\Ticket::canBeManagedBy($engineer))->toBeTrue();
+    foreach ([$person('OUTS'), $person('ADMN', 'group-admin'), $engineer, $this->bee] as $refused) {
+        actingAs($refused)->get(($this->fileUrl)($this->channelMessage, "FPCH$s"))->assertNotFound();
+        actingAs($refused)->get(($this->fileUrl)($this->dmMessage, "FPDM$s"))->assertNotFound();
+    }
+
+    $publicTwin = SlackMessage::create(['slack_channel_id' => $this->channel->id, 'ts' => ($this->ts)(3), 'slack_user_id' => "UANN$s", 'text' => 'same file in public', 'sent_at' => now(), 'data' => ['files' => [$this->channelFile]]]);
+    actingAs($this->viewer)->get(($this->fileUrl)($publicTwin, "FPCH$s"))->assertNotFound();
+    expect(\App\Actions\Chat\Staff\Slack\GetSlackMessageFiles::make()->handle(collect([$publicTwin]))[$publicTwin->id][0])->toMatchArray(['state' => 'pending', 'url' => null]);
+
+    \App\Models\Chat\SlackFile::create(['group_id' => $this->group->id, 'slack_id' => "FPUB$s", 'state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED, 'disk' => \App\Actions\Chat\Staff\Slack\CopySlackMessageFile::LARGE_DISK, 'path' => "slack-files/FPUB$s/x.png"]);
+    $reuses = SlackMessage::create(['slack_channel_id' => $this->privateChannel->id, 'ts' => ($this->ts)(4), 'slack_user_id' => "UVIEW$s", 'text' => 'public file here', 'sent_at' => now(), 'data' => ['files' => [['id' => "FPUB$s", 'name' => 'x.png', 'mode' => 'hosted']]]]);
+    actingAs($this->viewer)->get(($this->fileUrl)($reuses, "FPUB$s"))->assertNotFound();
+    expect(\App\Actions\Chat\Staff\Slack\GetSlackMessageFiles::make()->handle(collect([$reuses]), true)[$reuses->id][0])->toMatchArray(['state' => 'pending', 'note' => 'File not available yet', 'url' => null]);
+});
+
+test('Slack private files: a DM file of an author without the opt-in is never copied and the bot token is never used for it; deleteStoredCopy removes the bytes, twice safely, and slack:copy-message-files --private copies existing private files once, INI-441', function () {
+    slackPrivateFilesSetup($this);
+    $s = $this->s;
+
+    $beeFile = ['id' => "FPBEE$s", 'name' => 'bee.png', 'mimetype' => 'image/png', 'size' => 9, 'mode' => 'hosted', 'url_private_download' => "https://files.slack.com/files-pri/T1-FPBEE$s/download/bee.png"];
+    ($this->webhook)(($this->dm)("UBEE$s", 5, ['files' => [$beeFile]]), "UVIEW$s")->assertOk();
+    $beeWithData = SlackMessage::create(['slack_channel_id' => $this->dmChannel->id, 'ts' => ($this->ts)(6), 'slack_user_id' => "UBEE$s", 'text' => 'bee words', 'sent_at' => now(), 'data' => ['files' => [$beeFile]]]);
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFile::run($beeWithData, "FPBEE$s"))->toBeNull()
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->handle($this->dmChannel, pause: 0, private: true))->toBe(['queued' => 0, 'recorded' => 0])
+        ->and(\App\Models\Chat\SlackFile::where('slack_id', "FPBEE$s")->exists())->toBeFalse();
+    \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => str_contains($request->url(), "T1-FPBEE$s"));
+    \Illuminate\Support\Facades\Http::assertNotSent(fn ($request) => (str_contains($request->url(), 'files.info') || str_contains($request->url(), "T1-FPDM$s")) && $request->hasHeader('Authorization', 'Bearer xoxb-bot'));
+
+    $copy = \App\Models\Chat\SlackFile::where('slack_id', "FPCH$s")->sole();
+    $path = $copy->path;
+    $copy->deleteStoredCopy();
+    $copy->deleteStoredCopy();
+    expect(\Illuminate\Support\Facades\Storage::disk('local')->exists($path))->toBeFalse()
+        ->and($copy->fresh()->only(['state', 'disk', 'path', 'media_id']))->toBe(['state' => \App\Enums\CRM\Livechat\SlackFileStateEnum::PENDING, 'disk' => null, 'path' => null, 'media_id' => null]);
+    actingAs($this->viewer)->get(($this->fileUrl)($this->channelMessage, "FPCH$s"))->assertNotFound();
+
+    \Illuminate\Support\Facades\Queue::fake();
+    \App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->handle($this->privateChannel, limit: 1, pause: 0, private: true);
+    \Illuminate\Support\Facades\Queue::assertPushed(\Lorisleiva\Actions\Decorators\JobDecorator::class, fn ($job) => $job->getAction() instanceof \App\Actions\Chat\Staff\Slack\CopySlackMessageFile && $job->getParameters() === [$this->channelMessage->id, "FPCH$s"]);
+    app()->forgetInstance('queue');
+    \Illuminate\Support\Facades\Queue::clearResolvedInstances();
+
+    $this->privateChannel->update(['is_member' => false]);
+    expect(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($this->privateChannel, private: true))->toBe(['to_copy' => ['files' => 1, 'bytes' => 13]])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->dryRun($this->privateChannel))->toBe([])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->handle($this->privateChannel, pause: 0))->toBe(['queued' => 0, 'recorded' => 0])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->handle($this->privateChannel, pause: 0, private: true))->toBe(['queued' => 1, 'recorded' => 0])
+        ->and(\App\Actions\Chat\Staff\Slack\CopySlackMessageFiles::make()->handle($this->privateChannel, pause: 0, private: true))->toBe(['queued' => 0, 'recorded' => 0]);
+    $again = $copy->fresh();
+    expect($again->state)->toBe(\App\Enums\CRM\Livechat\SlackFileStateEnum::COPIED)
+        ->and($again->path)->not->toBe($path)
+        ->and(\Illuminate\Support\Facades\Storage::disk('local')->get($again->path))->toBe('channel bytes');
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_contains($request->url(), "T1-FPCH$s") && $request->hasHeader('Authorization', "Bearer xoxp-test-UVIEW$s"));
+});

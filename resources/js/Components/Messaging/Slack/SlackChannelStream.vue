@@ -8,9 +8,9 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 import axios from "axios"
 import { Deferred, InfiniteScroll, router, usePage } from "@inertiajs/vue3"
-import { Dialog, InputText, Popover } from "primevue"
+import { Dialog, InputText, Popover, ToggleSwitch } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
+import { faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faLock, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { isToday, isYesterday } from "date-fns"
 import { ctrans } from "@/Composables/useTrans"
@@ -26,7 +26,7 @@ import { isInSlackStream, myReactions, slackReloads, useSlackLive, type SlackLiv
 
 export type { SlackStreamMessage }
 
-library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
+library.add(faArchive, faArrowDown, faChevronLeft, faCommentDots, faFolder, faHashtag, faLink, faLock, faPencil, faPlus, faThumbtack, faTimes, faTrashAlt, faUsers)
 
 export interface SlackBookmark {
     id: number
@@ -45,6 +45,7 @@ export interface SlackChannelHeader {
     is_private?: boolean
     is_direct?: boolean
     brought_by?: string | null
+    is_listed?: boolean | null
     member_count?: number
     pinned_count?: number
     bookmarks?: SlackBookmark[]
@@ -327,6 +328,17 @@ const onThreadSent = (sent: SlackSentMessage) => {
 }
 
 const showPurpose = computed(() => props.channel.purpose && props.channel.purpose !== props.channel.topic)
+
+const isSavingListing = ref(false)
+const updateListing = (isListed: boolean) => {
+    router.patch(route("grp.chat.staff.groups.slack.listing.update", props.channel.id), { is_listed: isListed }, {
+        preserveScroll: true,
+        preserveState: true,
+        only: ["slack_channel"],
+        onStart: () => { isSavingListing.value = true },
+        onFinish: () => { isSavingListing.value = false },
+    })
+}
 </script>
 
 <template>
@@ -467,6 +479,10 @@ const showPurpose = computed(() => props.channel.purpose && props.channel.purpos
                 :label="newBelow === 1 ? ctrans('1 new message') : ctrans(':count new messages', { count: String(newBelow) })"
                 @click="scrollToBottom" />
             <p v-if="channel.brought_by && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">{{ ctrans("This channel is now in Verba, brought by :name", { name: channel.brought_by }) }}</p>
+            <div v-if="channel.is_private && !channel.is_direct && channel.is_listed !== null && channel.is_listed !== undefined && activeTab === 'messages'" class="flex shrink-0 items-center gap-x-3 border-t border-[#dddddd] px-5 py-2 text-xs text-[#616061]">
+                <ToggleSwitch :model-value="!!channel.is_listed" input-id="slack-channel-listed" :disabled="isSavingListing" @update:model-value="updateListing" />
+                <label for="slack-channel-listed" class="cursor-pointer">{{ channel.is_listed ? ctrans("Shown in Verbrations: everyone can see this channel's name and ask to join. Its messages stay for members only.") : ctrans("Show this channel's name in Verbrations, so others can ask to join. Its messages stay for members only.") }}</label>
+            </div>
             <p v-if="channel.is_private && activeTab === 'messages'" class="shrink-0 border-t border-[#dddddd] px-5 py-3 text-xs text-[#616061]">{{ channel.is_direct ? ctrans("Slack direct message, read only. Only the people in it can see it. Reply in Slack for now.") : ctrans("Private channel, read only. Writing from Verba comes later: reply in Slack for now.") }}</p>
             <SlackMessageComposer v-if="write" v-show="activeTab === 'messages'" :channel-id="channel.id" :write="write" :live-channel="liveChannel" :placeholder="ctrans('Message #:channel', { channel: channel.name ?? '' })" @sent="onSent" />
         </div>

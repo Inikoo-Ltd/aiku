@@ -290,22 +290,21 @@ class ShowSupplierPortalPurchaseOrder
      * What the supplier answered at the deposit stage. It chooses once, while the order is open, nothing is paid, no
      * deposit amount is set and no later stage is reached: no deposit needed, or a deposit of a fixed share.
      *
-     * @return array{choosable: bool, not_needed: bool, request: array{percentage: int|float, amount: float, requested_at: string}|null, request_percentage: float, request_amount: float, order_amount: float, recipients: list<array{name: string, organisation: string}>}
+     * @return array{choosable: bool, not_needed: bool, none_set: bool, confirms_order: bool, request: array{percentage: int|float, amount: float, requested_at: string}|null, request_percentage: float, request_amount: float, order_amount: float, recipients: list<array{name: string, organisation: string}>}
      */
     public function deposit(PurchaseOrder $purchaseOrder, Supplier $supplier): array
     {
         $request   = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request');
         $notNeeded = $purchaseOrder->deposit_amount !== null && (float) $purchaseOrder->deposit_amount == 0 && !$purchaseOrder->isDepositPaid();
 
-        $choosable = $request === null
-            && $purchaseOrder->deposit_amount === null
-            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
-            && !$purchaseOrder->isDepositPaid()
-            && !(GetPurchaseOrderStages::run($purchaseOrder)[PurchaseOrderStageEnum::DEPOSIT_PAID->value]['reached'] ?? false);
+        $choosable = $request === null && $this->isDepositChoosable($purchaseOrder);
+        $noneSet   = $choosable && GetPurchaseOrderStages::make()->depositNotRequired($purchaseOrder);
 
         return [
             'choosable'          => $choosable,
             'not_needed'         => $notNeeded,
+            'none_set'           => $noneSet,
+            'confirms_order'     => $noneSet && $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED && !$purchaseOrder->isWaitingForLineAnswers(),
             'not_needed_by'      => $notNeeded ? Arr::get($purchaseOrder->data ?? [], 'deposit_not_required_by') : null,
             'request'            => $request ? Arr::only($request, ['percentage', 'amount', 'requested_at']) : null,
             'request_percentage' => UpdateSupplierPortalPurchaseOrderDeposit::requestPercentage($purchaseOrder),
@@ -314,6 +313,32 @@ class ShowSupplierPortalPurchaseOrder
             'recipients'         => $choosable ? NotifyPurchasingOfSupplierDepositRequest::make()->emailRecipients($purchaseOrder) : [],
             'agreement_missing'  => $choosable && UpdateSupplierPortalPurchaseOrderDeposit::isAgreementMissing($supplier),
         ];
+    }
+
+    private function isDepositChoosable(PurchaseOrder $purchaseOrder): bool
+    {
+        return Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request') === null
+            && $purchaseOrder->deposit_amount === null
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
+            && !$purchaseOrder->isDepositPaid()
+            && !(GetPurchaseOrderStages::run($purchaseOrder)[PurchaseOrderStageEnum::DEPOSIT_PAID->value]['reached'] ?? false);
+    }
+
+    /**
+     * Who a submitted order is waiting for: the supplier itself when its deposit answer confirms the order,
+     * otherwise the ordering organisation.
+     */
+    private function waitingForConfirmation(PurchaseOrder $purchaseOrder): string
+    {
+        $organisation = $purchaseOrder->organisation->name;
+
+        return match (true) {
+            $purchaseOrder->isWaitingForLineAnswers() => __('Waiting for :organisation to answer the line changes and confirm the order.', ['organisation' => $organisation]),
+            $this->isDepositChoosable($purchaseOrder) && GetPurchaseOrderStages::make()->depositNotRequired($purchaseOrder) => __('Press Confirm order under Agreement, or wait for :organisation to confirm it.', ['organisation' => $organisation]),
+            $this->isDepositChoosable($purchaseOrder) => __('Answer the deposit under Agreement to confirm the order, or wait for :organisation to confirm it.', ['organisation' => $organisation]),
+            $purchaseOrder->isAgentOrder()            => __('Waiting for the order to be confirmed.'),
+            default                                   => __('Waiting for :organisation to confirm the order.', ['organisation' => $organisation]),
+        };
     }
 
     /**
@@ -328,7 +353,7 @@ class ShowSupplierPortalPurchaseOrder
         if ($open) {
             $stages  = GetPurchaseOrderStages::run($purchaseOrder);
             $blocked = match (true) {
-                $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => __('Production can be set once the order is agreed.'),
+                $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => $this->waitingForConfirmation($purchaseOrder),
                 $stages[PurchaseOrderStageEnum::HANDED_OVER->value]['reached'] ?? false => __('The goods are handed over.'),
                 default => null,
             };
@@ -362,7 +387,7 @@ class ShowSupplierPortalPurchaseOrder
         $blocked = match (true) {
             $isCompleted => null,
             !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true) => __('This order is closed.'),
-            $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => __('The order can be completed once it is agreed.'),
+            $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED => $this->waitingForConfirmation($purchaseOrder),
             !$this->supplierDocumentsQuery($purchaseOrder)->exists() => __('Upload at least one shipping document first.'),
             default => null,
         };

@@ -122,6 +122,7 @@ class UpdateOrganisation extends OrgAction
             $orderRelease = Arr::pull($modelData, 'order_release');
             data_set($modelData, 'settings.order_release.except_countries', (bool)Arr::get($orderRelease, 'except_countries'));
             data_set($modelData, 'settings.order_release.hold_countries', array_values(array_unique(Arr::get($orderRelease, 'countries') ?? [])));
+            data_set($modelData, 'settings.order_release.new_customers_only', (bool)Arr::get($orderRelease, 'new_customers_only', true));
         }
 
         if (Arr::has($modelData, 'show_tax_liability_date')) {
@@ -411,6 +412,7 @@ class UpdateOrganisation extends OrgAction
             'order_release'                         => ['sometimes', 'array'],
             'order_release.except_countries'        => ['required_with:order_release', 'boolean'],
             'order_release.countries'               => ['present_with:order_release', 'nullable', 'array'],
+            'order_release.new_customers_only'      => ['sometimes', 'boolean'],
             'order_release.countries.*'             => ['string', Rule::exists('countries', 'code')],
             'google_drive_folder_key'               => ['sometimes', 'string'],
             'access_id'                             => ['sometimes', 'string', 'nullable'],

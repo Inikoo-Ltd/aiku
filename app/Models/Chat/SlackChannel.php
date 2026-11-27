@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $history_backfilled_to
  * @property \Illuminate\Support\Carbon|null $history_synced_at
  * @property int|null $brought_by_user_id
+ * @property bool $is_listed
  */
 class SlackChannel extends Model
 {
@@ -41,6 +42,7 @@ class SlackChannel extends Model
         'is_public' => true,
         'is_ignored' => false,
         'is_private' => false,
+        'is_listed'  => false,
     ];
 
     protected function casts(): array
@@ -51,6 +53,7 @@ class SlackChannel extends Model
             'is_public'         => 'boolean',
             'is_ignored'        => 'boolean',
             'is_private'        => 'boolean',
+            'is_listed'         => 'boolean',
             'deleted_in_slack_at' => 'datetime',
             'data'              => 'array',
             'history_synced_at' => 'datetime',
@@ -157,6 +160,25 @@ class SlackChannel extends Model
     public function isPrivateVisibleTo(User $user): bool
     {
         return self::privateVisibleTo($user)->whereKey($this->getKey())->exists();
+    }
+
+    /**
+     * Private channels whose members chose to show their name (is_listed), offered to the other staff linked to Slack so they
+     * can ask to join. Only the name goes out: reading stays on privateVisibleTo.
+     */
+    public function scopeListedTo(Builder $query, User $user): Builder
+    {
+        $query->keptPrivate()->where('is_listed', true)->where('group_id', $user->group_id);
+        if (!self::privateReader($user)) {
+            return $query->whereRaw('false');
+        }
+
+        return $query->whereNotIn('id', self::privateVisibleTo($user)->select('id'));
+    }
+
+    public function isListedTo(User $user): bool
+    {
+        return self::listedTo($user)->whereKey($this->getKey())->exists();
     }
 
     /**

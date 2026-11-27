@@ -34,7 +34,7 @@ class StoreSlackPin
 
         $message = match (Arr::get($item, 'type')) {
             'message' => $channel->messages()->where('ts', (string) Arr::get($item, 'message.ts'))->first(),
-            'file'    => $channel->messages()->whereKey(SlackFile::where('slack_id', (string) Arr::get($item, 'file.id'))->value('slack_message_id'))->first(),
+            'file'    => $channel->messages()->whereKey(SlackFile::where('slack_id', (string) Arr::get($item, 'file.id'))->where('is_private', false)->value('slack_message_id'))->first(),
             default   => null,
         };
         if (!$message) {

@@ -16,6 +16,8 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::get('/groups/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inPrivateSlackChannel'])->name('groups.slack.show');
     Route::get('/d/slack/{slackChannel}', [\App\Actions\Chat\Staff\UI\ShowStaffSlackChannels::class, 'inDirectSlackChannel'])->name('direct.slack.show');
     Route::post('/groups/slack', \App\Actions\Chat\Staff\Slack\Write\StoreSlackPrivateChannel::class)->middleware('throttle:10,1,slack-verbration')->name('groups.slack.store');
+    Route::patch('/groups/slack/{slackChannel}/listing', \App\Actions\Chat\Staff\Slack\Write\UpdateSlackPrivateChannelListing::class)->name('groups.slack.listing.update');
+    Route::post('/groups/slack/{slackChannel}/join-request', \App\Actions\Chat\Staff\Slack\Write\RequestToJoinSlackPrivateChannel::class)->middleware('throttle:10,1,slack-join-request')->name('groups.slack.join_request.store');
     Route::get('/home', \App\Actions\Chat\Staff\Home\GetStaffHome::class)->name('home');
     Route::get('/conversations', \App\Actions\Chat\Staff\Json\GetStaffConversations::class)->name('conversations.index');
     Route::get('/cache-key', \App\Actions\Chat\Staff\Json\GetStaffChatCacheKey::class)->name('cache_key');

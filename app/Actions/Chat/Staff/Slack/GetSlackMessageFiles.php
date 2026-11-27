@@ -29,8 +29,8 @@ class GetSlackMessageFiles
     public const string ID_PATTERN = '[A-Za-z0-9]+';
 
     /**
-     * Files of a private channel are not copied yet (INI-441): they show as not available, never as a copy found by
-     * the same Slack file id in a public channel.
+     * Files of a private channel or DM use only their private copies (INI-441), never a copy found by the same Slack file id in
+     * a public channel, and the other way round; they get no preview or thumbnail, and one not copied yet shows as not available.
      *
      * @param  Collection<int, SlackMessage>  $messages
      * @return array<int, list<array<string, mixed>>>
@@ -41,17 +41,18 @@ class GetSlackMessageFiles
             $message->id => array_values(array_filter(is_array($message->data['files'] ?? null) ? $message->data['files'] : [], 'is_array')),
         ])->filter();
 
-        if ($isPrivateChannel) {
-            return $entries->map(fn (array $files) => array_map(fn (array $file) => $this->privateRow($file), $files))->all();
-        }
-
         $ids = $entries->flatten(1)->pluck('id')->filter(fn ($id) => is_string($id) && $id !== '')->unique()->values()->all();
         $copies = $ids === [] ? collect() : SlackFile::whereIn('slack_id', $ids)
-            ->get(['id', 'slack_id', 'name', 'mime_type', 'size', 'mode', 'state', 'reason', 'media_id', 'disk', 'path', 'data'])
+            ->where('is_private', $isPrivateChannel)
+            ->get(['id', 'slack_id', 'name', 'mime_type', 'size', 'mode', 'state', 'reason', 'media_id', 'disk', 'path', 'data', 'is_private'])
             ->keyBy('slack_id');
 
         return $entries->map(fn (array $files, int $messageId) => array_map(
-            fn (array $file) => $this->row($messageId, $file, is_string($file['id'] ?? null) ? $copies->get($file['id']) : null),
+            function (array $file) use ($messageId, $copies, $isPrivateChannel) {
+                $copy = is_string($file['id'] ?? null) ? $copies->get($file['id']) : null;
+
+                return $isPrivateChannel && !$copy ? $this->privateRow($file) : $this->row($messageId, $file, $copy, $isPrivateChannel);
+            },
             $files
         ))->all();
     }
@@ -60,7 +61,7 @@ class GetSlackMessageFiles
      * @param  array<string, mixed>  $file  one entry of the message's data->files
      * @return array<string, mixed>
      */
-    private function row(int $messageId, array $file, ?SlackFile $copy): array
+    private function row(int $messageId, array $file, ?SlackFile $copy, bool $isPrivate = false): array
     {
         $id    = is_string($file['id'] ?? null) && preg_match('/^'.self::ID_PATTERN.'$/', $file['id']) ? $file['id'] : null;
         $name  = $this->stringOrNull($file['name'] ?? null) ?? $this->stringOrNull($file['title'] ?? null) ?? $copy?->name ?? __('file');
@@ -69,7 +70,7 @@ class GetSlackMessageFiles
         $state = $state === 'ready' && $id === null ? 'pending' : $state;
         $ready = $state === 'ready';
         $url   = $ready ? route(self::ROUTE, ['slackMessage' => $messageId, 'slackFile' => $id]) : null;
-        $shown = $ready && $copy->media_id && in_array($mime, CopySlackMessageFile::IMAGE_MIME_TYPES, true);
+        $shown = $ready && !$isPrivate && $copy->media_id && in_array($mime, CopySlackMessageFile::IMAGE_MIME_TYPES, true);
 
         return [
             'id'            => $id,
@@ -77,9 +78,9 @@ class GetSlackMessageFiles
             'type'          => $this->type($name, $file),
             'size'          => is_numeric($copy?->size ?? $file['size'] ?? null) ? (int) ($copy?->size ?? $file['size']) : null,
             'state'         => $state,
-            'note'          => $this->note($state, $copy),
+            'note'          => $isPrivate && $state === 'pending' ? __('File not available yet') : $this->note($state, $copy),
             'is_image'      => $shown,
-            'opens_in_tab'  => $ready && $copy->media_id && $mime === ShowSlackMessageFile::PDF,
+            'opens_in_tab'  => $ready && !$isPrivate && $copy->media_id && $mime === ShowSlackMessageFile::PDF,
             'url'           => $url,
             'thumbnail_url' => $shown ? $url.'?variant=thumbnail' : null,
             'external_url'  => $state === 'external' ? $this->externalUrl($file, $copy) : null,
@@ -128,6 +129,10 @@ class GetSlackMessageFiles
 
     public static function hasCopy(SlackFile $copy): bool
     {
+        if ($copy->is_private) {
+            return $copy->media_id === null && in_array($copy->disk, [CopySlackMessageFile::LARGE_DISK, CopySlackMessageFile::PRIVATE_DISK], true) && (string) $copy->path !== '';
+        }
+
         return $copy->media_id !== null || ($copy->disk === CopySlackMessageFile::LARGE_DISK && (string) $copy->path !== '');
     }
 

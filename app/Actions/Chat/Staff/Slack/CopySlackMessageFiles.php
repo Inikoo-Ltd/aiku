@@ -31,6 +31,7 @@ class CopySlackMessageFiles
         {--dry-run : Only say how many files would be copied and their total size}
         {--channel= : Only this channel, by Slack id or name}
         {--retry-failed : Try again the files that failed before, once their cause is fixed}
+        {--private : The files of private channels and DMs instead, copied to members-only storage}
         {--limit= : Stop after queueing this many downloads}
         {--pause=3 : Seconds between queued downloads, and between checks while the queue is busy}';
 
@@ -41,24 +42,25 @@ class CopySlackMessageFiles
     /**
      * @return array{queued: int, recorded: int}
      */
-    public function handle(?SlackChannel $channel = null, ?int $limit = null, float $pause = 3, bool $retryFailed = false): array
+    public function handle(?SlackChannel $channel = null, ?int $limit = null, float $pause = 3, bool $retryFailed = false, bool $private = false): array
     {
         $totals = ['queued' => 0, 'recorded' => 0];
         $seen    = [];
         $waiting = [];
 
         $messages = SlackMessage::query()
-            ->select(['id', 'slack_channel_id', 'data'])
-            ->whereIn('slack_channel_id', SlackChannel::where('is_public', true)->where('is_ignored', false)->when($channel, fn ($query) => $query->whereKey($channel->id))->select('id'))
+            ->select(['id', 'slack_channel_id', 'slack_user_id', 'data'])
+            ->whereIn('slack_channel_id', self::channels($private)->when($channel, fn ($query) => $query->whereKey($channel->id))->select('id'))
             ->whereRaw("jsonb_typeof(data->'files') = 'array'");
 
         foreach ($messages->lazyById(200) as $message) {
             $files = array_filter((array) Arr::get($message->data, 'files', []), fn ($file) => is_array($file) && Arr::get($file, 'id') && !isset($seen[$file['id']]));
-            if (!$files) {
+            if (!$files || ($private && !CopySlackMessageFile::privateReadingToken($message))) {
                 continue;
             }
 
             $done = SlackFile::whereIn('slack_id', array_column($files, 'id'))
+                ->where('is_private', $private)
                 ->whereNotIn('state', SlackFileStateEnum::toCopy($retryFailed))
                 ->pluck('slack_id')
                 ->flip();
@@ -81,10 +83,10 @@ class CopySlackMessageFiles
                 if ($totals['queued'] > 0) {
                     Sleep::for($pause)->seconds();
                 }
-                while (count($waiting = $this->stillWaiting($waiting)) >= self::MAX_WAITING_JOBS) {
+                while (count($waiting = $this->stillWaiting($waiting, $private)) >= self::MAX_WAITING_JOBS) {
                     Sleep::for($pause)->seconds();
                 }
-                CopySlackMessageFile::dispatch($message, $file);
+                CopySlackMessageFile::dispatch($message->id, (string) $file['id']);
                 $waiting[] = $file['id'];
                 $totals['queued']++;
             }
@@ -99,14 +101,24 @@ class CopySlackMessageFiles
      * @param  list<string>  $slackIds
      * @return list<string>
      */
-    private function stillWaiting(array $slackIds): array
+    private function stillWaiting(array $slackIds, bool $private): array
     {
         if (!$slackIds) {
             return [];
         }
-        $finished = SlackFile::whereIn('slack_id', $slackIds)->whereNotIn('state', SlackFileStateEnum::toCopy())->pluck('slack_id')->all();
+        $finished = SlackFile::whereIn('slack_id', $slackIds)->where('is_private', $private)->whereNotIn('state', SlackFileStateEnum::toCopy())->pluck('slack_id')->all();
 
         return array_values(array_diff($slackIds, $finished));
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<SlackChannel>
+     */
+    private static function channels(bool $private): \Illuminate\Database\Eloquent\Builder
+    {
+        return $private
+            ? SlackChannel::where(fn ($query) => $query->whereIn('id', SlackChannel::keptPrivate()->select('id'))->orWhereIn('id', SlackChannel::keptDirect()->select('id')))
+            : SlackChannel::where('is_public', true)->where('is_ignored', false);
     }
 
     /**
@@ -115,8 +127,9 @@ class CopySlackMessageFiles
      *
      * @return array<string, array{files: int, bytes: int}>
      */
-    public function dryRun(?SlackChannel $channel = null, bool $retryFailed = false): array
+    public function dryRun(?SlackChannel $channel = null, bool $retryFailed = false, bool $private = false): array
     {
+        $channelIds = self::channels($private)->when($channel, fn ($query) => $query->whereKey($channel->id))->pluck('id')->all();
         $rows = DB::select(
             "select category, count(*) as files, coalesce(sum(size), 0) as bytes from (
                 select distinct on (f->>'id') f->>'id' as slack_id, (f->>'size')::bigint as size,
@@ -130,13 +143,13 @@ class CopySlackMessageFiles
                         else 'to_copy'
                     end as category
                 from slack_messages m
-                join slack_channels c on c.id = m.slack_channel_id and c.is_public and not c.is_ignored and (?::int is null or c.id = ?::int)
+                join slack_channels c on c.id = m.slack_channel_id and c.id = any(?::int[])
                 cross join jsonb_array_elements(case when jsonb_typeof(m.data->'files') = 'array' then m.data->'files' else '[]'::jsonb end) f
                 where m.deleted_at is null and f->>'id' is not null
-                  and not exists (select 1 from slack_files s where s.slack_id = f->>'id' and s.state <> all(?::text[]))
+                  and not exists (select 1 from slack_files s where s.slack_id = f->>'id' and s.is_private = ?::boolean and s.state <> all(?::text[]))
                 order by f->>'id', m.id
             ) files group by category order by category",
-            [CopySlackMessageFile::maxBytes(), $channel?->id, $channel?->id, '{'.implode(',', SlackFileStateEnum::toCopy($retryFailed)).'}']
+            [CopySlackMessageFile::maxBytes(), '{'.implode(',', $channelIds).'}', $private ? 'true' : 'false', '{'.implode(',', SlackFileStateEnum::toCopy($retryFailed)).'}']
         );
 
         return collect($rows)->mapWithKeys(fn ($row) => [$row->category => ['files' => (int) $row->files, 'bytes' => (int) $row->bytes]])->all();
@@ -159,14 +172,14 @@ class CopySlackMessageFiles
         if ($command->option('dry-run')) {
             $command->table(
                 ['What would happen', 'Files', 'Size (MB)'],
-                collect($this->dryRun($channel, (bool) $command->option('retry-failed')))->map(fn ($row, $category) => [$category, $row['files'], round($row['bytes'] / 1048576, 1)])->values()->all()
+                collect($this->dryRun($channel, (bool) $command->option('retry-failed'), (bool) $command->option('private')))->map(fn ($row, $category) => [$category, $row['files'], round($row['bytes'] / 1048576, 1)])->values()->all()
             );
 
             return 0;
         }
 
         $limit  = $command->option('limit');
-        $totals = $this->handle($channel, $limit !== null ? (int) $limit : null, (float) $command->option('pause'), (bool) $command->option('retry-failed'));
+        $totals = $this->handle($channel, $limit !== null ? (int) $limit : null, (float) $command->option('pause'), (bool) $command->option('retry-failed'), (bool) $command->option('private'));
         $command->info("Downloads queued: {$totals['queued']}, recorded without download: {$totals['recorded']}");
 
         return 0;
