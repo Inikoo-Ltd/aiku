@@ -104,6 +104,7 @@ class StaffConversationResource extends JsonResource
             'wallpaper'       => $viewer ? StaffChatWallpaper::forConversation($viewer, $this->resource, $myWallpaper) : null,
             'wallpaper_is_set' => (bool) $myWallpaper,
             'can_call'        => $myPivot && !$myLeftAt && \App\Models\Chat\StaffCall::isEnabled() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource),
+            'can_get_help'    => $myPivot && !$myLeftAt && !$this->resource->isBotDirect() && \App\Models\Chat\StaffCall::canBeHeldIn($this->resource) && $participants->count() === 2,
             'last_message_at' => $this->last_message_at,
             'last_message'    => \App\Models\Chat\StaffCall::entryText($this->last_message_body ?? null),
             'last_message_user_id' => $this->last_message_user_id ?? null,

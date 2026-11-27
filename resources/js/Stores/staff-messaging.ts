@@ -98,6 +98,7 @@ export interface StaffConversation {
     my_left_at?: string | null
     is_watching?: boolean
     can_call?: boolean
+    can_get_help?: boolean
     last_message_user_id?: number | null
     wallpaper?: { pattern: string | null; colour: string | null } | null
     wallpaper_is_set?: boolean

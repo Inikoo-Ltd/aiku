@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\User;
 
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Chat\StaffHelpGrant;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -105,6 +106,7 @@ class BorrowUserPermissions
     public function asController(User $user, ActionRequest $request): Response
     {
         abort_unless(self::canBorrow($request->user(), $user), 403);
+        abort_if($request->session()->has(StaffHelpGrant::SESSION_KEY), 403);
 
         $this->handle($user);
 

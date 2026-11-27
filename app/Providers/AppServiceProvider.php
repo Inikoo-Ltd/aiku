@@ -139,6 +139,11 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(fn (Audited $event) => BroadcastPurchaseOrderLastEdited::fromAudited($event));
 
+        Event::listen(fn (\Illuminate\Auth\Events\Logout $event) => $event->user instanceof \App\Models\SysAdmin\User
+            ? \App\Models\Chat\StaffHelpGrant::where('helper_user_id', $event->user->id)->whereNull('ended_at')->get()
+                ->each(fn (\App\Models\Chat\StaffHelpGrant $grant) => $grant->end(\App\Models\Chat\StaffHelpGrant::HELPER_LOGGED_OUT))
+            : null);
+
         Event::listen(function (CommandStarting $event) {
             if (in_array($event->command, [
                 'fetch:orders',

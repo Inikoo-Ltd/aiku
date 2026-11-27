@@ -46,6 +46,10 @@ Route::name('staff.')->middleware('throttle:240,1')->group(function () {
     Route::post('/calls/{staffCall}/lock', \App\Actions\Chat\Staff\Meeting\LockStaffMeeting::class)->name('calls.lock');
     Route::post('/calls/{staffCall}/guests/{guest}', \App\Actions\Chat\Staff\Meeting\DecideStaffMeetingGuest::class)->name('calls.guests.decide');
     Route::get('/calls', \App\Actions\Chat\Staff\UI\IndexStaffCalls::class)->name('calls.index');
+    Route::post('/conversations/{staffConversation}/help', \App\Actions\Chat\Staff\Help\GrantStaffHelp::class)->middleware('throttle:10,1,staff-help-grant')->name('conversations.help.store');
+    Route::post('/help/{staffHelpGrant}/start', \App\Actions\Chat\Staff\Help\StartStaffHelp::class)->name('help.start');
+    Route::delete('/help/{staffHelpGrant}', \App\Actions\Chat\Staff\Help\EndStaffHelp::class)->name('help.destroy');
+    Route::get('/help/{staffHelpGrant}', \App\Actions\Chat\Staff\Help\UI\ShowStaffHelpGrant::class)->name('help.show');
     Route::get('/calls/live', \App\Actions\Chat\Staff\Call\GetLiveStaffCalls::class)->name('calls.live');
     Route::post('/calls/{staffCall}/join', \App\Actions\Chat\Staff\Call\JoinStaffCall::class)->name('calls.join');
     Route::post('/calls/{staffCall}/decline', \App\Actions\Chat\Staff\Call\DeclineStaffCall::class)->name('calls.decline');

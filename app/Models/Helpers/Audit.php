@@ -85,6 +85,9 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                 if ($audit->event === 'updated' && empty($audit->old_values) && empty($audit->new_values)) {
                     return false;
                 }
+                if ($onBehalfOf = \Illuminate\Support\Facades\Context::getHidden(\App\Http\Middleware\ApplyBorrowedPermissions::AUDIT_CONTEXT_KEY)) {
+                    $audit->setAttribute('data', array_merge((array) ($audit->getAttribute('data') ?? []), $onBehalfOf));
+                }
                 if ($audit->tags) {
                     $tags = array_values(array_filter(array_map('trim', explode(',', $audit->tags)), fn (string $tag) => $tag !== ''));
                     $audit->tags = json_encode($tags);
@@ -97,6 +100,7 @@ class Audit extends \OwenIt\Auditing\Models\Audit
                         ->where('event', 'updated')
                         ->where('user_type', $audit->user_type)
                         ->where('user_id', $audit->user_id)
+                        ->whereRaw("(data->>'help_grant_id') IS NOT DISTINCT FROM ?", [isset($audit->getAttribute('data')['help_grant_id']) ? (string) $audit->getAttribute('data')['help_grant_id'] : null])
                         ->where('created_at', '>=', now()->subSeconds(3))
                         ->latest('id')
                         ->first();

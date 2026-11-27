@@ -35,6 +35,7 @@ import { STAFF_MESSAGE_COUNT_SHOWN_FROM, STAFF_MESSAGE_MAX_CHARACTERS, staffMess
 import { useLocaleStore } from "@/Stores/locale"
 import { faTasks, faCommentDots, faFolder } from "@fal"
 import { faPhone, faPhoneSlash, faVideo, faDesktop } from "@fal"
+import StaffHelpGrantButton from "@/Components/Messaging/Help/StaffHelpGrantButton.vue"
 import ChatWallpaperButton from "@/Components/Messaging/ChatWallpaperButton.vue"
 import { hasWallpaper, useBubbles, wallpaperStyle } from "@/Components/Messaging/chatWallpaper"
 
@@ -735,6 +736,11 @@ const onReactionPick = (emoji: string) => {
                     <FontAwesomeIcon icon="fal fa-desktop" fixed-width aria-hidden="true" />
                 </button>
             </template>
+            <StaffHelpGrantButton
+                v-if="conversation.can_get_help && !embedded && otherParticipants.length === 1"
+                :conversation-ulid="conversation.ulid"
+                :helper-name="otherParticipants[0].name"
+                :button-class="fullScreen ? (isDesk ? 'text-[var(--vx-head-muted,#4b5563)] hover:bg-black/5' : 'text-gray-600 hover:bg-gray-100') : 'text-[var(--chat-muted)] hover:text-[var(--chat-text)]'" />
             <ChatWallpaperButton
                 v-if="!embedded"
                 :conversation-ulid="conversation.ulid"

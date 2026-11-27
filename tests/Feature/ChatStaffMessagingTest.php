@@ -2239,3 +2239,173 @@ test('the Verba welcome shows until the person closes it once, and closing it ke
         ->patchJson(route('grp.models.profile.update'), ['verba_welcome_seen' => 'maybe'])
         ->assertStatus(422);
 });
+
+describe('let a colleague help me', function () {
+    beforeEach(function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
+        setPermissionsTeamId($this->user->group_id);
+
+        $make = fn (string $prefix) => User::factory()->create([
+            'group_id'    => $this->user->group_id,
+            'language_id' => $this->user->language_id,
+            'username'    => $prefix.'-'.Str::lower(Str::random(6)),
+            'status'      => true,
+        ]);
+
+        $this->granter = $make('granter');
+        $this->granter->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::SUPPLY_CHAIN->value);
+        $this->helper   = $make('helper');
+        $this->stranger = $make('stranger');
+        $this->dm       = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->granter, ['user_ids' => [$this->helper->id]]);
+    });
+
+    $grant = function (int $minutes = 15): \App\Models\Chat\StaffHelpGrant {
+        actingAs(test()->granter)
+            ->postJson(route('grp.chat.staff.conversations.help.store', test()->dm->ulid), ['minutes' => $minutes])
+            ->assertOk();
+
+        return \App\Models\Chat\StaffHelpGrant::where('granter_user_id', test()->granter->id)->whereNull('ended_at')->sole();
+    };
+
+    $start = function (\App\Models\Chat\StaffHelpGrant $helpGrant) {
+        actingAs(test()->helper)->post(route('grp.chat.staff.help.start', $helpGrant->ulid))->assertRedirect();
+    };
+
+    $hasGranterAccess = function (): bool {
+        actingAs(test()->helper)->get(route('grp.chat.staff.calls.index'));
+
+        return test()->helper->permissionsLender()?->id === test()->granter->id && test()->helper->authTo('supply-chain.view');
+    };
+
+    test('the granter lends their access to the colleague of the DM for the chosen time, and the DM says so', function () use ($grant, $start, $hasGranterAccess) {
+        expect($this->helper->authTo('supply-chain.view'))->toBeFalse();
+
+        $helpGrant = $grant(30);
+
+        expect($helpGrant->helper_user_id)->toBe($this->helper->id)
+            ->and($helpGrant->minutes)->toBe(30)
+            ->and((int) round(now()->diffInMinutes($helpGrant->expires_at)))->toBe(30)
+            ->and($this->dm->messages()->latest('id')->first()->user_id)->toBe($this->granter->id)
+            ->and($hasGranterAccess())->toBeFalse();
+
+        $start($helpGrant);
+
+        expect($hasGranterAccess())->toBeTrue()
+            ->and($helpGrant->fresh()->started_at)->not->toBeNull();
+    });
+
+    test('only the DM colleague can be granted, in a direct conversation, and grants are refused beyond an hour', function () use ($grant) {
+        $group = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->granter, ['user_ids' => [$this->helper->id, $this->stranger->id], 'name' => 'Help group']);
+
+        actingAs($this->granter)->postJson(route('grp.chat.staff.conversations.help.store', $group->ulid))->assertForbidden();
+        actingAs($this->granter)->postJson(route('grp.chat.staff.conversations.help.store', $this->dm->ulid), ['minutes' => 120])->assertUnprocessable();
+        actingAs($this->stranger)->postJson(route('grp.chat.staff.conversations.help.store', $this->dm->ulid))->assertForbidden();
+
+        $this->helper->update(['status' => false]);
+        actingAs($this->granter)->postJson(route('grp.chat.staff.conversations.help.store', $this->dm->ulid))->assertForbidden();
+    });
+
+    test('nobody but the named helper can start it, and not after it ended or ran out', function () use ($grant, $start, $hasGranterAccess) {
+        $helpGrant = $grant();
+
+        actingAs($this->stranger)->post(route('grp.chat.staff.help.start', $helpGrant->ulid))->assertForbidden();
+        actingAs($this->granter)->post(route('grp.chat.staff.help.start', $helpGrant->ulid))->assertForbidden();
+
+        $this->travel(16)->minutes();
+        actingAs($this->helper)->post(route('grp.chat.staff.help.start', $helpGrant->ulid))->assertForbidden();
+
+        $second = $grant();
+        $this->travelBack();
+        expect($helpGrant->fresh()->end_reason)->toBe(\App\Models\Chat\StaffHelpGrant::EXPIRED);
+
+        actingAs($this->granter)->delete(route('grp.chat.staff.help.destroy', $second->ulid))->assertRedirect();
+        actingAs($this->helper)->post(route('grp.chat.staff.help.start', $second->ulid))->assertForbidden();
+        expect($hasGranterAccess())->toBeFalse();
+    });
+
+    test('it ends at the time limit, on End now, on Stop, on logout, on deactivation and when replaced', function () use ($grant, $start, $hasGranterAccess) {
+        $ends = [
+            \App\Models\Chat\StaffHelpGrant::EXPIRED             => fn () => $this->travel(16)->minutes(),
+            \App\Models\Chat\StaffHelpGrant::ENDED_BY_GRANTER    => fn ($g) => actingAs($this->granter)->delete(route('grp.chat.staff.help.destroy', $g->ulid))->assertRedirect(),
+            \App\Models\Chat\StaffHelpGrant::STOPPED_BY_HELPER   => fn ($g) => actingAs($this->helper)->delete(route('grp.chat.staff.help.destroy', $g->ulid))->assertRedirect(),
+            \App\Models\Chat\StaffHelpGrant::HELPER_LOGGED_OUT   => fn () => event(new \Illuminate\Auth\Events\Logout('web', $this->helper)),
+            \App\Models\Chat\StaffHelpGrant::ACCOUNT_DEACTIVATED => fn () => $this->granter->update(['status' => false]),
+            \App\Models\Chat\StaffHelpGrant::REPLACED            => fn () => actingAs($this->granter)->postJson(route('grp.chat.staff.conversations.help.store', $this->dm->ulid))->assertOk(),
+        ];
+
+        foreach ($ends as $reason => $end) {
+            $this->granter->update(['status' => true]);
+            \App\Models\Chat\StaffHelpGrant::where('granter_user_id', $this->granter->id)->whereNull('ended_at')->get()->each->end('test_reset');
+
+            $helpGrant = $grant();
+            $start($helpGrant);
+            expect($hasGranterAccess())->toBeTrue($reason);
+
+            $end($helpGrant);
+
+            expect($hasGranterAccess())->toBeFalse($reason)
+                ->and($helpGrant->fresh()->end_reason)->toBe($reason)
+                ->and($helpGrant->fresh()->ended_at)->not->toBeNull();
+            $this->travelBack();
+        }
+    });
+
+    test('while helping there is no chain: no new grant, no other start, no borrowing', function () use ($grant, $start) {
+        $strangerDm = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->stranger, ['user_ids' => [$this->helper->id]]);
+        actingAs($this->stranger)->postJson(route('grp.chat.staff.conversations.help.store', $strangerDm->ulid))->assertOk();
+        $other = \App\Models\Chat\StaffHelpGrant::where('granter_user_id', $this->stranger->id)->whereNull('ended_at')->sole();
+
+        $start($grant());
+
+        $helperDm = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->helper, ['user_ids' => [$this->stranger->id]]);
+        actingAs($this->helper)->postJson(route('grp.chat.staff.conversations.help.store', $helperDm->ulid))->assertForbidden();
+
+        actingAs($this->helper)->post(route('grp.chat.staff.help.start', $other->ulid))->assertForbidden();
+
+        $this->helper->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_ADMIN->value);
+        actingAs($this->helper)->post(route('grp.models.user.borrow_permissions', ['user' => $this->stranger->id]))->assertForbidden();
+    });
+
+    test('the granter\'s own sign-in and private chats stay out of reach', function () use ($grant, $start) {
+        $start($grant());
+        $private = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->granter, ['user_ids' => [$this->stranger->id]]);
+
+        actingAs($this->helper)->getJson(route('grp.chat.staff.conversations.messages.index', $private->ulid))->assertForbidden();
+
+        $this->granter->assignRole(\App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_ADMIN->value);
+        foreach ([$this->granter, $this->helper] as $target) {
+            actingAs($this->helper)->patchJson(route('grp.models.user.update', $target->id), ['contact_name' => 'taken over'])->assertForbidden();
+            actingAs($this->helper)->postJson(route('grp.models.user.access-token.create', $target->id))->assertForbidden();
+        }
+        actingAs($this->helper)->postJson(route('grp.models.user.access-token.create', $this->stranger->id))->assertForbidden();
+        expect($this->granter->fresh()->contact_name)->not->toBe('taken over');
+
+        $page = actingAs($this->helper)->get(route('grp.dashboard.show'));
+        $page->assertInertia(fn (AssertableInertia $inertia) => $inertia
+            ->where('auth.user.id', $this->helper->id)
+            ->where('auth.user.help.helping.granter.id', $this->granter->id)
+            ->where('auth.user.borrowed_permissions_from', null));
+    });
+
+    test('a change made while helping is audited under both names and listed for the two of them only', function () use ($grant, $start) {
+        User::enableAuditing();
+        \Illuminate\Support\Facades\Route::middleware(['grp', 'auth'])->domain('app.'.config('app.domain'))
+            ->post('/_test/ini-496-audit', fn () => tap(User::find(request('id')))->update(['contact_name' => request('name')]) ? 'ok' : 'ok');
+
+        $helpGrant = $grant();
+        $start($helpGrant);
+
+        actingAs($this->helper)->post('http://app.'.config('app.domain').'/_test/ini-496-audit', ['id' => $this->stranger->id, 'name' => 'Changed while helping'])->assertOk();
+
+        $audit = \App\Models\Helpers\Audit::where('auditable_type', 'User')->where('auditable_id', $this->stranger->id)->latest('id')->first();
+        expect($audit->user_id)->toBe($this->helper->id)
+            ->and($audit->data['on_behalf_of_user_id'])->toBe($this->granter->id)
+            ->and($audit->data['help_grant_id'])->toBe($helpGrant->id);
+
+        actingAs($this->granter)->get(route('grp.chat.staff.help.show', $helpGrant->ulid))
+            ->assertInertia(fn (AssertableInertia $inertia) => $inertia->component('SysAdmin/Histories')->has('data.data', 1));
+        actingAs($this->stranger)->get(route('grp.chat.staff.help.show', $helpGrant->ulid))->assertForbidden();
+        actingAs($this->stranger)->delete(route('grp.chat.staff.help.destroy', $helpGrant->ulid))->assertForbidden();
+    });
+});

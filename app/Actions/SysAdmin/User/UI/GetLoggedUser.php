@@ -17,6 +17,7 @@ use App\Actions\DevOps\MonitorDatabaseReplicas;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Models\DevOps\DisasterRecoveryRehearsal;
 use App\Models\Helpers\Ticket;
+use App\Models\Chat\StaffHelpGrant;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -36,6 +37,7 @@ class GetLoggedUser
         $agentShops = $this->workableShopIdsFor($user);
         $isAgent    = $agentShops !== [];
         $isEngineer = Ticket::canBeManagedBy($user) && $user->hasGroupAccess();
+        $helping    = $user->permissionsLender() && request()->hasSession() && request()->session()->has(StaffHelpGrant::SESSION_KEY);
 
         return [
             'id'           => $user->id,
@@ -50,8 +52,9 @@ class GetLoggedUser
             'works_only_for_agents' => $user->worksOnlyForAgents(),
             'is_engineer'     => $isEngineer,
             'devops_problems' => $isEngineer ? array_values(array_filter([...Cache::get(MonitorDatabaseReplicas::PROBLEMS_CACHE_KEY, []), DisasterRecoveryRehearsal::issue()])) : [],
-            'borrowed_permissions_from' => $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
-            'can_borrow_permissions'    => BorrowUserPermissions::canBorrowSomebody($user),
+            'borrowed_permissions_from' => $helping ? null : $user->permissionsLender()?->only(['id', 'username', 'contact_name']),
+            'can_borrow_permissions'    => !$helping && BorrowUserPermissions::canBorrowSomebody($user),
+            'help'                      => $this->help($user, $helping),
             'agent_id'     => $user->chatAgent?->id,
             'agent_shops'  => $agentShops,
             'chat_alert_shops' => $isAgent ? $this->chatAlertShopIdsFor($user, $agentShops) : [],
@@ -72,6 +75,23 @@ class GetLoggedUser
                 'chat_wallpapers' => StaffChatWallpaper::catalogue($user),
                 'chat_languages' => GetChatLanguagesRead::run($user),
             ]
+        ];
+    }
+
+    /**
+     * INI-496 amber bars: what the helper is doing now, a grant waiting for them to press Start, and the granter's own
+     * open grant with End now.
+     *
+     * @return array{helping: array|null, offered: array|null, granted: array|null}
+     */
+    private function help(User $user, bool $helping): array
+    {
+        $open = fn () => StaffHelpGrant::with(['granter', 'helper'])->whereNull('ended_at')->where('expires_at', '>', now());
+
+        return [
+            'helping' => $helping ? $open()->find(request()->session()->get(StaffHelpGrant::SESSION_KEY))?->toBanner() : null,
+            'offered' => $helping ? null : $open()->where('helper_user_id', $user->id)->latest('id')->first()?->toBanner(),
+            'granted' => $open()->where('granter_user_id', $user->id)->first()?->toBanner(),
         ];
     }
 }

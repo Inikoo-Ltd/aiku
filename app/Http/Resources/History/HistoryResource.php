@@ -37,8 +37,21 @@ class HistoryResource extends JsonResource
             'user_type'      => $this['user_type'],
             'slug'           => $this['slug'],
             'user_agent'     => $isStaff ? $this['user_agent'] : null,
-            'user_name'      => $this['user_type'] === __('WebUser') ? __('Customer') : ($this->user?->contact_name ?? __('System')),
+            'user_name'      => $this['user_type'] === __('WebUser') ? __('Customer') : $this->staffName(),
             'tags'           => $this['tags']
         ];
+    }
+
+    /**
+     * A change made with someone else's access (help grant or borrowed permissions) shows both names: who did it, and for whom.
+     */
+    private function staffName(): string
+    {
+        $name       = $this->user?->contact_name ?? __('System');
+        $onBehalfOf = data_get($this['data'], 'on_behalf_of_user_id');
+
+        return $onBehalfOf
+            ? __(':name for :other', ['name' => $name, 'other' => \App\Models\SysAdmin\User::find($onBehalfOf)?->contact_name ?? '#'.$onBehalfOf])
+            : $name;
     }
 }
