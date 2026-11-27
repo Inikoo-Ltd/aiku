@@ -19,10 +19,15 @@ class ProductHydrateFirstAvailableAt
      * Stamps, once and for good, the moment a product can first be ordered on the website:
      * for sale, in stock and on a live webpage. The NEW IN badge counts from it.
      * A product already ordered or invoiced before keeps the date of its first sale, so it is not shown as new.
+     * Stock only another company's warehouse holds sells the product but never makes it new (INI-485 D6).
      */
     public function handle(Product $product): Product
     {
         if ($product->first_available_at) {
+            return $product;
+        }
+
+        if ($product->isStockedOnlyElsewhere()) {
             return $product;
         }
 

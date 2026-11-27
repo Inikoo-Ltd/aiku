@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\CrossDispatch;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\Production\JobOrder\FillToOrder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -34,6 +35,12 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class ResolveCrossDispatch
 {
     use AsObject;
+
+    /** @var array<int, Collection<int, Collection<int, object>>> */
+    private array $preloadedOrgStocks = [];
+
+    /** @var array<int, array<int, float>> */
+    private array $preloadedTradeUnits = [];
 
     /**
      * Maps every line of the order to the dispatching organisation's SKOs, or says why the order cannot be dispatched whole from there. Reads only.
@@ -247,6 +254,91 @@ class ResolveCrossDispatch
         return is_null($quantity) ? null : (float) $quantity;
     }
 
+    /**
+     * INI-485. How many whole units of the product the dispatching organisation could ship as the same pack, by the
+     * line rules of handle(): exactly one SKO there for each of the product's SKOs, live, packed and made the same, with
+     * a commercial value when the product has several, and the product not filled to order. The margin is kept back on
+     * each of those SKOs before counting whole products, and the product is limited by the scarcest of them. Null when
+     * the product cannot be shipped from there at all. Reads only; order rules (direction, customs, TikTok...) are not checked.
+     */
+    public function wholeProductsIn(Product $product, Organisation $dispatcher, int $safetyMargin = 0): ?int
+    {
+        $homeOrgStocks = $product->loadMissing('orgStocks')->orgStocks;
+
+        if ($homeOrgStocks->isEmpty() || FillToOrder::make()->artefactFor($product) !== null) {
+            return null;
+        }
+
+        $stockIds = $homeOrgStocks->pluck('stock_id')->filter()->unique();
+        if (isset($this->preloadedOrgStocks[$dispatcher->id])) {
+            $candidates = $this->preloadedOrgStocks[$dispatcher->id]->only($stockIds->all());
+            $tradeUnits = $this->tradeUnitsOf($homeOrgStocks->pluck('id')) + $this->preloadedTradeUnits;
+        } else {
+            $candidates = $this->liveOrgStocksOf($dispatcher, $stockIds);
+            $tradeUnits = $this->tradeUnitsOf($homeOrgStocks->pluck('id')->merge($candidates->flatten(1)->pluck('id'))->unique());
+        }
+
+        $usedOrgStockIds = [];
+        $wholeProducts   = [];
+        foreach ($homeOrgStocks as $homeOrgStock) {
+            $matches = $homeOrgStock->stock_id ? $candidates->get($homeOrgStock->stock_id, collect()) : collect();
+            if ($matches->count() !== 1) {
+                return null;
+            }
+
+            $sko = $matches->first();
+            if (
+                !in_array($sko->state, [OrgStockStateEnum::ACTIVE->value, OrgStockStateEnum::DISCONTINUING->value], true)
+                || $this->contentDiffers($sko->packed_in, $homeOrgStock->packed_in, $tradeUnits[$sko->id] ?? [], $tradeUnits[$homeOrgStock->id] ?? [])
+                || ($homeOrgStocks->count() > 1 && !($sko->sku_commercial_value > 0))
+                || in_array($sko->id, $usedOrgStockIds, true)
+            ) {
+                return null;
+            }
+            $usedOrgStockIds[] = $sko->id;
+
+            $skosPerProduct = (float) $homeOrgStock->pivot->quantity;
+            if ($skosPerProduct > 0) {
+                $available = max(0, (float) $sko->quantity_available - $safetyMargin);
+                $whole     = ProductHydrateAvailableQuantity::wholeProducts($available, $skosPerProduct);
+                while ($whole > 0 && DeliveryNoteItem::requiredQuantity($skosPerProduct, $whole) > $available) {
+                    $whole--;
+                }
+                $wholeProducts[] = $whole;
+            }
+        }
+
+        return $wholeProducts ? min($wholeProducts) : null;
+    }
+
+    /**
+     * Reads every live SKO of the organisation, and its content, once, for wholeProductsIn() to answer a whole shop's
+     * products without a query per product. The quantities are those of this moment.
+     */
+    public function preloadOrgStocksOf(Organisation $dispatcher): static
+    {
+        if (!isset($this->preloadedOrgStocks[$dispatcher->id])) {
+            $this->preloadedOrgStocks[$dispatcher->id] = $this->liveOrgStocksOf($dispatcher);
+            $this->preloadedTradeUnits                 += $this->tradeUnitsOf($this->preloadedOrgStocks[$dispatcher->id]->flatten(1)->pluck('id'));
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param  Collection<int, int>|null  $stockIds
+     * @return Collection<int, Collection<int, object>>
+     */
+    private function liveOrgStocksOf(Organisation $dispatcher, ?Collection $stockIds = null): Collection
+    {
+        return DB::table('org_stocks')
+            ->where('organisation_id', $dispatcher->id)
+            ->when($stockIds, fn ($query) => $query->whereIn('stock_id', $stockIds))
+            ->whereNull('deleted_at')
+            ->get(['id', 'stock_id', 'state', 'packed_in', 'quantity_available', 'sku_commercial_value'])
+            ->groupBy('stock_id');
+    }
+
     public static function direction(int $originOrganisationId, int $dispatcherOrganisationId): ?OrgPartner
     {
         return OrgPartner::where('organisation_id', $originOrganisationId)->where('partner_id', $dispatcherOrganisationId)->first();
@@ -339,10 +431,15 @@ class ResolveCrossDispatch
 
     private function crossesCustomsBorder(Order $order, Organisation $dispatcher): bool
     {
-        return self::crossesCustomsBorderBetween(
-            $dispatcher->warehouses()->orderBy('id')->first()?->address?->country_code ?? $dispatcher->country?->code,
-            $order->deliveryAddress?->country_code
-        );
+        return self::crossesCustomsBorderBetween(self::warehouseCountryCode($dispatcher), $order->deliveryAddress?->country_code);
+    }
+
+    /**
+     * Where an organisation's parcels leave from, for the customs rule: its first warehouse, or the organisation's own country when that warehouse has no address.
+     */
+    public static function warehouseCountryCode(Organisation $organisation): ?string
+    {
+        return $organisation->warehouses()->orderBy('id')->first()?->address?->country_code ?? $organisation->country?->code;
     }
 
     /**

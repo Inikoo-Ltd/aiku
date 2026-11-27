@@ -89,6 +89,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $image_id
  * @property ProductUnitRelationshipType|null $unit_relationship_type
  * @property int|null $available_quantity outer available quantity for sale
+ * @property int $available_quantity_elsewhere part of available_quantity only another company's warehouse holds (INI-485)
  * @property numeric $variant_ratio
  * @property bool $variant_is_visible
  * @property int|null $main_product_id
@@ -365,6 +366,22 @@ class Product extends Model implements Auditable, HasMedia
         'offers_data'          => '{}',
     ];
 
+
+    /**
+     * INI-485. What the home warehouse alone holds: the customer figure less the part only another company's warehouse holds. TikTok is told this one, since TikTok orders never ship from another company.
+     */
+    public function homeAvailableQuantity(): ?int
+    {
+        return $this->available_quantity === null ? null : max(0, $this->available_quantity - (int) $this->available_quantity_elsewhere);
+    }
+
+    /**
+     * INI-485 D6. Sold only from another company's warehouse: such stock sells the product but never makes it new.
+     */
+    public function isStockedOnlyElsewhere(): bool
+    {
+        return $this->available_quantity_elsewhere > 0 && $this->available_quantity <= $this->available_quantity_elsewhere;
+    }
     public function searchIndexShouldBeUpdated(): bool
     {
         return $this->wasRecentlyCreated

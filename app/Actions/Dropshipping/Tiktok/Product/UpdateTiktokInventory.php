@@ -34,7 +34,7 @@ class UpdateTiktokInventory implements ShouldBeUnique
 
     public static function quantityToSend(Product $product, CustomerSalesChannel $customerSalesChannel): int
     {
-        $availableQuantity = $product->available_quantity ?? 0;
+        $availableQuantity = $product->homeAvailableQuantity() ?? 0;
 
         if (!$product->isSellableThroughSalesChannels()) {
             $availableQuantity = 0;

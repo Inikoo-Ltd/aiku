@@ -172,7 +172,7 @@ class StoreProductToTiktok extends RetinaAction
                         'sales_attributes' => [],
                         'inventory' => [
                             [
-                                'quantity' => $product->available_quantity,
+                                'quantity' => $product->homeAvailableQuantity(),
                                 'warehouse_id' => (string) $tiktokUser->tiktok_warehouse_id
                             ]
                         ],

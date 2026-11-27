@@ -1576,3 +1576,882 @@ test('a label is refused on a note worked in another company\'s warehouse when t
     expect(shipmentRefusals($homeNote, shipperOf($this->organisation)))->toBe([])
         ->and($homeNote->shipments()->count())->toBe(1);
 });
+
+/**
+ * INI-485. Products of the test shop, turned dropshipping, each on SKOs of stocks of its own that the other company holds
+ * 1000 of: in stock, at 0, on demand, discontinued, made of two SKOs, and sold at six per SKO. Every input the stock
+ * figure reads is set here, and each product gets a listing on a Shopify channel of the customer.
+ * Setups: 'none' lists no other warehouse while the direction is on at both sides; 'switched_off' lists the other
+ * company while it has switched the direction off.
+ *
+ * @return array{0: array<string, Product>, 1: array<string, OrgStock>, 2: \App\Models\SysAdmin\Organisation, 3: array<string, CustomerSalesChannel>}
+ */
+function otherWarehouseStockFixture($test, string $setup): array
+{
+    $test->shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING]);
+    $test->shop->dropshippingStats()->exists() || $test->shop->dropshippingStats()->create([]);
+    $orgPartner = crossDispatchDirection($test->organisation);
+    $dispatcher = $orgPartner->partner;
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $test->organisation, ['enabled' => true, 'allow_customs_crossing' => true]);
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => $setup === 'none']);
+
+    $settings = \Illuminate\Support\Arr::except($test->shop->fresh()->settings ?? [], 'stock_from_other_warehouses');
+    if ($setup === 'switched_off') {
+        $settings['stock_from_other_warehouses'] = [['organisation_id' => $dispatcher->id, 'safety_margin' => 0]];
+    }
+    $test->shop->updateQuietly(['settings' => $settings]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+
+    $tradeUnit = $test->product->tradeUnits->first();
+    $newSko    = function (array $attributes) use ($test, $dispatcher, $tradeUnit): OrgStock {
+        $stock   = \App\Actions\Goods\Stock\StoreStock::make()->action($test->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+        $homeSko = StoreOrgStock::make()->action($test->organisation, $stock, []);
+        $homeSko->updateQuietly(array_merge(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'has_been_in_warehouse' => true, 'packed_in' => 1, 'quantity_available' => 0], $attributes));
+        $homeSko->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+        dispatcherSkoFor($dispatcher, $homeSko->refresh());
+
+        return $homeSko->refresh();
+    };
+
+    $skos = [
+        'in_stock'  => $newSko(['quantity_available' => 10]),
+        'at_zero'   => $newSko([]),
+        'on_demand' => $newSko(['is_on_demand' => true]),
+        'second'    => $newSko(['quantity_available' => 6]),
+        'pack'      => $newSko(['quantity_available' => 13]),
+    ];
+
+    $channels = [];
+    foreach (['woo' => PlatformTypeEnum::WOOCOMMERCE, 'ebay' => PlatformTypeEnum::EBAY, 'tiktok' => PlatformTypeEnum::TIKTOK, 'shopify' => PlatformTypeEnum::SHOPIFY] as $key => $platformType) {
+        $channels[$key] = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action(
+            $test->customer,
+            $test->group->platforms()->where('type', $platformType)->firstOrFail(),
+            ['reference' => 'ini485_'.$key.'_'.Str::random(6)]
+        );
+    }
+
+    $newProduct = function (array $orgStocks, array $attributes = []) use ($test, $tradeUnit, $channels): Product {
+        $product = StoreProduct::make()->action($test->product->family, array_merge(Product::factory()->definition(), [
+            'trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]],
+            'price'       => 10,
+        ]));
+        $product->orgStocks()->sync($orgStocks);
+        $portfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($channels['shopify'], $product->refresh(), []);
+        $portfolio->updateQuietly(['sku' => 'ini485-'.$product->id, 'platform_sku' => null]);
+        $product->updateQuietly(array_merge([
+            'state'                         => ProductStateEnum::ACTIVE,
+            'is_for_sale'                   => true,
+            'is_on_demand'                  => false,
+            'available_quantity'            => 0,
+            'status'                        => \App\Enums\Catalogue\Product\ProductStatusEnum::OUT_OF_STOCK,
+            'back_in_stock_since'           => null,
+            'out_of_stock_since'            => null,
+            'available_quantity_updated_at' => null,
+        ], $attributes));
+
+        return $product->refresh();
+    };
+
+    $products = [
+        'in_stock'     => $newProduct([$skos['in_stock']->id => ['quantity' => 1]]),
+        'at_zero'      => $newProduct([$skos['at_zero']->id => ['quantity' => 1]]),
+        'on_demand'    => $newProduct([$skos['on_demand']->id => ['quantity' => 1]]),
+        'discontinued' => $newProduct([$skos['in_stock']->id => ['quantity' => 1]], ['state' => ProductStateEnum::DISCONTINUED, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::DISCONTINUED]),
+        'two_skos'     => $newProduct([$skos['in_stock']->id => ['quantity' => 1], $skos['second']->id => ['quantity' => 2]]),
+        'six_per_sko'  => $newProduct([$skos['pack']->id => ['quantity' => 0.16666667]]),
+    ];
+
+    return [$products, $skos, $dispatcher, $channels];
+}
+
+/**
+ * Hydrates each product's stock figure and reads what customers and each channel are told. A stamp reads 'first run'
+ * when it carries $firstRunAt, so a later run that leaves it alone reads the same.
+ *
+ * @param  array<string, Product>  $products
+ * @param  array<string, CustomerSalesChannel>  $channels
+ */
+function otherWarehouseStockFigures(array $products, array $channels, \Illuminate\Support\Carbon $firstRunAt): array
+{
+    $stamp = fn ($value) => $value === null ? null : (\Illuminate\Support\Carbon::parse($value)->equalTo($firstRunAt) ? 'first run' : 'other');
+
+    \Illuminate\Support\Facades\Cache::forget('shopify:fetch_stock:channel:'.$channels['shopify']->id);
+    $figures = [];
+    foreach ($products as $key => $product) {
+        \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($product->fresh());
+        $product = $product->fresh();
+
+        $figures[$key] = [
+            'available_quantity'            => $product->available_quantity,
+            'available_quantity_elsewhere'  => $product->available_quantity_elsewhere,
+            'status'                        => $product->status->value,
+            'is_on_demand'                  => $product->is_on_demand,
+            'available_quantity_updated_at' => $stamp($product->available_quantity_updated_at),
+            'back_in_stock_since'           => $stamp($product->back_in_stock_since),
+            'out_of_stock_since'            => $stamp($product->out_of_stock_since),
+            'woo'                           => \App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $channels['woo']->fresh()),
+            'ebay'                          => \App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio::quantityToSend($product, $channels['ebay']->fresh()),
+            'tiktok'                        => \App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory::quantityToSend($product, $channels['tiktok']->fresh()),
+            'tiktok_listing'                => $product->homeAvailableQuantity(),
+        ];
+    }
+
+    $shopifyPayload = \App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock::make()->handle(new \App\Models\Dropshipping\ShopifyUser(['customer_sales_channel_id' => $channels['shopify']->id]));
+    foreach ($products as $key => $product) {
+        $figures[$key]['shopify'] = $shopifyPayload['ini485-'.$product->id] ?? 'missing';
+    }
+
+    return $figures;
+}
+
+test('stock figures and channel payloads stay what they were before other warehouses could count', function (string $setup) {
+    $firstRunAt = now()->startOfSecond();
+    \Illuminate\Support\Carbon::setTestNow($firstRunAt);
+
+    try {
+        [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, $setup);
+
+        $queries = [];
+        DB::listen(function ($query) use (&$queries) {
+            $queries[] = $query->sql;
+        });
+        $resolver = $setup === 'none' ? $this->spy(ResolveCrossDispatch::class) : null;
+        $figures  = otherWarehouseStockFigures($products, $channels, $firstRunAt);
+        app()->forgetInstance(ResolveCrossDispatch::class);
+        $columns  = ['available_quantity', 'available_quantity_elsewhere', 'status', 'is_on_demand', 'available_quantity_updated_at', 'back_in_stock_since', 'out_of_stock_since', 'woo', 'ebay', 'tiktok', 'tiktok_listing', 'shopify'];
+        $expected = array_map(fn (array $row) => array_combine($columns, $row), [
+            'in_stock'     => [10, 0, 'for-sale', false, 'first run', 'first run', null, 10, 10, 10, 10, 10],
+            'at_zero'      => [0, 0, 'out-of-stock', false, null, null, 'first run', 0, 0, 0, 0, 0],
+            'on_demand'    => [250, 0, 'for-sale', true, 'first run', 'first run', null, 250, 250, 250, 250, 250],
+            'discontinued' => [null, 0, 'discontinued', false, 'first run', null, null, 0, 0, 0, null, 0],
+            'two_skos'     => [3, 0, 'for-sale', false, 'first run', 'first run', null, 3, 3, 3, 3, 3],
+            'six_per_sko'  => [78, 0, 'for-sale', false, 'first run', 'first run', null, 78, 78, 78, 78, 78],
+        ]);
+
+        expect($figures)->toBe($expected);
+        if ($setup === 'none') {
+            expect(collect($queries)->filter(fn (string $sql) => str_contains($sql, 'org_partners') || str_contains($sql, 'from "org_stocks" where "organisation_id" = ?'))->all())->toBe([]);
+            $resolver->shouldNotHaveReceived('wholeProductsIn');
+        }
+
+        \Illuminate\Support\Carbon::setTestNow($firstRunAt->copy()->addHour());
+        expect(otherWarehouseStockFigures($products, $channels, $firstRunAt))->toBe($expected);
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+})->with(['no other warehouse listed' => 'none', 'a listed warehouse whose direction is switched off' => 'switched_off']);
+
+test('a stock change in the other company hydrates none of the shop\'s products, whichever path reaches its SKOs', function (string $setup) {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, $setup);
+    $orgPartner     = ResolveCrossDispatch::direction($this->organisation->id, $dispatcher->id);
+    $theirSko       = fn (OrgStock $homeSko) => OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $homeSko->stock_id)->sole();
+    $shopProductIds = collect($products)->pluck('id')->all();
+    $isHydrate      = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class);
+    $hydrates       = fn (array $productIds) => fn ($job) => $isHydrate($job) && in_array($job->getParameters()[0]->id, $productIds, true);
+
+    [$order] = submittedOrderWithTransaction($this->customer, $products['in_stock'], 2);
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $dispatcher, ['enabled' => true]);
+    $crossNote = \App\Actions\Dispatching\CrossDispatch\RaiseCrossDispatchDeliveryNote::run($order->fresh(), $dispatcher);
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => $setup === 'none']);
+
+    \Illuminate\Support\Facades\Bus::fake([$isHydrate]);
+
+    $moveStock = function (OrgStock $sko, float $quantity): void {
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($sko->organisation->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(
+            orgStock: $sko,
+            location: $location,
+            modelData: ['quantity' => $quantity, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+            strict: false
+        );
+        expect((float) $sko->fresh()->quantity_in_locations)->toBe($quantity);
+    };
+    $changeHasBeenInWarehouse = function (OrgStock $sko): void {
+        $sko->updateQuietly(['has_been_in_warehouse' => !$sko->has_been_in_warehouse]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsAvailableQuantity::run($sko->fresh());
+    };
+    $changeOnDemand = function (OrgStock $sko): void {
+        $sko->updateQuietly(['is_on_demand' => false]);
+        \App\Actions\Inventory\OrgStock\UpdateOrgStock::make()->action($sko->fresh(), ['is_on_demand' => true]);
+        expect($sko->fresh()->is_on_demand)->toBeTrue();
+    };
+
+    foreach (['in_stock', 'second', 'pack'] as $key) {
+        $moveStock($theirSko($skos[$key]), 40);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($theirSko($skos[$key])->id);
+        $changeHasBeenInWarehouse($theirSko($skos[$key]));
+    }
+    $this->artisan('hydrate:org_stocks_quantity_in_locations', ['organisations' => [$dispatcher->slug]])->assertExitCode(0);
+    $line = $crossNote->deliveryNoteItems()->sole();
+    $line->update(['quantity_required' => 3]);
+    expect($line->org_stock_id)->toBe($theirSko($skos['in_stock'])->id)
+        ->and((float) $theirSko($skos['in_stock'])->quantity_to_be_picked)->toBe($dispatcher->is_aiku_stock_control ? 3.0 : 0.0);
+    \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $hydrates($shopProductIds));
+
+    $moveStock($skos['in_stock'], 40);
+    \Illuminate\Support\Facades\Bus::assertDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $hydrates([$products['in_stock']->id]));
+
+    $spy = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::spy();
+    foreach (['in_stock', 'second', 'pack'] as $key) {
+        $changeOnDemand($theirSko($skos[$key]));
+    }
+    $spy->shouldNotHaveReceived('handle', [Mockery::on(fn ($product) => in_array($product->id, $shopProductIds, true))]);
+
+    $changeOnDemand($skos['second']);
+    $spy->shouldHaveReceived('handle')->with(Mockery::on(fn ($product) => $product->id === $products['two_skos']->id));
+})->with(['no other warehouse listed' => 'none', 'a listed warehouse whose direction is switched off' => 'switched_off']);
+
+test('an order the home warehouse cannot cover still gets its delivery note at home', function (string $setup) {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, $setup);
+    [$order, $transaction] = submittedOrderWithTransaction($this->customer, $products['at_zero'], 3);
+
+    expect(array_key_exists($dispatcher->id, GetCrossDispatchCoverage::run($order->fresh())))->toBe($setup === 'none');
+
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->fresh(), []);
+
+    expect($deliveryNote->isCrossDispatch())->toBeFalse()
+        ->and(deliveryNoteFingerprint($deliveryNote))->toEqual([
+            'note'  => [
+                'group_id'        => $this->group->id,
+                'organisation_id' => $this->organisation->id,
+                'shop_id'         => $this->shop->id,
+                'customer_id'     => $this->customer->id,
+                'warehouse_id'    => $this->organisation->warehouses()->first()->id,
+                'reference'       => $order->reference,
+                'state'           => 'unassigned',
+                'type'            => 'order',
+                'shop_type'       => ShopTypeEnum::DROPSHIPPING->value,
+            ],
+            'lines' => [[
+                'organisation_id'            => $this->organisation->id,
+                'shop_id'                    => $this->shop->id,
+                'transaction_id'             => $transaction->id,
+                'org_stock_id'               => $skos['at_zero']->id,
+                'stock_id'                   => $skos['at_zero']->stock_id,
+                'org_stock_family_id'        => $skos['at_zero']->org_stock_family_id,
+                'quantity_required'          => 3.0,
+                'original_quantity_required' => 3.0,
+                'quantity_picked'            => 0.0,
+                'is_dirty'                   => false,
+            ]],
+        ]);
+})->with(['no other warehouse listed' => 'none', 'a listed warehouse whose direction is switched off' => 'switched_off']);
+
+test('the other company can ship as many whole products as its SKOs of the same pack hold after the margin, and none when the pack differs', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $theirSko = fn (string $key) => OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos[$key]->stock_id)->sole();
+    $shippable = fn (string $product, int $margin = 0) => ResolveCrossDispatch::make()->wholeProductsIn($products[$product]->fresh(), $dispatcher, $margin);
+
+    $theirSko('in_stock')->updateQuietly(['quantity_available' => 12]);
+    $theirSko('second')->updateQuietly(['quantity_available' => 13]);
+    $theirSko('pack')->updateQuietly(['quantity_available' => 13]);
+    expect($shippable('in_stock'))->toBe(12)
+        ->and($shippable('in_stock', 2))->toBe(10)
+        ->and($shippable('in_stock', 20))->toBe(0)
+        ->and($shippable('six_per_sko'))->toBe(78)
+        ->and($shippable('six_per_sko', 2))->toBe(66)
+        ->and($shippable('two_skos'))->toBe(6)
+        ->and($shippable('two_skos', 2))->toBe(5);
+
+    $theirSko('in_stock')->updateQuietly(['packed_in' => 7]);
+    expect($shippable('in_stock'))->toBeNull()->and($shippable('two_skos'))->toBeNull();
+    $theirSko('in_stock')->updateQuietly(['packed_in' => 1]);
+
+    $tradeUnit = $skos['pack']->tradeUnits->first();
+    $theirSko('pack')->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 2]);
+    expect($shippable('six_per_sko'))->toBeNull();
+    $theirSko('pack')->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 1]);
+    expect($shippable('six_per_sko'))->toBe(78);
+
+    $theirTwin = StoreOrgStock::make()->action($dispatcher, $skos['in_stock']->stock, []);
+    expect($shippable('in_stock'))->toBeNull();
+    $theirTwin->delete();
+
+    $homeTwin = StoreOrgStock::make()->action($this->organisation, $skos['in_stock']->stock, []);
+    $homeTwin->updateQuietly(['packed_in' => 1]);
+    $homeTwin->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 1]]);
+    $products['in_stock']->orgStocks()->attach($homeTwin->id, ['quantity' => 1]);
+    expect($shippable('in_stock'))->toBeNull();
+    $products['in_stock']->orgStocks()->detach($homeTwin->id);
+    $homeTwin->delete();
+    expect($shippable('in_stock'))->toBe(12);
+
+    $theirSko('in_stock')->updateQuietly(['state' => OrgStockStateEnum::DISCONTINUING]);
+    expect($shippable('in_stock'))->toBe(12);
+    foreach ([OrgStockStateEnum::DISCONTINUED, OrgStockStateEnum::SUSPENDED, OrgStockStateEnum::ABNORMALITY] as $state) {
+        $theirSko('in_stock')->updateQuietly(['state' => $state]);
+        expect($shippable('in_stock'))->toBeNull();
+    }
+    $theirSko('in_stock')->updateQuietly(['state' => OrgStockStateEnum::ACTIVE]);
+
+    $theirSko('second')->updateQuietly(['sku_commercial_value' => 0]);
+    $theirSko('in_stock')->updateQuietly(['sku_commercial_value' => 0]);
+    expect($shippable('two_skos'))->toBeNull()->and($shippable('in_stock'))->toBe(12);
+    $theirSko('second')->updateQuietly(['sku_commercial_value' => 2]);
+    $theirSko('in_stock')->updateQuietly(['sku_commercial_value' => 2]);
+
+    $this->mock(FillToOrder::class)->shouldReceive('artefactFor')->andReturn(new Artefact());
+    expect($shippable('in_stock'))->toBeNull();
+    app()->forgetInstance(FillToOrder::class);
+
+    $theirSko('pack')->delete();
+    expect($shippable('six_per_sko'))->toBeNull();
+    $products['at_zero']->orgStocks()->detach();
+    expect($shippable('at_zero'))->toBeNull()
+        ->and($shippable('two_skos'))->toBe(6);
+});
+
+test('the shippable whole products of a product agree with the order resolver line by line', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $products = \Illuminate\Support\Arr::except($products, 'discontinued');
+    $theirSko = fn (string $key) => OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos[$key]->stock_id)->sole();
+
+    $order = StoreOrder::make()->action($this->customer, []);
+    $transactionOf = [];
+    foreach ($products as $key => $product) {
+        $transactionOf[$key] = StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 1])->id;
+    }
+    $order = SubmitOrder::make()->action($order->refresh());
+
+    $agree = function (array $expectedRefused) use ($products, $dispatcher, $order, $transactionOf) {
+        $refusedLines = collect(ResolveCrossDispatch::run($order->fresh(), $dispatcher->fresh())['refusals'])->pluck('transaction_id')->filter()->unique();
+        $byResolver   = array_map(fn (string $key) => $refusedLines->contains($transactionOf[$key]), array_combine(array_keys($products), array_keys($products)));
+        $byMethod     = array_map(fn (Product $product) => ResolveCrossDispatch::make()->wholeProductsIn($product->fresh(), $dispatcher) === null, $products);
+
+        expect($byMethod)->toBe($byResolver)
+            ->and(array_keys(array_filter($byMethod)))->toBe($expectedRefused);
+    };
+
+    $agree([]);
+
+    $theirSko('in_stock')->updateQuietly(['packed_in' => 7]);
+    $agree(['in_stock', 'two_skos']);
+    $theirSko('in_stock')->updateQuietly(['packed_in' => 1]);
+
+    $tradeUnit = $skos['pack']->tradeUnits->first();
+    $theirSko('pack')->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 2]);
+    $agree(['six_per_sko']);
+    $theirSko('pack')->tradeUnits()->updateExistingPivot($tradeUnit->id, ['quantity' => 1]);
+
+    $theirTwin = StoreOrgStock::make()->action($dispatcher, $skos['second']->stock, []);
+    $agree(['two_skos']);
+    $theirTwin->delete();
+
+    $theirSko('at_zero')->updateQuietly(['state' => OrgStockStateEnum::SUSPENDED]);
+    $theirSko('second')->updateQuietly(['sku_commercial_value' => 0]);
+    $agree(['at_zero', 'two_skos']);
+    $theirSko('at_zero')->updateQuietly(['state' => OrgStockStateEnum::ACTIVE]);
+    $theirSko('second')->updateQuietly(['sku_commercial_value' => 2]);
+
+    $theirSko('on_demand')->delete();
+    $agree(['on_demand']);
+
+    $theirSko('in_stock')->updateQuietly(['quantity_available' => 12]);
+    $theirSko('second')->updateQuietly(['quantity_available' => 13]);
+    foreach ([['in_stock', 13, 12], ['two_skos', 13, 6], ['six_per_sko', 13, 78], ['six_per_sko', 501, 3005]] as [$key, $packSkos, $whole]) {
+        $theirSko('pack')->updateQuietly(['quantity_available' => $packSkos]);
+        expect(ResolveCrossDispatch::make()->wholeProductsIn($products[$key]->fresh(), $dispatcher))->toBe($whole);
+        foreach ([$whole => [], $whole + 1 => ['not_enough_stock']] as $quantity => $reasons) {
+            [$singleLineOrder] = submittedOrderWithTransaction($this->customer, $products[$key], $quantity);
+            expect(crossDispatchRefusals($singleLineOrder, $dispatcher))->toBe($reasons);
+        }
+    }
+});
+
+test('a dropshipping shop lists another company\'s warehouse only while both companies have the direction on, each with a whole safety margin', function () {
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING, 'settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+    $save       = fn (array $list) => \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['stock_from_other_warehouses' => $list]);
+    $errorsOf   = function (array $list) use ($save): array {
+        try {
+            $save($list);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return $exception->errors();
+        }
+
+        return [];
+    };
+    $stored = fn () => \Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'stock_from_other_warehouses');
+
+    expect($this->shop->fresh()->stockFromOtherWarehouses())->toBe([])
+        ->and($errorsOf([['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]))->toHaveKey('stock_from_other_warehouses.0.organisation_id');
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => true, 'allow_customs_crossing' => true]);
+    expect($errorsOf([['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]))->toHaveKey('stock_from_other_warehouses.0.organisation_id');
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => true]);
+    foreach ([[], ['safety_margin' => null], ['safety_margin' => -1], ['safety_margin' => 1.5], ['safety_margin' => 'two']] as $margin) {
+        expect($errorsOf([array_merge(['organisation_id' => $dispatcher->id], $margin)]))->toHaveKey('stock_from_other_warehouses.0.safety_margin');
+    }
+    expect($errorsOf([['organisation_id' => $dispatcher->id, 'safety_margin' => 0], ['organisation_id' => $dispatcher->id, 'safety_margin' => 1]]))->toHaveKey('stock_from_other_warehouses.1.organisation_id')
+        ->and($errorsOf([['organisation_id' => $this->organisation->id, 'safety_margin' => 1]]))->toHaveKey('stock_from_other_warehouses.0.organisation_id')
+        ->and($stored())->toBeNull();
+
+    expect($errorsOf([['organisation_id' => (string) $dispatcher->id, 'safety_margin' => '2']]))->toBe(['stock_from_other_warehouses' => [\App\Actions\Catalogue\Shop\UpdateShop::stockFromOtherWarehousesNotLiveMessage()]])
+        ->and($stored())->toBeNull();
+
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]])]);
+    expect($this->shop->fresh()->stockFromOtherWarehouses())->toEqual([['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]);
+
+    foreach ([$dispatcher, $this->organisation] as $side) {
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $side, ['enabled' => false]);
+        expect($this->shop->fresh()->stockFromOtherWarehouses())->toBe([])
+            ->and($stored())->toEqual([['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]);
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $side, ['enabled' => true]);
+    }
+    expect($this->shop->fresh()->stockFromOtherWarehouses())->toEqual([['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]);
+
+    $save([]);
+    expect($stored())->toBeNull()
+        ->and($this->shop->fresh()->stockFromOtherWarehouses())->toBe([]);
+
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::B2B, 'settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 0]]])]);
+    expect($this->shop->fresh()->stockFromOtherWarehouses())->toBe([])
+        ->and($errorsOf([['organisation_id' => $dispatcher->id, 'safety_margin' => 0]]))->toHaveKey('stock_from_other_warehouses');
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING]);
+    $save([]);
+});
+
+test('only organisation admins can list other warehouses, from the shop settings screen, while shop admins keep the other settings', function () {
+    $this->shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING, 'settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+    $this->shop->dropshippingStats()->exists() || $this->shop->dropshippingStats()->create([]);
+    $orgPartner = crossDispatchDirection($this->organisation);
+    $dispatcher = $orgPartner->partner;
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['enabled' => true]);
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => true]);
+    $this->withoutVite();
+
+    $list   = ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 3]]];
+    $update = fn () => $this->patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), $list);
+    $stored = fn () => \Illuminate\Support\Arr::get($this->shop->fresh()->settings, 'stock_from_other_warehouses');
+
+    actingAsUserWithOnlyPermissions(userWithOnlyPermissions($this->organisation, ["orders.{$this->shop->id}.edit"]), ["orders.{$this->shop->id}.edit"]);
+    $update()->assertForbidden();
+    expect($stored())->toBeNull();
+
+    $shopAdmin = userWithOnlyPermissions($this->organisation, ['shop-admin.'.$this->shop->id]);
+    actingAsUserWithOnlyPermissions($shopAdmin, ['shop-admin.'.$this->shop->id]);
+    $update()->assertSessionHasErrors('stock_from_other_warehouses');
+    expect($stored())->toBeNull();
+    $this->patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), ['packaging_and_inserts_enabled' => $this->shop->fresh()->hasPackagingAndInserts()])->assertSessionHasNoErrors()->assertRedirect();
+
+    $this->patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), ['stock_from_other_warehouses' => []])->assertSessionHasErrors('stock_from_other_warehouses');
+
+    $orgAdmin = userWithOnlyPermissions($this->organisation, ['org-admin.'.$this->organisation->id]);
+    actingAsUserWithOnlyPermissions($orgAdmin, ['org-admin.'.$this->organisation->id]);
+    $update()->assertSessionHasErrors(['stock_from_other_warehouses' => \App\Actions\Catalogue\Shop\UpdateShop::stockFromOtherWarehousesNotLiveMessage()]);
+    expect($stored())->toBeNull();
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], $list)]);
+    expect($stored())->toEqual([['organisation_id' => $dispatcher->id, 'safety_margin' => 3]]);
+
+    UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => false]);
+    $field = collect($this->get(route('grp.org.shops.show.settings.edit', [$this->organisation->slug, $this->shop->slug]))->assertOk()->viewData('page')['props']['formData']['blueprint'])
+        ->keyBy('label')->get('Stock from other warehouses')['fields']['stock_from_other_warehouses'];
+    expect($field['type'])->toBe('stock_from_other_warehouses')
+        ->and($field['readonly'])->toBeTrue()
+        ->and($field['warning'])->toBe(\App\Actions\Catalogue\Shop\UpdateShop::stockFromOtherWarehousesNotLiveMessage())
+        ->and($field['value'])->toEqual([['organisation_id' => $dispatcher->id, 'safety_margin' => 3]])
+        ->and(collect($field['options'])->firstWhere('organisation_id', $dispatcher->id))->toBe(['organisation_id' => $dispatcher->id, 'name' => $dispatcher->name, 'enabled' => false]);
+
+    $update()->assertSessionHasErrors('stock_from_other_warehouses.0.organisation_id');
+    $this->patch(route('grp.models.org.shop.update', [$this->organisation->id, $this->shop->id]), ['stock_from_other_warehouses' => []])->assertSessionHasNoErrors();
+    expect($stored())->toBeNull();
+});
+
+/**
+ * Puts an organisation's first warehouse, and the organisation itself, in a country, for the customs rule.
+ */
+function shipsFromCountry(\App\Models\SysAdmin\Organisation $organisation, string $countryCode): void
+{
+    $country = Country::where('code', $countryCode)->firstOrFail();
+    $organisation->updateQuietly(['country_id' => $country->id]);
+    $organisation->warehouses()->orderBy('id')->first()?->address?->updateQuietly(['country_id' => $country->id, 'country_code' => $countryCode]);
+}
+
+test('a product sells the stock of the best single listed warehouse, after its margin, and only home stock makes it new', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $orgPartner = ResolveCrossDispatch::direction($this->organisation->id, $dispatcher->id);
+    $homeCountry      = ResolveCrossDispatch::warehouseCountryCode($this->organisation);
+    $dispatcherCountry = ResolveCrossDispatch::warehouseCountryCode($dispatcher);
+    shipsFromCountry($this->organisation, 'ES');
+    shipsFromCountry($dispatcher, 'SK');
+    UpdateCrossDispatchSettings::make()->action($orgPartner, $this->organisation, ['allow_customs_crossing' => false]);
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]])]);
+
+    $theirSko = fn (string $key) => OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos[$key]->stock_id)->sole();
+    $hydrate  = fn (string $key) => \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products[$key]->fresh())->fresh();
+    $figure   = fn (Product $product) => [$product->available_quantity, $product->available_quantity_elsewhere, $product->status->value];
+
+    try {
+        $products['at_zero']->updateQuietly(['status' => \App\Enums\Catalogue\Product\ProductStatusEnum::COMING_SOON, 'has_live_webpage' => true, 'first_in_stock_at' => null, 'first_available_at' => null]);
+        $skos['at_zero']->updateQuietly(['has_been_in_warehouse' => false]);
+        $theirSko('at_zero')->updateQuietly(['quantity_available' => 12]);
+        $product = $hydrate('at_zero');
+        expect($figure($product))->toBe([10, 10, 'for-sale'])
+            ->and($product->first_in_stock_at)->toBeNull()
+            ->and($product->first_available_at)->toBeNull()
+            ->and($product->back_in_stock_since)->not->toBeNull();
+
+        \App\Actions\Maintenance\Catalogue\RepairProductsFirstAvailableAt::make()->handle($product->fresh());
+        expect($product->fresh()->first_available_at)->toBeNull();
+
+        $skos['at_zero']->updateQuietly(['quantity_available' => 3, 'has_been_in_warehouse' => true]);
+        $product = $hydrate('at_zero');
+        expect($figure($product))->toBe([10, 7, 'for-sale'])
+            ->and($product->first_in_stock_at)->not->toBeNull()
+            ->and($product->first_available_at)->not->toBeNull();
+
+        $launchedAt = now()->subYear()->startOfSecond();
+        $skos['pack']->updateQuietly(['quantity_available' => 0]);
+        $theirSko('pack')->updateQuietly(['quantity_available' => 13]);
+        $products['six_per_sko']->updateQuietly(['first_in_stock_at' => null, 'first_available_at' => $launchedAt]);
+        expect($figure($hydrate('six_per_sko')))->toBe([66, 66, 'for-sale']);
+        $skos['pack']->updateQuietly(['quantity_available' => 1]);
+        $product = $hydrate('six_per_sko');
+        expect($figure($product))->toBe([66, 60, 'for-sale'])
+            ->and($product->first_in_stock_at)->toBeNull()
+            ->and($product->first_available_at->equalTo($launchedAt))->toBeTrue();
+
+        $skos['in_stock']->updateQuietly(['quantity_available' => 5]);
+        $theirSko('in_stock')->updateQuietly(['quantity_available' => 5]);
+        expect($figure($hydrate('in_stock')))->toBe([5, 0, 'for-sale']);
+        $skos['in_stock']->updateQuietly(['quantity_available' => 2]);
+        $theirSko('in_stock')->updateQuietly(['quantity_available' => 11]);
+        expect($figure($hydrate('in_stock')))->toBe([9, 7, 'for-sale'])
+            ->and($figure($hydrate('on_demand')))->toBe([250, 0, 'for-sale'])
+            ->and($figure($hydrate('discontinued')))->toBe([null, 0, 'discontinued']);
+
+        $skos['in_stock']->updateQuietly(['quantity_available' => 0]);
+        $updatedAt = $hydrate('in_stock')->available_quantity_updated_at;
+        \Illuminate\Support\Carbon::setTestNow(now()->addMinutes(5));
+        expect($figure($hydrate('in_stock')))->toBe([9, 9, 'for-sale'])
+            ->and($hydrate('in_stock')->available_quantity_updated_at->equalTo($updatedAt))->toBeTrue();
+
+        shipsFromCountry($dispatcher, 'GB');
+        expect($figure($hydrate('in_stock')))->toBe([0, 0, 'out-of-stock']);
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['allow_customs_crossing' => true]);
+        expect($figure($hydrate('in_stock')))->toBe([9, 9, 'for-sale']);
+
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => false]);
+        expect($figure($hydrate('in_stock')))->toBe([0, 0, 'out-of-stock'])
+            ->and($figure($hydrate('at_zero')))->toBe([3, 0, 'for-sale']);
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        $homeCountry && shipsFromCountry($this->organisation, $homeCountry);
+        $dispatcherCountry && shipsFromCountry($dispatcher, $dispatcherCountry);
+    }
+});
+
+test('a whole shop hydrated from the command reads the other company\'s SKOs once and gets the same figures', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 0]]])]);
+
+    try {
+        $queries = [];
+        DB::listen(function ($query) use (&$queries) {
+            $queries[] = $query->sql;
+        });
+        $this->artisan('product:hydrate-available-quantity', ['--shop' => [$this->shop->slug]])->assertExitCode(0);
+        $theirOrgStockReads = collect($queries)->filter(fn (string $sql) => str_contains($sql, 'from "org_stocks" where "organisation_id" = ?'))->count();
+        $chunks             = (int) ceil(Product::where('shop_id', $this->shop->id)->count() / 100);
+
+        $byCommand = collect($products)->map(fn (Product $product) => [$product->fresh()->available_quantity, $product->fresh()->available_quantity_elsewhere])->all();
+        foreach ($products as $product) {
+            \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($product->fresh());
+        }
+        $oneByOne = collect($products)->map(fn (Product $product) => [$product->fresh()->available_quantity, $product->fresh()->available_quantity_elsewhere])->all();
+
+        expect($theirOrgStockReads)->toBe($chunks)
+            ->and($byCommand)->toBe($oneByOne)
+            ->and($byCommand['at_zero'])->toBe([1000, 1000])
+            ->and($byCommand['in_stock'])->toBe([1000, 990]);
+    } finally {
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        $this->artisan('product:hydrate-available-quantity', ['--shop' => [$this->shop->slug]])->assertExitCode(0);
+    }
+    expect([$products['at_zero']->fresh()->available_quantity, $products['at_zero']->fresh()->available_quantity_elsewhere])->toBe([0, 0])
+        ->and(Product::where('shop_id', $this->shop->id)->where('available_quantity_elsewhere', '>', 0)->exists())->toBeFalse();
+});
+
+test('TikTok is told only the home stock of a product that sells another company\'s stock, and a change at home reaches it under an unchanged figure', function () {
+    [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, 'none');
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]])]);
+    $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['in_stock']->stock_id)->sole();
+    $hydrate  = fn () => \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['in_stock']->fresh())->fresh();
+    $tiktok   = $channels['tiktok']->fresh();
+    $sweep    = \App\Actions\Dropshipping\Tiktok\Product\UpdateInventoryTiktokProducts::make();
+
+    try {
+        $portfolio = \App\Actions\Dropshipping\Portfolio\StorePortfolio::make()->action($tiktok, $products['in_stock']->fresh(), []);
+        $portfolio->updateQuietly(['platform_product_id' => 'ini485-tiktok', 'platform_status' => true]);
+
+        $skos['in_stock']->updateQuietly(['quantity_available' => 2]);
+        $theirSko->updateQuietly(['quantity_available' => 11]);
+        $product = $hydrate();
+        expect([$product->available_quantity, $product->available_quantity_elsewhere, $product->homeAvailableQuantity()])->toBe([9, 7, 2])
+            ->and(\App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory::quantityToSend($product, $tiktok))->toBe(2)
+            ->and(\App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $channels['woo']->fresh()))->toBe(9)
+            ->and(\App\Actions\Dropshipping\Ebay\Product\UpdateEbayPortfolio::quantityToSend($product, $channels['ebay']->fresh()))->toBe(9);
+
+        $portfolio->updateQuietly(['last_stock_value' => 2, 'stock_last_updated_at' => now()->subHours(2), 'stock_last_fail_updated_at' => now()->addMinute()]);
+        expect($sweep->checkIfApplicable($portfolio->fresh(), $tiktok))->toBeFalse();
+
+        $stampedAt = $product->available_quantity_updated_at;
+        \Illuminate\Support\Carbon::setTestNow(now()->addMinutes(5));
+        $skos['in_stock']->updateQuietly(['quantity_available' => 0]);
+        $product = $hydrate();
+        expect([$product->available_quantity, $product->available_quantity_elsewhere, $product->homeAvailableQuantity()])->toBe([9, 9, 0])
+            ->and($product->available_quantity_updated_at->gt($stampedAt))->toBeTrue()
+            ->and(\App\Actions\Dropshipping\Tiktok\Product\UpdateTiktokInventory::quantityToSend($product, $tiktok))->toBe(0)
+            ->and($sweep->checkIfApplicable($portfolio->fresh(), $tiktok))->toBeTrue();
+
+        $portfolio->updateQuietly(['stock_last_fail_updated_at' => null, 'stock_last_updated_at' => now()->subMinute()]);
+        expect($sweep->checkIfApplicable($portfolio->fresh(), $tiktok))->toBeTrue();
+        $portfolio->updateQuietly(['last_stock_value' => 0]);
+        expect($sweep->checkIfApplicable($portfolio->fresh(), $tiktok))->toBeFalse();
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+    }
+});
+
+test('a stock change in another company re-hydrates the products of the shops that count it, and only those', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $orgPartner = ResolveCrossDispatch::direction($this->organisation->id, $dispatcher->id);
+    $theirSko   = fn (string $key) => OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos[$key]->stock_id)->sole();
+    $isHydrate  = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class);
+    $hydrated   = fn () => collect(\Illuminate\Support\Facades\Bus::dispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isHydrate))->map(fn ($job) => $job->getParameters()[0]->id)->unique()->sort()->values()->all();
+    $moveStock  = function (OrgStock $sko, float $quantity): void {
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($sko->organisation->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $sko, location: $location, modelData: ['quantity' => $quantity, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+    };
+
+    $otherShop = \App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, array_merge(\App\Models\Catalogue\Shop::factory()->definition(), ['type' => ShopTypeEnum::DROPSHIPPING]));
+    [, $otherProduct] = createProduct($otherShop);
+    $otherProduct->orgStocks()->sync([$skos['in_stock']->id => ['quantity' => 1]]);
+
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 0]]])]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+
+    try {
+        \Illuminate\Support\Facades\Bus::fake([$isHydrate]);
+
+        $moveStock($theirSko('in_stock'), 40);
+        $expected = collect([$products['in_stock']->id, $products['discontinued']->id, $products['two_skos']->id])->sort()->values()->all();
+        expect($hydrated())->toBe($expected);
+
+        $before = $hydrated();
+        \App\Actions\Inventory\OrgStock\UpdateOrgStock::make()->action($theirSko('at_zero'), ['state' => OrgStockStateEnum::DISCONTINUING]);
+        expect(array_values(array_diff($hydrated(), $before)))->toBe([$products['at_zero']->id]);
+
+        UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => false]);
+        $before = $hydrated();
+        $moveStock($theirSko('pack'), 40);
+        expect($hydrated())->toBe($before);
+
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Dispatching\CrossDispatch\UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $dispatcher, ['enabled' => true]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+        $second  = $theirSko('second');
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::run($second);
+        $cold = $queries;
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::run($second);
+        expect($cold)->toBe(1)
+            ->and($queries - $cold)->toBe(0)
+            ->and($hydrated())->toBe($before);
+    } finally {
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    }
+});
+
+test('the self-heal leaves a product that sells another company\'s stock alone while its home part is in sync', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]])]);
+    OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['in_stock']->stock_id)->sole()->updateQuietly(['quantity_available' => 11]);
+    $isHydrate = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class);
+    $hydrates  = fn (int $productId) => fn ($job) => $isHydrate($job) && $job->getParameters()[0]->id === $productId;
+
+    try {
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($this->organisation->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $skos['in_stock'], location: $location, modelData: ['quantity' => 2, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+        $product = $products['in_stock']->fresh();
+        expect((float) $skos['in_stock']->fresh()->quantity_available)->toBe(2.0)
+            ->and([$product->available_quantity, $product->available_quantity_elsewhere])->toBe([9, 7]);
+
+        \Illuminate\Support\Facades\Bus::fake([$isHydrate]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($skos['in_stock']->id);
+        \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $hydrates($products['in_stock']->id));
+        \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $hydrates($products['two_skos']->id));
+
+        $products['in_stock']->updateQuietly(['available_quantity_elsewhere' => 6]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations::run($skos['in_stock']->id);
+        \Illuminate\Support\Facades\Bus::assertDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $hydrates($products['in_stock']->id));
+    } finally {
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+    }
+});
+
+/**
+ * The in-stock product of the fixture selling the other company's stock: 2 at home, 9 shippable there after the margin.
+ *
+ * @return array{0: Product, 1: \App\Models\Dropshipping\CustomerSalesChannel}
+ */
+function pooledInStockProduct($test, array $products, array $skos, \App\Models\SysAdmin\Organisation $dispatcher, array $channels): array
+{
+    $test->shop->updateQuietly(['settings' => array_merge($test->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [['organisation_id' => $dispatcher->id, 'safety_margin' => 2]]])]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    $skos['in_stock']->updateQuietly(['quantity_available' => 2]);
+    OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['in_stock']->stock_id)->sole()->updateQuietly(['quantity_available' => 11]);
+    $product = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['in_stock']->fresh())->fresh();
+    expect([$product->available_quantity, $product->available_quantity_elsewhere])->toBe([9, 7])
+        ->and(\App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio::quantityToSend($product, $channels['woo']->fresh()))->toBe(9);
+
+    return [$product, $channels['woo']->fresh()];
+}
+
+test('removing the other warehouse from the shop re-hydrates its products, and they drop to the home figure', function () {
+    [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, 'none');
+    [$product, $woo] = pooledInStockProduct($this, $products, $skos, $dispatcher, $channels);
+    $isShopHydrate = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses::class);
+
+    try {
+        \Illuminate\Support\Carbon::setTestNow(now()->addMinutes(5));
+        \Illuminate\Support\Facades\Bus::fake([$isShopHydrate]);
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['stock_from_other_warehouses' => []]);
+        $dispatched = \Illuminate\Support\Facades\Bus::dispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isShopHydrate);
+        expect($dispatched)->toHaveCount(1)
+            ->and($dispatched->first()->getParameters()[0]->id)->toBe($this->shop->id)
+            ->and($products['in_stock']->fresh()->available_quantity)->toBe(9);
+
+        expect(\App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses::run($this->shop->fresh()))->toBe(Product::where('shop_id', $this->shop->id)->count());
+        $healed = $products['in_stock']->fresh();
+        expect([$healed->available_quantity, $healed->available_quantity_elsewhere])->toBe([2, 0])
+            ->and($healed->available_quantity_updated_at->gt($product->available_quantity_updated_at))->toBeTrue()
+            ->and(\App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio::quantityToSend($healed, $woo))->toBe(2);
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+    }
+});
+
+test('a direction switched off at either side, or its customs crossing taken back, re-hydrates the shops that count it', function () {
+    [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, 'none');
+    $orgPartner = ResolveCrossDispatch::direction($this->organisation->id, $dispatcher->id);
+    $homeCountry       = ResolveCrossDispatch::warehouseCountryCode($this->organisation);
+    $dispatcherCountry = ResolveCrossDispatch::warehouseCountryCode($dispatcher);
+
+    try {
+        foreach ([[$dispatcher, ['enabled' => false]], [$this->organisation, ['enabled' => false]], [$this->organisation, ['allow_customs_crossing' => false]]] as [$side, $change]) {
+            shipsFromCountry($this->organisation, 'ES');
+            shipsFromCountry($dispatcher, 'GB');
+            foreach ([$this->organisation, $dispatcher] as $eachSide) {
+                UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $eachSide, ['enabled' => true]);
+            }
+            UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $this->organisation, ['allow_customs_crossing' => true]);
+            [$product, $woo] = pooledInStockProduct($this, $products, $skos, $dispatcher, $channels);
+
+            \Illuminate\Support\Carbon::setTestNow(now()->addMinutes(5));
+            UpdateCrossDispatchSettings::make()->action($orgPartner->refresh(), $side, $change);
+            $healed = $products['in_stock']->fresh();
+            expect([$healed->available_quantity, $healed->available_quantity_elsewhere])->toBe([2, 0])
+                ->and($healed->available_quantity_updated_at->gt($product->available_quantity_updated_at))->toBeTrue()
+                ->and(\App\Actions\Dropshipping\WooCommerce\Product\UpdateWooCustomerSalesChannelPortfolio::quantityToSend($healed, $woo))->toBe(2);
+        }
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+        $homeCountry && shipsFromCountry($this->organisation, $homeCountry);
+        $dispatcherCountry && shipsFromCountry($dispatcher, $dispatcherCountry);
+    }
+});
+
+test('the nightly reconcile heals a product left selling stock from elsewhere, and queues nothing once none is left', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $products['at_zero']->updateQuietly(['available_quantity' => 9, 'available_quantity_elsewhere' => 9, 'status' => \App\Enums\Catalogue\Product\ProductStatusEnum::FOR_SALE]);
+
+    $this->artisan('products:hydrate-stock-from-other-warehouses')->assertExitCode(0);
+    $healed = $products['at_zero']->fresh();
+    expect([$healed->available_quantity, $healed->available_quantity_elsewhere, $healed->status->value])->toBe([0, 0, 'out-of-stock']);
+
+    $isHydrate = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class);
+    \Illuminate\Support\Facades\Bus::fake([$isHydrate]);
+    expect(\App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses::run())->toBe(0);
+    \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isHydrate);
+});
+
+test('a malformed entry in a shop\'s list is skipped and never breaks a stock movement', function () {
+    [$products, $skos, $dispatcher] = otherWarehouseStockFixture($this, 'none');
+    $this->shop->updateQuietly(['settings' => array_merge($this->shop->fresh()->settings ?? [], ['stock_from_other_warehouses' => [
+        ['safety_margin' => 1], ['organisation_id' => 'abc', 'safety_margin' => 1], 'junk', ['organisation_id' => $dispatcher->id], ['organisation_id' => (string) $dispatcher->id, 'safety_margin' => 0],
+    ]])]);
+    \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+
+    try {
+        expect($this->shop->fresh()->stockFromOtherWarehouses())->toBe([['organisation_id' => $dispatcher->id, 'safety_margin' => 0]]);
+
+        $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['at_zero']->stock_id)->sole();
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($dispatcher->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $theirSko, location: $location, modelData: ['quantity' => 7, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+        expect((float) $theirSko->fresh()->quantity_in_locations)->toBe(7.0)
+            ->and($products['at_zero']->fresh()->available_quantity)->toBe(7);
+    } finally {
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+        \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['at_zero']->fresh());
+    }
+});
+
+test('a closed shop counts no other warehouse, and a type or state change re-hydrates a shop that lists one', function () {
+    [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, 'none');
+    pooledInStockProduct($this, $products, $skos, $dispatcher, $channels);
+    $isShopHydrate = fn ($job) => $job instanceof \Lorisleiva\Actions\Decorators\JobDecorator && $job->decorates(\App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses::class);
+    $state         = $this->shop->fresh()->state;
+
+    try {
+        $this->shop->updateQuietly(['state' => \App\Enums\Catalogue\Shop\ShopStateEnum::CLOSED]);
+        expect($this->shop->fresh()->stockFromOtherWarehouses())->toBe([])
+            ->and(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['in_stock']->fresh())->fresh()->available_quantity_elsewhere)->toBe(0);
+        $this->shop->updateQuietly(['state' => $state]);
+
+        \Illuminate\Support\Facades\Bus::fake();
+        \App\Actions\Catalogue\Shop\UpdateShop::make()->action($this->shop->fresh(), ['type' => ShopTypeEnum::B2B]);
+        expect(\Illuminate\Support\Facades\Bus::dispatched(\App\Jobs\BoundedUniqueUntilProcessingJobDecorator::class, $isShopHydrate)->map(fn ($job) => $job->getParameters()[0]->id)->all())->toBe([$this->shop->id]);
+    } finally {
+        $this->shop->updateQuietly(['type' => ShopTypeEnum::DROPSHIPPING, 'state' => $state, 'settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    }
+});
+
+test('a failing lookup of the shops counting another company never breaks the stock move around it, and a failing count elsewhere falls back to home', function () {
+    [$products, $skos, $dispatcher, $channels] = otherWarehouseStockFixture($this, 'none');
+    $theirSko = OrgStock::where('organisation_id', $dispatcher->id)->where('stock_id', $skos['pack']->stock_id)->sole();
+
+    try {
+        \Illuminate\Support\Facades\Cache::put(\App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::LISTING_SHOPS_CACHE_KEY, [$dispatcher->id => ['not-a-shop-id']], now()->addMinute());
+        $location = \App\Actions\Inventory\Location\StoreLocation::make()->action($dispatcher->warehouses()->first(), \App\Models\Inventory\Location::factory()->definition());
+        DB::transaction(function () use ($theirSko, $location) {
+            \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action(orgStock: $theirSko, location: $location, modelData: ['quantity' => 7, 'type' => \App\Enums\Inventory\LocationStock\LocationStockTypeEnum::PICKING, 'fetched_at' => now()], strict: false);
+            $theirSko->refresh()->updateQuietly(['note_to_pickers' => 'moved']);
+        });
+        expect((float) $theirSko->fresh()->quantity_in_locations)->toBe(7.0)
+            ->and($theirSko->fresh()->note_to_pickers)->toBe('moved');
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+
+        pooledInStockProduct($this, $products, $skos, $dispatcher, $channels);
+        $this->mock(ResolveCrossDispatch::class)->shouldReceive('wholeProductsIn')->andThrow(new RuntimeException('broken'));
+        $product = \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::run($products['in_stock']->fresh())->fresh();
+        expect([$product->available_quantity, $product->available_quantity_elsewhere])->toBe([2, 0]);
+    } finally {
+        app()->forgetInstance(ResolveCrossDispatch::class);
+        $this->shop->updateQuietly(['settings' => \Illuminate\Support\Arr::except($this->shop->fresh()->settings ?? [], 'stock_from_other_warehouses')]);
+        \App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+    }
+});

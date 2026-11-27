@@ -44,7 +44,7 @@ class RepairProductsFirstAvailableAt
             return;
         }
 
-        if ($this->isNotLaunched($product)) {
+        if ($this->isNotLaunched($product) || $product->isStockedOnlyElsewhere()) {
             return;
         }
 

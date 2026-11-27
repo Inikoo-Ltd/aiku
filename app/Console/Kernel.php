@@ -814,6 +814,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('products:hydrate-stock-from-other-warehouses')->dailyAt('02:15')->timezone('UTC')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'HydrateProductsStockFromOtherWarehouses',
+                ),
+                name: 'HydrateProductsStockFromOtherWarehouses',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('tiktok:sync-fulfilment-orders')->dailyAt('03:30')->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'SyncTiktokFulfilmentOrderStatus',
                 ),

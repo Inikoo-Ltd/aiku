@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\CrossDispatch;
 
+use App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses;
 use App\Actions\Dispatching\CrossDispatch\UI\IndexCrossDispatchSettings;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -67,7 +68,13 @@ class UpdateCrossDispatchSettings extends OrgAction
                 return $orgPartner;
             }
 
-            return $this->update($orgPartner, ['data' => ['cross_dispatch' => $changes]], ['data']);
+            $orgPartner = $this->update($orgPartner, ['data' => ['cross_dispatch' => $changes]], ['data']);
+
+            if (array_intersect_key($changes, array_flip(['enabled_by_origin', 'enabled_by_dispatcher', 'allow_customs_crossing']))) {
+                DB::afterCommit(fn () => HydrateProductsStockFromOtherWarehouses::dispatchForShopsListing($orgPartner->organisation_id, $orgPartner->partner_id));
+            }
+
+            return $orgPartner;
         });
     }
 

@@ -37,6 +37,7 @@ use App\Enums\Catalogue\Review\ReviewValidationScopeEnum;
 use App\Models\Reviews\ReviewRatingLabel;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
@@ -944,6 +945,27 @@ class EditShop extends OrgAction
                             'label'       => __('Enable packaging & inserts'),
                             'value'       => $shop->hasPackagingAndInserts(),
                             'information' => __('Lets customers choose packaging and add printed inserts to an order. While off, none of it is shown or required: no packaging preferences, no insert add-ons at checkout, no packaging or insert columns in the warehouse, and delivery notes are never held back for unprinted inserts.'),
+                        ],
+                    ],
+                ] : [],
+
+                $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                    'label'  => __('Stock from other warehouses'),
+                    'icon'   => 'fa-light fa-warehouse',
+                    'fields' => [
+                        'stock_from_other_warehouses' => [
+                            'type'        => 'stock_from_other_warehouses',
+                            'label'       => __('Warehouses of other companies'),
+                            'information' => __('Products out of stock here can be sold from these warehouses when they hold the same product in the same pack. The safety margin is the number of SKOs kept back in each warehouse. Only companies that switched cross dispatch on for this company, on both sides, can be added.'),
+                            'warning'     => UpdateShop::STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE ? null : UpdateShop::stockFromOtherWarehousesNotLiveMessage(),
+                            'readonly'    => !UpdateShop::STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE,
+                            'full'        => true,
+                            'value'       => Arr::get($shop->settings, 'stock_from_other_warehouses') ?? [],
+                            'options'     => $shop->crossDispatchDirections()->load('partner')->map(fn ($direction) => [
+                                'organisation_id' => $direction->partner_id,
+                                'name'            => $direction->partner->name,
+                                'enabled'         => $direction->isCrossDispatchEnabled(),
+                            ])->values()->all(),
                         ],
                     ],
                 ] : [],

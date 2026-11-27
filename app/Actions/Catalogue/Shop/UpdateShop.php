@@ -9,11 +9,14 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Ordering\Order\CheckClaimCompensation;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops;
+use App\Actions\Catalogue\Product\Hydrators\HydrateProductsStockFromOtherWarehouses;
 use App\Actions\CRM\Appointment\Zoom\ZoomClient;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\ZentradaWebApi;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 use App\Actions\CRM\Appointment\Widget\EnableShopAppointmentWidget;
 use App\Actions\Chat\Widget\EnableShopChatWidget;
@@ -111,14 +114,27 @@ class UpdateShop extends OrgAction
         'reply_hours'          => 'int',
     ];
 
+    /**
+     * INI-485: a shop may not count other warehouses until orders can be sent there (step 7) and management decides to go live.
+     */
+    public const bool STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE = false;
+
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        if (!self::STOCK_FROM_OTHER_WAREHOUSES_IS_LIVE && !empty($this->get('stock_from_other_warehouses'))) {
+            $validator->errors()->add('stock_from_other_warehouses', self::stockFromOtherWarehousesNotLiveMessage());
+        }
+
         if (!$this->asAction && collect(array_keys(self::CLAIM_SETTINGS))->contains(fn (string $setting) => $request->has("claims_$setting")) && !$request->user()->authTo('org-admin.' . $this->shop->organisation_id)) {
             $validator->errors()->add('claims_self_service', __('Only organisation admins can change the claim settings.'));
         }
 
         if (!$this->asAction && $request->has('faire_order_from_days') && !$request->user()->authTo('org-admin.' . $this->shop->organisation_id)) {
             $validator->errors()->add('faire_order_from_days', __('Only organisation admins can change the days to dispatch.'));
+        }
+
+        if (!$this->asAction && $request->has('stock_from_other_warehouses') && !$request->user()->authTo(['organisations.edit', 'org-admin.' . $this->shop->organisation_id])) {
+            $validator->errors()->add('stock_from_other_warehouses', __('Only organisation admins can change which warehouses of other companies this shop counts.'));
         }
     }
 
@@ -133,6 +149,7 @@ class UpdateShop extends OrgAction
         $originalEnableChat              = Arr::get($shop->settings ?? [], 'chat.enable_chat');
         $originalChatEnabled             = (bool) Arr::get($shop->settings ?? [], 'chat.enabled', ShopPermissionsEnum::shopHasChat($shop));
 
+        $originalStockFromOtherWarehouses   = Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings ?? [], 'stock_from_other_warehouses'));
         $originalPackagingAndInsertsEnabled = (bool) Arr::get($shop->settings ?? [], 'packaging_and_inserts.enabled', false);
 
         /* Read off the shop rather than the payload because the two callers name these
@@ -291,6 +308,13 @@ class UpdateShop extends OrgAction
 
         if (Arr::has($modelData, 'packaging_and_inserts_enabled')) {
             data_set($modelData, 'settings.packaging_and_inserts.enabled', (bool) Arr::pull($modelData, 'packaging_and_inserts_enabled'));
+        }
+
+        if (Arr::has($modelData, 'stock_from_other_warehouses')) {
+            data_set($modelData, 'settings.stock_from_other_warehouses', array_map(
+                fn (array $entry) => ['organisation_id' => (int) $entry['organisation_id'], 'safety_margin' => (int) $entry['safety_margin']],
+                array_values(Arr::pull($modelData, 'stock_from_other_warehouses') ?? [])
+            ));
         }
 
         foreach (self::zentradaSettingFields() as $field => $cast) {
@@ -872,6 +896,15 @@ class UpdateShop extends OrgAction
         }
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
+
+        if (Arr::has($modelData, 'settings.stock_from_other_warehouses')) {
+            DB::afterCommit(function () use ($shop, $originalStockFromOtherWarehouses) {
+                OrgStockHydrateProductsInOtherShops::forgetShopsListing();
+                if (Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings, 'stock_from_other_warehouses')) != $originalStockFromOtherWarehouses) {
+                    HydrateProductsStockFromOtherWarehouses::dispatch($shop);
+                }
+            });
+        }
         $changes = $shop->getChanges();
         $shop->refresh();
 
@@ -930,6 +963,9 @@ class UpdateShop extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['state', 'type'])) {
+            if (Shop::wellFormedStockFromOtherWarehouses(Arr::get($shop->settings, 'stock_from_other_warehouses')) || $shop->products()->whereRaw('available_quantity_elsewhere > 0')->exists()) {
+                DB::afterCommit(fn () => HydrateProductsStockFromOtherWarehouses::dispatch($shop));
+            }
             GroupHydrateShops::dispatch($shop->group)->delay($this->hydratorsDelay);
             OrganisationHydrateShops::dispatch($shop->organisation)->delay($this->hydratorsDelay);
             if ($shop->master_shop_id) {
@@ -1442,11 +1478,35 @@ class UpdateShop extends OrgAction
             $rules['display_currencies.*'] = ['string', Rule::in([...Shop::currencyCodesWithExchangeRate(), $this->shop->currency->code])];
         }
 
+        if ($this->has('stock_from_other_warehouses')) {
+            $rules['stock_from_other_warehouses']                   = [$this->shop->type === ShopTypeEnum::DROPSHIPPING ? 'nullable' : 'prohibited', 'array'];
+            $rules['stock_from_other_warehouses.*']                 = ['array'];
+            $rules['stock_from_other_warehouses.*.organisation_id'] = ['required', 'integer', 'distinct', Rule::in($this->shop->crossDispatchDirections()->filter->isCrossDispatchEnabled()->keys()->all())];
+            $rules['stock_from_other_warehouses.*.safety_margin']   = ['required', 'integer', 'min:0'];
+        }
+
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
+    }
+
+    public static function stockFromOtherWarehousesNotLiveMessage(): string
+    {
+        return __('Not available yet: orders cannot be sent to another warehouse until dispatch from other warehouses is finished.');
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'stock_from_other_warehouses.prohibited'                => __('Only dropshipping shops can count the stock of other warehouses.'),
+            'stock_from_other_warehouses.*.organisation_id.in'       => __('This warehouse does not ship for this shop: both companies have to switch the direction on in Cross dispatch first.'),
+            'stock_from_other_warehouses.*.organisation_id.distinct' => __('This warehouse is listed twice.'),
+            'stock_from_other_warehouses.*.safety_margin.required'   => __('Type how many SKOs to keep back, 0 for none.'),
+            'stock_from_other_warehouses.*.safety_margin.integer'    => __('The safety margin is a whole number of SKOs, 0 or more.'),
+            'stock_from_other_warehouses.*.safety_margin.min'        => __('The safety margin is a whole number of SKOs, 0 or more.'),
+        ];
     }
 
     /**

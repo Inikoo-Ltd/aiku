@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateProductsInOtherShops;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
@@ -126,6 +127,10 @@ class UpdateOrgStock extends OrgAction
         if (Arr::has($changes, 'is_excluded_from_auto_ordering')) {
             OrganisationHydrateOrgStocks::dispatch($orgStock->organisation);
             GroupHydrateOrgStocks::dispatch($orgStock->group);
+        }
+
+        if (Arr::hasAny($changes, ['state', 'packed_in', 'sku_commercial_value'])) {
+            OrgStockHydrateProductsInOtherShops::run($orgStock);
         }
 
         if (Arr::hasAny($changes, ['is_on_demand'])) {

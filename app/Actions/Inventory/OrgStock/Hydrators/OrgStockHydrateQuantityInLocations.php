@@ -126,13 +126,14 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             foreach ($orgStock->products()->with(['group', 'organisation', 'shop', 'family', 'webpage', 'asset', 'orgStocks'])->get() as $product) {
                 ProductHydrateAvailableQuantity::dispatch($product);
             }
+            OrgStockHydrateProductsInOtherShops::run($orgStock);
 
             OrgStockHydrateStockValue::dispatch($orgStock);
         } elseif (!$orgStock->is_on_demand) {
             $outOfSyncProducts = $orgStock->products()
                 ->where('product_has_org_stocks.quantity', '>', 0)
                 ->whereRaw(
-                    'products.available_quantity is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
+                    '(products.available_quantity - products.available_quantity_elsewhere) is distinct from '.ProductHydrateAvailableQuantity::wholeProductsSql('?::numeric'),
                     [$quantityAvailable, $quantityAvailable]
                 )->get();
 

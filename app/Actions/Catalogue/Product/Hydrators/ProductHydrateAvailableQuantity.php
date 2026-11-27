@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\Hydrators;
 
 use App\Actions\Catalogue\Product\UpdateProduct;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Traits\AsUniqueUntilProcessingAction;
 use App\Actions\Traits\WithEnumStats;
@@ -17,6 +18,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Events\BroadcastProductAvailability;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Database\Query\Builder;
@@ -28,6 +30,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
     use WithEnumStats;
 
     public string $jobQueue = 'stock-control';
+
+    /** @var array<int, array<int, array{0: Organisation|null, 1: int}>> */
+    private array $otherWarehousesByShop = [];
+
+    private ?ResolveCrossDispatch $resolver = null;
+
+    private bool $preloadOtherWarehouses = false;
 
     /** Storefronts read a stock of 250 or more as "Unlimited quantity available". */
     public const int ON_DEMAND_QUANTITY = 250;
@@ -96,8 +105,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             $wasAvailable = $product->available_quantity > 0;
             $product      = UpdateProduct::run($product, [
-                'available_quantity' => null,
-                'status'             => ProductStatusEnum::DISCONTINUED,
+                'available_quantity'           => null,
+                'available_quantity_elsewhere' => 0,
+                'status'                       => ProductStatusEnum::DISCONTINUED,
             ]);
             if ($wasAvailable) {
                 SyncBasketLinesWithProductStock::dispatch($product);
@@ -107,7 +117,9 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
         }
 
 
-        $currentQuantity = $product->available_quantity;
+        $currentQuantity          = $product->available_quantity;
+        $currentHomeQuantity      = ($currentQuantity ?? 0) - $product->available_quantity_elsewhere;
+        $neverStockedOnlyElsewhere = $product->available_quantity_elsewhere > 0 && $currentHomeQuantity <= 0 && !$product->first_in_stock_at && !$product->first_available_at;
 
         $numberOrgStocksChecked                 = 0;
         $numberOrgStocksHasNeverBeenInWarehouse = 0;
@@ -146,16 +158,22 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
         }
 
 
+        $homeQuantity       = $availableQuantity;
+        $quantityElsewhere  = $onDemand ? 0 : rescue(fn () => $this->quantityElsewhere($product, $homeQuantity), 0);
+        $availableQuantity += $quantityElsewhere;
+
         $dataToUpdate = [
-            'available_quantity' => $availableQuantity,
-            'is_on_demand'       => $onDemand
+            'available_quantity'           => $availableQuantity,
+            'available_quantity_elsewhere' => $quantityElsewhere,
+            'is_on_demand'                 => $onDemand
         ];
 
         if ($currentQuantity == 0 && $availableQuantity > 0) {
             $dataToUpdate['back_in_stock_since'] = now();
-            if ($product->status === ProductStatusEnum::COMING_SOON) {
-                $dataToUpdate['first_in_stock_at'] = now();
-            }
+        }
+
+        if ($currentHomeQuantity <= 0 && $homeQuantity > 0 && ($product->status === ProductStatusEnum::COMING_SOON || $neverStockedOnlyElsewhere)) {
+            $dataToUpdate['first_in_stock_at'] = now();
         }
 
         if (in_array($product->status, [
@@ -198,10 +216,43 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
         return $product;
     }
 
+    /**
+     * INI-485 D2. What the best single other warehouse the shop counts could ship beyond the home figure: a line is never
+     * split between warehouses, so the figure is the larger of home and that warehouse, never their sum.
+     */
+    private function quantityElsewhere(Product $product, int $homeQuantity): int
+    {
+        $otherWarehouses = $this->otherWarehousesByShop[$product->shop_id] ??= array_map(
+            fn (array $entry) => [Organisation::find($entry['organisation_id']), $entry['safety_margin']],
+            $product->shop->stockFromOtherWarehouses()
+        );
+
+        $best = $homeQuantity;
+        foreach ($otherWarehouses as [$organisation, $safetyMargin]) {
+            if ($organisation) {
+                if ($this->preloadOtherWarehouses) {
+                    $this->resolver()->preloadOrgStocksOf($organisation);
+                }
+                $best = max($best, $this->resolver()->wholeProductsIn($product, $organisation, $safetyMargin) ?? 0);
+            }
+        }
+
+        return $best - $homeQuantity;
+    }
+
+    private function resolver(): ResolveCrossDispatch
+    {
+        return $this->resolver ??= ResolveCrossDispatch::make();
+    }
+
     public string $commandSignature = 'product:hydrate-available-quantity {id?} {--shop=* : Shop slugs, all aiku shops when omitted}';
 
     public function asCommand(Command $command): void
     {
+        $this->otherWarehousesByShop  = [];
+        $this->resolver               = null;
+        $this->preloadOtherWarehouses = false;
+
         if ($command->argument('id')) {
             if (is_numeric($command->argument('id'))) {
                 $product = Product::findOrFail($command->argument('id'));
@@ -213,6 +264,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
 
             return;
         }
+
+        $this->preloadOtherWarehouses = true;
 
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
@@ -238,6 +291,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
         $progressBar->start();
 
         Product::whereIn('shop_id', $aikuShops)->chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+            $this->resolver = null;
             foreach ($products as $product) {
                 $this->handle($product);
                 $count++;

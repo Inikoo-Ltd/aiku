@@ -9,6 +9,7 @@
 namespace App\Models\Catalogue;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Dispatching\CrossDispatch\ResolveCrossDispatch;
 use App\Actions\Catalogue\Shop\Traits\WithAnkorstoreApi;
 use App\Actions\Catalogue\Shop\Traits\WithFaireApi;
 use App\Actions\Catalogue\Shop\Traits\WithOrderchampApi;
@@ -88,6 +89,7 @@ use App\Models\Ordering\CheckoutAbandonment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\ShippingCountry;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Ordering\Transaction;
 use App\Models\Reviews\Review;
 use App\Models\Reviews\ShopReviewStat;
@@ -1043,6 +1045,75 @@ class Shop extends Model implements HasMedia, Auditable
     public function customersChooseChannelLanguage(): bool
     {
         return (bool) Arr::get($this->settings, 'channel_languages');
+    }
+
+    /**
+     * INI-485. The other companies whose warehouse stock this dropshipping shop may count, in the order the shop lists
+     * them, each with the SKOs kept back there. A company counts only while its cross dispatch direction for this shop's
+     * company is on at both sides. Nothing is read when the shop lists none.
+     *
+     * @return list<array{organisation_id: int, safety_margin: int}>
+     */
+    public function stockFromOtherWarehouses(): array
+    {
+        $listed = self::wellFormedStockFromOtherWarehouses(Arr::get($this->settings, 'stock_from_other_warehouses'));
+        if (!$listed || $this->type !== ShopTypeEnum::DROPSHIPPING || $this->state === ShopStateEnum::CLOSED) {
+            return [];
+        }
+
+        $directions = $this->crossDispatchDirections();
+
+        return array_values(array_filter(
+            $listed,
+            fn (array $entry) => $directions->get($entry['organisation_id'])?->isCrossDispatchEnabled()
+                && $this->customsAllowsStockFrom($directions->get($entry['organisation_id']))
+        ));
+    }
+
+    /**
+     * The entries of a stored stock_from_other_warehouses list that name a company and a margin, as integers; anything
+     * else written there by hand is skipped, so bad settings never break a stock movement.
+     *
+     * @return list<array{organisation_id: int, safety_margin: int}>
+     */
+    public static function wellFormedStockFromOtherWarehouses(mixed $listed): array
+    {
+        $entries = [];
+        foreach (is_array($listed) ? $listed : [] as $entry) {
+            $organisationId = is_array($entry) ? filter_var($entry['organisation_id'] ?? null, FILTER_VALIDATE_INT) : false;
+            $safetyMargin   = is_array($entry) ? filter_var($entry['safety_margin'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) : false;
+            if ($organisationId !== false && $safetyMargin !== false) {
+                $entries[] = ['organisation_id' => $organisationId, 'safety_margin' => $safetyMargin];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * INI-485 D3: a company's stock counts only when its warehouse is in the same customs territory as this shop's home
+     * warehouse, unless the pair of companies allows parcels to cross customs.
+     */
+    public function customsAllowsStockFrom(OrgPartner $direction): bool
+    {
+        return $direction->crossDispatchSettings()['allow_customs_crossing']
+            || !ResolveCrossDispatch::crossesCustomsBorderBetween(
+                ResolveCrossDispatch::warehouseCountryCode($direction->partner),
+                ResolveCrossDispatch::warehouseCountryCode($this->organisation)
+            );
+    }
+
+    /**
+     * The cross dispatch directions from this shop's company to each other company, keyed by that company's id.
+     *
+     * @return LaravelCollection<int, OrgPartner>
+     */
+    public function crossDispatchDirections(): LaravelCollection
+    {
+        return OrgPartner::where('organisation_id', $this->organisation_id)
+            ->whereColumn('partner_id', '!=', 'organisation_id')
+            ->get()
+            ->keyBy('partner_id');
     }
 
     /**

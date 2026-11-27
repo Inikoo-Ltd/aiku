@@ -383,7 +383,7 @@ class UpdateProduct extends OrgAction
             SyncBasketLinesWithProductStock::dispatch($product);
         }
 
-        if (Arr::has($changed, 'available_quantity')) {
+        if (Arr::hasAny($changed, ['available_quantity', 'available_quantity_elsewhere'])) {
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
             ]);
