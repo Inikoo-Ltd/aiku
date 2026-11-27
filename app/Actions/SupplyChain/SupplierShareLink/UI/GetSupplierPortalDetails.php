@@ -115,36 +115,58 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * The owner of AW, so the supplier can always write to the top.
+     * The owner of AW, so the supplier can always write to the top. When the owner is the supplier's relationship
+     * contact, this card carries the Main label instead of a second card for the same person.
      *
-     * @return array{name: string|null, email: string|null}|null
+     * @return array{name: string|null, email: string|null, is_main: bool}|null
      */
     public function owner(Supplier $supplier): ?array
     {
         $owner = DB::table('users')
             ->where('group_id', $supplier->group_id)
             ->where('username', self::OWNER_USERNAME)
-            ->select('users.contact_name as name')
+            ->select('users.id', 'users.contact_name as name')
             ->first();
 
-        return $owner ? ['name' => $owner->name, 'email' => self::OWNER_EMAIL] : null;
+        return $owner ? [
+            'name'    => $owner->name,
+            'email'   => self::OWNER_EMAIL,
+            'is_main' => (int) $owner->id === (int) $supplier->relationship_contact_user_id,
+        ] : null;
+    }
+
+    private function ownerUserId(Supplier $supplier): ?int
+    {
+        $id = DB::table('users')
+            ->where('group_id', $supplier->group_id)
+            ->where('username', self::OWNER_USERNAME)
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 
     /**
      * The purchasing contacts the supplier sees on its portal. The supplier's relationship contact is flagged is_main,
-     * and added when no organisation lists them.
+     * and added when no organisation lists them. The owner always has its own card (owner()), which carries the Main
+     * label when the owner is the relationship contact, so the owner is never flagged or added here.
      *
      * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null, is_main: bool}>
      */
     private function buyers(Supplier $supplier): array
     {
+        $mainUserId = $supplier->relationship_contact_user_id ? (int) $supplier->relationship_contact_user_id : null;
+
+        if ($mainUserId !== null && $mainUserId === $this->ownerUserId($supplier)) {
+            $mainUserId = null;
+        }
+
         return $this->purchasingContacts($supplier)
             ->map(fn (array $contact) => [
                 ...Arr::except($contact, 'user_id'),
-                'is_main' => $contact['user_id'] === (int) $supplier->relationship_contact_user_id,
+                'is_main' => $contact['user_id'] === $mainUserId,
             ])
             ->when(
-                $supplier->relationship_contact_user_id,
+                $mainUserId,
                 fn ($contacts) => $contacts->contains('is_main', true) ? $contacts : $contacts->push(...$this->relationshipContactOutsideBuyers($supplier))
             )
             ->all();
@@ -226,11 +248,12 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * A staff member's work email when HR has one, otherwise the email of their user.
+     * A staff member's work email when HR has one, otherwise the email of their user. The owner always shows
+     * OWNER_EMAIL: his user email is a personal address that suppliers must not see.
      */
     private function emailSql(): string
     {
-        return "coalesce((select nullif(employees.work_email, '') from user_has_models join employees on employees.id = user_has_models.model_id where user_has_models.user_id = users.id and user_has_models.model_type = 'Employee' and user_has_models.status order by employees.work_email is null limit 1), nullif(users.email, ''))";
+        return "case when users.username = '".self::OWNER_USERNAME."' then '".self::OWNER_EMAIL."' else coalesce((select nullif(employees.work_email, '') from user_has_models join employees on employees.id = user_has_models.model_id where user_has_models.user_id = users.id and user_has_models.model_type = 'Employee' and user_has_models.status order by employees.work_email is null limit 1), nullif(users.email, '')) end";
     }
 
     /**

@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faTimes, faUserTie, faExclamationTriangle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { ctrans } from "@/Composables/useTrans"
+import { ctrans, ctransChoice } from "@/Composables/useTrans"
 
 library.add(faCheck, faTimes, faUserTie, faExclamationTriangle)
 
@@ -73,8 +73,8 @@ async function save(relationshipContactUserId: number | null) {
             relationship_contact_user_id: relationshipContactUserId,
         })
         success.value = relationshipContactUserId
-            ? ctrans("Relationship contact set on :count suppliers", { count: response.data.updated })
-            : ctrans("Relationship contact cleared on :count suppliers", { count: response.data.updated })
+            ? ctransChoice("Relationship contact set on :count supplier|Relationship contact set on :count suppliers", response.data.updated)
+            : ctransChoice("Relationship contact cleared on :count supplier|Relationship contact cleared on :count suppliers", response.data.updated)
         isDialogOpen.value = false
         emits("saved")
     } catch (exception: any) {
@@ -103,7 +103,7 @@ async function save(relationshipContactUserId: number | null) {
         <Dialog
             v-model:visible="isDialogOpen"
             modal
-            :header="ctrans('Set relationship contact of :count suppliers', { count: selectedIds.length })"
+            :header="ctransChoice('Set relationship contact of :count supplier|Set relationship contact of :count suppliers', selectedIds.length)"
             :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
             :draggable="false"
         >
@@ -134,7 +134,7 @@ async function save(relationshipContactUserId: number | null) {
                                         <div class="font-semibold text-gray-800">{{ option.label }}</div>
                                         <div v-if="option.organisations.length" class="truncate text-gray-500">{{ option.organisations.join(" · ") }}</div>
                                     </div>
-                                    <span class="shrink-0 tabular-nums text-gray-500">{{ ctrans(":count of :total suppliers", { count: option.suppliers_count, total: suppliersCount }) }}</span>
+                                    <span class="shrink-0 tabular-nums text-gray-500">{{ ctransChoice(":listed of :total supplier|:listed of :total suppliers", suppliersCount, { listed: String(option.suppliers_count), total: String(suppliersCount) }) }}</span>
                                 </div>
                             </template>
                         </Select>
@@ -142,7 +142,7 @@ async function save(relationshipContactUserId: number | null) {
                     <p class="text-xs text-gray-500">{{ ctrans("The contacts shown on these suppliers' portals, or David Hardy and Tomas Belan. The portal labels the chosen one Main.") }}</p>
                     <div v-if="skippedCount > 0" class="flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                         <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 text-amber-500" fixed-width aria-hidden="true" />
-                        {{ ctrans(":count suppliers do not show :name on their portal and are left as they are", { count: skippedCount, name: selectedOption?.label ?? "" }) }}
+                        {{ ctransChoice(":count supplier does not show :name on its portal and is left as it is|:count suppliers do not show :name on their portal and are left as they are", skippedCount, { name: selectedOption?.label ?? "" }) }}
                     </div>
                     <button
                         type="button"

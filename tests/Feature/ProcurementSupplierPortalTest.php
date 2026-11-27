@@ -8,6 +8,10 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\SupplyChain\SupplierProduct\SyncSupplierProductTradeUnits;
 use App\Actions\SupplyChain\SupplierShareLink\StoreSupplierShareLink;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalSummary;
+use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalDetails;
+use App\Actions\SysAdmin\Guest\StoreGuest;
+use App\Models\SysAdmin\Guest;
+use App\Models\SysAdmin\User;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductAvailabilityStatusEnum;
@@ -340,6 +344,60 @@ test('the supplier page lists the terms purchasing shared and who buys from it',
         ->and($orders[$purchaseOrder->reference]['labels']['sko'])->toContain('purchase-order-labels/'.$purchaseOrder->id)->toContain('levels=sko')
         ->and($orders[$received->reference]['labels'])->toBeNull();
     $this->get($orders[$purchaseOrder->reference]['labels']['sko'])->assertStatus(404);
+});
+
+test('INI-539 the owner as relationship contact gets the Main label on his own card, never a second card, and suppliers never see his personal email', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $buyer                = $this->adminGuest->getUser();
+    $purchaseOrder        = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly(['submitted_at' => now(), 'buyer_id' => $buyer->id]);
+
+    $owner = User::where('group_id', $this->group->id)->where('username', GetSupplierPortalDetails::OWNER_USERNAME)->first()
+        ?? StoreGuest::make()->action($this->group, array_merge(Guest::factory()->definition(), [
+            'user'      => ['username' => GetSupplierPortalDetails::OWNER_USERNAME, 'password' => 'password'],
+            'positions' => [],
+        ]))->getUser();
+    $owner->updateQuietly(['status' => true, 'email' => 'owner.personal@gmail.com']);
+    Auth::logout();
+
+    $contacts = function () use ($token): array {
+        $buyers = null;
+        $owner  = $this->get(route('grp.supplier_share.show', $token))
+            ->assertInertia(function (AssertableInertia $page) use (&$buyers) {
+                $page->loadDeferredProps('details', function (AssertableInertia $reload) use (&$buyers) {
+                    $buyers = collect($reload->toArray()['props']['details']['buyers']);
+                });
+            })
+            ->viewData('page')['props']['owner'];
+
+        return [$owner, $buyers];
+    };
+
+    [$ownerCard, $buyers] = $contacts();
+    expect($ownerCard['is_main'])->toBeFalse()
+        ->and($buyers->pluck('is_main')->unique()->all())->toBe([false]);
+    $buyersWithoutMain = $buyers->count();
+
+    $supplier->updateQuietly(['relationship_contact_user_id' => $owner->id]);
+    [$ownerCard, $buyers] = $contacts();
+    expect($ownerCard)->toMatchArray(['name' => $owner->contact_name, 'email' => GetSupplierPortalDetails::OWNER_EMAIL, 'is_main' => true])
+        ->and($buyers)->toHaveCount($buyersWithoutMain)
+        ->and($buyers->where('is_main', true))->toBeEmpty()
+        ->and($buyers->pluck('email'))->not->toContain('owner.personal@gmail.com');
+
+    $purchaseOrder->updateQuietly(['buyer_id' => $owner->id]);
+    [$ownerCard, $buyers] = $contacts();
+    expect($ownerCard['is_main'])->toBeTrue()
+        ->and($buyers->where('is_main', true))->toBeEmpty()
+        ->and($buyers->firstWhere('name', $owner->contact_name)['email'])->toBe(GetSupplierPortalDetails::OWNER_EMAIL);
+
+    $purchaseOrder->updateQuietly(['buyer_id' => $buyer->id]);
+    $supplier->updateQuietly(['relationship_contact_user_id' => $buyer->id]);
+    [$ownerCard, $buyers] = $contacts();
+    expect($ownerCard['is_main'])->toBeFalse()
+        ->and($buyers)->toHaveCount($buyersWithoutMain)
+        ->and($buyers->where('is_main', true)->pluck('name')->all())->toBe([$buyer->contact_name]);
 });
 
 test('the person on a direct link keeps their own profile through a cookie, and a cookie never opens another supplier profile', function () {
