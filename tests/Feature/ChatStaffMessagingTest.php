@@ -2220,3 +2220,22 @@ test('Verba Home: Jev picks the news, Haiku writes it within seconds as a quick 
     Config::set('services.openrouter.api_key', null);
     expect(\App\Actions\Chat\Staff\Home\EditStaffMessageStories::run($this->user->group))->toBe(0);
 });
+
+test('the Verba welcome shows until the person closes it once, and closing it keeps their other settings, INI-587', function () {
+    $this->user->update(['settings' => array_merge(Arr::except($this->user->settings ?? [], 'verba_welcome_seen'), ['chat_theme' => 'nord'])]);
+
+    expect(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($this->user->fresh())['settings']['verba_welcome_seen'])->toBeFalse();
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['verba_welcome_seen' => true])
+        ->assertOk();
+
+    $user = $this->user->fresh();
+    expect(Arr::get($user->settings, 'verba_welcome_seen'))->toBeTrue()
+        ->and(Arr::get($user->settings, 'chat_theme'))->toBe('nord')
+        ->and(\App\Actions\SysAdmin\User\UI\GetLoggedUser::run($user)['settings']['verba_welcome_seen'])->toBeTrue();
+
+    actingAs($this->user)
+        ->patchJson(route('grp.models.profile.update'), ['verba_welcome_seen' => 'maybe'])
+        ->assertStatus(422);
+});

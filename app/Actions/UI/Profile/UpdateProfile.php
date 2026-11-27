@@ -233,6 +233,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['chat_auto_translate'] = (bool) Arr::pull($modelData, 'chat_auto_translate');
         }
 
+        if (Arr::exists($modelData, 'verba_welcome_seen')) {
+            $modelData['settings']['verba_welcome_seen'] = (bool) Arr::pull($modelData, 'verba_welcome_seen');
+        }
+
         if (Arr::exists($modelData, 'chat_languages')) {
             $modelData['settings']['chat_languages'] = array_values(array_unique(Arr::pull($modelData, 'chat_languages') ?? []));
         }
@@ -319,6 +323,7 @@ class UpdateProfile extends OrgAction
             'chat_languages'    => ['sometimes', 'nullable', 'array', 'max:20'],
             'chat_languages.*'  => ['string', 'exists:languages,code'],
             'focus_minutes'     => ['sometimes', 'integer', Rule::in([0, 30, 60, 240, 480])],
+            'verba_welcome_seen' => ['sometimes', 'boolean'],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_events'      => ['sometimes', 'array'],
             'alert_events.*'    => ['array'],
