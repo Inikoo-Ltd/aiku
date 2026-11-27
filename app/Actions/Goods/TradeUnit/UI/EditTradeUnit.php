@@ -157,7 +157,7 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => $this->complianceOnlyBlueprint([
                         [
-                            'label'  => __('Properties'),
+                            'label'  => __('Registration numbers'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 // 'code' => [
