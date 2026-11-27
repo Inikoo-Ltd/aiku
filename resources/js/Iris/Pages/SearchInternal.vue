@@ -13,6 +13,7 @@ import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import IrisSearchKeepExploring from '@/Iris/Components/IrisSearchKeepExploring.vue'
 import RenderProduct from '@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue'
+import RenderProductDropshiping from '@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { FreeMode } from 'swiper/modules'
 import 'swiper/css'
@@ -90,6 +91,7 @@ const fieldValue = computed(() => props.web_block_family?.fieldValue)
 const productCardCode = computed(() => props.web_block_family_code || 'products-1')
 
 const layout = inject('layout', retinaLayoutStructure)
+const isDropshipping = computed(() => layout?.retina?.type === 'dropshipping')
 
 const page = usePage()
 const searchQuery = computed(() => {
@@ -654,7 +656,11 @@ const isMobileFilterOpen = ref(false)
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                                 class="relative rounded flex md:flex-1 justify-center"
                                 @click.capture="(event) => recordResultClick(event, product.url)">
-                                <RenderProduct :code="productCardCode" :product="product"
+                                <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="product"
+                                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                    :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                    :bestSeller="fieldValue?.bestseller" :screenType />
+                                <RenderProduct v-else :code="productCardCode" :product="product"
                                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                     :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                     :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
@@ -689,7 +695,11 @@ const isMobileFilterOpen = ref(false)
                             <template #product="{ product }">
                                 <div :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                                     class="relative rounded flex md:flex-1 justify-center">
-                                    <RenderProduct :code="productCardCode" :product="product"
+                                    <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="product"
+                                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                    :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                    :bestSeller="fieldValue?.bestseller" :screenType />
+                                <RenderProduct v-else :code="productCardCode" :product="product"
                                         :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                         :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                         :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"

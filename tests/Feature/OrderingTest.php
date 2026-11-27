@@ -119,6 +119,7 @@ use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransactionChargeAmount;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Iris\Basket\StoreEcomOrder;
 use App\Actions\Retina\Dropshipping\Orders\ImportRetinaOrderTransaction;
 use App\Actions\Retina\Ordering\StoreRetinaTransaction;
 use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
@@ -5667,6 +5668,19 @@ test('products added from a stale customer after the basket was deleted all land
 
     expect($secondLine->order_id)->toBe($firstLine->order_id)
         ->and($this->customer->fresh()->current_order_in_basket_id)->toBe($firstLine->order_id);
+});
+
+test('a dropshipping customer never gets a channel-less ecom basket', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $originalShopType = $this->shop->type;
+    $this->shop->update(['type' => ShopTypeEnum::DROPSHIPPING]);
+
+    try {
+        expect(fn () => StoreEcomOrder::make()->action($customer->fresh()))->toThrow(ValidationException::class)
+            ->and(Order::where('customer_id', $customer->id)->count())->toBe(0);
+    } finally {
+        $this->shop->update(['type' => $originalShopType]);
+    }
 });
 
 test('an exclusive product can be added only by its own customer, and only while in stock', function () {
