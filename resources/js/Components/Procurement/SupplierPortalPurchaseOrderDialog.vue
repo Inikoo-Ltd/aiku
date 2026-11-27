@@ -96,6 +96,7 @@ interface PurchaseOrderDetail {
 		order_amount: number
 		recipients: { name: string; organisation: string }[]
 		agreement_missing: boolean
+		answer: { type: "paid" | "rejected"; message: string; at: string | null } | null
 	}
 	production: {
 		started_at: string | null
@@ -662,6 +663,18 @@ const stateClass = (order: PurchaseOrderDetail["order"]) => (order.open ? "text-
 								</li>
 							</ul>
 							<p v-else-if="!detail.deposit.none_set" class="text-gray-400">{{ ctrans("No deposit paid yet") }}</p>
+
+							<div
+								v-if="detail.deposit.answer"
+								class="mt-2 rounded border px-2 py-1.5"
+								:class="detail.deposit.answer.type === 'rejected' ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'"
+							>
+								<div class="flex items-start gap-1.5">
+									<FontAwesomeIcon :icon="detail.deposit.answer.type === 'rejected' ? 'fal fa-exclamation-circle' : 'fas fa-check-circle'" class="mt-0.5" fixed-width aria-hidden="true" />
+									<span>{{ detail.deposit.answer.message }}</span>
+								</div>
+								<div v-if="detail.deposit.answer.at" class="mt-0.5 text-right tabular-nums opacity-75">{{ day(detail.deposit.answer.at) }}</div>
+							</div>
 
 							<div v-if="detail.deposit.request" class="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-amber-800">
 								<div class="font-semibold">{{ ctrans("Deposit requested: :percentage%", { percentage: String(detail.deposit.request.percentage) }) }}</div>

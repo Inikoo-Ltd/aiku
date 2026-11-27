@@ -16,6 +16,7 @@ use App\Events\BroadcastAgentIncomingPurchaseOrdersChanged;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
+use App\Actions\SupplyChain\SupplierShareLink\NotifySupplierOfDepositAnswer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -87,6 +88,9 @@ class MarkPurchaseOrderStage extends OrgAction
         $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, [$field => $date]);
         if (in_array($field, PurchaseOrderStageEnum::READY_CHECK_FIELDS)) {
             $purchaseOrder = RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
+        }
+        if ($field === 'deposit_paid_at') {
+            NotifySupplierOfDepositAnswer::make()->paid($purchaseOrder);
         }
         BroadcastAgentIncomingPurchaseOrdersChanged::dispatchFor($purchaseOrder);
 

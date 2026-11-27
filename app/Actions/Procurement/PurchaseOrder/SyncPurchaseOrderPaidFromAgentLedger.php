@@ -15,6 +15,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Actions\SupplyChain\SupplierShareLink\NotifySupplierOfDepositAnswer;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -63,6 +64,10 @@ class SyncPurchaseOrderPaidFromAgentLedger
 
         if (array_key_exists('balance_paid_at', $changes)) {
             $purchaseOrder = RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
+        }
+
+        if (array_key_exists('deposit_paid_at', $changes)) {
+            NotifySupplierOfDepositAnswer::make()->paid($purchaseOrder);
         }
 
         BroadcastAgentIncomingPurchaseOrdersChanged::dispatchFor($purchaseOrder);

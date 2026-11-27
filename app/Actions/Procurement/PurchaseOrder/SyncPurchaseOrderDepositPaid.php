@@ -6,6 +6,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
+use App\Actions\SupplyChain\SupplierShareLink\NotifySupplierOfDepositAnswer;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -46,6 +47,8 @@ class SyncPurchaseOrderDepositPaid
             $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder);
             $purchaseOrder->update(['confirmed_at' => $firstPayment->date->min(now())]);
         }
+
+        NotifySupplierOfDepositAnswer::make()->paid($purchaseOrder);
 
         return RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
     }

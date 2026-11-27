@@ -117,6 +117,7 @@ const props = defineProps<{
     uploadRoute?: routeType | null
     skipRoute?: routeType | null
     deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
+    depositRequestRejectRoute?: routeType | null
     sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
     cho?: { passed: boolean, misses: string[], penalty_percentage: number } | null
     closeOld?: CloseOld | null
@@ -461,6 +462,32 @@ function saveSkip() {
     })
 }
 
+const rejectingDepositRequest = ref(false)
+const depositRejectReason = ref("")
+const savingDepositReject = ref(false)
+const depositRejectErrors = ref<Record<string, string>>({})
+
+function openDepositReject() {
+    depositRejectReason.value = ""
+    depositRejectErrors.value = {}
+    rejectingDepositRequest.value = true
+}
+
+function saveDepositReject() {
+    if (!props.depositRequestRejectRoute) {
+        return
+    }
+    router.patch(route(props.depositRequestRejectRoute.name, props.depositRequestRejectRoute.parameters), {
+        reason: depositRejectReason.value.trim(),
+    }, {
+        preserveScroll: true,
+        onStart: () => savingDepositReject.value = true,
+        onFinish: () => savingDepositReject.value = false,
+        onError: (error) => depositRejectErrors.value = error,
+        onSuccess: () => rejectingDepositRequest.value = false,
+    })
+}
+
 const closeOldDialog = ref(false)
 const closeOldUndoDialog = ref(false)
 const closeOldForm = ref<{ stock_delivery_id: number | null, reason: string }>({ stock_delivery_id: null, reason: "" })
@@ -600,6 +627,7 @@ function save() {
             <div v-if="stage.deposit_request" class="mt-1 w-fit rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800" v-tooltip="stage.deposit_request.requested_at ? ctrans('Requested by the supplier on :date', { date: formatDate(stage.deposit_request.requested_at) as string }) : null">
                 <div class="font-medium">{{ ctrans("Deposit :percentage% pending", { percentage: stage.deposit_request.percentage }) }}</div>
                 <div class="tabular-nums">{{ locale.currencyFormat(stage.deposit_request.currency_code ?? "", stage.deposit_request.amount) }}</div>
+                <button v-if="depositRequestRejectRoute" type="button" class="mt-0.5 text-red-600 underline hover:text-red-700" @click="openDepositReject">{{ ctrans("Reject request") }}</button>
             </div>
 
             <div v-if="stage.note" class="mt-0.5 text-xs text-gray-500">{{ stage.note }}</div>
@@ -1095,6 +1123,32 @@ function save() {
             </div>
         </template>
     </Dialog>
+    <Dialog
+        :visible="rejectingDepositRequest"
+        modal
+        :header="ctrans('Reject deposit request')"
+        :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false"
+        @update:visible="(visible: boolean) => !visible && (rejectingDepositRequest = false)"
+    >
+        <div class="space-y-3 text-sm">
+            <p class="text-gray-600">{{ ctrans("The supplier is emailed and sees on its page: Your deposit request has been rejected because (your reason). Please resubmit to continue.") }}</p>
+            <label class="block space-y-1">
+                <span class="block text-xs text-gray-500">{{ ctrans("Reason") }} <span class="text-red-500">*</span></span>
+                <Textarea v-model="depositRejectReason" rows="3" autoResize class="w-full" />
+                <span v-if="depositRejectErrors.reason" class="block text-xs text-red-600">{{ depositRejectErrors.reason }}</span>
+            </label>
+        </div>
+        <template #footer>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="rejectingDepositRequest = false">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="delete" full :label="ctrans('Reject request')" :loading="savingDepositReject" :disabled="!depositRejectReason.trim()" @click="saveDepositReject" />
+            </div>
+        </template>
+    </Dialog>
+
     <Dialog
         :visible="closeOldDialog"
         modal

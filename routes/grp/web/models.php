@@ -628,6 +628,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChangeSupplierOptio
 use App\Actions\Procurement\PurchaseOrder\CloseOldPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
+use App\Actions\Procurement\PurchaseOrder\RejectPurchaseOrderSupplierDepositRequest;
 use App\Actions\Procurement\PurchaseOrder\UndoCloseOldPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
 use App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest;
@@ -2205,6 +2206,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
     Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');
+    Route::patch('reject-deposit-request', RejectPurchaseOrderSupplierDepositRequest::class)->name('deposit_request.reject');
     Route::patch('close-old', CloseOldPurchaseOrder::class)->name('close_old');
     Route::patch('undo-close-old', UndoCloseOldPurchaseOrder::class)->name('undo_close_old');
     Route::post('chase', StorePurchaseOrderChase::class)->name('chase.store');

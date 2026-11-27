@@ -312,7 +312,37 @@ class ShowSupplierPortalPurchaseOrder
             'order_amount'       => round((float) $purchaseOrder->cost_items, 2),
             'recipients'         => $choosable ? NotifyPurchasingOfSupplierDepositRequest::make()->emailRecipients($purchaseOrder) : [],
             'agreement_missing'  => $choosable && UpdateSupplierPortalPurchaseOrderDeposit::isAgreementMissing($supplier),
+            'answer'             => $this->depositAnswer($purchaseOrder, $choosable),
         ];
+    }
+
+    /**
+     * The message the buyer's answer to a deposit request leaves on the order: paid, until production dates are
+     * added, or rejected with its reason, until the supplier answers the deposit stage again.
+     *
+     * @return array{type: string, message: string, at: string|null}|null
+     */
+    private function depositAnswer(PurchaseOrder $purchaseOrder, bool $choosable): ?array
+    {
+        $rejected = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request_rejected');
+        if ($choosable && $rejected) {
+            return [
+                'type'    => 'rejected',
+                'message' => __('Your deposit request has been rejected because :reason. Please resubmit to continue.', ['reason' => rtrim($rejected['reason'], '. ')]),
+                'at'      => $rejected['rejected_at'] ?? null,
+            ];
+        }
+
+        $paidNotifiedAt = Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request.paid_notified_at');
+        if ($paidNotifiedAt && $purchaseOrder->production_started_at === null && Arr::get($purchaseOrder->data ?? [], 'estimated_production_date') === null) {
+            return [
+                'type'    => 'paid',
+                'message' => __('Deposit paid, please add your production dates to take us to the next stage.'),
+                'at'      => $paidNotifiedAt,
+            ];
+        }
+
+        return null;
     }
 
     private function isDepositChoosable(PurchaseOrder $purchaseOrder): bool

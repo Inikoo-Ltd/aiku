@@ -1015,6 +1015,10 @@ class ShowPurchaseOrder extends OrgAction
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
             ] : null,
             'deposit'      => $this->getDepositChoice($purchaseOrder, $buyerCanEdit),
+            'deposit_request_reject_route' => ($buyerCanEdit || $this->agentCanEdit) && Arr::get($purchaseOrder->data ?? [], 'supplier_deposit_request') && !$purchaseOrder->isDepositPaid() ? [
+                'name'       => 'grp.models.purchase-order.deposit_request.reject',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ] : null,
             'sample'       => $this->getSampleChoice($purchaseOrder, $buyerCanEdit),
             'cho'          => $this->getCleanHandover($purchaseOrder),
             'close_old'    => $this->getCloseOld($purchaseOrder),
