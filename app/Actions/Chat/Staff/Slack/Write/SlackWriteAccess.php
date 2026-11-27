@@ -76,15 +76,19 @@ class SlackWriteAccess
         return $user->status && SlackChannel::userMayReadPublicChannels($user);
     }
 
-    public static function reasonUnavailable(User $user): ?string
+    public static function reasonUnavailable(User $user, ?\App\Actions\Chat\Staff\Slack\SlackWorkspace $workspace = null): ?string
     {
+        $workspace ??= \App\Actions\Chat\Staff\Slack\SlackWorkspace::main();
         if (!self::allows($user)) {
             return __('Writing to Slack from here is not available to you');
         }
         if (!app()->environment(self::WRITE_ENVIRONMENTS)) {
             return __('Writing to Slack is switched off on this machine');
         }
-        $connection = SlackConnection::where('user_id', $user->id)->first();
+        if (!$workspace->isMain() && !$workspace->personOf($user)) {
+            return __('You have no account in this Slack workspace, so only messages can be sent here');
+        }
+        $connection = SlackConnection::forWorkspace($workspace)->where('user_id', $user->id)->first();
         if ($connection?->isLive() && $connection->missingScopes() === []) {
             return null;
         }

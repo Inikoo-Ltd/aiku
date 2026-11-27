@@ -168,11 +168,42 @@ class EditProfile
     }
 
     /**
+     * The other Slack workspaces the person has an account in (INI-540), each connected on its own, for public channels only.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function otherSlackWorkspaces(User $user): array
+    {
+        return collect(\App\Actions\Chat\Staff\Slack\SlackWorkspace::others())
+            ->filter(fn ($workspace) => $workspace->personOf($user) !== null)
+            ->map(function ($workspace) use ($user) {
+                $connection = SlackConnection::forWorkspace($workspace)->where('user_id', $user->id)->first();
+                $person     = $workspace->personOf($user);
+
+                return [
+                    'team_id'            => $workspace->teamId,
+                    'name'               => $workspace->name,
+                    'state'              => match (true) {
+                        $connection?->isLive() && $connection->missingScopes() === [] => 'connected',
+                        (bool) $connection?->needsReconnection()                       => 'reconnect',
+                        default                                                        => 'none',
+                    },
+                    'slack_name'         => $person->display_name ?: $person->real_name ?: $person->name,
+                    'connected_at'       => $connection?->connected_at,
+                    'unavailable_reason' => StartSlackConnection::unavailableReason($user, $workspace),
+                    'connect_url'        => route('grp.chat.staff.slack.connect.start', ['team_id' => $workspace->teamId]),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function slackConnection(User $user): array
     {
-        $connection  = SlackConnection::where('user_id', $user->id)->first();
+        $connection  = SlackConnection::main()->where('user_id', $user->id)->first();
         $slackPerson = SlackChannel::linkedSlackPerson($user);
 
         return [
@@ -187,6 +218,7 @@ class EditProfile
             'error'              => session()->pull(StartSlackConnection::ERROR_KEY),
             'notice'             => session()->pull(StartSlackConnection::NOTICE_KEY),
             'connect_url'        => route('grp.chat.staff.slack.connect.start'),
+            'other_workspaces'   => $this->otherSlackWorkspaces($user),
             'disconnect_route'   => ['name' => 'grp.chat.staff.slack.connect.delete'],
             'private'            => SlackWriteAccess::privateOptInOpen() ? [
                 'on'              => (bool) $connection?->hasPrivateConsent(),

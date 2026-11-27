@@ -643,3 +643,54 @@ test('a person asks for their DM words to be removed: a group administrator appr
 
     $this->artisan('slack:erase-direct-words', ['person' => $annId, '--approved-by' => $clerk->username])->assertExitCode(1);
 });
+
+test('connecting a second Slack workspace is its own connection: it needs an account there, signs in to that team with that app, refuses another person or team, and connecting or disconnecting it never touches the main connection or its private consent, INI-540', function () {
+    Config::set('services.slack.other_workspaces', [['team_id' => 'TAWA', 'bot_token' => 'xoxb-awa', 'signing_secret' => 'awa-signing', 'client_id' => 'awa-client', 'client_secret' => 'awa-client-secret', 'name' => 'AW Advantage', 'name_suffix' => 'awa']]);
+    $user  = ($this->makeUser)();
+    $start = fn () => actingAs($user)->get(route('grp.chat.staff.slack.connect.start', ['team_id' => 'TAWA']));
+
+    $start()->assertRedirect(route('grp.profile.edit', ['section' => 'slack']))->assertSessionHas(StartSlackConnection::ERROR_KEY, 'You have no account in this Slack workspace, so it cannot be connected');
+
+    $awaId = 'UAWA'.Str::upper(Str::random(8));
+    SlackUser::create(['slack_id' => $awaId, 'name' => 'aw.person', 'email' => $user->email, 'user_id' => $user->id, 'data' => ['team_id' => 'TAWA']]);
+    $main = ($this->connect)($user);
+    $main->forceFill(['private_consented_at' => now(), 'private_consent_version' => 'v-test', 'private_terms_version' => 't-test'])->save();
+
+    $answer = null;
+    Http::fake([
+        'slack.com/api/oauth.v2.access' => function () use (&$answer) {
+            return Http::response($answer);
+        },
+        'slack.com/api/auth.revoke'     => Http::response(['ok' => true, 'revoked' => true]),
+    ]);
+    $callback = function (array $authedUser, string $team = 'TAWA') use (&$answer, $start, $user) {
+        $answer = ['ok' => true, 'team' => ['id' => $team], 'authed_user' => array_merge(['scope' => implode(',', SlackWriteAccess::USER_SCOPES), 'access_token' => 'xoxp-awa-token', 'token_type' => 'user'], $authedUser)];
+        $location = $start()->headers->get('Location');
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        expect($query['client_id'])->toBe('awa-client')->and($query['team'])->toBe('TAWA');
+
+        return actingAs($user)->get(route('grp.chat.staff.slack.connect.callback', ['code' => 'c', 'state' => $query['state']]));
+    };
+
+    $callback(['id' => $main->slack_user_id])->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    $callback(['id' => $awaId], 'TOURTEAM')->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    expect(SlackConnection::where('user_id', $user->id)->count())->toBe(1);
+
+    $callback(['id' => $awaId])->assertSessionHas(StartSlackConnection::NOTICE_KEY);
+    Http::assertSent(fn (Request $request) => $request->url() === 'https://slack.com/api/oauth.v2.access' && $request->hasHeader('Authorization', 'Basic '.base64_encode('awa-client:awa-client-secret')));
+    $awa = SlackConnection::where('user_id', $user->id)->where('team_id', 'TAWA')->sole();
+    expect($awa->token)->toBe('xoxp-awa-token')
+        ->and($awa->slack_user_id)->toBe($awaId)
+        ->and($main->fresh()->token)->toBe($this->token)
+        ->and($main->fresh()->private_consented_at)->not->toBeNull()
+        ->and(SlackConnection::main()->where('user_id', $user->id)->sole()->is($main))->toBeTrue();
+
+    actingAs($user)->delete(route('grp.chat.staff.slack.connect.delete', ['team_id' => 'TGONE']))->assertSessionHas(StartSlackConnection::ERROR_KEY);
+    expect($main->fresh()->isLive())->toBeTrue()
+        ->and($awa->fresh()->isLive())->toBeTrue();
+
+    actingAs($user)->delete(route('grp.chat.staff.slack.connect.delete', ['team_id' => 'TAWA']))->assertRedirect();
+    expect($awa->fresh()->isLive())->toBeFalse()
+        ->and($main->fresh()->isLive())->toBeTrue()
+        ->and($main->fresh()->private_consented_at)->not->toBeNull();
+});

@@ -58,12 +58,19 @@ const connect = () => {
     window.location.href = connection.value.connect_url
 }
 
-const disconnect = () => {
-    router.delete(route(connection.value.disconnect_route.name), {
+const disconnect = (teamId: string | null = null) => {
+    router.delete(route(connection.value.disconnect_route.name, teamId ? { team_id: teamId } : {}), {
         preserveScroll: true,
         onStart: () => isDisconnecting.value = true,
         onFinish: () => isDisconnecting.value = false,
     })
+}
+
+const otherWorkspaces = computed<any[]>(() => connection.value.other_workspaces ?? [])
+
+const connectTo = (url: string) => {
+    isLeaving.value = true
+    window.location.href = url
 }
 </script>
 
@@ -79,7 +86,7 @@ const disconnect = () => {
                 {{ ctrans('Connected as') }} <span class="font-medium">@{{ connection.slack_name }}</span>
                 <span v-if="connection.connected_at" class="text-gray-500">&nbsp;{{ ctrans('since') }} {{ useFormatTime(connection.connected_at) }}</span>
             </div>
-            <Button type="tertiary" :label="ctrans('Disconnect')" :loading="isDisconnecting" :disabled="isDisconnecting" @click.prevent="disconnect">
+            <Button type="tertiary" :label="ctrans('Disconnect')" :loading="isDisconnecting" :disabled="isDisconnecting" @click.prevent="disconnect()">
                 <template #icon>
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
                 </template>
@@ -115,6 +122,28 @@ const disconnect = () => {
                 </template>
             </Button>
         </template>
+
+        <div v-for="workspace in otherWorkspaces" :key="workspace.team_id" class="border-t border-gray-200 pt-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <p class="font-medium text-gray-700">{{ workspace.name }}</p>
+                <p v-if="workspace.state === 'connected'" class="text-gray-500">
+                    {{ ctrans('Connected as') }} <span class="font-medium">@{{ workspace.slack_name }}</span>
+                    <span v-if="workspace.connected_at">&nbsp;{{ ctrans('since') }} {{ useFormatTime(workspace.connected_at) }}</span>
+                </p>
+                <p v-else-if="workspace.unavailable_reason" class="text-gray-500">{{ workspace.unavailable_reason }}</p>
+                <p v-else class="text-gray-500">{{ ctrans('Connect it to react, pin, upload files and add bookmarks in its channels as @:name', { name: workspace.slack_name }) }}</p>
+            </div>
+            <Button v-if="workspace.state === 'connected'" type="tertiary" :label="ctrans('Disconnect')" :loading="isDisconnecting" :disabled="isDisconnecting" @click.prevent="disconnect(workspace.team_id)">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+            <Button v-else-if="!workspace.unavailable_reason" type="tertiary" :label="workspace.state === 'reconnect' ? ctrans('Reconnect') : ctrans('Connect')" :loading="isLeaving" :disabled="isLeaving" @click.prevent="connectTo(workspace.connect_url)">
+                <template #icon>
+                    <FontAwesomeIcon :icon="faPlug" class="text-green-600" fixed-width aria-hidden="true" />
+                </template>
+            </Button>
+        </div>
 
         <div v-if="privateSettings" class="border-t border-gray-200 pt-3 space-y-2">
             <div class="flex items-center justify-between gap-3">

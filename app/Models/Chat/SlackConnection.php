@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 /**
- * A person's own permission to write in Slack from aiku, one per aiku user. The token never leaves the server.
+ * A person's own permission to write in Slack from aiku, one per aiku user and Slack workspace. The token never leaves the server.
  *
  * @property int $id
  * @property int $user_id
@@ -51,6 +51,25 @@ class SlackConnection extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The main workspace's connection (INI-540): private opt-in, DMs and every user-keyed lookup that is not about
+     * writing in another workspace's channel go through it. A person has at most one connection per workspace.
+     */
+    public function scopeMain(Builder $query): Builder
+    {
+        if ($mainTeamId = config('services.slack.team_id')) {
+            return $query->where('team_id', $mainTeamId);
+        }
+        $otherTeams = array_map(fn ($workspace) => $workspace->teamId, \App\Actions\Chat\Staff\Slack\SlackWorkspace::others());
+
+        return $otherTeams === [] ? $query : $query->whereNotIn('team_id', $otherTeams);
+    }
+
+    public function scopeForWorkspace(Builder $query, \App\Actions\Chat\Staff\Slack\SlackWorkspace $workspace): Builder
+    {
+        return $workspace->isMain() ? $query->main() : $query->where('team_id', $workspace->teamId);
     }
 
     public function scopeLive(Builder $query): Builder

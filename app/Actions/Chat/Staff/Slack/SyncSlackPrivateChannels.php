@@ -186,7 +186,7 @@ class SyncSlackPrivateChannels
 
     private static function optedInConnectionsQuery(): Builder
     {
-        return SlackConnection::live()->whereNotNull('private_consented_at')->whereHas('user', fn (Builder $query) => $query->where('status', true));
+        return SlackConnection::main()->live()->whereNotNull('private_consented_at')->whereHas('user', fn (Builder $query) => $query->where('status', true));
     }
 
     /**

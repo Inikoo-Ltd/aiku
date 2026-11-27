@@ -9,6 +9,7 @@
 namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Actions\Chat\Staff\Slack\PurgeSlackDirectWords;
+use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\Chat\SlackConnection;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Encryption\DecryptException;
@@ -22,24 +23,26 @@ class DisconnectSlackAccount
 {
     use AsAction;
 
-    public function handle(User $user, bool $callSlack = true): bool
+    /**
+     * Without a workspace every connection of the person goes (deactivation); with one, only that workspace's (INI-540).
+     */
+    public function handle(User $user, bool $callSlack = true, ?SlackWorkspace $workspace = null): bool
     {
-        $connection = SlackConnection::where('user_id', $user->id)->first();
-        if (!$connection) {
-            return true;
+        $connections = SlackConnection::where('user_id', $user->id)->when($workspace, fn ($query) => $query->forWorkspace($workspace))->get();
+        $revoked     = true;
+        foreach ($connections as $connection) {
+            try {
+                $token = $connection->token;
+            } catch (DecryptException) {
+                $token = null;
+            }
+            $revoked = ($callSlack && $token !== null && $this->revokeAtSlack($token)) && $revoked;
+
+            $connection->forceFill(['token' => null, 'revoked_at' => now(), 'needs_reconnect' => false])->save();
+            $connection->endPrivateConsent('withdrawn');
         }
 
-        try {
-            $token = $connection->token;
-        } catch (DecryptException) {
-            $token = null;
-        }
-        $revoked = $callSlack && $token !== null && $this->revokeAtSlack($token);
-
-        $connection->forceFill(['token' => null, 'revoked_at' => now(), 'needs_reconnect' => false])->save();
-        $connection->endPrivateConsent('withdrawn');
-
-        return $revoked;
+        return $connections->isEmpty() || $revoked;
     }
 
     public function revokeAtSlack(#[\SensitiveParameter] string $token): bool
@@ -56,11 +59,15 @@ class DisconnectSlackAccount
     public function asController(ActionRequest $request): RedirectResponse
     {
         $mayCallSlack = app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS);
-        $connection   = SlackConnection::where('user_id', $request->user()->id)->first();
-        if ($connection) {
+        $teamId       = $request->input('team_id');
+        $workspace    = is_string($teamId) && $teamId !== '' ? SlackWorkspace::forTeam($teamId) : SlackWorkspace::main();
+        if (!$workspace || ($teamId !== null && !is_string($teamId))) {
+            return StartSlackConnection::backToSettings(StartSlackConnection::ERROR_KEY, __('That Slack workspace is not set up on this server, so nothing was disconnected'));
+        }
+        if ($workspace->isMain() && $connection = SlackConnection::main()->where('user_id', $request->user()->id)->first()) {
             PurgeSlackDirectWords::run($connection->slack_user_id);
         }
-        $revoked      = $this->handle($request->user(), $mayCallSlack);
+        $revoked      = $this->handle($request->user(), $mayCallSlack, $workspace);
 
         return StartSlackConnection::backToSettings(
             StartSlackConnection::NOTICE_KEY,

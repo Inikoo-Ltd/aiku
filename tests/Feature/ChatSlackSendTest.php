@@ -634,6 +634,15 @@ test('Slack second workspace: a message in an aw-advantage channel goes through 
     ($this->send)($this->general, 'Main as before')->assertOk();
     expect(($this->posts)()->last()[0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
 
-    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $awaChannel->id]), ['ts' => ($this->messages)($awaChannel)->last()->ts, 'name' => 'eyes', 'add' => true])
-        ->assertUnprocessable()->assertJsonPath('message', 'This cannot be done from aiku in this Slack workspace yet');
+    $lastTs = ($this->messages)($awaChannel)->last()->ts;
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $awaChannel->id]), ['ts' => $lastTs, 'name' => 'eyes', 'add' => true])
+        ->assertUnprocessable()->assertJsonPath('message', 'Connect your Slack account to write here');
+
+    SlackConnection::create(['user_id' => $this->writer->id, 'slack_user_id' => "UWAWA{$this->s}", 'team_id' => 'TAWA', 'token' => 'xoxp-awa-'.$this->s, 'scopes' => implode(',', SlackWriteAccess::USER_SCOPES), 'connected_at' => now()]);
+    Http::fake(['slack.com/api/reactions.add' => Http::response(['ok' => true])]);
+    actingAs($this->writer)->postJson(route('grp.chat.staff.slack.reactions.toggle', ['slackChannel' => $awaChannel->id]), ['ts' => $lastTs, 'name' => 'eyes', 'add' => true])->assertOk();
+    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), 'reactions.add'))->last()[0]->header('Authorization')[0])->toBe('Bearer xoxp-awa-'.$this->s);
+
+    ($this->send)($this->general, 'Main still uses the main token')->assertOk();
+    expect(($this->posts)()->last()[0]->header('Authorization')[0])->toBe('Bearer '.$this->token);
 });

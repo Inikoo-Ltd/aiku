@@ -58,12 +58,12 @@ class SlackWriteClient
         return $this->standInFor !== null;
     }
 
-    public static function for(User $user): ?self
+    public static function for(User $user, ?SlackWorkspace $workspace = null): ?self
     {
-        if (!SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS)) {
+        if (!SlackWriteAccess::allows($user) || !app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) || ($workspace && !$workspace->isMain() && !$workspace->personOf($user))) {
             return null;
         }
-        $connection = SlackConnection::where('user_id', $user->id)->live()->first();
+        $connection = SlackConnection::forWorkspace($workspace ?? SlackWorkspace::main())->where('user_id', $user->id)->live()->first();
 
         if (!$connection || $connection->missingScopes() !== []) {
             return null;

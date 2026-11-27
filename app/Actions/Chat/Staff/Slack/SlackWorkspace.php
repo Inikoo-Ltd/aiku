@@ -13,19 +13,19 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 /**
- * The Slack workspaces Verba reads (INI-540). The main one is services.slack (tickets, alerts and personal connections
+ * The Slack workspaces Verba reads (INI-540). The main one is services.slack (tickets, alerts, the private opt-in and DMs
  * live only there) and its channels have slack_team_id null; each of services.slack.other_workspaces has its own app,
  * bot and signing secret, and its channels carry its team id.
  */
 final readonly class SlackWorkspace
 {
-    private function __construct(public ?string $teamId, #[\SensitiveParameter] public string $botToken, #[\SensitiveParameter] public string $signingSecret, public ?string $nameSuffix)
+    private function __construct(public ?string $teamId, #[\SensitiveParameter] public string $botToken, #[\SensitiveParameter] public string $signingSecret, public ?string $nameSuffix, public ?string $clientId = null, #[\SensitiveParameter] public ?string $clientSecret = null, public ?string $name = null)
     {
     }
 
     public static function main(): self
     {
-        return new self(null, (string) config('services.slack.notifications.bot_user_oauth_token'), (string) config('services.slack.signing_secret'), null);
+        return new self(null, (string) config('services.slack.notifications.bot_user_oauth_token'), (string) config('services.slack.signing_secret'), null, config('services.slack.client_id'), config('services.slack.client_secret'));
     }
 
     /**
@@ -39,7 +39,7 @@ final readonly class SlackWorkspace
         return collect(config('services.slack.other_workspaces', []))
             ->filter(fn (array $workspace) => ($workspace['team_id'] ?? null) && ($workspace['bot_token'] ?? null) && ($workspace['signing_secret'] ?? null)
                 && $workspace['team_id'] !== $mainTeamId && $workspace['signing_secret'] !== $mainSecret)
-            ->map(fn (array $workspace) => new self($workspace['team_id'], $workspace['bot_token'], $workspace['signing_secret'], $workspace['name_suffix'] ?? null))
+            ->map(fn (array $workspace) => new self($workspace['team_id'], $workspace['bot_token'], $workspace['signing_secret'], $workspace['name_suffix'] ?? null, $workspace['client_id'] ?? null, $workspace['client_secret'] ?? null, $workspace['name'] ?? $workspace['team_id']))
             ->values()
             ->all();
     }
@@ -74,6 +74,24 @@ final readonly class SlackWorkspace
     public function isMain(): bool
     {
         return $this->teamId === null;
+    }
+
+    /**
+     * The Slack team id people sign in to: the main one's comes from services.slack.team_id.
+     */
+    public function slackTeamId(): ?string
+    {
+        return $this->teamId ?? config('services.slack.team_id');
+    }
+
+    /**
+     * The person's own linked Slack account in this workspace, never one from another workspace.
+     */
+    public function personOf(\App\Models\SysAdmin\User $user): ?\App\Models\Chat\SlackUser
+    {
+        $person = $this->isMain() ? SlackChannel::linkedSlackPerson($user) : \App\Models\Chat\SlackUser::whereIn('slack_id', SlackChannel::linkedSlackIds($user))->where('data->team_id', $this->teamId)->first();
+
+        return $this->isMain() && self::isOtherTeam($person?->data['team_id'] ?? null) ? null : $person;
     }
 
     public function client(): ?PendingRequest

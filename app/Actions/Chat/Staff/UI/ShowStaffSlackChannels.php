@@ -301,14 +301,15 @@ class ShowStaffSlackChannels extends OrgAction
      */
     public function writeState(User $user, ?SlackChannel $slackChannel = null): array
     {
-        $allowed = SlackWriteAccess::allows($user);
-        $reason  = $allowed ? SlackWriteAccess::reasonUnavailable($user) : null;
-        $standIn = $reason && SlackWriteClient::standInFor($user) !== null;
-        $state   = [
+        $workspace = $slackChannel ? \App\Actions\Chat\Staff\Slack\SlackWorkspace::forChannel($slackChannel) : \App\Actions\Chat\Staff\Slack\SlackWorkspace::main();
+        $allowed   = SlackWriteAccess::allows($user) && $workspace !== null;
+        $reason    = $allowed ? SlackWriteAccess::reasonUnavailable($user, $workspace) : null;
+        $standIn   = $reason && SlackWriteClient::standInFor($user, $workspace) !== null;
+        $state     = [
             'allowed'     => $allowed,
             'reason'      => $reason,
             'stand_in'    => $standIn,
-            'connect_url' => $reason && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) ? route('grp.profile.edit', ['section' => 'slack']) : null,
+            'connect_url' => $reason && app()->environment(SlackWriteAccess::WRITE_ENVIRONMENTS) && $workspace->personOf($user) ? route('grp.profile.edit', ['section' => 'slack']) : null,
         ];
         if (!$allowed || ($reason && !$standIn) || !$slackChannel) {
             return $state;
