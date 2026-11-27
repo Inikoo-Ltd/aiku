@@ -19,7 +19,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * A big order lead or a restock question nobody has taken (no assignee, still to do) after
  * services.shopping_assistant.sales_lead_reminder_hours is raised again to whoever it went to (sales
- * leads managers and the Slack channel, or the restock question recipients), then once a day until someone takes it or it is closed.
+ * leads managers, or the restock question recipients), then once a day until someone takes it or it is closed.
  * Reminders go out only on working days between 09:00 and 18:00 in the organisation's time zone,
  * so a lead from a Friday night is raised on Monday morning rather than at 03:00 on Saturday.
  *

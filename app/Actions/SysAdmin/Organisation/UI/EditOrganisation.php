@@ -242,12 +242,6 @@ class EditOrganisation extends OrgAction
                                 "information" => __("The AI shopping assistant offers a call when a customer plans an order of at least this much, converted to the shop's currency. Leave empty for :amount EUR.", ["amount" => number_format((float) config("services.shopping_assistant.sales_lead_threshold_eur"))]),
                                 "value"       => Arr::get($organisation->settings, "sales_leads.threshold_eur"),
                             ],
-                            "sales_leads_slack_channel" => [
-                                "type"        => "input",
-                                "label"       => __("Sales leads Slack channel"),
-                                "information" => __("Channel name or id where each big order lead and its reminders are posted by the aiku bot, which must be a member of the channel. Leave empty for no Slack post."),
-                                "value"       => Arr::get($organisation->settings, "sales_leads.slack_channel"),
-                            ],
                         ],
                     ],
                     [

@@ -22,7 +22,6 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
-use App\Helpers\SendSlackNotification;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -131,8 +130,6 @@ class StoreMasterProductCategory extends OrgAction
         }
 
         GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
-
-        //SendSlackNotification::dispatch($masterProductCategory);
 
         return $masterProductCategory;
     }
