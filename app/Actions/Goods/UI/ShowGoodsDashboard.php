@@ -163,6 +163,10 @@ class ShowGoodsDashboard extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
+        if (Arr::get($this->validatedData, 'condition') === 'supplier_price_change') {
+            $this->validatedData['condition'] = 'price_request';
+        }
+
         return $this->validatedData;
     }
 
@@ -1272,12 +1276,8 @@ class ShowGoodsDashboard extends OrgAction
             return $row['suggestions'] > 0;
         }
 
-        if ($condition === 'price_request') {
-            return $row['price_requests'] > 0;
-        }
-
-        if ($condition === 'supplier_price_change') {
-            return $row['supplier_price_changes'] > 0;
+        if (in_array($condition, ['price_request', 'supplier_price_change'], true)) {
+            return $row['price_requests'] > 0 || $row['supplier_price_changes'] > 0;
         }
 
         foreach ($this->scopedCells($row, $organisation) as $cell) {
@@ -1327,16 +1327,14 @@ class ShowGoodsDashboard extends OrgAction
             'suggestions'             => 0,
             'price_requested'         => 0,
             'price_requests'          => 0,
-            'supplier_price_changed'  => 0,
             'feedback_levels'         => array_fill_keys(array_keys(self::FEEDBACK_LEVELS), 0),
         ];
 
         foreach ($rows as $row) {
             $kpis['suggested']   += (int) ($row['suggestions'] > 0);
             $kpis['suggestions'] += $row['suggestions'];
-            $kpis['price_requested'] += (int) ($row['price_requests'] > 0);
+            $kpis['price_requested'] += (int) ($row['price_requests'] > 0 || $row['supplier_price_changes'] > 0);
             $kpis['price_requests']  += $row['price_requests'];
-            $kpis['supplier_price_changed'] += (int) ($row['supplier_price_changes'] > 0);
             if ($row['feedback_level']) {
                 $kpis['feedback_levels'][$row['feedback_level']]++;
             }

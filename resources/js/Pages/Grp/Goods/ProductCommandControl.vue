@@ -149,7 +149,6 @@ const props = defineProps<{
         suggestions: number
         price_requested: number
         price_requests: number
-        supplier_price_changed: number
         feedback_levels: Record<FeedbackLevel, number>
     }
     rows?: { data: Row[]; total: number }
@@ -208,8 +207,7 @@ const conditionFilters = computed(() => [
     { value: "hold", label: ctrans("On hold") },
     { value: "ok", label: ctrans("OK") },
     { value: "suggested", label: ctrans("Suggested to discontinue") },
-    { value: "price_request", label: props.kpis?.price_requested ? ctrans("Price request from agent (:count)", { count: props.kpis.price_requested }) : ctrans("Price request from agent") },
-    { value: "supplier_price_change", label: props.kpis?.supplier_price_changed ? ctrans("Price or MOQ request pending approval (:count)", { count: props.kpis.supplier_price_changed }) : ctrans("Price or MOQ request pending approval") },
+    { value: "price_request", label: props.kpis?.price_requested ? ctrans("Price or MOQ change waiting for answer, from agent or supplier (:count)", { count: props.kpis.price_requested }) : ctrans("Price or MOQ change waiting for answer, from agent or supplier") },
 ])
 
 const filterState = reactive({ ...props.filters })
@@ -636,7 +634,7 @@ function openPriceRequestsFromDrawer(row: Row): void {
 }
 
 function priceRequestLabel(count: number): string {
-    return count === 1 ? ctrans("1 price request") : ctrans(":count price requests", { count })
+    return count === 1 ? ctrans("1 agent price request") : ctrans(":count agent price requests", { count })
 }
 
 function supplierPriceChangeLabel(count: number): string {
