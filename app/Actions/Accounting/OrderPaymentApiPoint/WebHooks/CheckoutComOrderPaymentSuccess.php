@@ -189,7 +189,11 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
                 });
             } catch (\Throwable $e) {
                 Sentry::captureException($e);
-                $this->alertPaidOrderNotSubmitted($order, $e);
+                try {
+                    $this->alertPaidOrderNotSubmitted($order, $e);
+                } catch (\Throwable $alertException) {
+                    Sentry::captureException($alertException);
+                }
             }
         } elseif ($order->state == OrderStateEnum::CANCELLED) {
             Sentry::captureMessage(
