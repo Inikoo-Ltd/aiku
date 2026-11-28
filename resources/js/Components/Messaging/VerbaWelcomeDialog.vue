@@ -15,7 +15,7 @@ import { faHashtag, faComments, faCheck, faQuestionCircle, faLongArrowRight, faE
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLayoutStore } from "@/Stores/layout"
-import { useVerbaJoin, watchPagesOutsideVerba } from "@/Composables/useVerbaJoin"
+import { useVerbaJoin } from "@/Composables/useVerbaJoin"
 import VerbaArt from "@/Components/Messaging/VerbaArt.vue"
 
 library.add(faHashtag, faComments, faCheck, faQuestionCircle, faLongArrowRight, faExternalLink)
@@ -25,7 +25,6 @@ const visible = ref(false)
 
 const isVerbaRoute = computed(() => (layout.currentRoute ?? "").startsWith("grp.chat.staff."))
 const { slackJoin, mustJoin } = useVerbaJoin()
-watchPagesOutsideVerba()
 
 const page = usePage()
 watch([mustJoin, () => page.component], ([isJoining, component]) => {

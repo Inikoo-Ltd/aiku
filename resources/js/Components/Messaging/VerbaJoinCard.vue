@@ -15,7 +15,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import VerbaArt from "@/Components/Messaging/VerbaArt.vue"
 import SlackConsentDetails from "@/Components/Forms/Fields/SlackConsentDetails.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { leaveVerbaJoin, recordVerbaJoin, type VerbaSlackJoin } from "@/Composables/useVerbaJoin"
+import { joinLater, recordVerbaJoin, type VerbaSlackJoin } from "@/Composables/useVerbaJoin"
 
 const props = defineProps<{
     join: VerbaSlackJoin
@@ -29,11 +29,24 @@ const linkTicket = ref<string | null>(null)
 onMounted(() => recordVerbaJoin("shown"))
 watch(showDetails, (isOpen) => isOpen && recordVerbaJoin("policy_opened"))
 
+const features = [
+    ctrans("Calls"),
+    ctrans("Video and screen sharing"),
+    ctrans("Call summaries"),
+    ctrans("Meeting links for guests"),
+    ctrans("Direct messages"),
+    ...(props.join.linked ? [ctrans("Public and private V·Desks")] : []),
+    ctrans("Group chats"),
+    ctrans("Send later and reminders"),
+    ...(props.join.linked ? [ctrans("Files up to 1 GB")] : []),
+    ctrans("Automatic translation"),
+]
+
 const failed = () => error.value = ctrans("That did not save. Please try again")
 
 const later = () => {
     recordVerbaJoin("later")
-    leaveVerbaJoin()
+    joinLater()
 }
 
 const agreeAndConnect = () => {
@@ -76,24 +89,27 @@ const startWithoutSlack = () => {
 <template>
     <div class="flex w-full items-start justify-center overflow-y-auto bg-gray-50 px-4 py-16">
         <div class="w-full max-w-md space-y-4 rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-700">
-            <h2 class="text-center font-[Lobster] text-3xl leading-none text-gray-800">{{ ctrans("Welcome to Verba") }}</h2>
+            <h2 class="text-center font-[Lobster] text-3xl leading-none text-gray-800">{{ join.returning ? ctrans("Verba just got better") : ctrans("Welcome to Verba") }}</h2>
             <VerbaArt class="mx-auto h-24 w-60" />
             <template v-if="join.linked">
-                <p class="flex items-center justify-center gap-x-1.5 font-semibold text-gray-800">
-                    <FontAwesomeIcon :icon="faSlack" class="text-gray-500" fixed-width aria-hidden="true" />
-                    {{ ctrans("Connect your Slack") }}
+                <p class="flex items-center justify-center font-semibold text-gray-800">
+                    
+                    <span>{{ ctrans("Good news: Slack can now") }} <span class="relative inline-block text-[var(--app-accent)]">{{ ctrans("fully") }}<svg class="pointer-events-none absolute -bottom-1.5 left-[-4%] h-2 w-[108%]" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M2 6 C 18 2, 34 9, 52 5 S 84 3, 98 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg></span> {{ ctrans("connect to Verba") }}</span>
                 </p>
-                <p>{{ ctrans("Your Slack messages come to Verba, and only the people in each conversation can see them.") }}</p>
+                <p>{{ ctrans("All your channels, direct messages and group chats in one place. Only the people in each conversation can see them.") }}</p>
                 <p v-if="error" class="text-xs text-red-600" role="alert">{{ error }}</p>
                 <div class="flex gap-2">
                     <Button type="tertiary" class="shrink-0" :label="ctrans('Not now')" @click="later" />
-                    <Button type="primary" full :label="ctrans('Agree and connect')" :loading="isBusy" :disabled="isBusy" @click="agreeAndConnect">
+                    <Button type="primary" full :label="ctrans('Connect')" :loading="isBusy" :disabled="isBusy" @click="agreeAndConnect">
                         <template #icon>
                             <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                         </template>
+                        <template #iconRight>
+                            <FontAwesomeIcon :icon="faSlack" fixed-width aria-hidden="true" />
+                        </template>
                     </Button>
                 </div>
-                <button type="button" class="self-start text-xs text-gray-500 underline focus:outline-none" @click="showDetails = !showDetails">{{ ctrans("Privacy policy") }}</button>
+                <button type="button" class="text-xs text-gray-500 underline focus:outline-none" @click="showDetails = !showDetails">{{ ctrans("Privacy policy") }}</button>
                 <SlackConsentDetails v-if="showDetails" />
             </template>
 
@@ -112,6 +128,32 @@ const startWithoutSlack = () => {
                 </div>
             </template>
 
+
+            <div class="space-y-2 border-t border-gray-100 pt-4">
+                <p class="text-center font-[Lobster] text-xl leading-none text-gray-800">{{ ctrans("What's in Verba so far") }}</p>
+                <ul class="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                    <li v-for="feature in features" :key="feature" class="flex items-center gap-x-2">
+                        <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                        {{ feature }}
+                    </li>
+                </ul>
+                <p class="flex items-center justify-center gap-x-2">
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("Smart news feed from your chats") }}
+                </p>
+                <p v-if="join.linked" class="flex items-center justify-center gap-x-2">
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("V·Desks for your organisation") }}
+                </p>
+                <p v-if="join.linked" class="flex items-center justify-center gap-x-2">
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("Use Slack and Verba together: both stay in sync") }}
+                </p>
+                <p class="flex items-center justify-center gap-x-2">
+                    <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                    {{ ctrans("All our staff are welcome, each with their own account") }}
+                </p>
+            </div>
         </div>
     </div>
 </template>

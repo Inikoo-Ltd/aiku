@@ -241,6 +241,10 @@ class UpdateProfile extends OrgAction
             $modelData['settings']['verba_welcome_seen'] = (bool) Arr::pull($modelData, 'verba_welcome_seen');
         }
 
+        if (Arr::pull($modelData, 'verba_join_later')) {
+            $modelData['settings']['verba_join_later_until'] = now()->addDay()->toDateString();
+        }
+
         if (Arr::exists($modelData, 'verba_no_slack')) {
             $modelData['settings']['verba_no_slack'] = (bool) Arr::pull($modelData, 'verba_no_slack');
             if ($modelData['settings']['verba_no_slack']) {
@@ -336,6 +340,7 @@ class UpdateProfile extends OrgAction
             'focus_minutes'     => ['sometimes', 'integer', Rule::in([0, 30, 60, 240, 480])],
             'verba_welcome_seen' => ['sometimes', 'boolean'],
             'verba_no_slack'     => ['sometimes', 'boolean'],
+            'verba_join_later'   => ['sometimes', 'boolean'],
             'alert_sounds'      => ['sometimes', 'array'],
             'alert_events'      => ['sometimes', 'array'],
             'alert_events.*'    => ['array'],

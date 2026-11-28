@@ -10,6 +10,7 @@ namespace App\Actions\Chat\Staff\Slack\Write;
 
 use App\Models\Chat\SlackChannel;
 use App\Models\Chat\SlackConnection;
+use App\Models\Chat\StaffMessage;
 use App\Actions\Chat\Staff\Slack\SlackWorkspace;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
@@ -82,11 +83,11 @@ class SlackWriteAccess
      * Verba opens only after a staff member has agreed and connected all their Slack in one go. The only way past without it
      * is to say they are not in the company's Slack, which counts only while no Slack person is linked to them. Null when they may go in.
      *
-     * @return array{linked: bool, company: string, consent_version: string, terms_version: string, start_route: array{name: string}}|null
+     * @return array{linked: bool, returning: bool, company: string, consent_version: string, terms_version: string, start_route: array{name: string}}|null
      */
     public static function joinPending(User $user): ?array
     {
-        if (!$user->status || $user->worksOnlyForAgents() || !self::privateOptInOpen()
+        if (!$user->status || $user->worksOnlyForAgents() || !self::privateOptInOpen() || Arr::get($user->settings, 'verba_join_later_until', '') > now()->toDateString()
             || !app()->environment(self::WRITE_ENVIRONMENTS) || !StartSlackConnection::isConfigured()) {
             return null;
         }
@@ -97,6 +98,7 @@ class SlackWriteAccess
 
         return [
             'linked'          => $linked,
+            'returning'       => Arr::get($user->settings, 'verba_welcome_seen') || SlackConnection::where('user_id', $user->id)->exists() || StaffMessage::where('user_id', $user->id)->exists(),
             'company'         => SlackWorkspace::main()->displayName() ?? (string) $user->group?->name,
             'consent_version' => self::PRIVATE_CONSENT_VERSION,
             'terms_version'   => self::PRIVATE_TERMS_VERSION,

@@ -528,6 +528,7 @@ test('Verba asks every staff member to connect all their Slack in one go before 
     $user->forceFill(['settings' => ['verba_no_slack' => true]])->save();
     expect(SlackWriteAccess::joinPending($user))->toBe([
             'linked'          => true,
+            'returning'       => false,
             'company'         => 'Our Workspace',
             'consent_version' => SlackWriteAccess::PRIVATE_CONSENT_VERSION,
             'terms_version'   => SlackWriteAccess::PRIVATE_TERMS_VERSION,
@@ -558,6 +559,20 @@ test('Verba asks every staff member to connect all their Slack in one go before 
     actingAs($this->user)->get(route('grp.chat.staff.reports'))->assertInertia(fn (AssertableInertia $page) => $page
         ->where('joining_summary', ['shown' => 1, 'policy_opened' => 1, 'later' => 0, 'connected' => 1, 'not_in_slack' => 1, 'asked_link' => 1])
         ->has('joining.data', 2));
+});
+
+test('Not now on the Verba join page lets the person in and asks again the next day', function () {
+    $user = ($this->makeUser)();
+    expect(SlackWriteAccess::joinPending($user))->not->toBeNull();
+
+    actingAs($user)->patch(route('grp.models.profile.update'), ['verba_join_later' => true])->assertSessionHasNoErrors();
+    expect(SlackWriteAccess::joinPending($user->refresh()))->toBeNull();
+
+    $this->travel(1)->days();
+    expect(SlackWriteAccess::joinPending($user)['returning'])->toBeFalse();
+
+    $user->forceFill(['settings' => array_merge($user->settings ?? [], ['verba_welcome_seen' => true])])->save();
+    expect(SlackWriteAccess::joinPending($user)['returning'])->toBeTrue();
 });
 
 test('declining the private opt-in in Slack changes nothing and says so', function () {
