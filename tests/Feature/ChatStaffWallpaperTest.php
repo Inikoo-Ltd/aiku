@@ -119,3 +119,12 @@ test('a seasonal wallpaper is offered only in its window and gives way to the pr
     expect(StaffChatWallpaper::general($this->user->fresh(), Carbon::parse('2027-01-03'))['pattern'])->toBe('snow')
         ->and(StaffChatWallpaper::general($this->user->fresh(), Carbon::parse('2027-01-10'))['pattern'])->toBe('waves');
 });
+
+test('the login watercolour can be chosen, and every pattern has its picture, INI-597', function () {
+    actingAs($this->user)->patchJson(route('grp.models.profile.update'), ['chat_wallpaper' => ['pattern' => 'watercolour', 'colour' => 'none', 'mode' => 'same']])->assertSuccessful();
+
+    expect(StaffChatWallpaper::general($this->user->fresh())['pattern'])->toBe('watercolour');
+    foreach (array_keys(StaffChatWallpaper::PATTERNS) as $pattern) {
+        expect(file_exists(resource_path("js/Components/Messaging/wallpapers/$pattern.svg")))->toBeTrue();
+    }
+});

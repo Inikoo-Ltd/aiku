@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * The wallpaper behind staff chat messages: the one list of patterns and base colours, and which one a person sees in a conversation.
  * A pattern is a seamless SVG tile at resources/js/Components/Messaging/wallpapers/{key}.svg, so adding one is that file and one line in PATTERNS.
+ * A picture that covers the whole chat instead of repeating (watercolour, INI-597) is also listed in COVER_PATTERNS in chatWallpaper.ts; it carries its own colours.
  * A pattern with a window (MM-DD to MM-DD, it may cross the new year) is offered only inside it, and whoever picked it goes back to their previous pattern once it closes.
  */
 class StaffChatWallpaper
@@ -27,6 +28,7 @@ class StaffChatWallpaper
     public const array PATTERNS = [
         'dots'  => ['label' => 'Dots'],
         'waves' => ['label' => 'Waves'],
+        'watercolour' => ['label' => 'Watercolour'],
         'snow'  => ['label' => 'Winter lights', 'from' => '12-01', 'to' => '01-06'],
     ];
 

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { ctrans } from "@/Composables/useTrans"
-import { tileUrl, type ChatWallpaperCatalogue } from "@/Components/Messaging/chatWallpaper"
+import { isCoverPattern, tileStyle, type ChatWallpaperCatalogue } from "@/Components/Messaging/chatWallpaper"
 
 const props = defineProps<{
     catalogue: ChatWallpaperCatalogue
@@ -45,7 +45,7 @@ const swatchClass = (isChosen: boolean) =>
                     :key="option.key"
                     type="button"
                     :class="swatchClass(pattern === option.key)"
-                    :style="{ backgroundColor: colourHex, backgroundImage: tileUrl(option.key) ? `url('${tileUrl(option.key)}')` : undefined }"
+                    :style="{ backgroundColor: colourHex, ...tileStyle(option.key) }"
                     :aria-pressed="pattern === option.key"
                     v-tooltip="showUsage ? usersLabel(option.users) : undefined"
                     @click="pattern = option.key">
@@ -55,7 +55,8 @@ const swatchClass = (isChosen: boolean) =>
             </div>
             <div v-if="showUsage" class="mt-1 text-xxs text-gray-400">{{ ctrans("Hover a pattern to see how many people use it") }}</div>
         </div>
-        <div>
+        <p v-if="isCoverPattern(pattern)" class="text-xs text-gray-500">{{ ctrans("Watercolour brings its own colours") }}</p>
+        <div v-else>
             <div class="mb-1.5 text-xs font-medium text-gray-500">{{ ctrans("Colour") }}</div>
             <div class="flex flex-wrap gap-2">
                 <button
