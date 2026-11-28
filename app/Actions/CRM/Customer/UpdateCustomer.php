@@ -101,7 +101,8 @@ class UpdateCustomer extends OrgAction
             }
         }
 
-        if (Arr::has($modelData, 'contact_address')) {
+        $contactAddressChanged = Arr::has($modelData, 'contact_address');
+        if ($contactAddressChanged) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
 
 
@@ -324,8 +325,8 @@ class UpdateCustomer extends OrgAction
             VerifyCustomerDic::dispatchIfApplies($customer);
         }
 
-        if ($taxNumberChanged || Arr::has($changes, 'identity_document_number')) {
-            CompanyIdLabels::fillBelgianEnterpriseNumber($customer->refresh());
+        if ($taxNumberChanged || $contactAddressChanged || Arr::has($changes, 'identity_document_number')) {
+            CompanyIdLabels::fillNationalNumber($customer->refresh());
         }
 
         if (Arr::has($changes, 'contact_name')) {
@@ -441,7 +442,7 @@ class UpdateCustomer extends OrgAction
                 'nullable',
                 $this->strict ? new Phone() : 'string:255',
             ],
-            'identity_document_number'                              => ['sometimes', 'nullable', 'string', CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code ?? $this->customer?->address?->country_code)],
+            'identity_document_number'                              => ['sometimes', 'nullable', 'string', CompanyIdLabels::nationalNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code ?? $this->customer?->address?->country_code, $this->customer?->shop, $this->customer?->identity_document_number)],
             'identity_document_number_alt'                          => ['sometimes', 'nullable', 'string'],
             'contact_website'                                       => ['sometimes', 'nullable', 'active_url'],
             'contact_address'                                       => ['sometimes', 'required', new ValidAddress(requireFullAddress: !$this->asAction)],
@@ -455,7 +456,7 @@ class UpdateCustomer extends OrgAction
             'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
             'shipping_notes'                                        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'warehouse_temporary_notes'                             => ['sometimes', 'nullable', 'string'],
-            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array', CompanyIdLabels::spanishVatNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code ?? $this->customer?->address?->country_code, $this->customer?->taxNumber?->number)],
             'tags'                                                  => ['sometimes', 'array'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],

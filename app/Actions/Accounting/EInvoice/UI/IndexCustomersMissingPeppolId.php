@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\EInvoice\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\InertiaTable\InertiaTable;
@@ -29,6 +30,8 @@ use Spatie\QueryBuilder\AllowedFilter;
  * Business customers invoiced in the last 12 months in an e-invoice country who cannot be reached on Peppol yet:
  * no Peppol ID and no validated Slovak VAT number to take the DIČ from. Same rule as IsInvoiceInEInvoiceScope and
  * BuildUblInvoice::buyerParticipantId, on each customer's latest invoice.
+ * INI-592. Spanish customers are listed instead while neither their NIF nor their NIF-IVA is a valid NIF, so it is
+ * collected before Spanish e-invoicing starts (the ES organisation, not e-invoicing yet, gets this page for that).
  */
 class IndexCustomersMissingPeppolId extends OrgAction
 {
@@ -40,6 +43,16 @@ class IndexCustomersMissingPeppolId extends OrgAction
     public static function countries(Organisation $organisation): array
     {
         return Arr::get($organisation->settings, 'e_invoicing.countries') ?: array_filter([$organisation->country?->code]);
+    }
+
+    public static function appliesTo(Organisation $organisation): bool
+    {
+        return Arr::get($organisation->settings, 'e_invoicing.countries') || $organisation->country?->code === 'ES';
+    }
+
+    public static function asksForNif(Organisation $organisation): bool
+    {
+        return self::countries($organisation) === ['ES'];
     }
 
     public function handle(Organisation $organisation): LengthAwarePaginator
@@ -59,7 +72,7 @@ class IndexCustomersMissingPeppolId extends OrgAction
             ->where('invoices.in_process', false)
             ->where('invoices.date', '>=', now()->subYear())
             ->whereIn('addresses.country_code', self::countries($organisation))
-            ->selectRaw('distinct on (invoices.customer_id) invoices.customer_id, invoices.date, invoices.tax_number, invoices.tax_number_valid, invoices.identity_document_number')
+            ->selectRaw('distinct on (invoices.customer_id) invoices.customer_id, addresses.country_code, invoices.date, invoices.tax_number, invoices.tax_number_valid, invoices.identity_document_number')
             ->orderBy('invoices.customer_id')
             ->orderByDesc('invoices.date')
             ->orderByDesc('invoices.id');
@@ -67,8 +80,20 @@ class IndexCustomersMissingPeppolId extends OrgAction
         $query = Customer::query()
             ->joinSub($latestInvoices, 'latest_invoice', 'latest_invoice.customer_id', '=', 'customers.id')
             ->join('shops', 'shops.id', '=', 'customers.shop_id')
-            ->where(fn (Builder $query) => $query->whereNull('customers.peppol_id')->orWhereRaw("customers.peppol_id COLLATE \"C\" !~ '^[0-9]{4}:[A-Za-z0-9]{1,50}$'"))
-            ->whereRaw("not (coalesce(latest_invoice.tax_number_valid, false) and regexp_replace(upper(coalesce(latest_invoice.tax_number, '') COLLATE \"C\"), '[^A-Z0-9]', '', 'g') ~ '^SK[0-9]{10}$')")
+            ->where(fn (Builder $query) => $query
+                ->where(fn (Builder $query) => $query
+                    ->where('latest_invoice.country_code', '<>', 'ES')
+                    ->where(fn (Builder $query) => $query->whereNull('customers.peppol_id')->orWhereRaw("customers.peppol_id COLLATE \"C\" !~ '^[0-9]{4}:[A-Za-z0-9]{1,50}$'"))
+                    ->whereRaw("not (coalesce(latest_invoice.tax_number_valid, false) and regexp_replace(upper(coalesce(latest_invoice.tax_number, '') COLLATE \"C\"), '[^A-Z0-9]', '', 'g') ~ '^SK[0-9]{10}$')"))
+                ->orWhere(fn (Builder $query) => $query
+                    ->where('latest_invoice.country_code', 'ES')
+                    ->whereRaw('not '.CompanyIdLabels::spanishNifSql('customers.identity_document_number'))
+                    ->whereNotExists(fn ($taxNumber) => $taxNumber->selectRaw('1')->from('tax_numbers')
+                        ->where('tax_numbers.owner_type', 'Customer')
+                        ->whereColumn('tax_numbers.owner_id', 'customers.id')
+                        ->whereNull('tax_numbers.deleted_at')
+                        ->where('tax_numbers.country_code', 'ES')
+                        ->whereRaw(CompanyIdLabels::spanishNifSql('tax_numbers.number')))))
             ->where(fn (Builder $query) => $query
                 ->whereRaw("length(regexp_replace(coalesce(latest_invoice.tax_number, '') COLLATE \"C\", '[^0-9]', '', 'g')) >= 8")
                 ->orWhereRaw("length(regexp_replace(coalesce(latest_invoice.identity_document_number, '') COLLATE \"C\", '[^0-9]', '', 'g')) >= 8")
@@ -104,7 +129,7 @@ class IndexCustomersMissingPeppolId extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withLabelRecord([__('customer'), __('customers')])
-                ->withEmptyState(['title' => __('Every business customer can receive e-invoices')])
+                ->withEmptyState(['title' => self::asksForNif($this->organisation) ? __('Every business customer has a valid NIF') : __('Every business customer can receive e-invoices')])
                 ->column(key: 'reference', label: __('Customer'), sortable: true)
                 ->column(key: 'name', label: __('Name'), sortable: true)
                 ->column(key: 'shop_code', label: __('Shop'))
@@ -124,7 +149,7 @@ class IndexCustomersMissingPeppolId extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $customers, ActionRequest $request): Response
     {
-        $title = __('Customers missing a Peppol ID');
+        $title = self::title($this->organisation);
 
         return Inertia::render(
             'Org/Accounting/CustomersMissingPeppolId',
@@ -136,6 +161,7 @@ class IndexCustomersMissingPeppolId extends OrgAction
                     'title' => $title,
                 ],
                 'countries'   => self::countries($this->organisation),
+                'asksForNif'  => self::asksForNif($this->organisation),
                 'data'        => $customers->through(fn (Customer $customer) => [
                     'id'                       => $customer->id,
                     'reference'                => $customer->reference,
@@ -154,6 +180,11 @@ class IndexCustomersMissingPeppolId extends OrgAction
         )->table($this->tableStructure());
     }
 
+    public static function title(Organisation $organisation): string
+    {
+        return self::asksForNif($organisation) ? __('Customers missing a NIF') : __('Customers missing a Peppol ID');
+    }
+
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
         return array_merge(
@@ -163,7 +194,7 @@ class IndexCustomersMissingPeppolId extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => ['name' => $routeName, 'parameters' => $routeParameters],
-                        'label' => __('Customers missing a Peppol ID'),
+                        'label' => self::title($this->organisation),
                         'icon'  => 'fal fa-bars',
                     ],
                 ],

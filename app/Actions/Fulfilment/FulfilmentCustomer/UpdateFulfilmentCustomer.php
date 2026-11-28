@@ -8,7 +8,9 @@
 
 namespace App\Actions\Fulfilment\FulfilmentCustomer;
 
+use App\Actions\CRM\Customer\CompanyIdLabels;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Models\Helpers\Country;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydrateCustomers;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
@@ -31,6 +33,7 @@ class UpdateFulfilmentCustomer extends OrgAction
     use WithActionUpdate;
     use WithModelAddressActions;
     use WithPrepareTaxNumberValidation;
+    private ?FulfilmentCustomer $fulfilmentCustomer = null;
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
@@ -58,6 +61,7 @@ class UpdateFulfilmentCustomer extends OrgAction
                     canShip: true
                 );
             }
+            CompanyIdLabels::fillNationalNumber($fulfilmentCustomer->customer->refresh());
         }
 
         foreach ($modelData as $key => $value) {
@@ -143,8 +147,8 @@ class UpdateFulfilmentCustomer extends OrgAction
                 'sometimes',
                 Rule::enum(FulfilmentCustomerStatusEnum::class)
             ],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
+            'tax_number'               => ['sometimes', 'nullable', 'array', CompanyIdLabels::spanishVatNumberRule(fn () => Country::find($this->get('address.country_id'))?->code ?? $this->fulfilmentCustomer?->customer?->address?->country_code, $this->fulfilmentCustomer?->customer?->taxNumber?->number)],
+            'identity_document_number' => ['sometimes', 'nullable', 'string', CompanyIdLabels::nationalNumberRule(fn () => Country::find($this->get('address.country_id'))?->code ?? $this->fulfilmentCustomer?->customer?->address?->country_code, $this->fulfilmentCustomer?->customer?->shop, $this->fulfilmentCustomer?->customer?->identity_document_number)],
             'is_credit_customer'       => ['sometimes', 'boolean'],
             'accounting_reference'     => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
@@ -157,6 +161,7 @@ class UpdateFulfilmentCustomer extends OrgAction
         FulfilmentCustomer $fulfilmentCustomer,
         ActionRequest $request
     ): FulfilmentCustomer {
+        $this->fulfilmentCustomer = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
         return $this->handle($fulfilmentCustomer, $this->validatedData);
@@ -165,6 +170,7 @@ class UpdateFulfilmentCustomer extends OrgAction
     public function action(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
         $this->asAction = true;
+        $this->fulfilmentCustomer = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $modelData);
 
         return $this->handle($fulfilmentCustomer, $this->validatedData);

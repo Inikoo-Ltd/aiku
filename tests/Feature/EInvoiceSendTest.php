@@ -1002,16 +1002,98 @@ test('a Belgian customer\'s enterprise number is checked, stored as 10 digits an
 
         $customer->update(['identity_document_number' => null]);
         \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $customer->fresh(), modelData: ['number' => 'BE1039543060', 'country_id' => \App\Models\Helpers\Country::where('code', 'BE')->value('id')], strict: false);
-        $labels::fillBelgianEnterpriseNumber($customer->fresh());
+        $labels::fillNationalNumber($customer->fresh());
         expect($customer->fresh()->identity_document_number)->toBe('1039543060');
+
+        $customer->address->update(['country_code' => 'NL', 'country_id' => \App\Models\Helpers\Country::where('code', 'NL')->value('id')]);
+        $customer->update(['identity_document_number' => null]);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['contact_address' => ['address_line_1' => 'Rue Neuve 1', 'locality' => 'Bruxelles', 'postal_code' => '1000', 'country_id' => \App\Models\Helpers\Country::where('code', 'BE')->value('id')]]);
+        expect($customer->fresh()->address->country_code)->toBe('BE')
+            ->and($customer->fresh()->identity_document_number)->toBe('1039543060');
 
         $customer->address->update(['country_code' => 'NL']);
         $customer->update(['identity_document_number' => '11706332']);
-        $labels::fillBelgianEnterpriseNumber($customer->fresh());
+        $labels::fillNationalNumber($customer->fresh());
         expect($customer->fresh()->identity_document_number)->toBe('11706332');
     } finally {
         $this->customer->fresh()->taxNumber?->delete();
         $this->customer->address->update(['country_code' => $originalCountry]);
         $this->customer->update(['identity_document_number' => null]);
+    }
+});
+
+test('a Spanish customer\'s NIF is checked, taken from its NIF-IVA when it gave none, and customers without one are listed', function () {
+    $labels           = \App\Actions\CRM\Customer\CompanyIdLabels::class;
+    $originalCountry  = $this->customer->address->country_code;
+    $originalSettings = $this->organisation->settings;
+    $spain            = \App\Models\Helpers\Country::where('code', 'ES')->value('id');
+
+    expect($labels::spanishNif('ES-12345678Z'))->toBe('12345678Z')
+        ->and($labels::spanishNif('1234567L'))->toBe('01234567L')
+        ->and($labels::spanishNif('X1234567L'))->toBe('X1234567L')
+        ->and($labels::spanishNif('ES NIEZ4357398-F'))->toBe('Z4357398F')
+        ->and($labels::spanishNif('b-1234567 4'))->toBe('B12345674')
+        ->and($labels::spanishNif('P2807900B'))->toBe('P2807900B')
+        ->and($labels::spanishNif('B12345675'))->toBeNull()
+        ->and($labels::spanishNif('12345678A'))->toBeNull()
+        ->and($labels::spanishNif('036 y 037'))->toBeNull()
+        ->and(\Illuminate\Support\Facades\DB::selectOne('select '.$labels::spanishNifSql("'ES 12345678Z'").' as a, '.$labels::spanishNifSql("'B12345674'").' as b, '.$labels::spanishNifSql("'12345678A'").' as c, '.$labels::spanishNifSql('null').' as d, '.$labels::spanishNifSql("'ES NIEZ4357398-F'").' as e, '.$labels::spanishNifSql("'1234567L'").' as f'))
+        ->toEqual((object)['a' => true, 'b' => true, 'c' => false, 'd' => false, 'e' => true, 'f' => true]);
+
+    try {
+        $this->organisation->update(['settings' => array_merge($originalSettings ?? [], ['e_invoicing' => ['countries' => ['ES']]])]);
+        $this->invoice->update(['address_id' => $this->customer->address_id, 'tax_number' => null, 'identity_document_number' => null]);
+        $this->customer->address->update(['country_code' => 'ES']);
+        $this->customer->taxNumber?->delete();
+        $this->customer->update(['company_name' => 'Tienda S.L.', 'identity_document_number' => null, 'peppol_id' => null]);
+        $customer = $this->customer->fresh();
+
+        $listed = fn () => \App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId::make()->handle($this->organisation->fresh())->getCollection()->pluck('id');
+        expect($listed())->toContain($customer->id)
+            ->and(\App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId::title($this->organisation->fresh()))->toBe('Customers missing a NIF');
+
+        expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['identity_document_number' => '036 y 037']))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+        \App\Actions\Helpers\TaxNumber\StoreTaxNumber::run(owner: $customer->fresh(), modelData: ['number' => 'B12345674', 'country_id' => $spain], strict: false);
+        expect($listed())->not->toContain($customer->id);
+
+        $labels::fillNationalNumber($customer->fresh());
+        expect($customer->fresh()->identity_document_number)->toBe('B12345674');
+
+        $customer->fresh()->taxNumber->delete();
+        $customer->update(['identity_document_number' => null]);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['identity_document_number' => 'es-12345678z']);
+        expect($customer->fresh()->identity_document_number)->toBe('12345678Z')
+            ->and($listed())->not->toContain($customer->id);
+
+        expect(fn () => \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['tax_number' => ['number' => 'recargodeequivalencia', 'country_id' => $spain]]))
+            ->toThrow(\Illuminate\Validation\ValidationException::class);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['tax_number' => ['number' => 'FR 609-274-558-16']]);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['tax_number' => ['number' => 'ES12345678Z', 'country_id' => $spain]]);
+        expect($customer->fresh()->taxNumber->number)->toBe('ES12345678Z');
+
+        try {
+            \App\Actions\Accounting\Invoice\UpdateInvoiceTaxNumber::make()->handle($this->invoice->fresh(), ['formatted_tax_number' => 'ES recargo', 'update_customer' => true]);
+            $this->fail('expected a validation error');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            expect(array_keys($exception->errors()))->toBe(['formatted_tax_number']);
+        }
+
+        $customer->update(['identity_document_number' => '036 y 037']);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['identity_document_number' => '036 y 037', 'company_name' => 'Tienda Nueva S.L.']);
+        expect($customer->fresh()->company_name)->toBe('Tienda Nueva S.L.');
+
+        $originalShopSettings = $this->shop->settings;
+        $this->shop->update(['settings' => array_merge($originalShopSettings ?? [], ['customer' => ['identity_document_number' => 'EORI Number']])]);
+        $customer->update(['identity_document_number' => null]);
+        \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->fresh(), ['identity_document_number' => 'ESB12345674']);
+        expect($customer->fresh()->identity_document_number)->toBe('ESB12345674');
+        $this->shop->update(['settings' => $originalShopSettings]);
+    } finally {
+        $this->customer->fresh()->taxNumber?->delete();
+        $this->customer->address->update(['country_code' => $originalCountry]);
+        $this->customer->update(['identity_document_number' => null, 'company_name' => null]);
+        $this->organisation->update(['settings' => $originalSettings]);
     }
 });

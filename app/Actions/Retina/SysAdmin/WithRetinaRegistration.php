@@ -294,9 +294,9 @@ trait WithRetinaRegistration
                         $fail(__('The IČO has 6 to 8 digits.'));
                     }
                 },
-                CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code),
+                CompanyIdLabels::nationalNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code, $this->shop),
             ],
-            'tax_number'      => [Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable', 'array'],
+            'tax_number'      => [Arr::get($this->shop->settings, 'registration.tax_number_is_required', false) ? 'required' : 'nullable', 'array', CompanyIdLabels::spanishVatNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code)],
             'password'        =>
                 [
                     'required',

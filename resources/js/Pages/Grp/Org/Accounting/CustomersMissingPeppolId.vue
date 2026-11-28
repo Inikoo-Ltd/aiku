@@ -15,13 +15,17 @@ defineProps<{
     title: string
     pageHead: PageHeadingTypes
     countries: string[]
+    asksForNif?: boolean
 }>()
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-    <p class="px-4 py-3 text-sm text-gray-600">
+    <p v-if="asksForNif" class="px-4 py-3 text-sm text-gray-600">
+        {{ ctrans("Business customers invoiced in the last 12 months without a valid Spanish NIF, needed for Spanish e-invoices. Ask each one for their NIF and enter it on the customer, e.g. B12345674 or 12345678Z.") }}
+    </p>
+    <p v-else class="px-4 py-3 text-sm text-gray-600">
         {{ ctrans("Business customers invoiced in the last 12 months in :countries who cannot receive Peppol e-invoices yet. Ask each one for their DIČ and enter it on the customer as their Peppol ID, e.g. 0245:2120643690.", { countries: countries.join(", ") }) }}
     </p>
     <Table :resource="data">

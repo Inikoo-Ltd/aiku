@@ -2524,7 +2524,7 @@ test('customer tax number change left unticked keeps current orders as they are'
     \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::mock()->shouldReceive('handle')->never();
     \App\Actions\Ordering\Order\ResetOrderTaxCategory::mock()->shouldReceive('handle')->never();
 
-    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), ['tax_number' => ['number' => 'B22222222', 'country_id' => $spainId], 'update_current_orders' => false]);
+    \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), ['tax_number' => ['number' => 'B22222228', 'country_id' => $spainId], 'update_current_orders' => false]);
     \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), ['tax_number' => ['number' => null], 'update_current_orders' => false]);
 
     expect($customer->refresh()->taxNumber)->toBeNull()
@@ -2542,10 +2542,10 @@ test('customer tax number change updates current orders by default', function ()
     \App\Actions\Ordering\Order\CalculateOrderTotalAmounts::mock()->shouldReceive('handle')->atLeast()->once();
 
     \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer, [
-        'tax_number' => ['number' => 'B22222222', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
+        'tax_number' => ['number' => 'B22222228', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
     ]);
 
-    expect($customer->refresh()->taxNumber->number)->toBe('B22222222');
+    expect($customer->refresh()->taxNumber->number)->toBe('B22222228');
 });
 
 test('an invoiced order shows the tax number it was billed with, not the customer profile one', function () {
@@ -2556,15 +2556,15 @@ test('an invoiced order shows the tax number it was billed with, not the custome
     [, $product] = createProduct($this->shop);
     $order   = createOrder($customer, $product);
     $invoice = StoreInvoice::make()->action($customer, Invoice::factory()->definition());
-    DB::table('invoices')->where('id', $invoice->id)->update(['order_id' => $order->id, 'tax_number' => 'ESB22222222', 'in_process' => false]);
+    DB::table('invoices')->where('id', $invoice->id)->update(['order_id' => $order->id, 'tax_number' => 'ESB22222228', 'in_process' => false]);
 
     \App\Actions\CRM\Customer\UpdateCustomer::make()->action($customer->refresh(), [
-        'tax_number' => ['number' => 'B33333333', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
+        'tax_number' => ['number' => 'B33333337', 'country_id' => \App\Models\Helpers\Country::where('code', 'ES')->value('id')],
     ]);
 
     get(route('grp.org.shops.show.ordering.orders.show', [$this->organisation->slug, $this->shop->slug, $order->slug]))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.customer.tax_number.number', 'ESB22222222'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('box_stats.customer.tax_number.number', 'ESB22222228'));
 });
 
 /*

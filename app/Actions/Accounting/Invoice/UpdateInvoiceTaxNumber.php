@@ -18,6 +18,7 @@ use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Lorisleiva\Actions\ActionRequest;
@@ -72,12 +73,16 @@ class UpdateInvoiceTaxNumber extends OrgAction
         $oldTaxNumber = $customer->taxNumber?->getFormattedTaxNumber();
         $taxNumber    = getUnformattedTaxNumber($formattedTaxNumber);
 
-        UpdateCustomer::make()->action($customer, [
-            'tax_number' => [
-                'number'     => $taxNumber['number'] ?? null,
-                'country_id' => $taxNumber ? Country::where('code', $taxNumber['country_code'])->value('id') : null,
-            ],
-        ]);
+        try {
+            UpdateCustomer::make()->action($customer, [
+                'tax_number' => [
+                    'number'     => $taxNumber['number'] ?? null,
+                    'country_id' => $taxNumber ? Country::where('code', $taxNumber['country_code'])->value('id') : null,
+                ],
+            ]);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(['formatted_tax_number' => Arr::flatten($exception->errors())]);
+        }
 
         $newTaxNumber = $customer->refresh()->taxNumber?->getFormattedTaxNumber();
 

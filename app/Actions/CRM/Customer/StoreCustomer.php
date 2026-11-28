@@ -213,7 +213,7 @@ class StoreCustomer extends OrgAction
             MatchCustomerProspects::run($customer);
         }
 
-        CompanyIdLabels::fillBelgianEnterpriseNumber($customer);
+        CompanyIdLabels::fillNationalNumber($customer);
 
         return $customer;
     }
@@ -303,7 +303,7 @@ class StoreCustomer extends OrgAction
                 'nullable',
                 'string:32'
             ],
-            'identity_document_number' => ['sometimes', 'nullable', 'string', CompanyIdLabels::belgianEnterpriseNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code)],
+            'identity_document_number' => ['sometimes', 'nullable', 'string', CompanyIdLabels::nationalNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code, $this->shop)],
             'peppol_id'                => BuildUblInvoice::peppolIdRules(),
             'peppol_dic'               => [
                 'sometimes',
@@ -338,7 +338,7 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'traffic_sources'                                       => ['sometimes', 'nullable'],
-            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array', CompanyIdLabels::spanishVatNumberRule(fn () => Country::find($this->get('contact_address.country_id'))?->code)],
             'is_re'                                                 => ['sometimes', 'boolean'],
 
 
@@ -355,6 +355,8 @@ class StoreCustomer extends OrgAction
             $rules['is_vip']             = ['sometimes', 'boolean'];
             $rules['as_organisation_id'] = ['sometimes', 'nullable', 'integer'];
             $rules['as_employee_id']     = ['sometimes', 'nullable', 'integer'];
+            $rules['identity_document_number'] = ['sometimes', 'nullable', 'string'];
+            $rules['tax_number']               = ['sometimes', 'nullable', 'array'];
 
             $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['email']           = [

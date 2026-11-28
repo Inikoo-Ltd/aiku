@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\Accounting\EInvoice\UI\IndexCustomersMissingPeppolId;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
@@ -200,8 +201,8 @@ trait WithLayoutNavigation
                                 'parameters' => [$organisation->slug],
                             ]
                         ]] : []),
-                        ...(Arr::get($organisation->settings, 'e_invoicing.countries') ? [[
-                            'label' => __('Peppol IDs missing'),
+                        ...(IndexCustomersMissingPeppolId::appliesTo($organisation) ? [[
+                            'label' => IndexCustomersMissingPeppolId::asksForNif($organisation) ? __('NIFs missing') : __('Peppol IDs missing'),
                             'icon'  => ['fal', 'fa-address-card'],
                             'root'  => 'grp.org.accounting.customers_missing_peppol_id.',
                             'route' => [
